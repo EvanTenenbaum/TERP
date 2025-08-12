@@ -1,0 +1,441 @@
+// ERPv2 Prisma Schema
+// Complete data model based on CONTEXT.md specifications
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  crmNotesCreated   CrmNote[]        @relation("CreatedBy")
+  debtAdjustments   DebtAdjustment[] @relation("CreatedBy")
+  photosUploaded    IntakePhoto[]    @relation("UploadedBy")
+
+  @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  SALES
+  ACCOUNTING
+  READ_ONLY
+}
+
+// Product Catalog
+model Product {
+  id           String  @id @default(cuid())
+  name         String
+  category     String
+  defaultPrice Int     // Price in cents
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  batches           Batch[]
+  orderItems        OrderItem[]
+  salesQuoteItems   SalesQuoteItem[]
+  priceBookEntries  PriceBookEntry[]
+  sampleTransactions SampleTransaction[]
+  photos            IntakePhoto[]
+
+  @@map("products")
+}
+
+// Vendor Management
+model Vendor {
+  id          String @id @default(cuid())
+  vendorCode  String @unique
+  companyName String
+  contactInfo Json   // {email, phone, address, etc}
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  batches            Batch[]
+  accountsPayable    AccountsPayable[]
+  crmNotes           CrmNote[]
+  sampleTransactions SampleTransaction[]
+
+  @@map("vendors")
+}
+
+// Customer Management
+model Customer {
+  id           String @id @default(cuid())
+  companyName  String
+  contactInfo  Json   // {email, phone, address, etc}
+  creditLimit  Int?   // Credit limit in cents
+  paymentTerms String?
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  orders              Order[]
+  salesQuotes         SalesQuote[]
+  accountsReceivable  AccountsReceivable[]
+  payments            Payment[]
+  crmNotes            CrmNote[]
+  priceBooks          PriceBook[]
+  debtAdjustments     DebtAdjustment[]
+  sampleTransactions  SampleTransaction[]
+
+  @@map("customers")
+}
+
+// Inventory Management
+model Batch {
+  id               String    @id @default(cuid())
+  productId        String
+  vendorId         String
+  lotNumber        String
+  receivedDate     DateTime
+  expirationDate   DateTime?
+  quantityReceived Int
+  quantityAvailable Int
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  product            Product             @relation(fields: [productId], references: [id])
+  vendor             Vendor              @relation(fields: [vendorId], references: [id])
+  batchCosts         BatchCost[]
+  inventoryLot       InventoryLot?
+  orderItems         OrderItem[]
+  sampleTransactions SampleTransaction[]
+  photos             IntakePhoto[]
+
+  @@map("batches")
+}
+
+model BatchCost {
+  id            String   @id @default(cuid())
+  batchId       String
+  effectiveFrom DateTime
+  unitCost      Int      // Cost in cents
+  createdAt     DateTime @default(now())
+
+  // Relations
+  batch Batch @relation(fields: [batchId], references: [id])
+
+  @@unique([batchId, effectiveFrom])
+  @@map("batch_costs")
+}
+
+model InventoryLot {
+  id                String   @id @default(cuid())
+  batchId           String   @unique
+  quantityOnHand    Int
+  quantityAllocated Int
+  quantityAvailable Int
+  lastMovementDate  DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  batch Batch @relation(fields: [batchId], references: [id])
+
+  @@map("inventory_lots")
+}
+
+// Sales Management
+model Order {
+  id             String      @id @default(cuid())
+  customerId     String
+  orderDate      DateTime
+  allocationDate DateTime?
+  status         OrderStatus @default(DRAFT)
+  totalAmount    Int         // Total in cents
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  customer           Customer             @relation(fields: [customerId], references: [id])
+  orderItems         OrderItem[]
+  accountsReceivable AccountsReceivable[]
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  ALLOCATED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model OrderItem {
+  id             String    @id @default(cuid())
+  orderId        String
+  productId      String
+  batchId        String?
+  quantity       Int
+  unitPrice      Int       // Price in cents
+  allocationDate DateTime?
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  order   Order    @relation(fields: [orderId], references: [id])
+  product Product  @relation(fields: [productId], references: [id])
+  batch   Batch?   @relation(fields: [batchId], references: [id])
+
+  @@map("order_items")
+}
+
+// Financial Management
+model AccountsReceivable {
+  id               String   @id @default(cuid())
+  customerId       String
+  orderId          String?
+  invoiceNumber    String   @unique
+  invoiceDate      DateTime
+  dueDate          DateTime
+  amount           Int      // Amount in cents
+  balanceRemaining Int      // Remaining balance in cents
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  customer           Customer             @relation(fields: [customerId], references: [id])
+  order              Order?               @relation(fields: [orderId], references: [id])
+  paymentApplications PaymentApplication[]
+
+  @@map("accounts_receivable")
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  customerId      String
+  paymentDate     DateTime
+  amount          Int      // Amount in cents
+  paymentMethod   String
+  referenceNumber String?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  customer            Customer             @relation(fields: [customerId], references: [id])
+  paymentApplications PaymentApplication[]
+
+  @@map("payments")
+}
+
+model PaymentApplication {
+  id              String   @id @default(cuid())
+  paymentId       String
+  arId            String
+  appliedAmount   Int      // Amount applied in cents
+  applicationDate DateTime
+  createdAt       DateTime @default(now())
+
+  // Relations
+  payment Payment            @relation(fields: [paymentId], references: [id])
+  ar      AccountsReceivable @relation(fields: [arId], references: [id])
+
+  @@map("payment_applications")
+}
+
+model AccountsPayable {
+  id               String   @id @default(cuid())
+  vendorId         String
+  invoiceNumber    String
+  invoiceDate      DateTime
+  dueDate          DateTime
+  amount           Int      // Amount in cents
+  balanceRemaining Int      // Remaining balance in cents
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@map("accounts_payable")
+}
+
+// CRM
+model CrmNote {
+  id         String   @id @default(cuid())
+  customerId String?
+  vendorId   String?
+  noteDate   DateTime
+  noteType   String
+  content    String
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  // Relations
+  customer Customer? @relation(fields: [customerId], references: [id])
+  vendor   Vendor?   @relation(fields: [vendorId], references: [id])
+  user     User      @relation("CreatedBy", fields: [createdBy], references: [id])
+
+  @@map("crm_notes")
+}
+
+// Sales Quotes
+model SalesQuote {
+  id             String           @id @default(cuid())
+  customerId     String
+  quoteNumber    String           @unique
+  quoteDate      DateTime
+  expirationDate DateTime
+  status         SalesQuoteStatus @default(DRAFT)
+  shareToken     String           @unique
+  totalAmount    Int              // Total in cents
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relations
+  customer   Customer          @relation(fields: [customerId], references: [id])
+  quoteItems SalesQuoteItem[]
+
+  @@map("sales_quotes")
+}
+
+enum SalesQuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+model SalesQuoteItem {
+  id        String @id @default(cuid())
+  quoteId   String
+  productId String
+  quantity  Int
+  unitPrice Int    // Price in cents
+  lineTotal Int    // Line total in cents
+  createdAt DateTime @default(now())
+
+  // Relations
+  quote   SalesQuote @relation(fields: [quoteId], references: [id])
+  product Product    @relation(fields: [productId], references: [id])
+
+  @@map("sales_quote_items")
+}
+
+// Pricing Management
+model PriceBook {
+  id            String        @id @default(cuid())
+  name          String
+  type          PriceBookType
+  customerId    String?
+  roleId        String?
+  effectiveDate DateTime
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  customer Customer?        @relation(fields: [customerId], references: [id])
+  entries  PriceBookEntry[]
+
+  @@map("price_books")
+}
+
+enum PriceBookType {
+  GLOBAL
+  ROLE
+  CUSTOMER
+}
+
+model PriceBookEntry {
+  id            String   @id @default(cuid())
+  priceBookId   String
+  productId     String
+  unitPrice     Int      // Price in cents
+  effectiveDate DateTime
+  createdAt     DateTime @default(now())
+
+  // Relations
+  priceBook PriceBook @relation(fields: [priceBookId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@map("price_book_entries")
+}
+
+// Debt Adjustments
+model DebtAdjustment {
+  id             String   @id @default(cuid())
+  customerId     String
+  adjustmentDate DateTime
+  amount         Int      // Amount in cents (can be negative)
+  notes          String
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id])
+  user     User     @relation("CreatedBy", fields: [createdBy], references: [id])
+
+  @@map("debt_adjustments")
+}
+
+// Sample Management
+model SampleTransaction {
+  id                 String                  @id @default(cuid())
+  productId          String
+  batchId            String?
+  customerId         String?
+  vendorId           String?
+  transactionType    SampleTransactionType
+  quantity           Int
+  unitCostSnapshot   Int                     // Cost snapshot in cents
+  transactionDate    DateTime
+  notes              String?
+  createdAt          DateTime                @default(now())
+
+  // Relations
+  product  Product   @relation(fields: [productId], references: [id])
+  batch    Batch?    @relation(fields: [batchId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+  vendor   Vendor?   @relation(fields: [vendorId], references: [id])
+
+  @@map("sample_transactions")
+}
+
+enum SampleTransactionType {
+  VENDOR_IN
+  CLIENT_OUT
+  CLIENT_RETURN
+  VENDOR_RETURN
+}
+
+// Document Management
+model IntakePhoto {
+  id         String @id @default(cuid())
+  parentType String // "product", "batch", etc.
+  parentId   String
+  fileName   String
+  filePath   String
+  fileSize   Int
+  mimeType   String
+  uploadedBy String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user    User     @relation("UploadedBy", fields: [uploadedBy], references: [id])
+  product Product? @relation(fields: [parentId], references: [id], map: "intake_photos_product_fkey")
+  batch   Batch?   @relation(fields: [parentId], references: [id], map: "intake_photos_batch_fkey")
+
+  @@map("intake_photos")
+}
+
