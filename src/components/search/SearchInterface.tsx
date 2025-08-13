@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { searchProducts, SearchFilters, SearchResult } from '@/actions/search';
+import { searchProducts, SearchFilters as SearchFiltersType, SearchResult } from '@/actions/search';
 import SearchFilters from './SearchFilters';
 import SearchResults from './SearchResults';
 import { useCart } from '@/hooks/useCart';
@@ -21,13 +21,13 @@ interface SearchInterfaceProps {
 }
 
 export default function SearchInterface({ filterOptions }: SearchInterfaceProps) {
-  const [filters, setFilters] = useState<SearchFilters>({});
+  const [filters, setFilters] = useState<SearchFiltersType>({});
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { addToCart } = useCart();
 
-  const performSearch = useCallback(async (searchFilters: SearchFilters) => {
+  const performSearch = useCallback(async (searchFilters: SearchFiltersType) => {
     setLoading(true);
     setError(null);
     
