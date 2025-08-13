@@ -2,77 +2,69 @@
 
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
-export interface QuoteItem {
-  productId: string;
-  batchId: string;
-  inventoryLotId: string;
-  quantity: number;
-  unitPrice: number; // in cents
-}
-
 export interface CreateQuoteData {
   customerId: string;
-  items: QuoteItem[];
-  notes?: string;
+  items: {
+    productId: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
   validUntil?: Date;
+}
+
+export interface QuoteItem {
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+// Generate a random share token
+function generateShareToken(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+export async function getQuotes() {
+  try {
+    const quotes = await prisma.salesQuote.findMany({
+      include: {
+        customer: true,
+        quoteItems: {
+          include: {
+            product: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return {
+      success: true,
+      quotes
+    };
+  } catch (error) {
+    console.error('Error fetching quotes:', error);
+    return {
+      success: false,
+      error: 'Failed to fetch quotes'
+    };
+  }
 }
 
 export async function createQuote(data: CreateQuoteData) {
   try {
-    const { customerId, items, notes, validUntil } = data;
-
-    // Validate customer exists
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId }
-    });
-
-    if (!customer) {
-      return { success: false, error: 'Customer not found' };
-    }
-
-    // Validate all items exist and are available
-    for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId }
-      });
-
-      if (!product) {
-        return { success: false, error: `Product not found: ${item.productId}` };
-      }
-
-      const batch = await prisma.batch.findUnique({
-        where: { id: item.batchId }
-      });
-
-      if (!batch) {
-        return { success: false, error: `Batch not found: ${item.batchId}` };
-      }
-
-      const inventoryLot = await prisma.inventoryLot.findUnique({
-        where: { id: item.inventoryLotId }
-      });
-
-      if (!inventoryLot) {
-        return { success: false, error: `Inventory lot not found: ${item.inventoryLotId}` };
-      }
-
-      // Check availability (quotes don't reserve stock, but we should warn if insufficient)
-      const availableQty = inventoryLot.qtyOnHand - inventoryLot.qtyAllocated;
-      if (item.quantity > availableQty) {
-        console.warn(`Warning: Quote quantity (${item.quantity}) exceeds available stock (${availableQty}) for product ${product.sku}`);
-      }
-    }
+    const { customerId, items, validUntil } = data;
 
     // Generate quote number
-    const quoteNumber = await generateQuoteNumber();
+    const quoteCount = await prisma.salesQuote.count();
+    const quoteNumber = `Q${String(quoteCount + 1).padStart(6, '0')}`;
 
     // Generate share token
-    const shareToken = crypto.randomBytes(32).toString('hex');
+    const shareToken = generateShareToken();
 
     // Calculate total amount
     const totalAmount = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
@@ -83,66 +75,41 @@ export async function createQuote(data: CreateQuoteData) {
         quoteNumber,
         customerId,
         totalAmount,
-        status: 'draft',
+        status: 'DRAFT',
         shareToken,
-        notes,
-        validUntil,
-        items: {
+        quoteDate: new Date(),
+        expirationDate: validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default 30 days
+        quoteItems: {
           create: items.map(item => ({
             productId: item.productId,
-            batchId: item.batchId,
-            inventoryLotId: item.inventoryLotId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            totalPrice: item.unitPrice * item.quantity
+            lineTotal: item.unitPrice * item.quantity
           }))
         }
       },
       include: {
         customer: true,
-        items: {
+        quoteItems: {
           include: {
-            product: true,
-            batch: {
-              include: {
-                vendor: true
-              }
-            },
-            inventoryLot: true
+            product: true
           }
         }
       }
     });
 
     revalidatePath('/quotes');
-    return { success: true, quote };
+    
+    return {
+      success: true,
+      quote
+    };
   } catch (error) {
     console.error('Error creating quote:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create quote'
+      error: 'Failed to create quote'
     };
-  }
-}
-
-export async function getQuotes() {
-  try {
-    const quotes = await prisma.salesQuote.findMany({
-      include: {
-        customer: true,
-        items: {
-          include: {
-            product: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    return quotes;
-  } catch (error) {
-    console.error('Error fetching quotes:', error);
-    return [];
   }
 }
 
@@ -151,71 +118,62 @@ export async function getQuote(id: string) {
     const quote = await prisma.salesQuote.findUnique({
       where: { id },
       include: {
-        customer: {
+        customer: true,
+        quoteItems: {
           include: {
-            role: true
-          }
-        },
-        items: {
-          include: {
-            product: true,
-            batch: {
-              include: {
-                vendor: true
-              }
-            },
-            inventoryLot: true
+            product: true
           }
         }
       }
     });
 
-    return quote;
+    if (!quote) {
+      return {
+        success: false,
+        error: 'Quote not found'
+      };
+    }
+
+    return {
+      success: true,
+      quote
+    };
   } catch (error) {
     console.error('Error fetching quote:', error);
-    return null;
+    return {
+      success: false,
+      error: 'Failed to fetch quote'
+    };
   }
 }
 
 export async function getQuoteByToken(token: string) {
   try {
-    const quote = await prisma.salesQuote.findUnique({
+    return await prisma.salesQuote.findUnique({
       where: { shareToken: token },
       include: {
-        customer: {
+        customer: true,
+        quoteItems: {
           include: {
-            role: true
-          }
-        },
-        items: {
-          include: {
-            product: true,
-            batch: {
-              include: {
-                vendor: true
-              }
-            },
-            inventoryLot: true
+            product: true
           }
         }
       }
     });
-
-    return quote;
   } catch (error) {
     console.error('Error fetching quote by token:', error);
     return null;
   }
 }
 
-export async function updateQuoteStatus(id: string, status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired') {
+export async function updateQuoteStatus(id: string, status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED') {
   try {
     const quote = await prisma.salesQuote.update({
       where: { id },
       data: { status },
       include: {
         customer: true,
-        items: {
+        quoteItems: {
           include: {
             product: true
           }
@@ -225,12 +183,16 @@ export async function updateQuoteStatus(id: string, status: 'draft' | 'sent' | '
 
     revalidatePath('/quotes');
     revalidatePath(`/quotes/${id}`);
-    return { success: true, quote };
+    
+    return {
+      success: true,
+      quote
+    };
   } catch (error) {
     console.error('Error updating quote status:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to update quote status'
+      error: 'Failed to update quote status'
     };
   }
 }
@@ -241,11 +203,9 @@ export async function convertQuoteToOrder(quoteId: string) {
       where: { id: quoteId },
       include: {
         customer: true,
-        items: {
+        quoteItems: {
           include: {
-            product: true,
-            batch: true,
-            inventoryLot: true
+            product: true
           }
         }
       }
@@ -255,163 +215,119 @@ export async function convertQuoteToOrder(quoteId: string) {
       return { success: false, error: 'Quote not found' };
     }
 
-    if (quote.status !== 'accepted') {
+    if (quote.status !== 'ACCEPTED') {
       return { success: false, error: 'Only accepted quotes can be converted to orders' };
     }
 
-    // Re-validate prices and stock availability
-    for (const item of quote.items) {
-      const currentLot = await prisma.inventoryLot.findUnique({
-        where: { id: item.inventoryLotId }
-      });
-
-      if (!currentLot) {
-        return { success: false, error: `Inventory lot no longer exists for ${item.product.sku}` };
-      }
-
-      const availableQty = currentLot.qtyOnHand - currentLot.qtyAllocated;
-      if (item.quantity > availableQty) {
-        return { 
-          success: false, 
-          error: `Insufficient stock for ${item.product.sku}. Available: ${availableQty}, Required: ${item.quantity}` 
-        };
-      }
-    }
-
     // Generate order number
-    const orderNumber = await generateOrderNumber();
+    const orderCount = await prisma.order.count();
+    const orderNumber = `ORD${String(orderCount + 1).padStart(6, '0')}`;
 
     // Create the order
     const order = await prisma.order.create({
       data: {
-        orderNumber,
         customerId: quote.customerId,
+        orderDate: new Date(),
         totalAmount: quote.totalAmount,
-        status: 'pending',
-        allocationDate: new Date(),
-        items: {
-          create: quote.items.map(item => ({
+        status: 'DRAFT',
+        orderItems: {
+          create: quote.quoteItems.map(item => ({
             productId: item.productId,
-            batchId: item.batchId,
-            inventoryLotId: item.inventoryLotId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            totalPrice: item.totalPrice,
             allocationDate: new Date()
           }))
         }
       },
       include: {
         customer: true,
-        items: {
+        orderItems: {
           include: {
-            product: true,
-            batch: true,
-            inventoryLot: true
+            product: true
           }
         }
       }
     });
 
-    // Update inventory allocations
-    for (const item of quote.items) {
-      await prisma.inventoryLot.update({
-        where: { id: item.inventoryLotId },
-        data: {
-          qtyAllocated: {
-            increment: item.quantity
-          }
-        }
-      });
-    }
-
-    // Update quote status
+    // Update quote status to indicate it's been converted
     await prisma.salesQuote.update({
       where: { id: quoteId },
-      data: { status: 'accepted' }
+      data: { status: 'ACCEPTED' }
     });
 
     revalidatePath('/quotes');
-    revalidatePath(`/quotes/${quoteId}`);
     revalidatePath('/orders');
-
-    return { success: true, order };
+    
+    return {
+      success: true,
+      order
+    };
   } catch (error) {
     console.error('Error converting quote to order:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to convert quote to order'
+      error: 'Failed to convert quote to order'
     };
   }
 }
 
-async function generateQuoteNumber(): Promise<string> {
-  const year = new Date().getFullYear();
-  const prefix = `Q${year}`;
-  
-  // Find the highest quote number for this year
-  const lastQuote = await prisma.salesQuote.findFirst({
-    where: {
-      quoteNumber: {
-        startsWith: prefix
-      }
-    },
-    orderBy: {
-      quoteNumber: 'desc'
-    }
-  });
-
-  let nextNumber = 1;
-  if (lastQuote) {
-    const lastNumber = parseInt(lastQuote.quoteNumber.replace(prefix, ''));
-    nextNumber = lastNumber + 1;
-  }
-
-  return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
-}
-
-async function generateOrderNumber(): Promise<string> {
-  const year = new Date().getFullYear();
-  const prefix = `O${year}`;
-  
-  // Find the highest order number for this year
-  const lastOrder = await prisma.order.findFirst({
-    where: {
-      orderNumber: {
-        startsWith: prefix
-      }
-    },
-    orderBy: {
-      orderNumber: 'desc'
-    }
-  });
-
-  let nextNumber = 1;
-  if (lastOrder) {
-    const lastNumber = parseInt(lastOrder.orderNumber.replace(prefix, ''));
-    nextNumber = lastNumber + 1;
-  }
-
-  return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
-}
-
-export async function getCustomers() {
+export async function deleteQuote(id: string) {
   try {
-    const customers = await prisma.customer.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        companyName: true,
-        contactName: true,
-        email: true
-      },
-      orderBy: { companyName: 'asc' }
+    await prisma.salesQuote.delete({
+      where: { id }
     });
 
-    return customers;
+    revalidatePath('/quotes');
+    
+    return {
+      success: true
+    };
   } catch (error) {
-    console.error('Error fetching customers:', error);
-    return [];
+    console.error('Error deleting quote:', error);
+    return {
+      success: false,
+      error: 'Failed to delete quote'
+    };
+  }
+}
+
+
+
+export async function generateQuotePDF(quoteId: string) {
+  try {
+    // TODO: Implement PDF generation
+    return {
+      success: true,
+      pdfUrl: `/api/quotes/${quoteId}/pdf`
+    };
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    return {
+      success: false,
+      error: 'Failed to generate PDF'
+    };
+  }
+}
+
+export async function shareQuote(quoteId: string) {
+  try {
+    // Generate a share token
+    const shareToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    
+    // TODO: Store the share token in database
+    const shareUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/quotes/share/${shareToken}`;
+    
+    return {
+      success: true,
+      shareUrl,
+      shareToken
+    };
+  } catch (error) {
+    console.error('Error creating share link:', error);
+    return {
+      success: false,
+      error: 'Failed to create share link'
+    };
   }
 }
 

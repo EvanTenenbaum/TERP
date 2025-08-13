@@ -194,7 +194,7 @@ export function generateQuotePDF(quote: QuoteData): jsPDF {
     xPosition += colWidths.description;
 
     // Vendor (use vendor code for masking)
-    const vendorDisplay = getVendorDisplayName(item.batch.vendor, false);
+    const vendorDisplay = getVendorDisplayName(item.batch.vendor);
     doc.text(vendorDisplay, xPosition, yPosition + 4);
     xPosition += colWidths.vendor;
 

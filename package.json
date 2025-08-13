@@ -18,6 +18,8 @@
     "test:unit": "jest"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.7",
+    "@heroicons/react": "^2.2.0",
     "@prisma/client": "^5.22.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.0.0",

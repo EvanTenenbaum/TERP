@@ -90,9 +90,9 @@ export default function SearchResults({ results, loading, onAddToCart }: SearchR
           <div key={product.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
             {/* Product Image */}
             <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-t-lg overflow-hidden">
-              {product.images.length > 0 ? (
+              {product.photos.length > 0 ? (
                 <Image
-                  src={product.images[0].url}
+                  src={product.photos[0]}
                   alt={product.name}
                   width={400}
                   height={225}
@@ -110,54 +110,37 @@ export default function SearchResults({ results, loading, onAddToCart }: SearchR
             <div className="p-6">
               {/* Product Info */}
               <div className="mb-4">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                    {product.name}
-                  </h3>
-                  {product.inventoryLot && getAvailabilityBadge(product.inventoryLot.availability)}
-                </div>
+                   <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {product.name}
+                    </h3>
+                    {getAvailabilityBadge(product.availability)}
+                  </div>
                 
                 <p className="text-sm text-gray-600 mb-1">SKU: {product.sku}</p>
-                
-                {product.batch && (
-                  <p className="text-sm text-gray-600 mb-1">
-                    Vendor: {product.batch.vendorDisplayName}
-                  </p>
-                )}
-                
-                {product.inventoryLot && (
-                  <p className="text-sm text-gray-600 mb-1">
-                    Location: {product.inventoryLot.location}
-                  </p>
-                )}
-
-                {product.description && (
-                  <p className="text-sm text-gray-500 line-clamp-2 mt-2">
-                    {product.description}
-                  </p>
-                )}
+                <p className="text-sm text-gray-600 mb-1">Unit: {product.unit}</p>
+                <p className="text-sm text-gray-600 mb-1">Location: {product.location || 'N/A'}</p>
+                <p className="text-sm text-gray-600 mb-1">Vendor: {product.vendorCode}</p>
               </div>
 
               {/* Pricing and Stock */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl font-bold text-gray-900">
-                    {formatPrice(product.displayPrice)}
+                    {formatPrice(product.currentPrice)}
                   </span>
                   <span className="text-sm text-gray-500">
                     per {product.unit}
                   </span>
                 </div>
                 
-                {product.inventoryLot && (
-                  <p className="text-sm text-gray-600">
-                    {product.inventoryLot.qtyAvailable} {product.unit}s available
-                  </p>
-                )}
+                <p className="text-sm text-gray-600">
+                  {product.quantityAvailable} {product.unit}s available
+                </p>
               </div>
 
               {/* Add to Cart */}
-              {product.inventoryLot && product.inventoryLot.availability !== 'out_of_stock' ? (
+              {product.availability !== 'out_of_stock' ? (
                 <div className="flex items-center space-x-2">
                   <div className="flex-1">
                     <label htmlFor={`qty-${product.id}`} className="sr-only">
@@ -167,7 +150,7 @@ export default function SearchResults({ results, loading, onAddToCart }: SearchR
                       type="number"
                       id={`qty-${product.id}`}
                       min="1"
-                      max={product.inventoryLot.qtyAvailable}
+                      max={product.quantityAvailable}
                       value={quantities[product.id] || 1}
                       onChange={(e) => updateQuantity(product.id, parseInt(e.target.value) || 1)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"

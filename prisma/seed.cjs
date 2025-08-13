@@ -116,35 +116,50 @@ async function main() {
     prisma.product.create({
       data: {
         name: 'Premium Indoor Flower - OG Kush',
+        sku: 'PIF-OGK-001',
         category: 'Indoor Flower',
+        unit: 'pound',
+        location: 'Vault A',
         defaultPrice: 120000, // $1,200 per pound in cents
       },
     }),
     prisma.product.create({
       data: {
         name: 'Outdoor Flower - Blue Dream',
+        sku: 'OF-BD-002',
         category: 'Outdoor Flower',
+        unit: 'pound',
+        location: 'Vault B',
         defaultPrice: 80000, // $800 per pound in cents
       },
     }),
     prisma.product.create({
       data: {
         name: 'Light Dep - Purple Haze',
+        sku: 'LD-PH-003',
         category: 'Light Dep',
+        unit: 'pound',
+        location: 'Vault A',
         defaultPrice: 100000, // $1,000 per pound in cents
       },
     }),
     prisma.product.create({
       data: {
         name: 'CBD Isolate Powder',
+        sku: 'CBD-ISO-004',
         category: 'Concentrate',
+        unit: 'kg',
+        location: 'Lab Storage',
         defaultPrice: 500000, // $5,000 per kg in cents
       },
     }),
     prisma.product.create({
       data: {
         name: 'Full Spectrum CBD Oil',
+        sku: 'CBD-FS-005',
         category: 'Concentrate',
+        unit: 'liter',
+        location: 'Lab Storage',
         defaultPrice: 300000, // $3,000 per liter in cents
       },
     }),

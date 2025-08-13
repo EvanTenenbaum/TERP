@@ -9,8 +9,9 @@ import { getCustomers } from '@/actions/customers';
 interface Customer {
   id: string;
   companyName: string;
-  contactName: string;
-  email: string;
+  contactInfo: any; // JSON field
+  creditLimit?: number | null;
+  paymentTerms?: string | null;
 }
 
 export default function NewQuotePage() {
@@ -28,7 +29,9 @@ export default function NewQuotePage() {
     const loadCustomers = async () => {
       try {
         const customerList = await getCustomers();
-        setCustomers(customerList);
+        if (customerList.success && customerList.customers) {
+          setCustomers(customerList.customers);
+        }
       } catch (err) {
         console.error('Error loading customers:', err);
       }
@@ -166,7 +169,7 @@ export default function NewQuotePage() {
                 <option value="">Choose a customer...</option>
                 {customers.map(customer => (
                   <option key={customer.id} value={customer.id}>
-                    {customer.companyName} ({customer.contactName})
+                    {customer.companyName}
                   </option>
                 ))}
               </select>

@@ -1,282 +1,158 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { updateQuoteStatus, convertQuoteToOrder } from '@/actions/quotes';
-import { downloadQuotePDF } from '@/lib/pdf/quote';
+import { generateQuotePDF, shareQuote } from '@/actions/quotes';
 import { getVendorDisplayName } from '@/lib/vendorDisplay';
 
 interface QuoteDetailsProps {
-  quote: any; // Using any for now since the full type is complex
+  quote: {
+    id: string;
+    quoteNumber: string;
+    status: string;
+    totalAmount: number;
+    expirationDate?: Date;
+    createdAt: Date;
+    customer: {
+      id: string;
+      companyName: string;
+      contactInfo: any;
+    };
+    quoteItems: Array<{
+      id: string;
+      quantity: number;
+      unitPrice: number;
+      lineTotal: number; // Changed from totalPrice to lineTotal
+      product: {
+        id: string;
+        name: string;
+        sku: string;
+        unit: string;
+        location?: string | null;
+      };
+    }>;
+  };
 }
 
 export default function QuoteDetails({ quote }: QuoteDetailsProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showShareLink, setShowShareLink] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
-  const formatPrice = (price: number) => {
-    return `$${Math.round(price / 100)}`;
-  };
-
-  const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const handleStatusUpdate = async (newStatus: string) => {
-    setLoading(true);
-    setError(null);
-
+  const handleGeneratePDF = async () => {
+    setIsGeneratingPDF(true);
     try {
-      const result = await updateQuoteStatus(quote.id, newStatus as any);
-      if (!result.success) {
-        setError(result.error || 'Failed to update status');
+      const result = await generateQuotePDF(quote.id);
+      if (result.success && result.pdfUrl) {
+        // Open PDF in new tab
+        window.open(result.pdfUrl, '_blank');
       } else {
-        // Refresh the page to show updated status
-        window.location.reload();
+        alert('Failed to generate PDF: ' + (result.error || 'Unknown error'));
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF');
     } finally {
-      setLoading(false);
+      setIsGeneratingPDF(false);
     }
   };
 
-  const handleConvertToOrder = async () => {
-    if (!confirm('Are you sure you want to convert this quote to an order? This will allocate inventory and cannot be undone.')) {
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
+  const handleShare = async () => {
+    setIsSharing(true);
     try {
-      const result = await convertQuoteToOrder(quote.id);
-      if (!result.success) {
-        setError(result.error || 'Failed to convert to order');
+      const result = await shareQuote(quote.id);
+      if (result.success && result.shareUrl) {
+        setShareUrl(result.shareUrl);
+        // Copy to clipboard
+        await navigator.clipboard.writeText(result.shareUrl);
+        alert('Share link copied to clipboard!');
       } else {
-        alert('Quote successfully converted to order!');
-        // Redirect to the new order
-        window.location.href = `/orders/${result.order?.id}`;
+        alert('Failed to create share link: ' + (result.error || 'Unknown error'));
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
+    } catch (error) {
+      console.error('Error creating share link:', error);
+      alert('Failed to create share link');
     } finally {
-      setLoading(false);
+      setIsSharing(false);
     }
   };
 
-  const handleDownloadPDF = () => {
-    try {
-      downloadQuotePDF(quote, `quote-${quote.quoteNumber}.pdf`);
-    } catch (err) {
-      setError('Failed to generate PDF');
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DRAFT':
+        return 'bg-gray-100 text-gray-800';
+      case 'SENT':
+        return 'bg-blue-100 text-blue-800';
+      case 'ACCEPTED':
+        return 'bg-green-100 text-green-800';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
     }
-  };
-
-  const getShareLink = () => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/quotes/share/${quote.shareToken}`;
-  };
-
-  const copyShareLink = () => {
-    const shareLink = getShareLink();
-    navigator.clipboard.writeText(shareLink).then(() => {
-      alert('Share link copied to clipboard!');
-    }).catch(() => {
-      setError('Failed to copy share link');
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      draft: 'bg-gray-100 text-gray-800',
-      sent: 'bg-blue-100 text-blue-800',
-      accepted: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-      expired: 'bg-yellow-100 text-yellow-800'
-    };
-
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badges[status as keyof typeof badges]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
       {/* Header */}
-      <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="px-4 py-5 sm:px-6">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Quote #{quote.quoteNumber}</h1>
-            <p className="text-gray-600 mt-1">
-              Created {formatDate(quote.createdAt)}
-              {quote.validUntil && ` • Valid until ${formatDate(quote.validUntil)}`}
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Quote #{quote.quoteNumber}
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm text-gray-500">
+              Created on {new Date(quote.createdAt).toLocaleDateString()}
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            {getStatusBadge(quote.status)}
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(quote.status)}`}>
+              {quote.status}
+            </span>
+            <button
+              onClick={handleGeneratePDF}
+              disabled={isGeneratingPDF}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isGeneratingPDF ? 'Generating...' : 'Download PDF'}
+            </button>
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isSharing ? 'Creating...' : 'Share Quote'}
+            </button>
           </div>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error</h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={handleDownloadPDF}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Download PDF
-          </button>
-
-          <button
-            onClick={() => setShowShareLink(!showShareLink)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-            </svg>
-            Share Link
-          </button>
-
-          {quote.status === 'draft' && (
-            <button
-              onClick={() => handleStatusUpdate('sent')}
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              Mark as Sent
-            </button>
-          )}
-
-          {quote.status === 'sent' && (
-            <>
-              <button
-                onClick={() => handleStatusUpdate('accepted')}
-                disabled={loading}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-              >
-                Mark as Accepted
-              </button>
-              <button
-                onClick={() => handleStatusUpdate('rejected')}
-                disabled={loading}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-              >
-                Mark as Rejected
-              </button>
-            </>
-          )}
-
-          {quote.status === 'accepted' && (
-            <button
-              onClick={handleConvertToOrder}
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              Convert to Order
-            </button>
-          )}
-        </div>
-
-        {/* Share Link Display */}
-        {showShareLink && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Share Link</h4>
-            <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                value={getShareLink()}
-                readOnly
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm bg-white"
-              />
-              <button
-                onClick={copyShareLink}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              >
-                Copy
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              This link allows read-only access to the quote without requiring login.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Customer Information */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Customer Information</h2>
-          <div className="space-y-2">
-            <p><span className="font-medium">Company:</span> {quote.customer.companyName}</p>
-            <p><span className="font-medium">Contact:</span> {quote.customer.contactName}</p>
-            <p><span className="font-medium">Email:</span> {quote.customer.email}</p>
-            {quote.customer.phone && (
-              <p><span className="font-medium">Phone:</span> {quote.customer.phone}</p>
-            )}
-            {quote.customer.address && (
-              <div>
-                <p className="font-medium">Address:</p>
-                <p className="text-gray-600">
-                  {quote.customer.address}<br />
-                  {[quote.customer.city, quote.customer.state, quote.customer.zipCode]
-                    .filter(Boolean)
-                    .join(', ')}
-                </p>
-              </div>
-            )}
+      <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+        <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Customer</dt>
+            <dd className="mt-1 text-sm text-gray-900">{quote.customer.companyName}</dd>
           </div>
-        </div>
-
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Quote Summary</h2>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Items:</span>
-              <span>{quote.items.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Total Quantity:</span>
-              <span>{quote.items.reduce((sum: number, item: any) => sum + item.quantity, 0)}</span>
-            </div>
-            <div className="flex justify-between text-lg font-medium pt-2 border-t">
-              <span>Total Amount:</span>
-              <span>{formatPrice(quote.totalAmount)}</span>
-            </div>
+          <div>
+            <dt className="text-sm font-medium text-gray-500">Total Amount</dt>
+            <dd className="mt-1 text-sm text-gray-900">${(quote.totalAmount / 100).toFixed(0)}</dd>
           </div>
-        </div>
+          {quote.expirationDate && (
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Valid Until</dt>
+              <dd className="mt-1 text-sm text-gray-900">
+                {new Date(quote.expirationDate).toLocaleDateString()}
+              </dd>
+            </div>
+          )}
+        </dl>
       </div>
 
       {/* Quote Items */}
-      <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Quote Items</h2>
+      <div className="border-t border-gray-200">
+        <div className="px-4 py-5 sm:px-6">
+          <h4 className="text-lg font-medium text-gray-900">Quote Items</h4>
+        </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -286,9 +162,6 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   SKU
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vendor
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Location
@@ -305,58 +178,69 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {quote.items.map((item: any) => (
+              {quote.quoteItems.map((item) => (
                 <tr key={item.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{item.product.name}</div>
-                      {item.product.description && (
-                        <div className="text-sm text-gray-500">{item.product.description}</div>
-                      )}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900">{item.product.name}</div>
+                    <div className="text-sm text-gray-500">{item.product.unit}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {item.product.sku}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {getVendorDisplayName(item.batch.vendor, false)}
+                    {item.product.location || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.inventoryLot.location}
+                    {item.quantity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.quantity} {item.product.unit}s
+                    ${(item.unitPrice / 100).toFixed(0)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatPrice(item.unitPrice)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {formatPrice(item.totalPrice)}
+                    ${(item.lineTotal / 100).toFixed(0)}
                   </td>
                 </tr>
               ))}
             </tbody>
+            <tfoot className="bg-gray-50">
+              <tr>
+                <td colSpan={5} className="px-6 py-4 text-right text-sm font-medium text-gray-900">
+                  Total:
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  ${(quote.totalAmount / 100).toFixed(0)}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
 
-      {/* Notes */}
-      {quote.notes && (
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Notes</h2>
-          <p className="text-gray-600 whitespace-pre-wrap">{quote.notes}</p>
+      {/* Share URL Display */}
+      {shareUrl && (
+        <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">
+                  Share Link Created
+                </h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  <p>Share this link with your customer:</p>
+                  <code className="mt-1 block bg-white px-2 py-1 rounded text-xs break-all">
+                    {shareUrl}
+                  </code>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Link
-          href="/quotes"
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          ← Back to Quotes
-        </Link>
-      </div>
     </div>
   );
 }

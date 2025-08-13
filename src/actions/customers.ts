@@ -7,22 +7,42 @@ const prisma = new PrismaClient();
 
 export interface CreateCustomerData {
   companyName: string;
-  contactName: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  customerCode?: string;
+  contactInfo: {
+    email?: string;
+    phone?: string;
+    address?: string;
+    contactPerson?: string;
+  };
+  creditLimit?: number; // in cents
+  paymentTerms?: string;
+}
+
+export interface UpdateCustomerData extends CreateCustomerData {
+  id: string;
 }
 
 export async function getCustomers() {
   try {
     const customers = await prisma.customer.findMany({
-      orderBy: {
-        companyName: 'asc'
-      }
+      where: { isActive: true },
+      include: {
+        orders: {
+          take: 5,
+          orderBy: { createdAt: 'desc' }
+        },
+        salesQuotes: {
+          take: 5,
+          orderBy: { createdAt: 'desc' }
+        },
+        _count: {
+          select: {
+            orders: true,
+            salesQuotes: true,
+            accountsReceivable: true
+          }
+        }
+      },
+      orderBy: { companyName: 'asc' }
     });
 
     return {
@@ -44,16 +64,22 @@ export async function getCustomer(id: string) {
       where: { id },
       include: {
         orders: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
+          orderBy: { createdAt: 'desc' }
         },
         salesQuotes: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
+          orderBy: { createdAt: 'desc' }
         },
-        arInvoices: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
+        accountsReceivable: {
+          orderBy: { createdAt: 'desc' }
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' }
+        },
+        crmNotes: {
+          include: {
+            user: true
+          },
+          orderBy: { createdAt: 'desc' }
         }
       }
     });
@@ -80,35 +106,12 @@ export async function getCustomer(id: string) {
 
 export async function createCustomer(data: CreateCustomerData) {
   try {
-    // Generate customer code if not provided
-    if (!data.customerCode) {
-      const count = await prisma.customer.count();
-      data.customerCode = `CUST${String(count + 1).padStart(4, '0')}`;
-    }
-
-    // Check if customer code already exists
-    const existingCustomer = await prisma.customer.findUnique({
-      where: { customerCode: data.customerCode }
-    });
-
-    if (existingCustomer) {
-      return {
-        success: false,
-        error: 'Customer code already exists'
-      };
-    }
-
     const customer = await prisma.customer.create({
       data: {
         companyName: data.companyName,
-        contactName: data.contactName,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        city: data.city,
-        state: data.state,
-        zipCode: data.zipCode,
-        customerCode: data.customerCode,
+        contactInfo: data.contactInfo,
+        creditLimit: data.creditLimit,
+        paymentTerms: data.paymentTerms,
         isActive: true
       }
     });
@@ -128,18 +131,20 @@ export async function createCustomer(data: CreateCustomerData) {
   }
 }
 
-export async function updateCustomer(id: string, data: Partial<CreateCustomerData>) {
+export async function updateCustomer(data: UpdateCustomerData) {
   try {
     const customer = await prisma.customer.update({
-      where: { id },
+      where: { id: data.id },
       data: {
-        ...data,
-        updatedAt: new Date()
+        companyName: data.companyName,
+        contactInfo: data.contactInfo,
+        creditLimit: data.creditLimit,
+        paymentTerms: data.paymentTerms
       }
     });
 
     revalidatePath('/customers');
-    revalidatePath(`/customers/${id}`);
+    revalidatePath(`/customers/${data.id}`);
     
     return {
       success: true,
@@ -156,48 +161,48 @@ export async function updateCustomer(id: string, data: Partial<CreateCustomerDat
 
 export async function deleteCustomer(id: string) {
   try {
-    // Check if customer has any orders or quotes
-    const customerWithRelations = await prisma.customer.findUnique({
+    // Soft delete by setting isActive to false
+    const customer = await prisma.customer.update({
       where: { id },
-      include: {
-        orders: true,
-        salesQuotes: true,
-        arInvoices: true
-      }
+      data: { isActive: false }
     });
-
-    if (!customerWithRelations) {
-      return {
-        success: false,
-        error: 'Customer not found'
-      };
-    }
-
-    if (customerWithRelations.orders.length > 0 || 
-        customerWithRelations.salesQuotes.length > 0 || 
-        customerWithRelations.arInvoices.length > 0) {
-      // Don't delete, just deactivate
-      await prisma.customer.update({
-        where: { id },
-        data: { isActive: false }
-      });
-    } else {
-      // Safe to delete
-      await prisma.customer.delete({
-        where: { id }
-      });
-    }
 
     revalidatePath('/customers');
     
     return {
-      success: true
+      success: true,
+      customer
     };
   } catch (error) {
     console.error('Error deleting customer:', error);
     return {
       success: false,
       error: 'Failed to delete customer'
+    };
+  }
+}
+
+// Get customers for dropdowns (simplified)
+export async function getCustomersForDropdown() {
+  try {
+    const customers = await prisma.customer.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        companyName: true
+      },
+      orderBy: { companyName: 'asc' }
+    });
+
+    return {
+      success: true,
+      customers
+    };
+  } catch (error) {
+    console.error('Error fetching customers for dropdown:', error);
+    return {
+      success: false,
+      error: 'Failed to fetch customers'
     };
   }
 }

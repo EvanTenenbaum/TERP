@@ -2,359 +2,309 @@
 
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { createBatchCost, parseCostToCents } from '@/lib/cogs';
-import { isVendorCodeUnique } from '@/lib/vendorDisplay';
 
 const prisma = new PrismaClient();
 
-// Product Actions
-export async function createProduct(formData: FormData) {
+export interface CreateProductData {
+  name: string;
+  sku: string;
+  category: string;
+  unit: string;
+  defaultPrice: number; // in cents
+  location?: string;
+}
+
+export interface CreateBatchData {
+  productId: string;
+  vendorId: string;
+  lotNumber: string;
+  receivedDate: Date;
+  expirationDate?: Date;
+  quantityReceived: number;
+  initialCost: number; // in cents
+}
+
+export interface CreateInventoryLotData {
+  batchId: string;
+  quantityOnHand: number;
+  quantityAllocated?: number;
+}
+
+// Product operations
+export async function getProducts() {
   try {
-    const sku = formData.get('sku') as string;
-    const name = formData.get('name') as string;
-    const description = formData.get('description') as string;
-    const category = formData.get('category') as string;
-    const defaultPriceStr = formData.get('defaultPrice') as string;
-    const unit = formData.get('unit') as string;
-    const isActive = formData.get('isActive') === 'on';
-
-    // Validate required fields
-    if (!sku || !name || !category) {
-      throw new Error('SKU, name, and category are required');
-    }
-
-    // Check if SKU already exists
-    const existingProduct = await prisma.product.findUnique({
-      where: { sku }
+    const products = await prisma.product.findMany({
+      where: { isActive: true },
+      include: {
+        batches: {
+          include: {
+            vendor: true,
+            batchCosts: {
+              orderBy: { effectiveFrom: 'desc' },
+              take: 1
+            },
+            inventoryLot: true
+          }
+        },
+        photos: true
+      },
+      orderBy: { name: 'asc' }
     });
 
-    if (existingProduct) {
-      throw new Error('A product with this SKU already exists');
-    }
+    return {
+      success: true,
+      products
+    };
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return {
+      success: false,
+      error: 'Failed to fetch products'
+    };
+  }
+}
 
-    // Parse default price to cents
-    let defaultPrice = null;
-    if (defaultPriceStr && defaultPriceStr.trim() !== '') {
-      defaultPrice = parseCostToCents(defaultPriceStr);
-    }
-
+export async function createProduct(data: CreateProductData) {
+  try {
     const product = await prisma.product.create({
       data: {
-        sku,
-        name,
-        description: description || null,
-        category,
-        defaultPrice,
-        unit,
-        isActive
+        name: data.name,
+        sku: data.sku,
+        category: data.category,
+        unit: data.unit,
+        defaultPrice: data.defaultPrice,
+        location: data.location,
+        isActive: true
       }
     });
 
     revalidatePath('/inventory/products');
-    return { success: true, product };
+    
+    return {
+      success: true,
+      product
+    };
   } catch (error) {
     console.error('Error creating product:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to create product' 
+    return {
+      success: false,
+      error: 'Failed to create product'
     };
   }
 }
 
-export async function getProducts() {
-  try {
-    const products = await prisma.product.findMany({
-      orderBy: { name: 'asc' }
-    });
-    return products;
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return [];
-  }
-}
-
-export async function getProduct(id: string) {
-  try {
-    const product = await prisma.product.findUnique({
-      where: { id }
-    });
-    return product;
-  } catch (error) {
-    console.error('Error fetching product:', error);
-    return null;
-  }
-}
-
-// Batch Actions
-export async function createBatch(formData: FormData) {
-  try {
-    const batchNumber = formData.get('batchNumber') as string;
-    const productId = formData.get('productId') as string;
-    const vendorId = formData.get('vendorId') as string;
-    const quantityStr = formData.get('quantity') as string;
-    const receivedDateStr = formData.get('receivedDate') as string;
-    const expirationDateStr = formData.get('expirationDate') as string;
-    const initialCostStr = formData.get('initialCost') as string;
-    const notes = formData.get('notes') as string;
-
-    // Validate required fields
-    if (!batchNumber || !productId || !vendorId || !quantityStr || !receivedDateStr || !initialCostStr) {
-      throw new Error('Batch number, product, vendor, quantity, received date, and initial cost are required');
-    }
-
-    // Check if batch number already exists
-    const existingBatch = await prisma.batch.findUnique({
-      where: { batchNumber }
-    });
-
-    if (existingBatch) {
-      throw new Error('A batch with this number already exists');
-    }
-
-    const quantity = parseFloat(quantityStr);
-    const receivedDate = new Date(receivedDateStr);
-    const expirationDate = expirationDateStr ? new Date(expirationDateStr) : null;
-    const initialCostCents = parseCostToCents(initialCostStr);
-
-    // Create batch and initial cost in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create the batch
-      const batch = await tx.batch.create({
-        data: {
-          batchNumber,
-          productId,
-          vendorId,
-          quantity,
-          receivedDate,
-          expirationDate,
-          notes: notes || null
-        }
-      });
-
-      // Create initial BatchCost record
-      const batchCost = await tx.batchCost.create({
-        data: {
-          batchId: batch.id,
-          unitCost: initialCostCents,
-          effectiveFrom: receivedDate
-        }
-      });
-
-      return { batch, batchCost };
-    });
-
-    revalidatePath('/inventory/batches');
-    return { success: true, batch: result.batch, batchCost: result.batchCost };
-  } catch (error) {
-    console.error('Error creating batch:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to create batch' 
-    };
-  }
-}
-
+// Batch operations
 export async function getBatches() {
   try {
     const batches = await prisma.batch.findMany({
-      include: {
-        product: {
-          select: { name: true, sku: true }
-        },
-        vendor: {
-          select: { vendorCode: true }
-        },
-        batchCosts: {
-          orderBy: { effectiveFrom: 'desc' },
-          take: 1
-        }
-      },
-      orderBy: { receivedDate: 'desc' }
-    });
-    return batches;
-  } catch (error) {
-    console.error('Error fetching batches:', error);
-    return [];
-  }
-}
-
-export async function getBatch(id: string) {
-  try {
-    const batch = await prisma.batch.findUnique({
-      where: { id },
       include: {
         product: true,
         vendor: true,
         batchCosts: {
           orderBy: { effectiveFrom: 'desc' }
-        }
-      }
+        },
+        inventoryLot: true
+      },
+      orderBy: { receivedDate: 'desc' }
     });
-    return batch;
-  } catch (error) {
-    console.error('Error fetching batch:', error);
-    return null;
-  }
-}
 
-export async function addBatchCostChange(batchId: string, unitCost: number, effectiveFrom: Date) {
-  try {
-    const batchCost = await createBatchCost(batchId, unitCost, effectiveFrom);
-    revalidatePath(`/inventory/batches/${batchId}`);
-    return { success: true, batchCost };
+    return {
+      success: true,
+      batches
+    };
   } catch (error) {
-    console.error('Error adding batch cost change:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to add cost change' 
+    console.error('Error fetching batches:', error);
+    return {
+      success: false,
+      error: 'Failed to fetch batches'
     };
   }
 }
 
-// Inventory Lot Actions
-export async function createInventoryLot(formData: FormData) {
+export async function createBatch(data: CreateBatchData) {
   try {
-    const batchId = formData.get('batchId') as string;
-    const location = formData.get('location') as string;
-    const qtyOnHandStr = formData.get('qtyOnHand') as string;
-    const qtyAllocatedStr = formData.get('qtyAllocated') as string;
-    const reorderPointStr = formData.get('reorderPoint') as string;
-
-    // Validate required fields
-    if (!batchId || !location || !qtyOnHandStr) {
-      throw new Error('Batch, location, and quantity on hand are required');
-    }
-
-    const qtyOnHand = parseFloat(qtyOnHandStr);
-    const qtyAllocated = qtyAllocatedStr ? parseFloat(qtyAllocatedStr) : 0;
-    const reorderPoint = reorderPointStr ? parseFloat(reorderPointStr) : 0;
-
-    const inventoryLot = await prisma.inventoryLot.create({
+    const batch = await prisma.batch.create({
       data: {
-        batchId,
-        location,
-        qtyOnHand,
-        qtyAllocated,
-        reorderPoint
+        productId: data.productId,
+        vendorId: data.vendorId,
+        lotNumber: data.lotNumber,
+        receivedDate: data.receivedDate,
+        expirationDate: data.expirationDate,
+        quantityReceived: data.quantityReceived,
+        quantityAvailable: data.quantityReceived,
+        batchCosts: {
+          create: {
+            effectiveFrom: data.receivedDate,
+            unitCost: data.initialCost
+          }
+        }
+      },
+      include: {
+        product: true,
+        vendor: true,
+        batchCosts: true
       }
     });
 
-    revalidatePath('/inventory/lots');
-    return { success: true, inventoryLot };
+    revalidatePath('/inventory/batches');
+    
+    return {
+      success: true,
+      batch
+    };
   } catch (error) {
-    console.error('Error creating inventory lot:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to create inventory lot' 
+    console.error('Error creating batch:', error);
+    return {
+      success: false,
+      error: 'Failed to create batch'
     };
   }
 }
 
+// Inventory Lot operations
 export async function getInventoryLots() {
   try {
     const lots = await prisma.inventoryLot.findMany({
       include: {
         batch: {
           include: {
-            product: {
-              select: { name: true, sku: true }
-            },
-            batchCosts: {
-              orderBy: { effectiveFrom: 'desc' },
-              take: 1
-            }
+            product: true,
+            vendor: true
           }
         }
       },
-      orderBy: { location: 'asc' }
+      orderBy: { createdAt: 'desc' }
     });
-    return lots;
+
+    return {
+      success: true,
+      lots
+    };
   } catch (error) {
     console.error('Error fetching inventory lots:', error);
-    return [];
+    return {
+      success: false,
+      error: 'Failed to fetch inventory lots'
+    };
   }
 }
 
+export async function createInventoryLot(data: CreateInventoryLotData) {
+  try {
+    const lot = await prisma.inventoryLot.create({
+      data: {
+        batchId: data.batchId,
+        quantityOnHand: data.quantityOnHand,
+        quantityAllocated: data.quantityAllocated || 0,
+        quantityAvailable: data.quantityOnHand - (data.quantityAllocated || 0),
+        lastMovementDate: new Date()
+      },
+      include: {
+        batch: {
+          include: {
+            product: true,
+            vendor: true
+          }
+        }
+      }
+    });
+
+    revalidatePath('/inventory/lots');
+    
+    return {
+      success: true,
+      lot
+    };
+  } catch (error) {
+    console.error('Error creating inventory lot:', error);
+    return {
+      success: false,
+      error: 'Failed to create inventory lot'
+    };
+  }
+}
+
+// Low stock check
 export async function getLowStockItems() {
   try {
     const lowStockLots = await prisma.inventoryLot.findMany({
       where: {
-        qtyOnHand: {
-          lt: prisma.inventoryLot.fields.reorderPoint
+        quantityAvailable: {
+          lte: 10 // Simple threshold
         }
       },
       include: {
         batch: {
           include: {
-            product: {
-              select: { name: true, sku: true, category: true }
-            },
-            batchCosts: {
-              orderBy: { effectiveFrom: 'desc' },
-              take: 1
-            }
+            product: true,
+            vendor: true
           }
         }
       },
-      orderBy: [
-        { qtyOnHand: 'asc' },
-        { location: 'asc' }
-      ]
+      orderBy: { quantityAvailable: 'asc' }
     });
-    return lowStockLots;
+
+    return {
+      success: true,
+      lowStockLots
+    };
   } catch (error) {
     console.error('Error fetching low stock items:', error);
-    return [];
+    return {
+      success: false,
+      error: 'Failed to fetch low stock items'
+    };
   }
 }
 
-// Vendor Actions (for dropdowns)
-export async function getVendorsForSelect() {
+// Add batch cost change
+export async function addBatchCostChange(batchId: string, newCost: number, effectiveDate: Date) {
+  try {
+    const batchCost = await prisma.batchCost.create({
+      data: {
+        batchId,
+        effectiveFrom: effectiveDate,
+        unitCost: newCost
+      }
+    });
+
+    revalidatePath('/inventory/batches');
+    
+    return {
+      success: true,
+      batchCost
+    };
+  } catch (error) {
+    console.error('Error adding batch cost change:', error);
+    return {
+      success: false,
+      error: 'Failed to add batch cost change'
+    };
+  }
+}
+
+// Get vendors for dropdowns
+export async function getVendors() {
   try {
     const vendors = await prisma.vendor.findMany({
+      where: { isActive: true },
       select: {
         id: true,
-        vendorCode: true
+        vendorCode: true,
+        companyName: true
       },
       orderBy: { vendorCode: 'asc' }
     });
-    return vendors;
-  } catch (error) {
-    console.error('Error fetching vendors:', error);
-    return [];
-  }
-}
-
-// Utility Actions
-export async function getInventoryStats() {
-  try {
-    const [productCount, batchCount, lotCount, lowStockCount] = await Promise.all([
-      prisma.product.count({ where: { isActive: true } }),
-      prisma.batch.count(),
-      prisma.inventoryLot.count(),
-      prisma.inventoryLot.count({
-        where: {
-          qtyOnHand: {
-            lt: prisma.inventoryLot.fields.reorderPoint
-          }
-        }
-      })
-    ]);
 
     return {
-      products: productCount,
-      batches: batchCount,
-      lots: lotCount,
-      lowStock: lowStockCount
+      success: true,
+      vendors
     };
   } catch (error) {
-    console.error('Error fetching inventory stats:', error);
+    console.error('Error fetching vendors:', error);
     return {
-      products: 0,
-      batches: 0,
-      lots: 0,
-      lowStock: 0
+      success: false,
+      error: 'Failed to fetch vendors'
     };
   }
 }

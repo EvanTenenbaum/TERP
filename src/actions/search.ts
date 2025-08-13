@@ -1,8 +1,6 @@
 'use server';
 
 import { PrismaClient } from '@prisma/client';
-import { getActiveBatchCost } from '@/lib/cogs';
-import { getVendorDisplayName } from '@/lib/vendorDisplay';
 
 const prisma = new PrismaClient();
 
@@ -12,42 +10,26 @@ export interface SearchFilters {
   availability?: 'available' | 'low_stock' | 'out_of_stock';
   location?: string;
   vendorCode?: string;
-  priceMin?: number;
-  priceMax?: number;
-  customerId?: string; // For price book precedence
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface SearchResult {
   id: string;
-  sku: string;
   name: string;
-  description: string | null;
+  sku: string;
   category: string;
   unit: string;
-  isActive: boolean;
-  defaultPrice: number | null;
-  displayPrice: number; // Price after applying price book precedence
-  batch: {
-    id: string;
-    batchNumber: string;
-    vendorCode: string;
-    vendorDisplayName: string;
-    activeCost: number;
-  } | null;
-  inventoryLot: {
-    id: string;
-    location: string;
-    qtyOnHand: number;
-    qtyAllocated: number;
-    qtyAvailable: number;
-    reorderPoint: number;
-    availability: 'available' | 'low_stock' | 'out_of_stock';
-  } | null;
-  images: {
-    id: string;
-    filename: string;
-    url: string;
-  }[];
+  location?: string;
+  defaultPrice: number;
+  currentPrice: number; // From price book or default
+  availability: 'available' | 'low_stock' | 'out_of_stock';
+  quantityAvailable: number;
+  vendorCode: string;
+  vendorName: string;
+  batchId?: string;
+  lotNumber?: string;
+  photos: string[];
 }
 
 export async function searchProducts(filters: SearchFilters = {}): Promise<SearchResult[]> {
@@ -58,138 +40,103 @@ export async function searchProducts(filters: SearchFilters = {}): Promise<Searc
       availability,
       location,
       vendorCode,
-      priceMin,
-      priceMax,
-      customerId
+      minPrice,
+      maxPrice
     } = filters;
 
-    // Build the where clause for products
-    const productWhere: any = {
-      isActive: true,
+    // Build where clause
+    const where: any = {
+      isActive: true
     };
 
     if (keyword) {
-      productWhere.OR = [
-        { sku: { contains: keyword, mode: 'insensitive' } },
+      where.OR = [
         { name: { contains: keyword, mode: 'insensitive' } },
-        { description: { contains: keyword, mode: 'insensitive' } },
+        { sku: { contains: keyword, mode: 'insensitive' } },
+        { category: { contains: keyword, mode: 'insensitive' } }
       ];
     }
 
     if (category) {
-      productWhere.category = category;
+      where.category = category;
     }
 
-    // Get products with related data
+    if (location) {
+      where.location = location;
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.defaultPrice = {};
+      if (minPrice !== undefined) where.defaultPrice.gte = minPrice;
+      if (maxPrice !== undefined) where.defaultPrice.lte = maxPrice;
+    }
+
+    // Get products with their batches and inventory
     const products = await prisma.product.findMany({
-      where: productWhere,
+      where,
       include: {
         batches: {
           include: {
             vendor: true,
             batchCosts: {
-              orderBy: { effectiveFrom: 'desc' }
+              orderBy: { effectiveFrom: 'desc' },
+              take: 1
             },
-            inventoryLots: true
+            inventoryLot: true
           }
         },
-        intakePhotos: true
+        photos: true
       },
       orderBy: { name: 'asc' }
     });
 
-    // Process results and apply additional filters
     const results: SearchResult[] = [];
 
     for (const product of products) {
-      // Get the most recent batch for this product
-      const latestBatch = product.batches
-        .filter(batch => batch.inventoryLots.length > 0)
+      // Get the most recent batch with inventory
+      const availableBatch = product.batches
+        .filter(batch => batch.inventoryLot && batch.inventoryLot.quantityAvailable > 0)
         .sort((a, b) => new Date(b.receivedDate).getTime() - new Date(a.receivedDate).getTime())[0];
 
-      if (!latestBatch) continue;
+      if (!availableBatch && availability === 'available') continue;
+
+      const batch = availableBatch || product.batches[0];
+      if (!batch) continue;
 
       // Apply vendor filter
-      if (vendorCode && latestBatch.vendor.vendorCode !== vendorCode) {
-        continue;
-      }
+      if (vendorCode && batch.vendor.vendorCode !== vendorCode) continue;
 
-      // Get inventory lot (prefer the one matching location filter)
-      let inventoryLot = latestBatch.inventoryLots[0];
-      if (location) {
-        const locationLot = latestBatch.inventoryLots.find(lot => lot.location === location);
-        if (!locationLot) continue;
-        inventoryLot = locationLot;
-      }
-
-      // Calculate availability
-      const qtyAvailable = inventoryLot.qtyOnHand - inventoryLot.qtyAllocated;
-      let lotAvailability: 'available' | 'low_stock' | 'out_of_stock';
+      const quantityAvailable = batch.inventoryLot?.quantityAvailable || 0;
       
-      if (qtyAvailable <= 0) {
-        lotAvailability = 'out_of_stock';
-      } else if (inventoryLot.qtyOnHand <= inventoryLot.reorderPoint) {
-        lotAvailability = 'low_stock';
+      // Determine availability status
+      let availabilityStatus: 'available' | 'low_stock' | 'out_of_stock';
+      if (quantityAvailable === 0) {
+        availabilityStatus = 'out_of_stock';
+      } else if (quantityAvailable <= 10) { // Simple threshold
+        availabilityStatus = 'low_stock';
       } else {
-        lotAvailability = 'available';
+        availabilityStatus = 'available';
       }
 
       // Apply availability filter
-      if (availability && lotAvailability !== availability) {
-        continue;
-      }
-
-      // Get active batch cost
-      const activeCost = await getActiveBatchCost(latestBatch.id, new Date());
-
-      // Calculate display price using price book precedence
-      const displayPrice = await calculateDisplayPrice(product.id, customerId);
-
-      // Apply price filters
-      if (priceMin !== undefined && displayPrice < priceMin) {
-        continue;
-      }
-      if (priceMax !== undefined && displayPrice > priceMax) {
-        continue;
-      }
-
-      // Get vendor display name (masked)
-      const vendorDisplayName = getVendorDisplayName(latestBatch.vendor, false);
-
-      // Process images
-      const images = product.intakePhotos.map(photo => ({
-        id: photo.id,
-        filename: photo.filename,
-        url: `/api/images/${photo.filename}` // Assuming we have an image serving endpoint
-      }));
+      if (availability && availabilityStatus !== availability) continue;
 
       results.push({
         id: product.id,
-        sku: product.sku,
         name: product.name,
-        description: product.description,
+        sku: product.sku,
         category: product.category,
         unit: product.unit,
-        isActive: product.isActive,
+        location: product.location || undefined,
         defaultPrice: product.defaultPrice,
-        displayPrice,
-        batch: {
-          id: latestBatch.id,
-          batchNumber: latestBatch.batchNumber,
-          vendorCode: latestBatch.vendor.vendorCode,
-          vendorDisplayName,
-          activeCost
-        },
-        inventoryLot: {
-          id: inventoryLot.id,
-          location: inventoryLot.location,
-          qtyOnHand: inventoryLot.qtyOnHand,
-          qtyAllocated: inventoryLot.qtyAllocated,
-          qtyAvailable,
-          reorderPoint: inventoryLot.reorderPoint,
-          availability: lotAvailability
-        },
-        images
+        currentPrice: product.defaultPrice, // TODO: Implement price book logic
+        availability: availabilityStatus,
+        quantityAvailable,
+        vendorCode: batch.vendor.vendorCode,
+        vendorName: batch.vendor.companyName,
+        batchId: batch.id,
+        lotNumber: batch.lotNumber,
+        photos: product.photos.map(photo => photo.filePath)
       });
     }
 
@@ -200,128 +147,43 @@ export async function searchProducts(filters: SearchFilters = {}): Promise<Searc
   }
 }
 
-async function calculateDisplayPrice(productId: string, customerId?: string): Promise<number> {
-  try {
-    const product = await prisma.product.findUnique({
-      where: { id: productId }
-    });
-
-    if (!product) return 0;
-
-    let price = product.defaultPrice || 0;
-
-    if (customerId) {
-      // Get customer to determine role
-      const customer = await prisma.customer.findUnique({
-        where: { id: customerId },
-        include: { role: true }
-      });
-
-      if (customer) {
-        // Check for customer-specific price book entry
-        const customerPriceEntry = await prisma.priceBookEntry.findFirst({
-          where: {
-            productId,
-            priceBook: {
-              customerId: customer.id
-            }
-          },
-          include: { priceBook: true }
-        });
-
-        if (customerPriceEntry) {
-          price = customerPriceEntry.price;
-        } else if (customer.role) {
-          // Check for role-based price book entry
-          const rolePriceEntry = await prisma.priceBookEntry.findFirst({
-            where: {
-              productId,
-              priceBook: {
-                roleId: customer.role.id
-              }
-            },
-            include: { priceBook: true }
-          });
-
-          if (rolePriceEntry) {
-            price = rolePriceEntry.price;
-          } else {
-            // Check for global price book entry
-            const globalPriceEntry = await prisma.priceBookEntry.findFirst({
-              where: {
-                productId,
-                priceBook: {
-                  isGlobal: true
-                }
-              },
-              include: { priceBook: true }
-            });
-
-            if (globalPriceEntry) {
-              price = globalPriceEntry.price;
-            }
-          }
-        }
-      }
-    }
-
-    return price;
-  } catch (error) {
-    console.error('Error calculating display price:', error);
-    return 0;
-  }
-}
-
 export async function getSearchFilterOptions() {
   try {
     const [categories, locations, vendors] = await Promise.all([
-      // Get unique categories
       prisma.product.findMany({
         where: { isActive: true },
         select: { category: true },
         distinct: ['category']
       }),
-      
-      // Get unique locations
-      prisma.inventoryLot.findMany({
+      prisma.product.findMany({
+        where: { 
+          isActive: true,
+          location: { not: null }
+        },
         select: { location: true },
         distinct: ['location']
       }),
-      
-      // Get vendors with their codes
       prisma.vendor.findMany({
         where: { isActive: true },
-        select: { id: true, vendorCode: true, companyName: true },
-        orderBy: { vendorCode: 'asc' }
+        select: { vendorCode: true, companyName: true }
       })
     ]);
 
     return {
-      categories: categories.map(c => c.category).filter(Boolean),
+      categories: categories.map(c => c.category),
       locations: locations.map(l => l.location).filter(Boolean),
       vendors: vendors.map(v => ({
-        id: v.id,
-        vendorCode: v.vendorCode,
-        displayName: getVendorDisplayName(v, false)
+        code: v.vendorCode,
+        name: v.companyName
       }))
     };
   } catch (error) {
-    console.error('Error getting filter options:', error);
+    console.error('Error fetching search filters:', error);
     return {
       categories: [],
       locations: [],
       vendors: []
     };
-  }
-}
-
-export async function getProductDetails(productId: string, customerId?: string): Promise<SearchResult | null> {
-  try {
-    const results = await searchProducts({ customerId });
-    return results.find(r => r.id === productId) || null;
-  } catch (error) {
-    console.error('Error getting product details:', error);
-    return null;
   }
 }
 

@@ -28,9 +28,10 @@ export default async function QuotesPage() {
 }
 
 async function QuotesList() {
-  const quotes = await getQuotes();
+  const quotesResponse = await getQuotes();
+  const quotes = quotesResponse.success && quotesResponse.quotes ? quotesResponse.quotes : [];
 
-  if (quotes.length === 0) {
+  if (!quotes || quotes.length === 0) {
     return (
       <div className="text-center py-12">
         <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -76,15 +77,15 @@ async function QuotesList() {
                         ${(quote.totalAmount / 100).toFixed(0)}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {quote.items.length} item{quote.items.length !== 1 ? 's' : ''}
+                        {quote.quoteItems.length} item{quote.quoteItems.length !== 1 ? 's' : ''}
                       </p>
                     </div>
                     <div className="flex-shrink-0">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        quote.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                        quote.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                        quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                        quote.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        quote.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
+                        quote.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
+                        quote.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+                        quote.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
                         'bg-yellow-100 text-yellow-800'
                       }`}>
                         {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
@@ -97,9 +98,9 @@ async function QuotesList() {
                     <p className="flex items-center text-sm text-gray-500">
                       Created {new Date(quote.createdAt).toLocaleDateString()}
                     </p>
-                    {quote.validUntil && (
+                    {quote.expirationDate && (
                       <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                        Valid until {new Date(quote.validUntil).toLocaleDateString()}
+                        Valid until {new Date(quote.expirationDate).toLocaleDateString()}
                       </p>
                     )}
                   </div>

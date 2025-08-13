@@ -38,8 +38,11 @@ enum UserRole {
 model Product {
   id           String  @id @default(cuid())
   name         String
+  sku          String  @unique // Product SKU
   category     String
+  unit         String  @default("piece") // Unit of measure (piece, kg, liter, etc.)
   defaultPrice Int     // Price in cents
+  location     String? // Storage location
   isActive     Boolean @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
