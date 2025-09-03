@@ -1,0 +1,51 @@
+name: vercel-redeploy-and-probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to comment on
+        required: true
+        default: '3'
+      base_url:
+        description: Production base URL (e.g., https://your-app.vercel.app)
+        required: true
+
+jobs:
+  redeploy-and-probe:
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ github.event.inputs.pr_number }}
+      BASE_URL: ${{ github.event.inputs.base_url }}
+      DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+    steps:
+      - name: Trigger Vercel deploy (optional)
+        run: |
+          if [ -n "$DEPLOY_HOOK" ]; then
+            echo "Triggering deploy via hook"
+            curl -sS -X POST "$DEPLOY_HOOK" || true
+            echo "Waiting for deploy to settle..."
+            sleep 30
+          else
+            echo "No VERCEL_DEPLOY_HOOK set; skipping redeploy"
+          fi
+      - name: Probe health and ERP routes
+        run: |
+          set +e
+          curl -sS "$BASE_URL/api/health" | sed -n '1,60p' > health.txt
+          curl -sS "$BASE_URL/api/customers?limit_page_length=1" | sed -n '1,60p' > customers.txt
+          curl -sS "$BASE_URL/api/sales-orders?limit_page_length=1" | sed -n '1,60p' > sales_orders.txt
+          curl -sS "$BASE_URL/api/purchase-invoices?limit_page_length=1" | sed -n '1,60p' > purchase_invoices.txt
+      - name: Comment results to PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          h=$(sed -n '1,60p' health.txt | sed 's/`/\`/g')
+          c=$(sed -n '1,60p' customers.txt | sed 's/`/\`/g')
+          s=$(sed -n '1,60p' sales_orders.txt | sed 's/`/\`/g')
+          p=$(sed -n '1,60p' purchase_invoices.txt | sed 's/`/\`/g')
+          body=$(printf "Deploy probe results (base: %s)\n\n- Health /api/health:\n\`\`\`\n%s\n\`\`\`\n\n- Customers:\n\`\`\`\n%s\n\`\`\`\n\n- Sales Orders:\n\`\`\`\n%s\n\`\`\`\n\n- Purchase Invoices:\n\`\`\`\n%s\n\`\`\`\n" "$BASE_URL" "$h" "$c" "$s" "$p")
+          jq -n --arg body "$body" '{body:$body}' > /tmp/comment.json
+          curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            -d @/tmp/comment.json >/dev/null
