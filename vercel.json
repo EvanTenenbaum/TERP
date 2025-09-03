@@ -5,7 +5,6 @@
   "installCommand": "npm install",
   "devCommand": "npm run dev",
   "env": {
-    "DATABASE_URL": "@database_url",
     "NEXTAUTH_SECRET": "@nextauth_secret",
     "NEXTAUTH_URL": "@nextauth_url",
     "NEXTERP_HOST": "@nexterp_host",
@@ -13,11 +12,6 @@
     "NEXTERP_API_SECRET": "@nexterp_api_secret",
     "UPLOAD_DIR": "@upload_dir",
     "MAX_FILE_SIZE": "@max_file_size"
-  },
-  "build": {
-    "env": {
-      "DATABASE_URL": "@database_url"
-    }
   },
   "functions": {
     "app/api/**/*.ts": {
