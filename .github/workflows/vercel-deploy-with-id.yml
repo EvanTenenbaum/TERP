@@ -1,0 +1,52 @@
+name: vercel-deploy-with-id
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to comment on
+        required: true
+        default: '3'
+      base_url:
+        description: Production base URL (e.g., https://erpsept25.vercel.app)
+        required: true
+
+jobs:
+  deploy-and-probe:
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ github.event.inputs.pr_number }}
+      BASE_URL: ${{ github.event.inputs.base_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Deploy to Vercel (Production)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          # Optional: scope/team/org. Set VERCEL_ORG_ID if needed.
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+          working-directory: .
+          vercel-args: '--prod'
+      - name: Probe health and ERP routes
+        run: |
+          set +e
+          curl -sS "$BASE_URL/api/health" | sed -n '1,60p' > health.txt
+          curl -sS "$BASE_URL/api/customers?limit_page_length=1" | sed -n '1,60p' > customers.txt
+          curl -sS "$BASE_URL/api/sales-orders?limit_page_length=1" | sed -n '1,60p' > sales_orders.txt
+          curl -sS "$BASE_URL/api/purchase-invoices?limit_page_length=1" | sed -n '1,60p' > purchase_invoices.txt
+      - name: Comment results to PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          h=$(sed -n '1,60p' health.txt | sed 's/`/\`/g')
+          c=$(sed -n '1,60p' customers.txt | sed 's/`/\`/g')
+          s=$(sed -n '1,60p' sales_orders.txt | sed 's/`/\`/g')
+          p=$(sed -n '1,60p' purchase_invoices.txt | sed 's/`/\`/g')
+          body=$(printf "Vercel deploy (project-id) + probe results (base: %s)\n\n- Health /api/health:\n\`\`\`\n%s\n\`\`\`\n\n- Customers:\n\`\`\`\n%s\n\`\`\`\n\n- Sales Orders:\n\`\`\`\n%s\n\`\`\`\n\n- Purchase Invoices:\n\`\`\`\n%s\n\`\`\`\n" "$BASE_URL" "$h" "$c" "$s" "$p")
+          jq -n --arg body "$body" '{body:$body}' > /tmp/comment.json
+          curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            -d @/tmp/comment.json >/dev/null
