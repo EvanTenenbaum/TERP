@@ -57,3 +57,5 @@ Health & Smoke Tests
 
 - Health: `GET /api/health` → `{ "ok": true }`
 - ERPNext (read-only): see `docs/deploy-smoke.md` for curl examples.
+
+Deployment bump: trigger Vercel production deploy (no code changes)
