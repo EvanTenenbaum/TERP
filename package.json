@@ -17,6 +17,9 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.cjs",
+    "strains:fetch": "node scripts/fetchStrains.mjs",
+    "strains:download:openthc": "curl -L -o data/strains_openthc.csv https://vdb.openthc.org/download/strains.csv",
+    "strains:seed": "node prisma/seedVarieties.cjs",
     "test:unit": "jest"
   },
   "dependencies": {
