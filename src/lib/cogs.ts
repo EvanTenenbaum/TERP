@@ -7,9 +7,7 @@
  * Key Business Rule: COGS = BatchCost active at allocationDate for each OrderItem
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 /**
  * Get the active BatchCost for a given batch at a specific date
@@ -196,4 +194,3 @@ export function parseCostToCents(dollarAmount: string | number): number {
   
   return Math.round(amount * 100);
 }
-
