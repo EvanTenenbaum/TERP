@@ -7,9 +7,7 @@
  * the vendor profile; exports respect this masking.
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 export interface VendorDisplayInfo {
   id: string;
@@ -245,4 +243,3 @@ export function getVendorProfileDisplayName(vendor: {
 }): string {
   return vendor.companyName || vendor.vendorCode;
 }
-
