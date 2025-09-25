@@ -2,45 +2,7 @@
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-
-async function getEffectiveUnitPrice(tx: typeof prisma, productId: string, customerId: string): Promise<number> {
-  // Customer-specific price book
-  const now = new Date();
-  const customerPrice = await tx.priceBookEntry.findFirst({
-    where: {
-      productId,
-      priceBook: {
-        type: 'CUSTOMER',
-        customerId,
-        isActive: true,
-        effectiveDate: { lte: now },
-      },
-      effectiveDate: { lte: now },
-    },
-    orderBy: { effectiveDate: 'desc' },
-  });
-  if (customerPrice) return customerPrice.unitPrice;
-
-  // Global price
-  const globalPrice = await tx.priceBookEntry.findFirst({
-    where: {
-      productId,
-      priceBook: {
-        type: 'GLOBAL',
-        isActive: true,
-        effectiveDate: { lte: now },
-      },
-      effectiveDate: { lte: now },
-    },
-    orderBy: { effectiveDate: 'desc' },
-  });
-  if (globalPrice) return globalPrice.unitPrice;
-
-  // Fallback to product default
-  const product = await tx.product.findUnique({ where: { id: productId }, select: { defaultPrice: true } });
-  if (!product) throw new Error('product_not_found');
-  return product.defaultPrice;
-}
+import { getEffectiveUnitPrice } from '@/lib/pricing';
 
 export interface CreateQuoteData {
   customerId: string;
@@ -263,7 +225,7 @@ export async function convertQuoteToOrder(quoteId: string) {
       const itemsToCreate: any[] = [];
 
       for (const qi of quote.quoteItems) {
-        const unitPrice = await getEffectiveUnitPrice(tx as any, qi.productId, quote.customerId);
+        const unitPrice = await getEffectiveUnitPrice(tx as any, qi.productId, { customerId: quote.customerId });
         const qty = qi.quantity;
 
         // Find an inventory lot with sufficient available quantity for this product
@@ -308,6 +270,26 @@ export async function convertQuoteToOrder(quoteId: string) {
         include: {
           customer: true,
           orderItems: { include: { product: true } },
+        },
+      });
+
+      // Create AR invoice
+      const arCount = await tx.accountsReceivable.count();
+      const invoiceNumber = `INV-${new Date().getFullYear()}-${String(arCount + 1).padStart(4, '0')}`;
+      const invoiceDate = new Date();
+      const terms = quote.customer.paymentTerms || 'Net 30';
+      const daysMatch = /Net\s+(\d+)/i.exec(terms);
+      const days = daysMatch ? parseInt(daysMatch[1], 10) : 30;
+      const dueDate = new Date(invoiceDate.getTime() + days * 24 * 60 * 60 * 1000);
+      await tx.accountsReceivable.create({
+        data: {
+          customerId: order.customerId,
+          orderId: order.id,
+          invoiceNumber,
+          invoiceDate,
+          dueDate,
+          amount: order.totalAmount,
+          balanceRemaining: order.totalAmount,
         },
       });
 
