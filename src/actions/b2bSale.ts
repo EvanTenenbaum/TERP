@@ -243,7 +243,16 @@ async function departForOutgoing(tx: typeof prisma, saleId: string) {
     })
     if (res.count === 0) throw new Error('insufficient_allocated')
 
-    shipEvents.push({ eventType: 'DEPARTED_ITEM', data: { ...actorMeta(), itemId: item.id, inventoryId, qty } })
+    const inv = await tx.inventoryLot.findUnique({ where: { id: inventoryId }, include: { batch: { include: { batchCosts: true } } } })
+    let unitCost: number | null = null
+    if (inv?.batch?.batchCosts?.length) {
+      const costs = inv.batch.batchCosts
+        .filter(c => c.effectiveFrom <= now)
+        .sort((a,b)=> b.effectiveFrom.getTime()-a.effectiveFrom.getTime())
+      unitCost = costs.length ? costs[0].unitCost : null
+    }
+
+    shipEvents.push({ eventType: 'DEPARTED_ITEM', data: { ...actorMeta(), itemId: item.id, inventoryId, qty, unitCost } })
   }
 
   if (shipEvents.length > 0) {
