@@ -1,9 +1,7 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-
-const prisma = new PrismaClient();
 
 export interface CreateProductData {
   name: string;
@@ -308,4 +306,3 @@ export async function getVendors() {
     };
   }
 }
-
