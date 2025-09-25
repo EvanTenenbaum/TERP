@@ -10,8 +10,8 @@ interface QuoteData {
   notes?: string | null;
   customer: {
     companyName: string;
-    contactName: string;
-    email: string;
+    contactName?: string | null;
+    email?: string | null;
     phone?: string | null;
     address?: string | null;
     city?: string | null;
@@ -22,23 +22,16 @@ interface QuoteData {
     id: string;
     quantity: number;
     unitPrice: number;
-    totalPrice: number;
+    totalPrice?: number;
+    lineTotal?: number;
     product: {
       sku: string;
       name: string;
       description?: string | null;
       unit: string;
     };
-    batch: {
-      batchNumber: string;
-      vendor: {
-        vendorCode: string;
-        companyName: string;
-      };
-    };
-    inventoryLot: {
-      location: string;
-    };
+    vendorCode?: string;
+    location?: string;
   }>;
 }
 
@@ -89,10 +82,14 @@ export function generateQuotePDF(quote: QuoteData): jsPDF {
   doc.setFont('helvetica', 'normal');
   doc.text(quote.customer.companyName, margin, yPosition);
   yPosition += 6;
-  doc.text(quote.customer.contactName, margin, yPosition);
-  yPosition += 6;
-  doc.text(quote.customer.email, margin, yPosition);
-  yPosition += 6;
+  if (quote.customer.contactName) {
+    doc.text(quote.customer.contactName, margin, yPosition);
+    yPosition += 6;
+  }
+  if (quote.customer.email) {
+    doc.text(quote.customer.email, margin, yPosition);
+    yPosition += 6;
+  }
 
   if (quote.customer.phone) {
     doc.text(quote.customer.phone, margin, yPosition);
@@ -193,13 +190,14 @@ export function generateQuotePDF(quote: QuoteData): jsPDF {
     doc.text(truncatedDescription, xPosition, yPosition + 4);
     xPosition += colWidths.description;
 
-    // Vendor (use vendor code for masking)
-    const vendorDisplay = getVendorDisplayName(item.batch.vendor);
-    doc.text(vendorDisplay, xPosition, yPosition + 4);
+    // Vendor (masked code if available)
+    const vendorDisplay = item.vendorCode || '';
+    doc.text(vendorDisplay || '-', xPosition, yPosition + 4);
     xPosition += colWidths.vendor;
 
-    // Location
-    doc.text(item.inventoryLot.location, xPosition, yPosition + 4);
+    // Location (optional)
+    const locationText = item.location || '';
+    doc.text(locationText || '-', xPosition, yPosition + 4);
     xPosition += colWidths.location;
 
     // Quantity
@@ -215,7 +213,8 @@ export function generateQuotePDF(quote: QuoteData): jsPDF {
     xPosition += colWidths.price;
 
     // Total Price
-    doc.text(formatCurrency(item.totalPrice), xPosition, yPosition + 4);
+    const lineTotal = item.totalPrice ?? item.lineTotal ?? item.unitPrice * item.quantity;
+    doc.text(formatCurrency(lineTotal), xPosition, yPosition + 4);
 
     yPosition += 10;
   });
@@ -278,4 +277,3 @@ export function downloadQuotePDF(quote: QuoteData, filename?: string) {
   const fileName = filename || `quote-${quote.quoteNumber}.pdf`;
   doc.save(fileName);
 }
-
