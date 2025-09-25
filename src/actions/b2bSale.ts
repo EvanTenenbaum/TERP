@@ -66,7 +66,7 @@ export async function createB2BSale(input: CreateB2BSaleInput) {
 export async function listSales() {
   try {
     const sales = await prisma.b2BSale.findMany({
-      include: { itemList: true },
+      include: { itemList: { include: { product: true } } },
       orderBy: { createdAt: 'desc' },
     })
     return { success: true, sales }
