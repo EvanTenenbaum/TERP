@@ -119,6 +119,8 @@ export async function getBatches() {
   }
 }
 
+import { normalizeFlowerProductName } from '@/lib/normalization';
+
 export async function createBatch(data: CreateBatchData) {
   try {
     const batch = await prisma.batch.create({
@@ -144,8 +146,24 @@ export async function createBatch(data: CreateBatchData) {
       }
     });
 
+    // Normalize name for flower category products: "[vendorCode] - [strainName]"
+    try {
+      const product = await prisma.product.findUnique({ where: { id: batch.productId }, include: { variety: true } });
+      if (product && /flower/i.test(product.category) && product.variety) {
+        const vendor = await prisma.vendor.findUnique({ where: { id: batch.vendorId }, select: { vendorCode: true } });
+        const newName = vendor?.vendorCode && product.variety?.name
+          ? normalizeFlowerProductName(vendor.vendorCode, product.variety.name)
+          : null;
+        if (newName && newName !== product.name) {
+          await prisma.product.update({ where: { id: product.id }, data: { name: newName } });
+        }
+      }
+    } catch (e) {
+      console.warn('Name normalization skipped:', e);
+    }
+
     revalidatePath('/inventory/batches');
-    
+
     return {
       success: true,
       batch
