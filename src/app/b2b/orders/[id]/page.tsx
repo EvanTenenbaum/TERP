@@ -48,7 +48,7 @@ export default function B2BOrderDetail({ params }: { params: { id: string } }) {
           <thead className="bg-gray-50"><tr><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Product</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Qty</th><th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Unit Price</th></tr></thead>
           <tbody className="divide-y divide-gray-200">
             {sale.itemList.map((it:any)=> (
-              <tr key={it.id}><td className="px-3 py-2">{it.productId}</td><td className="px-3 py-2">{it.unitCount}</td><td className="px-3 py-2">${(it.unitPrice/100).toFixed(0)}</td></tr>
+              <tr key={it.id}><td className="px-3 py-2">{it.productId}</td><td className="px-3 py-2">{it.unitCount}</td><td className="px-3 py-2">${(it.unitPrice/100).toFixed(2)}</td></tr>
             ))}
           </tbody>
         </table>

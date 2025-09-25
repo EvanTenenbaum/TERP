@@ -540,7 +540,7 @@ model B2BSaleItem {
   productId   String
   varietyId   String?
   unitCount   Float
-  unitPrice   Float
+  unitPrice   Int
 
   // Relations
   b2bSale   B2BSale      @relation(fields: [b2bSaleId], references: [id])
