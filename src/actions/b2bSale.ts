@@ -341,6 +341,45 @@ export async function updateSaleStatus(id: string, status: B2BStatus) {
         include: { itemList: true },
       })
 
+      if (status === 'DEPARTED' && updated.type === 'outgoing') {
+        const total = updated.itemList.reduce((s, it)=> s + toInt(it.unitPrice)*toInt(it.unitCount), 0)
+        const arCount = await tx.accountsReceivable.count()
+        const invoiceNumber = `B2B-AR-${new Date().getFullYear()}-${String(arCount + 1).padStart(5,'0')}`
+        const invoiceDate = new Date()
+        const dueDate = new Date(invoiceDate.getTime() + 30*24*60*60*1000)
+        await tx.accountsReceivable.create({
+          data: {
+            customerId: updated.targetId,
+            orderId: null,
+            invoiceNumber,
+            invoiceDate,
+            dueDate,
+            amount: total,
+            balanceRemaining: total,
+          },
+        })
+        await tx.eventLog.create({ data: { b2bSaleId: updated.id, eventType: 'AR_CREATED', data: { ...actorMeta(), invoiceNumber, total } } })
+      }
+
+      if (status === 'ACCEPTED' && updated.type === 'incoming') {
+        const total = updated.itemList.reduce((s, it)=> s + toInt(it.unitPrice)*toInt(it.unitCount), 0)
+        const apCount = await tx.accountsPayable.count()
+        const invoiceNumber = `B2B-AP-${new Date().getFullYear()}-${String(apCount + 1).padStart(5,'0')}`
+        const invoiceDate = new Date()
+        const dueDate = new Date(invoiceDate.getTime() + 30*24*60*60*1000)
+        await tx.accountsPayable.create({
+          data: {
+            vendorId: updated.sourceId,
+            invoiceNumber,
+            invoiceDate,
+            dueDate,
+            amount: total,
+            balanceRemaining: total,
+          },
+        })
+        await tx.eventLog.create({ data: { b2bSaleId: updated.id, eventType: 'AP_CREATED', data: { ...actorMeta(), invoiceNumber, total } } })
+      }
+
       return updated
     })
 
