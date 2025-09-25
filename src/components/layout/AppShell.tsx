@@ -40,6 +40,7 @@ const nav: NavGroup[] = [
       { label: "Quotes", href: "/quotes", icon: DocumentTextIcon },
       { label: "New Quote", href: "/quotes/new", icon: PlusCircleIcon },
       { label: "Orders", href: "/orders", icon: DocumentTextIcon },
+      { label: "B2B Orders", href: "/b2b/orders", icon: DocumentTextIcon },
       { label: "Price Books", href: "/price-books", icon: DocumentTextIcon },
     ],
   },
