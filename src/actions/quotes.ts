@@ -1,9 +1,7 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-
-const prisma = new PrismaClient();
 
 export interface CreateQuoteData {
   customerId: string;
@@ -311,23 +309,27 @@ export async function generateQuotePDF(quoteId: string) {
 
 export async function shareQuote(quoteId: string) {
   try {
-    // Generate a share token
-    const shareToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    
-    // TODO: Store the share token in database
-    const shareUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/quotes/share/${shareToken}`;
-    
-    return {
-      success: true,
-      shareUrl,
-      shareToken
-    };
+    // Reuse existing token if present to keep links stable
+    const existing = await prisma.salesQuote.findUnique({
+      where: { id: quoteId },
+      select: { shareToken: true },
+    });
+
+    let shareToken = existing?.shareToken || '';
+    if (!shareToken) {
+      // Cryptographically strong token
+      shareToken = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      await prisma.salesQuote.update({ where: { id: quoteId }, data: { shareToken } });
+    }
+
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const shareUrl = `${baseUrl}/quotes/share/${shareToken}`;
+
+    return { success: true, shareUrl, shareToken };
   } catch (error) {
     console.error('Error creating share link:', error);
-    return {
-      success: false,
-      error: 'Failed to create share link'
-    };
+    return { success: false, error: 'Failed to create share link' };
   }
 }
-
