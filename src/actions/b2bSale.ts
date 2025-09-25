@@ -50,12 +50,7 @@ export async function createB2BSale(input: CreateB2BSaleInput) {
         targetId: input.targetId,
         status: 'DRAFT',
         itemList: {
-          create: input.items.map((it) => ({
-            productId: it.productId,
-            unitCount: it.unitCount,
-            unitPrice: toInt(it.unitPrice),
-            varietyId: it.varietyId ?? null,
-          })),
+          create: normalizedItems,
         },
         events: {
           create: [{ eventType: 'CREATED', data: { ...actorMeta(), type: input.type, sourceId: input.sourceId, targetId: input.targetId } }],
