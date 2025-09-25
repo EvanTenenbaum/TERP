@@ -3,6 +3,45 @@
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
+async function getEffectiveUnitPrice(tx: typeof prisma, productId: string, customerId: string): Promise<number> {
+  // Customer-specific price book
+  const now = new Date();
+  const customerPrice = await tx.priceBookEntry.findFirst({
+    where: {
+      productId,
+      priceBook: {
+        type: 'CUSTOMER',
+        customerId,
+        isActive: true,
+        effectiveDate: { lte: now },
+      },
+      effectiveDate: { lte: now },
+    },
+    orderBy: { effectiveDate: 'desc' },
+  });
+  if (customerPrice) return customerPrice.unitPrice;
+
+  // Global price
+  const globalPrice = await tx.priceBookEntry.findFirst({
+    where: {
+      productId,
+      priceBook: {
+        type: 'GLOBAL',
+        isActive: true,
+        effectiveDate: { lte: now },
+      },
+      effectiveDate: { lte: now },
+    },
+    orderBy: { effectiveDate: 'desc' },
+  });
+  if (globalPrice) return globalPrice.unitPrice;
+
+  // Fallback to product default
+  const product = await tx.product.findUnique({ where: { id: productId }, select: { defaultPrice: true } });
+  if (!product) throw new Error('product_not_found');
+  return product.defaultPrice;
+}
+
 export interface CreateQuoteData {
   customerId: string;
   items: {
@@ -203,69 +242,86 @@ export async function convertQuoteToOrder(quoteId: string) {
         customer: true,
         quoteItems: {
           include: {
-            product: true
-          }
-        }
-      }
+            product: true,
+          },
+        },
+      },
     });
 
-    if (!quote) {
-      return { success: false, error: 'Quote not found' };
-    }
-
+    if (!quote) return { success: false, error: 'Quote not found' };
     if (quote.status !== 'ACCEPTED') {
       return { success: false, error: 'Only accepted quotes can be converted to orders' };
     }
 
-    // Generate order number
-    const orderCount = await prisma.order.count();
-    const orderNumber = `ORD${String(orderCount + 1).padStart(6, '0')}`;
+    const result = await prisma.$transaction(async (tx) => {
+      // Generate order number
+      const orderCount = await tx.order.count();
+      const orderNumber = `ORD${String(orderCount + 1).padStart(6, '0')}`;
 
-    // Create the order
-    const order = await prisma.order.create({
-      data: {
-        customerId: quote.customerId,
-        orderDate: new Date(),
-        totalAmount: quote.totalAmount,
-        status: 'DRAFT',
-        orderItems: {
-          create: quote.quoteItems.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            allocationDate: new Date()
-          }))
-        }
-      },
-      include: {
-        customer: true,
-        orderItems: {
-          include: {
-            product: true
-          }
-        }
+      const allocationDate = new Date();
+      let computedTotal = 0;
+      const itemsToCreate: any[] = [];
+
+      for (const qi of quote.quoteItems) {
+        const unitPrice = await getEffectiveUnitPrice(tx as any, qi.productId, quote.customerId);
+        const qty = qi.quantity;
+
+        // Find an inventory lot with sufficient available quantity for this product
+        const batch = await tx.batch.findFirst({
+          where: {
+            productId: qi.productId,
+            inventoryLot: { quantityAvailable: { gte: qty } },
+          },
+          orderBy: { receivedDate: 'asc' },
+          include: { inventoryLot: true },
+        });
+        if (!batch || !batch.inventoryLot) throw new Error('insufficient_stock');
+
+        // Allocate inventory
+        await tx.inventoryLot.update({
+          where: { id: batch.inventoryLot.id },
+          data: {
+            quantityAllocated: { increment: qty },
+            quantityAvailable: { decrement: qty },
+            lastMovementDate: allocationDate,
+          },
+        });
+
+        itemsToCreate.push({
+          productId: qi.productId,
+          batchId: batch.id,
+          quantity: qty,
+          unitPrice,
+          allocationDate,
+        });
+        computedTotal += unitPrice * qty;
       }
-    });
 
-    // Update quote status to indicate it's been converted
-    await prisma.salesQuote.update({
-      where: { id: quoteId },
-      data: { status: 'ACCEPTED' }
+      const order = await tx.order.create({
+        data: {
+          customerId: quote.customerId,
+          orderDate: new Date(),
+          totalAmount: computedTotal,
+          status: 'DRAFT',
+          orderItems: { create: itemsToCreate },
+        },
+        include: {
+          customer: true,
+          orderItems: { include: { product: true } },
+        },
+      });
+
+      // Keep quote as ACCEPTED; it has been converted
+      return order;
     });
 
     revalidatePath('/quotes');
     revalidatePath('/orders');
-    
-    return {
-      success: true,
-      order
-    };
+    return { success: true, order: result };
   } catch (error) {
     console.error('Error converting quote to order:', error);
-    return {
-      success: false,
-      error: 'Failed to convert quote to order'
-    };
+    const message = (error as Error)?.message === 'insufficient_stock' ? 'Insufficient stock to allocate' : 'Failed to convert quote to order';
+    return { success: false, error: message };
   }
 }
 
