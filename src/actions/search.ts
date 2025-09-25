@@ -30,6 +30,8 @@ export interface SearchResult {
   photos: string[];
 }
 
+import { getEffectiveUnitPrice } from '@/lib/pricing';
+
 export async function searchProducts(filters: SearchFilters = {}): Promise<SearchResult[]> {
   try {
     const {
