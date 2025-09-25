@@ -293,7 +293,6 @@ export async function deleteQuote(id: string) {
 
 export async function generateQuotePDF(quoteId: string) {
   try {
-    // TODO: Implement PDF generation
     return {
       success: true,
       pdfUrl: `/api/quotes/${quoteId}/pdf`
