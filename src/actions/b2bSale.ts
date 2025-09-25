@@ -80,7 +80,7 @@ export async function getSale(id: string) {
   try {
     const sale = await prisma.b2BSale.findUnique({
       where: { id },
-      include: { itemList: true },
+      include: { itemList: { include: { product: true, inventory: { include: { batch: true } } } } },
     })
     if (!sale) return { success: false, error: 'not_found' }
     return { success: true, sale }
