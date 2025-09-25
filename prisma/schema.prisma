@@ -53,12 +53,14 @@ model Package {
   type PackageType
   size Float
   unit UnitOfMeasure
+  products Product[]
 }
 
 model ServingSize {
   id  String       @id @default(cuid())
   qty Float
   uom UnitOfMeasure
+  products Product[]
 }
 
 enum VarietyType {
@@ -75,6 +77,7 @@ model Variety {
   type     VarietyType
   products      Product[]
   b2bItems      B2BSaleItem[]
+  inventoryLots InventoryLot[]
 
   @@unique([name, type])
 }
@@ -226,8 +229,9 @@ model InventoryLot {
   varietyId         String?
 
   // Relations
-  batch   Batch   @relation(fields: [batchId], references: [id])
-  variety Variety? @relation(fields: [varietyId], references: [id])
+  batch     Batch   @relation(fields: [batchId], references: [id])
+  variety   Variety? @relation(fields: [varietyId], references: [id])
+  b2bItems  B2BSaleItem[]
 
   @@map("inventory_lots")
 }
