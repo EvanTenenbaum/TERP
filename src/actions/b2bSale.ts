@@ -33,6 +33,15 @@ export async function createB2BSale(input: CreateB2BSaleInput) {
   if (!input.items || input.items.length === 0) {
     return { success: false, error: 'items_required' }
   }
+  const normalizedItems = input.items.map(i=> ({
+    productId: i.productId,
+    unitCount: toInt(i.unitCount),
+    unitPrice: Math.max(0, toInt(i.unitPrice)),
+    varietyId: i.varietyId ?? null,
+  })).filter(i=> i.productId && i.unitCount > 0)
+  if (normalizedItems.length === 0) {
+    return { success: false, error: 'invalid_items' }
+  }
   try {
     const sale = await prisma.b2BSale.create({
       data: {
