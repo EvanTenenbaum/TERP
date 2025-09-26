@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function GET() {
   const pos = await prisma.purchaseOrder.findMany({ include: { vendor: true, items: { include: { product: true } } }, orderBy: { createdAt: 'desc' } })
