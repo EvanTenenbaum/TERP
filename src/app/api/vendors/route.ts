@@ -1,7 +1,7 @@
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { NextResponse } from 'next/server'
 
-export async function GET() {
+export const GET = api({})(async () => {
   const vendors = await prisma.vendor.findMany({ where: { isActive: true }, orderBy: { companyName: 'asc' } })
-  return NextResponse.json({ success: true, vendors })
-}
+  return new Response(JSON.stringify({ success: true, vendors }), { headers: { 'Content-Type':'application/json' } })
+})
