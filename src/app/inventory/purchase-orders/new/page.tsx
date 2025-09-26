@@ -13,9 +13,6 @@ export default function NewPOPage() {
 
   useEffect(() => {
     (async () => {
-      const resp = await fetch('/api/finance/ap/export') // reuse vendor listing? this route may not list vendors
-      // Fallback: fetch vendors via internal API we may not have; call /api/health to ensure server OK
-      // Instead, query vendors via a minimal route here:
       const v = await fetch('/api/vendors').catch(()=>null)
       let data: any = null
       try { data = v ? await v.json() : null } catch {}
