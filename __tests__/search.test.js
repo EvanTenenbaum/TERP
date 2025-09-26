@@ -3,9 +3,13 @@ jest.mock('@/lib/prisma', () => ({
   default: {
     product: {
       findMany: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({ defaultPrice: 10000 }),
     },
     vendor: {
       findMany: jest.fn(),
+    },
+    priceBookEntry: {
+      findFirst: jest.fn().mockResolvedValue(null),
     },
   },
 }))
