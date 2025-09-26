@@ -104,3 +104,52 @@ export async function applyApPayment(apId: string, amountCents: number) {
     return { success: false, error: 'failed_apply_ap_payment' }
   }
 }
+
+export interface DunningItem { arId: string; invoiceNumber: string; dueDate: string; balanceCents: number }
+export interface DunningCustomer { customerId: string; customerName: string; contactEmail?: string | null; totalDueCents: number; items: DunningItem[] }
+
+export async function generateDunningPreview(minDaysOverdue: number = 1) {
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden', customers: [] as DunningCustomer[] } }
+  try {
+    const today = new Date()
+    const cutoff = new Date(today.getTime() - minDaysOverdue * 86400000)
+    const ars = await prisma.accountsReceivable.findMany({
+      where: { balanceRemaining: { gt: 0 }, dueDate: { lt: cutoff } },
+      include: { customer: true },
+      orderBy: { dueDate: 'asc' }
+    })
+    const map = new Map<string, DunningCustomer>()
+    for (const ar of ars) {
+      const key = ar.customerId
+      const dc = map.get(key) || { customerId: key, customerName: ar.customer?.companyName || 'Unknown', contactEmail: ar.customer?.contactEmail || (typeof ar.customer?.contactInfo === 'object' ? (ar.customer?.contactInfo as any)?.email : undefined), totalDueCents: 0, items: [] }
+      dc.items.push({ arId: ar.id, invoiceNumber: ar.invoiceNumber, dueDate: ar.dueDate.toISOString(), balanceCents: ar.balanceRemaining })
+      dc.totalDueCents += ar.balanceRemaining
+      map.set(key, dc)
+    }
+    const customers = Array.from(map.values()).sort((a,b)=> b.totalDueCents - a.totalDueCents)
+    return { success: true, customers }
+  } catch (e) {
+    Sentry.captureException(e)
+    return { success: false, error: 'failed_generate_dunning', customers: [] as DunningCustomer[] }
+  }
+}
+
+export async function logDunningToSentry(minDaysOverdue: number = 1) {
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
+  try {
+    const { success, customers } = await generateDunningPreview(minDaysOverdue)
+    if (!success) return { success: false, error: 'failed_generate_dunning' }
+    const logged: { customerId: string; count: number; totalDueCents: number }[] = []
+    for (const c of customers) {
+      const subject = `Past Due Notice: ${c.customerName}`
+      const lines = c.items.map(i => `• Invoice ${i.invoiceNumber} due ${new Date(i.dueDate).toLocaleDateString()} — $${(i.balanceCents/100).toFixed(2)}`)
+      const body = `Dear ${c.customerName},\n\nOur records indicate the following invoices are past due:\n${lines.join('\n')}\n\nTotal due: $${(c.totalDueCents/100).toFixed(2)}\n\nPlease remit payment at your earliest convenience or reply to arrange terms.\n\nThank you.`
+      Sentry.captureMessage(`[DUNNING] ${subject}\n${body}`)
+      logged.push({ customerId: c.customerId, count: c.items.length, totalDueCents: c.totalDueCents })
+    }
+    return { success: true, logged }
+  } catch (e) {
+    Sentry.captureException(e)
+    return { success: false, error: 'failed_log_dunning' }
+  }
+}
