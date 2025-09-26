@@ -66,6 +66,23 @@ export default function PriceBooksPage() {
     if (pb.success) setBooks(pb.books);
   };
 
+  const submitOverride = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!overrideForm.productId) return;
+    const res = await applyGlobalPriceOverride({
+      productId: overrideForm.productId,
+      unitPrice: Math.round(Number(overrideForm.unitPrice)),
+      reason: overrideForm.reason || 'Manual global override',
+    });
+    if (res.success) {
+      const pb = await getPriceBooks();
+      if (pb.success) setBooks(pb.books);
+      setOverrideForm({ productId: '', unitPrice: '', reason: '' });
+    } else {
+      alert(res.error || 'Failed to apply override');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <div>
