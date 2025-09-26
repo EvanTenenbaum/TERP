@@ -38,9 +38,13 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
     revalidatePath('/finance/payments')
   }
 
+  const q = (searchParams?.q || '').toLowerCase()
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <h1 className="text-3xl font-bold">Payments</h1>
+
+      <form className="flex items-center gap-2"><input name="q" defaultValue={searchParams?.q || ''} placeholder="Filter by customer or ref #" className="w-full md:w-80 rounded border-gray-300 px-3 py-2" /><button className="hidden" type="submit" /></form>
 
       <section className="bg-white shadow rounded-lg p-4">
         <h2 className="text-lg font-semibold mb-3">Record New Payment</h2>
