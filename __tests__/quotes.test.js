@@ -19,7 +19,9 @@ jest.mock('@/lib/prisma', () => ({
   },
 }))
 
+jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }))
 const prisma = require('@/lib/prisma').default
+prisma.$transaction = async (fn) => fn(prisma)
 const { createQuote, convertQuoteToOrder } = require('@/actions/quotes')
 
 describe('Quote actions', () => {
