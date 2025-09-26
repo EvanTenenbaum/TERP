@@ -1,17 +1,20 @@
 import Link from 'next/link';
+import AlertBanner from '@/components/ui/AlertBanner';
 
 export default function InventoryLotsPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Inventory Lots</h2>
-        <Link 
-          href="/inventory/lots/new"
-          className="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors"
+        <h2 className="text-2xl font-bold text-gray-900">Inventory Lots (legacy view)</h2>
+        <Link
+          href="/inventory/products"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
         >
-          Add Inventory Lot
+          Go to Products
         </Link>
       </div>
+
+      <AlertBanner type="info" message="Inventory is now organized by product and intake date. Lots are still tracked internally and visible within each product." />
 
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -66,7 +69,7 @@ export default function InventoryLotsPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               <tr>
                 <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                  No inventory lots found. <Link href="/inventory/lots/new" className="text-yellow-600 hover:text-yellow-800">Add your first inventory lot</Link>
+                  No lots to display here. View inventory by <Link href="/inventory/products" className="text-blue-600 hover:text-blue-800">product</Link>.
                 </td>
               </tr>
             </tbody>
@@ -76,4 +79,3 @@ export default function InventoryLotsPage() {
     </div>
   );
 }
-
