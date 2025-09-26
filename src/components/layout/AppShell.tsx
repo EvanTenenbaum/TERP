@@ -32,6 +32,7 @@ const nav: NavGroup[] = [
     items: [
       { label: "Home", href: "/", icon: HomeIcon },
       { label: "Search", href: "/search", icon: MagnifyingGlassIcon },
+      { label: "Attachments", href: "/attachments", icon: DocumentTextIcon },
     ],
   },
   {
