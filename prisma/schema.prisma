@@ -191,6 +191,7 @@ model Batch {
   expirationDate   DateTime?
   quantityReceived Int
   quantityAvailable Int
+  isConsignment    Boolean   @default(false)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
