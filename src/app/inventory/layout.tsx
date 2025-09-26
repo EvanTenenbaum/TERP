@@ -19,18 +19,6 @@ export default function InventoryLayout({
                 Products
               </Link>
               <Link 
-                href="/inventory/batches" 
-                className="text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Batches
-              </Link>
-              <Link 
-                href="/inventory/lots" 
-                className="text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Inventory Lots
-              </Link>
-              <Link 
                 href="/inventory/low-stock" 
                 className="text-red-600 hover:text-red-800 px-3 py-2 rounded-md text-sm font-medium"
               >
@@ -46,4 +34,3 @@ export default function InventoryLayout({
     </div>
   );
 }
-
