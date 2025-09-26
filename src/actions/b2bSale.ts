@@ -113,7 +113,7 @@ export async function listSaleEvents(b2bSaleId: string) {
 
 
 
-async function allocateForOutgoing(tx: typeof prisma, saleId: string) {
+async function allocateForOutgoing(tx: any, saleId: string) {
   const sale = await tx.b2BSale.findUnique({ where: { id: saleId }, include: { itemList: true } })
   if (!sale) throw new Error('not_found')
   if (sale.type !== 'outgoing') return
@@ -161,7 +161,7 @@ async function allocateForOutgoing(tx: typeof prisma, saleId: string) {
   }
 }
 
-async function departForOutgoing(tx: typeof prisma, saleId: string) {
+async function departForOutgoing(tx: any, saleId: string) {
   const sale = await tx.b2BSale.findUnique({ where: { id: saleId }, include: { itemList: true } })
   if (!sale) throw new Error('not_found')
   if (sale.type !== 'outgoing') return
@@ -211,7 +211,7 @@ async function departForOutgoing(tx: typeof prisma, saleId: string) {
   }
 }
 
-async function acceptForIncoming(tx: typeof prisma, saleId: string) {
+async function acceptForIncoming(tx: any, saleId: string) {
   const sale = await tx.b2BSale.findUnique({ where: { id: saleId }, include: { itemList: true } })
   if (!sale) throw new Error('not_found')
   if (sale.type !== 'incoming') return
