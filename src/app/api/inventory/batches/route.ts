@@ -1,0 +1,46 @@
+import { NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
+import { requireRole } from '@/lib/auth'
+
+export async function POST(request: Request) {
+  try {
+    try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
+    const body = await request.json()
+    const productId = String(body.productId || '')
+    const vendorId = String(body.vendorId || '')
+    const lotNumber = String(body.lotNumber || body.batchNumber || '').trim()
+    const receivedDate = new Date(body.receivedDate || Date.now())
+    const expirationDate = body.expirationDate ? new Date(body.expirationDate) : null
+    const quantityReceived = Math.round(Number(body.quantityReceived ?? body.quantity))
+    const initialCostDollars = Number(body.initialCost)
+
+    if (!productId || !vendorId || !lotNumber || !Number.isFinite(quantityReceived) || quantityReceived <= 0) {
+      return NextResponse.json({ success: false, error: 'invalid_input' }, { status: 400 })
+    }
+
+    const initialUnitCost = Math.round((Number.isFinite(initialCostDollars) ? initialCostDollars : 0) * 100)
+
+    const batch = await prisma.batch.create({
+      data: {
+        productId,
+        vendorId,
+        lotNumber: lotNumber.slice(0,64),
+        receivedDate,
+        expirationDate: expirationDate ?? undefined,
+        quantityReceived,
+        quantityAvailable: quantityReceived,
+        batchCosts: {
+          create: {
+            effectiveFrom: receivedDate,
+            unitCost: initialUnitCost
+          }
+        }
+      },
+      include: { product: true, vendor: true, batchCosts: true }
+    })
+
+    return NextResponse.json({ success: true, batch })
+  } catch (e) {
+    return NextResponse.json({ success: false, error: 'server_error' }, { status: 500 })
+  }
+}
