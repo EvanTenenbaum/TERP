@@ -239,10 +239,8 @@ export async function convertQuoteToOrder(quoteId: string) {
         const allocations = await allocateFIFOByProduct(tx as any, qi.productId, qty)
 
         for (const alloc of allocations) {
-          const activeCost = await tx.batchCost.findFirst({
-            where: { batchId: alloc.batchId, effectiveFrom: { lte: allocationDate } },
-            orderBy: { effectiveFrom: 'desc' },
-          })
+          const { getActiveBatchCostDb } = await import('@/lib/cogs')
+          const activeCost = await getActiveBatchCostDb(tx as any, alloc.batchId, allocationDate)
           const cogsUnitCents = activeCost?.unitCost ?? null
           const cogsTotalCents = cogsUnitCents != null ? cogsUnitCents * alloc.qty : null
 
