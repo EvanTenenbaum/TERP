@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
+import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
+  if (process.env.ENABLE_QA_CRONS !== 'true') {
+    return NextResponse.json({ ok: false, error: 'disabled' }, { status: 404 })
+  }
   try {
     const since = new Date(Date.now() - 24*3600*1000)
     const orders = await prisma.order.findMany({
