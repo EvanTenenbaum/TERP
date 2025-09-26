@@ -46,7 +46,7 @@ export default function NewQuotePage() {
   }, []);
 
   const formatPrice = (price: number) => {
-    return `$${(price / 100).toFixed(0)}`;
+    return `$${(price / 100).toFixed(2)}`;
   };
 
   const getTotalPrice = () => {
@@ -295,4 +295,3 @@ export default function NewQuotePage() {
     </div>
   );
 }
-
