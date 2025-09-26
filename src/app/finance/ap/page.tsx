@@ -43,6 +43,8 @@ export default async function APPage({ searchParams }: { searchParams?: { q?: st
           <button className="hidden" type="submit" />
         </form>
         <a href="/api/finance/ap/export" className="inline-flex items-center rounded-md bg-gray-800 px-3 py-2 text-sm font-medium text-white hover:bg-black">Export CSV</a>
+        <a href="/api/finance/ap/aging" className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-200">Aging (JSON)</a>
+        <a href="/api/finance/ap/aging.csv" className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-200">Aging CSV</a>
       </div>
 
       {!success || filtered.length===0 ? (
