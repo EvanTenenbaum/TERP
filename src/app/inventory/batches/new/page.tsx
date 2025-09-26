@@ -43,15 +43,25 @@ export default function NewBatchPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Implement batch creation API call
-      console.log('Creating batch:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const res = await fetch('/api/inventory/batches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: formData.productId,
+          vendorId: formData.vendorId,
+          batchNumber: formData.batchNumber,
+          receivedDate: formData.receivedDate,
+          expirationDate: formData.expirationDate || undefined,
+          quantity: Number(formData.quantity),
+          initialCost: Number(formData.initialCost || 0),
+        })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) throw new Error(data.error || 'create_failed')
       router.push('/inventory/batches');
     } catch (error) {
       console.error('Error creating batch:', error);
+      alert('Failed to create batch')
     } finally {
       setIsSubmitting(false);
     }
