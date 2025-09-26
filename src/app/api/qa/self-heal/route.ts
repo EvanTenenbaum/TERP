@@ -1,18 +1,19 @@
-import { NextResponse } from 'next/server'
+import { api } from '@/lib/api'
 import * as Sentry from '@sentry/nextjs'
 import { runSelfHeal } from '@/lib/selfHeal'
+import { ok, err } from '@/lib/http'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export const GET = api({})(async () => {
   if (process.env.ENABLE_QA_CRONS !== 'true') {
-    return NextResponse.json({ ok: false, error: 'disabled' }, { status: 404 })
+    return err('disabled', 404)
   }
   try {
     const { fixes, errors, postingLocked } = await runSelfHeal()
-    return NextResponse.json({ ok: true, fixes, errors, postingLocked })
+    return ok({ ok: true, fixes, errors, postingLocked })
   } catch (e) {
     Sentry.captureException(e)
-    return NextResponse.json({ ok: false, error: 'self_heal_failed' }, { status: 500 })
+    return err('self_heal_failed', 500)
   }
-}
+})
