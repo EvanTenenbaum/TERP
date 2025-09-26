@@ -156,8 +156,10 @@ model Vendor {
   isActive    Boolean @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  partyId     String?
 
   // Relations
+  party              Party?            @relation(fields: [partyId], references: [id])
   batches            Batch[]
   accountsPayable    AccountsPayable[]
   crmNotes           CrmNote[]
@@ -167,6 +169,24 @@ model Vendor {
   vendorRebates      VendorRebate[]
 
   @@map("vendors")
+}
+
+// Party (canonical entity for customers/vendors)
+model Party {
+  id          String   @id @default(cuid())
+  name        String
+  taxId       String?  @unique
+  isCustomer  Boolean  @default(false)
+  isVendor    Boolean  @default(false)
+  contactInfo Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customers   Customer[]
+  vendors     Vendor[]
+
+  @@map("parties")
 }
 
 // Customer Management
@@ -189,8 +209,10 @@ model Customer {
   isActive     Boolean @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  partyId      String?
 
   // Relations
+  party              Party?            @relation(fields: [partyId], references: [id])
   orders              Order[]
   salesQuotes         SalesQuote[]
   accountsReceivable  AccountsReceivable[]
