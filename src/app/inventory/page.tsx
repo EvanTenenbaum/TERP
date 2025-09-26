@@ -37,13 +37,19 @@ export default function InventoryDashboard() {
             >
               Add New Product
             </Link>
-            <Link 
+            <Link
               href="/inventory/batches/new"
               className="block w-full bg-green-600 text-white text-center py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
             >
               Create New Batch
             </Link>
-            <Link 
+            <Link
+              href="/api/inventory/export"
+              className="block w-full bg-indigo-600 text-white text-center py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors"
+            >
+              Export Inventory CSV
+            </Link>
+            <Link
               href="/inventory/lots/new"
               className="block w-full bg-yellow-600 text-white text-center py-2 px-4 rounded-md hover:bg-yellow-700 transition-colors"
             >
