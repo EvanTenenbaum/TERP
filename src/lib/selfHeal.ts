@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
 import { invalidateInventorySummaryCache } from '@/lib/inventoryCache'
+import prisma from '@/lib/prisma'
 
 export async function runSelfHeal() {
   const fixes: string[] = []
@@ -17,13 +18,13 @@ export async function runSelfHeal() {
 
   // Detect duplicate batches via groupBy
   try {
-    const groups = await prisma.batch.groupBy({
+    const groups: any[] = await (prisma as any).batch.groupBy({
       by: ['productId','vendorId','lotNumber'],
       _count: { _all: true },
       having: { _count: { _all: { gt: 1 } } },
     })
     for (const g of groups) {
-      errors.push(`duplicate_batch:${g.productId}:${g.vendorId}:${g.lotNumber}:${g._count._all}`)
+      errors.push(`duplicate_batch:${g.productId}:${g.vendorId}:${g.lotNumber}:${g._count?._all ?? 0}`)
     }
   } catch (e) {
     Sentry.captureException(e)
