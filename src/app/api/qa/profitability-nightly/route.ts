@@ -1,12 +1,13 @@
-import { NextResponse } from 'next/server'
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
+import { ok, err } from '@/lib/http'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export const GET = api({})(async () => {
   if (process.env.ENABLE_QA_CRONS !== 'true') {
-    return NextResponse.json({ ok: false, error: 'disabled' }, { status: 404 })
+    return err('disabled', 404)
   }
   try {
     const since = new Date(Date.now() - 24*3600*1000)
@@ -22,9 +23,9 @@ export async function GET() {
       }
     }
     await prisma.profitabilityLedger.create({ data: { revenue, cogs, margin: Math.max(0, revenue - cogs) } })
-    return NextResponse.json({ ok: true, revenue, cogs })
+    return ok({ ok: true, revenue, cogs })
   } catch (e) {
     Sentry.captureException(e)
-    return NextResponse.json({ ok: false, error: 'profitability_failed' }, { status: 500 })
+    return err('profitability_failed', 500)
   }
-}
+})
