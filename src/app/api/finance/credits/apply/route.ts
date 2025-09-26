@@ -22,9 +22,10 @@ export async function POST(req: Request) {
       if (!ar) throw new Error('ar_not_found')
       if (!cc) throw new Error('credit_not_found')
       if (cc.customerId !== ar.customerId) throw new Error('customer_mismatch')
-      if (cc.balanceCents < amountCents) throw new Error('insufficient_credit')
-      await tx.customerCredit.update({ where: { id: cc.id }, data: { balanceCents: { decrement: amountCents } } })
-      await tx.accountsReceivable.update({ where: { id: arId }, data: { balanceRemaining: { decrement: amountCents } } })
+      const maxApply = Math.min(amountCents, Math.max(0, cc.balanceCents), Math.max(0, ar.balanceRemaining))
+      if (maxApply <= 0) throw new Error('insufficient_credit')
+      await tx.customerCredit.update({ where: { id: cc.id }, data: { balanceCents: { decrement: maxApply } } })
+      await tx.accountsReceivable.update({ where: { id: arId }, data: { balanceRemaining: { decrement: maxApply } } })
     })
     return NextResponse.json({ success:true })
   } catch (e:any) {
