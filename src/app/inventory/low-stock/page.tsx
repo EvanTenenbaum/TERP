@@ -114,8 +114,8 @@ export default function LowStockPage() {
             <p>Set appropriate reorder points for each product based on lead times and demand patterns.</p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900 mb-2">Batch Management</h4>
-            <p>Create new batches when receiving inventory to maintain proper cost tracking and FIFO allocation.</p>
+            <h4 className="font-medium text-gray-900 mb-2">Product Intake</h4>
+            <p>Receive inventory by product and intake date; batches are tracked under the hood for cost and FIFO.</p>
           </div>
           <div>
             <h4 className="font-medium text-gray-900 mb-2">Location Tracking</h4>
