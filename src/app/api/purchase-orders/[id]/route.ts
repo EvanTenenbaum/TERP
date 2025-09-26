@@ -11,6 +11,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:po-update`, 120, 60_000)
+  if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
   const body = await req.json()
   const { status, expectedAt } = body || {}
   const po = await prisma.purchaseOrder.update({ where: { id: params.id }, data: { status, expectedAt: expectedAt ? new Date(expectedAt) : undefined } })
