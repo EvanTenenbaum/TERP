@@ -229,6 +229,7 @@ model Batch {
   sampleTransactions SampleTransaction[]
   photos             IntakePhoto[]
   reservations       Reservation[]
+  subBatches         SubBatch[]
 
   @@index([productId])
   @@map("batches")
@@ -598,6 +599,20 @@ model WriteOffLedger {
   lot InventoryLot @relation(fields: [lotId], references: [id])
 
   @@map("write_off_ledger")
+}
+
+model SubBatch {
+  id                     String   @id @default(cuid())
+  batchId                String
+  tierName               String
+  qtyAllocated           Int
+  unitCostOverrideCents  Int?
+  createdAt              DateTime @default(now())
+
+  batch Batch @relation(fields: [batchId], references: [id])
+
+  @@index([batchId])
+  @@map("sub_batches")
 }
 
 // Sample Management
