@@ -38,10 +38,8 @@ const nav: NavGroup[] = [
     title: "Sales",
     items: [
       { label: "Quotes", href: "/quotes", icon: DocumentTextIcon },
-      { label: "New Quote", href: "/quotes/new", icon: PlusCircleIcon },
       { label: "Orders", href: "/orders", icon: DocumentTextIcon },
       { label: "B2B Orders", href: "/b2b/orders", icon: DocumentTextIcon },
-      { label: "New B2B Order", href: "/b2b/orders/new", icon: PlusCircleIcon },
       { label: "Price Books", href: "/price-books", icon: DocumentTextIcon },
     ],
   },
@@ -50,10 +48,8 @@ const nav: NavGroup[] = [
     items: [
       { label: "Overview", href: "/inventory", icon: Squares2X2Icon },
       { label: "Products", href: "/inventory/products", icon: CubeIcon },
-      { label: "Add Product", href: "/inventory/products/new", icon: PlusCircleIcon },
       { label: "Varieties", href: "/admin/varieties", icon: Squares2X2Icon },
       { label: "Batches", href: "/inventory/batches", icon: QueueListIcon },
-      { label: "Create Batch", href: "/inventory/batches/new", icon: PlusCircleIcon },
       { label: "Inventory Lots", href: "/inventory/lots", icon: ArchiveBoxIcon },
       { label: "Low Stock", href: "/inventory/low-stock", icon: ExclamationTriangleIcon },
     ],
