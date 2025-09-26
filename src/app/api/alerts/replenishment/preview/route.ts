@@ -2,11 +2,14 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: Request) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req as any)}:replenishment-preview`, 120, 60_000)
+  if (!rl.allowed) return NextResponse.json({ success:false, error:'rate_limited' }, { status:429 })
   const body = await req.json().catch(()=>({}))
-  const thresholdDefault = Number(body.thresholdDefault || 10)
+  const thresholdDefault = Math.max(0, Math.round(Number(body.thresholdDefault ?? 10)))
 
   const lots = await prisma.inventoryLot.findMany({ include: { batch: { include: { product: true } } } })
   const byProduct: Record<string, { productId:string; sku:string; name:string; onHand:number; reserved:number }> = {}
