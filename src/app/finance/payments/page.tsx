@@ -40,8 +40,6 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
     revalidatePath('/finance/payments')
   }
 
-  const q = (searchParams?.q || '').toLowerCase()
-
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <h1 className="text-3xl font-bold">Payments</h1>
