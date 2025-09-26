@@ -14,6 +14,8 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
   const payments = paymentsRes.success ? paymentsRes.rows : []
   const arList = arRes.success ? arRes.rows : []
   const customers = customersRes.success ? customersRes.customers : []
+  const q = (searchParams?.q || '').toLowerCase()
+  const filteredPayments = payments.filter((p: any)=> !q || (p.customer?.companyName || '').toLowerCase().includes(q) || (p.referenceNumber || '').toLowerCase().includes(q))
 
   async function createPaymentAction(formData: FormData) {
     'use server'
@@ -84,6 +86,11 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
       </section>
 
       <section className="bg-white shadow rounded-lg overflow-hidden">
+        {filteredPayments.length === 0 ? (
+          <div className="p-6">
+            <EmptyState title="No payments" description={q ? 'Try clearing the filter.' : 'Record a payment to see it here.'} />
+          </div>
+        ) : (
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -95,9 +102,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {payments.length === 0 ? (
-              <tr><td className="px-3 py-4 text-gray-500" colSpan={5}>No payments.</td></tr>
-            ) : payments.map((p: any)=> {
+            {filteredPayments.map((p: any)=> {
               const applied = p.paymentApplications.reduce((s: number, a: any)=> s + a.appliedAmount, 0)
               const remaining = Math.max(0, p.amount - applied)
               const customerAR = arList.filter((r: any)=> r.customerId === p.customerId && r.balanceRemaining > 0)
@@ -150,6 +155,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
             })}
           </tbody>
         </table>
+        )}
       </section>
     </div>
   )
