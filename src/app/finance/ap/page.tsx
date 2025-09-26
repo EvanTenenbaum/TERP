@@ -3,10 +3,26 @@ import { revalidatePath } from 'next/cache'
 
 import EmptyState from '@/components/ui/EmptyState'
 
-export default async function APPage({ searchParams }: { searchParams?: { q?: string } }) {
+export default async function APPage({ searchParams }: { searchParams?: { q?: string; sort?: string; dir?: 'asc'|'desc' } }) {
   const { success, rows } = await getAccountsPayable()
   const q = (searchParams?.q || '').toLowerCase()
-  const filtered = (rows || []).filter((r: any)=> !q || r.invoiceNumber.toLowerCase().includes(q) || (r.vendor?.companyName || '').toLowerCase().includes(q))
+  const sort = searchParams?.sort || 'due'
+  const dir = (searchParams?.dir === 'asc' ? 'asc' : 'desc') as 'asc'|'desc'
+  const filtered = (rows || []).filter((r: any)=> !q || r.invoiceNumber.toLowerCase().includes(q) || (r.vendor?.companyName || '').toLowerCase().includes(q)).sort((a: any, b: any)=>{
+    const mul = dir==='asc' ? 1 : -1
+    if (sort==='invoice') return a.invoiceNumber.localeCompare(b.invoiceNumber)*mul
+    if (sort==='vendor') return (a.vendor?.companyName||'').localeCompare(b.vendor?.companyName||'')*mul
+    if (sort==='amount') return (a.amount-b.amount)*mul
+    if (sort==='balance') return (a.balanceRemaining-b.balanceRemaining)*mul
+    if (sort==='due') return (new Date(a.dueDate).getTime()-new Date(b.dueDate).getTime())*mul
+    return 0
+  })
+
+  const hdr = (key: string, label: string)=>{
+    const nextDir = sort===key && dir==='desc' ? 'asc' : 'desc'
+    const params = new URLSearchParams({ q: searchParams?.q||'', sort: key, dir: nextDir })
+    return <a href={`?${params.toString()}`} className="hover:underline">{label}</a>
+  }
 
   async function applyAction(formData: FormData) {
     'use server'
