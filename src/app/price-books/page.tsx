@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPriceBook, createPriceBookEntry, getPriceBooks, setPriceBookActive } from '@/actions/priceBooks';
 import { getProducts } from '@/actions/inventory';
 import { getCustomersForDropdown } from '@/actions/customers';
+import { applyGlobalPriceOverride } from '@/actions/overrides';
 
 interface ProductOpt { id: string; name: string; }
 interface CustomerOpt { id: string; companyName: string; }
@@ -143,7 +144,7 @@ export default function PriceBooksPage() {
               {books.map(b=> (
                 <tr key={b.id}>
                   <td className="px-4 py-2">{b.name}</td>
-                  <td className="px-4 py-2">{b.type}{b.customer ? ` – ${b.customer.companyName}`: ''}</td>
+                  <td className="px-4 py-2">{b.type}{b.customer ? ` ��� ${b.customer.companyName}`: ''}</td>
                   <td className="px-4 py-2">{b.isActive ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-2">
                     <button onClick={()=>toggleActive(b.id, b.isActive)} className="text-blue-600 hover:text-blue-800">
