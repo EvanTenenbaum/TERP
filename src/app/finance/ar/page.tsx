@@ -1,10 +1,21 @@
-import { getAccountsReceivable } from '@/actions/finance'
+import { getAccountsReceivable, getARAging } from '@/actions/finance'
 
 export default async function ARPage() {
-  const { success, rows } = await getAccountsReceivable()
+  const [{ success, rows }, aging] = await Promise.all([getAccountsReceivable(), getARAging()])
+  const sum = aging?.success ? aging.summary : { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 }
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Accounts Receivable</h1>
+    <div className="container mx-auto px-4 py-8 space-y-6">
+      <h1 className="text-3xl font-bold">Accounts Receivable</h1>
+
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {Object.entries(sum).map(([k,v])=> (
+          <div key={k} className="bg-white shadow rounded p-3">
+            <div className="text-xs text-gray-500">{k} days</div>
+            <div className="text-xl font-semibold">${(v/100).toFixed(2)}</div>
+          </div>
+        ))}
+      </section>
+
       {!success || rows.length===0 ? (
         <div className="text-gray-500">No AR invoices.</div>
       ) : (
