@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 function toISODate(d: Date) {
   const y = d.getFullYear()
@@ -9,9 +11,11 @@ function toISODate(d: Date) {
   return `${y}-${m}-${day}`
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     try { requireRole(['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
+    const rl = rateLimit(`${rateKeyFromRequest(req as any)}:inventory-products-summary`, 60, 60_000)
+    if (!rl.allowed) return NextResponse.json({ success:false, error:'rate_limited' }, { status: 429 })
 
     const products = await prisma.product.findMany({
       where: { isActive: true },
