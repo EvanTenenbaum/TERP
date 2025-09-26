@@ -46,11 +46,11 @@ export default async function APPage({ searchParams }: { searchParams?: { q?: st
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Invoice #</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Vendor</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Amount</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Balance</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Due</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">{hdr('invoice','Invoice #')}</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">{hdr('vendor','Vendor')}</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">{hdr('amount','Amount')}</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">{hdr('balance','Balance')}</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">{hdr('due','Due')}</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Apply</th>
               </tr>
             </thead>
