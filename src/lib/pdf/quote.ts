@@ -41,8 +41,8 @@ export function generateQuotePDF(quote: QuoteData): jsPDF {
   const margin = 20;
   let yPosition = margin;
 
-  // Helper function to format currency (whole numbers)
-  const formatCurrency = (amount: number) => `$${Math.round(amount / 100)}`;
+  // Helper function to format currency (two decimals)
+  const formatCurrency = (amount: number) => `$${(amount / 100).toFixed(2)}`;
 
   // Helper function to format date
   const formatDate = (date: Date) => date.toLocaleDateString('en-US', {
