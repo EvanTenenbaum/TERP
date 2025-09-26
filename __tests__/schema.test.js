@@ -256,6 +256,7 @@ describe('ERPv2 Schema Referential Integrity', () => {
 
       const product = await prisma.product.create({
         data: {
+          sku: 'TEST-SKU-BC',
           name: 'Test Product for BatchCost',
           category: 'Test Category',
           defaultPrice: 10000,
@@ -409,9 +410,17 @@ async function cleanupTestData() {
   await prisma.paymentApplication.deleteMany({
     where: { payment: { referenceNumber: { contains: 'TEST' } } },
   });
-  
+
   await prisma.paymentApplication.deleteMany({
     where: { payment: { referenceNumber: { contains: 'FIFO' } } },
+  });
+
+  await prisma.paymentApplication.deleteMany({
+    where: { payment: { referenceNumber: { contains: 'CHK' } } },
+  });
+
+  await prisma.paymentApplication.deleteMany({
+    where: { payment: { referenceNumber: { contains: 'WIRE' } } },
   });
 
   await prisma.payment.deleteMany({
@@ -471,4 +480,3 @@ async function cleanupTestData() {
     },
   });
 }
-

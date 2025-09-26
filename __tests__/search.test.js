@@ -13,6 +13,7 @@ jest.mock('@/lib/prisma', () => ({
 }))
 
 const prisma = require('@/lib/prisma').default
+const { searchProducts, getSearchFilterOptions } = require('@/actions/search')
 
 describe('Search Functionality', () => {
   beforeEach(() => {

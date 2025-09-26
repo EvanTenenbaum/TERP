@@ -22,6 +22,7 @@ jest.mock('@/lib/prisma', () => ({
 }))
 
 const prisma = require('@/lib/prisma').default
+const { createQuote, convertQuoteToOrder } = require('@/actions/quotes')
 
 describe('Quote actions', () => {
   beforeEach(() => jest.clearAllMocks())
