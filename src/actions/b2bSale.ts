@@ -111,56 +111,7 @@ export async function listSaleEvents(b2bSaleId: string) {
   }
 }
 
-async function allocateFromSpecificLot(tx: typeof prisma, lotId: string, qty: number) {
-  const now = new Date()
-  const res = await tx.inventoryLot.updateMany({
-    where: { id: lotId, quantityAvailable: { gte: qty } },
-    data: {
-      quantityAllocated: { increment: qty },
-      quantityAvailable: { decrement: qty },
-      lastMovementDate: now,
-    },
-  })
-  if (res.count === 0) throw new Error('insufficient_stock')
-  return { lotId, qty }
-}
 
-async function allocateFromLots(tx: typeof prisma, productId: string, qty: number) {
-  let remaining = toInt(qty)
-  if (remaining <= 0) return [] as { lotId: string; qty: number }[]
-  const allocations: { lotId: string; qty: number }[] = []
-
-  // FIFO across lots for this product
-  const lots = await tx.inventoryLot.findMany({
-    where: { quantityAvailable: { gt: 0 }, batch: { productId } },
-    orderBy: [
-      { lastMovementDate: 'asc' },
-      { createdAt: 'asc' },
-    ],
-    include: { batch: true },
-  })
-
-  for (const lot of lots) {
-    if (remaining <= 0) break
-    const take = Math.min(remaining, lot.quantityAvailable)
-    if (take <= 0) continue
-    const now = new Date()
-    const res = await tx.inventoryLot.updateMany({
-      where: { id: lot.id, quantityAvailable: { gte: take } },
-      data: {
-        quantityAllocated: { increment: take },
-        quantityAvailable: { decrement: take },
-        lastMovementDate: now,
-      },
-    })
-    if (res.count === 0) continue
-    allocations.push({ lotId: lot.id, qty: take })
-    remaining -= take
-  }
-
-  if (remaining > 0) throw new Error('insufficient_stock')
-  return allocations
-}
 
 async function allocateForOutgoing(tx: typeof prisma, saleId: string) {
   const sale = await tx.b2BSale.findUnique({ where: { id: saleId }, include: { itemList: true } })
