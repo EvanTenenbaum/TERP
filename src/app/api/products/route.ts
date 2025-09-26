@@ -1,28 +1,22 @@
 import prisma from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { api } from '@/lib/api'
+import { ok, err } from '@/lib/http'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
-export async function GET() {
+export const GET = api({})(async () => {
   const products = await prisma.product.findMany({ where: { isActive: true }, select: { id: true, sku: true, name: true }, orderBy: { sku: 'asc' } })
-  return NextResponse.json({ success: true, products })
-}
+  return ok({ products })
+})
 
-export async function POST(request: Request) {
+export const POST = api<{ sku:string; name:string; category:string; unit?:string; defaultPrice?:number }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], rate: { key: 'products-create', limit: 60 }, parseJson: true })(async ({ json }) => {
   try {
-    try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
-    const key = `${rateKeyFromRequest(request as any)}:products-create`
-    const rl = rateLimit(key, 60, 60_000)
-    if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
-
-    const body = await request.json()
-    const sku = String(body.sku || '').trim()
-    const name = String(body.name || '').trim()
-    const category = String(body.category || '').trim()
-    const unit = String(body.unit || '').trim() || 'each'
-    const defaultPriceDollars = Number(body.defaultPrice)
-    if (!sku || !name || !category) return NextResponse.json({ success: false, error: 'missing_fields' }, { status: 400 })
+    const sku = String(json!.sku || '').trim()
+    const name = String(json!.name || '').trim()
+    const category = String(json!.category || '').trim()
+    const unit = String(json!.unit || '').trim() || 'each'
+    const defaultPriceDollars = Number(json!.defaultPrice)
+    if (!sku || !name || !category) return err('missing_fields', 400)
     const defaultPrice = Math.round((Number.isFinite(defaultPriceDollars) ? defaultPriceDollars : 0) * 100)
 
     const product = await prisma.product.create({
@@ -35,9 +29,9 @@ export async function POST(request: Request) {
         isActive: true
       }
     })
-    return NextResponse.json({ success: true, product })
+    return ok({ product })
   } catch (e: any) {
     const msg = e?.code === 'P2002' ? 'duplicate_sku' : 'server_error'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    return err(msg, 500)
   }
-}
+})
