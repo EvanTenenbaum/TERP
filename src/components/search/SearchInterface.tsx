@@ -56,7 +56,7 @@ export default function SearchInterface({ filterOptions }: SearchInterfaceProps)
     addToCart({
       productId: product.id,
       batchId: product.batchId,
-      inventoryLotId: '', // TODO: Add inventory lot ID when available
+      inventoryLotId: '',
       sku: product.sku,
       name: product.name,
       unit: product.unit,
@@ -91,4 +91,3 @@ export default function SearchInterface({ filterOptions }: SearchInterfaceProps)
     </div>
   );
 }
-
