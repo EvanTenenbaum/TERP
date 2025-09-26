@@ -113,7 +113,8 @@ export async function createQuote(data: CreateQuoteData) {
       for (const qi of quote.quoteItems) {
         const eff = await getEffectiveUnitPrice(prisma as any, qi.productId, { customerId: quote.customerId })
         if (qi.unitPrice !== eff) {
-          await prisma.overrideAudit.create({ data: { userId: 'system', quoteId: quote.id, lineItemId: qi.id, oldPrice: eff, newPrice: qi.unitPrice, reason: 'QUOTE_PRICE_OVERRIDE', overrideType: 'LINE' } })
+          const { getCurrentUserId } = await import('@/lib/auth')
+          await prisma.overrideAudit.create({ data: { userId: getCurrentUserId(), quoteId: quote.id, lineItemId: qi.id, oldPrice: eff, newPrice: qi.unitPrice, reason: 'QUOTE_PRICE_OVERRIDE', overrideType: 'LINE' } })
         }
       }
     } catch {}
