@@ -176,6 +176,7 @@ model Customer {
   priceBooks          PriceBook[]
   debtAdjustments     DebtAdjustment[]
   sampleTransactions  SampleTransaction[]
+  customerCredits     CustomerCredit[]
 
   @@map("customers")
 }
