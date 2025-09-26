@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+"use client";
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function NewProductPage() {
@@ -22,15 +23,24 @@ export default function NewProductPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Implement product creation API call
-      console.log('Creating product:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sku: formData.sku,
+          name: formData.name,
+          category: formData.category,
+          unit: formData.unit,
+          defaultPrice: Number(formData.defaultPrice || 0),
+          isActive: formData.isActive,
+        })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) throw new Error(data.error || 'create_failed')
       router.push('/inventory/products');
     } catch (error) {
       console.error('Error creating product:', error);
+      alert('Failed to create product')
     } finally {
       setIsSubmitting(false);
     }
@@ -195,4 +205,3 @@ export default function NewProductPage() {
     </div>
   );
 }
-
