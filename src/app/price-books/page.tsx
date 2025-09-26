@@ -68,11 +68,16 @@ export default function PriceBooksPage() {
   const submitOverride = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!overrideForm.productId) return;
-    const res = await applyGlobalPriceOverride({
-      productId: overrideForm.productId,
-      unitPrice: Math.round(Number(overrideForm.unitPrice)),
-      reason: overrideForm.reason || 'Manual global override',
-    });
+    const resp = await fetch('/api/overrides/global', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId: overrideForm.productId,
+        unitPrice: Math.round(Number(overrideForm.unitPrice)),
+        reason: overrideForm.reason || 'Manual global override',
+      }),
+    })
+    const res = await resp.json().catch(()=>({ success:false }))
     if (res.success) {
       const pb = await getPriceBooks();
       if (pb.success) setBooks(pb.books);
