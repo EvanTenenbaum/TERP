@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { getActiveBatchCostDb } from '@/lib/cogs'
+import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   try { requireRole(['ACCOUNTING','SUPER_ADMIN']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
