@@ -180,7 +180,8 @@ async function allocateForOutgoing(tx: typeof prisma, saleId: string) {
       continue
     }
 
-    const allocations = await allocateFromLots(tx, item.productId, qty)
+    const { allocateFIFOByProduct } = await import('@/lib/inventoryAllocator')
+    const allocations = await allocateFIFOByProduct(tx as any, item.productId, qty)
 
     if (allocations.length === 0) throw new Error('insufficient_stock')
 
