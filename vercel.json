@@ -1,6 +1,8 @@
 {
   "version": 2,
   "crons": [
-    { "path": "/api/qa/self-heal", "schedule": "0 8 * * *" }
+    { "path": "/api/qa/self-heal", "schedule": "0 8 * * *" },
+    { "path": "/api/alerts/evaluate-nightly", "schedule": "30 8 * * *" },
+    { "path": "/api/qa/profitability-nightly", "schedule": "0 9 * * *" }
   ]
 }
