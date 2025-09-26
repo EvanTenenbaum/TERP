@@ -134,6 +134,16 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(quote.status)}`}>
               {quote.status}
             </span>
+            <div className="flex items-center gap-2">
+              <select defaultValue={quote.status} onChange={async (e)=>{ await fetch(`/api/quotes/${quote.id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: e.target.value }) }); window.location.reload() }} className="text-xs border rounded px-2 py-1">
+                <option value="DRAFT">DRAFT</option>
+                <option value="SENT">SENT</option>
+                <option value="ACCEPTED">ACCEPTED</option>
+                <option value="EXPIRED">EXPIRED</option>
+                <option value="CANCELLED">CANCELLED</option>
+              </select>
+              <button onClick={async ()=>{ const r = await fetch(`/api/quotes/${quote.id}/convert`, { method: 'POST' }); const d = await r.json(); if (d.success) window.location.href = '/orders'; else alert(d.error || 'Failed'); }} className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">Convert to Order</button>
+            </div>
             <button
               onClick={handleGeneratePDF}
               disabled={isGeneratingPDF}
