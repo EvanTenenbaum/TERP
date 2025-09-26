@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from 'react'
-import { createCategory, deleteCategory, listCategories, updateCategory } from '@/actions/categories'
 
 export default function CategoriesPage() {
   const [cats, setCats] = useState<any[]>([])
