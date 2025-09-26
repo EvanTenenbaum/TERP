@@ -39,7 +39,7 @@ export default async function APPage({ searchParams }: { searchParams?: { q?: st
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {rows.map((r)=> (
+              {filtered.map((r)=> (
                 <tr key={r.id}>
                   <td className="px-3 py-2">{r.invoiceNumber}</td>
                   <td className="px-3 py-2">{r.vendor?.companyName}</td>
