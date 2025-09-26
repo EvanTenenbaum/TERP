@@ -123,6 +123,11 @@ export default function AlertsPage() {
           </table>
         </div>
       </div>
+
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-lg font-semibold mb-4">Low-Stock Replenishment</h2>
+        <LowStockPanel />
+      </div>
     </div>
   )
 }
