@@ -23,5 +23,5 @@ export const GET = api({
   }
 
   const buf = await generateSalesSheetPDFBuffer(q)
-  return new Response(buf, { headers: { 'Content-Type':'application/pdf', 'Content-Disposition': `inline; filename="sales-sheet-${id}.pdf"` } })
+  return new Response(new Uint8Array(buf as any), { headers: { 'Content-Type':'application/pdf', 'Content-Disposition': `inline; filename="sales-sheet-${id}.pdf"` } })
 })
