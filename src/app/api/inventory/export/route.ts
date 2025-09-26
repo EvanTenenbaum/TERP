@@ -27,6 +27,9 @@ export async function GET(req: NextRequest) {
     ])
   }
   const csv = rows.map(r => r.map(field => /[",\n]/.test(field) ? `"${field.replace(/"/g,'""')}"` : field).join(',')).join('\n')
+
+  try { await prisma.eventLog.create({ data: { eventType: 'EXPORT', data: { route: '/api/inventory/export', userId: getCurrentUserId(), count: lots.length } } }) } catch {}
+
   return new NextResponse(csv, {
     status: 200,
     headers: {
