@@ -176,10 +176,8 @@ export default function PriceBooksPage() {
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-lg font-semibold mb-4">Effective Pricing Inspector</h2>
         <p className="text-sm text-gray-600 mb-3">Query effective price for a product by optional customer/role precedence.</p>
-        {/* Lightweight ID-based inspector to avoid heavy dropdown queries */}
         <div className="mb-6">
-          {/* @ts-expect-error Client Component */}
-          {(await import('../../components/price-books/EffectiveInspector')).default()}
+          <EffectiveInspector />
         </div>
       </div>
 
