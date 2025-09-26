@@ -1,6 +1,5 @@
 import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { ensurePostingUnlocked } from '@/lib/system'
 
 export const GET = api({})(async () => {
   const pos = await prisma.purchaseOrder.findMany({ include: { vendor: true, items: { include: { product: true } } }, orderBy: { createdAt: 'desc' } })
