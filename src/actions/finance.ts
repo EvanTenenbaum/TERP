@@ -3,6 +3,7 @@
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
 import { requireRole } from '@/lib/auth'
+import { ensurePostingUnlocked } from '@/lib/system'
 
 export async function getAccountsReceivable() {
   try {
@@ -60,6 +61,7 @@ export async function getARAging() {
 
 export async function createPayment(customerId: string, amountCents: number, paymentMethod: string, referenceNumber?: string) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'posting_locked' } }
   try {
     if (!customerId || typeof customerId !== 'string') return { success: false, error: 'invalid_customer' }
     if (!paymentMethod || typeof paymentMethod !== 'string') return { success: false, error: 'invalid_method' }
@@ -75,6 +77,7 @@ export async function createPayment(customerId: string, amountCents: number, pay
 
 export async function applyPayment(paymentId: string, arId: string, appliedAmountCents: number) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'posting_locked' } }
   try {
     if (!paymentId || !arId) return { success: false, error: 'invalid_ids' }
     const result = await prisma.$transaction(async (tx) => {
@@ -96,6 +99,7 @@ export async function applyPayment(paymentId: string, arId: string, appliedAmoun
 
 export async function applyApPayment(apId: string, amountCents: number) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'posting_locked' } }
   try {
     if (!apId) return { success: false, error: 'invalid_id' }
     const amount = Math.round(Number(amountCents))
