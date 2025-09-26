@@ -58,7 +58,7 @@ export default function NewBatchPage() {
       })
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.error || 'create_failed')
-      router.push('/inventory/batches');
+      router.push('/inventory/products');
     } catch (error) {
       console.error('Error creating batch:', error);
       alert('Failed to create batch')
