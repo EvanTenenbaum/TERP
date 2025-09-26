@@ -76,5 +76,8 @@ export async function runSelfHeal() {
     })
   }
 
+  // Inventory quantities may have changed; refresh cache
+  invalidateInventorySummaryCache()
+
   return { fixes, errors, postingLocked: errors.length > 10 }
 }
