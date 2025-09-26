@@ -244,15 +244,8 @@ async function departForOutgoing(tx: typeof prisma, saleId: string) {
     }
 
     const now = new Date()
-    const res = await tx.inventoryLot.updateMany({
-      where: { id: inventoryId, quantityOnHand: { gte: qty }, quantityAllocated: { gte: qty } },
-      data: {
-        quantityOnHand: { decrement: qty },
-        quantityAllocated: { decrement: qty },
-        lastMovementDate: now,
-      },
-    })
-    if (res.count === 0) throw new Error('insufficient_allocated')
+    const { shipAllocated } = await import('@/lib/inventoryAllocator')
+    await shipAllocated(tx as any, inventoryId, qty)
 
     const inv = await tx.inventoryLot.findUnique({ where: { id: inventoryId }, include: { batch: { include: { batchCosts: true } } } })
     let unitCost: number | null = null
