@@ -51,8 +51,6 @@ const nav: NavGroup[] = [
       { label: "Products", href: "/inventory/products", icon: CubeIcon },
       { label: "Varieties", href: "/admin/varieties", icon: Squares2X2Icon },
       { label: "Categories", href: "/inventory/categories", icon: Squares2X2Icon },
-      { label: "Batches", href: "/inventory/batches", icon: QueueListIcon },
-      { label: "Inventory Lots", href: "/inventory/lots", icon: ArchiveBoxIcon },
       { label: "Transfers", href: "/inventory/transfers", icon: QueueListIcon },
       { label: "Purchase Orders", href: "/inventory/purchase-orders", icon: QueueListIcon },
       { label: "Low Stock", href: "/inventory/low-stock", icon: ExclamationTriangleIcon },
@@ -102,7 +100,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     '/quotes': { href: '/quotes/new', label: 'New Quote' },
     '/b2b/orders': { href: '/b2b/orders/new', label: 'New B2B Order' },
     '/inventory/products': { href: '/inventory/products/new', label: 'Add Product' },
-    '/inventory/batches': { href: '/inventory/batches/new', label: 'Create Batch' },
   }
   const cta = Object.keys(ctaMap).find((k) => pathname?.startsWith(k)) ? ctaMap[Object.keys(ctaMap).find((k) => pathname?.startsWith(k)) as string] : undefined
 
