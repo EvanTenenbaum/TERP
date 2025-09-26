@@ -41,8 +41,10 @@ export default function NewB2BOrderPage() {
       const filtered = items.filter(it=> it.productId && it.unitCount>0 && it.unitPrice>=0)
       const payload = { type, sourceId: type==='incoming'? sourceId : '', targetId: type==='outgoing'? targetId : '', items: filtered }
       const res = await createB2BSale(payload as any)
-      if (res.success) {
-        window.location.href = `/b2b/orders/${res.sale.id}`
+      if (res && res.success && (res as any).sale) {
+        window.location.href = `/b2b/orders/${(res as any).sale.id}`
+      } else {
+        alert('Failed to create order')
       }
     } finally {
       setSaving(false)
