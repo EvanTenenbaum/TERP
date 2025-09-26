@@ -20,6 +20,8 @@ jest.mock('@/lib/prisma', () => ({
 }))
 
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }))
+jest.mock('@/lib/inventoryAllocator', () => ({ allocateFIFOByProduct: jest.fn().mockResolvedValue([{ lotId: 'l1', batchId: 'b1', qty: 1 }]), shipAllocated: jest.fn() }))
+jest.mock('@/lib/cogs', () => ({ getActiveBatchCostDb: jest.fn().mockResolvedValue({ unitCost: 100 }) }))
 const prisma = require('@/lib/prisma').default
 prisma.$transaction = async (fn) => fn(prisma)
 const { createQuote, convertQuoteToOrder } = require('@/actions/quotes')
