@@ -1,25 +1,22 @@
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 import { ensurePostingUnlocked } from '@/lib/system'
 
-export async function GET() {
+export const GET = api({})(async () => {
   const pos = await prisma.purchaseOrder.findMany({ include: { vendor: true, items: { include: { product: true } } }, orderBy: { createdAt: 'desc' } })
-  return NextResponse.json({ success: true, purchaseOrders: pos })
-}
+  return new Response(JSON.stringify({ success: true, purchaseOrders: pos }), { headers: { 'Content-Type':'application/json' } })
+})
 
-export async function POST(req: NextRequest) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
-  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'posting_locked' }, { status: 423 }) }
-  const rl = rateLimit(`${rateKeyFromRequest(req)}:po-create`, 60, 60_000)
-  if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
-  const body = await req.json()
-  const { vendorId, expectedAt, poNumber } = body || {}
-  if (!vendorId) return NextResponse.json({ success: false, error: 'invalid_input' }, { status: 400 })
+export const POST = api<{ vendorId:string; expectedAt?:string; poNumber?:string }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  postingLock: true,
+  rate: { key: 'po-create', limit: 60 },
+  parseJson: true,
+})(async ({ json }) => {
+  const { vendorId, expectedAt, poNumber } = json || ({} as any)
+  if (!vendorId) return new Response(JSON.stringify({ success:false, error: 'invalid_input' }), { status: 400, headers: { 'Content-Type':'application/json' } })
   const count = await prisma.purchaseOrder.count()
   const defaultPo = `PO-${new Date().getFullYear()}-${String(count + 1).padStart(4,'0')}`
   const po = await prisma.purchaseOrder.create({ data: { vendorId, poNumber: poNumber || defaultPo, expectedAt: expectedAt ? new Date(expectedAt) : null } })
-  return NextResponse.json({ success: true, purchaseOrder: po })
-}
+  return new Response(JSON.stringify({ success: true, purchaseOrder: po }), { headers: { 'Content-Type':'application/json' } })
+})
