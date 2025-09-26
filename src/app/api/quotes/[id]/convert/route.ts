@@ -58,7 +58,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const openAR = await tx.accountsReceivable.aggregate({ _sum: { balanceRemaining: true }, where: { customerId: quote.customerId, balanceRemaining: { gt: 0 } } })
         const projected = (openAR._sum.balanceRemaining || 0) + computedTotal
         if (projected > cust.creditLimit) {
-          throw new Error('credit_limit_exceeded')
+          if (!overrideCreditLimit) throw new Error('credit_limit_exceeded')
+          await tx.overrideAudit.create({ data: { userId: 'system', quoteId: quote.id, oldPrice: cust.creditLimit, newPrice: projected, reason: 'CREDIT_LIMIT_OVERRIDE', overrideType: 'ADMIN_FREEFORM' } })
         }
       }
 
