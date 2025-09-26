@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createRule, deleteRule, listRules, setRuleActive } from '@/actions/rules'
+import LowStockPanel from '@/components/alerts/LowStockPanel'
 
 export default function AlertsPage() {
   const [rules, setRules] = useState<any[]>([])
