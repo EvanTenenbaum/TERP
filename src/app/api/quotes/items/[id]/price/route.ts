@@ -9,6 +9,8 @@ import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
   try { await ensurePostingUnlocked(['SUPER_ADMIN','SALES']) } catch { return NextResponse.json({ success: false, error: 'posting_locked' }, { status: 423 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req as any)}:quote-item-price`, 120, 60_000)
+  if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
   try {
     const body = await req.json()
     const { newUnitPrice, reason, adminFreeform } = body || {}
