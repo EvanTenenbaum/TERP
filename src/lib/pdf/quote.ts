@@ -26,6 +26,7 @@ interface QuoteData {
     product: {
       sku: string;
       name: string;
+      customerFacingName?: string | null;
       description?: string | null;
       unit: string;
     };
@@ -184,7 +185,8 @@ export function generateQuotePDF(quote: QuoteData): jsPDF {
     xPosition += colWidths.sku;
 
     // Description (truncate if too long)
-    const description = item.product.name + (item.product.description ? ` - ${item.product.description}` : '');
+    const displayName = (item.product as any).customerFacingName || item.product.name;
+    const description = displayName + (item.product.description ? ` - ${item.product.description}` : '');
     const truncatedDescription = description.length > 35 ? description.substring(0, 32) + '...' : description;
     doc.text(truncatedDescription, xPosition, yPosition + 4);
     xPosition += colWidths.description;
@@ -275,4 +277,34 @@ export function downloadQuotePDF(quote: QuoteData, filename?: string) {
   const doc = generateQuotePDF(quote);
   const fileName = filename || `quote-${quote.quoteNumber}.pdf`;
   doc.save(fileName);
+}
+
+// Sales sheet helpers
+export async function generateSalesSheetPDF(quote: any): Promise<jsPDF> {
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text('SALES SHEET', 10, 10);
+
+  doc.setFontSize(12);
+  doc.text(`Customer: ${quote.customer?.name ?? ''}`, 10, 20);
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, 10, 28);
+
+  let y = 40;
+  for (const item of (quote.items || [])) {
+    const displayName = (item.product?.customerFacingName) || (item.product?.name) || '';
+    const qty = item.qty ?? item.quantity ?? 0;
+    const price = item.unitPrice ?? 0;
+    doc.text(`${displayName} - Qty: ${qty} @ ${price}`, 10, y);
+    y += 8;
+    if (y > doc.internal.pageSize.height - 20) {
+      doc.addPage();
+      y = 20;
+    }
+  }
+  return doc;
+}
+
+export async function generateSalesSheetPDFBuffer(quote: any): Promise<Buffer> {
+  const doc = await generateSalesSheetPDF(quote);
+  return Buffer.from((doc as any).output('arraybuffer'));
 }
