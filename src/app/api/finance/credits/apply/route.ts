@@ -2,17 +2,18 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { ok, err } from '@/lib/http'
 
 export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('forbidden', 403) }
   const rl = rateLimit(`${rateKeyFromRequest(req)}:credits-apply`, 120, 60_000)
-  if (!rl.allowed) return NextResponse.json({ success:false, error:'rate_limited' }, { status:429 })
+  if (!rl.allowed) return err('rate_limited', 429)
   const body = await req.json().catch(()=>null)
-  if (!body) return NextResponse.json({ success:false, error:'bad_json' }, { status:400 })
+  if (!body) return err('bad_json', 400)
   const arId = String(body.arId||'')
   const creditId = String(body.creditId||'')
   const amountCents = Math.round(Number(body.amountCents))
-  if (!arId || !creditId || !Number.isFinite(amountCents) || amountCents <= 0) return NextResponse.json({ success:false, error:'invalid_input' }, { status:400 })
+  if (!arId || !creditId || !Number.isFinite(amountCents) || amountCents <= 0) return err('invalid_input', 400)
 
   try {
     await prisma.$transaction(async (tx)=>{
@@ -26,10 +27,10 @@ export async function POST(req: Request) {
       await tx.customerCredit.update({ where: { id: cc.id }, data: { balanceCents: { decrement: maxApply } } })
       await tx.accountsReceivable.update({ where: { id: arId }, data: { balanceRemaining: { decrement: maxApply } } })
     })
-    return NextResponse.json({ success:true })
+    return ok()
   } catch (e:any) {
     const code = e?.message || 'server_error'
     const status = code === 'ar_not_found' || code === 'credit_not_found' ? 404 : code === 'insufficient_credit' || code === 'customer_mismatch' ? 400 : 500
-    return NextResponse.json({ success:false, error: code }, { status })
+    return err(code, status)
   }
 }
