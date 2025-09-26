@@ -24,9 +24,9 @@ export default function NewB2BOrderPage() {
         getVendors(),
         getCustomersForDropdown(),
       ])
-      if (p.success) setProducts(p.products)
-      if (v.success) setVendors(v.vendors)
-      if (c.success) setCustomers(c.customers)
+      if (p.success) setProducts(p.products || [])
+      if (v.success) setVendors(v.vendors || [])
+      if (c.success) setCustomers(c.customers || [])
     })()
   },[])
 
