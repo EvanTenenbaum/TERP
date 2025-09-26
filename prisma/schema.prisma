@@ -262,6 +262,7 @@ model InventoryLot {
   batch     Batch   @relation(fields: [batchId], references: [id])
   variety   Variety? @relation(fields: [varietyId], references: [id])
   b2bItems  B2BSaleItem[]
+  writeOffs WriteOffLedger[]
 
   @@index([quantityAvailable])
   @@index([lastMovementDate])
@@ -354,6 +355,7 @@ model AccountsReceivable {
   customer           Customer             @relation(fields: [customerId], references: [id])
   order              Order?               @relation(fields: [orderId], references: [id])
   paymentApplications PaymentApplication[]
+  creditMemos        CreditMemo[]
 
   @@index([customerId])
   @@index([balanceRemaining])
