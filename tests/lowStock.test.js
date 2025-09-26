@@ -26,7 +26,7 @@ describe('Low Stock Replenishment', () => {
     const res = await mod.POST(new Request('http://localhost/api/alerts/replenishment/preview', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ thresholdDefault: 5 }) }))
     expect(res.status).toBe(200)
     const j = await res.json()
-    const ids = j.data.items.map((i:any)=>i.productId)
+    const ids = j.data.items.map((i)=>i.productId)
     expect(ids).toContain(pLow.id)
     expect(ids).not.toContain(pOk.id)
   })
