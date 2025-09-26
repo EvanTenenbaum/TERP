@@ -1,8 +1,6 @@
-import prisma from '@/lib/prisma'
 import { api } from '@/lib/api'
 import { ok, err } from '@/lib/http'
 import prisma from '@/lib/prisma'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export const GET = api({})(async () => {
   const products = await prisma.product.findMany({ where: { isActive: true }, select: { id: true, sku: true, name: true }, orderBy: { sku: 'asc' } })
