@@ -96,9 +96,9 @@ export default function ProductInventoryTable() {
             )}
             {filtered.map(row => {
               const isOpen = !!expanded[row.productId]
-              return (
-                <>
-                  <tr key={row.productId} className="hover:bg-gray-50">
+              return [
+                (
+                  <tr key={`${row.productId}-main`} className="hover:bg-gray-50">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
                         <button aria-label={isOpen? 'Collapse' : 'Expand'} onClick={()=>setExpanded(prev=>({ ...prev, [row.productId]: !isOpen }))} className="p-1 rounded hover:bg-gray-100 border">
@@ -116,8 +116,10 @@ export default function ProductInventoryTable() {
                     <td className="px-6 py-3 text-right tabular-nums">{row.totals.allocated}</td>
                     <td className="px-6 py-3 text-right tabular-nums">{row.totals.available}</td>
                   </tr>
-                  {isOpen && (
-                    <tr>
+                ),
+                (
+                  isOpen ? (
+                    <tr key={`${row.productId}-detail`}>
                       <td colSpan={6} className="px-6 py-3 bg-gray-50">
                         <div className="text-sm font-medium text-gray-700 mb-2">Intake groups</div>
                         {row.intake.groups.length === 0 ? (
@@ -151,9 +153,9 @@ export default function ProductInventoryTable() {
                         <div className="mt-2 text-xs text-gray-500">Lots and batches are tracked under the hood; this view organizes inventory by product and intake date for simplicity.</div>
                       </td>
                     </tr>
-                  )}
-                </>
-              )
+                  ) : null
+                )
+              ]
             })}
           </tbody>
         </table>
