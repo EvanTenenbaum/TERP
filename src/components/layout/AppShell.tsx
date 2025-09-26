@@ -58,6 +58,14 @@ const nav: NavGroup[] = [
       { label: "Low Stock", href: "/inventory/low-stock", icon: ExclamationTriangleIcon },
     ],
   },
+  {
+    title: "Finance",
+    items: [
+      { label: "Accounts Receivable", href: "/finance/ar", icon: DocumentTextIcon },
+      { label: "Accounts Payable", href: "/finance/ap", icon: DocumentTextIcon },
+      { label: "Payments", href: "/finance/payments", icon: DocumentTextIcon },
+    ],
+  },
 ];
 
 function classNames(...classes: (string | false | undefined)[]) {
