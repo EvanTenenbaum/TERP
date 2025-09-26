@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { NextRequest, NextResponse } from 'next/server'
+import { api } from '@/lib/api'
+import { ok } from '@/lib/http'
 
-export async function GET(req: NextRequest) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING','READ_ONLY']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
+export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','READ_ONLY'] })(async ({ req }) => {
   const { searchParams } = new URL(req.url)
   const entityType = searchParams.get('entityType') || undefined
   const entityId = searchParams.get('entityId') || undefined
@@ -26,5 +25,5 @@ export async function GET(req: NextRequest) {
   for (const o of overrides) items.push({ when: o.timestamp, type: 'override', summary: `Override ${o.oldPrice}→${o.newPrice} (${o.reason})` })
 
   items.sort((a,b)=> new Date(b.when).getTime() - new Date(a.when).getTime())
-  return NextResponse.json({ success:true, data: items.slice(0, limit) })
-}
+  return ok({ data: items.slice(0, limit) })
+})
