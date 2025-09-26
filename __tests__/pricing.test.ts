@@ -13,14 +13,12 @@ describe('getEffectiveUnitPrice', () => {
   test('uses global over default', async () => {
     const db = {
       priceBookEntry: { findFirst: jest.fn()
-        .mockResolvedValueOnce(null) // customer
-        .mockResolvedValueOnce({ unitPrice: 999 }) // role
-        .mockResolvedValueOnce({ unitPrice: 555 }) // global
+        .mockResolvedValueOnce({ unitPrice: 555 }) // global (first call since no customer/role)
       },
       product: { findUnique: jest.fn() },
     }
     const price = await getEffectiveUnitPrice(db as any, 'prod1', {})
-    expect(price).toBe(999) // role mocked before global
+    expect(price).toBe(555)
   })
 
   test('customer overrides role/global', async () => {
