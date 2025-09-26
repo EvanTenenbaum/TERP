@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
 import { ensurePostingUnlocked } from '@/lib/system'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
