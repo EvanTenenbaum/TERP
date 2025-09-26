@@ -1,5 +1,4 @@
 import { api } from '@/lib/api'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 import { getInventorySummary } from '@/lib/inventoryCache'
 import { ok, err } from '@/lib/http'
 
