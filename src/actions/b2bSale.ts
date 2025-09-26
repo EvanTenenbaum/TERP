@@ -174,7 +174,8 @@ async function allocateForOutgoing(tx: typeof prisma, saleId: string) {
     if (qty <= 0) continue
 
     if (item.inventoryId) {
-      const alloc = await allocateFromSpecificLot(tx, item.inventoryId, qty)
+      const { allocateFromSpecificLot } = await import('@/lib/inventoryAllocator')
+      const alloc = await allocateFromSpecificLot(tx as any, item.inventoryId, qty)
       enrichedEvents.push({ eventType: 'ALLOCATED', data: { ...actorMeta(), itemId: item.id, allocations: [alloc] } })
       continue
     }
