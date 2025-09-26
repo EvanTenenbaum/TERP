@@ -3,32 +3,33 @@ import prisma from '@/lib/prisma'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { ok, err } from '@/lib/http'
 
 export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING','SALES']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status: 403 }) }
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING','SALES']) } catch { return err('forbidden', 403) }
   await ensurePostingUnlocked()
 
   const rl = rateLimit(`${rateKeyFromRequest(req)}:cart-add`, 240, 60_000)
-  if (!rl.allowed) return NextResponse.json({ success:false, error:'rate_limited' }, { status: 429 })
+  if (!rl.allowed) return err('rate_limited', 429)
 
   const body = await req.json().catch(() => null)
-  if (!body) return NextResponse.json({ success:false, error:'bad_json' }, { status: 400 })
+  if (!body) return err('bad_json', 400)
 
   const productId = String(body.productId || '')
   const inventoryLotId = body.inventoryLotId ? String(body.inventoryLotId) : undefined
   const quantity = Number(body.quantity)
-  if (!productId || !Number.isFinite(quantity) || quantity <= 0) return NextResponse.json({ success:false, error:'invalid_input' }, { status: 400 })
+  if (!productId || !Number.isFinite(quantity) || quantity <= 0) return err('invalid_input', 400)
 
   const lots = await prisma.inventoryLot.findMany({ where: { batch: { productId } }, select: { id: true, quantityAvailable: true, reservedQty: true } })
-  if (lots.length === 0) return NextResponse.json({ success:false, error:'no_lots_for_product' }, { status: 404 })
+  if (lots.length === 0) return err('no_lots_for_product', 404)
 
   let lotIdToUse: string
   if (lots.length === 1) {
     lotIdToUse = lots[0].id
   } else {
-    if (!inventoryLotId) return NextResponse.json({ success:false, error:'lot_required' }, { status: 400 })
+    if (!inventoryLotId) return err('lot_required', 400)
     const exists = lots.find(l => l.id === inventoryLotId)
-    if (!exists) return NextResponse.json({ success:false, error:'invalid_lot' }, { status: 400 })
+    if (!exists) return err('invalid_lot', 400)
     lotIdToUse = inventoryLotId
   }
 
@@ -46,10 +47,10 @@ export async function POST(req: Request) {
       return { updated, reservation }
     })
 
-    return NextResponse.json({ success:true, reservation: out.reservation })
+    return ok({ reservation: out.reservation })
   } catch (e: any) {
     const code = e?.message || 'server_error'
     const status = code === 'invalid_lot' ? 400 : code === 'insufficient_on_hand' ? 409 : 500
-    return NextResponse.json({ success:false, error: code }, { status })
+    return err(code, status)
   }
 }
