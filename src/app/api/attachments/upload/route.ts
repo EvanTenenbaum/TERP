@@ -3,10 +3,17 @@ import prisma from '@/lib/prisma'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireRole } from '@/lib/auth'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
+  try { requireRole(['SUPER_ADMIN','SALES','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
+  const key = `${rateKeyFromRequest(req)}:attachments-upload`
+  const rl = rateLimit(key, 30, 60_000)
+  if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
+
   const form = await req.formData()
   const file = form.get('file') as File | null
   const entityType = String(form.get('entityType') || '')
