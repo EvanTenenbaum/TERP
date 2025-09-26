@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
+import { invalidateInventorySummaryCache } from '@/lib/inventoryCache'
 
 export async function runSelfHeal() {
   const fixes: string[] = []
