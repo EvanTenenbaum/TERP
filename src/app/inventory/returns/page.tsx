@@ -40,7 +40,7 @@ export default async function ReturnsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-            <input type="number" min={1} step={1} name="quantity" defaultValue={1} className="w-full rounded border-gray-300 px-3 py-2" />
+            <input type="number" min={1} step={1} name="quantity" required aria-required="true" defaultValue={1} className="w-full rounded border-gray-300 px-3 py-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Return Type</label>
