@@ -3,10 +3,13 @@ import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('forbidden', { status: 403 }) }
   try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('posting_locked', { status: 423 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:credit-memo`, 60, 60_000)
+  if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   const body = await req.json()
   const { arId, amountCents, reason } = body || {}
   const amt = Math.round(Number(amountCents))
