@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { generatePoPdf } from '@/lib/pdf/po'
-import { NextResponse } from 'next/server'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {

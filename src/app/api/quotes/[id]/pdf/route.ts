@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateQuotePDFBuffer } from '@/lib/pdf/quote'
-import { NextResponse } from 'next/server'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function GET(

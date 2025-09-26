@@ -3,7 +3,6 @@ import prisma from '@/lib/prisma'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { getActiveBatchCostDb } from '@/lib/cogs'
-import { NextResponse } from 'next/server'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: Request) {

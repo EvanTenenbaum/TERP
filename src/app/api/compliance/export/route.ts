@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentRole, getCurrentUserId } from '@/lib/auth'
-import { NextResponse } from 'next/server'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: Request) {
