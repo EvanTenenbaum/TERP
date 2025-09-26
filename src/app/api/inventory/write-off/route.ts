@@ -1,31 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { ensurePostingUnlocked } from '@/lib/system'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { api } from '@/lib/api'
+import { ok, err } from '@/lib/http'
 
-export async function POST(req: NextRequest) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('forbidden', { status: 403 }) }
-  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('posting_locked', { status: 423 }) }
-  const rl = rateLimit(`${rateKeyFromRequest(req)}:write-off`, 60, 60_000)
-  if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
-  const body = await req.json()
-  const { lotId, qty, reason } = body || {}
-  const q = Math.round(Number(qty))
-  if (!lotId || !Number.isFinite(q) || q <= 0 || !reason) return NextResponse.json({ error: 'invalid_input' }, { status: 400 })
+export const POST = api<{ lotId:string; qty:number; reason:string }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  postingLock: true,
+  rate: { key: 'write-off', limit: 60 },
+  parseJson: true,
+})(async ({ json }) => {
+  const lotId = String(json!.lotId || '')
+  const q = Math.round(Number(json!.qty))
+  const reason = String(json!.reason || '').slice(0,256)
+  if (!lotId || !Number.isFinite(q) || q <= 0 || !reason) return err('invalid_input', 400)
 
-  return await prisma.$transaction(async (tx) => {
-    const lot = await tx.inventoryLot.findUnique({ where: { id: String(lotId) } })
-    if (!lot) return NextResponse.json({ error: 'lot_not_found' }, { status: 404 })
-    if (lot.quantityAvailable < q) return NextResponse.json({ error: 'insufficient_available' }, { status: 409 })
+  const lot = await prisma.inventoryLot.findUnique({ where: { id: lotId } })
+  if (!lot) return err('lot_not_found', 404)
+  if (lot.quantityAvailable < q) return err('insufficient_available', 409)
 
-    const newOnHand = lot.quantityOnHand - q
-    const newAllocated = lot.quantityAllocated
-    const newAvailable = Math.max(0, newOnHand - newAllocated)
+  const newOnHand = lot.quantityOnHand - q
+  const newAvailable = Math.max(0, newOnHand - lot.quantityAllocated)
 
+  await prisma.$transaction(async (tx) => {
     await tx.inventoryLot.update({ where: { id: lot.id }, data: { quantityOnHand: newOnHand, quantityAvailable: newAvailable, lastMovementDate: new Date() } })
-    await tx.writeOffLedger.create({ data: { lotId: lot.id, qty: q, reason: String(reason).slice(0,256) } })
-
-    return NextResponse.json({ ok: true })
+    await tx.writeOffLedger.create({ data: { lotId: lot.id, qty: q, reason } })
   })
-}
+
+  return ok()
+})
