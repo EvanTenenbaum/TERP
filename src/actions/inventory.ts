@@ -170,7 +170,7 @@ export async function createBatch(data: CreateBatchData) {
           ? normalizeFlowerProductName(vendor.vendorCode, product.variety.name)
           : null;
         if (newName && newName !== product.name) {
-          await prisma.product.update({ where: { id: product.id }, data: { name: newName } });
+          await prisma.product.update({ where: { id: product.id }, data: { name: newName, retailName: product.variety.name, standardStrainName: product.variety.name, customerFacingName: newName } });
         }
       }
     } catch (e) {
