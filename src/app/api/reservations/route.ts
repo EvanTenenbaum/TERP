@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch { return new NextResponse('forbidden', { status: 403 }) }
