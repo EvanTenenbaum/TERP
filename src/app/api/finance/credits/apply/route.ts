@@ -1,36 +1,33 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { api } from '@/lib/api'
 import { ok, err } from '@/lib/http'
 
-export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('forbidden', 403) }
-  const rl = rateLimit(`${rateKeyFromRequest(req)}:credits-apply`, 120, 60_000)
-  if (!rl.allowed) return err('rate_limited', 429)
-  const body = await req.json().catch(()=>null)
-  if (!body) return err('bad_json', 400)
-  const arId = String(body.arId||'')
-  const creditId = String(body.creditId||'')
-  const amountCents = Math.round(Number(body.amountCents))
+export const POST = api<{ arId:string; creditId:string; amountCents:number }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  rate: { key: 'credits-apply', limit: 120 },
+  parseJson: true,
+  onError: (e) => {
+    const code = e?.message
+    if (code === 'ar_not_found' || code === 'credit_not_found') return { code, status: 404 }
+    if (code === 'insufficient_credit' || code === 'customer_mismatch') return { code, status: 400 }
+    return undefined
+  }
+})(async ({ json }) => {
+  const arId = String(json!.arId || '')
+  const creditId = String(json!.creditId || '')
+  const amountCents = Math.round(Number(json!.amountCents))
   if (!arId || !creditId || !Number.isFinite(amountCents) || amountCents <= 0) return err('invalid_input', 400)
 
-  try {
-    await prisma.$transaction(async (tx)=>{
-      const ar = await tx.accountsReceivable.findUnique({ where:{ id: arId } })
-      const cc = await tx.customerCredit.findUnique({ where: { id: creditId } })
-      if (!ar) throw new Error('ar_not_found')
-      if (!cc) throw new Error('credit_not_found')
-      if (cc.customerId !== ar.customerId) throw new Error('customer_mismatch')
-      const maxApply = Math.min(amountCents, Math.max(0, cc.balanceCents), Math.max(0, ar.balanceRemaining))
-      if (maxApply <= 0) throw new Error('insufficient_credit')
-      await tx.customerCredit.update({ where: { id: cc.id }, data: { balanceCents: { decrement: maxApply } } })
-      await tx.accountsReceivable.update({ where: { id: arId }, data: { balanceRemaining: { decrement: maxApply } } })
-    })
-    return ok()
-  } catch (e:any) {
-    const code = e?.message || 'server_error'
-    const status = code === 'ar_not_found' || code === 'credit_not_found' ? 404 : code === 'insufficient_credit' || code === 'customer_mismatch' ? 400 : 500
-    return err(code, status)
-  }
-}
+  await prisma.$transaction(async (tx)=>{
+    const ar = await tx.accountsReceivable.findUnique({ where:{ id: arId } })
+    const cc = await tx.customerCredit.findUnique({ where: { id: creditId } })
+    if (!ar) throw new Error('ar_not_found')
+    if (!cc) throw new Error('credit_not_found')
+    if (cc.customerId !== ar.customerId) throw new Error('customer_mismatch')
+    const maxApply = Math.min(amountCents, Math.max(0, cc.balanceCents), Math.max(0, ar.balanceRemaining))
+    if (maxApply <= 0) throw new Error('insufficient_credit')
+    await tx.customerCredit.update({ where: { id: cc.id }, data: { balanceCents: { decrement: maxApply } } })
+    await tx.accountsReceivable.update({ where: { id: arId }, data: { balanceRemaining: { decrement: maxApply } } })
+  })
+  return ok()
+})
