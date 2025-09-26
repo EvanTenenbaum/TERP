@@ -256,12 +256,22 @@ export async function convertQuoteToOrder(quoteId: string) {
           },
         });
 
+        // COGS snapshot (unit cost active at allocation)
+        const activeCost = await tx.batchCost.findFirst({
+          where: { batchId: batch.id, effectiveFrom: { lte: allocationDate } },
+          orderBy: { effectiveFrom: 'desc' },
+        })
+        const cogsUnitCents = activeCost?.unitCost ?? null
+        const cogsTotalCents = cogsUnitCents != null ? cogsUnitCents * qty : null
+
         itemsToCreate.push({
           productId: qi.productId,
           batchId: batch.id,
           quantity: qty,
           unitPrice,
           allocationDate,
+          cogsUnitCents: cogsUnitCents ?? undefined,
+          cogsTotalCents: cogsTotalCents ?? undefined,
         });
         computedTotal += unitPrice * qty;
       }
