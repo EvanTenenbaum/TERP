@@ -16,6 +16,7 @@ export default function PriceBooksPage() {
 
   const [bookForm, setBookForm] = useState({ name: '', type: 'GLOBAL', customerId: '' });
   const [entryForm, setEntryForm] = useState({ priceBookId: '', productId: '', unitPrice: '', effectiveDate: '' });
+  const [overrideForm, setOverrideForm] = useState({ productId: '', unitPrice: '', reason: '' });
 
   useEffect(() => {
     (async () => {
@@ -144,7 +145,7 @@ export default function PriceBooksPage() {
               {books.map(b=> (
                 <tr key={b.id}>
                   <td className="px-4 py-2">{b.name}</td>
-                  <td className="px-4 py-2">{b.type}{b.customer ? ` ��� ${b.customer.companyName}`: ''}</td>
+                  <td className="px-4 py-2">{b.type}{b.customer ? ` – ${b.customer.companyName}`: ''}</td>
                   <td className="px-4 py-2">{b.isActive ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-2">
                     <button onClick={()=>toggleActive(b.id, b.isActive)} className="text-blue-600 hover:text-blue-800">
