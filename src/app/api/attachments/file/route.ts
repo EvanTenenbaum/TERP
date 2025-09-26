@@ -18,5 +18,5 @@ export const GET = api({
   // basic path safety
   if (att.filePath.includes('..')) return new Response('forbidden', { status: 403 })
   const buf = await fs.readFile(att.filePath)
-  return new Response(buf, { headers: { 'Content-Type': att.mimeType, 'Content-Disposition': `inline; filename="${att.fileName}"` } })
+  return new Response(new Uint8Array(buf), { headers: { 'Content-Type': att.mimeType, 'Content-Disposition': `inline; filename="${att.fileName}"` } })
 })
