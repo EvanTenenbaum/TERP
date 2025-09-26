@@ -15,7 +15,7 @@ export const GET = api({
   if (vendorId) where.batch = { vendorId }
 
   try {
-    const subBatches = await prisma.subBatch.findMany({
+    const subBatches = await (prisma as any).subBatch.findMany({
       where,
       include: { batch: { include: { vendor: true, product: true } } },
       orderBy: { createdAt: 'desc' },
