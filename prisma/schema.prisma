@@ -252,6 +252,7 @@ model InventoryLot {
   quantityOnHand    Int
   quantityAllocated Int
   quantityAvailable Int
+  reservedQty       Int      @default(0)
   lastMovementDate  DateTime
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -348,6 +349,8 @@ model AccountsReceivable {
   terms            String?
   amount           Int      // Amount in cents
   balanceRemaining Int      // Remaining balance in cents
+  dunningStage     Int      @default(0)
+  lastDunningAt    DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -436,11 +439,14 @@ model Reminder {
   customerId String
   dueDate    DateTime
   note       String
+  arId       String?
+  resolved   Boolean  @default(false)
   createdAt  DateTime @default(now())
 
   customer Customer @relation(fields: [customerId], references: [id])
 
   @@index([dueDate])
+  @@index([arId])
   @@map("reminders")
 }
 
@@ -810,4 +816,74 @@ model PurchaseOrderItem {
   product Product       @relation(fields: [productId], references: [id])
 
   @@map("purchase_order_items")
+}
+
+// Inventory Transfer audit
+model InventoryTransfer {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  createdBy    String
+  sourceLotId  String
+  destLotId    String?
+  productId    String
+  quantity     Int
+  reason       String?
+  notes        String?
+
+  @@index([sourceLotId])
+  @@index([destLotId])
+  @@index([productId])
+  @@map("inventory_transfers")
+}
+
+// Vendor Settlements & Rebates
+model VendorSettlement {
+  id            String   @id @default(cuid())
+  vendorId      String
+  periodStart   DateTime
+  periodEnd     DateTime
+  amount        Int
+  notes         String?
+  appliedToApId String?
+  createdBy     String
+  createdAt     DateTime @default(now())
+
+  vendor      Vendor           @relation(fields: [vendorId], references: [id])
+  appliedToAp AccountsPayable? @relation(fields: [appliedToApId], references: [id])
+
+  @@index([vendorId])
+  @@index([appliedToApId])
+  @@map("vendor_settlements")
+}
+
+model VendorRebate {
+  id            String   @id @default(cuid())
+  vendorId      String
+  basis         String
+  amount        Int
+  notes         String?
+  appliedToApId String?
+  createdBy     String
+  createdAt     DateTime @default(now())
+
+  vendor      Vendor           @relation(fields: [vendorId], references: [id])
+  appliedToAp AccountsPayable? @relation(fields: [appliedToApId], references: [id])
+
+  @@index([vendorId])
+  @@index([appliedToApId])
+  @@map("vendor_rebates")
+}
+
+// Server-side cart reservations
+model CartReservation {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  createdBy      String
+  productId      String
+  inventoryLotId String
+  quantity       Int
+
+  @@index([inventoryLotId])
+  @@index([productId])
+  @@map("cart_reservations")
 }
