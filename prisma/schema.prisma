@@ -528,6 +528,19 @@ model PriceBookEntry {
   @@map("price_book_entries")
 }
 
+// Credit Memos
+model CreditMemo {
+  id        String   @id @default(cuid())
+  arId      String
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  ar AccountsReceivable @relation(fields: [arId], references: [id])
+
+  @@map("credit_memos")
+}
+
 // Customer Credits
 model CustomerCredit {
   id           String   @id @default(cuid())
@@ -560,6 +573,19 @@ model DebtAdjustment {
   user     User     @relation("CreatedBy", fields: [createdBy], references: [id])
 
   @@map("debt_adjustments")
+}
+
+// Write-Off / Shrinkage
+model WriteOffLedger {
+  id        String   @id @default(cuid())
+  lotId     String
+  qty       Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  lot InventoryLot @relation(fields: [lotId], references: [id])
+
+  @@map("write_off_ledger")
 }
 
 // Sample Management
