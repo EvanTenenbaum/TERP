@@ -1,8 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { NextRequest, NextResponse } from 'next/server'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 function bucket(days: number) {
   if (days >= 90) return '90+'
@@ -12,10 +9,10 @@ function bucket(days: number) {
   return 'not_due'
 }
 
-export async function GET(_req: NextRequest) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('forbidden', { status: 403 }) }
-  const rl = rateLimit(`${rateKeyFromRequest(_req)}:export-ap-aging`, 30, 60_000)
-  if (!rl.allowed) return new NextResponse('rate_limited', { status: 429 })
+export const GET = api({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  rate: { key: 'export-ap-aging', limit: 30 },
+})(async ({ req }) => {
   const today = new Date()
   const aps = await prisma.accountsPayable.findMany({ include: { vendor: true } })
 
@@ -34,5 +31,5 @@ export async function GET(_req: NextRequest) {
     ])
   }
   const csv = rows.map(r => r.map(f => /[",\n]/.test(f) ? `"${f.replace(/"/g,'""')}"` : f).join(',')).join('\n')
-  return new NextResponse(csv, { status:200, headers: { 'Content-Type':'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="ap_aging_${Date.now()}.csv"` } })
-}
+  return new Response(csv, { status:200, headers: { 'Content-Type':'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="ap_aging_${Date.now()}.csv"` } })
+})
