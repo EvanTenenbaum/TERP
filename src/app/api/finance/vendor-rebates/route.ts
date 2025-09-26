@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 function parseAmountCents(v: any) {
   const n = typeof v === 'number' ? v : Number(v)
@@ -13,6 +14,8 @@ function parseAmountCents(v: any) {
 export async function POST(req: Request) {
   try { requireRole(['ACCOUNTING','SUPER_ADMIN']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
   await ensurePostingUnlocked()
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:vendor-rebate`, 60, 60_000)
+  if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json({ success: false, error: 'bad_json' }, { status: 400 })
 
