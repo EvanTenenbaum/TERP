@@ -61,7 +61,11 @@ export async function getARAging() {
 export async function createPayment(customerId: string, amountCents: number, paymentMethod: string, referenceNumber?: string) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
   try {
-    const p = await prisma.payment.create({ data: { customerId, amount: Math.round(amountCents), paymentMethod, referenceNumber } })
+    if (!customerId || typeof customerId !== 'string') return { success: false, error: 'invalid_customer' }
+    if (!paymentMethod || typeof paymentMethod !== 'string') return { success: false, error: 'invalid_method' }
+    const amount = Math.round(Number(amountCents))
+    if (!Number.isFinite(amount) || amount <= 0) return { success: false, error: 'invalid_amount' }
+    const p = await prisma.payment.create({ data: { customerId, amount, paymentMethod: paymentMethod.slice(0,64), referenceNumber: referenceNumber?.slice(0,64) } })
     return { success: true, payment: p }
   } catch (e) {
     Sentry.captureException(e)
@@ -72,11 +76,12 @@ export async function createPayment(customerId: string, amountCents: number, pay
 export async function applyPayment(paymentId: string, arId: string, appliedAmountCents: number) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
   try {
+    if (!paymentId || !arId) return { success: false, error: 'invalid_ids' }
     const result = await prisma.$transaction(async (tx) => {
       const ar = await tx.accountsReceivable.findUnique({ where: { id: arId } })
       if (!ar) throw new Error('ar_not_found')
-      const amount = Math.round(appliedAmountCents)
-      if (amount <= 0 || amount > ar.balanceRemaining) throw new Error('invalid_amount')
+      const amount = Math.round(Number(appliedAmountCents))
+      if (!Number.isFinite(amount) || amount <= 0 || amount > ar.balanceRemaining) throw new Error('invalid_amount')
 
       const app = await tx.paymentApplication.create({ data: { paymentId, arId, appliedAmount: amount, applicationDate: new Date() } })
       await tx.accountsReceivable.update({ where: { id: arId }, data: { balanceRemaining: { decrement: amount } } })
@@ -92,8 +97,9 @@ export async function applyPayment(paymentId: string, arId: string, appliedAmoun
 export async function applyApPayment(apId: string, amountCents: number) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
   try {
-    const amount = Math.round(amountCents)
-    if (amount <= 0) return { success: false, error: 'invalid_amount' }
+    if (!apId) return { success: false, error: 'invalid_id' }
+    const amount = Math.round(Number(amountCents))
+    if (!Number.isFinite(amount) || amount <= 0) return { success: false, error: 'invalid_amount' }
     const ap = await prisma.accountsPayable.findUnique({ where: { id: apId } })
     if (!ap) return { success: false, error: 'ap_not_found' }
     if (amount > ap.balanceRemaining) return { success: false, error: 'amount_exceeds_balance' }

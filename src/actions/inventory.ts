@@ -67,14 +67,19 @@ export async function getProducts() {
 
 export async function createProduct(data: CreateProductData) {
   try {
+    if (!data?.name || !data?.sku || !data?.category || !data?.unit) {
+      return { success: false, error: 'missing_fields' }
+    }
+    const price = Math.round(Number(data.defaultPrice))
+    if (!Number.isFinite(price) || price < 0) return { success: false, error: 'invalid_price' }
     const product = await prisma.product.create({
       data: {
-        name: data.name,
-        sku: data.sku,
-        category: data.category,
-        unit: data.unit,
-        defaultPrice: data.defaultPrice,
-        location: data.location,
+        name: String(data.name).trim().slice(0,128),
+        sku: String(data.sku).trim().slice(0,64),
+        category: String(data.category).trim().slice(0,64),
+        unit: String(data.unit).trim().slice(0,32),
+        defaultPrice: price,
+        location: data.location?.toString().slice(0,128),
         isActive: true
       }
     });
@@ -126,19 +131,26 @@ import { normalizeFlowerProductName } from '@/lib/normalization';
 
 export async function createBatch(data: CreateBatchData) {
   try {
+    if (!data?.productId || !data?.vendorId || !data?.lotNumber) return { success: false, error: 'missing_fields' }
+    const qty = Math.round(Number(data.quantityReceived))
+    const cost = Math.round(Number(data.initialCost))
+    if (!Number.isFinite(qty) || qty <= 0) return { success: false, error: 'invalid_quantity' }
+    if (!Number.isFinite(cost) || cost < 0) return { success: false, error: 'invalid_cost' }
+    const recv = new Date(data.receivedDate)
+    const exp = data.expirationDate ? new Date(data.expirationDate) : undefined
     const batch = await prisma.batch.create({
       data: {
         productId: data.productId,
         vendorId: data.vendorId,
-        lotNumber: data.lotNumber,
-        receivedDate: data.receivedDate,
-        expirationDate: data.expirationDate,
-        quantityReceived: data.quantityReceived,
-        quantityAvailable: data.quantityReceived,
+        lotNumber: String(data.lotNumber).trim().slice(0,64),
+        receivedDate: recv,
+        expirationDate: exp,
+        quantityReceived: qty,
+        quantityAvailable: qty,
         batchCosts: {
           create: {
-            effectiveFrom: data.receivedDate,
-            unitCost: data.initialCost
+            effectiveFrom: recv,
+            unitCost: cost
           }
         }
       },
@@ -210,12 +222,17 @@ export async function getInventoryLots() {
 
 export async function createInventoryLot(data: CreateInventoryLotData) {
   try {
+    if (!data?.batchId) return { success: false, error: 'missing_batch' }
+    const qoh = Math.round(Number(data.quantityOnHand))
+    const qalloc = Math.round(Number(data.quantityAllocated || 0))
+    if (!Number.isFinite(qoh) || qoh < 0) return { success: false, error: 'invalid_quantity_on_hand' }
+    if (!Number.isFinite(qalloc) || qalloc < 0) return { success: false, error: 'invalid_quantity_allocated' }
     const lot = await prisma.inventoryLot.create({
       data: {
         batchId: data.batchId,
-        quantityOnHand: data.quantityOnHand,
-        quantityAllocated: data.quantityAllocated || 0,
-        quantityAvailable: data.quantityOnHand - (data.quantityAllocated || 0),
+        quantityOnHand: qoh,
+        quantityAllocated: qalloc,
+        quantityAvailable: Math.max(0, qoh - qalloc),
         lastMovementDate: new Date()
       },
       include: {
@@ -279,11 +296,15 @@ export async function getLowStockItems() {
 // Add batch cost change
 export async function addBatchCostChange(batchId: string, newCost: number, effectiveDate: Date) {
   try {
+    if (!batchId) return { success: false, error: 'missing_batch' }
+    const cost = Math.round(Number(newCost))
+    if (!Number.isFinite(cost) || cost < 0) return { success: false, error: 'invalid_cost' }
+    const when = new Date(effectiveDate)
     const batchCost = await prisma.batchCost.create({
       data: {
         batchId,
-        effectiveFrom: effectiveDate,
-        unitCost: newCost
+        effectiveFrom: when,
+        unitCost: cost
       }
     });
 
