@@ -3,18 +3,19 @@ import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { ok, err } from '@/lib/http'
 
 export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
-  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success:false, error:'posting_locked' }, { status:423 }) }
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('forbidden', 403) }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('posting_locked', 423) }
   const rl = rateLimit(`${rateKeyFromRequest(req)}:credits-memo`, 60, 60_000)
-  if (!rl.allowed) return NextResponse.json({ success:false, error:'rate_limited' }, { status:429 })
+  if (!rl.allowed) return err('rate_limited', 429)
   const body = await req.json().catch(()=>null)
-  if (!body) return NextResponse.json({ success:false, error:'bad_json' }, { status:400 })
+  if (!body) return err('bad_json', 400)
   const arId = String(body.arId||'')
   const amountCents = Math.round(Number(body.amountCents))
   const reason = String(body.reason||'').slice(0,256)
-  if (!arId || !Number.isFinite(amountCents) || amountCents <= 0) return NextResponse.json({ success:false, error:'invalid_input' }, { status:400 })
+  if (!arId || !Number.isFinite(amountCents) || amountCents <= 0) return err('invalid_input', 400)
 
   try {
     const out = await prisma.$transaction(async (tx)=>{
@@ -31,10 +32,10 @@ export async function POST(req: Request) {
       return { memo, customerCredit: cc }
     })
 
-    return NextResponse.json({ success:true, data: out })
+    return ok({ data: out })
   } catch (e:any) {
     const code = e?.message || 'server_error'
     const status = code === 'ar_not_found' ? 404 : 500
-    return NextResponse.json({ success:false, error: code }, { status })
+    return err(code, status)
   }
 }
