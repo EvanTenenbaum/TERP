@@ -1,14 +1,13 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { api } from '@/lib/api'
+import { ok, err } from '@/lib/http'
 
-export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
-  const rl = rateLimit(`${rateKeyFromRequest(req as any)}:replenishment-preview`, 120, 60_000)
-  if (!rl.allowed) return NextResponse.json({ success:false, error:'rate_limited' }, { status:429 })
-  const body = await req.json().catch(()=>({}))
-  const thresholdDefault = Math.max(0, Math.round(Number(body.thresholdDefault ?? 10)))
+export const POST = api<{ thresholdDefault?: number }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'],
+  rate: { key: 'replenishment-preview', limit: 120 },
+  parseJson: true,
+})(async ({ json }) => {
+  const thresholdDefault = Math.max(0, Math.round(Number(json?.thresholdDefault ?? 10)))
 
   const lots = await prisma.inventoryLot.findMany({ include: { batch: { include: { product: true } } } })
   const byProduct: Record<string, { productId:string; sku:string; name:string; onHand:number; reserved:number }> = {}
@@ -26,5 +25,5 @@ export async function POST(req: Request) {
     return { ...p, effective, threshold, suggested }
   }).filter(i => i.effective < i.threshold)
 
-  return NextResponse.json({ success:true, data: { items } })
-}
+  return ok({ data: { items } })
+})
