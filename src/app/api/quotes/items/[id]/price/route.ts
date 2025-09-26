@@ -5,6 +5,7 @@ import { ensurePostingUnlocked } from '@/lib/system'
 import { getCurrentRole, getCurrentUserId, requireRole } from '@/lib/auth'
 import { getEffectiveUnitPrice } from '@/lib/pricing'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { NextResponse } from 'next/server'
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
