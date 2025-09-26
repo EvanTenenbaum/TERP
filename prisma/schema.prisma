@@ -96,6 +96,9 @@ model Product {
   defaultPrice Int
   location     String?
   isActive     Boolean @default(true)
+  retailName  String?
+  standardStrainName String?
+  customerFacingName String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -296,6 +299,7 @@ model AccountsReceivable {
   invoiceNumber    String   @unique
   invoiceDate      DateTime
   dueDate          DateTime
+  terms            String?
   amount           Int      // Amount in cents
   balanceRemaining Int      // Remaining balance in cents
   createdAt        DateTime @default(now())
@@ -349,6 +353,7 @@ model AccountsPayable {
   invoiceNumber    String
   invoiceDate      DateTime
   dueDate          DateTime
+  terms            String?
   amount           Int      // Amount in cents
   balanceRemaining Int      // Remaining balance in cents
   createdAt        DateTime @default(now())
@@ -592,4 +597,20 @@ model IntakePhoto {
   batch   Batch?   @relation(fields: [parentId], references: [id], map: "intake_photos_batch_fkey")
 
   @@map("intake_photos")
+}
+
+// Override audit log for pricing changes
+model OverrideAudit {
+  id           String   @id @default(cuid())
+  userId       String
+  timestamp    DateTime @default(now())
+  orderId      String?
+  quoteId      String?
+  lineItemId   String?
+  oldPrice     Int
+  newPrice     Int
+  reason       String
+  overrideType String   // LINE | GLOBAL | ADMIN_FREEFORM
+
+  @@map("override_audit")
 }
