@@ -159,6 +159,7 @@ model Vendor {
   accountsPayable    AccountsPayable[]
   crmNotes           CrmNote[]
   sampleTransactions SampleTransaction[]
+  purchaseOrders     PurchaseOrder[]
 
   @@map("vendors")
 }
