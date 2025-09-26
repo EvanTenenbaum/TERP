@@ -9,7 +9,7 @@ export default async function RebuildInventoryPage() {
       <form action={runSelfHeal}>
         <button type="submit" className="inline-flex items-center px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Run Rebuild & Self-Heal</button>
       </form>
-      <p className="mt-3 text-sm text-gray-600">Runs nightly automatically; this triggers now and locks posting if >10 unresolved errors.</p>
+      <p className="mt-3 text-sm text-gray-600">Runs nightly automatically; this triggers now and locks posting if &gt;10 unresolved errors.</p>
     </div>
   )
 }
