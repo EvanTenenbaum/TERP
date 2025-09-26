@@ -66,6 +66,12 @@ const nav: NavGroup[] = [
       { label: "Payments", href: "/finance/payments", icon: DocumentTextIcon },
     ],
   },
+  {
+    title: "Analytics",
+    items: [
+      { label: "Overview", href: "/analytics", icon: Squares2X2Icon },
+    ],
+  },
 ];
 
 function classNames(...classes: (string | false | undefined)[]) {
