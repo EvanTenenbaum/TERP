@@ -13,11 +13,11 @@ export default function InventoryDashboard() {
             <p className="text-2xl font-bold text-blue-900">--</p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-green-800">Active Batches</h3>
+            <h3 className="text-sm font-medium text-green-800">Products In Stock</h3>
             <p className="text-2xl font-bold text-green-900">--</p>
           </div>
           <div className="bg-yellow-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-yellow-800">Inventory Lots</h3>
+            <h3 className="text-sm font-medium text-yellow-800">Latest Intake</h3>
             <p className="text-2xl font-bold text-yellow-900">--</p>
           </div>
           <div className="bg-red-50 p-4 rounded-lg">
@@ -38,22 +38,10 @@ export default function InventoryDashboard() {
               Add New Product
             </Link>
             <Link
-              href="/inventory/batches/new"
-              className="block w-full bg-green-600 text-white text-center py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
-            >
-              Create New Batch
-            </Link>
-            <Link
               href="/api/inventory/export"
               className="block w-full bg-indigo-600 text-white text-center py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors"
             >
               Export Inventory CSV
-            </Link>
-            <Link
-              href="/inventory/lots/new"
-              className="block w-full bg-yellow-600 text-white text-center py-2 px-4 rounded-md hover:bg-yellow-700 transition-colors"
-            >
-              Add Inventory Lot
             </Link>
           </div>
         </div>
