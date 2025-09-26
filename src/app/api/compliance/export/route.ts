@@ -1,14 +1,11 @@
-import { NextResponse } from 'next/server'
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { getCurrentRole, getCurrentUserId } from '@/lib/auth'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { getCurrentUserId } from '@/lib/auth'
 
-export async function GET(req: Request) {
-  const role = getCurrentRole()
-  if (!(role === 'SUPER_ADMIN' || role === 'ACCOUNTING' || role === 'READ_ONLY')) return new NextResponse('forbidden', { status: 403 })
-  const rl = rateLimit(`${rateKeyFromRequest(req as any)}:export-compliance`, 30, 60_000)
-  if (!rl.allowed) return new NextResponse('rate_limited', { status: 429 })
-
+export const GET = api({
+  roles: ['SUPER_ADMIN','ACCOUNTING','READ_ONLY'],
+  rate: { key: 'export-compliance', limit: 30 },
+})(async () => {
   const orders = await prisma.order.findMany({
     include: { orderItems: { include: { batch: true, product: true } }, customer: true },
     orderBy: { orderDate: 'desc' },
@@ -31,5 +28,5 @@ export async function GET(req: Request) {
 
   try { await prisma.eventLog.create({ data: { eventType: 'EXPORT', data: { route: '/api/compliance/export', userId: getCurrentUserId(), rows: rows.length } } }) } catch {}
 
-  return new NextResponse(csv, { status: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="compliance_${Date.now()}.csv"` } })
-}
+  return new Response(csv, { status: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="compliance_${Date.now()}.csv"` } })
+})
