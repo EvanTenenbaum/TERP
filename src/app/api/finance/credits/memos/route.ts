@@ -1,21 +1,16 @@
-import { NextResponse } from 'next/server'
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { ensurePostingUnlocked } from '@/lib/system'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
-import { ok, err } from '@/lib/http'
 
-export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('forbidden', 403) }
-  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('posting_locked', 423) }
-  const rl = rateLimit(`${rateKeyFromRequest(req)}:credits-memo`, 60, 60_000)
-  if (!rl.allowed) return err('rate_limited', 429)
-  const body = await req.json().catch(()=>null)
-  if (!body) return err('bad_json', 400)
-  const arId = String(body.arId||'')
-  const amountCents = Math.round(Number(body.amountCents))
-  const reason = String(body.reason||'').slice(0,256)
-  if (!arId || !Number.isFinite(amountCents) || amountCents <= 0) return err('invalid_input', 400)
+export const POST = api<{ arId:string; amountCents:number; reason:string }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  postingLock: true,
+  rate: { key: 'credits-memo', limit: 60 },
+  parseJson: true,
+})(async ({ json }) => {
+  const arId = String(json!.arId||'')
+  const amountCents = Math.round(Number(json!.amountCents))
+  const reason = String(json!.reason||'').slice(0,256)
+  if (!arId || !Number.isFinite(amountCents) || amountCents <= 0) return new Response(JSON.stringify({ success:false, error: 'invalid_input' }), { status: 400, headers: { 'Content-Type':'application/json' } })
 
   try {
     const out = await prisma.$transaction(async (tx)=>{
@@ -32,10 +27,10 @@ export async function POST(req: Request) {
       return { memo, customerCredit: cc }
     })
 
-    return ok({ data: out })
+    return new Response(JSON.stringify({ success:true, data: out }), { headers: { 'Content-Type':'application/json' } })
   } catch (e:any) {
     const code = e?.message || 'server_error'
     const status = code === 'ar_not_found' ? 404 : 500
-    return err(code, status)
+    return new Response(JSON.stringify({ success:false, error: code }), { status, headers: { 'Content-Type':'application/json' } })
   }
-}
+})
