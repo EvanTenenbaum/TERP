@@ -82,6 +82,21 @@ model Variety {
   @@unique([name, type])
 }
 
+model ProductCategory {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent    ProductCategory? @relation("CategoryParent", fields: [parentId], references: [id])
+  children  ProductCategory[] @relation("CategoryParent")
+
+  @@unique([name])
+  @@map("product_categories")
+}
+
 model Product {
   id           String  @id @default(cuid())
   name         String
@@ -99,6 +114,7 @@ model Product {
   retailName  String?
   standardStrainName String?
   customerFacingName String?
+  categoryRefId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -106,6 +122,7 @@ model Product {
   package           Package?     @relation(fields: [packageId], references: [id])
   serving           ServingSize? @relation(fields: [servingId], references: [id])
   variety           Variety?     @relation(fields: [varietyId], references: [id])
+  categoryRef       ProductCategory? @relation(fields: [categoryRefId], references: [id])
   batches           Batch[]
   orderItems        OrderItem[]
   salesQuoteItems   SalesQuoteItem[]
@@ -177,6 +194,7 @@ model Customer {
   debtAdjustments     DebtAdjustment[]
   sampleTransactions  SampleTransaction[]
   customerCredits     CustomerCredit[]
+  reminders           Reminder[]
 
   @@map("customers")
 }
@@ -384,6 +402,19 @@ model CrmNote {
   user     User      @relation("CreatedBy", fields: [createdBy], references: [id])
 
   @@map("crm_notes")
+}
+
+model Reminder {
+  id         String   @id @default(cuid())
+  customerId String
+  dueDate    DateTime
+  note       String
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([dueDate])
+  @@map("reminders")
 }
 
 // Sales Quotes
@@ -659,4 +690,71 @@ model SystemStatus {
   updatedAt      DateTime @updatedAt
 
   @@map("system_status")
+}
+
+// Rules engine
+model Rule {
+  id        String   @id @default(cuid())
+  field     String   // InventoryAge | QtyAvailable | ARDays | SalesVolume
+  operator  String   // >, <, >=, <=, ==, !=
+  value     String
+  action    String   // Alert | Flag | CreateTask
+  priority  Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("rules")
+}
+
+model RuleConflict {
+  id        String   @id @default(cuid())
+  ruleIds   String
+  createdAt DateTime @default(now())
+
+  @@map("rule_conflicts")
+}
+
+// Profitability ledger (nightly)
+model ProfitabilityLedger {
+  id         String   @id @default(cuid())
+  batchId    String?
+  vendorId   String?
+  revenue    Int      @default(0)
+  cogs       Int      @default(0)
+  opex       Int      @default(0)
+  badDebt    Int      @default(0)
+  margin     Int      @default(0)
+  runDate    DateTime @default(now())
+
+  @@index([runDate])
+  @@map("profitability_ledger")
+}
+
+// Purchase Orders
+model PurchaseOrder {
+  id         String   @id @default(cuid())
+  vendorId   String
+  poNumber   String   @unique
+  status     String   @default("OPEN")
+  expectedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+  items  PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id        String   @id @default(cuid())
+  poId      String
+  productId String
+  quantity  Int
+  unitCost  Int
+
+  po      PurchaseOrder @relation(fields: [poId], references: [id])
+  product Product       @relation(fields: [productId], references: [id])
+
+  @@map("purchase_order_items")
 }
