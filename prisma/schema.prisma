@@ -470,6 +470,23 @@ model PriceBookEntry {
   @@map("price_book_entries")
 }
 
+// Customer Credits
+model CustomerCredit {
+  id           String   @id @default(cuid())
+  customerId   String
+  sourcePaymentId String?
+  amountCents  Int
+  balanceCents Int
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@map("customer_credits")
+}
+
 // Debt Adjustments
 model DebtAdjustment {
   id             String   @id @default(cuid())
