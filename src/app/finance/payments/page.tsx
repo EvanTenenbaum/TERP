@@ -13,7 +13,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
 
   const payments = paymentsRes.success ? paymentsRes.rows : []
   const arList = arRes.success ? arRes.rows : []
-  const customers = customersRes.success ? customersRes.customers : []
+  const customers: any[] = (customersRes.success && (customersRes as any).customers) ? (customersRes as any).customers : []
   const q = (searchParams?.q || '').toLowerCase()
   const filteredPayments = payments.filter((p: any)=> !q || (p.customer?.companyName || '').toLowerCase().includes(q) || (p.referenceNumber || '').toLowerCase().includes(q))
 
