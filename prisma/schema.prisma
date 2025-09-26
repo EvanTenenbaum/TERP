@@ -614,3 +614,13 @@ model OverrideAudit {
 
   @@map("override_audit")
 }
+
+// System status and posting lock
+model SystemStatus {
+  id             String   @id @default("singleton")
+  postingLocked  Boolean  @default(false)
+  lastReason     String?
+  updatedAt      DateTime @updatedAt
+
+  @@map("system_status")
+}
