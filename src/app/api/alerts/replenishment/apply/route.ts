@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
+import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
