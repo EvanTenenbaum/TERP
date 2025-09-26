@@ -16,7 +16,7 @@ export const POST = api<{ batchId:string; tierName:string; qtyAllocated:number; 
     if (!batch) return err('batch_not_found', 404)
     if (!batch.isConsignment) return err('not_consignment_batch', 400)
 
-    const subBatch = await prisma.subBatch.create({
+    const subBatch = await (prisma as any).subBatch.create({
       data: {
         batchId,
         tierName: String(tierName).slice(0,128),
