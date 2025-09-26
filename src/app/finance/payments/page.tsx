@@ -119,6 +119,10 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
                         <details>
                           <summary className="cursor-pointer text-sm text-gray-700">Apply to invoices for {p.customer?.companyName}</summary>
                           <div className="mt-3 space-y-3">
+                            <form action={async (formData: FormData)=> { 'use server'; const id=String(formData.get('paymentId')||''); if(!id) return; const { applyPaymentFIFO } = await import('@/actions/finance'); await applyPaymentFIFO(id); revalidatePath('/finance/payments') }}>
+                              <input type="hidden" name="paymentId" value={p.id} />
+                              <button type="submit" className="inline-flex items-center px-3 py-1.5 rounded bg-indigo-600 text-white text-sm">Apply FIFO</button>
+                            </form>
                             {customerAR.map((r: any)=> {
                               const maxApply = Math.min(remaining, r.balanceRemaining)
                               return (
