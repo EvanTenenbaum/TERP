@@ -18,6 +18,11 @@ export default function AttachmentsPage() {
     if (data.success) setList(data.attachments)
   }
 
+  const toggleArchive = async (id: string, archived: boolean) => {
+    await fetch(`/api/attachments/${id}/archive`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archived: !archived }) })
+    await load()
+  }
+
   useEffect(() => { load() }, [])
 
   const submit = async (e: React.FormEvent) => {
@@ -88,6 +93,7 @@ export default function AttachmentsPage() {
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
                 <th className="px-4 py-2">Open</th>
+                <th className="px-4 py-2">Archive</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -98,6 +104,7 @@ export default function AttachmentsPage() {
                   <td className="px-4 py-2">{a.fileName}</td>
                   <td className="px-4 py-2">{Math.round(a.fileSize/1024)} KB</td>
                   <td className="px-4 py-2"><a className="text-blue-600 hover:text-blue-800" href={`/api/attachments/file?id=${a.id}`} target="_blank" rel="noreferrer">View</a></td>
+                  <td className="px-4 py-2"><button onClick={()=>toggleArchive(a.id, a.archived)} className={a.archived? 'text-green-700' : 'text-gray-600 hover:text-gray-800'}>{a.archived? 'Unarchive' : 'Archive'}</button></td>
                 </tr>
               ))}
             </tbody>
