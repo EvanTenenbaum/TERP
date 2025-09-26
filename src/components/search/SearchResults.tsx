@@ -25,7 +25,7 @@ export default function SearchResults({ results, loading, onAddToCart }: SearchR
   };
 
   const formatPrice = (price: number) => {
-    return `$${(price / 100).toFixed(0)}`;
+    return `$${(price / 100).toFixed(2)}`;
   };
 
   const getAvailabilityBadge = (availability: string) => {
@@ -178,4 +178,3 @@ export default function SearchResults({ results, loading, onAddToCart }: SearchR
     </div>
   );
 }
-
