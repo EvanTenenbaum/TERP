@@ -1,23 +1,20 @@
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
-import { ensurePostingUnlocked } from '@/lib/system'
-import { requireRole, getCurrentUserId } from '@/lib/auth'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { getCurrentUserId } from '@/lib/auth'
 import { ok, err } from '@/lib/http'
 
-export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('forbidden', 403) }
-  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('posting_locked', 423) }
-  const rl = rateLimit(`${rateKeyFromRequest(req as any)}:override-customer`, 60, 60_000)
-  if (!rl.allowed) return err('rate_limited', 429)
-
+export const POST = api<{ productId:string; customerId:string; unitPrice:number; reason:string }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  postingLock: true,
+  rate: { key: 'override-customer', limit: 60 },
+  parseJson: true,
+})(async ({ json }) => {
   try {
-    const body = await req.json().catch(()=>null) as any
-    if (!body) return err('bad_json', 400)
-    const productId = String(body.productId||'')
-    const customerId = String(body.customerId||'')
-    const unitPrice = Math.round(Number(body.unitPrice))
-    const reason = String(body.reason||'').slice(0,256)
+    const productId = String(json!.productId||'')
+    const customerId = String(json!.customerId||'')
+    const unitPrice = Math.round(Number(json!.unitPrice))
+    const reason = String(json!.reason||'').slice(0,256)
     if (!productId || !customerId || !Number.isFinite(unitPrice) || unitPrice <= 0 || !reason) {
       return err('invalid_input', 400)
     }
@@ -40,4 +37,4 @@ export async function POST(req: Request) {
     Sentry.captureException(e)
     return err('server_error', 500)
   }
-}
+})
