@@ -1,13 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { NextRequest, NextResponse } from 'next/server'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
-export async function GET(req: NextRequest) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('forbidden', { status: 403 }) }
-  const rl = rateLimit(`${rateKeyFromRequest(req)}:export-returns`, 30, 60_000)
-  if (!rl.allowed) return new NextResponse('rate_limited', { status: 429 })
+export const GET = api({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  rate: { key: 'export-returns', limit: 30 },
+})(async ({ req }) => {
   const { searchParams } = new URL(req.url)
   const lotId = searchParams.get('lotId') || undefined
   const limit = Number(searchParams.get('limit') || '500')
@@ -26,5 +23,5 @@ export async function GET(req: NextRequest) {
   for (const w of writeoffs) rows.push(['WRITE_OFF', '', w.lotId, String(w.qty), new Date(w.createdAt).toISOString(), w.reason])
 
   const csv = rows.map(r => r.map(f => /[",\n]/.test(f) ? `"${f.replace(/"/g,'""')}"` : f).join(',')).join('\n')
-  return new NextResponse(csv, { status:200, headers: { 'Content-Type':'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="returns_${Date.now()}.csv"` } })
-}
+  return new Response(csv, { status:200, headers: { 'Content-Type':'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="returns_${Date.now()}.csv"` } })
+})
