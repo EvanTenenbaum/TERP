@@ -10,6 +10,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:po-create`, 60, 60_000)
+  if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
   const body = await req.json()
   const { vendorId, expectedAt, poNumber } = body || {}
   if (!vendorId) return NextResponse.json({ success: false, error: 'invalid_input' }, { status: 400 })
