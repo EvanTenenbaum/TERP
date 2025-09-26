@@ -88,3 +88,19 @@ export async function applyPayment(paymentId: string, arId: string, appliedAmoun
     return { success: false, error: 'failed_apply_payment' }
   }
 }
+
+export async function applyApPayment(apId: string, amountCents: number) {
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
+  try {
+    const amount = Math.round(amountCents)
+    if (amount <= 0) return { success: false, error: 'invalid_amount' }
+    const ap = await prisma.accountsPayable.findUnique({ where: { id: apId } })
+    if (!ap) return { success: false, error: 'ap_not_found' }
+    if (amount > ap.balanceRemaining) return { success: false, error: 'amount_exceeds_balance' }
+    await prisma.accountsPayable.update({ where: { id: apId }, data: { balanceRemaining: { decrement: amount } } })
+    return { success: true }
+  } catch (e) {
+    Sentry.captureException(e)
+    return { success: false, error: 'failed_apply_ap_payment' }
+  }
+}
