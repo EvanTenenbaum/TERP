@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import prisma from '@/lib/prisma'
 import { ensurePostingUnlocked } from '@/lib/system'
-import { requireRole } from '@/lib/auth'
+import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { getEffectiveUnitPrice } from '@/lib/pricing'
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
