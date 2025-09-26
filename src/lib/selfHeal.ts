@@ -28,6 +28,17 @@ export async function runSelfHeal() {
     Sentry.captureException(e)
   }
 
+  // Release expired reservations
+  const exps = await prisma.reservation.findMany({ where: { releasedAt: null, expiresAt: { lt: new Date() } } })
+  for (const r of exps) {
+    const lot = await prisma.inventoryLot.findFirst({ where: { batchId: r.batchId! } })
+    if (lot) {
+      await prisma.inventoryLot.update({ where: { id: lot.id }, data: { quantityAllocated: { decrement: r.qty }, quantityAvailable: { increment: r.qty }, lastMovementDate: new Date() } })
+      await prisma.reservation.update({ where: { id: r.id }, data: { releasedAt: new Date() } })
+      fixes.push(`reservation:${r.id}:released`)
+    }
+  }
+
   // Normalize small negative balances on AR/AP (<=1 cent)
   const ars = await prisma.accountsReceivable.findMany({ where: { balanceRemaining: { lt: 0 } } })
   for (const ar of ars) {
