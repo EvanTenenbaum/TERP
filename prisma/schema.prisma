@@ -131,6 +131,7 @@ model Product {
   sampleTransactions SampleTransaction[]
   photos            IntakePhoto[]
   b2bItems          B2BSaleItem[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@map("products")
 }
