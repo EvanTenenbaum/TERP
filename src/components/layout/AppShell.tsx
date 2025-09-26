@@ -76,6 +76,7 @@ const nav: NavGroup[] = [
       { label: "Overview", href: "/analytics", icon: Squares2X2Icon },
       { label: "Profitability", href: "/analytics/profitability", icon: Squares2X2Icon },
       { label: "Alerts", href: "/alerts", icon: ExclamationTriangleIcon },
+      { label: "Audit Log", href: "/admin/audit-log", icon: DocumentTextIcon },
     ],
   },
 ];
