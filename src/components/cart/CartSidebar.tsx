@@ -15,7 +15,7 @@ export default function CartSidebar({ isOpen, onClose, onCreateQuote }: CartSide
   const { items, updateQuantity, removeFromCart, clearCart, getTotalPrice } = useCart();
 
   const formatPrice = (price: number) => {
-    return `$${(price / 100).toFixed(0)}`;
+    return `$${(price / 100).toFixed(2)}`;
   };
 
   const handleCreateQuote = () => {
@@ -203,4 +203,3 @@ export default function CartSidebar({ isOpen, onClose, onCreateQuote }: CartSide
     </Transition.Root>
   );
 }
-
