@@ -23,9 +23,11 @@ export default function PriceBooksPage() {
       const pb = await getPriceBooks();
       if (pb.success) setBooks(pb.books);
       const prods = await getProducts();
-      if (prods.success) setProducts(prods.products.map((p: any) => ({ id: p.id, name: `${p.sku} – ${p.name}` })));
+      if (prods.success && prods.products) setProducts((prods.products || []).map((p: any) => ({ id: p.id, name: `${p.sku} – ${p.name}` })));
+      else setProducts([])
       const cust = await getCustomersForDropdown();
-      if (cust.success) setCustomers(cust.customers);
+      if (cust.success && cust.customers) setCustomers(cust.customers || []);
+      else setCustomers([])
     })();
   }, []);
 
