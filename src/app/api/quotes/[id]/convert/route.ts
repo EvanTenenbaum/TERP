@@ -5,7 +5,7 @@ import { ensurePostingUnlocked } from '@/lib/system'
 import { requireRole } from '@/lib/auth'
 import { getEffectiveUnitPrice } from '@/lib/pricing'
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
   try { await ensurePostingUnlocked(['SUPER_ADMIN','SALES']) } catch { return NextResponse.json({ success: false, error: 'posting_locked' }, { status: 423 }) }
   try {
