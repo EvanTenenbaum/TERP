@@ -1,14 +1,13 @@
-import { requireRole } from '@/lib/auth'
+import { api } from '@/lib/api'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 import { getInventorySummary } from '@/lib/inventoryCache'
 import { ok, err } from '@/lib/http'
 
-export async function GET(req: Request) {
+export const GET = api({
+  roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'],
+  rate: { key: 'inventory-products-summary', limit: 60 },
+})(async ({ req }) => {
   try {
-    try { requireRole(['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY']) } catch { return err('forbidden', 403) }
-    const rl = rateLimit(`${rateKeyFromRequest(req as any)}:inventory-products-summary`, 60, 60_000)
-    if (!rl.allowed) return err('rate_limited', 429)
-
     const { searchParams } = new URL(req.url)
     const q = searchParams.get('q') || undefined
     const category = searchParams.get('category') || undefined
@@ -23,4 +22,4 @@ export async function GET(req: Request) {
   } catch (e) {
     return err('server_error', 500)
   }
-}
+})
