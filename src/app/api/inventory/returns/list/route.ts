@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
-import { NextRequest, NextResponse } from 'next/server'
+import { ok, err } from '@/lib/http'
 
 export async function GET(req: NextRequest) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING','READ_ONLY']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING','READ_ONLY']) } catch { return err('forbidden', 403) }
   const { searchParams } = new URL(req.url)
   const lotId = searchParams.get('lotId') || undefined
   const limit = Number(searchParams.get('limit') || '100')
@@ -15,5 +15,5 @@ export async function GET(req: NextRequest) {
     prisma.writeOffLedger.findMany({ where: lotId ? { lotId } : undefined, orderBy:{ createdAt:'desc' }, take: limit }),
   ])
 
-  return NextResponse.json({ success:true, data: { client, vendor, writeoffs: internal } })
+  return ok({ data: { client, vendor, writeoffs: internal } })
 }
