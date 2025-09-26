@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const po = await prisma.purchaseOrder.findUnique({ where: { id: params.id }, include: { vendor: true, items: { include: { product: true } } } })
