@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
+import { api } from '@/lib/api'
+import { ok } from '@/lib/http'
 
-export async function GET(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING','READ_ONLY']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
+export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','READ_ONLY'] })(async ({ req }) => {
   const { searchParams } = new URL(req.url)
   const vendorId = searchParams.get('vendorId') || undefined
   const data = await prisma.vendorRebate.findMany({ where: vendorId ? { vendorId } : undefined, orderBy: { createdAt: 'desc' }, take: 100 })
-  return NextResponse.json({ success: true, rebates: data })
-}
+  return ok({ rebates: data })
+})
