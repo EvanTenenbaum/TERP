@@ -265,6 +265,25 @@ model InventoryLot {
   @@map("inventory_lots")
 }
 
+// Reservations
+model Reservation {
+  id         String   @id @default(cuid())
+  customerId String
+  productId  String
+  batchId    String?
+  qty        Int
+  expiresAt  DateTime
+  releasedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+  batch    Batch?   @relation(fields: [batchId], references: [id])
+
+  @@index([expiresAt])
+  @@map("reservations")
+}
+
 // Sales Management
 model Order {
   id             String      @id @default(cuid())
