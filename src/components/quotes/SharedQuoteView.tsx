@@ -75,7 +75,7 @@ export default function SharedQuoteView({ quote }: SharedQuoteViewProps) {
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">Total Amount</dt>
-                <dd className="mt-1 text-lg font-medium text-gray-900">${(quote.totalAmount / 100).toFixed(0)}</dd>
+                <dd className="mt-1 text-lg font-medium text-gray-900">${(quote.totalAmount / 100).toFixed(2)}</dd>
               </div>
               {quote.expirationDate && (
                 <div>
@@ -134,10 +134,10 @@ export default function SharedQuoteView({ quote }: SharedQuoteViewProps) {
                         {item.quantity} {item.product.unit}s
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${(item.unitPrice / 100).toFixed(0)}
+                        ${(item.unitPrice / 100).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${(item.lineTotal / 100).toFixed(0)}
+                        ${(item.lineTotal / 100).toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -148,7 +148,7 @@ export default function SharedQuoteView({ quote }: SharedQuoteViewProps) {
                       Total:
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-lg font-medium text-gray-900">
-                      ${(quote.totalAmount / 100).toFixed(0)}
+                      ${(quote.totalAmount / 100).toFixed(2)}
                     </td>
                   </tr>
                 </tfoot>
@@ -169,4 +169,3 @@ export default function SharedQuoteView({ quote }: SharedQuoteViewProps) {
     </div>
   );
 }
-
