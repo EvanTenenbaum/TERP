@@ -37,7 +37,13 @@ export default async function ARPage({ searchParams }: { searchParams?: { q?: st
         ))}
       </section>
 
-      <form className="flex items-center gap-2"><input name="q" defaultValue={searchParams?.q || ''} placeholder="Filter by invoice or customer" className="w-full md:w-80 rounded border-gray-300 px-3 py-2" /><button className="hidden" type="submit" /></form>
+      <div className="flex items-center gap-3">
+        <form className="flex items-center gap-2">
+          <input name="q" defaultValue={searchParams?.q || ''} placeholder="Filter by invoice or customer" className="w-full md:w-80 rounded border-gray-300 px-3 py-2" />
+          <button className="hidden" type="submit" />
+        </form>
+        <a href="/api/finance/ar/export" className="inline-flex items-center rounded-md bg-gray-800 px-3 py-2 text-sm font-medium text-white hover:bg-black">Export CSV</a>
+      </div>
 
       {!success || filtered.length===0 ? (
         <EmptyState title="No AR invoices" description={q ? 'Try clearing the filter.' : 'Create orders to generate receivables.'} />
