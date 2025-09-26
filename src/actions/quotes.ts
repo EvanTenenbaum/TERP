@@ -102,12 +102,6 @@ export async function createQuote(data: CreateQuoteData) {
       }
     });
 
-    revalidatePath('/quotes');
-    
-    return {
-      success: true,
-      quote
-    };
     // Audit overrides: compare provided price vs effective
     try {
       for (const qi of quote.quoteItems) {
