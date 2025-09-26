@@ -1,5 +1,7 @@
 import prisma from '@/lib/prisma'
 
+import prisma from '@/lib/prisma'
+
 export type InventoryIntakeGroup = {
   date: string
   onHand: number
@@ -99,8 +101,8 @@ export async function getInventorySummary(params: InventorySummaryParams = {}): 
       available += qAvail
       const d = b.receivedDate
       if (d) {
-        latestIntake = !latestIntake || d > latestIntake ? d : latestIntake
-        oldestIntake = !oldestIntake || d < oldestIntake ? d : oldestIntake
+        latestIntake = !latestIntake || d.getTime() > (latestIntake as Date).getTime() ? d : latestIntake
+        oldestIntake = !oldestIntake || d.getTime() < (oldestIntake as Date).getTime() ? d : oldestIntake
         const key = toISODate(d)
         const g = intakeGroups[key] || { date: key, onHand: 0, allocated: 0, available: 0, batchCount: 0 }
         g.onHand += qOnHand
