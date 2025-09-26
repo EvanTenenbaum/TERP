@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+"use client";
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function NewBatchPage() {
@@ -221,4 +222,3 @@ export default function NewBatchPage() {
     </div>
   );
 }
-
