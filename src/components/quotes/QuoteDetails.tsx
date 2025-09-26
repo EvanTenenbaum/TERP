@@ -51,12 +51,16 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
   const submitEdit = async (itemId: string) => {
     const cents = Math.round(Number(priceInput))
     if (!Number.isFinite(cents) || cents < 0) return alert('Enter a valid price in cents')
-    const res = await updateQuoteItemPrice({ quoteItemId: itemId, newUnitPrice: cents, reason: reasonInput || 'Manual line override', adminFreeform })
+    const resp = await fetch(`/api/quotes/items/${itemId}/price`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newUnitPrice: cents, reason: reasonInput || 'Manual line override', adminFreeform }),
+    })
+    const res = await resp.json().catch(()=>({ success:false }))
     if (!res.success) {
       alert(res.error || 'Failed to update price')
       return
     }
-    // Reload to reflect server-side totals and pricing
     window.location.reload()
   }
 
