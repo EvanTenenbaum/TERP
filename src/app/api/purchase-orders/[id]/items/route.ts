@@ -1,18 +1,16 @@
 import prisma from '@/lib/prisma'
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { api } from '@/lib/api'
+import { ok, err } from '@/lib/http'
 import { ensurePostingUnlocked } from '@/lib/system'
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
-  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'posting_locked' }, { status: 423 }) }
-  const rl = rateLimit(`${rateKeyFromRequest(req)}:po-add-item`, 240, 60_000)
-  if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
-  const body = await req.json()
-  const { productId, quantity, unitCost } = body || {}
-  if (!productId || !quantity || !unitCost) return NextResponse.json({ success: false, error: 'invalid_input' }, { status: 400 })
-  const item = await prisma.purchaseOrderItem.create({ data: { poId: params.id, productId, quantity: Number(quantity), unitCost: Number(unitCost) }, include: { product: true } })
-  return NextResponse.json({ success: true, item })
-}
+export const POST = api<{ productId:string; quantity:number; unitCost:number }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  postingLock: true,
+  rate: { key: 'po-add-item', limit: 240 },
+  parseJson: true,
+})(async ({ json, params }) => {
+  const { productId, quantity, unitCost } = json || ({} as any)
+  if (!productId || !quantity || !unitCost) return err('invalid_input', 400)
+  const item = await prisma.purchaseOrderItem.create({ data: { poId: params!.id, productId, quantity: Number(quantity), unitCost: Number(unitCost) }, include: { product: true } })
+  return ok({ item })
+})
