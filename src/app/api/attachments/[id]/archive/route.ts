@@ -1,15 +1,16 @@
 import prisma from '@/lib/prisma'
-import { NextRequest, NextResponse } from 'next/server'
-import { requireRole } from '@/lib/auth'
-import prisma from '@/lib/prisma'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { NextRequest } from 'next/server'
+import { api } from '@/lib/api'
+import { ok, err } from '@/lib/http'
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  try { requireRole(['SUPER_ADMIN']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
-  const key = `${rateKeyFromRequest(req)}:attachments-archive`
-  const rl = rateLimit(key, 60, 60_000)
-  if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
-  const { archived } = await req.json()
-  const att = await prisma.attachment.update({ where: { id: params.id }, data: { archived: !!archived } })
-  return NextResponse.json({ success: true, attachment: att })
-}
+export const PATCH = api<{ archived: boolean }>({
+  roles: ['SUPER_ADMIN'],
+  rate: { key: 'attachments-archive', limit: 60 },
+  parseJson: true,
+})(async ({ json, params }) => {
+  const archived = !!json!.archived
+  const id = params?.id || ''
+  if (!id) return err('bad_request', 400)
+  const att = await prisma.attachment.update({ where: { id }, data: { archived } })
+  return ok({ attachment: att })
+})
