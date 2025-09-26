@@ -233,6 +233,8 @@ model InventoryLot {
   variety   Variety? @relation(fields: [varietyId], references: [id])
   b2bItems  B2BSaleItem[]
 
+  @@index([quantityAvailable])
+  @@index([lastMovementDate])
   @@map("inventory_lots")
 }
 
