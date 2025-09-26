@@ -1,18 +1,18 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { getEffectiveUnitPrice } from '@/lib/pricing'
+import { ok, err } from '@/lib/http'
 
 export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
-  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'posting_locked' }, { status: 423 }) }
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('forbidden', 403) }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('posting_locked', 423) }
   try {
     const body = await req.json()
     const { productId, unitPrice, reason } = body || {}
     if (!productId || typeof unitPrice !== 'number') {
-      return NextResponse.json({ success: false, error: 'invalid_input' }, { status: 400 })
+      return err('invalid_input', 400)
     }
     const now = new Date()
 
@@ -29,10 +29,9 @@ export async function POST(req: Request) {
 
     await prisma.overrideAudit.create({ data: { userId: getCurrentUserId(), oldPrice, newPrice: unitPrice, reason: reason || 'GLOBAL_PRICE_OVERRIDE', overrideType: 'GLOBAL' } })
 
-    return NextResponse.json({ success: true, entry })
+    return ok({ entry })
   } catch (error) {
-    console.error('global override error', error)
     Sentry.captureException(error)
-    return NextResponse.json({ success: false, error: 'failed' }, { status: 500 })
+    return err('failed', 500)
   }
 }
