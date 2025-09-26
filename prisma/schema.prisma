@@ -569,6 +569,8 @@ model EventLog {
 
   // Relations
   b2bSale    B2BSale?   @relation(fields: [b2bSaleId], references: [id])
+
+  @@index([b2bSaleId, createdAt])
 }
 
 // Document Management
