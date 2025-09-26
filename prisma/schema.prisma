@@ -634,6 +634,23 @@ model OverrideAudit {
   @@map("override_audit")
 }
 
+// Generic attachments
+model Attachment {
+  id         String   @id @default(cuid())
+  entityType String   // 'product' | 'batch' | 'order' | 'invoice' | 'vendor' | 'customer'
+  entityId   String
+  fileName   String
+  filePath   String
+  mimeType   String
+  fileSize   Int
+  archived   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([entityType, entityId])
+  @@map("attachments")
+}
+
 // System status and posting lock
 model SystemStatus {
   id             String   @id @default("singleton")
