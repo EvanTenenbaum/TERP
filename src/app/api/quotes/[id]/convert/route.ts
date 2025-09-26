@@ -9,6 +9,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   try { requireRole(['SUPER_ADMIN','SALES']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
   try { await ensurePostingUnlocked(['SUPER_ADMIN','SALES']) } catch { return NextResponse.json({ success: false, error: 'posting_locked' }, { status: 423 }) }
   try {
+    const body = await req.json().catch(()=>({})) as any
+    const overrideCreditLimit = !!body?.overrideCreditLimit
+
     const quote = await prisma.salesQuote.findUnique({ where: { id: params.id }, include: { customer: true, quoteItems: { include: { product: true } } } })
     if (!quote) return NextResponse.json({ success: false, error: 'not_found' }, { status: 404 })
     if (quote.status !== 'ACCEPTED') return NextResponse.json({ success: false, error: 'not_accepted' }, { status: 400 })
