@@ -38,28 +38,26 @@ export const GET = api({})(async ({ req }) => {
     results.arAgingCsv = csv.startsWith('Customer,InvoiceId')
   } catch { results.arAgingCsv = false }
 
-  // Sales sheet PDF (optional)
-  if (quoteId) {
-    try {
-      const quote = await prisma.salesQuote.findUnique({
-        where: { id: quoteId },
-        include: { customer: true, quoteItems: { include: { product: true } } },
-      })
-      if (quote) {
-        const q: any = {
-          id: quote.id,
-          quoteNumber: quote.quoteNumber,
-          createdAt: quote.quoteDate,
-          customer: { name: (quote as any).customer?.companyName },
-          items: quote.quoteItems.map((it: any) => ({ qty: it.quantity, unitPrice: it.unitPrice, product: it.product })),
-        }
-        const buf = await generateSalesSheetPDFBuffer(q)
-        results.salesSheetPdf = (buf?.byteLength || 0) > 100
-      } else {
-        results.salesSheetPdf = false
+  // Sales sheet PDF: try provided id, else pick latest
+  try {
+    const quote = quoteId
+      ? await prisma.salesQuote.findUnique({ where: { id: quoteId }, include: { customer: true, quoteItems: { include: { product: true } } } })
+      : await prisma.salesQuote.findFirst({ orderBy: { createdAt: 'desc' }, include: { customer: true, quoteItems: { include: { product: true } } } })
+
+    if (quote) {
+      const q: any = {
+        id: (quote as any).id,
+        quoteNumber: (quote as any).quoteNumber,
+        createdAt: (quote as any).quoteDate,
+        customer: { name: (quote as any).customer?.companyName },
+        items: (quote as any).quoteItems.map((it: any) => ({ qty: it.quantity, unitPrice: it.unitPrice, product: it.product })),
       }
-    } catch { results.salesSheetPdf = false }
-  }
+      const buf = await generateSalesSheetPDFBuffer(q)
+      results.salesSheetPdf = (buf?.byteLength || 0) > 100
+    } else {
+      results.salesSheetPdf = false
+    }
+  } catch { results.salesSheetPdf = false }
 
   return ok({ results })
 })
