@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { generateQuotePDF, shareQuote } from '@/actions/quotes';
+import { updateQuoteItemPrice } from '@/actions/overrides';
 
 interface QuoteDetailsProps {
   quote: {
@@ -36,6 +37,29 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [priceInput, setPriceInput] = useState<string>('')
+  const [reasonInput, setReasonInput] = useState<string>('')
+  const [adminFreeform, setAdminFreeform] = useState<boolean>(false)
+
+  const startEdit = (id: string, currentCents: number) => {
+    setEditingId(id)
+    setPriceInput(String(currentCents))
+    setReasonInput('')
+    setAdminFreeform(false)
+  }
+
+  const submitEdit = async (itemId: string) => {
+    const cents = Math.round(Number(priceInput))
+    if (!Number.isFinite(cents) || cents < 0) return alert('Enter a valid price in cents')
+    const res = await updateQuoteItemPrice({ quoteItemId: itemId, newUnitPrice: cents, reason: reasonInput || 'Manual line override', adminFreeform })
+    if (!res.success) {
+      alert(res.error || 'Failed to update price')
+      return
+    }
+    // Reload to reflect server-side totals and pricing
+    window.location.reload()
+  }
 
   const handleGeneratePDF = async () => {
     setIsGeneratingPDF(true);
@@ -174,6 +198,7 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Total
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -197,6 +222,23 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     ${(item.lineTotal / 100).toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {editingId === item.id ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          <input type="number" className="border rounded px-2 py-1" value={priceInput} onChange={(e)=>setPriceInput(e.target.value)} placeholder="Price (cents)" />
+                          <input className="border rounded px-2 py-1 col-span-2" value={reasonInput} onChange={(e)=>setReasonInput(e.target.value)} placeholder="Reason" />
+                        </div>
+                        <label className="inline-flex items-center gap-2 text-xs"><input type="checkbox" checked={adminFreeform} onChange={(e)=>setAdminFreeform(e.target.checked)} /> Admin freeform</label>
+                        <div className="flex gap-2">
+                          <button onClick={()=>submitEdit(item.id)} className="px-2 py-1 bg-indigo-600 text-white rounded">Save</button>
+                          <button onClick={()=>setEditingId(null)} className="px-2 py-1 border rounded">Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={()=>startEdit(item.id, item.unitPrice)} className="text-indigo-600 hover:text-indigo-800">Override</button>
+                    )}
                   </td>
                 </tr>
               ))}
