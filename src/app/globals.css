@@ -12,4 +12,5 @@
 @layer utilities {
   /* Increase contrast for commonly used low-contrast text */
   .text-gray-500 { @apply text-gray-700 !important; }
+  .text-gray-400 { @apply text-gray-600 !important; }
 }
