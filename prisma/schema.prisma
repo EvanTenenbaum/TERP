@@ -163,6 +163,8 @@ model Vendor {
   crmNotes           CrmNote[]
   sampleTransactions SampleTransaction[]
   purchaseOrders     PurchaseOrder[]
+  vendorSettlements  VendorSettlement[]
+  vendorRebates      VendorRebate[]
 
   @@map("vendors")
 }
@@ -411,6 +413,8 @@ model AccountsPayable {
 
   // Relations
   vendor Vendor @relation(fields: [vendorId], references: [id])
+  vendorSettlements VendorSettlement[]
+  vendorRebates     VendorRebate[]
 
   @@map("accounts_payable")
 }
