@@ -272,6 +272,9 @@ model OrderItem {
   quantity       Int
   unitPrice      Int       // Price in cents
   allocationDate DateTime?
+  // COGS snapshot at allocation time
+  cogsUnitCents  Int?
+  cogsTotalCents Int?
   createdAt      DateTime  @default(now())
 
   // Relations
