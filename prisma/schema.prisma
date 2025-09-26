@@ -132,6 +132,7 @@ model Product {
   photos            IntakePhoto[]
   b2bItems          B2BSaleItem[]
   purchaseOrderItems PurchaseOrderItem[]
+  reservations      Reservation[]
 
   @@map("products")
 }
@@ -198,6 +199,7 @@ model Customer {
   sampleTransactions  SampleTransaction[]
   customerCredits     CustomerCredit[]
   reminders           Reminder[]
+  reservations        Reservation[]
 
   @@map("customers")
 }
@@ -224,6 +226,7 @@ model Batch {
   orderItems         OrderItem[]
   sampleTransactions SampleTransaction[]
   photos             IntakePhoto[]
+  reservations       Reservation[]
 
   @@index([productId])
   @@map("batches")
