@@ -1,8 +1,12 @@
 import { getAccountsPayable, applyApPayment } from '@/actions/finance'
 import { revalidatePath } from 'next/cache'
 
-export default async function APPage() {
+import EmptyState from '@/components/ui/EmptyState'
+
+export default async function APPage({ searchParams }: { searchParams?: { q?: string } }) {
   const { success, rows } = await getAccountsPayable()
+  const q = (searchParams?.q || '').toLowerCase()
+  const filtered = (rows || []).filter((r: any)=> !q || r.invoiceNumber.toLowerCase().includes(q) || (r.vendor?.companyName || '').toLowerCase().includes(q))
 
   async function applyAction(formData: FormData) {
     'use server'
