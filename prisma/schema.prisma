@@ -456,6 +456,8 @@ model PriceBookEntry {
   priceBook PriceBook @relation(fields: [priceBookId], references: [id])
   product   Product   @relation(fields: [productId], references: [id])
 
+  @@index([productId, effectiveDate])
+  @@index([priceBookId, effectiveDate])
   @@map("price_book_entries")
 }
 
