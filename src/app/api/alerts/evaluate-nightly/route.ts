@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
+import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
