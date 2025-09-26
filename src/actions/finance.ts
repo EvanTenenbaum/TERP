@@ -101,7 +101,7 @@ export async function createPayment(customerId: string, amountCents: number, pay
     if (!paymentMethod || typeof paymentMethod !== 'string') return { success: false, error: 'invalid_method' }
     const amount = Math.round(Number(amountCents))
     if (!Number.isFinite(amount) || amount <= 0) return { success: false, error: 'invalid_amount' }
-    const p = await prisma.payment.create({ data: { customerId, amount, paymentMethod: paymentMethod.slice(0,64), referenceNumber: referenceNumber?.slice(0,64) } })
+    const p = await prisma.payment.create({ data: { customerId, paymentDate: new Date(), amount, paymentMethod: paymentMethod.slice(0,64), referenceNumber: referenceNumber?.slice(0,64) } })
     return { success: true, payment: p }
   } catch (e) {
     Sentry.captureException(e)
@@ -165,7 +165,7 @@ export async function generateDunningPreview(minDaysOverdue: number = 1) {
     const map = new Map<string, DunningCustomer>()
     for (const ar of ars) {
       const key = ar.customerId
-      const dc = map.get(key) || { customerId: key, customerName: ar.customer?.companyName || 'Unknown', contactEmail: ar.customer?.contactEmail || (typeof ar.customer?.contactInfo === 'object' ? (ar.customer?.contactInfo as any)?.email : undefined), totalDueCents: 0, items: [] }
+      const dc = map.get(key) || { customerId: key, customerName: ar.customer?.companyName || 'Unknown', contactEmail: ar.customer?.contactEmail || (typeof ar.customer?.contactInfo === 'object' ? (ar.customer?.contactInfo as any)?.email : undefined), totalDueCents: 0, items: [] as DunningItem[] }
       dc.items.push({ arId: ar.id, invoiceNumber: ar.invoiceNumber, dueDate: ar.dueDate.toISOString(), balanceCents: ar.balanceRemaining })
       dc.totalDueCents += ar.balanceRemaining
       map.set(key, dc)
