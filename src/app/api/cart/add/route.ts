@@ -1,23 +1,21 @@
-import { NextResponse } from 'next/server'
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 import { ok, err } from '@/lib/http'
 
-export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING','SALES']) } catch { return err('forbidden', 403) }
+export const POST = api<{ productId:string; inventoryLotId?:string; quantity:number }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING','SALES'],
+  rate: { key: 'cart-add', limit: 240 },
+  parseJson: true,
+})(async ({ req, json }) => {
+  // preserve original semantics: only SUPER_ADMIN can post while locked
   await ensurePostingUnlocked()
 
-  const rl = rateLimit(`${rateKeyFromRequest(req)}:cart-add`, 240, 60_000)
-  if (!rl.allowed) return err('rate_limited', 429)
-
-  const body = await req.json().catch(() => null)
-  if (!body) return err('bad_json', 400)
-
-  const productId = String(body.productId || '')
-  const inventoryLotId = body.inventoryLotId ? String(body.inventoryLotId) : undefined
-  const quantity = Number(body.quantity)
+  const productId = String(json!.productId || '')
+  const inventoryLotId = json!.inventoryLotId ? String(json!.inventoryLotId) : undefined
+  const quantity = Number(json!.quantity)
   if (!productId || !Number.isFinite(quantity) || quantity <= 0) return err('invalid_input', 400)
 
   const lots = await prisma.inventoryLot.findMany({ where: { batch: { productId } }, select: { id: true, quantityAvailable: true, reservedQty: true } })
@@ -53,4 +51,4 @@ export async function POST(req: Request) {
     const status = code === 'invalid_lot' ? 400 : code === 'insufficient_on_hand' ? 409 : 500
     return err(code, status)
   }
-}
+})
