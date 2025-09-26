@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { api } from '@/lib/api'
+import { ok } from '@/lib/http'
 
-export async function GET() {
-  return NextResponse.json({ ok: true });
-}
+export const GET = api({})(async () => {
+  return ok({ ok: true })
+})
