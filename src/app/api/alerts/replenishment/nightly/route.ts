@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { NextResponse } from 'next/server'
 
 export async function GET() {
+  if (process.env.ENABLE_QA_CRONS !== 'true') {
+    return NextResponse.json({ success: false, error: 'disabled' }, { status: 404 })
+  }
   // Lightweight nightly: generate suggest events for all low-effective products at default threshold 10
   const lots = await prisma.inventoryLot.findMany({ include: { batch: { include: { product: true } } } })
   const byProduct: Record<string, { productId:string; effective:number }> = {}
