@@ -18,6 +18,25 @@ export default function NewBatchPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [products, setProducts] = useState<{id:string; name:string}[]>([])
+  const [vendors, setVendors] = useState<{id:string; vendorCode:string; companyName:string}[]>([])
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [pRes, vRes] = await Promise.all([
+          fetch('/api/products'),
+          fetch('/api/vendors')
+        ])
+        const pData = await pRes.json()
+        const vData = await vRes.json()
+        if (pData?.success) setProducts(pData.products)
+        if (vData?.success) setVendors(vData.vendors)
+      } catch (e) {
+        console.error('Failed to load options', e)
+      }
+    })()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
