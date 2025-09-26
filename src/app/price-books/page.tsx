@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { createPriceBook, createPriceBookEntry, getPriceBooks, setPriceBookActive } from '@/actions/priceBooks';
 import { getProducts } from '@/actions/inventory';
 import { getCustomersForDropdown } from '@/actions/customers';
-import { applyGlobalPriceOverride } from '@/actions/overrides';
 
 interface ProductOpt { id: string; name: string; }
 interface CustomerOpt { id: string; companyName: string; }
