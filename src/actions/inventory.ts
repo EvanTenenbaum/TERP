@@ -177,7 +177,7 @@ export async function createBatch(data: CreateBatchData) {
       console.warn('Name normalization skipped:', e);
     }
 
-    revalidatePath('/inventory/batches');
+    revalidatePath('/inventory/products');
 
     return {
       success: true,
@@ -245,7 +245,7 @@ export async function createInventoryLot(data: CreateInventoryLotData) {
       }
     });
 
-    revalidatePath('/inventory/lots');
+    revalidatePath('/inventory/products');
     
     return {
       success: true,
@@ -308,7 +308,7 @@ export async function addBatchCostChange(batchId: string, newCost: number, effec
       }
     });
 
-    revalidatePath('/inventory/batches');
+    revalidatePath('/inventory/products');
     
     return {
       success: true,
