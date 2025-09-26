@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { getEffectiveUnitPrice } from '@/lib/pricing'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
