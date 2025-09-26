@@ -1,5 +1,7 @@
 import { allocateFIFOByProduct, shipAllocated } from '@/lib/inventoryAllocator'
 
+import { allocateFIFOByProduct, shipAllocated } from '@/lib/inventoryAllocator'
+
 describe('inventoryAllocator', () => {
   function makeDb(lots: any[]) {
     const state = new Map(lots.map((l)=> [l.id, { ...l }]))
