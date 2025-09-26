@@ -7,6 +7,8 @@ import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 export async function POST(req: NextRequest) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch { return new NextResponse('forbidden', { status: 403 }) }
   try { await ensurePostingUnlocked(['SUPER_ADMIN','SALES']) } catch { return new NextResponse('posting_locked', { status: 423 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:reservations-create`, 240, 60_000)
+  if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   const body = await req.json()
   const { customerId, productId, batchId, qty, expiresAt } = body || {}
   const q = Math.round(Number(qty))
@@ -32,6 +34,8 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch { return new NextResponse('forbidden', { status: 403 }) }
   try { await ensurePostingUnlocked(['SUPER_ADMIN','SALES']) } catch { return new NextResponse('posting_locked', { status: 423 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:reservations-release`, 240, 60_000)
+  if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id') || ''
   if (!id) return new NextResponse('bad_request', { status: 400 })
