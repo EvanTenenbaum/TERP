@@ -1,12 +1,16 @@
 import { NextResponse, NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentRole } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
   const role = getCurrentRole()
   if (!(role === 'SUPER_ADMIN' || role === 'ACCOUNTING')) {
     return new NextResponse('forbidden', { status: 403 })
   }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:export-ar`, 30, 60_000)
+  if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   const ars = await prisma.accountsReceivable.findMany({ include: { customer: true }, orderBy: { invoiceDate: 'desc' } })
   const rows = [['invoiceNumber','customer','invoiceDate','dueDate','amountCents','balanceCents']]
   for (const ar of ars) {
