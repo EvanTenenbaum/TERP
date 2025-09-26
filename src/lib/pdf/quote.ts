@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import { getVendorDisplayName } from '@/lib/vendorDisplay';
 
 interface QuoteData {
   id: string;
