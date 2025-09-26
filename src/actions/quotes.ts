@@ -235,45 +235,28 @@ export async function convertQuoteToOrder(quoteId: string) {
         const unitPrice = await getEffectiveUnitPrice(tx as any, qi.productId, { customerId: quote.customerId });
         const qty = qi.quantity;
 
-        // Find an inventory lot with sufficient available quantity for this product
-        const batch = await tx.batch.findFirst({
-          where: {
+        const { allocateFIFOByProduct } = await import('@/lib/inventoryAllocator')
+        const allocations = await allocateFIFOByProduct(tx as any, qi.productId, qty)
+
+        for (const alloc of allocations) {
+          const activeCost = await tx.batchCost.findFirst({
+            where: { batchId: alloc.batchId, effectiveFrom: { lte: allocationDate } },
+            orderBy: { effectiveFrom: 'desc' },
+          })
+          const cogsUnitCents = activeCost?.unitCost ?? null
+          const cogsTotalCents = cogsUnitCents != null ? cogsUnitCents * alloc.qty : null
+
+          itemsToCreate.push({
             productId: qi.productId,
-            inventoryLot: { quantityAvailable: { gte: qty } },
-          },
-          orderBy: { receivedDate: 'asc' },
-          include: { inventoryLot: true },
-        });
-        if (!batch || !batch.inventoryLot) throw new Error('insufficient_stock');
-
-        // Allocate inventory
-        await tx.inventoryLot.update({
-          where: { id: batch.inventoryLot.id },
-          data: {
-            quantityAllocated: { increment: qty },
-            quantityAvailable: { decrement: qty },
-            lastMovementDate: allocationDate,
-          },
-        });
-
-        // COGS snapshot (unit cost active at allocation)
-        const activeCost = await tx.batchCost.findFirst({
-          where: { batchId: batch.id, effectiveFrom: { lte: allocationDate } },
-          orderBy: { effectiveFrom: 'desc' },
-        })
-        const cogsUnitCents = activeCost?.unitCost ?? null
-        const cogsTotalCents = cogsUnitCents != null ? cogsUnitCents * qty : null
-
-        itemsToCreate.push({
-          productId: qi.productId,
-          batchId: batch.id,
-          quantity: qty,
-          unitPrice,
-          allocationDate,
-          cogsUnitCents: cogsUnitCents ?? undefined,
-          cogsTotalCents: cogsTotalCents ?? undefined,
-        });
-        computedTotal += unitPrice * qty;
+            batchId: alloc.batchId,
+            quantity: alloc.qty,
+            unitPrice,
+            allocationDate,
+            cogsUnitCents: cogsUnitCents ?? undefined,
+            cogsTotalCents: cogsTotalCents ?? undefined,
+          })
+          computedTotal += unitPrice * alloc.qty
+        }
       }
 
       const order = await tx.order.create({

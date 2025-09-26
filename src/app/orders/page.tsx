@@ -25,7 +25,7 @@ export default async function OrdersPage() {
                     <p className="text-sm text-gray-500">{order.customer?.companyName || '—'}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">${(order.totalAmount/100).toFixed(0)}</p>
+                    <p className="text-sm font-medium text-gray-900">${(order.totalAmount/100).toFixed(2)}</p>
                     <p className="text-sm text-gray-500">{order.orderItems.length} item{order.orderItems.length!==1?'s':''}</p>
                   </div>
                 </div>

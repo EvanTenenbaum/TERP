@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { generateQuotePDF, shareQuote } from '@/actions/quotes';
-import { getVendorDisplayName } from '@/lib/vendorDisplay';
 
 interface QuoteDetailsProps {
   quote: {
@@ -135,7 +134,7 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
           </div>
           <div>
             <dt className="text-sm font-medium text-gray-500">Total Amount</dt>
-            <dd className="mt-1 text-sm text-gray-900">${(quote.totalAmount / 100).toFixed(0)}</dd>
+            <dd className="mt-1 text-sm text-gray-900">${(quote.totalAmount / 100).toFixed(2)}</dd>
           </div>
           {quote.expirationDate && (
             <div>
@@ -194,10 +193,10 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
                     {item.quantity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${(item.unitPrice / 100).toFixed(0)}
+                    ${(item.unitPrice / 100).toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${(item.lineTotal / 100).toFixed(0)}
+                    ${(item.lineTotal / 100).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -208,7 +207,7 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
                   Total:
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  ${(quote.totalAmount / 100).toFixed(0)}
+                  ${(quote.totalAmount / 100).toFixed(2)}
                 </td>
               </tr>
             </tfoot>
@@ -244,4 +243,3 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
     </div>
   );
 }
-
