@@ -305,6 +305,9 @@ model AccountsReceivable {
   order              Order?               @relation(fields: [orderId], references: [id])
   paymentApplications PaymentApplication[]
 
+  @@index([customerId])
+  @@index([balanceRemaining])
+  @@index([invoiceDate])
   @@map("accounts_receivable")
 }
 
