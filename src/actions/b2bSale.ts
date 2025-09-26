@@ -198,14 +198,10 @@ async function departForOutgoing(tx: typeof prisma, saleId: string) {
     const { shipAllocated } = await import('@/lib/inventoryAllocator')
     await shipAllocated(tx as any, inventoryId, qty)
 
-    const inv = await tx.inventoryLot.findUnique({ where: { id: inventoryId }, include: { batch: { include: { batchCosts: true } } } })
-    let unitCost: number | null = null
-    if (inv?.batch?.batchCosts?.length) {
-      const costs = inv.batch.batchCosts
-        .filter(c => c.effectiveFrom <= now)
-        .sort((a,b)=> b.effectiveFrom.getTime()-a.effectiveFrom.getTime())
-      unitCost = costs.length ? costs[0].unitCost : null
-    }
+    const lot = await tx.inventoryLot.findUnique({ where: { id: inventoryId }, select: { batchId: true } })
+    const { getActiveBatchCostDb } = await import('@/lib/cogs')
+    const active = lot?.batchId ? await getActiveBatchCostDb(tx as any, lot.batchId, now) : null
+    const unitCost: number | null = active?.unitCost ?? null
 
     shipEvents.push({ eventType: 'DEPARTED_ITEM', data: { ...actorMeta(), itemId: item.id, inventoryId, qty, unitCost } })
   }
