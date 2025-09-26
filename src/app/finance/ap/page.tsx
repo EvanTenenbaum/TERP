@@ -21,8 +21,10 @@ export default async function APPage({ searchParams }: { searchParams?: { q?: st
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Accounts Payable</h1>
-      {!success || rows.length===0 ? (
-        <div className="text-gray-500">No AP bills.</div>
+      <form className="mb-3 flex items-center gap-2"><input name="q" defaultValue={searchParams?.q || ''} placeholder="Filter by invoice or vendor" className="w-full md:w-80 rounded border-gray-300 px-3 py-2" /><button className="hidden" type="submit" /></form>
+
+      {!success || filtered.length===0 ? (
+        <EmptyState title="No AP bills" description={searchParams?.q ? 'Try clearing the filter.' : 'Accept incoming B2B orders to generate payables.'} />
       ) : (
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
