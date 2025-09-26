@@ -22,7 +22,7 @@ export default function Home() {
             </span>
           </h2>
           <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Manage products, batches, and inventory lots with real-time tracking.
+            Manage products with real-time inventory by product and intake date.
           </p>
         </div>
 
@@ -65,4 +65,3 @@ export default function Home() {
     </main>
   )
 }
-
