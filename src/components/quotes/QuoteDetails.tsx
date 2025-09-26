@@ -143,6 +143,7 @@ export default function QuoteDetails({ quote }: QuoteDetailsProps) {
                 <option value="CANCELLED">CANCELLED</option>
               </select>
               <button onClick={async ()=>{ const r = await fetch(`/api/quotes/${quote.id}/convert`, { method: 'POST' }); const d = await r.json(); if (d.success) window.location.href = '/orders'; else alert(d.error || 'Failed'); }} className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">Convert to Order</button>
+              <button onClick={async ()=>{ const r = await fetch(`/api/quotes/${quote.id}/convert`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ overrideCreditLimit: true }) }); const d = await r.json(); if (d.success) window.location.href = '/orders'; else alert(d.error || 'Failed'); }} className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">Override Credit Limit + Convert</button>
             </div>
             <button
               onClick={handleGeneratePDF}
