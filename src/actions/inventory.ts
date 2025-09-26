@@ -2,6 +2,9 @@
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import * as Sentry from '@sentry/nextjs'
+import { requireRole } from '@/lib/auth'
+import { getActiveBatchCostDb } from '@/lib/cogs'
 
 export interface CreateProductData {
   name: string;
@@ -296,6 +299,86 @@ export async function addBatchCostChange(batchId: string, newCost: number, effec
       success: false,
       error: 'Failed to add batch cost change'
     };
+  }
+}
+
+export async function getLotsForDropdown() {
+  try {
+    const lots = await prisma.inventoryLot.findMany({
+      select: { id: true, batch: { select: { lotNumber: true, product: { select: { name: true } } } } },
+      orderBy: { createdAt: 'desc' }
+    })
+    return { success: true, lots: lots.map(l => ({ id: l.id, label: `${l.batch.product.name} — Lot ${l.batch.lotNumber}` })) }
+  } catch (e) {
+    console.error('Error fetching lots for dropdown:', e)
+    return { success: false, error: 'Failed to fetch lots' }
+  }
+}
+
+export async function customerReturn(lotId: string, quantity: number, customerId: string, notes?: string) {
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
+  try {
+    if (!lotId || !customerId || !quantity || quantity <= 0) return { success: false, error: 'invalid_input' }
+    const result = await prisma.$transaction(async (tx) => {
+      const lot = await tx.inventoryLot.findUnique({ where: { id: lotId }, include: { batch: { include: { product: true } } } })
+      if (!lot) throw new Error('lot_not_found')
+      const newOnHand = lot.quantityOnHand + quantity
+      const newAvailable = Math.max(0, newOnHand - lot.quantityAllocated)
+      await tx.inventoryLot.update({ where: { id: lot.id }, data: { quantityOnHand: newOnHand, quantityAvailable: newAvailable, lastMovementDate: new Date() } })
+      const cost = await getActiveBatchCostDb(tx, lot.batchId, new Date())
+      await tx.sampleTransaction.create({
+        data: {
+          productId: lot.batch.product.id,
+          batchId: lot.batchId,
+          customerId,
+          transactionType: 'CLIENT_RETURN',
+          quantity,
+          unitCostSnapshot: cost?.unitCost ?? 0,
+          transactionDate: new Date(),
+          notes: notes || undefined,
+        }
+      })
+      return { lotId: lot.id, newOnHand, newAvailable }
+    })
+    revalidatePath('/inventory/lots')
+    return { success: true, result }
+  } catch (e) {
+    Sentry.captureException(e)
+    return { success: false, error: 'failed_customer_return' }
+  }
+}
+
+export async function vendorReturn(lotId: string, quantity: number, vendorId: string, notes?: string) {
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
+  try {
+    if (!lotId || !vendorId || !quantity || quantity <= 0) return { success: false, error: 'invalid_input' }
+    const result = await prisma.$transaction(async (tx) => {
+      const lot = await tx.inventoryLot.findUnique({ where: { id: lotId }, include: { batch: { include: { product: true, vendor: true } } } })
+      if (!lot) throw new Error('lot_not_found')
+      if (lot.quantityOnHand < quantity) throw new Error('insufficient_on_hand')
+      const newOnHand = lot.quantityOnHand - quantity
+      const newAvailable = Math.max(0, newOnHand - lot.quantityAllocated)
+      await tx.inventoryLot.update({ where: { id: lot.id }, data: { quantityOnHand: newOnHand, quantityAvailable: newAvailable, lastMovementDate: new Date() } })
+      const cost = await getActiveBatchCostDb(tx, lot.batchId, new Date())
+      await tx.sampleTransaction.create({
+        data: {
+          productId: lot.batch.product.id,
+          batchId: lot.batchId,
+          vendorId,
+          transactionType: 'VENDOR_RETURN',
+          quantity,
+          unitCostSnapshot: cost?.unitCost ?? 0,
+          transactionDate: new Date(),
+          notes: notes || undefined,
+        }
+      })
+      return { lotId: lot.id, newOnHand, newAvailable }
+    })
+    revalidatePath('/inventory/lots')
+    return { success: true, result }
+  } catch (e) {
+    Sentry.captureException(e)
+    return { success: false, error: 'failed_vendor_return' }
   }
 }
 
