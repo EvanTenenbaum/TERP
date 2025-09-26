@@ -312,7 +312,8 @@ export async function convertQuoteToOrder(quoteId: string) {
   } catch (error) {
     console.error('Error converting quote to order:', error);
     Sentry.captureException(error)
-    const message = (error as Error)?.message === 'insufficient_stock' ? 'Insufficient stock to allocate' : 'Failed to convert quote to order';
+    const msg = (error as Error)?.message
+    const message = msg === 'insufficient_stock' ? 'Insufficient stock to allocate' : msg === 'credit_limit_exceeded' ? 'Credit limit exceeded; admin override required' : 'Failed to convert quote to order';
     return { success: false, error: message };
   }
 }
