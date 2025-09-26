@@ -4,11 +4,12 @@ import { rateLimit, rateKeyFromRequest } from '@/lib/rateLimit'
 export function middleware(req: NextRequest) {
   const res = NextResponse.next()
 
-  // If RBAC enabled and header missing, default to READ_ONLY
+  // If RBAC enabled, allow configurable default via RBAC_DEFAULT_ROLE; if unset, do not override
   const enable = process.env.ENABLE_RBAC === 'true'
   const roleHeader = req.headers.get('x-user-role')
-  if (enable && !roleHeader) {
-    res.headers.set('x-user-role', 'READ_ONLY')
+  const defaultRole = process.env.RBAC_DEFAULT_ROLE
+  if (enable && !roleHeader && defaultRole) {
+    res.headers.set('x-user-role', defaultRole)
   }
 
   // Basic rate limiting for non-GET requests
