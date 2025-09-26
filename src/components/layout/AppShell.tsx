@@ -66,6 +66,7 @@ const nav: NavGroup[] = [
       { label: "Dunning", href: "/finance/ar/dunning", icon: DocumentTextIcon },
       { label: "Accounts Payable", href: "/finance/ap", icon: DocumentTextIcon },
       { label: "Payments", href: "/finance/payments", icon: DocumentTextIcon },
+      { label: "Credits", href: "/finance/credits", icon: DocumentTextIcon },
       { label: "Vendor Settlements", href: "/finance/vendor-settlements", icon: DocumentTextIcon },
       { label: "Vendor Rebates", href: "/finance/vendor-rebates", icon: DocumentTextIcon },
     ],
