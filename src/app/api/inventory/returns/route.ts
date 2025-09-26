@@ -1,19 +1,19 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { getActiveBatchCostDb } from '@/lib/cogs'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { ok, err } from '@/lib/http'
 
 export async function POST(req: Request) {
-  try { requireRole(['ACCOUNTING','SUPER_ADMIN']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
+  try { requireRole(['ACCOUNTING','SUPER_ADMIN']) } catch { return err('forbidden', 403) }
   await ensurePostingUnlocked()
 
   const rl = rateLimit(`${rateKeyFromRequest(req)}:inventory-return`, 120, 60_000)
-  if (!rl.allowed) return NextResponse.json({ success:false, error:'rate_limited' }, { status:429 })
+  if (!rl.allowed) return err('rate_limited', 429)
 
   const body = await req.json().catch(()=>null)
-  if (!body) return NextResponse.json({ success:false, error:'bad_json' }, { status:400 })
+  if (!body) return err('bad_json', 400)
 
   const type = String(body.type||'')
   const lotId = String(body.lotId||'')
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   const increase = body.increase === true
   const userId = getCurrentUserId()
 
-  if (!lotId || !Number.isFinite(qtyNum) || qtyNum <= 0) return NextResponse.json({ success:false, error:'invalid_input' }, { status:400 })
+  if (!lotId || !Number.isFinite(qtyNum) || qtyNum <= 0) return err('invalid_input', 400)
 
   try {
     const out = await prisma.$transaction(async (tx) => {
@@ -75,10 +75,10 @@ export async function POST(req: Request) {
       throw new Error('invalid_type')
     })
 
-    return NextResponse.json({ success:true, data: out })
+    return ok({ data: out })
   } catch (e: any) {
     const code = e?.message || 'server_error'
     const status = code === 'lot_not_found' ? 404 : code === 'insufficient_on_hand' ? 409 : code === 'invalid_type' ? 400 : 500
-    return NextResponse.json({ success:false, error: code }, { status })
+    return err(code, status)
   }
 }
