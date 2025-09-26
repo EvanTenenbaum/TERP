@@ -199,6 +199,7 @@ model Batch {
   sampleTransactions SampleTransaction[]
   photos             IntakePhoto[]
 
+  @@index([productId])
   @@map("batches")
 }
 
