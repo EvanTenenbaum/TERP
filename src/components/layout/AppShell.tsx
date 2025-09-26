@@ -68,6 +68,7 @@ const nav: NavGroup[] = [
     title: "Analytics",
     items: [
       { label: "Overview", href: "/analytics", icon: Squares2X2Icon },
+      { label: "Alerts", href: "/alerts", icon: ExclamationTriangleIcon },
     ],
   },
 ];
