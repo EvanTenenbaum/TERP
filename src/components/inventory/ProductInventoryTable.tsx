@@ -86,13 +86,12 @@ export default function ProductInventoryTable() {
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">On Hand</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Allocated</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Available</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">No products found.</td>
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">No products found.</td>
               </tr>
             )}
             {filtered.map(row => {
@@ -116,13 +115,10 @@ export default function ProductInventoryTable() {
                     <td className="px-6 py-3 text-right tabular-nums">{row.totals.onHand}</td>
                     <td className="px-6 py-3 text-right tabular-nums">{row.totals.allocated}</td>
                     <td className="px-6 py-3 text-right tabular-nums">{row.totals.available}</td>
-                    <td className="px-6 py-3 text-right text-sm">
-                      <a className="text-blue-600 hover:text-blue-800" href={`/inventory/products/${row.productId}`}>Details</a>
-                    </td>
                   </tr>
                   {isOpen && (
                     <tr>
-                      <td colSpan={7} className="px-6 py-3 bg-gray-50">
+                      <td colSpan={6} className="px-6 py-3 bg-gray-50">
                         <div className="text-sm font-medium text-gray-700 mb-2">Intake groups</div>
                         {row.intake.groups.length === 0 ? (
                           <div className="text-sm text-gray-500">No intakes yet.</div>
