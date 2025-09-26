@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: Request) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:credits-apply`, 120, 60_000)
+  if (!rl.allowed) return NextResponse.json({ success:false, error:'rate_limited' }, { status:429 })
   const body = await req.json().catch(()=>null)
   if (!body) return NextResponse.json({ success:false, error:'bad_json' }, { status:400 })
   const arId = String(body.arId||'')
