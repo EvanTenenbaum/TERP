@@ -82,8 +82,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
+  // Breadcrumb data
+  const segments = (pathname || '/').split('/').filter(Boolean)
+  const crumbs = segments.map((seg, i) => ({
+    label: seg.replace(/[-_]/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()),
+    href: '/' + segments.slice(0, i + 1).join('/'),
+  }))
+
+  // Contextual quick actions
+  const ctaMap: Record<string, { href: string; label: string } | undefined> = {
+    '/quotes': { href: '/quotes/new', label: 'New Quote' },
+    '/b2b/orders': { href: '/b2b/orders/new', label: 'New B2B Order' },
+    '/inventory/products': { href: '/inventory/products/new', label: 'Add Product' },
+    '/inventory/batches': { href: '/inventory/batches/new', label: 'Create Batch' },
+  }
+  const cta = Object.keys(ctaMap).find((k) => pathname?.startsWith(k)) ? ctaMap[Object.keys(ctaMap).find((k) => pathname?.startsWith(k)) as string] : undefined
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-white border px-3 py-1 rounded shadow">Skip to content</a>
       {/* Mobile top bar */}
       <div className="md:hidden sticky top-0 z-30 bg-white border-b shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
@@ -127,7 +144,30 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Main content */}
         <div className="flex-1 w-full md:ml-64">
-          <main className="p-4 md:p-6">{children}</main>
+          {/* Breadcrumb and actions */}
+          <div className="px-4 md:px-6 pt-3 md:pt-4">
+            {crumbs.length > 0 && (
+              <div className="flex items-center justify-between mb-2">
+                <nav aria-label="Breadcrumb" className="text-sm text-gray-500">
+                  <ol className="flex flex-wrap gap-1">
+                    <li><Link href="/" className="hover:text-gray-900">Home</Link></li>
+                    {crumbs.map((c) => (
+                      <li key={c.href} className="flex items-center">
+                        <span className="mx-1 text-gray-400">/</span>
+                        <Link href={c.href} className="hover:text-gray-900">{c.label}</Link>
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
+                {cta && (
+                  <Link href={cta.href} className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                    {cta.label}
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+          <main id="main" className="p-4 md:p-6">{children}</main>
         </div>
       </div>
     </div>
