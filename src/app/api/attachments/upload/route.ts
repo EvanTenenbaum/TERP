@@ -16,6 +16,10 @@ export async function POST(req: NextRequest) {
   const allowed = ['image/jpeg', 'image/webp', 'application/pdf']
   if (!allowed.includes(mime)) return NextResponse.json({ error: 'invalid_type' }, { status: 415 })
 
+  // Per-entity limit
+  const existingCount = await prisma.attachment.count({ where: { entityType, entityId, archived: false } })
+  if (existingCount >= 50) return NextResponse.json({ error: 'too_many_attachments' }, { status: 429 })
+
   const uploadDir = process.env.UPLOAD_DIR || './uploads'
   await fs.mkdir(uploadDir, { recursive: true })
   const baseName = path.basename(file.name || 'upload')
@@ -23,6 +27,10 @@ export async function POST(req: NextRequest) {
   const fileName = `${stamp}-${baseName}`
   const filePath = path.join(uploadDir, fileName)
   const ab = await file.arrayBuffer()
+
+  // Size limit 10MB
+  if (ab.byteLength > 10 * 1024 * 1024) return NextResponse.json({ error: 'file_too_large' }, { status: 413 })
+
   await fs.writeFile(filePath, Buffer.from(ab))
 
   const stat = await fs.stat(filePath)
