@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 function bucket(days: number) {
   if (days >= 90) return '90+'
@@ -12,6 +14,8 @@ function bucket(days: number) {
 
 export async function GET(_req: NextRequest) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('forbidden', { status: 403 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(_req)}:export-ap-aging`, 30, 60_000)
+  if (!rl.allowed) return new NextResponse('rate_limited', { status: 429 })
   const today = new Date()
   const aps = await prisma.accountsPayable.findMany({ include: { vendor: true } })
 
