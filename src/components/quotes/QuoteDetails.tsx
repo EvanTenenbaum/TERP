@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { generateQuotePDF, shareQuote } from '@/actions/quotes';
-import { updateQuoteItemPrice } from '@/actions/overrides';
 
 interface QuoteDetailsProps {
   quote: {
