@@ -1,27 +1,25 @@
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { requireRole, getCurrentUserId } from '@/lib/auth'
+import { getCurrentUserId } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { getActiveBatchCostDb } from '@/lib/cogs'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 import { ok, err } from '@/lib/http'
 
-export async function POST(req: Request) {
-  try { requireRole(['ACCOUNTING','SUPER_ADMIN']) } catch { return err('forbidden', 403) }
+export const POST = api<{ type:string; lotId:string; quantity:number; reason?:string; notes?:string; defect?:boolean; increase?:boolean }>({
+  roles: ['ACCOUNTING','SUPER_ADMIN'],
+  rate: { key: 'inventory-return', limit: 120 },
+  parseJson: true,
+})(async ({ json }) => {
+  // preserve original semantics: only SUPER_ADMIN can post while locked
   await ensurePostingUnlocked()
 
-  const rl = rateLimit(`${rateKeyFromRequest(req)}:inventory-return`, 120, 60_000)
-  if (!rl.allowed) return err('rate_limited', 429)
-
-  const body = await req.json().catch(()=>null)
-  if (!body) return err('bad_json', 400)
-
-  const type = String(body.type||'')
-  const lotId = String(body.lotId||'')
-  const qtyNum = Number(body.quantity)
-  const reason = body.reason ? String(body.reason) : undefined
-  const notes = body.notes ? String(body.notes) : undefined
-  const defect = body.defect === true
-  const increase = body.increase === true
+  const type = String(json!.type||'')
+  const lotId = String(json!.lotId||'')
+  const qtyNum = Number(json!.quantity)
+  const reason = json!.reason ? String(json!.reason) : undefined
+  const notes = json!.notes ? String(json!.notes) : undefined
+  const defect = json!.defect === true
+  const increase = json!.increase === true
   const userId = getCurrentUserId()
 
   if (!lotId || !Number.isFinite(qtyNum) || qtyNum <= 0) return err('invalid_input', 400)
@@ -81,4 +79,4 @@ export async function POST(req: Request) {
     const status = code === 'lot_not_found' ? 404 : code === 'insufficient_on_hand' ? 409 : code === 'invalid_type' ? 400 : 500
     return err(code, status)
   }
-}
+})
