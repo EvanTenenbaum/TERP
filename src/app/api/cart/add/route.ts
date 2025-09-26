@@ -1,8 +1,7 @@
 import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { requireRole, getCurrentUserId } from '@/lib/auth'
+import { getCurrentUserId } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 import { ok, err } from '@/lib/http'
 
 export const POST = api<{ productId:string; inventoryLotId?:string; quantity:number }>({
