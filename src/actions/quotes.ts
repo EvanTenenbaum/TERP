@@ -287,9 +287,24 @@ export async function convertQuoteToOrder(quoteId: string) {
         },
         include: {
           customer: true,
-          orderItems: { include: { product: true } },
+          orderItems: { include: { product: true, batch: { include: { vendor: true } } } },
         },
       });
+
+      // Consignment vendor payables accrue on sale
+      const consignByVendor = new Map<string, number>()
+      for (const it of order.orderItems) {
+        if (it.batch && (it.batch as any).isConsignment && it.cogsTotalCents) {
+          // accrue vendor payable by COGS
+          consignByVendor.set(it.batch.vendorId, (consignByVendor.get(it.batch.vendorId) || 0) + (it.cogsTotalCents || 0))
+        }
+      }
+      for (const [vendorId, amount] of consignByVendor) {
+        const apCount = await tx.accountsPayable.count({})
+        const apNumber = `CONS-${new Date().getFullYear()}-${String(apCount + 1).padStart(4, '0')}`
+        const now = new Date()
+        await tx.accountsPayable.create({ data: { vendorId, invoiceNumber: apNumber, invoiceDate: now, dueDate: now, terms: 'Consignment', amount, balanceRemaining: amount } })
+      }
 
       // Credit limit enforcement
       const cust = await tx.customer.findUnique({ where: { id: quote.customerId } })
