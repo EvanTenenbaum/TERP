@@ -1,6 +1,8 @@
 'use server';
 
 import prisma from '@/lib/prisma';
+import * as Sentry from '@sentry/nextjs'
+import { requireRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache';
 import { getEffectiveUnitPrice } from '@/lib/pricing';
 
@@ -55,6 +57,7 @@ export async function getQuotes() {
 }
 
 export async function createQuote(data: CreateQuoteData) {
+  try { requireRole(['SUPER_ADMIN','SALES']) } catch (e) { return { success: false, error: 'forbidden' } }
   try {
     const { customerId, items, validUntil } = data;
 
@@ -105,6 +108,7 @@ export async function createQuote(data: CreateQuoteData) {
     };
   } catch (error) {
     console.error('Error creating quote:', error);
+    Sentry.captureException(error)
     return {
       success: false,
       error: 'Failed to create quote'
@@ -166,6 +170,7 @@ export async function getQuoteByToken(token: string) {
 }
 
 export async function updateQuoteStatus(id: string, status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED') {
+  try { requireRole(['SUPER_ADMIN','SALES']) } catch (e) { return { success: false, error: 'forbidden' } }
   try {
     const quote = await prisma.salesQuote.update({
       where: { id },
@@ -189,6 +194,7 @@ export async function updateQuoteStatus(id: string, status: 'DRAFT' | 'SENT' | '
     };
   } catch (error) {
     console.error('Error updating quote status:', error);
+    Sentry.captureException(error)
     return {
       success: false,
       error: 'Failed to update quote status'
@@ -197,6 +203,7 @@ export async function updateQuoteStatus(id: string, status: 'DRAFT' | 'SENT' | '
 }
 
 export async function convertQuoteToOrder(quoteId: string) {
+  try { requireRole(['SUPER_ADMIN','SALES']) } catch (e) { return { success: false, error: 'forbidden' } }
   try {
     const quote = await prisma.salesQuote.findUnique({
       where: { id: quoteId },
@@ -302,6 +309,7 @@ export async function convertQuoteToOrder(quoteId: string) {
     return { success: true, order: result };
   } catch (error) {
     console.error('Error converting quote to order:', error);
+    Sentry.captureException(error)
     const message = (error as Error)?.message === 'insufficient_stock' ? 'Insufficient stock to allocate' : 'Failed to convert quote to order';
     return { success: false, error: message };
   }

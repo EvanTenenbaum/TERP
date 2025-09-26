@@ -4,7 +4,7 @@ import type { PrismaClient } from '@prisma/client'
 export async function getEffectiveUnitPrice(
   db: Pick<PrismaClient, any> | any,
   productId: string,
-  opts?: { customerId?: string }
+  opts?: { customerId?: string; roleId?: string }
 ): Promise<number> {
   const now = new Date()
 
@@ -23,6 +23,24 @@ export async function getEffectiveUnitPrice(
       orderBy: { effectiveDate: 'desc' },
     })
     if (customerPrice) return customerPrice.unitPrice
+  }
+
+  // Role price (if provided)
+  if (opts?.roleId) {
+    const rolePrice = await db.priceBookEntry.findFirst({
+      where: {
+        productId,
+        priceBook: {
+          type: 'ROLE',
+          roleId: opts.roleId,
+          isActive: true,
+          effectiveDate: { lte: now },
+        },
+        effectiveDate: { lte: now },
+      },
+      orderBy: { effectiveDate: 'desc' },
+    })
+    if (rolePrice) return rolePrice.unitPrice
   }
 
   const globalPrice = await db.priceBookEntry.findFirst({

@@ -1,6 +1,8 @@
 'use server';
 
 import prisma from '@/lib/prisma';
+import * as Sentry from '@sentry/nextjs'
+import { requireRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache';
 
 export type PriceBookType = 'GLOBAL' | 'ROLE' | 'CUSTOMER'
@@ -36,6 +38,7 @@ export async function getPriceBooks() {
 }
 
 export async function createPriceBook(data: CreatePriceBookData) {
+  requireRole(['SUPER_ADMIN','ACCOUNTING'])
   const book = await prisma.priceBook.create({
     data: {
       name: data.name,
@@ -51,12 +54,14 @@ export async function createPriceBook(data: CreatePriceBookData) {
 }
 
 export async function setPriceBookActive(id: string, isActive: boolean) {
+  requireRole(['SUPER_ADMIN','ACCOUNTING'])
   const book = await prisma.priceBook.update({ where: { id }, data: { isActive } });
   revalidatePath('/price-books');
   return { success: true, book };
 }
 
 export async function createPriceBookEntry(data: CreatePriceBookEntryData) {
+  requireRole(['SUPER_ADMIN','ACCOUNTING'])
   const entry = await prisma.priceBookEntry.create({
     data: {
       priceBookId: data.priceBookId,

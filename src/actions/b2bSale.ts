@@ -1,6 +1,8 @@
 "use server";
 
 import prisma from '@/lib/prisma';
+import * as Sentry from '@sentry/nextjs'
+import { requireRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache';
 
 export type B2BSaleType = 'outgoing' | 'incoming'
@@ -30,6 +32,7 @@ function actorMeta() {
 }
 
 export async function createB2BSale(input: CreateB2BSaleInput) {
+  try { requireRole(['SUPER_ADMIN','SALES']) } catch (e) { return { success: false, error: 'forbidden' } }
   if (!input.items || input.items.length === 0) {
     return { success: false, error: 'items_required' }
   }
@@ -63,6 +66,7 @@ export async function createB2BSale(input: CreateB2BSaleInput) {
     return { success: true, sale }
   } catch (e) {
     console.error('createB2BSale error', e)
+    Sentry.captureException(e)
     return { success: false, error: 'failed_create_b2b' }
   }
 }
@@ -318,6 +322,7 @@ async function acceptForIncoming(tx: typeof prisma, saleId: string) {
 }
 
 export async function updateSaleStatus(id: string, status: B2BStatus) {
+  try { requireRole(['SUPER_ADMIN','SALES']) } catch (e) { return { success: false, error: 'forbidden' } }
   try {
     const result = await prisma.$transaction(async (tx) => {
       const current = await tx.b2BSale.findUnique({ where: { id } })
@@ -392,6 +397,7 @@ export async function updateSaleStatus(id: string, status: B2BStatus) {
     return { success: true, sale: result }
   } catch (e) {
     console.error('updateSaleStatus error', e)
+    Sentry.captureException(e)
     const msg = (e as Error).message === 'insufficient_stock' || (e as Error).message === 'insufficient_allocated' ? (e as Error).message : 'failed_update_status'
     return { success: false, error: msg }
   }
