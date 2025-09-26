@@ -1,5 +1,3 @@
-import { searchProducts, getSearchFilterOptions } from '@/actions/search'
-
 jest.mock('@/lib/prisma', () => ({
   __esModule: true,
   default: {
