@@ -59,6 +59,7 @@ const nav: NavGroup[] = [
     title: "Finance",
     items: [
       { label: "Accounts Receivable", href: "/finance/ar", icon: DocumentTextIcon },
+      { label: "Dunning", href: "/finance/ar/dunning", icon: DocumentTextIcon },
       { label: "Accounts Payable", href: "/finance/ap", icon: DocumentTextIcon },
       { label: "Payments", href: "/finance/payments", icon: DocumentTextIcon },
     ],
