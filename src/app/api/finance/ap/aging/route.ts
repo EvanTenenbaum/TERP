@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { NextRequest, NextResponse } from 'next/server'
+import { api } from '@/lib/api'
+import { ok, err } from '@/lib/http'
 
 function bucket(days: number) {
   if (days >= 90) return '90+'
@@ -11,8 +10,7 @@ function bucket(days: number) {
   return 'not_due'
 }
 
-export async function GET(_req: NextRequest) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING','READ_ONLY']) } catch { return NextResponse.json({ success:false, error:'forbidden' }, { status:403 }) }
+export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','READ_ONLY'] })(async () => {
   const today = new Date()
   const aps = await prisma.accountsPayable.findMany({ include: { vendor: true } })
 
@@ -31,5 +29,5 @@ export async function GET(_req: NextRequest) {
   const totals: Record<string, number> = { '0-29':0, '30-59':0, '60-89':0, '90+':0 }
   for (const r of rows) { if (totals[r.bucket] != null) totals[r.bucket] += r.balanceCents }
 
-  return NextResponse.json({ success:true, data: { rows, totals } })
-}
+  return ok({ data: { rows, totals } })
+})
