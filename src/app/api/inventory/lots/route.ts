@@ -1,10 +1,10 @@
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
 import { ok, err } from '@/lib/http'
 
-export async function GET(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY']) } catch { return err('forbidden', 403) }
-
+export const GET = api({
+  roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'],
+})(async ({ req }) => {
   const { searchParams } = new URL(req.url)
   const productId = searchParams.get('productId') || ''
   if (!productId) return err('missing_productId', 400)
@@ -16,4 +16,4 @@ export async function GET(req: Request) {
   })
   const mapped = lots.map(l => ({ id: l.id, quantityAvailable: Math.max(0, (l.quantityAvailable - (l.reservedQty ?? 0))) }))
   return ok({ lots: mapped })
-}
+})
