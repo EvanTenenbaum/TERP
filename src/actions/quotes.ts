@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/nextjs'
 import { requireRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache';
 import { getEffectiveUnitPrice } from '@/lib/pricing';
+import { ensurePostingUnlocked } from '@/lib/system'
 
 export interface CreateQuoteData {
   customerId: string;
@@ -58,6 +59,7 @@ export async function getQuotes() {
 
 export async function createQuote(data: CreateQuoteData) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch (e) { return { success: false, error: 'forbidden' } }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','SALES']) } catch { return { success: false, error: 'posting_locked' } }
   try {
     const { customerId, items, validUntil } = data;
 
@@ -102,6 +104,22 @@ export async function createQuote(data: CreateQuoteData) {
 
     revalidatePath('/quotes');
     
+    return {
+      success: true,
+      quote
+    };
+    // Audit overrides: compare provided price vs effective
+    try {
+      for (const qi of quote.quoteItems) {
+        const eff = await getEffectiveUnitPrice(prisma as any, qi.productId, { customerId: quote.customerId })
+        if (qi.unitPrice !== eff) {
+          await prisma.overrideAudit.create({ data: { userId: 'system', quoteId: quote.id, lineItemId: qi.id, oldPrice: eff, newPrice: qi.unitPrice, reason: 'QUOTE_PRICE_OVERRIDE', overrideType: 'LINE' } })
+        }
+      }
+    } catch {}
+
+    revalidatePath('/quotes');
+
     return {
       success: true,
       quote
@@ -171,6 +189,7 @@ export async function getQuoteByToken(token: string) {
 
 export async function updateQuoteStatus(id: string, status: 'DRAFT' | 'SENT' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED') {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch (e) { return { success: false, error: 'forbidden' } }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','SALES']) } catch { return { success: false, error: 'posting_locked' } }
   try {
     const quote = await prisma.salesQuote.update({
       where: { id },
@@ -204,6 +223,7 @@ export async function updateQuoteStatus(id: string, status: 'DRAFT' | 'SENT' | '
 
 export async function convertQuoteToOrder(quoteId: string) {
   try { requireRole(['SUPER_ADMIN','SALES']) } catch (e) { return { success: false, error: 'forbidden' } }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','SALES']) } catch { return { success: false, error: 'posting_locked' } }
   try {
     const quote = await prisma.salesQuote.findUnique({
       where: { id: quoteId },
