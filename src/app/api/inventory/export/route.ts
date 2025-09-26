@@ -2,12 +2,15 @@ import { NextResponse, NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentRole, getCurrentUserId } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
   const role = getCurrentRole()
   if (!(role === 'SUPER_ADMIN' || role === 'SALES' || role === 'ACCOUNTING' || role === 'READ_ONLY')) {
     return new NextResponse('forbidden', { status: 403 })
   }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:export-inventory`, 30, 60_000)
+  if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   const lots = await prisma.inventoryLot.findMany({
     include: { batch: { include: { product: true, vendor: true } } },
     orderBy: { lastMovementDate: 'desc' }
