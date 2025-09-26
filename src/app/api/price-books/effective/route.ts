@@ -17,7 +17,7 @@ export const GET = api({ roles: ['SUPER_ADMIN','SALES','ACCOUNTING','READ_ONLY']
     const eligibleBooks = books.filter(b => b.type === (source as any) && (source!=='CUSTOMER' || b.customerId===customerId) && (source!=='ROLE' || (role && b.roleId===role)))
     const ids = new Set(eligibleBooks.map(b=>b.id))
     const e = entries.find(en => ids.has(en.priceBookId))
-    return e ? { price: en.unitPrice } : {}
+    return e ? { price: e.unitPrice } : {}
   }
 
   const customer = customerId ? pick('CUSTOMER') : {}
