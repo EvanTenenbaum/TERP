@@ -271,11 +271,21 @@ export async function convertQuoteToOrder(quoteId: string) {
         },
       });
 
+      // Credit limit enforcement
+      const cust = await tx.customer.findUnique({ where: { id: quote.customerId } })
+      if (cust?.creditLimit && cust.creditLimit > 0) {
+        const openAR = await tx.accountsReceivable.aggregate({ _sum: { balanceRemaining: true }, where: { customerId: quote.customerId, balanceRemaining: { gt: 0 } } })
+        const projected = (openAR._sum.balanceRemaining || 0) + computedTotal
+        if (projected > cust.creditLimit) {
+          throw new Error('credit_limit_exceeded')
+        }
+      }
+
       // Create AR invoice
       const arCount = await tx.accountsReceivable.count();
       const invoiceNumber = `INV-${new Date().getFullYear()}-${String(arCount + 1).padStart(4, '0')}`;
       const invoiceDate = new Date();
-      const terms = quote.customer.paymentTerms || 'Net 30';
+      const terms = cust?.paymentTerms || 'Net 30';
       const daysMatch = /Net\s+(\d+)/i.exec(terms);
       const days = daysMatch ? parseInt(daysMatch[1], 10) : 30;
       const dueDate = new Date(invoiceDate.getTime() + days * 24 * 60 * 60 * 1000);
@@ -286,6 +296,7 @@ export async function convertQuoteToOrder(quoteId: string) {
           invoiceNumber,
           invoiceDate,
           dueDate,
+          terms,
           amount: order.totalAmount,
           balanceRemaining: order.totalAmount,
         },
