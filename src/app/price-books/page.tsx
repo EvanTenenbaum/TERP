@@ -144,6 +144,29 @@ export default function PriceBooksPage() {
           </div>
           <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Add Entry</button>
         </form>
+
+        <form onSubmit={submitOverride} className="bg-white shadow rounded-lg p-6 space-y-4 lg:col-span-2">
+          <h2 className="text-lg font-semibold">Quick Global Override</h2>
+          <p className="text-sm text-gray-600">Creates/updates a global override price for a product effective immediately and logs an audit.</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-1">Product</label>
+              <select className="w-full border rounded px-3 py-2" value={overrideForm.productId} onChange={e=>setOverrideForm({...overrideForm,productId:e.target.value})} required>
+                <option value="">Select…</option>
+                {products.map(p=> (<option key={p.id} value={p.id}>{p.name}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Unit Price (cents)</label>
+              <input type="number" className="w-full border rounded px-3 py-2" value={overrideForm.unitPrice} onChange={e=>setOverrideForm({...overrideForm,unitPrice:e.target.value})} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Reason</label>
+              <input className="w-full border rounded px-3 py-2" value={overrideForm.reason} onChange={e=>setOverrideForm({...overrideForm,reason:e.target.value})} placeholder="e.g., competitive match" />
+            </div>
+          </div>
+          <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Apply Override</button>
+        </form>
       </div>
 
       <div className="bg-white shadow rounded-lg p-6">
