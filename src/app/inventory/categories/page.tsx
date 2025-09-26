@@ -8,7 +8,8 @@ export default function CategoriesPage() {
   const [parentId, setParentId] = useState('')
 
   const load = async () => {
-    const res = await listCategories()
+    const resp = await fetch('/api/categories')
+    const res = await resp.json()
     if (res.success) setCats(res.categories as any[])
   }
   useEffect(() => { load() }, [])
@@ -16,20 +17,21 @@ export default function CategoriesPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    await createCategory(name.trim(), parentId || undefined)
+    const resp = await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim(), parentId: parentId || undefined }) })
+    if (!resp.ok) { alert('Failed'); return }
     setName(''); setParentId(''); await load()
   }
 
   const toggle = async (id: string, active: boolean) => {
     const c = cats.find(x=>x.id===id)
     if (!c) return
-    await updateCategory(id, c.name, c.parentId || undefined, !active)
+    await fetch(`/api/categories/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: c.name, parentId: c.parentId || undefined, isActive: !active }) })
     await load()
   }
 
   const remove = async (id: string) => {
     if (!confirm('Delete category?')) return
-    await deleteCategory(id)
+    await fetch(`/api/categories/${id}`, { method: 'DELETE' })
     await load()
   }
 
