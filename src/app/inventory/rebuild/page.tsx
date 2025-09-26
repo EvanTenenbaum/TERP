@@ -1,7 +1,8 @@
 export default async function RebuildInventoryPage() {
-  async function runSelfHeal() {
+  async function runSelfHealAction() {
     'use server'
-    await fetch(`${process.env.NEXTAUTH_URL || ''}/api/qa/self-heal`, { cache: 'no-store' })
+    const { runSelfHeal } = await import('@/lib/selfHeal')
+    await runSelfHeal()
   }
   return (
     <div className="container mx-auto px-4 py-8">
