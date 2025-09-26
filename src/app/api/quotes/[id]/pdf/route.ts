@@ -62,7 +62,7 @@ export async function GET(
 
     const buffer = await generateQuotePDFBuffer(pdfData as any)
 
-    return new Response(buffer, {
+    return new Response(new Uint8Array(buffer as any), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="quote-${quote.quoteNumber}.pdf"`,
