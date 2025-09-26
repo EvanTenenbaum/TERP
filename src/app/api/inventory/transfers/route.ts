@@ -1,18 +1,18 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole, getCurrentUserId } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
 import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
+import { ok, err } from '@/lib/http'
 
 export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 }) }
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('forbidden', 403) }
   await ensurePostingUnlocked()
 
   const rl = rateLimit(`${rateKeyFromRequest(req)}:inventory-transfer`, 120, 60_000)
-  if (!rl.allowed) return NextResponse.json({ success: false, error: 'rate_limited' }, { status: 429 })
+  if (!rl.allowed) return err('rate_limited', 429)
 
   const body = await req.json().catch(() => null)
-  if (!body) return NextResponse.json({ success: false, error: 'bad_json' }, { status: 400 })
+  if (!body) return err('bad_json', 400)
 
   const productId = String(body.productId || '')
   const sourceLotId = String(body.sourceLotId || '')
@@ -22,10 +22,10 @@ export async function POST(req: Request) {
   const notes = body.notes ? String(body.notes) : undefined
 
   if (!productId || !sourceLotId || !destLotId) {
-    return NextResponse.json({ success: false, error: 'missing_fields' }, { status: 400 })
+    return err('missing_fields', 400)
   }
   if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
-    return NextResponse.json({ success: false, error: 'invalid_quantity' }, { status: 400 })
+    return err('invalid_quantity', 400)
   }
 
   try {
@@ -36,14 +36,14 @@ export async function POST(req: Request) {
       prisma.inventoryLot.findUnique({ where: { id: destLotId }, include: { batch: true } })
     ])
 
-    if (!src || !dst) return NextResponse.json({ success: false, error: 'lot_not_found' }, { status: 404 })
-    if (!src.batch || !dst.batch) return NextResponse.json({ success: false, error: 'batch_missing' }, { status: 500 })
+    if (!src || !dst) return err('lot_not_found', 404)
+    if (!src.batch || !dst.batch) return err('batch_missing', 500)
     if (src.batch.productId !== productId || dst.batch.productId !== productId) {
-      return NextResponse.json({ success: false, error: 'product_mismatch' }, { status: 400 })
+      return err('product_mismatch', 400)
     }
 
     const available = src.quantityAvailable - (src.reservedQty ?? 0)
-    if (available < qtyNum) return NextResponse.json({ success: false, error: 'insufficient_on_hand' }, { status: 409 })
+    if (available < qtyNum) return err('insufficient_on_hand', 409)
 
     const now = new Date()
 
@@ -78,10 +78,10 @@ export async function POST(req: Request) {
       return { transfer, updatedSource, updatedDest }
     })
 
-    return NextResponse.json({ success: true, transfer: result.transfer })
+    return ok({ transfer: result.transfer })
   } catch (e: any) {
     const code = e?.message === 'insufficient_on_hand' ? 'insufficient_on_hand' : e?.message === 'lot_not_found' ? 'lot_not_found' : 'server_error'
     const status = code === 'insufficient_on_hand' ? 409 : code === 'lot_not_found' ? 404 : 500
-    return NextResponse.json({ success: false, error: code }, { status })
+    return err(code, status)
   }
 }
