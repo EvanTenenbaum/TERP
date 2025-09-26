@@ -28,6 +28,40 @@ export async function getAccountsPayable() {
   }
 }
 
+export async function applyPaymentFIFO(paymentId: string) {
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'forbidden' } }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return { success: false, error: 'posting_locked' } }
+  try {
+    const payment = await prisma.payment.findUnique({ where: { id: paymentId } , include: { paymentApplications: true } })
+    if (!payment) return { success: false, error: 'payment_not_found' }
+    let remaining = payment.amount - payment.paymentApplications.reduce((s,a)=> s + a.appliedAmount, 0)
+    if (remaining <= 0) return { success: true, applied: 0, remaining: 0 }
+
+    const openAR = await prisma.accountsReceivable.findMany({ where: { customerId: payment.customerId, balanceRemaining: { gt: 0 } }, orderBy: { invoiceDate: 'asc' } })
+    let applied = 0
+    await prisma.$transaction(async (tx) => {
+      for (const ar of openAR) {
+        if (remaining <= 0) break
+        const amt = Math.min(remaining, ar.balanceRemaining)
+        if (amt > 0) {
+          await tx.paymentApplication.create({ data: { paymentId: payment.id, arId: ar.id, appliedAmount: amt, applicationDate: new Date() } })
+          await tx.accountsReceivable.update({ where: { id: ar.id }, data: { balanceRemaining: { decrement: amt } } })
+          applied += amt
+          remaining -= amt
+        }
+      }
+      if (remaining > 0) {
+        // Overpayment → customer credit (increase balance)
+        await tx.customerCredit.create({ data: { customerId: payment.customerId, sourcePaymentId: payment.id, amountCents: remaining, balanceCents: remaining } })
+      }
+    })
+    return { success: true, applied, remaining }
+  } catch (e) {
+    Sentry.captureException(e)
+    return { success: false, error: 'failed_apply_fifo' }
+  }
+}
+
 export async function getPayments() {
   try {
     const rows = await prisma.payment.findMany({ include: { customer: true, paymentApplications: { include: { ar: true } } }, orderBy: { createdAt: 'desc' } })
