@@ -44,7 +44,7 @@ export default async function ReturnsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Return Type</label>
-            <select name="type" className="w-full rounded border-gray-300 px-3 py-2">
+            <select name="type" required aria-required="true" className="w-full rounded border-gray-300 px-3 py-2">
               <option value="customer">Customer Return (increase stock)</option>
               <option value="vendor">Vendor Return (decrease stock)</option>
             </select>
