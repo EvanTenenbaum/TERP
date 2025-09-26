@@ -1,24 +1,21 @@
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
-import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
-import { ensurePostingUnlocked } from '@/lib/system'
 import { ok, err } from '@/lib/http'
 
-export async function POST(request: Request) {
+export const POST = api<{ productId:string; vendorId:string; lotNumber?:string; batchNumber?:string; receivedDate?:string; expirationDate?:string | null; quantityReceived:number; quantity?:number; initialCost?:number }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  postingLock: true,
+  rate: { key: 'batches-create', limit: 60 },
+  parseJson: true,
+})(async ({ json }) => {
   try {
-    try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('forbidden', 403) }
-    try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('posting_locked', 423) }
-    const key = `${rateKeyFromRequest(request as any)}:batches-create`
-    const rl = rateLimit(key, 60, 60_000)
-    if (!rl.allowed) return err('rate_limited', 429)
-    const body = await request.json()
-    const productId = String(body.productId || '')
-    const vendorId = String(body.vendorId || '')
-    const lotNumber = String(body.lotNumber || body.batchNumber || '').trim()
-    const receivedDate = new Date(body.receivedDate || Date.now())
-    const expirationDate = body.expirationDate ? new Date(body.expirationDate) : null
-    const quantityReceived = Math.round(Number(body.quantityReceived ?? body.quantity))
-    const initialCostDollars = Number(body.initialCost)
+    const productId = String(json!.productId || '')
+    const vendorId = String(json!.vendorId || '')
+    const lotNumber = String(json!.lotNumber || json!.batchNumber || '').trim()
+    const receivedDate = new Date((json as any).receivedDate || Date.now())
+    const expirationDate = (json as any).expirationDate ? new Date((json as any).expirationDate) : null
+    const quantityReceived = Math.round(Number((json as any).quantityReceived ?? (json as any).quantity))
+    const initialCostDollars = Number((json as any).initialCost)
 
     if (!productId || !vendorId || !lotNumber || !Number.isFinite(quantityReceived) || quantityReceived <= 0) {
       return err('invalid_input', 400)
@@ -49,4 +46,4 @@ export async function POST(request: Request) {
   } catch (e) {
     return err('server_error', 500)
   }
-}
+})
