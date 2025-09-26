@@ -2,7 +2,9 @@ import { getPayments, getAccountsReceivable, createPayment, applyPayment } from 
 import { getCustomersForDropdown } from '@/actions/customers'
 import { revalidatePath } from 'next/cache'
 
-export default async function PaymentsPage() {
+import EmptyState from '@/components/ui/EmptyState'
+
+export default async function PaymentsPage({ searchParams }: { searchParams?: { q?: string } }) {
   const [paymentsRes, arRes, customersRes] = await Promise.all([
     getPayments(),
     getAccountsReceivable(),
