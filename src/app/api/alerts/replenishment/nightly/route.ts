@@ -1,11 +1,9 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { api } from '@/lib/api'
+import { ok, err } from '@/lib/http'
 
-export async function GET() {
-  if (process.env.ENABLE_QA_CRONS !== 'true') {
-    return NextResponse.json({ success: false, error: 'disabled' }, { status: 404 })
-  }
-  // Lightweight nightly: generate suggest events for all low-effective products at default threshold 10
+export const GET = api({})(async () => {
+  if (process.env.ENABLE_QA_CRONS !== 'true') return err('disabled', 404)
   const lots = await prisma.inventoryLot.findMany({ include: { batch: { include: { product: true } } } })
   const byProduct: Record<string, { productId:string; effective:number }> = {}
   for (const l of lots) {
@@ -15,8 +13,6 @@ export async function GET() {
   }
   const threshold = 10
   const low = Object.values(byProduct).filter(p => p.effective < threshold)
-  if (low.length) {
-    await prisma.eventLog.createMany({ data: low.map(p => ({ eventType: 'replenishment.nightly', data: { productId: p.productId, effective: p.effective, threshold } })) })
-  }
-  return NextResponse.json({ success:true, count: low.length })
-}
+  if (low.length) await prisma.eventLog.createMany({ data: low.map(p => ({ eventType: 'replenishment.nightly', data: { productId: p.productId, effective: p.effective, threshold } })) })
+  return ok({ count: low.length })
+})
