@@ -18,8 +18,6 @@ export default function POPage() {
     if (data.success) setPo(data.purchaseOrder)
   }
   const loadProducts = async () => {
-    const r = await fetch('/api/inventory/export')
-    try { await r.text() } catch {}
     const p = await fetch('/api/products').catch(()=>null)
     let data: any = null
     try { data = p ? await p.json() : null } catch {}
