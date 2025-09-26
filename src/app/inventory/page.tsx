@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import Link from 'next/link'
+
 export default function InventoryDashboard() {
   return (
     <div className="space-y-6">
@@ -60,4 +62,3 @@ export default function InventoryDashboard() {
     </div>
   );
 }
-
