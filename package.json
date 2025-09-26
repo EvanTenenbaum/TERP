@@ -20,7 +20,8 @@
     "strains:fetch": "node scripts/fetchStrains.mjs",
     "strains:download:openthc": "curl -L -o data/strains_openthc.csv https://vdb.openthc.org/download/strains.csv",
     "strains:seed": "node prisma/seedVarieties.cjs",
-    "test:unit": "jest"
+    "test:unit": "jest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
