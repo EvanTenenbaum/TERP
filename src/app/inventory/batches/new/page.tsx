@@ -116,7 +116,9 @@ export default function NewBatchPage() {
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Select Product</option>
-                {/* Product options will be populated dynamically */}
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
               </select>
             </div>
           </div>
