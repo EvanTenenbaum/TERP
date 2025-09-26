@@ -7,6 +7,8 @@ import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 export async function POST(req: NextRequest) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('forbidden', { status: 403 }) }
   try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('posting_locked', { status: 423 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:write-off`, 60, 60_000)
+  if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   const body = await req.json()
   const { lotId, qty, reason } = body || {}
   const q = Math.round(Number(qty))
