@@ -92,6 +92,7 @@ model ProductCategory {
 
   parent    ProductCategory? @relation("CategoryParent", fields: [parentId], references: [id])
   children  ProductCategory[] @relation("CategoryParent")
+  products  Product[]
 
   @@unique([name])
   @@map("product_categories")
