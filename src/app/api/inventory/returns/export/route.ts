@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
   try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return new NextResponse('forbidden', { status: 403 }) }
+  const rl = rateLimit(`${rateKeyFromRequest(req)}:export-returns`, 30, 60_000)
+  if (!rl.allowed) return new NextResponse('rate_limited', { status: 429 })
   const { searchParams } = new URL(req.url)
   const lotId = searchParams.get('lotId') || undefined
   const limit = Number(searchParams.get('limit') || '500')
