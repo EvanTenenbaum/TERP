@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { NextRequest, NextResponse } from 'next/server'
-import { Readable } from 'stream'
 import { createReadStream } from 'fs'
+import { api } from '@/lib/api'
+import { ok } from '@/lib/http'
 
-export async function GET(req: NextRequest) {
+export const GET = api({})(async ({ req }) => {
   const { searchParams } = new URL(req.url)
   const q = (searchParams.get('q') || '').trim()
   const out: string[] = []
-  if (q.length === 0) return NextResponse.json({ results: out })
+  if (q.length === 0) return ok({ results: out })
   try {
     const db = await prisma.variety.findMany({ where: { name: { contains: q, mode: 'insensitive' } }, take: 10 })
     out.push(...db.map(v => v.name))
@@ -27,5 +26,5 @@ export async function GET(req: NextRequest) {
       out.push(...matches)
     } catch {}
   }
-  return NextResponse.json({ results: Array.from(new Set(out)).slice(0, 10) })
-}
+  return ok({ results: Array.from(new Set(out)).slice(0, 10) })
+})
