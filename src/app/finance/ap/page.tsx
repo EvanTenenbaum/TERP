@@ -37,7 +37,13 @@ export default async function APPage({ searchParams }: { searchParams?: { q?: st
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Accounts Payable</h1>
-      <form className="mb-3 flex items-center gap-2"><input name="q" defaultValue={searchParams?.q || ''} placeholder="Filter by invoice or vendor" className="w-full md:w-80 rounded border-gray-300 px-3 py-2" /><button className="hidden" type="submit" /></form>
+      <div className="mb-3 flex items-center gap-3">
+        <form className="flex items-center gap-2">
+          <input name="q" defaultValue={searchParams?.q || ''} placeholder="Filter by invoice or vendor" className="w-full md:w-80 rounded border-gray-300 px-3 py-2" />
+          <button className="hidden" type="submit" />
+        </form>
+        <a href="/api/finance/ap/export" className="inline-flex items-center rounded-md bg-gray-800 px-3 py-2 text-sm font-medium text-white hover:bg-black">Export CSV</a>
+      </div>
 
       {!success || filtered.length===0 ? (
         <EmptyState title="No AP bills" description={searchParams?.q ? 'Try clearing the filter.' : 'Accept incoming B2B orders to generate payables.'} />
