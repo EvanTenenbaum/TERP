@@ -223,7 +223,8 @@ async function departForOutgoing(tx: typeof prisma, saleId: string) {
 
     let inventoryId = item.inventoryId
     if (!inventoryId) {
-      const allocs = await allocateFromLots(tx, item.productId, qty)
+      const { allocateFIFOByProduct } = await import('@/lib/inventoryAllocator')
+      const allocs = await allocateFIFOByProduct(tx as any, item.productId, qty)
       const [first, ...rest] = allocs
       await tx.b2BSaleItem.update({ where: { id: item.id }, data: { inventoryId: first.lotId, unitCount: first.qty } })
       for (const a of rest) {
