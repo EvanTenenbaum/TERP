@@ -1,16 +1,17 @@
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
-import { ensurePostingUnlocked } from '@/lib/system'
-import { requireRole, getCurrentUserId } from '@/lib/auth'
+import { getCurrentUserId } from '@/lib/auth'
 import { getEffectiveUnitPrice } from '@/lib/pricing'
 import { ok, err } from '@/lib/http'
 
-export async function POST(req: Request) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('forbidden', 403) }
-  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return err('posting_locked', 423) }
+export const POST = api<{ productId:string; unitPrice:number; reason?:string }>({
+  roles: ['SUPER_ADMIN','ACCOUNTING'],
+  postingLock: true,
+  parseJson: true,
+})(async ({ json }) => {
   try {
-    const body = await req.json()
-    const { productId, unitPrice, reason } = body || {}
+    const { productId, unitPrice, reason } = json || ({} as any)
     if (!productId || typeof unitPrice !== 'number') {
       return err('invalid_input', 400)
     }
@@ -34,4 +35,4 @@ export async function POST(req: Request) {
     Sentry.captureException(error)
     return err('failed', 500)
   }
-}
+})
