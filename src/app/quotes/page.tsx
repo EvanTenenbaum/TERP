@@ -74,7 +74,7 @@ async function QuotesList() {
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       <p className="text-sm font-medium text-gray-900">
-                        ${(quote.totalAmount / 100).toFixed(0)}
+                        ${(quote.totalAmount / 100).toFixed(2)}
                       </p>
                       <p className="text-sm text-gray-500">
                         {quote.quoteItems.length} item{quote.quoteItems.length !== 1 ? 's' : ''}
@@ -141,4 +141,3 @@ function QuotesSkeleton() {
     </div>
   );
 }
-
