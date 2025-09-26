@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateQuotePDFBuffer } from '@/lib/pdf/quote'
+import { NextResponse } from 'next/server'
+import { rateKeyFromRequest, rateLimit } from '@/lib/rateLimit'
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const rl = rateLimit(`${rateKeyFromRequest(req as any)}:quote-pdf`, 30, 60_000)
+    if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
     const quote = await prisma.salesQuote.findUnique({
       where: { id: params.id },
       include: {
