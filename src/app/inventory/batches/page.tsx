@@ -1,17 +1,20 @@
 import Link from 'next/link';
+import AlertBanner from '@/components/ui/AlertBanner';
 
 export default function BatchesPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Batches</h2>
-        <Link 
-          href="/inventory/batches/new"
-          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+        <h2 className="text-2xl font-bold text-gray-900">Batches (legacy view)</h2>
+        <Link
+          href="/inventory/products"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
         >
-          Create Batch
+          Go to Products
         </Link>
       </div>
+
+      <AlertBanner type="info" message="Inventory is now organized by product and intake date. Batches are still tracked internally and visible within each product." />
 
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -61,7 +64,7 @@ export default function BatchesPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                  No batches found. <Link href="/inventory/batches/new" className="text-green-600 hover:text-green-800">Create your first batch</Link>
+                  No batches to display here. View inventory by <Link href="/inventory/products" className="text-blue-600 hover:text-blue-800">product</Link>.
                 </td>
               </tr>
             </tbody>
@@ -71,4 +74,3 @@ export default function BatchesPage() {
     </div>
   );
 }
-
