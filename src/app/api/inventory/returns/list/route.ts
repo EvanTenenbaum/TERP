@@ -1,10 +1,10 @@
-import { NextRequest } from 'next/server'
+import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
-import { requireRole } from '@/lib/auth'
 import { ok, err } from '@/lib/http'
 
-export async function GET(req: NextRequest) {
-  try { requireRole(['SUPER_ADMIN','ACCOUNTING','READ_ONLY']) } catch { return err('forbidden', 403) }
+export const GET = api({
+  roles: ['SUPER_ADMIN','ACCOUNTING','READ_ONLY'],
+})(async ({ req }) => {
   const { searchParams } = new URL(req.url)
   const lotId = searchParams.get('lotId') || undefined
   const limit = Number(searchParams.get('limit') || '100')
@@ -16,4 +16,4 @@ export async function GET(req: NextRequest) {
   ])
 
   return ok({ data: { client, vendor, writeoffs: internal } })
-}
+})
