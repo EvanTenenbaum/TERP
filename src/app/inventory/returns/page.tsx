@@ -32,7 +32,7 @@ export default async function ReturnsPage() {
         <form action={submitReturn} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Lot</label>
-            <select name="lotId" className="w-full rounded border-gray-300 px-3 py-2">
+            <select name="lotId" required aria-required="true" className="w-full rounded border-gray-300 px-3 py-2">
               {(lOk && lots) ? lots.map((l: any)=> (
                 <option key={l.id} value={l.id}>{l.label}</option>
               )) : null}
