@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "postinstall": "prisma generate",
-    "lint": "next lint",
+    "lint": "next lint --max-warnings=0",
     "test": "npm run test:unit && npm run test:e2e",
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
