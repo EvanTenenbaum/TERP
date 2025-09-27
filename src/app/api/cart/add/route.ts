@@ -6,6 +6,7 @@ import { ok, err } from '@/lib/http'
 
 export const POST = api<{ productId:string; inventoryLotId?:string; quantity:number }>({
   roles: ['SUPER_ADMIN','ACCOUNTING','SALES'],
+  postingLock: false,
   rate: { key: 'cart-add', limit: 240 },
   parseJson: true,
 })(async ({ req, json }) => {
