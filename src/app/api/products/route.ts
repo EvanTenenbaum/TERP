@@ -34,7 +34,7 @@ export const POST = api<{ sku:string; name:string; category:string; unit?:string
   }
 })
 
-export const PATCH = api<{ id:string; isActive:boolean }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], parseJson: true })(async ({ json }) => {
+export const PATCH = api<{ id:string; isActive:boolean }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], postingLock: true, rate: { key: 'products-update', limit: 60 }, parseJson: true })(async ({ json }) => {
   const id = String(json!.id||'')
   const isActive = Boolean(json!.isActive)
   if (!id) return err('invalid_input', 400)
