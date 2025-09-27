@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getSale, listSaleEvents, updateSaleStatus } from '@/actions/b2bSale'
 
 export default function B2BOrderDetail({ params }: { params: { id: string } }) {
@@ -8,14 +8,14 @@ export default function B2BOrderDetail({ params }: { params: { id: string } }) {
   const [sale, setSale] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const s = await getSale(saleId)
     if (s.success) setSale(s.sale)
     const ev = await listSaleEvents(saleId)
     if (ev.success) setEvents(ev.events)
-  }
+  }, [saleId])
 
-  useEffect(()=> { load() }, [load, saleId])
+  useEffect(()=> { load() }, [load])
 
   const setStatus = async (status: any) => {
     await updateSaleStatus(saleId, status)
