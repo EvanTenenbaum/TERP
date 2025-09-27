@@ -2,6 +2,8 @@
   "extends": ["next", "next/core-web-vitals"],
   "rules": {
     "no-console": ["error", { "allow": ["warn", "error"] }],
-    "no-debugger": "error"
+    "no-debugger": "error",
+    "no-redeclare": ["error", { "builtinGlobals": true }],
+    "no-shadow": ["error", { "builtinGlobals": true, "hoist": "all" }]
   }
 }
