@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { SystemBanner } from "@/components/ui/Banner";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -125,7 +125,7 @@ export default function AppShell({ children, role }: { children: React.ReactNode
   const cta = Object.keys(ctaMap).find((k) => pathname?.startsWith(k)) ? ctaMap[Object.keys(ctaMap).find((k) => pathname?.startsWith(k)) as string] : undefined
 
   // Keyboard shortcuts: Ctrl/Cmd+K (search), Ctrl/Cmd+N (new/context), ? (help)
-  React.useEffect(() => {
+  useEffect(() => {
     function isTypingEl(el: any) { return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) }
     function onKey(e: KeyboardEvent) {
       const meta = e.ctrlKey || e.metaKey
