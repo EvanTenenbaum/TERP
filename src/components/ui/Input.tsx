@@ -19,9 +19,11 @@ export function Input({ error, onValidate, onBlur, onChange, ...rest }: Props) {
   }
 
   const invalid = !!msg
+  const props: any = { ...rest }
+  if (!props.inputMode && (props.type === 'number' || props.inputMode === undefined)) props.inputMode = 'decimal'
   return (
     <input
-      {...rest}
+      {...props}
       aria-invalid={invalid}
       className={[
         'block w-full rounded-md border px-3 py-2 text-sm',
