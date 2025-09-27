@@ -1,8 +1,9 @@
 import prisma from '@/lib/prisma'
 import { api } from '@/lib/api'
 import { ok, err } from '@/lib/http'
+import prisma from '@/lib/prisma'
 
-export const PATCH = api<{ name?:string; parentId?:string | null; isActive?:boolean }>({ roles: ['SUPER_ADMIN'], parseJson: true })(async ({ json, params }) => {
+export const PATCH = api<{ name?:string; parentId?:string | null; isActive?:boolean }>({ roles: ['SUPER_ADMIN'], postingLock: true, rate: { key: 'categories-update', limit: 60 }, parseJson: true })(async ({ json, params }) => {
   const { name, parentId, isActive } = json || ({} as any)
   const data: any = {}
   if (name !== undefined) {
@@ -22,7 +23,7 @@ export const PATCH = api<{ name?:string; parentId?:string | null; isActive?:bool
   return ok({ category })
 })
 
-export const DELETE = api({ roles: ['SUPER_ADMIN'] })(async ({ params }) => {
+export const DELETE = api({ roles: ['SUPER_ADMIN'], postingLock: true, rate: { key: 'categories-delete', limit: 60 } })(async ({ params }) => {
   await prisma.productCategory.delete({ where: { id: params!.id } })
   return ok()
 })
