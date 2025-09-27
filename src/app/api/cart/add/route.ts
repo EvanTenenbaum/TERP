@@ -48,7 +48,7 @@ export const POST = api<{ productId:string; inventoryLotId?:string; quantity:num
     return ok({ reservation: out.reservation })
   } catch (e: any) {
     const code = e?.message || 'server_error'
-    const status = code === 'invalid_lot' ? 400 : code === 'insufficient_on_hand' ? 409 : 500
-    return err(code, status)
+    const httpStatus = code === 'invalid_lot' ? 400 : code === 'insufficient_on_hand' ? 409 : 500
+    return err(code, httpStatus)
   }
 })

@@ -8,7 +8,7 @@ export function ok<T = any>(body?: T, init?: ResponseInit) {
   return NextResponse.json(payload, init)
 }
 
-export function err(error: string, status = 400, extra?: Record<string, any>) {
+export function err(error: string, statusCode = 400, extra?: Record<string, any>) {
   const payload: Err & Record<string, any> = { success: false, error, ...(extra || {}) }
-  return NextResponse.json(payload, { status })
+  return NextResponse.json(payload, { status: statusCode })
 }

@@ -30,7 +30,7 @@ export const POST = api<{ arId:string; amountCents:number; reason:string }>({
     return new Response(JSON.stringify({ success:true, data: out }), { headers: { 'Content-Type':'application/json' } })
   } catch (e:any) {
     const code = e?.message || 'server_error'
-    const status = code === 'ar_not_found' ? 404 : 500
-    return new Response(JSON.stringify({ success:false, error: code }), { status, headers: { 'Content-Type':'application/json' } })
+    const httpStatus = code === 'ar_not_found' ? 404 : 500
+    return new Response(JSON.stringify({ success:false, error: code }), { status: httpStatus, headers: { 'Content-Type':'application/json' } })
   }
 })

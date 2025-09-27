@@ -1,7 +1,6 @@
 import prisma from '@/lib/prisma'
 import { api } from '@/lib/api'
 import { ok, err } from '@/lib/http'
-import prisma from '@/lib/prisma'
 
 export const PATCH = api<{ name?:string; parentId?:string | null; isActive?:boolean }>({ roles: ['SUPER_ADMIN'], postingLock: true, rate: { key: 'categories-update', limit: 60 }, parseJson: true })(async ({ json, params }) => {
   const { name, parentId, isActive } = json || ({} as any)

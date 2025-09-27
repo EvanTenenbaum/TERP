@@ -3,12 +3,12 @@ import { getCurrentRole, UserRole } from '@/lib/auth'
 
 export async function ensurePostingUnlocked(allowRoles: UserRole[] = ['SUPER_ADMIN']) {
   try {
-    const status = await prisma.systemStatus?.findUnique?.({ where: { id: 'singleton' } })
-    if (status?.postingLocked) {
+    const sys = await prisma.systemStatus?.findUnique?.({ where: { id: 'singleton' } })
+    if (sys?.postingLocked) {
       const role = getCurrentRole()
       if (!allowRoles.includes(role)) {
         const err: any = new Error('posting_locked')
-        err.reason = status.lastReason || 'locked'
+        err.reason = sys.lastReason || 'locked'
         throw err
       }
     }

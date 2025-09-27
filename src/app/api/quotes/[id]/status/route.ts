@@ -9,10 +9,10 @@ export const PUT = api<{ status: 'DRAFT'|'SENT'|'ACCEPTED'|'EXPIRED'|'CANCELLED'
   rate: { key: 'quotes-status', limit: 120 },
   parseJson: true,
 })(async ({ json, params }) => {
-  const { status } = json || ({} as any)
-  if (!['DRAFT','SENT','ACCEPTED','EXPIRED','CANCELLED'].includes(status as any)) return err('invalid_status', 400)
+  const { status: newStatus } = json || ({} as any)
+  if (!['DRAFT','SENT','ACCEPTED','EXPIRED','CANCELLED'].includes(newStatus as any)) return err('invalid_status', 400)
   try {
-    const quote = await prisma.salesQuote.update({ where: { id: params!.id }, data: { status } })
+    const quote = await prisma.salesQuote.update({ where: { id: params!.id }, data: { status: newStatus } })
     return ok({ quote })
   } catch (errAny) {
     Sentry.captureException(errAny)

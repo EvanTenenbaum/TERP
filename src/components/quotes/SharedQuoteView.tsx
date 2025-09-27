@@ -30,8 +30,8 @@ interface SharedQuoteViewProps {
 }
 
 export default function SharedQuoteView({ quote }: SharedQuoteViewProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusColor = (st: string) => {
+    switch (st) {
       case 'DRAFT':
         return 'bg-gray-100 text-gray-800';
       case 'SENT':

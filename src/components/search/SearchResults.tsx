@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { SearchResult } from '@/actions/search';
-import Image from 'next/image';
 
 interface SearchResultsProps {
   results: SearchResult[];

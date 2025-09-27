@@ -12,7 +12,7 @@ export const PATCH = api<{ status?: string; expectedAt?: string }>({
   rate: { key: 'po-update', limit: 120 },
   parseJson: true,
 })(async ({ json, params }) => {
-  const { status, expectedAt } = json || ({} as any)
-  const po = await prisma.purchaseOrder.update({ where: { id: params!.id }, data: { status, expectedAt: expectedAt ? new Date(expectedAt) : undefined } })
+  const { status: newStatus, expectedAt } = json || ({} as any)
+  const po = await prisma.purchaseOrder.update({ where: { id: params!.id }, data: { status: newStatus, expectedAt: expectedAt ? new Date(expectedAt) : undefined } })
   return new Response(JSON.stringify({ success: true, purchaseOrder: po }), { headers: { 'Content-Type':'application/json' } })
 })

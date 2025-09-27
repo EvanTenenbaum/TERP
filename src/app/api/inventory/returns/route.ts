@@ -77,7 +77,7 @@ export const POST = api<{ type:string; lotId:string; quantity:number; reason?:st
     return ok({ data: out })
   } catch (e: any) {
     const code = e?.message || 'server_error'
-    const status = code === 'lot_not_found' ? 404 : code === 'insufficient_on_hand' ? 409 : code === 'invalid_type' ? 400 : 500
-    return err(code, status)
+    const httpStatus = code === 'lot_not_found' ? 404 : code === 'insufficient_on_hand' ? 409 : code === 'invalid_type' ? 400 : 500
+    return err(code, httpStatus)
   }
 })

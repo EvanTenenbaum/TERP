@@ -3,16 +3,16 @@ import { useState } from "react";
 
 export default function QaToolsPage() {
   const [log, setLog] = useState<string>("");
-  const [status, setStatus] = useState<{ postingLocked: boolean; lastReason?: string | null } | null>(null)
+  const [sysStatus, setSysStatus] = useState<{ postingLocked: boolean; lastReason?: string | null } | null>(null)
   const [reason, setReason] = useState<string>("")
   async function loadStatus() {
-    try { const r = await fetch('/api/system/status', { cache: 'no-store' }); if (r.ok) setStatus(await r.json()); } catch {}
+    try { const r = await fetch('/api/system/status', { cache: 'no-store' }); if (r.ok) setSysStatus(await r.json()); } catch {}
   }
   async function setLock(pl: boolean) {
     try {
       const r = await fetch('/api/system/status', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ postingLocked: pl, reason }) })
       const data = await r.json().catch(() => null)
-      if (r.ok) setStatus(data)
+      if (r.ok) setSysStatus(data)
       setLog((l)=> l + `\n→ PATCH /api/system/status ${r.status}\n` + JSON.stringify(data))
     } catch (e:any) {
       setLog((l)=> l + `\nERROR ${String(e?.message||e)}`)
@@ -38,7 +38,7 @@ export default function QaToolsPage() {
           <div className="font-medium">System Status</div>
           <button onClick={loadStatus} className="px-2 py-1 rounded border text-sm">Refresh</button>
         </div>
-        <div className="text-sm text-gray-700">Posting Locked: <span className={status?.postingLocked ? 'text-red-600' : 'text-green-700'}>{String(status?.postingLocked ?? false)}</span></div>
+        <div className="text-sm text-gray-700">Posting Locked: <span className={sysStatus?.postingLocked ? 'text-red-600' : 'text-green-700'}>{String(sysStatus?.postingLocked ?? false)}</span></div>
         <div className="flex gap-2 items-center">
           <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason (optional)" className="flex-1 rounded border px-2 py-1 text-sm" />
           <button onClick={()=>setLock(true)} className="px-3 py-1.5 rounded bg-amber-600 text-white">Lock</button>
