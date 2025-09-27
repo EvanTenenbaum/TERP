@@ -74,7 +74,7 @@ export async function getPayments() {
 
 export async function getARAging() {
   try {
-    const ars = await prisma.accountsReceivable.findMany({ include: { customer: true } })
+    const ars = await prisma.accountsReceivable.findMany({ include: { customer: { include: { party: true } } } })
     const today = new Date()
     const buckets = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 } as Record<string, number>
     const perCustomer: Record<string, { name: string, buckets: Record<string, number> }> = {}
@@ -83,7 +83,7 @@ export async function getARAging() {
       const key = days <= 30 ? '0-30' : days <= 60 ? '31-60' : days <= 90 ? '61-90' : '90+'
       buckets[key] += ar.balanceRemaining
       const cid = ar.customerId
-      if (!perCustomer[cid]) perCustomer[cid] = { name: ar.customer?.companyName || 'Unknown', buckets: { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 } }
+      if (!perCustomer[cid]) perCustomer[cid] = { name: (ar.customer as any)?.party?.name || ar.customer?.companyName || 'Unknown', buckets: { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 } }
       perCustomer[cid].buckets[key] += ar.balanceRemaining
     }
     return { success: true, summary: buckets, perCustomer }
@@ -159,13 +159,13 @@ export async function generateDunningPreview(minDaysOverdue: number = 1) {
     const cutoff = new Date(today.getTime() - minDaysOverdue * 86400000)
     const ars = await prisma.accountsReceivable.findMany({
       where: { balanceRemaining: { gt: 0 }, dueDate: { lt: cutoff } },
-      include: { customer: true },
+      include: { customer: { include: { party: true } } },
       orderBy: { dueDate: 'asc' }
     })
     const map = new Map<string, DunningCustomer>()
     for (const ar of ars) {
       const key = ar.customerId
-      const dc = map.get(key) || { customerId: key, customerName: ar.customer?.companyName || 'Unknown', contactEmail: ar.customer?.contactEmail || (typeof ar.customer?.contactInfo === 'object' ? (ar.customer?.contactInfo as any)?.email : undefined), totalDueCents: 0, items: [] as DunningItem[] }
+      const dc = map.get(key) || { customerId: key, customerName: (ar.customer as any)?.party?.name || ar.customer?.companyName || 'Unknown', contactEmail: ar.customer?.contactEmail || (typeof ar.customer?.contactInfo === 'object' ? (ar.customer?.contactInfo as any)?.email : undefined), totalDueCents: 0, items: [] as DunningItem[] }
       dc.items.push({ arId: ar.id, invoiceNumber: ar.invoiceNumber, dueDate: ar.dueDate.toISOString(), balanceCents: ar.balanceRemaining })
       dc.totalDueCents += ar.balanceRemaining
       map.set(key, dc)
