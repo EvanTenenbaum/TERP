@@ -7,7 +7,7 @@ export const GET = api({})(async () => {
   return ok({ products })
 })
 
-export const POST = api<{ sku:string; name:string; category:string; unit?:string; defaultPrice?:number }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], rate: { key: 'products-create', limit: 60 }, parseJson: true })(async ({ json }) => {
+export const POST = api<{ sku:string; name:string; category:string; unit?:string; defaultPrice?:number }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], postingLock: true, rate: { key: 'products-create', limit: 60 }, parseJson: true })(async ({ json }) => {
   try {
     const sku = String(json!.sku || '').trim()
     const name = String(json!.name || '').trim()
