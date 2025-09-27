@@ -33,3 +33,11 @@ export const POST = api<{ sku:string; name:string; category:string; unit?:string
     return err(msg, 500)
   }
 })
+
+export const PATCH = api<{ id:string; isActive:boolean }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], parseJson: true })(async ({ json }) => {
+  const id = String(json!.id||'')
+  const isActive = Boolean(json!.isActive)
+  if (!id) return err('invalid_input', 400)
+  const product = await prisma.product.update({ where: { id }, data: { isActive } })
+  return ok({ product })
+})
