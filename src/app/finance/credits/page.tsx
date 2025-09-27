@@ -16,7 +16,7 @@ export default function CreditsPage() {
     if (j.success) setCredits(j.data)
   }
 
-  useEffect(()=>{ load() }, [])
+  useEffect(()=>{ load() }, [load, customerId])
 
   const createMemo = async (cid: string) => {
     if (!arId || !amount) return
