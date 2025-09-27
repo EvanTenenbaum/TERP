@@ -23,7 +23,7 @@ export default function AttachmentsPage() {
     await load()
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load, entityType, entityId])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
