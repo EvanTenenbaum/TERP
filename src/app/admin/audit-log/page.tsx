@@ -16,7 +16,7 @@ export default function AuditLogPage() {
     if (j.success) setItems(j.data)
   }
 
-  useEffect(()=>{ load() }, [])
+  useEffect(()=>{ load() }, [load])
 
   return (
     <div className="p-6 space-y-4">
