@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import NextImage from 'next/image';
 import { SearchResult } from '@/actions/search';
 
 interface SearchResultsProps {
@@ -90,7 +91,7 @@ export default function SearchResults({ results, loading, onAddToCart }: SearchR
             {/* Product Image */}
             <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-t-lg overflow-hidden">
               {product.photos.length > 0 ? (
-                <Image
+                <NextImage
                   src={product.photos[0]}
                   alt={product.name}
                   width={400}
