@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 export default function SamplesPage() {
   const [rows, setRows] = useState<any[]>([])
@@ -8,7 +8,7 @@ export default function SamplesPage() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
     if (from) params.set('from', from)
@@ -17,9 +17,9 @@ export default function SamplesPage() {
     const data = await resp.json()
     setRows(data.data || [])
     setLoading(false)
-  }
+  }, [from, to])
 
-  useEffect(()=>{ load() },[load, from, to])
+  useEffect(()=>{ load() },[load])
 
   async function convert(id: string, mode: 'QUOTE'|'ORDER') {
     const resp = await fetch('/api/samples/convert', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ id, mode }) })
