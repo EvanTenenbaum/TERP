@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
 import { getCurrentUserId } from '@/lib/auth'
 import { ok, err } from '@/lib/http'
+import { validateOverrideInput } from '@/lib/validation/pricing'
 
 export const POST = api<{ productId:string; customerId:string; unitPrice:number; reason:string }>({
   roles: ['SUPER_ADMIN','ACCOUNTING'],
@@ -15,9 +16,14 @@ export const POST = api<{ productId:string; customerId:string; unitPrice:number;
     const customerId = String(json!.customerId||'')
     const unitPrice = Math.round(Number(json!.unitPrice))
     const reason = String(json!.reason||'').slice(0,256)
-    if (!productId || !customerId || !Number.isFinite(unitPrice) || unitPrice <= 0 || !reason) {
+    if (!productId || !customerId) {
       return err('invalid_input', 400)
     }
+    const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true } })
+    const customer = await prisma.customer.findUnique({ where: { id: customerId }, select: { id: true } })
+    if (!product || !customer) return err('invalid_reference', 400)
+    const valid = validateOverrideInput(unitPrice, reason)
+    if (!valid.ok) return err(valid.error, 400)
 
     const now = new Date()
     const userId = getCurrentUserId()
@@ -27,7 +33,7 @@ export const POST = api<{ productId:string; customerId:string; unitPrice:number;
       if (!book) {
         book = await tx.priceBook.create({ data: { name: `CUSTOMER_${customerId}_OVERRIDES`, type: 'CUSTOMER', customerId, effectiveDate: now, isActive: true } })
       }
-      const entry = await tx.priceBookEntry.create({ data: { priceBookId: book.id, productId, unitPrice, effectiveDate: now } })
+      const entry = await tx.priceBookEntry.create({ data: { priceBookId: book.id, productId, unitPrice: Math.round(Number(unitPrice)), effectiveDate: now } })
       await tx.overrideAudit.create({ data: { userId, quoteId: null, oldPrice: 0, newPrice: unitPrice, reason, overrideType: 'CUSTOMER' } })
       return { book, entry }
     })
