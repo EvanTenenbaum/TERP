@@ -77,7 +77,7 @@ export default function NewB2BOrderPage() {
               <label className="block text-sm font-medium mb-1">Customer</label>
               <select className="w-full border rounded px-3 py-2" value={targetId} onChange={e=>setTargetId(e.target.value)}>
                 <option value="">Select customer…</option>
-                {customers.map(c=> <option key={c.id} value={c.id}>{c.companyName}</option>)}
+                {customers.map(c=> <option key={c.id} value={c.id}>{c.displayName}</option>)}
               </select>
             </div>
           )}
