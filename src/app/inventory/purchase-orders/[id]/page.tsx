@@ -24,7 +24,7 @@ export default function POPage() {
     if (data && data.success) setProducts(data.products)
   }
 
-  useEffect(() => { load(); loadProducts() }, [id])
+  useEffect(() => { load(); loadProducts() }, [id, load, loadProducts])
 
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault()
