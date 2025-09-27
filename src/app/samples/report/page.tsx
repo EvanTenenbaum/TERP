@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 export default function SamplesReportPage() {
   const [summary, setSummary] = useState<any>(null)
@@ -9,7 +9,7 @@ export default function SamplesReportPage() {
   const [to, setTo] = useState('')
   const [loading, setLoading] = useState(true)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
     if (from) params.set('from', from)
@@ -19,9 +19,9 @@ export default function SamplesReportPage() {
     setSummary(data.summary)
     setRows(data.rows || [])
     setLoading(false)
-  }
+  }, [from, to])
 
-  useEffect(()=>{ load() },[load, from, to])
+  useEffect(()=>{ load() },[load])
 
   return (
     <div className="space-y-4">
