@@ -105,7 +105,10 @@ export default function ProductInventoryTable() {
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`h-4 w-4 ${isOpen ? '' : 'rotate-[-90deg]'} transition-transform`}><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" /></svg>
                         </button>
                         <div>
-                          <div className="font-medium text-gray-900">{row.name}</div>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            <span>{row.name}</span>
+                            <button onClick={async()=>{if(!confirm('Deactivate this product?')) return; const resp=await fetch('/api/products',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({id:row.productId,isActive:false})}); if(resp.ok){ location.reload() } else { const j=await resp.json().catch(()=>({})); alert(j.error||'Failed') }}} className="text-xs px-2 py-0.5 rounded border border-red-300 text-red-700 hover:bg-red-50">Deactivate</button>
+                          </div>
                           <div className="text-xs text-gray-500">SKU: {row.sku}</div>
                         </div>
                       </div>
