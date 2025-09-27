@@ -55,6 +55,8 @@ const nav: NavGroup[] = [
       { label: "Purchase Orders", href: "/inventory/purchase-orders", icon: QueueListIcon },
       { label: "Low Stock", href: "/inventory/low-stock", icon: ExclamationTriangleIcon },
       { label: "Returns", href: "/inventory/returns", icon: ArchiveBoxIcon },
+      { label: "Discrepancies", href: "/inventory/discrepancies", icon: ExclamationTriangleIcon },
+      { label: "Adjustments", href: "/inventory/adjustments", icon: QueueListIcon },
     ],
   },
   {
