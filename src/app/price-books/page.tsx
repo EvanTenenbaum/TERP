@@ -7,7 +7,7 @@ import { getCustomersForDropdown } from '@/actions/customers';
 import EffectiveInspector from '@/components/price-books/EffectiveInspector';
 
 interface ProductOpt { id: string; name: string; }
-interface CustomerOpt { id: string; companyName: string; }
+interface CustomerOpt { id: string; displayName: string; }
 
 export default function PriceBooksPage() {
   const [books, setBooks] = useState<any[]>([]);
