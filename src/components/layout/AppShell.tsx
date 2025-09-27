@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { SystemBanner } from "@/components/ui/Banner";
+import { ToastProvider } from "@/components/ui/Toast";
 import type { UserRole } from "@/lib/auth";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -138,6 +139,7 @@ export default function AppShell({ children, role }: { children: React.ReactNode
   }, [router, cta])
 
   return (
+    <ToastProvider>
     <div className="min-h-screen bg-gray-50">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-white border px-3 py-1 rounded shadow">Skip to content</a>
       {/* Mobile top bar */}
@@ -228,6 +230,7 @@ export default function AppShell({ children, role }: { children: React.ReactNode
         </div>
       </div>
     </div>
+    </ToastProvider>
   );
 }
 
