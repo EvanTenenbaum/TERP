@@ -8,7 +8,7 @@ export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY']
   return ok({ customers: result })
 })
 
-export const PATCH = api<{ id:string; isActive:boolean }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], parseJson: true })(async ({ json }) => {
+export const PATCH = api<{ id:string; isActive:boolean }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], postingLock: true, rate: { key: 'customers-update', limit: 60 }, parseJson: true })(async ({ json }) => {
   const id = String(json!.id||'')
   const isActive = Boolean(json!.isActive)
   if (!id) return err('invalid_input', 400)
