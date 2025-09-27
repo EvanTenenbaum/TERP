@@ -2,7 +2,7 @@ import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
 import { ok, err } from '@/lib/http'
 
-export const POST = api<{ lotId:string }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], postingLock: true, parseJson: true })(async ({ json }) => {
+export const POST = api<{ lotId:string }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], postingLock: true, rate: { key: 'inventory-discrepancy-resolve', limit: 60 }, parseJson: true })(async ({ json }) => {
   const lotId = String(json!.lotId||'')
   if (!lotId) return err('invalid_input', 400)
   const lot = await prisma.inventoryLot.findUnique({ where: { id: lotId } })
