@@ -49,7 +49,6 @@ const nav: NavGroup[] = [
     items: [
       { label: "Overview", href: "/inventory", icon: Squares2X2Icon },
       { label: "Products", href: "/inventory/products", icon: CubeIcon },
-      { label: "Varieties", href: "/admin/varieties", icon: Squares2X2Icon },
       { label: "Categories", href: "/inventory/categories", icon: Squares2X2Icon },
       { label: "Transfers", href: "/inventory/transfers", icon: QueueListIcon },
       { label: "Purchase Orders", href: "/inventory/purchase-orders", icon: QueueListIcon },
