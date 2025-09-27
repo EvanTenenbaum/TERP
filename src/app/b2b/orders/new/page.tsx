@@ -15,7 +15,7 @@ export default function NewB2BOrderPage() {
 
   const [products, setProducts] = useState<{id:string,name:string}[]>([])
   const [vendors, setVendors] = useState<{id:string,vendorCode:string,companyName:string}[]>([])
-  const [customers, setCustomers] = useState<{id:string,companyName:string}[]>([])
+  const [customers, setCustomers] = useState<{id:string,displayName:string}[]>([])
 
   useEffect(()=>{
     ;(async()=>{
