@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { SystemBanner } from "@/components/ui/Banner";
+import type { UserRole } from "@/lib/auth";
 import { usePathname } from "next/navigation";
 import {
   HomeIcon,
@@ -26,7 +28,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const nav: NavGroup[] = [
+const _nav: NavGroup[] = [
   {
     title: "General",
     items: [
@@ -89,9 +91,20 @@ function classNames(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+function filterNavForRole(groups: NavGroup[], role?: UserRole): NavGroup[] {
+  if (!role || role === 'SUPER_ADMIN') return groups
+  return groups.filter(g => {
+    if (role === 'SALES' && g.title === 'Finance') return false
+    if (role === 'ACCOUNTING' && g.title === 'Sales') return false
+    if (role === 'READ_ONLY' && (g.title === 'Sales' || g.title === 'Finance')) return false
+    return true
+  })
+}
+
+export default function AppShell({ children, role }: { children: React.ReactNode; role?: UserRole }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const nav = filterNavForRole(_nav, role);
 
   // Breadcrumb data
   const segments = (pathname || '/').split('/').filter(Boolean)
@@ -140,7 +153,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <NavContent pathname={pathname} onNavigate={() => setSidebarOpen(false)} />
+            <NavContent pathname={pathname} nav={nav} onNavigate={() => setSidebarOpen(false)} />
           </aside>
         </div>
       )}
@@ -149,11 +162,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* Desktop sidebar */}
         <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 md:z-20 bg-white border-r">
           <div className="h-14 border-b flex items-center px-4 font-semibold">ERPv2</div>
-          <NavContent pathname={pathname} />
+          <NavContent pathname={pathname} nav={nav} />
         </aside>
 
         {/* Main content */}
         <div className="flex-1 w-full md:ml-64">
+          <SystemBanner />
           {/* Breadcrumb and actions */}
           <div className="px-4 md:px-6 pt-3 md:pt-4">
             {crumbs.length > 0 && (
@@ -184,7 +198,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavContent({ pathname, onNavigate }: { pathname: string | null; onNavigate?: () => void }) {
+function NavContent({ pathname, nav, onNavigate }: { pathname: string | null; nav: NavGroup[]; onNavigate?: () => void }) {
   return (
     <nav className="overflow-y-auto px-3 py-4 space-y-6">
       {nav.map((group) => (
