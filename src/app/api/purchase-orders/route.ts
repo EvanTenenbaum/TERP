@@ -2,8 +2,12 @@ import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
 
 export const GET = api({})(async () => {
-  const pos = await prisma.purchaseOrder.findMany({ include: { vendor: true, items: { include: { product: true } } }, orderBy: { createdAt: 'desc' } })
-  return new Response(JSON.stringify({ success: true, purchaseOrders: pos }), { headers: { 'Content-Type':'application/json' } })
+  const pos = await prisma.purchaseOrder.findMany({ include: { vendor: { include: { party: { select: { name: true } } } }, items: { include: { product: true } } }, orderBy: { createdAt: 'desc' } })
+  const result = pos.map(po => ({
+    ...po,
+    vendorDisplayName: po.vendor?.party?.name ?? po.vendor?.vendorCode ?? po.vendor?.companyName ?? ''
+  }))
+  return new Response(JSON.stringify({ success: true, purchaseOrders: result }), { headers: { 'Content-Type':'application/json' } })
 })
 
 export const POST = api<{ vendorId:string; expectedAt?:string; poNumber?:string }>({
