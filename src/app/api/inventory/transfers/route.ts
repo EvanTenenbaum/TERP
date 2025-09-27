@@ -2,7 +2,6 @@ import prisma from '@/lib/prisma'
 import { getCurrentUserId } from '@/lib/auth'
 import { api } from '@/lib/api'
 import { ok, err } from '@/lib/http'
-import prisma from '@/lib/prisma'
 
 export const POST = api<{ productId:string; sourceLotId:string; destLotId:string; quantity:number; reason?:string; notes?:string }>({
   roles: ['SUPER_ADMIN','ACCOUNTING'],
