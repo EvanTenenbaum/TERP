@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 export default function CreditsPage() {
   const [customerId, setCustomerId] = useState('')
@@ -8,15 +8,15 @@ export default function CreditsPage() {
   const [arId, setArId] = useState('')
   const [amount, setAmount] = useState('')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const params = new URLSearchParams()
     if (customerId) params.set('customerId', customerId)
     const res = await fetch(`/api/finance/credits/list?${params.toString()}`)
     const j = await res.json()
     if (j.success) setCredits(j.data)
-  }
+  }, [customerId])
 
-  useEffect(()=>{ load() }, [load, customerId])
+  useEffect(()=>{ load() }, [load])
 
   const createMemo = async (cid: string) => {
     if (!arId || !amount) return
