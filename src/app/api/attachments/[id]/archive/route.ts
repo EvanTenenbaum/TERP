@@ -4,6 +4,7 @@ import { ok, err } from '@/lib/http'
 
 export const PATCH = api<{ archived: boolean }>({
   roles: ['SUPER_ADMIN'],
+  postingLock: true,
   rate: { key: 'attachments-archive', limit: 60 },
   parseJson: true,
 })(async ({ json, params }) => {
