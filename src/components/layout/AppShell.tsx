@@ -80,6 +80,7 @@ const nav: NavGroup[] = [
       { label: "Profitability", href: "/analytics/profitability", icon: Squares2X2Icon },
       { label: "Alerts", href: "/alerts", icon: ExclamationTriangleIcon },
       { label: "Audit Log", href: "/admin/audit-log", icon: DocumentTextIcon },
+      { label: "QA Tools", href: "/admin/qa", icon: DocumentTextIcon },
     ],
   },
 ];
