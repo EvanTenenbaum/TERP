@@ -19,7 +19,7 @@ export default function SamplesPage() {
     setLoading(false)
   }
 
-  useEffect(()=>{ load() },[])
+  useEffect(()=>{ load() },[load, from, to])
 
   async function convert(id: string, mode: 'QUOTE'|'ORDER') {
     const resp = await fetch('/api/samples/convert', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ id, mode }) })
