@@ -15,7 +15,7 @@ export default function B2BOrderDetail({ params }: { params: { id: string } }) {
     if (ev.success) setEvents(ev.events)
   }
 
-  useEffect(()=> { load() }, [])
+  useEffect(()=> { load() }, [load, saleId])
 
   const setStatus = async (status: any) => {
     await updateSaleStatus(saleId, status)
