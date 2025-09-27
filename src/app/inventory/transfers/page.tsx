@@ -97,7 +97,7 @@ export default function InventoryTransfersPage() {
           <label className="block text-sm font-medium">Destination Lot</label>
           <select value={destLotId} onChange={e => setDestLotId(e.target.value)} className="mt-1 w-full border rounded p-2" disabled={!lotsData?.lots?.length}>
             <option value="">Select destination lot…</option>
-            {lotsData?.lots?.filter(l => l.id !== sourceLotId).map(l => <option key={l.id} value={l.id}>{l.id} ��� avail {Number(l.quantityAvailable)}</option>)}
+            {lotsData?.lots?.filter(l => l.id !== sourceLotId).map(l => <option key={l.id} value={l.id}>{l.id} — avail {Number(l.quantityAvailable)}</option>)}
           </select>
         </div>
 
@@ -137,7 +137,7 @@ export default function InventoryTransfersPage() {
               {history.transfers.map((t: any) => (
                 <tr key={t.id} className="border-t">
                   <td className="p-2">{new Date(t.createdAt).toLocaleString()}</td>
-                  <td className="p-2">{t.productId}</td>
+                  <td className="p-2">{productsData?.products?.find(p=>p.id===t.productId)?.name || t.productId}</td>
                   <td className="p-2">{t.sourceLotId}</td>
                   <td className="p-2">{t.destLotId ?? '-'}</td>
                   <td className="p-2">{String(t.quantity)}</td>
