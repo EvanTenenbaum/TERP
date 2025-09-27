@@ -58,6 +58,7 @@ const nav: NavGroup[] = [
       { label: "Returns", href: "/inventory/returns", icon: ArchiveBoxIcon },
       { label: "Discrepancies", href: "/inventory/discrepancies", icon: ExclamationTriangleIcon },
       { label: "Adjustments", href: "/inventory/adjustments", icon: QueueListIcon },
+      { label: "Consignment Tiers", href: "/consignment/sub-batches", icon: QueueListIcon },
     ],
   },
   {
