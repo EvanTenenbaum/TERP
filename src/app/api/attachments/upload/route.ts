@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic'
 
 export const POST = api({
   roles: ['SUPER_ADMIN','SALES','ACCOUNTING'],
-  rate: { key: 'attachments-upload', limit: 30 },
+  postingLock: true,
+  rate: { key: 'attachments-upload', limit: 60 },
 })(async ({ req }) => {
   const form = await req.formData()
   const file = form.get('file') as File | null
