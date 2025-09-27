@@ -13,10 +13,13 @@ export default function PriceBooksPage() {
   const [books, setBooks] = useState<any[]>([]);
   const [products, setProducts] = useState<ProductOpt[]>([]);
   const [customers, setCustomers] = useState<CustomerOpt[]>([]);
+  const [audits, setAudits] = useState<any[]>([]);
 
-  const [bookForm, setBookForm] = useState({ name: '', type: 'GLOBAL', customerId: '' });
+  const [bookForm, setBookForm] = useState({ name: '', type: 'GLOBAL', customerId: '', roleId: '' });
   const [entryForm, setEntryForm] = useState({ priceBookId: '', productId: '', unitPrice: '', effectiveDate: '' });
   const [overrideForm, setOverrideForm] = useState({ productId: '', unitPrice: '', reason: '' });
+  const [customerOverrideForm, setCustomerOverrideForm] = useState({ customerId: '', productId: '', unitPrice: '', reason: '' });
+  const [roleOverrideForm, setRoleOverrideForm] = useState({ roleId: '', productId: '', unitPrice: '', reason: '' });
 
   useEffect(() => {
     (async () => {
@@ -28,6 +31,11 @@ export default function PriceBooksPage() {
       const cust = await getCustomersForDropdown();
       if (cust.success && cust.customers) setCustomers(cust.customers || []);
       else setCustomers([])
+      try {
+        const resp = await fetch('/api/overrides/audit');
+        const data = await resp.json();
+        if (data.audits) setAudits(data.audits);
+      } catch {}
     })();
   }, []);
 
@@ -39,11 +47,12 @@ export default function PriceBooksPage() {
       isActive: true,
     };
     if (bookForm.type === 'CUSTOMER' && bookForm.customerId) data.customerId = bookForm.customerId;
+    if (bookForm.type === 'ROLE' && bookForm.roleId) data.roleId = bookForm.roleId;
     const res = await createPriceBook(data);
     if (res.success) {
       const pb = await getPriceBooks();
       if (pb.success) setBooks(pb.books);
-      setBookForm({ name: '', type: 'GLOBAL', customerId: '' });
+      setBookForm({ name: '', type: 'GLOBAL', customerId: '', roleId: '' });
     }
   };
 
@@ -90,6 +99,52 @@ export default function PriceBooksPage() {
     }
   };
 
+  const submitCustomerOverride = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerOverrideForm.productId || !customerOverrideForm.customerId) return;
+    const resp = await fetch('/api/overrides/customer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId: customerOverrideForm.productId,
+        customerId: customerOverrideForm.customerId,
+        unitPrice: Math.round(Number(customerOverrideForm.unitPrice)),
+        reason: customerOverrideForm.reason || 'Customer override',
+      }),
+    })
+    const res = await resp.json().catch(()=>({ success:false }))
+    if (res.success) {
+      setCustomerOverrideForm({ customerId:'', productId:'', unitPrice:'', reason:'' })
+      const pb = await getPriceBooks();
+      if (pb.success) setBooks(pb.books);
+    } else {
+      alert(res.error || 'Failed to apply override');
+    }
+  };
+
+  const submitRoleOverride = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!roleOverrideForm.productId || !roleOverrideForm.roleId) return;
+    const resp = await fetch('/api/overrides/role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId: roleOverrideForm.productId,
+        roleId: roleOverrideForm.roleId,
+        unitPrice: Math.round(Number(roleOverrideForm.unitPrice)),
+        reason: roleOverrideForm.reason || 'Role override',
+      }),
+    })
+    const res = await resp.json().catch(()=>({ success:false }))
+    if (res.success) {
+      setRoleOverrideForm({ roleId:'', productId:'', unitPrice:'', reason:'' })
+      const pb = await getPriceBooks();
+      if (pb.success) setBooks(pb.books);
+    } else {
+      alert(res.error || 'Failed to apply override');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <div>
@@ -109,6 +164,7 @@ export default function PriceBooksPage() {
             <select className="w-full border rounded px-3 py-2" value={bookForm.type} onChange={e=>setBookForm({...bookForm,type:e.target.value})}>
               <option value="GLOBAL">GLOBAL</option>
               <option value="CUSTOMER">CUSTOMER</option>
+              <option value="ROLE">ROLE</option>
             </select>
           </div>
           {bookForm.type === 'CUSTOMER' && (
@@ -116,7 +172,7 @@ export default function PriceBooksPage() {
               <label className="block text-sm font-medium mb-1">Customer</label>
               <select className="w-full border rounded px-3 py-2" value={bookForm.customerId} onChange={e=>setBookForm({...bookForm,customerId:e.target.value})} required>
                 <option value="">Select customer…</option>
-                {customers.map(c=> (<option key={c.id} value={c.id}>{c.companyName}</option>))}
+                {customers.map(c=> (<option key={c.id} value={c.id}>{c.displayName}</option>))}
               </select>
             </div>
           )}
@@ -174,6 +230,61 @@ export default function PriceBooksPage() {
           </div>
           <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Apply Override</button>
         </form>
+
+        <form onSubmit={submitCustomerOverride} className="bg-white shadow rounded-lg p-6 space-y-4 lg:col-span-2">
+          <h2 className="text-lg font-semibold">Quick Customer Override</h2>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Customer</label>
+              <select className="w-full border rounded px-3 py-2" value={customerOverrideForm.customerId} onChange={e=>setCustomerOverrideForm({...customerOverrideForm,customerId:e.target.value})} required>
+                <option value="">Select…</option>
+                {customers.map(c=> (<option key={c.id} value={c.id}>{c.displayName}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Product</label>
+              <select className="w-full border rounded px-3 py-2" value={customerOverrideForm.productId} onChange={e=>setCustomerOverrideForm({...customerOverrideForm,productId:e.target.value})} required>
+                <option value="">Select…</option>
+                {products.map(p=> (<option key={p.id} value={p.id}>{p.name}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Unit Price (cents)</label>
+              <input type="number" className="w-full border rounded px-3 py-2" value={customerOverrideForm.unitPrice} onChange={e=>setCustomerOverrideForm({...customerOverrideForm,unitPrice:e.target.value})} required />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-1">Reason</label>
+              <input className="w-full border rounded px-3 py-2" value={customerOverrideForm.reason} onChange={e=>setCustomerOverrideForm({...customerOverrideForm,reason:e.target.value})} />
+            </div>
+          </div>
+          <button type="submit" className="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">Apply Customer Override</button>
+        </form>
+
+        <form onSubmit={submitRoleOverride} className="bg-white shadow rounded-lg p-6 space-y-4 lg:col-span-2">
+          <h2 className="text-lg font-semibold">Quick Role Override</h2>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Role ID</label>
+              <input className="w-full border rounded px-3 py-2" value={roleOverrideForm.roleId} onChange={e=>setRoleOverrideForm({...roleOverrideForm,roleId:e.target.value})} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Product</label>
+              <select className="w-full border rounded px-3 py-2" value={roleOverrideForm.productId} onChange={e=>setRoleOverrideForm({...roleOverrideForm,productId:e.target.value})} required>
+                <option value="">Select…</option>
+                {products.map(p=> (<option key={p.id} value={p.id}>{p.name}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Unit Price (cents)</label>
+              <input type="number" className="w-full border rounded px-3 py-2" value={roleOverrideForm.unitPrice} onChange={e=>setRoleOverrideForm({...roleOverrideForm,unitPrice:e.target.value})} required />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-1">Reason</label>
+              <input className="w-full border rounded px-3 py-2" value={roleOverrideForm.reason} onChange={e=>setRoleOverrideForm({...roleOverrideForm,reason:e.target.value})} />
+            </div>
+          </div>
+          <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Apply Role Override</button>
+        </form>
       </div>
 
       <div className="bg-white shadow rounded-lg p-6">
@@ -185,6 +296,31 @@ export default function PriceBooksPage() {
       </div>
 
       <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-lg font-semibold mb-4">Override Audit</h2>
+        <div className="overflow-x-auto mb-6">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Old</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {audits.map(a => (
+                <tr key={a.id}>
+                  <td className="px-4 py-2">{new Date(a.timestamp).toLocaleString()}</td>
+                  <td className="px-4 py-2">{a.overrideType}</td>
+                  <td className="px-4 py-2">${(a.oldPrice/100).toFixed(2)}</td>
+                  <td className="px-4 py-2">${(a.newPrice/100).toFixed(2)}</td>
+                  <td className="px-4 py-2">{a.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <h2 className="text-lg font-semibold mb-4">Existing Price Books</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -200,7 +336,7 @@ export default function PriceBooksPage() {
               {books.map(b=> (
                 <tr key={b.id}>
                   <td className="px-4 py-2">{b.name}</td>
-                  <td className="px-4 py-2">{b.type}{b.customer ? ` – ${b.customer.companyName}`: ''}</td>
+                  <td className="px-4 py-2">{b.type}{b.customer ? ` – ${b.customer.companyName}`: ''}{b.roleId ? ` – ${b.roleId}`: ''}</td>
                   <td className="px-4 py-2">{b.isActive ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-2">
                     <button onClick={()=>toggleActive(b.id, b.isActive)} className="text-blue-600 hover:text-blue-800">
