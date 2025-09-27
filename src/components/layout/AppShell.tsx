@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { SystemBanner } from "@/components/ui/Banner";
 import type { UserRole } from "@/lib/auth";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   HomeIcon,
   MagnifyingGlassIcon,
@@ -103,6 +103,8 @@ function filterNavForRole(groups: NavGroup[], role?: UserRole): NavGroup[] {
 
 export default function AppShell({ children, role }: { children: React.ReactNode; role?: UserRole }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const router = useRouter();
   const pathname = usePathname();
   const nav = filterNavForRole(_nav, role);
 
@@ -120,6 +122,20 @@ export default function AppShell({ children, role }: { children: React.ReactNode
     '/inventory/products': { href: '/inventory/products/new', label: 'Add Product' },
   }
   const cta = Object.keys(ctaMap).find((k) => pathname?.startsWith(k)) ? ctaMap[Object.keys(ctaMap).find((k) => pathname?.startsWith(k)) as string] : undefined
+
+  // Keyboard shortcuts: Ctrl/Cmd+K (search), Ctrl/Cmd+N (new/context), ? (help)
+  React.useEffect(() => {
+    function isTypingEl(el: any) { return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) }
+    function onKey(e: KeyboardEvent) {
+      const meta = e.ctrlKey || e.metaKey
+      if (isTypingEl(e.target)) return
+      if (meta && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); router.push('/search'); return }
+      if (meta && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); if (cta) router.push(cta.href); return }
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) { e.preventDefault(); setShowHelp((v)=>!v); return }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [router, cta])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -168,6 +184,23 @@ export default function AppShell({ children, role }: { children: React.ReactNode
         {/* Main content */}
         <div className="flex-1 w-full md:ml-64">
           <SystemBanner />
+          {/* Help overlay */}
+          {showHelp && (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
+              <div className="bg-white rounded shadow-lg p-4 w-[90vw] max-w-md">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="font-semibold">Keyboard Shortcuts</h2>
+                  <button aria-label="Close" onClick={()=>setShowHelp(false)} className="rounded p-1 hover:bg-gray-100">✕</button>
+                </div>
+                <ul className="text-sm space-y-1">
+                  <li><kbd className="px-1 border rounded">Ctrl/Cmd</kbd> + <kbd className="px-1 border rounded">K</kbd> — Global search</li>
+                  <li><kbd className="px-1 border rounded">Ctrl/Cmd</kbd> + <kbd className="px-1 border rounded">N</kbd> — New/context action</li>
+                  <li><kbd className="px-1 border rounded">?</kbd> — Toggle this help</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
           {/* Breadcrumb and actions */}
           <div className="px-4 md:px-6 pt-3 md:pt-4">
             {crumbs.length > 0 && (
