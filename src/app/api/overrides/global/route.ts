@@ -4,8 +4,9 @@ import * as Sentry from '@sentry/nextjs'
 import { getCurrentUserId } from '@/lib/auth'
 import { getEffectiveUnitPrice } from '@/lib/pricing'
 import { ok, err } from '@/lib/http'
+import { validateOverrideInput } from '@/lib/validation/pricing'
 
-export const POST = api<{ productId:string; unitPrice:number; reason?:string }>({
+export const POST = api<{ productId:string; unitPrice:number; reason:string }>({
   roles: ['SUPER_ADMIN','ACCOUNTING'],
   postingLock: true,
   parseJson: true,
@@ -17,6 +18,12 @@ export const POST = api<{ productId:string; unitPrice:number; reason?:string }>(
     }
     const now = new Date()
 
+    const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true } })
+    if (!product) return err('invalid_product', 400)
+
+    const valid = validateOverrideInput(unitPrice, reason || '')
+    if (!valid.ok) return err(valid.error, 400)
+
     let book = await prisma.priceBook.findFirst({ where: { type: 'GLOBAL', name: 'ADMIN_GLOBAL_OVERRIDE' } })
     if (!book) {
       book = await prisma.priceBook.create({ data: { name: 'ADMIN_GLOBAL_OVERRIDE', type: 'GLOBAL', effectiveDate: now, isActive: true } })
@@ -26,9 +33,9 @@ export const POST = api<{ productId:string; unitPrice:number; reason?:string }>(
 
     const oldPrice = await getEffectiveUnitPrice(prisma as any, productId, {})
 
-    const entry = await prisma.priceBookEntry.create({ data: { priceBookId: book.id, productId, unitPrice, effectiveDate: now } })
+    const entry = await prisma.priceBookEntry.create({ data: { priceBookId: book.id, productId, unitPrice: Math.round(Number(unitPrice)), effectiveDate: now } })
 
-    await prisma.overrideAudit.create({ data: { userId: getCurrentUserId(), oldPrice, newPrice: unitPrice, reason: reason || 'GLOBAL_PRICE_OVERRIDE', overrideType: 'GLOBAL' } })
+    await prisma.overrideAudit.create({ data: { userId: getCurrentUserId(), oldPrice, newPrice: Math.round(Number(unitPrice)), reason, overrideType: 'GLOBAL' } })
 
     return ok({ entry })
   } catch (error) {
