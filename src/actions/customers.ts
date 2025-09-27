@@ -24,6 +24,7 @@ export async function getCustomers() {
     const customers = await prisma.customer.findMany({
       where: { isActive: true },
       include: {
+        party: { select: { name: true, isActive: true } },
         orders: {
           take: 5,
           orderBy: { createdAt: 'desc' }
@@ -43,9 +44,14 @@ export async function getCustomers() {
       orderBy: { companyName: 'asc' }
     });
 
+    const result = customers.map(c => ({
+      ...c,
+      displayName: c.party?.name ?? c.companyName
+    }));
+
     return {
       success: true,
-      customers
+      customers: result
     };
   } catch (error) {
     console.error('Error fetching customers:', error);
@@ -104,21 +110,33 @@ export async function getCustomer(id: string) {
 
 export async function createCustomer(data: CreateCustomerData) {
   try {
-    const customer = await prisma.customer.create({
-      data: {
-        companyName: data.companyName,
-        contactInfo: data.contactInfo,
-        creditLimit: data.creditLimit,
-        paymentTerms: data.paymentTerms,
-        isActive: true
-      }
+    const created = await prisma.$transaction(async (tx) => {
+      const party = await tx.party.create({
+        data: {
+          name: data.companyName,
+          isCustomer: true,
+          isActive: true,
+          contactInfo: (data as any).contactInfo || {}
+        }
+      });
+      const customer = await tx.customer.create({
+        data: {
+          companyName: data.companyName,
+          contactInfo: data.contactInfo,
+          creditLimit: data.creditLimit,
+          paymentTerms: data.paymentTerms,
+          isActive: true,
+          partyId: party.id
+        }
+      });
+      return customer;
     });
 
     revalidatePath('/customers');
-    
+
     return {
       success: true,
-      customer
+      customer: created
     };
   } catch (error) {
     console.error('Error creating customer:', error);
@@ -131,22 +149,34 @@ export async function createCustomer(data: CreateCustomerData) {
 
 export async function updateCustomer(data: UpdateCustomerData) {
   try {
-    const customer = await prisma.customer.update({
-      where: { id: data.id },
-      data: {
-        companyName: data.companyName,
-        contactInfo: data.contactInfo,
-        creditLimit: data.creditLimit,
-        paymentTerms: data.paymentTerms
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.customer.findUnique({ where: { id: data.id }, select: { partyId: true } });
+      let partyId = existing?.partyId || null;
+      if (!partyId) {
+        const party = await tx.party.create({ data: { name: data.companyName, isCustomer: true, isActive: true, contactInfo: (data as any).contactInfo || {} } });
+        partyId = party.id;
+      } else {
+        await tx.party.update({ where: { id: partyId }, data: { name: data.companyName, contactInfo: (data as any).contactInfo || {} } });
       }
+      const customer = await tx.customer.update({
+        where: { id: data.id },
+        data: {
+          companyName: data.companyName,
+          contactInfo: data.contactInfo,
+          creditLimit: data.creditLimit,
+          paymentTerms: data.paymentTerms,
+          partyId
+        }
+      });
+      return customer;
     });
 
     revalidatePath('/customers');
     revalidatePath(`/customers/${data.id}`);
-    
+
     return {
       success: true,
-      customer
+      customer: updated
     };
   } catch (error) {
     console.error('Error updating customer:', error);
@@ -159,17 +189,20 @@ export async function updateCustomer(data: UpdateCustomerData) {
 
 export async function deleteCustomer(id: string) {
   try {
-    // Soft delete by setting isActive to false
-    const customer = await prisma.customer.update({
-      where: { id },
-      data: { isActive: false }
+    // Soft delete by setting isActive to false and deactivate party if present
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.customer.findUnique({ where: { id }, select: { partyId: true } });
+      if (existing?.partyId) {
+        await tx.party.update({ where: { id: existing.partyId }, data: { isActive: false } });
+      }
+      return tx.customer.update({ where: { id }, data: { isActive: false } });
     });
 
     revalidatePath('/customers');
-    
+
     return {
       success: true,
-      customer
+      customer: updated
     };
   } catch (error) {
     console.error('Error deleting customer:', error);
@@ -187,14 +220,17 @@ export async function getCustomersForDropdown() {
       where: { isActive: true },
       select: {
         id: true,
-        companyName: true
+        companyName: true,
+        party: { select: { name: true } }
       },
       orderBy: { companyName: 'asc' }
     });
 
+    const options = customers.map(c => ({ id: c.id, displayName: c.party?.name ?? c.companyName }))
+
     return {
       success: true,
-      customers
+      customers: options
     };
   } catch (error) {
     console.error('Error fetching customers for dropdown:', error);
