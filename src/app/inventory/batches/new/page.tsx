@@ -229,7 +229,7 @@ export default function NewBatchPage() {
           <div className="bg-blue-50 p-4 rounded-md">
             <h4 className="text-sm font-medium text-blue-800 mb-2">Cost History</h4>
             <p className="text-sm text-blue-700">
-              An initial BatchCost record will be created with the specified unit cost and today's date as the effective date. 
+              An initial BatchCost record will be created with the specified unit cost and today&apos;s date as the effective date. 
               You can add cost changes later that will only affect future allocations.
             </p>
           </div>
