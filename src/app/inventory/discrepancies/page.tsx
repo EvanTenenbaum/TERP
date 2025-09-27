@@ -1,10 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/Button'
+import { useToast } from '@/components/ui/Toast'
 
 export default function DiscrepanciesPage() {
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const { push } = useToast()
 
   useEffect(()=>{
     ;(async()=>{
@@ -53,7 +56,19 @@ export default function DiscrepanciesPage() {
                   <td className="px-3 py-2 text-sm text-right font-semibold"><span className={r.discrepancy !== 0 ? 'text-red-600' : ''}>{r.discrepancy}</span></td>
                   <td className="px-3 py-2 text-sm text-gray-600">{new Date(r.lastMovementDate).toLocaleString()}</td>
                   <td className="px-3 py-2 text-sm">
-                    <button onClick={async()=>{const resp=await fetch('/api/inventory/discrepancies/resolve',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({lotId:r.lotId})});const data=await resp.json().catch(()=>({}));if(resp.ok){alert('Resolved'); location.reload()} else {alert(data.error||'Failed')}}} className="px-2 py-1 rounded bg-amber-600 text-white">Resolve</button>
+                    <Button onClick={async()=>{
+                      const resp = await fetch('/api/inventory/discrepancies/resolve',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({lotId:r.lotId})})
+                      const data = await resp.json().catch(()=>({}))
+                      if(resp.ok){
+                        push({ message: 'Discrepancy resolved', actionText: 'Undo', onAction: async ()=>{
+                          const u = await fetch('/api/inventory/discrepancies/resolve/undo',{ method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ lotId: r.lotId }) })
+                          if (u.ok) location.reload()
+                        } })
+                        setTimeout(()=> location.reload(), 1200)
+                      } else {
+                        push({ message: data.error || 'Failed to resolve' })
+                      }
+                    }} className="px-2 py-1">Resolve</Button>
                   </td>
                 </tr>
               ))}
