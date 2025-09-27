@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 
 export default function POPage() {
@@ -12,19 +12,19 @@ export default function POPage() {
   const [quantity, setQuantity] = useState('')
   const [unitCost, setUnitCost] = useState('')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const resp = await fetch(`/api/purchase-orders/${id}`)
     const data = await resp.json()
     if (data.success) setPo(data.purchaseOrder)
-  }
-  const loadProducts = async () => {
+  }, [id])
+  const loadProducts = useCallback(async () => {
     const p = await fetch('/api/products').catch(()=>null)
     let data: any = null
     try { data = p ? await p.json() : null } catch {}
     if (data && data.success) setProducts(data.products)
-  }
+  }, [])
 
-  useEffect(() => { load(); loadProducts() }, [id, load, loadProducts])
+  useEffect(() => { load(); loadProducts() }, [load, loadProducts])
 
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault()
