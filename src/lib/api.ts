@@ -19,19 +19,24 @@ type HandlerCtx<T = any> = {
 }
 
 export function api<TBody = any>(opts: ApiOptions) {
-  const windowMs = opts.rate?.windowMs ?? 60_000
   return function <R = any>(handler: (ctx: HandlerCtx<TBody>) => Promise<Response> | Response) {
     return async (req: Request, context?: { params?: Record<string, string> }) => {
       try {
+        const method = (req.method || 'GET').toUpperCase()
+        const isMutating = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS'
         if (opts.roles && opts.roles.length) {
           try { requireRole(opts.roles as any) } catch { return err('forbidden', 403) }
         }
-        if (opts.postingLock) {
+        // Enforce posting lock by default for mutating endpoints unless explicitly disabled
+        if (opts.postingLock || (isMutating && opts.postingLock !== false)) {
           try { await ensurePostingUnlocked(opts.roles as any) } catch { return err('posting_locked', 423) }
         }
-        if (opts.rate) {
-          const key = `${rateKeyFromRequest(req as any)}:${opts.rate.key}`
-          const rl = rateLimit(key, opts.rate.limit, windowMs)
+        // Apply rate limiting: explicit config wins, else default for mutating endpoints
+        if (opts.rate || isMutating) {
+          const rateCfg = opts.rate ?? { key: new URL(req.url).pathname.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, ''), limit: 60 }
+          const windowMs = rateCfg.windowMs ?? 60_000
+          const key = `${rateKeyFromRequest(req as any)}:${rateCfg.key}`
+          const rl = rateLimit(key, rateCfg.limit, windowMs)
           if (!rl.allowed) return err('rate_limited', 429)
         }
         let json: any = undefined
