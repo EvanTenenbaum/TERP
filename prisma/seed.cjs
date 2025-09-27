@@ -5,6 +5,9 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
+  // Ensure System Status singleton exists
+  await prisma.systemStatus.upsert({ where: { id: 'singleton' }, update: {}, create: { id: 'singleton', postingLocked: false } });
+
   // Create Users
   console.log('Creating users...');
   const superAdmin = await prisma.user.create({
