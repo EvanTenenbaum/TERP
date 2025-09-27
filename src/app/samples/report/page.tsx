@@ -21,7 +21,7 @@ export default function SamplesReportPage() {
     setLoading(false)
   }
 
-  useEffect(()=>{ load() },[])
+  useEffect(()=>{ load() },[load, from, to])
 
   return (
     <div className="space-y-4">
