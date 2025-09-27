@@ -11,7 +11,7 @@ type Lot = { id: string; quantityAvailable: number };
 type Product = { id: string; sku: string; name: string };
 
 export default function InventoryTransfersPage() {
-  const { data: productsData } = useSWR<{ success: boolean; products: Product[] }>('\'/api/products\'', fetcher);
+  const { data: productsData } = useSWR<{ success: boolean; products: Product[] }>("/api/products", fetcher);
   const [productId, setProductId] = useState('');
   const lotsKey = productId ? `/api/inventory/lots?productId=${encodeURIComponent(productId)}` : null;
   const { data: lotsData } = useSWR<{ success: boolean; lots: Lot[] }>(lotsKey, fetcher);
@@ -97,7 +97,7 @@ export default function InventoryTransfersPage() {
           <label className="block text-sm font-medium">Destination Lot</label>
           <select value={destLotId} onChange={e => setDestLotId(e.target.value)} className="mt-1 w-full border rounded p-2" disabled={!lotsData?.lots?.length}>
             <option value="">Select destination lot…</option>
-            {lotsData?.lots?.filter(l => l.id !== sourceLotId).map(l => <option key={l.id} value={l.id}>{l.id} — avail {Number(l.quantityAvailable)}</option>)}
+            {lotsData?.lots?.filter(l => l.id !== sourceLotId).map(l => <option key={l.id} value={l.id}>{l.id} ��� avail {Number(l.quantityAvailable)}</option>)}
           </select>
         </div>
 
