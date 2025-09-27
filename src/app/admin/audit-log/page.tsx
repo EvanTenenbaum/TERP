@@ -1,20 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 export default function AuditLogPage() {
   const [items, setItems] = useState<any[]>([])
   const [entityType, setEntityType] = useState('')
   const [entityId, setEntityId] = useState('')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const params = new URLSearchParams()
     if (entityType) params.set('entityType', entityType)
     if (entityId) params.set('entityId', entityId)
     const res = await fetch(`/api/audit?${params.toString()}`)
     const j = await res.json()
     if (j.success) setItems(j.data)
-  }
+  }, [entityType, entityId])
 
   useEffect(()=>{ load() }, [load])
 
