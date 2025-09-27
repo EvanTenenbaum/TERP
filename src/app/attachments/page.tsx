@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 export default function AttachmentsPage() {
   const [entityType, setEntityType] = useState('product')
@@ -9,21 +9,21 @@ export default function AttachmentsPage() {
   const [list, setList] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const qs = new URLSearchParams()
     if (entityType) qs.set('entityType', entityType)
     if (entityId) qs.set('entityId', entityId)
     const resp = await fetch(`/api/attachments/list?${qs.toString()}`)
     const data = await resp.json()
     if (data.success) setList(data.attachments)
-  }
+  }, [entityType, entityId])
 
   const toggleArchive = async (id: string, archived: boolean) => {
     await fetch(`/api/attachments/${id}/archive`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archived: !archived }) })
     await load()
   }
 
-  useEffect(() => { load() }, [load, entityType, entityId])
+  useEffect(() => { load() }, [load])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
