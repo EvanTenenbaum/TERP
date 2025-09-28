@@ -1,13 +1,14 @@
 import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
+import { ok, err } from '@/lib/http'
 
-export const GET = api({})(async () => {
+export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'] })(async () => {
   const pos = await prisma.purchaseOrder.findMany({ include: { vendor: { include: { party: { select: { name: true } } } }, items: { include: { product: true } } }, orderBy: { createdAt: 'desc' } })
   const result = pos.map(po => ({
     ...po,
     vendorDisplayName: po.vendor?.party?.name ?? po.vendor?.vendorCode ?? po.vendor?.companyName ?? ''
   }))
-  return new Response(JSON.stringify({ success: true, purchaseOrders: result }), { headers: { 'Content-Type':'application/json' } })
+  return ok({ purchaseOrders: result })
 })
 
 export const POST = api<{ vendorId:string; expectedAt?:string; poNumber?:string }>({
@@ -17,9 +18,9 @@ export const POST = api<{ vendorId:string; expectedAt?:string; poNumber?:string 
   parseJson: true,
 })(async ({ json }) => {
   const { vendorId, expectedAt, poNumber } = json || ({} as any)
-  if (!vendorId) return new Response(JSON.stringify({ success:false, error: 'invalid_input' }), { status: 400, headers: { 'Content-Type':'application/json' } })
+  if (!vendorId) return err('invalid_input', 400)
   const count = await prisma.purchaseOrder.count()
   const defaultPo = `PO-${new Date().getFullYear()}-${String(count + 1).padStart(4,'0')}`
   const po = await prisma.purchaseOrder.create({ data: { vendorId, poNumber: poNumber || defaultPo, expectedAt: expectedAt ? new Date(expectedAt) : null } })
-  return new Response(JSON.stringify({ success: true, purchaseOrder: po }), { headers: { 'Content-Type':'application/json' } })
+  return ok({ purchaseOrder: po })
 })
