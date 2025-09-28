@@ -8,6 +8,7 @@ export default function VendorSettlementsPage() {
   const { data } = useSWR('/api/finance/vendor-settlements/list', fetcher);
   const [form, setForm] = useState({ vendorId:'', periodStart:'', periodEnd:'', amount:'', notes:'' , appliedToApId:'' });
 
+  const { push } = useToast();
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const res = await fetch('/api/finance/vendor-settlements', {
