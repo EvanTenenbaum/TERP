@@ -75,10 +75,10 @@ export default function InventoryTransfersPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Inventory Transfers</h1>
-        <Link href="/inventory" className="text-blue-600 underline">Back to Inventory</Link>
-      </div>
+      <PageHeader
+        title="Inventory Transfers"
+        actions={<Link href="/inventory" className="text-blue-600 underline">Back to Inventory</Link>}
+      />
 
       <form onSubmit={submit} className="grid gap-4 md:grid-cols-2 bg-white p-4 rounded border">
         <div className="col-span-2">
