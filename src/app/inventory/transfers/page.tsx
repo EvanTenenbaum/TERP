@@ -127,7 +127,9 @@ export default function InventoryTransfersPage() {
 
       <div className="bg-white p-4 rounded border">
         <h2 className="text-lg font-semibold mb-2">Recent Transfers</h2>
-        {historyLoading ? (
+        {historyError ? (
+          <ErrorAlert message={historyError.message || 'Failed to load transfers'} />
+        ) : historyLoading ? (
           <div className="space-y-2">
             <Skeleton className="h-4 w-1/3" />
             <Skeleton className="h-4 w-2/3" />
