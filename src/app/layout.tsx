@@ -11,6 +11,8 @@ export const metadata = {
   description: 'Modern ERP system built with Next.js 14, TypeScript, and Prisma',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default function RootLayout({
   children,
 }: {
