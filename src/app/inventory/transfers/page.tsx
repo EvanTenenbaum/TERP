@@ -4,7 +4,7 @@ import useSWR, { mutate as swrMutate } from 'swr';
 import { useState } from 'react';
 import Link from 'next/link';
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+import { fetcher } from '@/lib/fetcher';
 
 type Lot = { id: string; quantityAvailable: number };
 
