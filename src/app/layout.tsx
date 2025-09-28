@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { CartProvider } from '@/hooks/useCart'
 import AppShell from '@/components/layout/AppShell'
 import { getCurrentRole } from '@/lib/auth'
+import { ToastProvider } from '@/components/ui/Toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,11 +23,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <CartProvider>
-          <AppShell role={role}>
-            {children}
-          </AppShell>
-        </CartProvider>
+        <ToastProvider>
+          <CartProvider>
+            <AppShell role={role}>
+              {children}
+            </AppShell>
+          </CartProvider>
+        </ToastProvider>
       </body>
     </html>
   )
