@@ -15,13 +15,13 @@ export const POST = api({
   const file = form.get('file') as File | null
   const entityType = String(form.get('entityType') || '')
   const entityId = String(form.get('entityId') || '')
-  if (!file || !entityType || !entityId) return new Response(JSON.stringify({ success:false, error: 'invalid_input' }), { status: 400, headers: { 'Content-Type':'application/json' } })
+  if (!file || !entityType || !entityId) return err('invalid_input', 400)
   const mime = file.type || 'application/octet-stream'
   const allowed = ['image/jpeg', 'image/webp', 'application/pdf']
-  if (!allowed.includes(mime)) return new Response(JSON.stringify({ success:false, error: 'invalid_type' }), { status: 415, headers: { 'Content-Type':'application/json' } })
+  if (!allowed.includes(mime)) return err('invalid_type', 415)
 
   const existingCount = await prisma.attachment.count({ where: { entityType, entityId, archived: false } })
-  if (existingCount >= 50) return new Response(JSON.stringify({ success:false, error: 'too_many_attachments' }), { status: 429, headers: { 'Content-Type':'application/json' } })
+  if (existingCount >= 50) return err('too_many_attachments', 429)
 
   const uploadDir = process.env.UPLOAD_DIR || './uploads'
   await fs.mkdir(uploadDir, { recursive: true })
@@ -31,11 +31,11 @@ export const POST = api({
   const filePath = path.join(uploadDir, fileName)
   const ab = await file.arrayBuffer()
 
-  if (ab.byteLength > 10 * 1024 * 1024) return new Response(JSON.stringify({ success:false, error: 'file_too_large' }), { status: 413, headers: { 'Content-Type':'application/json' } })
+  if (ab.byteLength > 10 * 1024 * 1024) return err('file_too_large', 413)
 
   await fs.writeFile(filePath, Buffer.from(ab))
 
   const stat = await fs.stat(filePath)
   const att = await prisma.attachment.create({ data: { entityType, entityId, fileName: baseName, filePath, mimeType: mime, fileSize: stat.size } })
-  return new Response(JSON.stringify({ success:true, attachment: { id: att.id, fileName: att.fileName, url: `/api/attachments/file?id=${att.id}` } }), { headers: { 'Content-Type':'application/json' } })
+  return ok({ attachment: { id: att.id, fileName: att.fileName, url: `/api/attachments/file?id=${att.id}` } })
 })
