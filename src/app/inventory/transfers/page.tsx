@@ -57,7 +57,7 @@ export default function InventoryTransfersPage() {
         reverted = true;
         swrMutate(key);
         const j = await res.json().catch(() => ({}));
-        alert(`Error: ${j?.error ?? res.status}`);
+        push({ message: `Transfer failed: ${j?.error ?? res.status}` });
         return;
       }
 
@@ -65,7 +65,7 @@ export default function InventoryTransfersPage() {
       setNotes('');
       setQuantity('');
       setDestLotId('');
-      alert('Transfer completed');
+      push({ message: 'Transfer completed' });
     } catch (err) {
       if (!reverted) swrMutate(key);
       alert('Unexpected error performing transfer');
