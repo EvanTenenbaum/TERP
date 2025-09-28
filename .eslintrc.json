@@ -4,6 +4,8 @@
     "no-console": ["error", { "allow": ["warn", "error"] }],
     "no-debugger": "error",
     "no-redeclare": ["error", { "builtinGlobals": true }],
-    "no-shadow": ["error", { "builtinGlobals": true, "hoist": "all", "allow": ["status","name","location","global","Image","history","batch","key","start","end"] }]
+    "no-shadow": ["error", { "builtinGlobals": true, "hoist": "all", "allow": ["status","name","location","global","Image","history","batch","key","start","end"] }],
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error"
   }
 }
