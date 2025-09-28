@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
 import { requireRole } from '@/lib/auth'
 import { ensurePostingUnlocked } from '@/lib/system'
+import { normalizeFlowerProductName } from '@/lib/normalization'
 
 export interface IntakeData {
   retailName: string
@@ -22,6 +23,8 @@ export interface IntakeData {
   lotNumber: string
   quantity: number
   unitCostCents: number
+  notes?: string
+  metadata?: Record<string, any>
 }
 
 export async function createProductIntake(data: IntakeData) {
@@ -41,16 +44,17 @@ export async function createProductIntake(data: IntakeData) {
       create: { vendorCode: data.vendorCode, companyName: data.vendorCompany || data.vendorCode, contactInfo: {} },
     })
 
+    const normalizedName = normalizeFlowerProductName(vendor.vendorCode, data.standardStrainName || data.retailName) || `${vendor.vendorCode} · ${data.retailName}`
     const product = await prisma.product.create({
       data: {
-        name: `${vendor.vendorCode} · ${data.retailName}`.slice(0,128),
+        name: normalizedName.slice(0,128),
         sku: `${vendor.vendorCode}-${Date.now().toString(36)}`.slice(0,64),
         category: data.category,
         unit: data.unit,
         defaultPrice: price,
         retailName: data.retailName,
         standardStrainName: data.standardStrainName || data.retailName,
-        customerFacingName: `${vendor.vendorCode} · ${data.retailName}`.slice(0,128),
+        customerFacingName: normalizedName.slice(0,128),
       }
     })
 
