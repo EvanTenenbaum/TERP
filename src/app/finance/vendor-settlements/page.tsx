@@ -2,7 +2,7 @@
 import useSWR from 'swr';
 import { useState } from 'react';
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+import { fetcher } from '@/lib/fetcher';
 
 export default function VendorSettlementsPage() {
   const { data } = useSWR('/api/finance/vendor-settlements/list', fetcher);
