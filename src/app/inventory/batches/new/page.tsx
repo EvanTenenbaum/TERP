@@ -64,7 +64,7 @@ export default function NewBatchPage() {
       router.push('/inventory/products');
     } catch (error) {
       console.error('Error creating batch:', error);
-      alert('Failed to create batch')
+      push({ message: 'Failed to create batch' })
     } finally {
       setIsSubmitting(false);
     }
