@@ -2,7 +2,7 @@
 import useSWR from 'swr';
 import { useState } from 'react';
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+import { fetcher } from '@/lib/fetcher';
 
 export default function VendorRebatesPage() {
   const { data } = useSWR('/api/finance/vendor-rebates/list', fetcher);
