@@ -103,6 +103,7 @@ export default function NewQuotePage() {
 
   if (items.length === 0) {
     return (
+      <FlowProvider steps={[{ label: 'Quote', current: true }, { label: 'Order' }, { label: 'Invoice' }]}>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto text-center">
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -122,10 +123,12 @@ export default function NewQuotePage() {
           </div>
         </div>
       </div>
+      </FlowProvider>
     );
   }
 
   return (
+    <FlowProvider steps={[{ label: 'Quote', current: true }, { label: 'Order' }, { label: 'Invoice' }]}>
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
@@ -295,5 +298,6 @@ export default function NewQuotePage() {
         </form>
       </div>
     </div>
+    </FlowProvider>
   );
 }
