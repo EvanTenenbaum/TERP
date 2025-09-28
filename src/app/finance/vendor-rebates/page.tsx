@@ -2,11 +2,13 @@
 import useSWR from 'swr';
 import { useState } from 'react';
 import { useToast } from '@/components/ui/Toast';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { ErrorAlert } from '@/components/ui/ErrorAlert';
 
 import { fetcher } from '@/lib/fetcher';
 
 export default function VendorRebatesPage() {
-  const { data } = useSWR('/api/finance/vendor-rebates/list', fetcher);
+  const { data, isLoading, error } = useSWR('/api/finance/vendor-rebates/list', fetcher);
   const [form, setForm] = useState({ vendorId:'', basis:'', amount:'', notes:'' , appliedToApId:'' });
 
   const { push } = useToast();
@@ -45,7 +47,17 @@ export default function VendorRebatesPage() {
       </form>
       <div>
         <h2 className="text-lg font-semibold">Recent Rebates</h2>
-        <pre className="bg-gray-100 p-2 rounded overflow-auto text-xs">{JSON.stringify(data,null,2)}</pre>
+        {error ? (
+          <ErrorAlert message={error.message || 'Failed to load rebates'} />
+        ) : isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        ) : (
+          <pre className="bg-gray-100 p-2 rounded overflow-auto text-xs">{JSON.stringify(data,null,2)}</pre>
+        )}
       </div>
     </div>
   );
