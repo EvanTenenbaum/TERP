@@ -25,9 +25,10 @@ export default function VendorRebatesPage() {
     });
     if(!res.ok) {
       const j = await res.json().catch(()=>({}));
-      alert('Error: ' + (j.error || res.status));
+      push({ message: 'Error creating rebate: ' + (j.error || res.status) });
     } else {
       setForm({ vendorId:'', basis:'', amount:'', notes:'' , appliedToApId:'' });
+      push({ message: 'Rebate created' });
     }
   }
 
