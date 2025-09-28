@@ -311,6 +311,7 @@ model Reservation {
   batch    Batch?   @relation(fields: [batchId], references: [id])
 
   @@index([expiresAt])
+  @@index([batchId])
   @@map("reservations")
 }
 
@@ -441,6 +442,8 @@ model AccountsPayable {
   vendorSettlements VendorSettlement[]
   vendorRebates     VendorRebate[]
 
+  @@index([vendorId])
+  @@index([dueDate])
   @@map("accounts_payable")
 }
 
