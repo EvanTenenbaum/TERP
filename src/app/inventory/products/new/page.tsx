@@ -43,7 +43,7 @@ export default function NewProductPage() {
       router.push('/inventory/products');
     } catch (error) {
       console.error('Error creating product:', error);
-      alert('Failed to create product')
+      push({ message: 'Failed to create product' })
     } finally {
       setIsSubmitting(false);
     }
