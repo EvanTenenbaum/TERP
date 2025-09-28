@@ -24,7 +24,8 @@ export default function InventoryTransfersPage() {
   const [notes, setNotes] = useState('');
   const [reason, setReason] = useState('');
 
-  const { data: history } = useSWR<{ success: boolean; transfers: any[] }>('/api/inventory/transfers/list', fetcher);
+  const { data: history, isLoading: historyLoading, error: historyError } = useSWR<{ success: boolean; transfers: any[] }>('/api/inventory/transfers/list', fetcher);
+  const { push } = useToast();
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
