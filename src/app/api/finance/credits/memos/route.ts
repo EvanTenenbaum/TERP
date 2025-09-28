@@ -1,5 +1,6 @@
 import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
+import { ok, err } from '@/lib/http'
 
 export const POST = api<{ arId:string; amountCents:number; reason:string }>({
   roles: ['SUPER_ADMIN','ACCOUNTING'],
@@ -10,7 +11,7 @@ export const POST = api<{ arId:string; amountCents:number; reason:string }>({
   const arId = String(json!.arId||'')
   const amountCents = Math.round(Number(json!.amountCents))
   const reason = String(json!.reason||'').slice(0,256)
-  if (!arId || !Number.isFinite(amountCents) || amountCents <= 0) return new Response(JSON.stringify({ success:false, error: 'invalid_input' }), { status: 400, headers: { 'Content-Type':'application/json' } })
+  if (!arId || !Number.isFinite(amountCents) || amountCents <= 0) return err('invalid_input', 400)
 
   try {
     const out = await prisma.$transaction(async (tx)=>{
@@ -27,10 +28,10 @@ export const POST = api<{ arId:string; amountCents:number; reason:string }>({
       return { memo, customerCredit: cc }
     })
 
-    return new Response(JSON.stringify({ success:true, data: out }), { headers: { 'Content-Type':'application/json' } })
+    return ok({ data: out })
   } catch (e:any) {
     const code = e?.message || 'server_error'
     const httpStatus = code === 'ar_not_found' ? 404 : 500
-    return new Response(JSON.stringify({ success:false, error: code }), { status: httpStatus, headers: { 'Content-Type':'application/json' } })
+    return err(code, httpStatus)
   }
 })
