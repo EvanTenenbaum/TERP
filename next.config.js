@@ -31,4 +31,11 @@ const nextConfig = {
 }
 
 const { withSentryConfig } = require('@sentry/nextjs')
-module.exports = withSentryConfig(nextConfig, { silent: true }, {})
+module.exports = withSentryConfig(
+  nextConfig,
+  { silent: true },
+  {
+    // Skip uploading source maps unless Sentry is fully configured
+    dryRun: !process.env.SENTRY_AUTH_TOKEN || !process.env.SENTRY_ORG || !process.env.SENTRY_PROJECT,
+  }
+)
