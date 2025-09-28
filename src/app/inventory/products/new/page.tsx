@@ -17,6 +17,7 @@ export default function NewProductPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { push } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
