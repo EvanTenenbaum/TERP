@@ -68,7 +68,7 @@ export default function InventoryTransfersPage() {
       push({ message: 'Transfer completed' });
     } catch (err) {
       if (!reverted) swrMutate(key);
-      alert('Unexpected error performing transfer');
+      push({ message: 'Unexpected error performing transfer' });
     }
   }
 
