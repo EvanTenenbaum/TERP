@@ -4,6 +4,13 @@ import { revalidatePath } from 'next/cache'
 export default function IntakePage() {
   async function submit(formData: FormData) {
     'use server'
+    const notes = String(formData.get('notes')||'') || undefined
+    let metadata: Record<string, any> | undefined = undefined
+    const mdRaw = String(formData.get('metadata')||'')
+    if (mdRaw) {
+      try { metadata = JSON.parse(mdRaw) } catch { metadata = undefined }
+    }
+
     const data = {
       retailName: String(formData.get('retailName')||''),
       standardStrainName: String(formData.get('standardStrainName')||'') || undefined,
@@ -18,6 +25,8 @@ export default function IntakePage() {
       lotNumber: String(formData.get('lotNumber')||''),
       quantity: Math.round(parseFloat(String(formData.get('quantity')||'0'))),
       unitCostCents: Math.round(parseFloat(String(formData.get('unitCost')||'0'))*100),
+      notes,
+      metadata,
     }
     await createProductIntake(data as any)
     revalidatePath('/inventory')
@@ -51,6 +60,10 @@ export default function IntakePage() {
           <option value="CONSIGNMENT">Consignment</option>
         </select>
         <input name="netDays" type="number" min="0" placeholder="Net Days (for Net-X)" className="border rounded px-3 py-2" />
+
+        <div className="md:col-span-3 font-semibold mt-2">Other</div>
+        <textarea name="notes" placeholder="Notes (internal)" className="border rounded px-3 py-2 md:col-span-3" rows={3} />
+        <textarea name="metadata" placeholder='Metadata JSON (e.g. {"coaUrl":"https://..."})' className="border rounded px-3 py-2 md:col-span-3" rows={3} />
 
         <div className="md:col-span-3 mt-4">
           <button type="submit" className="inline-flex items-center px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Save</button>
