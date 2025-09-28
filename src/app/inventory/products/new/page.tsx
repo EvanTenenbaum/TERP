@@ -2,6 +2,7 @@
 
 "use client";
 import { useEffect, useState } from 'react';
+import { useToast } from '@/components/ui/Toast';
 import { useRouter } from 'next/navigation';
 
 export default function NewProductPage() {
