@@ -70,6 +70,7 @@ export default function IntakePage() {
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.error || 'intake_failed')
       push({ message: 'Intake created' })
+      await swrMutate('/api/inventory/products/summary')
       router.push('/inventory')
     } catch (err: any) {
       push({ message: err?.message || 'Failed to create intake' })
