@@ -126,7 +126,15 @@ export default function InventoryTransfersPage() {
 
       <div className="bg-white p-4 rounded border">
         <h2 className="text-lg font-semibold mb-2">Recent Transfers</h2>
-        {!history?.transfers?.length ? <div className="text-sm text-gray-500">No transfers yet.</div> : (
+        {historyLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+        ) : !history?.transfers?.length ? (
+          <div className="text-sm text-gray-500">No transfers yet.</div>
+        ) : (
           <table className="min-w-full text-sm">
             <thead><tr className="text-left">
               <th className="p-2">When</th>
