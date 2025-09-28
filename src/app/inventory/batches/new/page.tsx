@@ -18,6 +18,7 @@ export default function NewBatchPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { push } = useToast();
   const [products, setProducts] = useState<{id:string; name:string}[]>([])
   const [vendors, setVendors] = useState<{id:string; vendorCode:string; companyName:string}[]>([])
 
