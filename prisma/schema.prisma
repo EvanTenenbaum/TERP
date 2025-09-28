@@ -330,6 +330,8 @@ model Order {
   orderItems         OrderItem[]
   accountsReceivable AccountsReceivable[]
 
+  @@index([status, createdAt])
+  @@index([orderDate])
   @@map("orders")
 }
 
