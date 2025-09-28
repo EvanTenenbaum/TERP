@@ -39,6 +39,7 @@ export default function NewProductPage() {
       })
       const data = await res.json()
       if (!res.ok || !data.success) throw new Error(data.error || 'create_failed')
+      push({ message: 'Product created' });
       router.push('/inventory/products');
     } catch (error) {
       console.error('Error creating product:', error);
