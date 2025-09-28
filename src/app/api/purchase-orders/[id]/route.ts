@@ -1,10 +1,11 @@
 import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
+import { ok, err } from '@/lib/http'
 
-export const GET = api({})(async ({ params }) => {
+export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'] })(async ({ params }) => {
   const po = await prisma.purchaseOrder.findUnique({ where: { id: params!.id }, include: { vendor: true, items: { include: { product: true } } } })
-  if (!po) return new Response(JSON.stringify({ success: false, error: 'not_found' }), { status: 404, headers: { 'Content-Type':'application/json' } })
-  return new Response(JSON.stringify({ success: true, purchaseOrder: po }), { headers: { 'Content-Type':'application/json' } })
+  if (!po) return err('not_found', 404)
+  return ok({ purchaseOrder: po })
 })
 
 export const PATCH = api<{ status?: string; expectedAt?: string }>({
@@ -14,5 +15,5 @@ export const PATCH = api<{ status?: string; expectedAt?: string }>({
 })(async ({ json, params }) => {
   const { status: newStatus, expectedAt } = json || ({} as any)
   const po = await prisma.purchaseOrder.update({ where: { id: params!.id }, data: { status: newStatus, expectedAt: expectedAt ? new Date(expectedAt) : undefined } })
-  return new Response(JSON.stringify({ success: true, purchaseOrder: po }), { headers: { 'Content-Type':'application/json' } })
+  return ok({ purchaseOrder: po })
 })
