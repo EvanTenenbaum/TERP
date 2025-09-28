@@ -3,6 +3,7 @@
 import useSWR, { mutate as swrMutate } from 'swr';
 import { useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { ErrorAlert } from '@/components/ui/ErrorAlert';
 import { useState } from 'react';
 import Link from 'next/link';
 
