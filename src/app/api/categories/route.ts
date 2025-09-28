@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma'
 import { api } from '@/lib/api'
 import { ok, err } from '@/lib/http'
 
-export const GET = api({})(async () => {
+export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'] })(async () => {
   const categories = await prisma.productCategory.findMany({ orderBy: [{ parentId: 'asc' }, { name: 'asc' }] })
   return ok({ categories })
 })
