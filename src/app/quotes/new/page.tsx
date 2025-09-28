@@ -14,6 +14,8 @@ interface Customer {
   paymentTerms?: string | null;
 }
 
+import { FlowProvider } from '@/lib/flow'
+
 export default function NewQuotePage() {
   const router = useRouter();
   const { items, clearCart } = useCart();
