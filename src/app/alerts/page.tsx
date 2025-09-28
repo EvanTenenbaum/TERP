@@ -1,7 +1,7 @@
 "use client";
 
+'use client'
 import { useEffect, useState } from 'react'
-import { createRule, deleteRule, listRules, setRuleActive } from '@/actions/rules'
 import LowStockPanel from '@/components/alerts/LowStockPanel'
 
 export default function AlertsPage() {
@@ -10,35 +10,45 @@ export default function AlertsPage() {
 
   useEffect(() => {
     (async () => {
-      const res = await listRules()
-      if (res.success) setRules(res.rules as any[])
+      const r = await fetch('/api/alerts/rules', { cache: 'no-store' })
+      if (r.ok) {
+        const j = await r.json()
+        if (j.success) setRules(j.rules as any[])
+      }
     })()
   }, [])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const res = await createRule({
-      field: form.field as any,
-      operator: form.operator as any,
-      value: form.value,
-      action: form.action as any,
-      priority: Number(form.priority) || 0,
+    const r = await fetch('/api/alerts/rules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        field: form.field,
+        operator: form.operator,
+        value: form.value,
+        action: form.action,
+        priority: Number(form.priority) || 0,
+      }),
     })
-    if (res.success) {
-      const r = await listRules(); if (r.success) setRules(r.rules as any[])
+    if (r.ok) {
+      const res = await fetch('/api/alerts/rules', { cache: 'no-store' })
+      if (res.ok) { const j = await res.json(); if (j.success) setRules(j.rules as any[]) }
       setForm({ field: 'InventoryAge', operator: '>', value: '', action: 'Alert', priority: 0 })
     }
   }
 
   const toggle = async (id: string, active: boolean) => {
-    await setRuleActive(id, !active)
-    const r = await listRules(); if (r.success) setRules(r.rules as any[])
+    await fetch('/api/alerts/rules', { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ id, active: !active }) })
+    const r = await fetch('/api/alerts/rules', { cache: 'no-store' })
+    if (r.ok) { const j = await r.json(); if (j.success) setRules(j.rules as any[]) }
   }
 
   const remove = async (id: string) => {
     if (!confirm('Delete rule?')) return
-    await deleteRule(id)
-    const r = await listRules(); if (r.success) setRules(r.rules as any[])
+    await fetch('/api/alerts/rules', { method: 'DELETE', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ id }) })
+    const r = await fetch('/api/alerts/rules', { cache: 'no-store' })
+    if (r.ok) { const j = await r.json(); if (j.success) setRules(j.rules as any[]) }
   }
 
   return (
