@@ -26,9 +26,10 @@ export default function VendorSettlementsPage() {
     });
     if(!res.ok) {
       const j = await res.json().catch(()=>({}));
-      alert('Error: ' + (j.error || res.status));
+      push({ message: 'Error creating settlement: ' + (j.error || res.status) });
     } else {
       setForm({ vendorId:'', periodStart:'', periodEnd:'', amount:'', notes:'' , appliedToApId:'' });
+      push({ message: 'Settlement created' });
     }
   }
 
