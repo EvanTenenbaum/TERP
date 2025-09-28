@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorAlert } from '@/components/ui/ErrorAlert';
+import PageHeader from '@/components/ui/PageHeader'
 
 import { fetcher } from '@/lib/fetcher';
 
@@ -36,7 +37,7 @@ export default function VendorRebatesPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-semibold">Vendor Rebates</h1>
+      <PageHeader title="Vendor Rebates" subtitle="Record vendor rebate credits and review recent activity" />
       <form onSubmit={submit} className="space-y-2 bg-white p-4 rounded border grid md:grid-cols-2 gap-3">
         <input placeholder="Vendor ID" value={form.vendorId} onChange={e=>setForm({...form,vendorId:e.target.value})} className="border p-2 rounded"/>
         <input placeholder="AP Id (optional)" value={form.appliedToApId} onChange={e=>setForm({...form,appliedToApId:e.target.value})} className="border p-2 rounded"/>
