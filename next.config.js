@@ -21,6 +21,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  allowedDevOrigins: ['https://a523effc6a724dd592d3fbd3dc11b9a9-1e645176-8c76-4ec4-820f-648222.fly.dev'],
   async headers() {
     return [
       {
