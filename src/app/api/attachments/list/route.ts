@@ -1,14 +1,17 @@
 import prisma from '@/lib/prisma'
 import { api } from '@/lib/api'
 import { ok } from '@/lib/http'
+import { z } from 'zod'
 
-export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'] })(async ({ req }) => {
-  const { searchParams } = new URL(req.url)
-  const entityType = searchParams.get('entityType') || undefined
-  const entityId = searchParams.get('entityId') || undefined
+const querySchema = z.object({
+  entityType: z.string().optional(),
+  entityId: z.string().optional(),
+})
+
+export const GET = api<{},{ entityType?: string; entityId?: string }>({ roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'], querySchema })(async ({ query }) => {
   const where: any = {}
-  if (entityType) where.entityType = entityType
-  if (entityId) where.entityId = entityId
+  if (query?.entityType) where.entityType = query.entityType
+  if (query?.entityId) where.entityId = query.entityId
   const attachments = await prisma.attachment.findMany({
     where,
     orderBy: { createdAt: 'desc' },
