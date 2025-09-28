@@ -8,6 +8,7 @@ export default function VendorRebatesPage() {
   const { data } = useSWR('/api/finance/vendor-rebates/list', fetcher);
   const [form, setForm] = useState({ vendorId:'', basis:'', amount:'', notes:'' , appliedToApId:'' });
 
+  const { push } = useToast();
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const res = await fetch('/api/finance/vendor-rebates', {
