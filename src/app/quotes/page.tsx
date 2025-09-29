@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { getQuotes } from '@/actions/quotes';
+import { ClientLink } from '@/components/client/ClientLink';
 
 export default async function QuotesPage() {
   return (
