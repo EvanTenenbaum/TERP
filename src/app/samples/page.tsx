@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { ClientLink } from '@/components/client/ClientLink'
 
 export default function SamplesPage() {
   const [rows, setRows] = useState<any[]>([])
@@ -62,8 +63,8 @@ export default function SamplesPage() {
                   <td className="p-2">{r.transactionType}</td>
                   <td className="p-2">{r.product?.name ?? r.productId}</td>
                   <td className="p-2 text-right">{r.quantity}</td>
-                  <td className="p-2">{r.customer?.companyName ?? '-'}</td>
-                  <td className="p-2">{r.vendor?.companyName ?? '-'}</td>
+                  <td className="p-2">{r.customer ? (<ClientLink partyId={r.customer.partyId || r.customer.party?.id} fallbackHref="/clients">{r.customer.party?.name || r.customer.companyName}</ClientLink>) : '-'}</td>
+                  <td className="p-2">{r.vendor ? (<ClientLink partyId={r.vendor.partyId || r.vendor.party?.id} fallbackHref="/clients">{r.vendor.party?.name || r.vendor.companyName}</ClientLink>) : '-'}</td>
                   <td className="p-2 text-center">
                     {r.transactionType === 'CLIENT_OUT' && r.customerId ? (
                       <div className="flex gap-2 justify-center">
