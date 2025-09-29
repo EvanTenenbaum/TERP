@@ -53,7 +53,11 @@ async function QuotesList() {
                         Sales Sheet #{quote.quoteNumber}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {quote.customer?.companyName || 'No customer assigned'}
+                        {quote.customer ? (
+                          <ClientLink partyId={quote.customer.partyId || undefined} fallbackHref="/clients">
+                            {quote.customer.companyName}
+                          </ClientLink>
+                        ) : 'No customer assigned'}
                       </p>
                     </div>
                   </div>
