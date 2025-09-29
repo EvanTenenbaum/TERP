@@ -27,7 +27,7 @@ export function Input({ error, onValidate, onBlur, onChange, ...rest }: Props) {
       aria-invalid={invalid}
       className={[
         'block w-full rounded-md border px-3 py-2 text-sm',
-        invalid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+        invalid ? 'border-danger-500 focus:border-danger-500 focus:ring-danger-500' : 'border-border focus:border-primary-500 focus:ring-primary-500'
       ].join(' ')}
       onBlur={handleBlur}
       onChange={handleChange}
