@@ -16,7 +16,7 @@ export default async function QuotesPage() {
           href="/quotes/new"
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
-          Create Quote
+          Create Sales Sheet
         </Link>
       </div>
 
@@ -34,7 +34,7 @@ async function QuotesList() {
   if (!quotes || quotes.length === 0) {
     const EmptyState = (await import('@/components/ui/EmptyState')).default
     return (
-      <EmptyState title="No quotes" description="Get started by creating a new sales quote." actionHref="/quotes/new" actionLabel="Create Quote" />
+      <EmptyState title="No quotes" description="Get started by creating a new sales quote." actionHref="/quotes/new" actionLabel="Create Sales Sheet" />
     );
   }
 
