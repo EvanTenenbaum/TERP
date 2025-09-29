@@ -15,12 +15,14 @@ export default function DashboardGrid({
   onMove,
   onResize,
   onRemove,
+  onRename,
 }: {
   widgets: DashboardWidget[];
   editMode?: boolean;
   onMove?: (id: string, dir: "up" | "down") => void;
   onResize?: (id: string, pos: WidgetPosition) => void;
   onRemove?: (id: string) => void;
+  onRename?: (id: string, title: string) => void;
 }) {
   const ordered = [...widgets].sort(
     (a, b) => (a.position?.order ?? 0) - (b.position?.order ?? 0)
@@ -39,7 +41,19 @@ export default function DashboardGrid({
           >
             <div className="px-3 py-2 border-b flex items-center justify-between bg-gray-50">
               <div className="font-medium text-sm text-gray-700 truncate">
-                {w.title || "Widget"}
+                {editMode ? (
+                  <input
+                    defaultValue={w.title || ""}
+                    placeholder="Title"
+                    className="text-sm border rounded px-2 py-0.5 w-40"
+                    onBlur={(e) => onRename?.(w.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') onRename?.(w.id, (e.target as HTMLInputElement).value)
+                    }}
+                  />
+                ) : (
+                  <span>{w.title || "Widget"}</span>
+                )}
               </div>
               {editMode && (
                 <div className="flex items-center gap-1">

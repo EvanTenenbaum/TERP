@@ -60,6 +60,11 @@ export default function DashboardViewPage({ params }: { params: { id: string } }
     await deleteJson(`/api/analytics/dashboards/${id}/widgets/${wid}`)
   }
 
+  const onRename = async (wid: string, title: string) => {
+    setWidgets(ws => ws.map(w => w.id === wid ? { ...w, title } : w))
+    await patchJson(`/api/analytics/dashboards/${id}/widgets/${wid}`, { title })
+  }
+
   const onAdd = async (reportId: string) => {
     const order = widgets.length ? Math.max(...widgets.map(w=> toPos(w.position).order)) + 1 : 0
     const res = await postJson<{ data:any }>(`/api/analytics/dashboards/${id}/widgets`, { reportId, position: { order, colSpan:1, rowSpan:1 } })
@@ -67,15 +72,49 @@ export default function DashboardViewPage({ params }: { params: { id: string } }
     setShowPicker(false)
   }
 
+  const onMetaChange = async (patch: any) => {
+    const next = { ...dashboard, ...patch }
+    setDashboard(next)
+    await patchJson(`/api/analytics/dashboards/${id}`, patch)
+  }
+
   if (loading) return <div className="text-sm text-gray-500">Loading dashboard...</div>
   if (!dashboard) return <div className="text-sm text-red-600">Dashboard not found</div>
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">{dashboard.name}</h1>
-          {dashboard.description ? <div className="text-sm text-gray-500">{dashboard.description}</div> : null}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="min-w-[240px]">
+          {edit ? (
+            <div className="flex flex-col gap-2">
+              <input
+                className="border rounded px-2 py-1 text-sm"
+                value={dashboard.name || ''}
+                onChange={(e)=> onMetaChange({ name: e.target.value })}
+              />
+              <input
+                className="border rounded px-2 py-1 text-sm"
+                value={dashboard.description || ''}
+                onChange={(e)=> onMetaChange({ description: e.target.value })}
+                placeholder="Description"
+              />
+              <select
+                className="border rounded px-2 py-1 text-sm"
+                value={dashboard.visibility}
+                onChange={(e)=> onMetaChange({ visibility: e.target.value })}
+              >
+                <option value="PRIVATE">PRIVATE</option>
+                <option value="SHARED">SHARED</option>
+                <option value="ORG_DEFAULT">ORG_DEFAULT</option>
+              </select>
+            </div>
+          ) : (
+            <div>
+              <h1 className="text-xl font-semibold">{dashboard.name}</h1>
+              {dashboard.description ? <div className="text-sm text-gray-500">{dashboard.description}</div> : null}
+              <div className="text-xs text-gray-500 mt-1">Visibility: {dashboard.visibility}</div>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button className="px-3 py-1.5 rounded border text-sm" onClick={()=> setEdit(e=>!e)}>{edit? 'Done' : 'Edit'}</button>
@@ -83,7 +122,7 @@ export default function DashboardViewPage({ params }: { params: { id: string } }
         </div>
       </div>
 
-      <DashboardGrid widgets={gridWidgets} editMode={edit} onMove={onMove} onResize={onResize} onRemove={onRemove} />
+      <DashboardGrid widgets={gridWidgets} editMode={edit} onMove={onMove} onResize={onResize} onRemove={onRemove} onRename={onRename} />
 
       {showPicker && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={()=> setShowPicker(false)}>
@@ -126,11 +165,16 @@ function WidgetRenderer({ reportId, snapshotId }: { reportId: string; snapshotId
     async function run() {
       setLoading(true)
       try {
-        // For now, always evaluate current spec; snapshot support can be added with a GET endpoint
-        const rep = await fetcher<{ data:any }>(`/api/analytics/reports/${reportId}`)
-        const res = await fetcher<{ data:any }>(`/api/analytics/evaluate`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ spec: rep.data.spec }) })
-        if (!alive) return
-        setData(res.data)
+        if (snapshotId) {
+          const snap = await fetcher<{ data:any }>(`/api/analytics/snapshots/${snapshotId}`)
+          if (!alive) return
+          setData(snap.data.data)
+        } else {
+          const rep = await fetcher<{ data:any }>(`/api/analytics/reports/${reportId}`)
+          const res = await fetcher<{ data:any }>(`/api/analytics/evaluate`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ spec: rep.data.spec }) })
+          if (!alive) return
+          setData(res.data)
+        }
       } catch (e) {
         if (!alive) return
         setData({ rows: [], meta: { viz: 'table', recommendedViz: 'table' } })
