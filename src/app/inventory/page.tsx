@@ -1,6 +1,18 @@
 import Link from 'next/link'
 import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
+import Link from 'next/link'
+
+const tiles: { title: string; href: string; description: string }[] = [
+  { title: 'Products', href: '/inventory/products', description: 'Catalog and stock by intake date' },
+  { title: 'Categories', href: '/inventory/categories', description: 'Organize and manage product taxonomy' },
+  { title: 'Purchase Orders', href: '/inventory/purchase-orders', description: 'Create, receive, and track POs' },
+  { title: 'Transfers', href: '/inventory/transfers', description: 'Move inventory between lots' },
+  { title: 'Adjustments', href: '/inventory/adjustments', description: 'Add/remove inventory with reasons' },
+  { title: 'Returns', href: '/inventory/returns', description: 'Process returns and credit' },
+  { title: 'Discrepancies', href: '/inventory/discrepancies', description: 'Investigate and resolve variances' },
+  { title: 'Low Stock', href: '/inventory/low-stock', description: 'Replenishment candidates and alerts' },
+]
 
 export default function InventoryDashboard() {
   return (
@@ -29,6 +41,17 @@ export default function InventoryDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Explore</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {tiles.map(t => (
+              <Link key={t.href} href={t.href} className="block border rounded p-3 hover:shadow">
+                <div className="font-medium text-gray-900">{t.title}</div>
+                <div className="text-sm text-gray-600">{t.description}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
           <div className="space-y-3">
