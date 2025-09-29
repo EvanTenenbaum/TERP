@@ -7,9 +7,9 @@ export default async function QuotesPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Quotes</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sales Sheets</h1>
           <p className="text-gray-600">
-            Manage and track your sales quotes
+            Create, send, and track sales sheets
           </p>
         </div>
         <Link
@@ -34,7 +34,7 @@ async function QuotesList() {
   if (!quotes || quotes.length === 0) {
     const EmptyState = (await import('@/components/ui/EmptyState')).default
     return (
-      <EmptyState title="No quotes" description="Get started by creating a new sales quote." actionHref="/quotes/new" actionLabel="Create Sales Sheet" />
+      <EmptyState title="No sales sheets" description="Get started by creating a new sales sheet." actionHref="/quotes/new" actionLabel="Create Sales Sheet" />
     );
   }
 
@@ -49,7 +49,7 @@ async function QuotesList() {
                   <div className="flex items-center">
                     <div>
                       <p className="text-sm font-medium text-blue-600 truncate">
-                        Quote #{quote.quoteNumber}
+                        Sales Sheet #{quote.quoteNumber}
                       </p>
                       <p className="text-sm text-gray-500">
                         {quote.customer?.companyName || 'No customer assigned'}
