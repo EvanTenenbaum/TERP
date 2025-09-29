@@ -1,6 +1,7 @@
 import { getAccountsReceivable, getARAging } from '@/actions/finance'
 
 import EmptyState from '@/components/ui/EmptyState'
+import { ClientLink } from '@/components/client/ClientLink'
 
 export default async function ARPage({ searchParams }: { searchParams?: { q?: string; sort?: string; dir?: 'asc'|'desc' } }) {
   const [{ success, rows }, aging] = await Promise.all([getAccountsReceivable(), getARAging()])
@@ -63,7 +64,7 @@ export default async function ARPage({ searchParams }: { searchParams?: { q?: st
               {filtered.map((r)=> (
                 <tr key={r.id}>
                   <td className="px-3 py-2">{r.invoiceNumber}</td>
-                  <td className="px-3 py-2">{r.customer?.companyName}</td>
+                  <td className="px-3 py-2">{r.customer ? (<ClientLink partyId={r.customer.partyId || r.customer.party?.id} fallbackHref="/clients">{r.customer.party?.name || r.customer.companyName}</ClientLink>) : null}</td>
                   <td className="px-3 py-2">${(r.amount/100).toFixed(2)}</td>
                   <td className="px-3 py-2">${(r.balanceRemaining/100).toFixed(2)}</td>
                   <td className="px-3 py-2">{new Date(r.dueDate).toLocaleDateString()}</td>
