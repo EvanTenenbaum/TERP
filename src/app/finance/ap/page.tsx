@@ -2,6 +2,7 @@ import { getAccountsPayable, applyApPayment } from '@/actions/finance'
 import { revalidatePath } from 'next/cache'
 
 import EmptyState from '@/components/ui/EmptyState'
+import { ClientLink } from '@/components/client/ClientLink'
 
 export default async function APPage({ searchParams }: { searchParams?: { q?: string; sort?: string; dir?: 'asc'|'desc' } }) {
   const { success, rows } = await getAccountsPayable()
@@ -66,7 +67,7 @@ export default async function APPage({ searchParams }: { searchParams?: { q?: st
               {filtered.map((r)=> (
                 <tr key={r.id}>
                   <td className="px-3 py-2">{r.invoiceNumber}</td>
-                  <td className="px-3 py-2">{r.vendor?.companyName}</td>
+                  <td className="px-3 py-2">{r.vendor ? (<ClientLink partyId={r.vendor.partyId || r.vendor.party?.id} fallbackHref="/clients">{r.vendor.party?.name || r.vendor.companyName}</ClientLink>) : null}</td>
                   <td className="px-3 py-2">${(r.amount/100).toFixed(2)}</td>
                   <td className="px-3 py-2">${(r.balanceRemaining/100).toFixed(2)}</td>
                   <td className="px-3 py-2">{new Date(r.dueDate).toLocaleDateString()}</td>
