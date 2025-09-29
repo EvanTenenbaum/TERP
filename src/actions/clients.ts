@@ -1,8 +1,8 @@
-'use server'
-
 import prisma from '@/lib/prisma'
 import * as Sentry from '@sentry/nextjs'
 import { revalidatePath } from 'next/cache'
+import { requireRole, getCurrentUserId } from '@/lib/auth'
+import { ensurePostingUnlocked } from '@/lib/system'
 
 export interface CreateClientInput {
   name: string
@@ -97,4 +97,51 @@ export async function createClient(input: CreateClientInput) {
     Sentry.captureException(e)
     return { success: false, error: msg }
   }
+}
+
+export async function updateCustomerCredit(input: {
+  customerId: string
+  creditLimitCents?: number | null
+  paymentTerms?: string | null
+  revalidate?: string
+}) {
+  try { requireRole(['SUPER_ADMIN','ACCOUNTING']) } catch { return }
+  try { await ensurePostingUnlocked(['SUPER_ADMIN','ACCOUNTING']) } catch { return }
+  const { customerId, creditLimitCents, paymentTerms, revalidate } = input
+  await prisma.customer.update({
+    where: { id: customerId },
+    data: { creditLimit: creditLimitCents ?? undefined, paymentTerms: paymentTerms ?? undefined },
+  })
+  if (revalidate) revalidatePath(revalidate)
+}
+
+export async function createCrmNote(input: {
+  customerId?: string
+  vendorId?: string
+  type: 'call' | 'email' | 'meeting' | 'internal' | 'pinned'
+  content: string
+  revalidate?: string
+}) {
+  try { requireRole(['SUPER_ADMIN','SALES','ACCOUNTING']) } catch { return }
+  const { customerId, vendorId, type, content, revalidate } = input
+  const userId = getCurrentUserId()
+  await prisma.crmNote.create({
+    data: { customerId: customerId ?? null, vendorId: vendorId ?? null, noteType: type, noteDate: new Date(), content, createdBy: userId },
+  })
+  if (revalidate) revalidatePath(revalidate)
+}
+
+export async function createReminder(input: {
+  customerId: string
+  dueDate: string // ISO
+  note: string
+  arId?: string
+  revalidate?: string
+}) {
+  try { requireRole(['SUPER_ADMIN','SALES','ACCOUNTING']) } catch { return }
+  const { customerId, dueDate, note, arId, revalidate } = input
+  await prisma.reminder.create({
+    data: { customerId, dueDate: new Date(dueDate), note, arId: arId ?? null },
+  })
+  if (revalidate) revalidatePath(revalidate)
 }
