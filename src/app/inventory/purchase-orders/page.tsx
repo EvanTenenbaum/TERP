@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ClientLink } from '@/components/client/ClientLink'
 
 export default function PurchaseOrdersPage() {
   const [list, setList] = useState<any[]>([])
@@ -41,7 +42,7 @@ export default function PurchaseOrdersPage() {
               {list.map((po)=> (
                 <tr key={po.id}>
                   <td className="px-4 py-2">{po.poNumber}</td>
-                  <td className="px-4 py-2">{po.vendor?.companyName}</td>
+                  <td className="px-4 py-2">{po.vendor ? (<ClientLink partyId={po.vendor.partyId || po.vendor.party?.id} fallbackHref="/clients">{po.vendor.party?.name || po.vendor.companyName || po.vendor.vendorCode}</ClientLink>) : null}</td>
                   <td className="px-4 py-2">{po.status}</td>
                   <td className="px-4 py-2">{po.expectedAt ? new Date(po.expectedAt).toLocaleDateString() : '-'}</td>
                   <td className="px-4 py-2">{po.items?.length || 0}</td>
