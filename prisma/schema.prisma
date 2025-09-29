@@ -933,3 +933,111 @@ model CartReservation {
   @@index([productId])
   @@map("cart_reservations")
 }
+
+// Analytics & Reporting
+
+enum DashboardVisibility {
+  PRIVATE
+  SHARED
+  ORG_DEFAULT
+}
+
+enum ReportVisibility {
+  PRIVATE
+  SHARED
+  TEMPLATE
+}
+
+enum ReportDomain {
+  SALES
+  FINANCE
+  INVENTORY
+  OPERATIONS
+}
+
+enum AlertScope {
+  REPORT
+}
+
+model Dashboard {
+  id            String   @id @default(cuid())
+  ownerUserId   String
+  name          String
+  description   String?
+  layout        Json
+  locked        Boolean  @default(false)
+  isTemplate    Boolean  @default(false)
+  roleScope     UserRole?
+  visibility    DashboardVisibility @default(PRIVATE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner         User     @relation(fields: [ownerUserId], references: [id])
+  widgets       ReportWidget[]
+
+  @@index([ownerUserId])
+}
+
+model ReportDefinition {
+  id              String   @id @default(cuid())
+  ownerUserId     String
+  name            String
+  description     String?
+  domain          ReportDomain
+  spec            Json
+  presentation    Json
+  visibility      ReportVisibility @default(PRIVATE)
+  snapshotOfId    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  owner           User @relation(fields: [ownerUserId], references: [id])
+
+  @@index([ownerUserId])
+}
+
+model ReportSnapshot {
+  id            String   @id @default(cuid())
+  reportId      String
+  takenAt       DateTime @default(now())
+  spec          Json
+  presentation  Json
+  data          Json
+  takenByUserId String
+
+  report        ReportDefinition @relation(fields: [reportId], references: [id])
+
+  @@index([reportId, takenAt])
+}
+
+model ReportWidget {
+  id           String   @id @default(cuid())
+  dashboardId  String
+  reportId     String
+  snapshotId   String?
+  title        String?
+  position     Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  dashboard    Dashboard       @relation(fields: [dashboardId], references: [id])
+  report       ReportDefinition @relation(fields: [reportId], references: [id])
+  snapshot     ReportSnapshot?  @relation(fields: [snapshotId], references: [id])
+
+  @@index([dashboardId])
+}
+
+model Alert {
+  id            String   @id @default(cuid())
+  ownerUserId   String
+  reportId      String
+  scope         AlertScope @default(REPORT)
+  condition     Json
+  active        Boolean   @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  report        ReportDefinition @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
+}
