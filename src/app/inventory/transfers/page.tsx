@@ -7,6 +7,7 @@ import { ErrorAlert } from '@/components/ui/ErrorAlert';
 import { useState } from 'react';
 import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader'
+import { Button } from '@/components/ui/Button'
 
 import { fetcher } from '@/lib/fetcher';
 
@@ -78,13 +79,13 @@ export default function InventoryTransfersPage() {
     <div className="p-6 space-y-6">
       <PageHeader
         title="Inventory Transfers"
-        actions={<Link href="/inventory" className="text-blue-600 underline">Back to Inventory</Link>}
+        actions={<Link href="/inventory" className="text-primary-600 underline">Back to Inventory</Link>}
       />
 
-      <form onSubmit={submit} className="grid gap-4 md:grid-cols-2 bg-white p-4 rounded border">
+      <form onSubmit={submit} className="grid gap-4 md:grid-cols-2 bg-white p-4 rounded-md border border-border shadow-card">
         <div className="col-span-2">
           <label className="block text-sm font-medium">Product</label>
-          <select value={productId} onChange={e => setProductId(e.target.value)} className="mt-1 w-full border rounded p-2">
+          <select value={productId} onChange={e => setProductId(e.target.value)} className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500">
             <option value="">Select product…</option>
             {productsData?.products?.map(p => <option key={p.id} value={p.id}>{p.sku} — {p.name}</option>)}
           </select>
@@ -92,7 +93,7 @@ export default function InventoryTransfersPage() {
 
         <div>
           <label className="block text-sm font-medium">Source Lot</label>
-          <select value={sourceLotId} onChange={e => setSourceLotId(e.target.value)} className="mt-1 w-full border rounded p-2" disabled={!lotsData?.lots?.length}>
+          <select value={sourceLotId} onChange={e => setSourceLotId(e.target.value)} className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500" disabled={!lotsData?.lots?.length}>
             <option value="">Select source lot…</option>
             {lotsData?.lots?.map(l => <option key={l.id} value={l.id}>{l.id} — avail {Number(l.quantityAvailable)}</option>)}
           </select>
@@ -100,7 +101,7 @@ export default function InventoryTransfersPage() {
 
         <div>
           <label className="block text-sm font-medium">Destination Lot</label>
-          <select value={destLotId} onChange={e => setDestLotId(e.target.value)} className="mt-1 w-full border rounded p-2" disabled={!lotsData?.lots?.length}>
+          <select value={destLotId} onChange={e => setDestLotId(e.target.value)} className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500" disabled={!lotsData?.lots?.length}>
             <option value="">Select destination lot…</option>
             {lotsData?.lots?.filter(l => l.id !== sourceLotId).map(l => <option key={l.id} value={l.id}>{l.id} — avail {Number(l.quantityAvailable)}</option>)}
           </select>
@@ -108,21 +109,21 @@ export default function InventoryTransfersPage() {
 
         <div>
           <label className="block text-sm font-medium">Quantity</label>
-          <input value={quantity} onChange={e => setQuantity(e.target.value)} type="number" min="0" step="1" className="mt-1 w-full border rounded p-2" required />
+          <input value={quantity} onChange={e => setQuantity(e.target.value)} type="number" min="0" step="1" className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500" required />
         </div>
 
         <div>
           <label className="block text-sm font-medium">Reason</label>
-          <input value={reason} onChange={e => setReason(e.target.value)} className="mt-1 w-full border rounded p-2" placeholder="e.g., repackage, move location" />
+          <input value={reason} onChange={e => setReason(e.target.value)} className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500" placeholder="e.g., repackage, move location" />
         </div>
 
         <div className="col-span-2">
           <label className="block text-sm font-medium">Notes</label>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} className="mt-1 w-full border rounded p-2" />
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary-500 focus:ring-primary-500" />
         </div>
 
         <div className="col-span-2">
-          <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white">Transfer</button>
+          <Button type="submit">Transfer</Button>
         </div>
       </form>
 
