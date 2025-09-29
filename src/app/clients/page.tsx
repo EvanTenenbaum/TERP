@@ -25,7 +25,7 @@ export default async function ClientsLanding() {
               <tr><td colSpan={4} className="px-4 py-6 text-sm text-gray-600">No clients yet.</td></tr>
             ) : clients.map(c => (
               <tr key={c.id}>
-                <td className="px-4 py-2 text-sm text-gray-900">{c.name}</td>
+                <td className="px-4 py-2 text-sm text-gray-900"><ClientLink partyId={c.id} fallbackHref="/clients">{c.name}</ClientLink></td>
                 <td className="px-4 py-2 text-sm">
                   <span className={`inline-block px-2 py-0.5 rounded text-xs mr-2 ${c.isCustomer ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>Customer</span>
                   <span className={`inline-block px-2 py-0.5 rounded text-xs ${c.isVendor ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'}`}>Vendor</span>
