@@ -95,7 +95,6 @@ export default function IntakePage() {
             { name: 'metadata', label: 'Metadata JSON', type: 'textarea', hint: 'e.g. {"coaUrl":"https://..."}' },
           ]}
         />
-        <div className="text-sm text-gray-600">Preview: <span className="font-medium">{previewName({})}</span></div>
       </div>
     </div>
   )
