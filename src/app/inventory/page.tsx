@@ -1,8 +1,11 @@
 import Link from 'next/link'
+import PageHeader from '@/components/ui/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
 
 export default function InventoryDashboard() {
   return (
     <div className="space-y-6">
+      <PageHeader title="Inventory" subtitle="Overview and quick actions" />
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Inventory Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -46,9 +49,7 @@ export default function InventoryDashboard() {
 
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
-          <div className="text-sm text-gray-500">
-            <p>No recent activity to display.</p>
-          </div>
+          <EmptyState title="No recent activity" description="Intakes, transfers, and adjustments will show up here." />
         </div>
       </div>
     </div>
