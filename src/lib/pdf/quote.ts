@@ -55,7 +55,7 @@ export function generateQuotePDF(quote: QuoteData): jsPDF {
   // Header
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
-  doc.text('SALES QUOTE', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('SALES SHEET', pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 15;
 
   // Quote number and date

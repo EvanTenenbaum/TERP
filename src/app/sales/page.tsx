@@ -2,7 +2,7 @@ import Link from 'next/link'
 import PageHeader from '@/components/ui/PageHeader'
 
 const cards: { title: string; href: string; description: string }[] = [
-  { title: 'Quotes', href: '/quotes', description: 'Create and manage quotes; convert to orders' },
+  { title: 'Sales Sheets', href: '/quotes', description: 'Create and manage sales sheets; convert to orders' },
   { title: 'Orders', href: '/orders', description: 'Process orders and manage fulfillment' },
   { title: 'B2B Orders', href: '/b2b/orders', description: 'External portal orders management' },
   { title: 'Price Books', href: '/price-books', description: 'Configure pricing and overrides' },

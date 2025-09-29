@@ -56,6 +56,12 @@ const _nav: NavGroup[] = [
     ],
   },
   {
+    title: "Clients",
+    items: [
+      { label: "Clients", href: "/clients", icon: DocumentTextIcon },
+    ],
+  },
+  {
     title: "Analytics",
     items: [
       { label: "Analytics", href: "/analytics", icon: Squares2X2Icon },
