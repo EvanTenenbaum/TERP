@@ -8,7 +8,7 @@ import { ensurePostingUnlocked } from '@/lib/system'
 export async function getAccountsReceivable() {
   try {
     const rows = await prisma.accountsReceivable.findMany({
-      include: { customer: true, paymentApplications: { include: { payment: true } } },
+      include: { customer: { include: { party: true } }, paymentApplications: { include: { payment: true } } },
       orderBy: { createdAt: 'desc' },
     })
     return { success: true, rows }
@@ -20,7 +20,7 @@ export async function getAccountsReceivable() {
 
 export async function getAccountsPayable() {
   try {
-    const rows = await prisma.accountsPayable.findMany({ include: { vendor: true }, orderBy: { createdAt: 'desc' } })
+    const rows = await prisma.accountsPayable.findMany({ include: { vendor: { include: { party: true } } }, orderBy: { createdAt: 'desc' } })
     return { success: true, rows }
   } catch (e) {
     Sentry.captureException(e)
@@ -64,7 +64,7 @@ export async function applyPaymentFIFO(paymentId: string) {
 
 export async function getPayments() {
   try {
-    const rows = await prisma.payment.findMany({ include: { customer: true, paymentApplications: { include: { ar: true } } }, orderBy: { createdAt: 'desc' } })
+    const rows = await prisma.payment.findMany({ include: { customer: { include: { party: true } }, paymentApplications: { include: { ar: true } } }, orderBy: { createdAt: 'desc' } })
     return { success: true, rows }
   } catch (e) {
     Sentry.captureException(e)
