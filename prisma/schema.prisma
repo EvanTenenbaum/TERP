@@ -23,6 +23,8 @@ model User {
   crmNotesCreated   CrmNote[]        @relation("CreatedBy")
   debtAdjustments   DebtAdjustment[] @relation("CreatedBy")
   photosUploaded    IntakePhoto[]    @relation("UploadedBy")
+  dashboards        Dashboard[]
+  reportDefinitions ReportDefinition[]
 
   @@map("users")
 }
@@ -992,6 +994,9 @@ model ReportDefinition {
   updatedAt       DateTime @updatedAt
 
   owner           User @relation(fields: [ownerUserId], references: [id])
+  snapshots       ReportSnapshot[]
+  widgets         ReportWidget[]
+  alerts          Alert[]
 
   @@index([ownerUserId])
 }
@@ -1006,6 +1011,7 @@ model ReportSnapshot {
   takenByUserId String
 
   report        ReportDefinition @relation(fields: [reportId], references: [id])
+  widgets       ReportWidget[]
 
   @@index([reportId, takenAt])
 }
