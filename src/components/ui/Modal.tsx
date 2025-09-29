@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
+import React, { useEffect } from 'react'
+
 type Props = {
   open: boolean
   onClose: () => void
@@ -8,15 +10,15 @@ type Props = {
   children: React.ReactNode
 }
 
-export function Modal({ open, onClose, title, children }: Props) {
+export function Modal({ open: isOpen, onClose, title, children }: Props) {
   useEffect(() => {
-    if (!open) return
+    if (!isOpen) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [isOpen, onClose])
 
-  if (!open) return null
+  if (!isOpen) return null
   const body = (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
