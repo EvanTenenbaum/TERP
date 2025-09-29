@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import PageHeader from '@/components/ui/PageHeader'
 import { getClients } from '@/actions/clients'
+import Link from 'next/link'
+import { ClientLink } from '@/components/client/ClientLink'
 
 export default async function ClientsLanding() {
   const res = await getClients()
