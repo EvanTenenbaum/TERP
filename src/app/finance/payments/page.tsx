@@ -3,6 +3,7 @@ import { getCustomersForDropdown } from '@/actions/customers'
 import { revalidatePath } from 'next/cache'
 
 import EmptyState from '@/components/ui/EmptyState'
+import { ClientLink } from '@/components/client/ClientLink'
 
 export default async function PaymentsPage({ searchParams }: { searchParams?: { q?: string } }) {
   const [paymentsRes, arRes, customersRes] = await Promise.all([
@@ -108,7 +109,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
                 <>
                   <tr key={p.id}>
                     <td className="px-3 py-2">{new Date(p.paymentDate).toLocaleDateString()}</td>
-                    <td className="px-3 py-2">{p.customer?.companyName}</td>
+                    <td className="px-3 py-2">{p.customer ? (<ClientLink partyId={p.customer.partyId || p.customer.party?.id} fallbackHref="/clients">{p.customer.party?.name || p.customer.companyName}</ClientLink>) : null}</td>
                     <td className="px-3 py-2">${(p.amount/100).toFixed(2)}</td>
                     <td className="px-3 py-2">${(applied/100).toFixed(2)}</td>
                     <td className="px-3 py-2">${(remaining/100).toFixed(2)}</td>
@@ -117,7 +118,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: { 
                     <tr>
                       <td colSpan={5} className="px-3 py-3 bg-gray-50">
                         <details>
-                          <summary className="cursor-pointer text-sm text-gray-700">Apply to invoices for {p.customer?.companyName}</summary>
+                          <summary className="cursor-pointer text-sm text-gray-700">Apply to invoices for {p.customer?.party?.name || p.customer?.companyName}</summary>
                           <div className="mt-3 space-y-3">
                             <form action={async (formData: FormData)=> { 'use server'; const id=String(formData.get('paymentId')||''); if(!id) return; const { applyPaymentFIFO } = await import('@/actions/finance'); await applyPaymentFIFO(id); revalidatePath('/finance/payments') }}>
                               <input type="hidden" name="paymentId" value={p.id} />
