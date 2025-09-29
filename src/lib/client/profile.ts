@@ -203,16 +203,12 @@ export async function getClientProfile(partyId: string): Promise<ClientProfile> 
     arp.forEach((p) => acts.push({ ts: p.createdAt?.toISOString() ?? '', type: 'AR_PAYMENT', refId: p.id, label: `AR Payment ${p.id}`, amountCents: p.amount ?? 0 }))
   }
   if (vendorId) {
-    const [ap, app, settlements, vnotes] = await Promise.all([
+    const [ap, settlements, vnotes] = await Promise.all([
       prisma.accountsPayable.findMany({
         where: { vendorId },
         orderBy: { invoiceDate: 'desc' },
         take: 10,
         select: { id: true, invoiceDate: true, amount: true },
-      }),
-      prisma.payment.findMany({
-        where: { customerId: undefined as any, },
-        take: 0,
       }),
       prisma.vendorSettlement.findMany({
         where: { vendorId },
@@ -228,7 +224,6 @@ export async function getClientProfile(partyId: string): Promise<ClientProfile> 
       }),
     ])
     ap.forEach((i) => acts.push({ ts: i.invoiceDate?.toISOString() ?? '', type: 'AP_INVOICE', refId: i.id, label: `AP Invoice ${i.id}`, amountCents: i.amount ?? 0 }))
-    // app reserved for AP payments if implemented separately
     settlements.forEach((s) => acts.push({ ts: s.createdAt?.toISOString() ?? '', type: 'SETTLEMENT', refId: s.id, label: `Vendor Settlement ${s.id}`, amountCents: s.amount ?? 0 }))
     vnotes.forEach((n) => acts.push({ ts: n.createdAt?.toISOString() ?? '', type: 'NOTE', refId: n.id, label: `Note (${n.noteType})` }))
   }
