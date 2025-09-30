@@ -25,17 +25,27 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <StackProvider serverApp={stackServerApp}>
-          <StackTheme>
-            <ToastProvider>
-              <CartProvider>
-                <AppShell role={role}>
-                  {children}
-                </AppShell>
-              </CartProvider>
-            </ToastProvider>
-          </StackTheme>
-        </StackProvider>
+        {hasStackAuth ? (
+          <StackProvider serverApp={stackServerApp}>
+            <StackTheme>
+              <ToastProvider>
+                <CartProvider>
+                  <AppShell role={role}>
+                    {children}
+                  </AppShell>
+                </CartProvider>
+              </ToastProvider>
+            </StackTheme>
+          </StackProvider>
+        ) : (
+          <ToastProvider>
+            <CartProvider>
+              <AppShell role={role}>
+                {children}
+              </AppShell>
+            </CartProvider>
+          </ToastProvider>
+        )}
       </body>
     </html>
   )
