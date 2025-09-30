@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-export type WidgetPosition = { order: number; colSpan?: number; rowSpan?: number };
+export type WidgetPosition = { order: number; colSpan?: number; rowSpan?: number; vizOverride?: 'auto' | 'table' | 'bar' | 'line' | 'pie' | 'kpi' };
 export type DashboardWidget = {
   id: string;
   title?: string | null;
