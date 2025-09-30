@@ -811,6 +811,8 @@ model Rule {
   throttleMinutes Int      @default(60)
   createdAt       DateTime @default(now())
 
+  events          RuleEvent[]
+
   @@map("rules")
 }
 
