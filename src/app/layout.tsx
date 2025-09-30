@@ -4,6 +4,8 @@ import { CartProvider } from '@/hooks/useCart'
 import AppShell from '@/components/layout/AppShell'
 import { getCurrentRole } from '@/lib/auth'
 import { ToastProvider } from '@/components/ui/Toast'
+import { StackProvider, StackTheme } from '@stackframe/stack'
+import { stackServerApp } from '@/stack'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,13 +25,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ToastProvider>
-          <CartProvider>
-            <AppShell role={role}>
-              {children}
-            </AppShell>
-          </CartProvider>
-        </ToastProvider>
+        <StackProvider serverApp={stackServerApp}>
+          <StackTheme>
+            <ToastProvider>
+              <CartProvider>
+                <AppShell role={role}>
+                  {children}
+                </AppShell>
+              </CartProvider>
+            </ToastProvider>
+          </StackTheme>
+        </StackProvider>
       </body>
     </html>
   )
