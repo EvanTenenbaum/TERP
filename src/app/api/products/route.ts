@@ -11,13 +11,11 @@ import { ProductCreate } from '@/lib/schemas/product'
 
 export const POST = api<{ sku:string; name:string; category:string; unit?:string; defaultPrice?:number }>({ roles: ['SUPER_ADMIN','ACCOUNTING'], postingLock: true, rate: { key: 'products-create', limit: 60 }, parseJson: true, bodySchema: ProductCreate })(async ({ json }) => {
   try {
-    const sku = String(json!.sku || '').trim()
-    const name = String(json!.name || '').trim()
-    const category = String(json!.category || '').trim()
-    const unit = String(json!.unit || '').trim() || 'each'
-    const defaultPriceDollars = Number(json!.defaultPrice)
-    if (!sku || !name || !category) return err('missing_fields', 400)
-    const defaultPrice = Math.round((Number.isFinite(defaultPriceDollars) ? defaultPriceDollars : 0) * 100)
+    const sku = json!.sku.trim()
+    const name = json!.name.trim()
+    const category = json!.category.trim()
+    const unit = (json!.unit ?? 'each').trim()
+    const defaultPrice = Math.round(((json!.defaultPrice ?? 0) as number) * 100)
 
     const product = await prisma.product.create({
       data: {
