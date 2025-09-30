@@ -44,7 +44,7 @@ export const POST = api<{ overrideCreditLimit?: boolean }>({
       }
     }
 
-    const order = await tx.order.create({ data: { customerId: quote.customerId, orderDate: new Date(), totalAmount: computedTotal, status: 'DRAFT', orderItems: { create: itemsToCreate } }, include: { customer: true, orderItems: { include: { product: true, batch: { include: { vendor: true } } } } } })
+    const order = await tx.order.create({ data: { customerId: quote.customerId, orderDate: new Date(), allocationDate, totalAmount: computedTotal, status: 'ALLOCATED', orderItems: { create: itemsToCreate } }, include: { customer: true, orderItems: { include: { product: true, batch: { include: { vendor: true } } } } } })
 
     const consignByVendor = new Map<string, number>()
     for (const it of order.orderItems) {
