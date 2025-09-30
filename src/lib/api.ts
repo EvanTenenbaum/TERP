@@ -15,11 +15,15 @@ export type ApiOptions = {
   onError?: (e: any) => { code: string; status: number } | undefined
 }
 
-type HandlerCtx<T = any, Q = any> = {
+ type HandlerCtx<T = any, Q = any> = {
   req: Request
   params?: Record<string, string>
   json?: T
   query?: Q
+}
+
+function defaultRateKeyFromPath(url: string) {
+  return new URL(url).pathname.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
 export function api<TBody = any, TQuery = any>(opts: ApiOptions) {
@@ -35,11 +39,11 @@ export function api<TBody = any, TQuery = any>(opts: ApiOptions) {
         if (opts.postingLock || (isMutating && opts.postingLock !== false)) {
           try { await ensurePostingUnlocked(opts.roles as any) } catch { return err('posting_locked', 423) }
         }
-        // Observability scope
-        try { const { setRequestScope } = await import('@/lib/observability'); setRequestScope(req, rateCfg?.key || new URL(req.url).pathname) } catch {}
-        // Apply rate limiting: explicit config wins, else default for mutating endpoints
-        if (opts.rate || isMutating) {
-          const rateCfg = opts.rate ?? { key: new URL(req.url).pathname.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, ''), limit: 60 }
+        // Apply rate limiting
+        const getLimit = Number(process.env.RATE_LIMIT_GET || '0')
+        const shouldRateLimit = !!opts.rate || isMutating || (method === 'GET' && getLimit > 0)
+        if (shouldRateLimit) {
+          const rateCfg = opts.rate ?? { key: defaultRateKeyFromPath(req.url), limit: isMutating ? 60 : getLimit, windowMs: 60_000 }
           const windowMs = rateCfg.windowMs ?? 60_000
           const key = `${rateKeyFromRequest(req as any)}:${rateCfg.key}`
           const rl = rateLimit(key, rateCfg.limit, windowMs)
@@ -49,7 +53,7 @@ export function api<TBody = any, TQuery = any>(opts: ApiOptions) {
         const sp = new URL(req.url).searchParams
         const queryObj: Record<string, any> = {}
         sp.forEach((v, k) => {
-          if (k in queryObj) queryObj[k] = Array.isArray(queryObj[k]) ? [...queryObj[k], v] : [queryObj[k], v]
+          if (k in queryObj) queryObj[k] = Array.isArray(queryObj[k]) ? [...(queryObj[k] as any[]), v] : [queryObj[k], v]
           else queryObj[k] = v
         })
         let query: any = queryObj
