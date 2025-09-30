@@ -17,11 +17,11 @@ export const POST = api<{ vendorId:string; expectedAt?:string; poNumber?:string 
   postingLock: true,
   rate: { key: 'po-create', limit: 60 },
   parseJson: true,
+  bodySchema: PurchaseOrderCreate,
 })(async ({ json }) => {
-  const { vendorId, expectedAt, poNumber } = json || ({} as any)
-  if (!vendorId) return err('invalid_input', 400)
+  const { vendorId, expectedAt, poNumber } = json as any
   const count = await prisma.purchaseOrder.count()
   const defaultPo = `PO-${new Date().getFullYear()}-${String(count + 1).padStart(4,'0')}`
-  const po = await prisma.purchaseOrder.create({ data: { vendorId, poNumber: poNumber || defaultPo, expectedAt: expectedAt ? new Date(expectedAt) : null } })
+  const po = await prisma.purchaseOrder.create({ data: { vendorId, status: 'OPEN', poNumber: poNumber || defaultPo, expectedAt: expectedAt ? new Date(expectedAt) : null } as any })
   return ok({ purchaseOrder: po })
 })
