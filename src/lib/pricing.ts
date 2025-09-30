@@ -51,9 +51,11 @@ export async function getEffectiveUnitPrice(
     },
     orderBy: { effectiveDate: 'desc' },
   })
-  if (globalPrice) return globalPrice.unitPrice
+  const base = globalPrice ? globalPrice.unitPrice : (await db.product.findUnique({ where: { id: productId }, select: { defaultPrice: true, category: true } }))
+  if (!base || typeof (base as any).defaultPrice === 'undefined') throw new Error('product_not_found')
 
-  const product = await db.product.findUnique({ where: { id: productId }, select: { defaultPrice: true } })
-  if (!product) throw new Error('product_not_found')
-  return product.defaultPrice
+  // Apply discount rules (product/category/customer)
+  const { applicableDiscounts, applyDiscounts } = await import('@/lib/discounts')
+  const rules = await applicableDiscounts({ productId, category: (base as any).category, customerId: opts?.customerId })
+  return applyDiscounts((globalPrice ? base as any : (base as any).defaultPrice) as number, rules)
 }
