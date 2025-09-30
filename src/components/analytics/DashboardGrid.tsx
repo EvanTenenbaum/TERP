@@ -16,6 +16,7 @@ export default function DashboardGrid({
   onResize,
   onRemove,
   onRename,
+  onVizChange,
 }: {
   widgets: DashboardWidget[];
   editMode?: boolean;
@@ -23,6 +24,7 @@ export default function DashboardGrid({
   onResize?: (id: string, pos: WidgetPosition) => void;
   onRemove?: (id: string) => void;
   onRename?: (id: string, title: string) => void;
+  onVizChange?: (id: string, viz: 'auto'|'table'|'bar'|'line'|'pie'|'kpi') => void;
 }) {
   const ordered = [...widgets].sort(
     (a, b) => (a.position?.order ?? 0) - (b.position?.order ?? 0)
