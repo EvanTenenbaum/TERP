@@ -1,6 +1,7 @@
 import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
 import { ok, err } from '@/lib/http'
+import { PurchaseOrderCreate } from '@/lib/schemas/purchaseOrder'
 
 export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'] })(async () => {
   const pos = await prisma.purchaseOrder.findMany({ include: { vendor: { include: { party: { select: { name: true } } } }, items: { include: { product: true } } }, orderBy: { createdAt: 'desc' } })
