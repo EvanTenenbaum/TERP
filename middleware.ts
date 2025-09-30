@@ -52,6 +52,13 @@ export function middleware(req: NextRequest) {
     res.headers.set('Vary', 'Origin')
   }
 
+  // Cache headers for API GETs (tunable via env)
+  if (isApi && req.method === 'GET') {
+    const maxAge = Number(process.env.CACHE_MAX_AGE || '30')
+    const swr = Number(process.env.CACHE_STALE_WHILE_REVALIDATE || '120')
+    res.headers.set('Cache-Control', `public, max-age=${maxAge}, stale-while-revalidate=${swr}`)
+  }
+
   return res
 }
 
