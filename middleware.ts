@@ -2,6 +2,29 @@ import { NextResponse, NextRequest } from 'next/server'
 import { rateLimit, rateKeyFromRequest } from '@/lib/rateLimit'
 
 export function middleware(req: NextRequest) {
+  const url = new URL(req.url)
+  const isApi = url.pathname.startsWith('/api/')
+
+  // CORS allow-list via env CORS_ALLOW_ORIGINS (comma-separated)
+  const allowList = (process.env.CORS_ALLOW_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
+  const origin = req.headers.get('origin')
+  const isAllowedOrigin = !!(origin && (allowList.includes('*') || allowList.includes(origin)))
+
+  // Preflight handling for API
+  if (isApi && req.method === 'OPTIONS') {
+    const headers: Record<string, string> = {
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    }
+    if (isAllowedOrigin && origin) {
+      headers['Access-Control-Allow-Origin'] = origin
+      headers['Vary'] = 'Origin'
+      headers['Access-Control-Allow-Credentials'] = 'true'
+    }
+    return new NextResponse(null, { status: 204, headers })
+  }
+
   const res = NextResponse.next()
 
   // If RBAC enabled, allow configurable default via RBAC_DEFAULT_ROLE; if unset, do not override
@@ -20,6 +43,13 @@ export function middleware(req: NextRequest) {
       return new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '60', 'X-RateLimit-Remaining': String(remaining) } })
     }
     res.headers.set('X-RateLimit-Remaining', String(remaining))
+  }
+
+  // Set CORS headers on API responses for allowed origins
+  if (isApi && isAllowedOrigin && origin) {
+    res.headers.set('Access-Control-Allow-Origin', origin)
+    res.headers.set('Access-Control-Allow-Credentials', 'true')
+    res.headers.set('Vary', 'Origin')
   }
 
   return res
