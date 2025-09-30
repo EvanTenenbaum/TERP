@@ -4,13 +4,11 @@ import { Input } from '@/components/ui/Input'
 import KPICard from '@/components/home/KPICard'
 import RecentActivity, { ActivityItem } from '@/components/home/RecentActivity'
 import { getCurrentRole } from '@/lib/auth'
+import prisma from '@/lib/prisma'
 
 async function getProductsTotal(): Promise<number> {
   try {
-    const r = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/inventory/products/summary?pageSize=1`, { cache: 'no-store' })
-    if (!r.ok) return 0
-    const j = await r.json()
-    return Number(j?.meta?.total || 0)
+    return await prisma.product.count()
   } catch {
     return 0
   }
@@ -18,10 +16,20 @@ async function getProductsTotal(): Promise<number> {
 
 async function getLowStockCount(): Promise<number> {
   try {
-    const r = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/alerts/replenishment/preview`, { method: 'POST', cache: 'no-store', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ thresholdDefault: 10 }) })
-    if (!r.ok) return 0
-    const j = await r.json()
-    return Number((j?.data?.items || []).length)
+    const lots = await prisma.inventoryLot.findMany({ include: { batch: { include: { product: true } } } })
+    const byProduct: Record<string, { onHand:number; reserved:number }> = {}
+    for (const l of lots) {
+      const pid = l.batch.product.id
+      if (!byProduct[pid]) byProduct[pid] = { onHand:0, reserved:0 }
+      byProduct[pid].onHand += l.quantityAvailable
+      byProduct[pid].reserved += l.reservedQty || 0
+    }
+    const threshold = 10
+    const count = Object.values(byProduct).reduce((acc, p) => {
+      const effective = Math.max(0, p.onHand - p.reserved)
+      return acc + (effective < threshold ? 1 : 0)
+    }, 0)
+    return count
   } catch {
     return 0
   }
@@ -29,11 +37,7 @@ async function getLowStockCount(): Promise<number> {
 
 async function getActiveRulesCount(): Promise<number> {
   try {
-    const r = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/alerts/rules`, { cache: 'no-store' })
-    if (!r.ok) return 0
-    const j = await r.json()
-    const rules = Array.isArray(j?.rules) ? j.rules : []
-    return rules.filter((r: any) => r.active).length
+    return await prisma.rule.count({ where: { active: true } })
   } catch {
     return 0
   }
@@ -41,10 +45,22 @@ async function getActiveRulesCount(): Promise<number> {
 
 async function getRecentActivity(): Promise<ActivityItem[]> {
   try {
-    const r = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/audit?limit=10`, { cache: 'no-store' })
-    if (!r.ok) return []
-    const j = await r.json()
-    return Array.isArray(j?.data) ? j.data : []
+    const limit = 10
+    const [transfers, writeoffs, settlements, rebates, overrides] = await Promise.all([
+      prisma.inventoryTransfer.findMany({ orderBy:{ createdAt:'asc' }, take: limit }),
+      prisma.writeOffLedger.findMany({ orderBy:{ createdAt:'asc' }, take: limit }),
+      prisma.vendorSettlement.findMany({ orderBy:{ createdAt:'asc' }, take: limit }),
+      prisma.vendorRebate.findMany({ orderBy:{ createdAt:'asc' }, take: limit }),
+      prisma.overrideAudit.findMany({ orderBy:{ timestamp:'asc' }, take: limit }),
+    ])
+    const items: ActivityItem[] = []
+    for (const t of transfers) items.push({ when: t.createdAt, type: 'inventory.transfer', summary: `Transfer ${t.quantity} ${t.sourceLotId} → ${t.destLotId || '-'} for ${t.productId}` })
+    for (const w of writeoffs) items.push({ when: w.createdAt, type: 'inventory.writeoff', summary: `Write-off ${w.qty} from lot ${w.lotId} (${w.reason})` })
+    for (const s of settlements) items.push({ when: s.createdAt, type: 'ap.settlement', summary: `Vendor settlement ${s.amount} for ${s.vendorId}` })
+    for (const r of rebates) items.push({ when: r.createdAt, type: 'ap.rebate', summary: `Vendor rebate ${r.amount} for ${r.vendorId}` })
+    for (const o of overrides) items.push({ when: o.timestamp, type: 'override', summary: `Override ${o.oldPrice}→${o.newPrice} (${o.reason})` })
+    items.sort((a,b)=> new Date(b.when as any).getTime() - new Date(a.when as any).getTime())
+    return items.slice(0, limit)
   } catch {
     return []
   }
