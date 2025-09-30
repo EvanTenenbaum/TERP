@@ -8,5 +8,6 @@ export const stackServerApp = has
       projectId: process.env.NEXT_PUBLIC_STACK_PROJECT_ID as string,
       publishableClientKey: process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY as string,
       secretServerKey: process.env.STACK_SECRET_SERVER_KEY as string,
+      tokenStore: "nextjs-cookie",
     })
   : null as any
