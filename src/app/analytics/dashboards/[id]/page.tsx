@@ -32,7 +32,7 @@ export default function DashboardViewPage({ params }: { params: { id: string } }
     id: w.id,
     title: w.title || w.reportId,
     position: toPos(w.position),
-    content: <WidgetRenderer key={w.id} reportId={w.reportId} snapshotId={w.snapshotId} />
+    content: <WidgetRenderer key={w.id} reportId={w.reportId} snapshotId={w.snapshotId} vizOverride={toPos(w.position).vizOverride} />
   })), [widgets])
 
   const onMove = async (wid: string, dir: 'up'|'down') => {
@@ -122,7 +122,12 @@ export default function DashboardViewPage({ params }: { params: { id: string } }
         </div>
       </div>
 
-      <DashboardGrid widgets={gridWidgets} editMode={edit} onMove={onMove} onResize={onResize} onRemove={onRemove} onRename={onRename} />
+      <DashboardGrid widgets={gridWidgets} editMode={edit} onMove={onMove} onResize={onResize} onRemove={onRemove} onRename={onRename} onVizChange={async (wid, viz)=>{
+        setWidgets(ws => ws.map(w => w.id === wid ? { ...w, position: { ...(w.position||{}), vizOverride: viz } } : w))
+        const w = widgets.find(x=> x.id===wid)
+        const pos = toPos(w?.position)
+        await patchJson(`/api/analytics/dashboards/${id}/widgets/${wid}`, { position: { ...pos, vizOverride: viz } })
+      }} />
 
       {showPicker && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={()=> setShowPicker(false)}>
@@ -153,10 +158,10 @@ export default function DashboardViewPage({ params }: { params: { id: string } }
 
 function toPos(p: any): WidgetPosition {
   const d = p || {}
-  return { order: typeof d.order === 'number' ? d.order : 0, colSpan: d.colSpan ?? 1, rowSpan: d.rowSpan ?? 1 }
+  return { order: typeof d.order === 'number' ? d.order : 0, colSpan: d.colSpan ?? 1, rowSpan: d.rowSpan ?? 1, vizOverride: d.vizOverride }
 }
 
-function WidgetRenderer({ reportId, snapshotId }: { reportId: string; snapshotId?: string | null }) {
+function WidgetRenderer({ reportId, snapshotId, vizOverride }: { reportId: string; snapshotId?: string | null; vizOverride?: WidgetPosition['vizOverride'] }) {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -168,12 +173,16 @@ function WidgetRenderer({ reportId, snapshotId }: { reportId: string; snapshotId
         if (snapshotId) {
           const snap = await fetcher<{ data:any }>(`/api/analytics/snapshots/${snapshotId}`)
           if (!alive) return
-          setData(snap.data.data)
+          const payload = snap.data.data
+          const forced = vizOverride && vizOverride !== 'auto' ? { ...payload, meta: { ...(payload?.meta||{}), viz: vizOverride } } : payload
+          setData(forced)
         } else {
           const rep = await fetcher<{ data:any }>(`/api/analytics/reports/${reportId}`)
           const res = await fetcher<{ data:any }>(`/api/analytics/evaluate`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ spec: rep.data.spec }) })
           if (!alive) return
-          setData(res.data)
+          const payload = res.data
+          const forced = vizOverride && vizOverride !== 'auto' ? { ...payload, meta: { ...(payload?.meta||{}), viz: vizOverride } } : payload
+          setData(forced)
         }
       } catch (e) {
         if (!alive) return
