@@ -1,6 +1,8 @@
 import { api } from '@/lib/api'
 import { err } from '@/lib/http'
 import prisma from '@/lib/prisma'
+import { getCurrentRole } from '@/lib/auth'
+import { hideSensitiveForRole } from '@/lib/reports/sanitize'
 
 function toCsv(rows: any[]): string {
   if (!rows.length) return ''
@@ -27,6 +29,7 @@ export const GET = api({ roles: ['SUPER_ADMIN','SALES','ACCOUNTING','READ_ONLY']
     const data = (rep as any).lastEvaluatedData?.rows || []
     rows = data
   }
+  rows = hideSensitiveForRole(rows, getCurrentRole())
   const csv = toCsv(rows)
   return new Response(csv, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="report.csv"' } })
 })
