@@ -2,60 +2,71 @@ import type { PrismaClient } from '@prisma/client'
 
 export interface Allocation { lotId: string; batchId: string; qty: number }
 
-function now() { return new Date() }
-
-export async function allocateFromSpecificLot(db: PrismaClient, lotId: string, qty: number): Promise<Allocation> {
-  const res = await db.inventoryLot.updateMany({
-    where: { id: lotId, quantityAvailable: { gte: qty } },
-    data: {
-      quantityAllocated: { increment: qty },
-      quantityAvailable: { decrement: qty },
-      lastMovementDate: now(),
-    },
-  })
-  if (res.count === 0) throw new Error('insufficient_stock')
-  const lot = await db.inventoryLot.findUnique({ where: { id: lotId }, include: { batch: true } })
-  return { lotId, batchId: lot!.batchId, qty }
+export async function allocateFIFO(db: PrismaClient, productId: string, qty: number): Promise<Allocation[]> {
+  if (qty <= 0) throw new Error('invalid_quantity')
+  return await (db as any).$transaction(async (tx: PrismaClient) => {
+    const lots = await (tx as any).$queryRaw<{ id: string; batchid: string; quantityavailable: number }[]>`
+      SELECT "id", "batchId" as batchid, "quantityAvailable" as quantityavailable
+      FROM "InventoryLot"
+      WHERE "batchId" IN (SELECT id FROM "Batch" WHERE "productId" = ${productId})
+        AND "quantityAvailable" > 0
+      ORDER BY "createdAt" ASC
+      FOR UPDATE
+    `
+    let remaining = qty
+    const allocations: Allocation[] = []
+    for (const lot of lots) {
+      if (remaining <= 0) break
+      const avail = Number(lot.quantityavailable)
+      const take = Math.min(remaining, avail)
+      if (take > 0) {
+        await (tx as any).inventoryLot.update({
+          where: { id: lot.id },
+          data: {
+            quantityAllocated: { increment: take },
+            quantityAvailable: { decrement: take },
+            lastMovementDate: new Date(),
+          },
+        })
+        allocations.push({ lotId: lot.id, batchId: lot.batchid, qty: take })
+        remaining -= take
+      }
+    }
+    if (remaining > 0) throw new Error('insufficient_stock')
+    return allocations
+  }, { isolationLevel: 'Serializable' } as any)
 }
 
-export async function allocateFIFOByProduct(db: PrismaClient, productId: string, qty: number): Promise<Allocation[]> {
-  let remaining = Math.round(qty)
-  const allocations: Allocation[] = []
-  if (remaining <= 0) return allocations
+export async function allocateFromSpecificLot(db: PrismaClient, lotId: string, qty: number): Promise<Allocation> {
+  if (qty <= 0) throw new Error('invalid_quantity')
+  return await (db as any).$transaction(async (tx: PrismaClient) => {
+    const rows = await (tx as any).$queryRaw<{ id: string; batchid: string; quantityavailable: number }[]>`
+      SELECT "id","batchId" as batchid,"quantityAvailable" as quantityavailable
+      FROM "InventoryLot" WHERE "id" = ${lotId} FOR UPDATE
+    `
+    const lot = rows[0]
+    if (!lot) throw new Error('lot_not_found')
+    if (Number(lot.quantityavailable) < qty) throw new Error('insufficient_stock')
 
-  const lots = await db.inventoryLot.findMany({
-    where: { quantityAvailable: { gt: 0 }, batch: { productId } },
-    orderBy: [{ lastMovementDate: 'asc' }, { createdAt: 'asc' }],
-    include: { batch: true },
-  })
-
-  for (const lot of lots) {
-    if (remaining <= 0) break
-    const take = Math.min(remaining, lot.quantityAvailable)
-    if (take <= 0) continue
-    const res = await db.inventoryLot.updateMany({
-      where: { id: lot.id, quantityAvailable: { gte: take } },
+    await (tx as any).inventoryLot.update({
+      where: { id: lotId },
       data: {
-        quantityAllocated: { increment: take },
-        quantityAvailable: { decrement: take },
-        lastMovementDate: now(),
+        quantityAllocated: { increment: qty },
+        quantityAvailable: { decrement: qty },
+        lastMovementDate: new Date(),
       },
     })
-    if (res.count === 0) continue
-    allocations.push({ lotId: lot.id, batchId: lot.batchId, qty: take })
-    remaining -= take
-  }
-  if (remaining > 0) throw new Error('insufficient_stock')
-  return allocations
+    return { lotId, batchId: lot.batchid, qty }
+  }, { isolationLevel: 'Serializable' } as any)
 }
 
 export async function shipAllocated(db: PrismaClient, lotId: string, qty: number) {
-  const res = await db.inventoryLot.updateMany({
+  const res = await (db as any).inventoryLot.updateMany({
     where: { id: lotId, quantityOnHand: { gte: qty }, quantityAllocated: { gte: qty } },
     data: {
       quantityOnHand: { decrement: qty },
       quantityAllocated: { decrement: qty },
-      lastMovementDate: now(),
+      lastMovementDate: new Date(),
     },
   })
   if (res.count === 0) throw new Error('insufficient_allocated')
