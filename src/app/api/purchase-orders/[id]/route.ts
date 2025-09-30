@@ -1,6 +1,7 @@
 import { api } from '@/lib/api'
 import prisma from '@/lib/prisma'
 import { ok, err } from '@/lib/http'
+import { PurchaseOrderUpdate } from '@/lib/schemas/purchaseOrder'
 
 export const GET = api({ roles: ['SUPER_ADMIN','ACCOUNTING','SALES','READ_ONLY'] })(async ({ params }) => {
   const po = await prisma.purchaseOrder.findUnique({ where: { id: params!.id }, include: { vendor: true, items: { include: { product: true } } } })
