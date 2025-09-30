@@ -20,6 +20,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           <div className="text-gray-600">{order.customer?.companyName || '—'} · {order.status}</div>
         </div>
         <div className="flex gap-2">
+          <Link href={`/api/orders/${id}/pdf`} className="px-4 py-2 rounded border">Packing Slip PDF</Link>
           {(order.status === 'ALLOCATED' || order.status === 'CONFIRMED') && (
             <form action={ship}><button className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">Ship Order</button></form>
           )}
