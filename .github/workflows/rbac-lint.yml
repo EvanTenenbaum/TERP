@@ -1,0 +1,16 @@
+name: RBAC Lint
+on: [pull_request, push]
+jobs:
+  rbac-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check mutating routes have roles
+        run: |
+          set -e
+          MISS=$(grep -RIl "export const \(POST\|PUT\|PATCH\|DELETE\) = api(" src/app/api | xargs -I{} sh -c "grep -q 'roles:' {} || echo {}" || true)
+          if [ -n "$MISS" ]; then
+            echo "Mutating routes missing roles:"
+            echo "$MISS"
+            exit 1
+          fi
