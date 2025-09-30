@@ -23,6 +23,11 @@ export const POST = api<{ productId:string; vendorId:string; lotNumber?:string; 
 
     const initialUnitCost = Math.round((Number.isFinite(initialCostDollars) ? initialCostDollars : 0) * 100)
 
+    if ((json as any).poId) {
+      const po = await prisma.purchaseOrder.findUnique({ where: { id: String((json as any).poId) }, select: { status: true } })
+      if (!po || po.status !== 'APPROVED') return err('po_not_approved', 409)
+    }
+
     const batch = await prisma.batch.create({
       data: {
         productId,
