@@ -13,8 +13,19 @@ export const PATCH = api<{ status?: string; expectedAt?: string }>({
   roles: ['SUPER_ADMIN','ACCOUNTING'],
   rate: { key: 'po-update', limit: 120 },
   parseJson: true,
+  bodySchema: PurchaseOrderUpdate,
 })(async ({ json, params }) => {
-  const { status: newStatus, expectedAt } = json || ({} as any)
-  const po = await prisma.purchaseOrder.update({ where: { id: params!.id }, data: { status: newStatus, expectedAt: expectedAt ? new Date(expectedAt) : undefined } })
+  const id = params!.id
+  const update: any = {}
+  if (json?.expectedAt) update.expectedAt = new Date(json.expectedAt)
+  if (json?.status) {
+    const current = await prisma.purchaseOrder.findUnique({ where: { id }, select: { status: true } })
+    const from = current?.status || 'OPEN'
+    const to = json.status
+    const allowed: Record<string,string[]> = { OPEN:['APPROVED','CANCELLED'], APPROVED:['CLOSED','CANCELLED'], CLOSED:[], CANCELLED:[] }
+    if (!allowed[from]?.includes(to)) return err('invalid_transition', 409)
+    update.status = to
+  }
+  const po = await prisma.purchaseOrder.update({ where: { id }, data: update })
   return ok({ purchaseOrder: po })
 })
