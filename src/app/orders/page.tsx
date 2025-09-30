@@ -29,7 +29,10 @@ export default async function OrdersPage() {
                     <p className="text-sm text-gray-500">{order.orderItems.length} item{order.orderItems.length!==1?'s':''}</p>
                   </div>
                 </div>
-                <div className="mt-2 text-sm text-gray-500">Placed {new Date(order.orderDate).toLocaleDateString()}</div>
+                <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
+                  <span>Placed {new Date(order.orderDate).toLocaleDateString()}</span>
+                  <Link href={`/orders/${order.id}`} className="text-primary-600 underline">View</Link>
+                </div>
               </li>
             ))}
           </ul>
