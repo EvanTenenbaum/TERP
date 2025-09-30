@@ -26,7 +26,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         {hasStackAuth ? (
-          <StackProvider serverApp={stackServerApp}>
+          <StackProvider app={stackServerApp}>
             <StackTheme>
               <ToastProvider>
                 <CartProvider>
