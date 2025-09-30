@@ -35,6 +35,8 @@ export function api<TBody = any, TQuery = any>(opts: ApiOptions) {
         if (opts.postingLock || (isMutating && opts.postingLock !== false)) {
           try { await ensurePostingUnlocked(opts.roles as any) } catch { return err('posting_locked', 423) }
         }
+        // Observability scope
+        try { const { setRequestScope } = await import('@/lib/observability'); setRequestScope(req, rateCfg?.key || new URL(req.url).pathname) } catch {}
         // Apply rate limiting: explicit config wins, else default for mutating endpoints
         if (opts.rate || isMutating) {
           const rateCfg = opts.rate ?? { key: new URL(req.url).pathname.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, ''), limit: 60 }
