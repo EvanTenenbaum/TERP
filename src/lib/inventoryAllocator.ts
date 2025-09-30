@@ -37,6 +37,10 @@ export async function allocateFIFO(db: PrismaClient, productId: string, qty: num
   }, { isolationLevel: 'Serializable' } as any)
 }
 
+export async function allocateFIFOByProduct(db: PrismaClient, productId: string, qty: number): Promise<Allocation[]> {
+  return allocateFIFO(db, productId, qty)
+}
+
 export async function allocateFromSpecificLot(db: PrismaClient, lotId: string, qty: number): Promise<Allocation> {
   if (qty <= 0) throw new Error('invalid_quantity')
   return await (db as any).$transaction(async (tx: PrismaClient) => {
