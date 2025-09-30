@@ -5,7 +5,7 @@ import AppShell from '@/components/layout/AppShell'
 import { getCurrentRole } from '@/lib/auth'
 import { ToastProvider } from '@/components/ui/Toast'
 import { StackProvider, StackTheme } from '@stackframe/stack'
-import { stackServerApp } from '@/stack'
+import { stackServerApp, hasStackAuth } from '@/stack'
 
 const inter = Inter({ subsets: ['latin'] })
 
