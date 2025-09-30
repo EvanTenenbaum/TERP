@@ -801,14 +801,15 @@ model SystemStatus {
 
 // Rules engine
 model Rule {
-  id        String   @id @default(cuid())
-  field     String   // InventoryAge | QtyAvailable | ARDays | SalesVolume
-  operator  String   // >, <, >=, <=, ==, !=
-  value     String
-  action    String   // Alert | Flag | CreateTask
-  priority  Int      @default(0)
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  field           String   // InventoryAge | QtyAvailable | ARDays | SalesVolume
+  operator        String   // >, <, >=, <=, ==, !=
+  value           String
+  action          String   // Alert | Flag | CreateTask
+  priority        Int      @default(0)
+  active          Boolean  @default(true)
+  throttleMinutes Int      @default(60)
+  createdAt       DateTime @default(now())
 
   @@map("rules")
 }
@@ -1046,4 +1047,65 @@ model Alert {
   report        ReportDefinition @relation(fields: [reportId], references: [id])
 
   @@index([reportId])
+}
+
+// Discounts
+model DiscountRule {
+  id            String   @id @default(cuid())
+  name          String
+  type          String   // 'PERCENT' | 'FIXED'
+  value         Int      // cents if FIXED; basis points if PERCENT
+  scope         String   // 'PRODUCT' | 'CATEGORY' | 'CUSTOMER'
+  productId     String?
+  category      String?
+  customerId    String?
+  exclusive     Boolean  @default(false)
+  active        Boolean  @default(true)
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+}
+
+// Ranking
+model Ranking {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  score      Int
+  computedAt DateTime @default(now())
+
+  @@unique([entityType, entityId], name: "entityType_entityId")
+}
+
+// Alert emission tracking
+model RuleEvent {
+  id         String   @id @default(cuid())
+  ruleId     String
+  entityType String?
+  entityId   String?
+  createdAt  DateTime @default(now())
+
+  rule       Rule     @relation(fields: [ruleId], references: [id])
+
+  @@index([ruleId, entityType, entityId, createdAt])
+}
+
+// Cycle count planning
+model CycleCountPlan {
+  id        String   @id @default(cuid())
+  name      String
+  strategy  String   // 'ABC' | 'ALL'
+  createdAt DateTime @default(now())
+  tasks     CycleCountTask[]
+}
+
+model CycleCountTask {
+  id          String   @id @default(cuid())
+  planId      String
+  lotId       String
+  expectedQty Int
+  countedQty  Int?
+  status      String   @default("OPEN") // OPEN|COUNTED|APPLIED
+  createdAt   DateTime @default(now())
+
+  plan        CycleCountPlan @relation(fields: [planId], references: [id])
 }
