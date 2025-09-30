@@ -5,10 +5,19 @@ export function middleware(req: NextRequest) {
   const url = new URL(req.url)
   const isApi = url.pathname.startsWith('/api/')
 
-  // CORS allow-list via env CORS_ALLOW_ORIGINS (comma-separated)
+  // CORS allow-list via env CORS_ALLOW_ORIGINS (comma-separated). Supports wildcards like https://*.vercel.app
   const allowList = (process.env.CORS_ALLOW_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
   const origin = req.headers.get('origin')
-  const isAllowedOrigin = !!(origin && (allowList.includes('*') || allowList.includes(origin)))
+  const originMatches = (o: string, entries: string[]) => entries.some((e) => {
+    if (e === '*') return true
+    if (e.includes('*')) {
+      const escaped = e.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+      const pattern = '^' + escaped.replace(/\*/g, '.*') + '$'
+      return new RegExp(pattern).test(o)
+    }
+    return e === o
+  })
+  const isAllowedOrigin = !!(origin && originMatches(origin, allowList))
 
   // Preflight handling for API
   if (isApi && req.method === 'OPTIONS') {
