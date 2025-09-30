@@ -13,7 +13,7 @@ export function middleware(req: NextRequest) {
   // Preflight handling for API
   if (isApi && req.method === 'OPTIONS') {
     const headers: Record<string, string> = {
-      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+      'Access-Control-Allow-Methods': (process.env.CORS_ALLOW_METHODS || 'GET,OPTIONS'),
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
     }
