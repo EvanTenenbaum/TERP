@@ -3,27 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --c-bg: #0B0B0B;
-  --c-panel: #111214;
-  --c-elev: #1A1B1E;
-  --c-border: #2A2C31;
-  --c-ink: #FFFFFF;
-  --c-mid: #9CA3AF;
-  --c-brand: #2563EB;
-  --c-brand-strong: #1E40AF;
+  /* Colors - Light Professional Theme */
+  --c-bg: #F8F9FA;
+  --c-paper: #FFFFFF;
+  --c-panel: #F3F4F6;
+  --c-border: #E5E7EB;
+  --c-line: #D1D5DB;
+  
+  --c-ink: #111827;
+  --c-mid: #6B7280;
+  --c-subtle: #9CA3AF;
+  
+  /* Brand */
+  --c-brand: #0066FF;
+  --c-brandDark: #0052CC;
+  --c-brandLight: #3385FF;
+  
+  /* Semantic */
   --c-success: #10B981;
-  --c-success-bg: #064E3B;
+  --c-success-bg: #D1FAE5;
   --c-warning: #F59E0B;
-  --c-warning-bg: #78350F;
+  --c-warning-bg: #FEF3C7;
   --c-error: #EF4444;
-  --c-error-bg: #7F1D1D;
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3);
-  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+  --c-error-bg: #FEE2E2;
 }
 
-@layer base {
-  body {
-    @apply bg-[var(--c-bg)] text-[var(--c-ink)] antialiased;
-  }
+body {
+  background-color: var(--c-bg);
+  color: var(--c-ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
