@@ -13,7 +13,7 @@ interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
   onRowClick?: (row: T) => void;
-  keyExtractor: (row: T) => string;
+  keyExtractor?: (row: T) => string;
 }
 
 export function DataTable<T extends Record<string, any>>({

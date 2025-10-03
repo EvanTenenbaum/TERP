@@ -1,23 +1,33 @@
 'use client';
-import React from 'react';
-import { apiPost } from '@/lib/fetcher';
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { DataTable } from '@/components/data/DataTable';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 export default function AdjustmentsPage() {
-  const [form, setForm] = React.useState<any>({ quantityDelta: 0, reason: '' });
-  async function submit() {
-    await apiPost('/api/inventory/adjustments', form);
-    alert('Adjustment applied');
-  }
+  const [adjustments, setAdjustments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/inventory/adjustments')
+      .then(res => res.json())
+      .then(data => { setAdjustments(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="p-6"><LoadingSpinner /></div>;
+
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Adjustments</h1>
-      <div className="space-y-2 max-w-xl">
-        <input className="border p-2 w-full" placeholder="Product ID" onChange={e=>setForm({...form, productId: e.target.value})} />
-        <input className="border p-2 w-full" placeholder="Lot ID (optional)" onChange={e=>setForm({...form, lotId: e.target.value})} />
-        <input className="border p-2 w-full" type="number" onChange={e=>setForm({...form, quantityDelta: parseInt(e.target.value||'0',10)})} />
-        <input className="border p-2 w-full" placeholder="Reason" onChange={e=>setForm({...form, reason: e.target.value})} />
-        <button className="bg-black text-white px-4 py-2 rounded" onClick={submit}>Apply</button>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-c-ink">Inventory Adjustments</h1>
+        <Button variant="primary">+ New Adjustment</Button>
       </div>
+      <Card className="p-6">
+        <DataTable data={adjustments} columns={[]} />
+      </Card>
     </div>
   );
 }
