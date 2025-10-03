@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export const TopBar: React.FC = () => {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[var(--c-border)] bg-[var(--c-bg)]/95 backdrop-blur">
+    <header className="sticky top-0 z-40 w-full border-b border-[var(--c-border)] bg-[var(--c-paper)]/95 backdrop-blur shadow-sm">
       <div className="flex h-14 items-center px-4">
         <Link href="/" className="flex items-center space-x-2 mr-8">
           <span className="font-bold text-lg">ERPv3</span>

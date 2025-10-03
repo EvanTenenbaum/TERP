@@ -8,7 +8,7 @@ interface CardProps {
 
 export const Card: React.FC<CardProps> = ({ children, className = '', onClick }) => (
   <div
-    className={`bg-[var(--c-panel)] border border-[var(--c-border)] rounded-lg p-4 ${onClick ? 'cursor-pointer hover:bg-[var(--c-elev)] transition-colors' : ''} ${className}`}
+    className={`bg-[var(--c-paper)] border border-[var(--c-border)] rounded-lg p-6 shadow-sm ${onClick ? 'cursor-pointer hover:shadow-md transition-all' : ''} ${className}`}
     onClick={onClick}
     role={onClick ? 'button' : undefined}
     tabIndex={onClick ? 0 : undefined}
