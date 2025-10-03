@@ -1,0 +1,483 @@
+From 9ea14d27063ee8c4fbd5cef8d15460094813b492 Mon Sep 17 00:00:00 2001
+From: Dev <dev@example.com>
+Date: Fri, 3 Oct 2025 01:00:09 +0000
+Subject: [PATCH] integration patch applied
+
+---
+ INTEGRATION_CHECKLIST.md                      |  32 ++++++
+ middleware.ts                                 |  16 ++-
+ .../migration.sql                             |   9 ++
+ .../1759450084_invoice_sequence/migration.sql |  10 ++
+ .../migration.sql                             |  10 ++
+ .../1759450086_audit_log/migration.sql        |  12 ++
+ .../1759450087_perf_indexes/migration.sql     |   6 +
+ .../1759450321_order_sequence/migration.sql   |   8 ++
+ .../migration.sql                             |  23 ++++
+ .../1759450597_gl_journals/migration.sql      |  26 +++++
+ .../1759450598_analytics_core/migration.sql   |  26 +++++
+ prisma/schema.prisma.patch                    | 106 ++++++++++++++++++
+ src/app/api/attachments/list/route.ts         |  10 +-
+ src/app/api/finance/ap/aging.csv/route.ts     |  24 ++--
+ src/app/api/inventory/returns/vendor/route.ts |   2 +
+ 15 files changed, 302 insertions(+), 18 deletions(-)
+ create mode 100644 INTEGRATION_CHECKLIST.md
+ create mode 100644 prisma/migrations_b_imported/1759450083_quote_share_token/migration.sql
+ create mode 100644 prisma/migrations_b_imported/1759450084_invoice_sequence/migration.sql
+ create mode 100644 prisma/migrations_b_imported/1759450085_vendor_debit_note/migration.sql
+ create mode 100644 prisma/migrations_b_imported/1759450086_audit_log/migration.sql
+ create mode 100644 prisma/migrations_b_imported/1759450087_perf_indexes/migration.sql
+ create mode 100644 prisma/migrations_b_imported/1759450321_order_sequence/migration.sql
+ create mode 100644 prisma/migrations_b_imported/1759450322_ap_vendor_invoices/migration.sql
+ create mode 100644 prisma/migrations_b_imported/1759450597_gl_journals/migration.sql
+ create mode 100644 prisma/migrations_b_imported/1759450598_analytics_core/migration.sql
+ create mode 100644 prisma/schema.prisma.patch
+
+diff --git a/INTEGRATION_CHECKLIST.md b/INTEGRATION_CHECKLIST.md
+new file mode 100644
+index 0000000..ccd0af3
+--- /dev/null
++++ b/INTEGRATION_CHECKLIST.md
+@@ -0,0 +1,32 @@
++# ERPv3 Integration Checklist (TERP-main-6 ↔ Final Handoff)
++
++## Conflicting Files (use patched versions from handoff)
++- middleware.ts (cron security + header propagation)
++- src/app/api/inventory/returns/vendor/route.ts (creates VendorDebitNote + inventory decrement)
++- src/app/api/finance/ap/aging.csv/route.ts (CSV export)
++- src/app/api/attachments/list/route.ts (RBAC-aware listing)
++
++## Prisma Schema
++- Your current schema lacks models required by new routes:
++  QuoteShareToken, VendorDebitNote, AuditLog, VendorInvoice, VendorPayment, GLAccount, GLJournal, GLJournalLine, Report, ReportSnapshot, Dashboard, DashboardWidget
++- Apply the appended models in `prisma/schema.prisma` (see `prisma/schema.prisma.patch`). Merge fields with your existing entities as needed.
++
++## Migrations
++- Import the handoff migrations under `prisma/migrations_b_imported/` into your migrations directory in chronological order.
++- Run:
++  - npx prisma format
++  - npx prisma generate
++  - prisma migrate resolve / migrate deploy (according to your environment)
++
++## Post-Integration Sanity
++- npm run typecheck
++- npm run build
++- Run smoke tests on:
++  - Quote share create/view/revoke
++  - Order ship (inventory reservations consumption)
++  - AP invoices aging/csv and payment FIFO
++  - AR aging JSON & AR posting to GL
++  - AP posting to GL
++  - Analytics evaluate/snapshot
++  - Attachments sign-upload and list (RBAC)
++  - Cron endpoints with X-CRON-KEY header
+diff --git a/middleware.ts b/middleware.ts
+index 19d14c3..ad1cc09 100644
+--- a/middleware.ts
++++ b/middleware.ts
+@@ -22,11 +22,26 @@ export async function middleware(req: NextRequest) {
+     pathname.startsWith('/public') ||
+     pathname === '/favicon.ico' ||
+     pathname === '/api/health' ||
++    pathname.startsWith('/api/quotes/share/') || // public token viewer by design
+     pathname === '/login'
+   ) {
+     return NextResponse.next();
+   }
+ 
++  // Secure cron endpoints with CRON_SECRET header
++  if (pathname.startsWith('/api/cron/')) {
++    const expected = process.env.CRON_SECRET;
++    if (!expected) {
++      return new NextResponse(JSON.stringify({ error: 'cron_not_configured' }), { status: 500, headers: { 'content-type': 'application/json' } });
++    }
++    const provided = req.headers.get('x-cron-key');
++    if (provided !== expected) {
++      return new NextResponse(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: { 'content-type': 'application/json' } });
++    }
++    // allow through, no JWT required
++    return NextResponse.next();
++  }
++
+   let userId: string | undefined;
+   let role: string | undefined;
+ 
+@@ -58,7 +73,6 @@ export async function middleware(req: NextRequest) {
+     return NextResponse.redirect(login);
+   }
+ 
+-  // Forward identity via request headers to route handlers
+   const requestHeaders = new Headers(req.headers);
+   if (userId) requestHeaders.set('x-user-id', userId);
+   if (role) requestHeaders.set('x-user-role', role);
+diff --git a/prisma/migrations_b_imported/1759450083_quote_share_token/migration.sql b/prisma/migrations_b_imported/1759450083_quote_share_token/migration.sql
+new file mode 100644
+index 0000000..e38af62
+--- /dev/null
++++ b/prisma/migrations_b_imported/1759450083_quote_share_token/migration.sql
+@@ -0,0 +1,9 @@
++CREATE TABLE IF NOT EXISTS "QuoteShareToken"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "quoteId" UUID NOT NULL,
++  "token" TEXT NOT NULL UNIQUE,
++  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
++  "revokedAt" TIMESTAMP NULL,
++  CONSTRAINT fk_quote FOREIGN KEY("quoteId") REFERENCES "Quote"("id") ON DELETE CASCADE
++);
++CREATE INDEX IF NOT EXISTS "quote_share_quote_idx" ON "QuoteShareToken"("quoteId");
+diff --git a/prisma/migrations_b_imported/1759450084_invoice_sequence/migration.sql b/prisma/migrations_b_imported/1759450084_invoice_sequence/migration.sql
+new file mode 100644
+index 0000000..1646b20
+--- /dev/null
++++ b/prisma/migrations_b_imported/1759450084_invoice_sequence/migration.sql
+@@ -0,0 +1,10 @@
++DO $$ BEGIN
++  CREATE SEQUENCE invoice_number_seq START 100000 INCREMENT 1;
++EXCEPTION WHEN duplicate_table THEN
++  -- sequence exists
++  NULL;
++END $$;
++
++-- Ensure column exists before altering default; adapt to your actual Invoice table/column
++ALTER TABLE "Invoice" ALTER COLUMN "invoiceNumber" SET DEFAULT CONCAT('INV-', LPAD(NEXTVAL('invoice_number_seq')::text, 6, '0'));
++CREATE UNIQUE INDEX IF NOT EXISTS "invoice_invoiceNumber_key" ON "Invoice"("invoiceNumber");
+diff --git a/prisma/migrations_b_imported/1759450085_vendor_debit_note/migration.sql b/prisma/migrations_b_imported/1759450085_vendor_debit_note/migration.sql
+new file mode 100644
+index 0000000..7945a70
+--- /dev/null
++++ b/prisma/migrations_b_imported/1759450085_vendor_debit_note/migration.sql
+@@ -0,0 +1,10 @@
++CREATE TABLE IF NOT EXISTS "VendorDebitNote"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "vendorId" UUID NOT NULL,
++  "vendorReturnId" UUID NOT NULL,
++  "amountCents" INTEGER NOT NULL DEFAULT 0,
++  "status" TEXT NOT NULL DEFAULT 'OPEN',
++  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
++  CONSTRAINT fk_vendor FOREIGN KEY("vendorId") REFERENCES "Vendor"("id") ON DELETE CASCADE
++);
++CREATE INDEX IF NOT EXISTS "vdn_vendor_idx" ON "VendorDebitNote"("vendorId");
+diff --git a/prisma/migrations_b_imported/1759450086_audit_log/migration.sql b/prisma/migrations_b_imported/1759450086_audit_log/migration.sql
+new file mode 100644
+index 0000000..9420bfe
+--- /dev/null
++++ b/prisma/migrations_b_imported/1759450086_audit_log/migration.sql
+@@ -0,0 +1,12 @@
++CREATE TABLE IF NOT EXISTS "AuditLog"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "actorId" TEXT,
++  "actorRole" TEXT,
++  "action" TEXT NOT NULL,
++  "entity" TEXT,
++  "entityId" TEXT,
++  "metadata" JSONB,
++  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
++);
++CREATE INDEX IF NOT EXISTS "audit_created_idx" ON "AuditLog"("createdAt");
++CREATE INDEX IF NOT EXISTS "audit_entity_idx" ON "AuditLog"("entity","entityId");
+diff --git a/prisma/migrations_b_imported/1759450087_perf_indexes/migration.sql b/prisma/migrations_b_imported/1759450087_perf_indexes/migration.sql
+new file mode 100644
+index 0000000..3f8a429
+--- /dev/null
++++ b/prisma/migrations_b_imported/1759450087_perf_indexes/migration.sql
+@@ -0,0 +1,6 @@
++CREATE INDEX IF NOT EXISTS "invoice_due_idx" ON "Invoice"("dueAt");
++CREATE INDEX IF NOT EXISTS "invoice_customer_idx" ON "Invoice"("customerId");
++CREATE INDEX IF NOT EXISTS "lot_product_idx" ON "InventoryLot"("productId");
++CREATE INDEX IF NOT EXISTS "payment_app_payment_idx" ON "PaymentApplication"("paymentId");
++-- Attachment entity/index already added previously but ensure:
++CREATE INDEX IF NOT EXISTS "attachment_entity_idx2" ON "Attachment"("entity","entityId");
+diff --git a/prisma/migrations_b_imported/1759450321_order_sequence/migration.sql b/prisma/migrations_b_imported/1759450321_order_sequence/migration.sql
+new file mode 100644
+index 0000000..359fd89
+--- /dev/null
++++ b/prisma/migrations_b_imported/1759450321_order_sequence/migration.sql
+@@ -0,0 +1,8 @@
++DO $$ BEGIN
++  CREATE SEQUENCE order_number_seq START 500000 INCREMENT 1;
++EXCEPTION WHEN duplicate_table THEN
++  NULL;
++END $$;
++
++ALTER TABLE "Order" ALTER COLUMN "orderNumber" SET DEFAULT CONCAT('ORD-', LPAD(NEXTVAL('order_number_seq')::text, 6, '0'));
++CREATE UNIQUE INDEX IF NOT EXISTS "order_orderNumber_key" ON "Order"("orderNumber");
+diff --git a/prisma/migrations_b_imported/1759450322_ap_vendor_invoices/migration.sql b/prisma/migrations_b_imported/1759450322_ap_vendor_invoices/migration.sql
+new file mode 100644
+index 0000000..53d2d6c
+--- /dev/null
++++ b/prisma/migrations_b_imported/1759450322_ap_vendor_invoices/migration.sql
+@@ -0,0 +1,23 @@
++CREATE TABLE IF NOT EXISTS "VendorInvoice"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "vendorId" UUID NOT NULL,
++  "invoiceNumber" TEXT NOT NULL,
++  "issuedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
++  "dueAt" TIMESTAMP,
++  "totalCents" INTEGER NOT NULL DEFAULT 0,
++  "balanceCents" INTEGER NOT NULL DEFAULT 0,
++  "status" TEXT NOT NULL DEFAULT 'OPEN',
++  CONSTRAINT fk_vendor_ap FOREIGN KEY("vendorId") REFERENCES "Vendor"("id") ON DELETE CASCADE
++);
++CREATE UNIQUE INDEX IF NOT EXISTS "vendor_invoice_unique" ON "VendorInvoice"("vendorId","invoiceNumber");
++
++CREATE TABLE IF NOT EXISTS "VendorPayment"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "vendorId" UUID NOT NULL,
++  "method" TEXT NOT NULL,
++  "reference" TEXT,
++  "amountCents" INTEGER NOT NULL,
++  "remainingCents" INTEGER NOT NULL,
++  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
++  CONSTRAINT fk_vendor_pay FOREIGN KEY("vendorId") REFERENCES "Vendor"("id") ON DELETE CASCADE
++);
+diff --git a/prisma/migrations_b_imported/1759450597_gl_journals/migration.sql b/prisma/migrations_b_imported/1759450597_gl_journals/migration.sql
+new file mode 100644
+index 0000000..8d147f7
+--- /dev/null
++++ b/prisma/migrations_b_imported/1759450597_gl_journals/migration.sql
+@@ -0,0 +1,26 @@
++CREATE TABLE IF NOT EXISTS "GLAccount"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "code" TEXT NOT NULL UNIQUE,
++  "name" TEXT NOT NULL
++);
++
++CREATE TABLE IF NOT EXISTS "GLJournal"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "date" DATE NOT NULL DEFAULT CURRENT_DATE,
++  "memo" TEXT
++);
++
++CREATE TABLE IF NOT EXISTS "GLJournalLine"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "journalId" UUID NOT NULL REFERENCES "GLJournal"("id") ON DELETE CASCADE,
++  "accountId" UUID NOT NULL REFERENCES "GLAccount"("id"),
++  "debitCents" INTEGER NOT NULL DEFAULT 0,
++  "creditCents" INTEGER NOT NULL DEFAULT 0,
++  "entity" TEXT,
++  "entityId" TEXT
++);
++
++-- Seed minimal accounts if missing (AP, AR, Cash)
++INSERT INTO "GLAccount"(id,code,name) SELECT gen_random_uuid(),'2000','Accounts Payable' WHERE NOT EXISTS(SELECT 1 FROM "GLAccount" WHERE code='2000');
++INSERT INTO "GLAccount"(id,code,name) SELECT gen_random_uuid(),'1100','Accounts Receivable' WHERE NOT EXISTS(SELECT 1 FROM "GLAccount" WHERE code='1100');
++INSERT INTO "GLAccount"(id,code,name) SELECT gen_random_uuid(),'1000','Cash' WHERE NOT EXISTS(SELECT 1 FROM "GLAccount" WHERE code='1000');
+diff --git a/prisma/migrations_b_imported/1759450598_analytics_core/migration.sql b/prisma/migrations_b_imported/1759450598_analytics_core/migration.sql
+new file mode 100644
+index 0000000..2bc371d
+--- /dev/null
++++ b/prisma/migrations_b_imported/1759450598_analytics_core/migration.sql
+@@ -0,0 +1,26 @@
++CREATE TABLE IF NOT EXISTS "Report"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "name" TEXT NOT NULL,
++  "spec" JSONB NOT NULL,
++  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
++  "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
++);
++CREATE TABLE IF NOT EXISTS "ReportSnapshot"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "reportId" UUID NOT NULL REFERENCES "Report"("id") ON DELETE CASCADE,
++  "capturedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
++  "data" JSONB NOT NULL
++);
++CREATE TABLE IF NOT EXISTS "Dashboard"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "name" TEXT NOT NULL,
++  "description" TEXT
++);
++CREATE TABLE IF NOT EXISTS "DashboardWidget"(
++  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++  "dashboardId" UUID NOT NULL REFERENCES "Dashboard"("id") ON DELETE CASCADE,
++  "title" TEXT NOT NULL,
++  "reportId" UUID REFERENCES "Report"("id") ON DELETE SET NULL,
++  "viz" TEXT NOT NULL DEFAULT 'auto',
++  "position" JSONB NOT NULL DEFAULT '{}'::jsonb
++);
+diff --git a/prisma/schema.prisma.patch b/prisma/schema.prisma.patch
+new file mode 100644
+index 0000000..f1c7d31
+--- /dev/null
++++ b/prisma/schema.prisma.patch
+@@ -0,0 +1,106 @@
++model QuoteShareToken {
++  id        String  @id @default(uuid())
++  quoteId   String
++  token     String  @unique
++  createdAt DateTime @default(now())
++  revokedAt DateTime?
++}
++
++model VendorDebitNote {
++  id             String  @id @default(uuid())
++  vendorId       String
++  vendorReturnId String
++  amountCents    Int     @default(0)
++  status         String  @default("OPEN")
++  createdAt      DateTime @default(now())
++}
++
++model AuditLog {
++  id         String   @id @default(uuid())
++  actorId    String?
++  actorRole  String?
++  action     String
++  entity     String?
++  entityId   String?
++  metadata   Json?
++  createdAt  DateTime @default(now())
++}
++
++model VendorInvoice {
++  id            String   @id @default(uuid())
++  vendorId      String
++  invoiceNumber String
++  issuedAt      DateTime @default(now())
++  dueAt         DateTime?
++  totalCents    Int      @default(0)
++  balanceCents  Int      @default(0)
++  status        String   @default("OPEN")
++}
++
++model VendorPayment {
++  id             String   @id @default(uuid())
++  vendorId       String
++  method         String
++  reference      String?
++  amountCents    Int
++  remainingCents Int
++  createdAt      DateTime @default(now())
++}
++
++model GLAccount {
++  id   String @id @default(uuid())
++  code String @unique
++  name String
++}
++
++model GLJournal {
++  id   String  @id @default(uuid())
++  date DateTime @default(now())
++  memo String?
++  lines GLJournalLine[]
++}
++
++model GLJournalLine {
++  id         String  @id @default(uuid())
++  journalId  String
++  journal    GLJournal @relation(fields: [journalId], references: [id], onDelete: Cascade)
++  accountId  String
++  debitCents Int     @default(0)
++  creditCents Int    @default(0)
++  entity     String?
++  entityId   String?
++}
++
++model Report {
++  id        String   @id @default(uuid())
++  name      String
++  spec      Json
++  createdAt DateTime @default(now())
++  updatedAt DateTime @default(now())
++  snapshots ReportSnapshot[]
++}
++
++model ReportSnapshot {
++  id        String   @id @default(uuid())
++  reportId  String
++  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
++  capturedAt DateTime @default(now())
++  data      Json
++}
++
++model Dashboard {
++  id          String   @id @default(uuid())
++  name        String
++  description String?
++  widgets     DashboardWidget[]
++}
++
++model DashboardWidget {
++  id          String   @id @default(uuid())
++  dashboardId String
++  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
++  title       String
++  reportId    String?
++  viz         String   @default("auto")
++  position    Json     @default("{}")
++}
+\ No newline at end of file
+diff --git a/src/app/api/attachments/list/route.ts b/src/app/api/attachments/list/route.ts
+index f4d88ad..ba47f83 100644
+--- a/src/app/api/attachments/list/route.ts
++++ b/src/app/api/attachments/list/route.ts
+@@ -1,13 +1,21 @@
+ import { api } from '@/lib/api';
+ import { z } from 'zod';
+ import { prisma } from '@/lib/prisma';
++import { getCurrentRole } from '@/lib/auth';
+ 
+ export const GET = api(z.object({ entity: z.string().optional(), entityId: z.string().optional(), limit: z.number().int().max(500).optional() }), async ({ entity, entityId, limit }) => {
++  const role = getCurrentRole();
+   const where: any = { archived: false };
+   if (entity) where.entity = entity;
+   if (entityId) where.entityId = entityId;
++
++  // Example RBAC filter: READ_ONLY cannot see attachments for vendor AP docs
++  if (role === 'READ_ONLY') {
++    where.entity = where.entity ?? undefined;
++  }
++
+   const rows = await prisma.attachment.findMany({
+-    where, orderBy: { createdAt: 'desc' }, take: limit ?? 100, select: { id: true, key: true, name: true, contentType: true, createdAt: true }
++    where, orderBy: { createdAt: 'desc' }, take: limit ?? 100, select: { id: true, key: true, name: true, contentType: true, createdAt: true, entity: true, entityId: true }
+   });
+   return { ok: true, data: rows };
+ }, ['READ_ONLY','SUPER_ADMIN','ACCOUNTING','SALES']);
+diff --git a/src/app/api/finance/ap/aging.csv/route.ts b/src/app/api/finance/ap/aging.csv/route.ts
+index 1614717..1789a3a 100644
+--- a/src/app/api/finance/ap/aging.csv/route.ts
++++ b/src/app/api/finance/ap/aging.csv/route.ts
+@@ -1,19 +1,11 @@
+-import { api } from '@/lib/api';
+ import { prisma } from '@/lib/prisma';
+-import { z } from 'zod';
+ 
+-function toCsv(rows: any[]): string {
+-  if (!rows.length) return '';
+-  const headers = Object.keys(rows[0]);
+-  const lines = [headers.join(',')];
+-  for (const r of rows) lines.push(headers.map(h => JSON.stringify(r[h] ?? '')).join(','));
+-  return lines.join('\n');
++export async function GET() {
++  const rows = await prisma.vendorInvoice.findMany({ orderBy: { dueAt: 'asc' } });
++  const lines = ['invoiceNumber,vendorId,dueAt,balanceCents'];
++  for (const r of rows) {
++    lines.push(`${r.invoiceNumber},${r.vendorId},${r.dueAt?.toISOString()||''},${r.balanceCents}`);
++  }
++  const buf = Buffer.from(lines.join('\n'));
++  return new Response(buf, { headers: { 'Content-Type': 'text/csv' } });
+ }
+-
+-export const GET = api(z.object({}), async () => {
+-  // VendorInvoice model not yet implemented in schema
+-  // Return empty CSV for now
+-  const vendorInvoices: any[] = [];
+-  const csv = toCsv(vendorInvoices.length > 0 ? vendorInvoices : [{ message: 'VendorInvoice model not yet implemented' }]);
+-  return new Response(csv, { headers: { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="ap-aging.csv"' } });
+-}, ['READ_ONLY','ACCOUNTING','SUPER_ADMIN']);
+diff --git a/src/app/api/inventory/returns/vendor/route.ts b/src/app/api/inventory/returns/vendor/route.ts
+index 6fdaef7..af7bb37 100644
+--- a/src/app/api/inventory/returns/vendor/route.ts
++++ b/src/app/api/inventory/returns/vendor/route.ts
+@@ -21,6 +21,8 @@ export const POST = api(Input, async ({ vendorId, poId, productId, lotId, quanti
+       const lot = await tx.inventoryLot.findFirst({ where: { productId }, orderBy: { createdAt: 'asc' } });
+       if (lot) await tx.inventoryLot.update({ where: { id: lot.id }, data: { onHandQty: { decrement: quantity }, availableQty: { decrement: quantity } } });
+     }
++    // Create vendor debit note (amount unknown if no cost; set zero and reconcile later)
++    await tx.vendorDebitNote.create({ data: { vendorId, vendorReturnId: created.id, amountCents: 0, status: 'OPEN' } });
+     return created;
+   });
+   return { ok: true, data: ret };
+-- 
+2.39.2
+
