@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Button } from './Button';
 
 interface DialogProps {
@@ -11,14 +11,29 @@ interface DialogProps {
 }
 
 export const Dialog: React.FC<DialogProps> = ({ open, onClose, title, children, actions }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  
   useEffect(() => {
+    if (!open) return;
+    
+    // Focus the dialog when it opens
+    dialogRef.current?.focus();
+    
+    // Prevent body scroll when dialog is open
+    document.body.style.overflow = 'hidden';
+    
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) {
+      if (e.key === 'Escape') {
         onClose();
       }
     };
+    
     document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -34,7 +49,9 @@ export const Dialog: React.FC<DialogProps> = ({ open, onClose, title, children, 
       
       {/* Dialog */}
       <div
-        className="relative bg-[var(--c-panel)] border border-[var(--c-border)] rounded-lg shadow-modal max-w-md w-full mx-4 p-6"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative bg-[var(--c-panel)] border border-[var(--c-border)] rounded-lg shadow-modal max-w-md w-full mx-4 p-6 focus:outline-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"

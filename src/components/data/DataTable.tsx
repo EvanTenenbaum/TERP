@@ -20,16 +20,18 @@ export function DataTable<T extends Record<string, any>>({
   columns,
   data,
   onRowClick,
-  keyExtractor,
+  keyExtractor = (row) => row.id || String(Math.random()),
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
+    <div className="overflow-x-auto" role="region" aria-label="Data table">
+      <table className="w-full" role="table">
         <thead className="border-b border-[var(--c-border)]">
-          <tr>
+          <tr role="row">
             {columns.map((col) => (
               <th
                 key={col.key}
+                role="columnheader"
+                scope="col"
                 className="text-left px-4 py-3 text-sm font-medium text-[var(--c-mid)]"
               >
                 {col.label}
@@ -41,13 +43,21 @@ export function DataTable<T extends Record<string, any>>({
           {data.map((row) => (
             <tr
               key={keyExtractor(row)}
+              role="row"
               onClick={() => onRowClick?.(row)}
+              onKeyDown={(e) => {
+                if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  onRowClick(row);
+                }
+              }}
+              tabIndex={onRowClick ? 0 : undefined}
               className={`border-b border-[var(--c-border)] ${
-                onRowClick ? 'cursor-pointer hover:bg-[var(--c-panel)] transition-colors' : ''
+                onRowClick ? 'cursor-pointer hover:bg-[var(--c-panel)] transition-colors focus:outline-none focus:ring-2 focus:ring-c-brand' : ''
               }`}
             >
               {columns.map((col) => (
-                <td key={col.key} className="px-4 py-3 text-sm text-[var(--c-ink)]">
+                <td key={col.key} role="cell" className="px-4 py-3 text-sm text-[var(--c-ink)]">
                   {col.render ? col.render(row) : row[col.key]}
                 </td>
               ))}

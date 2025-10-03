@@ -85,7 +85,7 @@ export function RadioGroup<T extends string | number>({
             checked={value === option.value}
             onChange={() => !option.disabled && !disabled && onChange(option.value)}
             disabled={option.disabled || disabled}
-            ref={el => (radioRefs.current[index] = el)}
+            ref={el => { radioRefs.current[index] = el; }}
             className="
               absolute opacity-0 w-0 h-0
               peer

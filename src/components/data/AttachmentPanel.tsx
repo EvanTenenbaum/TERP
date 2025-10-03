@@ -193,7 +193,7 @@ export function AttachmentPanel({
       {attachments.length === 0 ? (
         <EmptyState
           title="No attachments"
-          message="Upload files to attach them to this record"
+          description="Upload files to attach them to this record"
         />
       ) : (
         <div className="space-y-2">
@@ -207,7 +207,7 @@ export function AttachmentPanel({
                   <span className="font-medium text-c-ink truncate">
                     {attachment.filename}
                   </span>
-                  <Badge variant="neutral">
+                  <Badge variant="default">
                     {formatFileSize(attachment.sizeBytes)}
                   </Badge>
                 </div>

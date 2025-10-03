@@ -171,7 +171,7 @@ export const Tabs: React.FC<TabsProps> = ({
               aria-controls={`tabpanel-${id}`}
               tabIndex={selected ? 0 : -1}
               disabled={disabled}
-              ref={(el) => (tabsRef.current[i] = el)}
+              ref={(el) => { tabsRef.current[i] = el; }}
               onClick={() => !disabled && changeActive(id)}
               className={`
                 min-h-[44px] min-w-[44px] px-4 flex items-center justify-center
