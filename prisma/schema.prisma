@@ -224,6 +224,8 @@ model Order {
   customer Customer    @relation(fields: [customerId], references: [id])
   items    OrderItem[]
   invoices Invoice[]
+
+  @@index([customerId, status])
 }
 
 model OrderItem {
@@ -282,6 +284,7 @@ model Payment {
   applications PaymentApplication[]
 
   @@index([customerId])
+  @@index([customerId, status])
 }
 
 model PaymentApplication {
@@ -444,3 +447,7 @@ model CustomerCredit {
   reason         String?
   createdAt      DateTime @default(now())
 }
+// Note: Composite indexes added for performance
+// Invoice already has @@index([customerId, status])
+// Payment needs composite index
+// Order needs composite index
