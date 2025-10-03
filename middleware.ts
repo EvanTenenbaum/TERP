@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { ratelimit } from './src/lib/ratelimit';
 
 const AUTH_COOKIE = process.env.AUTH_COOKIE_NAME || 'auth_token';
 const REQUIRE_AUTH = (process.env.REQUIRE_AUTH ?? 'true') !== 'false';
@@ -26,6 +27,18 @@ export async function middleware(req: NextRequest) {
     pathname === '/login'
   ) {
     return NextResponse.next();
+  }
+
+  // Rate limiting for API endpoints
+  if (pathname.startsWith('/api/')) {
+    const identifier = req.ip ?? req.headers.get('x-forwarded-for') ?? 'anonymous';
+    const { success } = await ratelimit.limit(identifier);
+    if (!success) {
+      return new NextResponse(
+        JSON.stringify({ error: 'too_many_requests', message: 'Rate limit exceeded. Please try again later.' }),
+        { status: 429, headers: { 'content-type': 'application/json', 'retry-after': '60' } }
+      );
+    }
   }
 
   // Secure cron endpoints with CRON_SECRET header
