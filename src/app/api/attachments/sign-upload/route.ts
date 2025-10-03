@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+export const dynamic = 'force-dynamic';
 import { z } from 'zod';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';

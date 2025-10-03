@@ -1,4 +1,5 @@
 import { z } from 'zod';
+export const dynamic = 'force-dynamic';
 import { api } from '@/lib/api';
 import { prisma } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
