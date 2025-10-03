@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { postARPayment } from '@/lib/posting';
