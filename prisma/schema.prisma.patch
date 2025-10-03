@@ -1,0 +1,106 @@
+model QuoteShareToken {
+  id        String  @id @default(uuid())
+  quoteId   String
+  token     String  @unique
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+}
+
+model VendorDebitNote {
+  id             String  @id @default(uuid())
+  vendorId       String
+  vendorReturnId String
+  amountCents    Int     @default(0)
+  status         String  @default("OPEN")
+  createdAt      DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actorRole  String?
+  action     String
+  entity     String?
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}
+
+model VendorInvoice {
+  id            String   @id @default(uuid())
+  vendorId      String
+  invoiceNumber String
+  issuedAt      DateTime @default(now())
+  dueAt         DateTime?
+  totalCents    Int      @default(0)
+  balanceCents  Int      @default(0)
+  status        String   @default("OPEN")
+}
+
+model VendorPayment {
+  id             String   @id @default(uuid())
+  vendorId       String
+  method         String
+  reference      String?
+  amountCents    Int
+  remainingCents Int
+  createdAt      DateTime @default(now())
+}
+
+model GLAccount {
+  id   String @id @default(uuid())
+  code String @unique
+  name String
+}
+
+model GLJournal {
+  id   String  @id @default(uuid())
+  date DateTime @default(now())
+  memo String?
+  lines GLJournalLine[]
+}
+
+model GLJournalLine {
+  id         String  @id @default(uuid())
+  journalId  String
+  journal    GLJournal @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  accountId  String
+  debitCents Int     @default(0)
+  creditCents Int    @default(0)
+  entity     String?
+  entityId   String?
+}
+
+model Report {
+  id        String   @id @default(uuid())
+  name      String
+  spec      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  snapshots ReportSnapshot[]
+}
+
+model ReportSnapshot {
+  id        String   @id @default(uuid())
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  capturedAt DateTime @default(now())
+  data      Json
+}
+
+model Dashboard {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  widgets     DashboardWidget[]
+}
+
+model DashboardWidget {
+  id          String   @id @default(uuid())
+  dashboardId String
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  title       String
+  reportId    String?
+  viz         String   @default("auto")
+  position    Json     @default("{}")
+}

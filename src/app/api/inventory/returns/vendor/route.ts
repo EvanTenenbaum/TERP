@@ -21,6 +21,8 @@ export const POST = api(Input, async ({ vendorId, poId, productId, lotId, quanti
       const lot = await tx.inventoryLot.findFirst({ where: { productId }, orderBy: { createdAt: 'asc' } });
       if (lot) await tx.inventoryLot.update({ where: { id: lot.id }, data: { onHandQty: { decrement: quantity }, availableQty: { decrement: quantity } } });
     }
+    // Create vendor debit note (amount unknown if no cost; set zero and reconcile later)
+    await tx.vendorDebitNote.create({ data: { vendorId, vendorReturnId: created.id, amountCents: 0, status: 'OPEN' } });
     return created;
   });
   return { ok: true, data: ret };

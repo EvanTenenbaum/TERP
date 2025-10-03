@@ -22,8 +22,23 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/public') ||
     pathname === '/favicon.ico' ||
     pathname === '/api/health' ||
+    pathname.startsWith('/api/quotes/share/') || // public token viewer by design
     pathname === '/login'
   ) {
+    return NextResponse.next();
+  }
+
+  // Secure cron endpoints with CRON_SECRET header
+  if (pathname.startsWith('/api/cron/')) {
+    const expected = process.env.CRON_SECRET;
+    if (!expected) {
+      return new NextResponse(JSON.stringify({ error: 'cron_not_configured' }), { status: 500, headers: { 'content-type': 'application/json' } });
+    }
+    const provided = req.headers.get('x-cron-key');
+    if (provided !== expected) {
+      return new NextResponse(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: { 'content-type': 'application/json' } });
+    }
+    // allow through, no JWT required
     return NextResponse.next();
   }
 
@@ -58,7 +73,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  // Forward identity via request headers to route handlers
   const requestHeaders = new Headers(req.headers);
   if (userId) requestHeaders.set('x-user-id', userId);
   if (role) requestHeaders.set('x-user-role', role);
