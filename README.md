@@ -1,6 +1,13 @@
-# ERPv3 - Enterprise Resource Planning System
+# TERP ERP System - Monorepo
+
+[![CI](https://github.com/EvanTenenbaum/TERP/actions/workflows/ci.yml/badge.svg)](https://github.com/EvanTenenbaum/TERP/actions/workflows/ci.yml)
+[![Status Hub](https://img.shields.io/badge/Status-Hub-blue)](docs/status/STATUS.md)
 
 A production-ready ERP system built with Next.js 14, TypeScript, Prisma, and PostgreSQL. Features comprehensive inventory management, sales operations, finance tracking, and role-based access control.
+
+**📊 [View Status Hub](docs/status/STATUS.md)** - Single source of truth for project status
+
+---
 
 ## Features
 
@@ -30,183 +37,241 @@ A production-ready ERP system built with Next.js 14, TypeScript, Prisma, and Pos
 - **Middleware Protection**: All routes protected by authentication middleware
 - **Audit Trail**: User tracking on all critical operations
 
-### Attachments & Storage
-- **S3-Compatible Storage**: AWS S3, Cloudflare R2, or MinIO support
-- **Database-Backed Index**: Attachment metadata stored in PostgreSQL
-- **Archive Support**: Soft-delete with archive functionality
-- **Multi-Entity Support**: Attach files to any entity type
+---
 
 ## Tech Stack
 
 - **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
+- **Language**: TypeScript (strict mode)
+- **Monorepo**: pnpm workspaces + Turborepo
 - **Database**: PostgreSQL (via Neon or any Postgres provider)
 - **ORM**: Prisma
 - **Authentication**: JWT (jose library)
 - **Storage**: AWS S3 SDK (S3-compatible)
 - **Validation**: Zod
 - **Testing**: Jest (unit) + Playwright (e2e)
+- **CI/CD**: GitHub Actions + Vercel
+- **Monitoring**: Sentry (optional)
+
+---
+
+## Monorepo Structure
+
+```
+terp-monorepo/
+├── apps/
+│   └── web/              # Next.js 14 app (frontend + API routes)
+├── packages/
+│   ├── db/               # Prisma schema, client, migrations
+│   ├── types/            # Shared TypeScript types and Zod schemas
+│   ├── config/           # Feature flags and configuration
+│   ├── ui/               # Shared UI components (future)
+│   └── utils/            # Shared utilities (future)
+├── docs/
+│   ├── status/           # Status Hub (single source of truth)
+│   ├── adrs/             # Architecture Decision Records
+│   └── iterating.md      # How to request changes safely
+├── scripts/              # Bootstrap and automation scripts
+├── .github/
+│   └── workflows/        # CI/CD pipelines
+├── pnpm-workspace.yaml   # pnpm workspace configuration
+├── turbo.json            # Turborepo build configuration
+├── CONTRIBUTING.md       # Development workflow
+├── RUNBOOK.md            # Operational procedures
+└── DEPRECATION.md        # API deprecation log
+```
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ 
-- PostgreSQL database (Neon recommended)
-- S3-compatible storage (AWS S3, Cloudflare R2, or MinIO)
+- **Node.js**: 18.0.0 or higher
+- **pnpm**: 8.0.0 or higher
+- **PostgreSQL**: For local development (or use Neon)
 
 ### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/EvanTenenbaum/TERP.git
+cd TERP
+
 # Install dependencies
-npm install
+pnpm install
 
 # Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
+cp .env.example .env.local
+# Edit .env.local with your configuration
 
 # Generate Prisma client
-npm run prisma:generate
+pnpm db:generate
 
 # Run migrations
-npm run prisma:migrate
+pnpm db:migrate:dev
 
-# Seed database (optional)
-npm run seed
-```
-
-### Development
-
-```bash
 # Start development server
-npm run dev
-
-# Open http://localhost:3000
+pnpm dev
 ```
 
-### Testing
+The app will be available at `http://localhost:3000`.
+
+### Development Commands
 
 ```bash
-# Type checking
-npm run typecheck
+# Development
+pnpm dev              # Start dev server
+pnpm build            # Build for production
+pnpm start            # Start production server
 
-# Unit tests
-npm test
+# Quality checks
+pnpm typecheck        # Type checking
+pnpm lint             # Linting
+pnpm test             # Unit tests
+pnpm e2e              # E2E tests
 
-# E2E tests
-npm run test:e2e
+# Database
+pnpm db:generate      # Generate Prisma client
+pnpm db:migrate:dev   # Create and apply migration
+pnpm db:migrate:deploy # Apply migrations (production)
+pnpm db:reset         # Reset database
+pnpm db:studio        # Open Prisma Studio
+
+# Utilities
+pnpm clean            # Clean build artifacts
+pnpm format           # Format code with Prettier
 ```
 
-### Production Build
-
-```bash
-# Build for production
-npm run build
-
-# Start production server
-npm start
-```
+---
 
 ## Deployment
 
-See [docs/VERCEL_DEPLOY.md](docs/VERCEL_DEPLOY.md) for complete Vercel deployment instructions.
+### Vercel (Recommended)
 
-### Quick Deploy to Vercel
+1. **Connect Repository**:
+   - Import repository in Vercel
+   - Vercel auto-detects monorepo structure
 
-1. Push to GitHub
-2. Import repository in Vercel
-3. Set environment variables (see `.env.example`)
-4. Deploy
+2. **Configure Environment Variables**:
+   ```bash
+   DATABASE_URL="postgresql://..."
+   AUTH_JWT_SECRET="your-secret-min-32-chars"
+   REQUIRE_AUTH="true"
+   ALLOW_DEV_BYPASS="false"
+   DEV_LOGIN_ENABLED="false"
+   OBJECT_STORAGE_ENDPOINT="https://s3.us-west-2.amazonaws.com"
+   OBJECT_STORAGE_BUCKET="your-bucket"
+   OBJECT_STORAGE_ACCESS_KEY="..."
+   OBJECT_STORAGE_SECRET="..."
+   ```
+
+3. **Deploy**:
+   - Push to `main` for production
+   - Open PR for preview deployment
 
 ### Environment Variables
 
-Critical environment variables for production:
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `AUTH_JWT_SECRET` | JWT secret (min 32 chars) | Yes |
+| `REQUIRE_AUTH` | Enable authentication | Yes (prod) |
+| `ALLOW_DEV_BYPASS` | Allow dev bypass | No (false in prod) |
+| `DEV_LOGIN_ENABLED` | Enable dev login | No (false in prod) |
+| `OBJECT_STORAGE_*` | S3-compatible storage config | Yes |
+| `FEATURE_*` | Feature flag overrides | No |
 
+---
+
+## Feature Flags
+
+New features are gated behind feature flags for safe iteration:
+
+```typescript
+import { isFeatureEnabled } from '@terp/config';
+
+if (await isFeatureEnabled('ENABLE_MOBILE_UI')) {
+  // Show new mobile UI
+}
+```
+
+**Available Flags**:
+- `ENABLE_MOBILE_UI`: Mobile-optimized UI from Lovable frontend
+- `ENABLE_NEW_DASHBOARD`: Redesigned dashboard with enhanced analytics
+- `ENABLE_ADVANCED_PRICING`: Advanced pricing rules and tier management
+
+See [Feature Flags ADR](docs/adrs/002-feature-flags.md) for details.
+
+---
+
+## API Versioning
+
+APIs are versioned under `/api/v1/*` namespace:
+
+- **Non-breaking changes**: Added to current version
+- **Breaking changes**: New version created (e.g., `/api/v2/*`)
+- **Deprecation**: Old endpoints maintained with deprecation headers
+
+See [API Versioning ADR](docs/adrs/003-api-versioning.md) and [DEPRECATION.md](DEPRECATION.md) for details.
+
+---
+
+## Documentation
+
+- **[Status Hub](docs/status/STATUS.md)**: Current project status (single source of truth)
+- **[CONTRIBUTING.md](CONTRIBUTING.md)**: Development workflow and guidelines
+- **[RUNBOOK.md](RUNBOOK.md)**: Operational procedures and incident response
+- **[DEPRECATION.md](DEPRECATION.md)**: API deprecation log
+- **[docs/iterating.md](docs/iterating.md)**: How to request changes safely
+- **[docs/adrs/](docs/adrs/)**: Architecture Decision Records
+
+---
+
+## Testing
+
+### Unit Tests
 ```bash
-DATABASE_URL="postgresql://..."
-AUTH_JWT_SECRET="your-secret-min-32-chars"
-REQUIRE_AUTH="true"
-ALLOW_DEV_BYPASS="false"
-DEV_LOGIN_ENABLED="false"
-OBJECT_STORAGE_ENDPOINT="https://s3.us-west-2.amazonaws.com"
-OBJECT_STORAGE_BUCKET="your-bucket"
-OBJECT_STORAGE_ACCESS_KEY="..."
-OBJECT_STORAGE_SECRET="..."
+pnpm test
+pnpm test --watch
 ```
 
-## Project Structure
-
-```
-erpv3/
-├── src/
-│   ├── app/
-│   │   ├── api/              # API routes
-│   │   │   ├── alerts/       # Replenishment alerts
-│   │   │   ├── attachments/  # File upload/download
-│   │   │   ├── auth/         # Authentication
-│   │   │   ├── finance/      # Finance operations
-│   │   │   ├── inventory/    # Inventory operations
-│   │   │   ├── products/     # Product management
-│   │   │   └── quotes/       # Quote management
-│   │   ├── finance/          # Finance UI pages
-│   │   ├── inventory/        # Inventory UI pages
-│   │   ├── quotes/           # Quote UI pages
-│   │   └── login/            # Login page
-│   └── lib/
-│       ├── api.ts            # API wrapper with RBAC
-│       ├── auth.ts           # Authentication helpers
-│       ├── errors.ts         # Error handling
-│       ├── prisma.ts         # Prisma client
-│       ├── storage.ts        # Object storage
-│       ├── pricing.ts        # Pricing engine
-│       ├── inventoryAllocator.ts  # FIFO allocation
-│       └── finance/
-│           └── payments.ts   # Payment FIFO application
-├── prisma/
-│   ├── schema.prisma         # Database schema
-│   ├── migrations/           # SQL migrations
-│   └── seed.ts               # Seed data
-├── tests/
-│   └── unit/                 # Unit tests
-├── e2e/                      # E2E tests
-├── docs/                     # Documentation
-└── middleware.ts             # Auth middleware
-
+### E2E Tests
+```bash
+pnpm e2e
+pnpm e2e --ui  # Interactive mode
 ```
 
-## API Endpoints
+### Coverage
+```bash
+pnpm test --coverage
+```
 
-### Inventory
-- `POST /api/inventory/cycle-count/plan` - Create cycle count plan
-- `GET /api/inventory/cycle-count/tasks` - List tasks for plan
-- `POST /api/inventory/cycle-count/task/[id]/submit` - Submit count
-- `POST /api/inventory/cycle-count/apply` - Apply cycle count
-- `POST /api/inventory/adjustments` - Create adjustment
-- `GET /api/inventory/adjustments/list` - List adjustments
-- `POST /api/inventory/transfers` - Create transfer
-- `POST /api/inventory/returns/customer` - Customer return
-- `POST /api/inventory/returns/vendor` - Vendor return
-- `GET /api/inventory/export` - Export inventory CSV
+**Coverage Requirements**:
+- Unit/Integration: ≥80% for business logic
+- E2E: Smoke tests for core user funnels
 
-### Sales
-- `GET /api/quotes` - List quotes
-- `POST /api/quotes` - Create quote
-- `POST /api/quotes/[id]/convert` - Convert quote to order
+---
 
-### Finance
-- `POST /api/finance/payments/apply` - Apply payment FIFO
-- `GET /api/finance/ar/aging.csv` - AR aging report
-- `GET /api/finance/ap/aging.csv` - AP aging report
+## Contributing
 
-### Alerts
-- `GET /api/alerts/replenishment/preview` - Preview replenishment needs
-- `POST /api/alerts/replenishment/apply` - Apply replenishment
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
-### Attachments
-- `POST /api/attachments/upload` - Upload file
-- `GET /api/attachments/list` - List attachments
-- `GET /api/attachments/file` - Download file
-- `POST /api/attachments/[id]/archive` - Archive attachment
+- Development workflow
+- Branch strategy
+- Commit conventions
+- PR process
+- Code standards
+- Testing requirements
+
+**Quick Start**:
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feat/my-feature`
+3. Make changes and add tests
+4. Run quality checks: `pnpm typecheck && pnpm lint && pnpm test`
+5. Open a PR with clear description
+
+---
 
 ## Security
 
@@ -228,18 +293,31 @@ Four roles with hierarchical permissions:
 - ✅ Database SSL enabled (`sslmode=require`)
 - ✅ Object storage credentials secured
 
-## Documentation
+---
 
-- [Authentication & RBAC](docs/AUTH_RBAC.md)
-- [Migration Safety](docs/MIGRATION_SAFETY.md)
-- [Object Storage Setup](docs/OBJECT_STORAGE.md)
-- [Vercel Deployment](docs/VERCEL_DEPLOY.md)
-- [RBAC QA Checklist](docs/QA_RBAC_CHECKLIST.md)
+## Support
+
+- **Status**: Check [Status Hub](docs/status/STATUS.md)
+- **Issues**: [GitHub Issues](https://github.com/EvanTenenbaum/TERP/issues)
+- **Documentation**: See `docs/` directory
+- **Contact**: See Status Hub for current responsible owner
+
+---
 
 ## License
 
 Proprietary - All rights reserved
 
-## Support
+---
 
-For issues, questions, or feature requests, please contact the development team.
+## Acknowledgments
+
+- **Lovable Frontend**: Mobile-first UI components from [code-to-beauty-design](https://github.com/EvanTenenbaum/code-to-beauty-design)
+- **Backend**: Built on [ERPv3](https://github.com/EvanTenenbaum/ERPv3)
+
+---
+
+**Last Updated**: 2025-10-22  
+**Version**: 1.0.0  
+**Status**: 🟡 In Development
+

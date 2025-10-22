@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* ERPv3 Design Tokens - Dark Minimalist */
+    
+    /* Typography Scale */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --h1: 1.75rem;     /* 28px */
+    --h2: 1.375rem;    /* 22px */
+    --h3: 1.125rem;    /* 18px */
+    --body: 0.875rem;  /* 14px */
+    --small: 0.75rem;  /* 12px */
+
+    /* Spacing Scale (8pt) */
+    --space-1: 0.25rem;   /* 4px */
+    --space-2: 0.5rem;    /* 8px */
+    --space-3: 0.75rem;   /* 12px */
+    --space-4: 1rem;      /* 16px */
+    --space-5: 1.25rem;   /* 20px */
+    --space-6: 1.5rem;    /* 24px */
+    --space-8: 2rem;      /* 32px */
+    --space-12: 3rem;     /* 48px */
+
+    /* Border Radius */
+    --radius-sm: 0.25rem;  /* 4px */
+    --radius-md: 0.5rem;   /* 8px */
+    --radius-lg: 0.75rem;  /* 12px */
+    --radius: 0.5rem;
+
+    /* Motion */
+    --motion-fast: 150ms;
+    --motion-med: 250ms;
+
+    /* Dark Theme Colors (HSL) */
+    --background: 222 13% 4%;        /* #0B0B0B */
+    --foreground: 0 0% 100%;         /* #FFFFFF */
+    
+    --card: 222 10% 7%;              /* #111214 */
+    --card-foreground: 0 0% 100%;
+    
+    --popover: 222 10% 7%;
+    --popover-foreground: 0 0% 100%;
+    
+    --panel: 222 8% 10%;             /* #1A1B1E */
+    --panel-foreground: 0 0% 100%;
+    
+    --elevated: 222 7% 12%;
+    --elevated-foreground: 0 0% 100%;
+    
+    --border: 222 7% 17%;            /* #2A2C31 */
+    --input: 222 7% 17%;
+    --ring: 217 91% 60%;             /* Brand blue focus */
+    
+    /* Brand Colors */
+    --primary: 217 91% 60%;          /* #2563EB */
+    --primary-foreground: 0 0% 100%;
+    
+    --brand: 217 91% 60%;
+    --brand-strong: 224 76% 48%;     /* #1E40AF */
+    
+    /* Semantic Colors */
+    --secondary: 222 8% 10%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 222 7% 17%;
+    --muted-foreground: 220 9% 46%;  /* #9CA3AF */
+    
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+    
+    --success: 142 71% 45%;          /* #10B981 */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;           /* #F59E0B */
+    --warning-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;        /* #EF4444 */
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Sidebar */
+    --sidebar-background: 222 13% 4%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 8% 10%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 7% 17%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* Shadows */
+    --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-elevated: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    font-size: var(--body);
+  }
+
+  h1 {
+    font-size: var(--h1);
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: var(--h2);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-size: var(--h3);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  small {
+    font-size: var(--small);
+  }
+}
+
+/* Smooth transitions */
+@layer utilities {
+  .transition-fast {
+    transition-duration: var(--motion-fast);
+  }
+
+  .transition-med {
+    transition-duration: var(--motion-med);
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm build",
+  "devCommand": "pnpm dev",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "outputDirectory": "apps/web/.next",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./apps/web ./packages",
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "AUTH_JWT_SECRET": "@auth_jwt_secret",
+    "REQUIRE_AUTH": "true",
+    "ALLOW_DEV_BYPASS": "false",
+    "DEV_LOGIN_ENABLED": "false"
+  },
+  "build": {
+    "env": {
+      "DATABASE_URL": "@database_url"
+    }
+  }
+}
+
