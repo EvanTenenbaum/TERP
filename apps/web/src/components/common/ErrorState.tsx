@@ -1,6 +1,5 @@
-import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import React from 'react';
+import { Button } from '../ui/Button';
 
 interface ErrorStateProps {
   title?: string;
@@ -8,30 +7,25 @@ interface ErrorStateProps {
   retry?: () => void;
 }
 
-export function ErrorState({ 
-  title = "Something went wrong", 
+export const ErrorState: React.FC<ErrorStateProps> = ({ 
+  title = 'Something went wrong', 
   message, 
   retry 
-}: ErrorStateProps) {
+}) => {
   return (
-    <div className="flex items-center justify-center py-12 px-4">
-      <Alert variant="destructive" className="max-w-lg">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>{title}</AlertTitle>
-        <AlertDescription className="mt-2">
-          {message}
-        </AlertDescription>
-        {retry && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={retry}
-            className="mt-4"
-          >
-            Try Again
-          </Button>
-        )}
-      </Alert>
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <div className="mb-4 text-[var(--c-error)]">
+        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h3 className="text-lg font-semibold text-[var(--c-ink)] mb-2">{title}</h3>
+      <p className="text-[var(--c-mid)] mb-6 max-w-sm">{message}</p>
+      {retry && (
+        <Button onClick={retry} variant="default">
+          Try Again
+        </Button>
+      )}
     </div>
   );
-}
+};

@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Colors - Light Professional Theme */
+  --c-bg: #F8F9FA;
+  --c-paper: #FFFFFF;
+  --c-panel: #F3F4F6;
+  --c-border: #E5E7EB;
+  --c-line: #D1D5DB;
+  
+  --c-ink: #111827;
+  --c-mid: #6B7280;
+  --c-subtle: #9CA3AF;
+  
+  /* Brand */
+  --c-brand: #0066FF;
+  --c-brandDark: #0052CC;
+  --c-brandLight: #3385FF;
+  
+  /* Semantic */
+  --c-success: #10B981;
+  --c-success-bg: #D1FAE5;
+  --c-warning: #F59E0B;
+  --c-warning-bg: #FEF3C7;
+  --c-error: #EF4444;
+  --c-error-bg: #FEE2E2;
+}
+
+body {
+  background-color: var(--c-bg);
+  color: var(--c-ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}

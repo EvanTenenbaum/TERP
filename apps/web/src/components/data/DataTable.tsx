@@ -1,84 +1,70 @@
-import { ReactNode } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { EmptyState } from "@/components/common/EmptyState";
-import { FileText } from "lucide-react";
+'use client';
+import React from 'react';
+import { Badge } from '../ui/Badge';
 
-interface Column<T> {
+export interface Column<T> {
   key: string;
   label: string;
-  render?: (item: T) => ReactNode;
-  className?: string;
+  render?: (row: T) => React.ReactNode;
+  sortable?: boolean;
 }
 
 interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
-  onRowClick?: (item: T) => void;
-  emptyMessage?: string;
-  emptyTitle?: string;
+  onRowClick?: (row: T) => void;
+  keyExtractor?: (row: T) => string;
 }
 
-export function DataTable<T extends { id: string | number }>({ 
-  columns, 
-  data, 
+export function DataTable<T extends Record<string, any>>({
+  columns,
+  data,
   onRowClick,
-  emptyMessage = "No data available",
-  emptyTitle = "No Results"
+  keyExtractor = (row) => row.id || String(Math.random()),
 }: DataTableProps<T>) {
-  if (data.length === 0) {
-    return (
-      <EmptyState
-        icon={FileText}
-        title={emptyTitle}
-        description={emptyMessage}
-      />
-    );
-  }
-
   return (
-    <div className="rounded-md border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow className="border-b border-border hover:bg-transparent">
-            {columns.map((column) => (
-              <TableHead 
-                key={column.key}
-                className={column.className}
+    <div className="overflow-x-auto" role="region" aria-label="Data table">
+      <table className="w-full" role="table">
+        <thead className="border-b border-[var(--c-border)]">
+          <tr role="row">
+            {columns.map((col) => (
+              <th
+                key={col.key}
+                role="columnheader"
+                scope="col"
+                className="text-left px-4 py-3 text-sm font-medium text-[var(--c-mid)]"
               >
-                {column.label}
-              </TableHead>
+                {col.label}
+              </th>
             ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((item) => (
-            <TableRow
-              key={item.id}
-              onClick={() => onRowClick?.(item)}
-              className={onRowClick ? "cursor-pointer" : ""}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row) => (
+            <tr
+              key={keyExtractor(row)}
+              role="row"
+              onClick={() => onRowClick?.(row)}
+              onKeyDown={(e) => {
+                if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  onRowClick(row);
+                }
+              }}
+              tabIndex={onRowClick ? 0 : undefined}
+              className={`border-b border-[var(--c-border)] ${
+                onRowClick ? 'cursor-pointer hover:bg-[var(--c-panel)] transition-colors focus:outline-none focus:ring-2 focus:ring-c-brand' : ''
+              }`}
             >
-              {columns.map((column) => (
-                <TableCell 
-                  key={`${item.id}-${column.key}`}
-                  className={column.className}
-                >
-                  {column.render 
-                    ? column.render(item) 
-                    : String((item as any)[column.key] ?? "-")
-                  }
-                </TableCell>
+              {columns.map((col) => (
+                <td key={col.key} role="cell" className="px-4 py-3 text-sm text-[var(--c-ink)]">
+                  {col.render ? col.render(row) : row[col.key]}
+                </td>
               ))}
-            </TableRow>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
