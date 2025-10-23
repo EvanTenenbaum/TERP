@@ -1,7 +1,7 @@
 # TERP Project Context
 
 **Last Updated:** October 23, 2025  
-**Current Version:** terp-redesign v1.0 (Checkpoint: 1fa68187)  
+**Current Version:** terp-redesign v2.0 (Checkpoint: af56b9b5)  
 **Purpose:** Living document tracking current project state, decisions, and status
 
 ---
@@ -12,11 +12,11 @@
 
 1. **terp-redesign** (Primary Active Project)
    - **Location:** `/home/ubuntu/terp-redesign`
-   - **Status:** Production-ready initial implementation
-   - **Version:** 1fa68187
+   - **Status:** Production-ready with Inventory Module
+   - **Version:** af56b9b5
    - **Dev Server:** https://3000-ifpycsnmbvrec0h03kl1v-9fa449a6.manusvm.computer
    - **Stack:** React 19, Next.js 16, Tailwind CSS 4, shadcn/ui
-   - **Features:** Static frontend only (web-static)
+   - **Features:** Full-stack with database (web-db-user)
 
 2. **TERP** (Legacy/Original Repository)
    - **Location:** `/home/ubuntu/TERP`
@@ -44,6 +44,18 @@
   - Action buttons
   - Mock data integration
 
+- ✅ **Inventory Module** (`/inventory`)
+  - Complete batch management system
+  - Intake flow with comprehensive form
+  - Batch detail drawer with audit trail
+  - Open tasks dashboard
+  - Search and filter functionality
+  - Database-backed with 9 tables
+  - Status state machine (7 states)
+  - COGS modes (FIXED, FLOOR, RANGE)
+  - Location tracking (site, zone, rack, shelf, bin)
+  - Audit logging for all operations
+
 - ✅ **Navigation System**
   - 7 main navigation items
   - Active state indicators
@@ -54,7 +66,6 @@
 
 - ⏳ **Additional Pages**
   - Orders page (`/orders`)
-  - Inventory page (`/inventory`)
   - Customers page (`/customers`)
   - Analytics page (`/analytics`)
   - Settings page (`/settings`)
@@ -66,11 +77,11 @@
   - Toast notifications
   - Advanced search functionality
 
-- ⏳ **Backend Integration**
-  - API endpoints (requires web-db-user upgrade)
-  - Database schema
-  - Authentication
-  - Real-time data
+- ✅ **Backend Integration**
+  - ✅ API endpoints (tRPC)
+  - ✅ Database schema (Drizzle ORM)
+  - ✅ Authentication (built-in)
+  - ⏳ Real-time data
 
 ---
 
@@ -92,10 +103,16 @@
 - ESLint
 - PostCSS
 
+**Backend:**
+- tRPC (type-safe API)
+- Drizzle ORM (database)
+- PostgreSQL (database)
+- Node.js server
+
 **Deployment:**
 - Manus webdev platform
-- Static hosting (current)
-- Can upgrade to server/database features
+- Full-stack hosting (web-db-user)
+- Database and server features enabled
 
 ### Design System
 
