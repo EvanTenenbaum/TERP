@@ -14,6 +14,10 @@ import {
   batches,
   batchLocations,
   auditLogs,
+  locations,
+  categories,
+  subcategories,
+  grades,
   type InsertVendor,
   type InsertBrand,
   type InsertProduct,
@@ -431,5 +435,165 @@ export async function seedInventoryData() {
   }
   
   console.log("Inventory seed data created successfully");
+}
+
+
+
+// ============================================================================
+// SETTINGS MANAGEMENT FUNCTIONS
+// ============================================================================
+
+// Locations
+export async function getAllLocations() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.select().from(locations).orderBy(locations.site);
+}
+
+export async function createLocation(data: {
+  site: string;
+  zone?: string;
+  rack?: string;
+  shelf?: string;
+  bin?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(locations).values(data);
+  return { success: true };
+}
+
+export async function updateLocation(data: {
+  id: number;
+  site: string;
+  zone?: string;
+  rack?: string;
+  shelf?: string;
+  bin?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { id, ...updateData } = data;
+  await db.update(locations).set(updateData).where(eq(locations.id, id));
+  return { success: true };
+}
+
+export async function deleteLocation(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(locations).where(eq(locations.id, id));
+  return { success: true };
+}
+
+// Categories
+export async function getAllCategoriesWithSubcategories() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const categoriesData = await db.select().from(categories).orderBy(categories.name);
+  const subcategoriesData = await db.select().from(subcategories);
+  
+  return categoriesData.map(category => ({
+    ...category,
+    subcategories: subcategoriesData.filter(sub => sub.categoryId === category.id),
+  }));
+}
+
+export async function createCategory(name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(categories).values({ name });
+  return { success: true };
+}
+
+export async function updateCategory(id: number, name: string, updateProducts: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(categories).set({ name }).where(eq(categories.id, id));
+  
+  if (updateProducts) {
+    // Update all products using this category
+    await db.update(products).set({ category: name }).where(eq(products.category, name));
+  }
+  
+  return { success: true };
+}
+
+export async function deleteCategory(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Delete associated subcategories first
+  await db.delete(subcategories).where(eq(subcategories.categoryId, id));
+  await db.delete(categories).where(eq(categories.id, id));
+  return { success: true };
+}
+
+// Subcategories
+export async function createSubcategory(categoryId: number, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(subcategories).values({ categoryId, name });
+  return { success: true };
+}
+
+export async function updateSubcategory(id: number, name: string, updateProducts: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const oldSubcategory = await db.select().from(subcategories).where(eq(subcategories.id, id)).limit(1);
+  
+  await db.update(subcategories).set({ name }).where(eq(subcategories.id, id));
+  
+  if (updateProducts && oldSubcategory.length > 0) {
+    // Update all products using this subcategory
+    await db.update(products)
+      .set({ subcategory: name })
+      .where(eq(products.subcategory, oldSubcategory[0].name));
+  }
+  
+  return { success: true };
+}
+
+export async function deleteSubcategory(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(subcategories).where(eq(subcategories.id, id));
+  return { success: true };
+}
+
+// Grades
+export async function getAllGrades() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.select().from(grades).orderBy(grades.name);
+}
+
+export async function createGrade(name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(grades).values({ name });
+  return { success: true };
+}
+
+export async function updateGrade(id: number, name: string, updateProducts: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const oldGrade = await db.select().from(grades).where(eq(grades.id, id)).limit(1);
+  
+  await db.update(grades).set({ name }).where(eq(grades.id, id));
+  
+  if (updateProducts && oldGrade.length > 0) {
+    // Update all batches using this grade
+    await db.update(batches)
+      .set({ grade: name })
+      .where(eq(batches.grade, oldGrade[0].name));
+  }
+  
+  return { success: true };
+}
+
+export async function deleteGrade(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(grades).where(eq(grades.id, id));
+  return { success: true };
 }
 

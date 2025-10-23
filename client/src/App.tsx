@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Inventory from "@/pages/Inventory";
 import { AppShell } from "./components/layout/AppShell";
 import Quotes from "./pages/Quotes";
+import Settings from "@/pages/Settings";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -17,6 +18,7 @@ function Router() {
         <Route path={"/"} component={Home} />
         <Route path={"/quotes"} component={Quotes} />
         <Route path={"/inventory"} component={Inventory} />
+        <Route path={"/settings"} component={Settings} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
