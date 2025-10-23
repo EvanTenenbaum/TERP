@@ -1,7 +1,8 @@
+import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 import { api } from '@/lib/api';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 const Input = z.object({
   vendorId: z.string().uuid(),
@@ -13,7 +14,7 @@ const Input = z.object({
 });
 
 export const POST = api(Input, async ({ vendorId, poId, productId, lotId, quantity, reason }) => {
-  const ret = await prisma.$transaction(async (tx) => {
+  const ret = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const created = await tx.vendorReturn.create({ data: { vendorId, poId: poId ?? null, productId, lotId: lotId ?? null, quantity, reason: reason ?? null } });
     // Decrease inventory
     if (lotId) {

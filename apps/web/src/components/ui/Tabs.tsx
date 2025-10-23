@@ -99,7 +99,7 @@ export const Tabs: React.FC<TabsProps> = ({
           e.preventDefault();
           for (let i = 1; i <= tabs.length; i++) {
             const candidate = (idx + i) % tabs.length;
-            if (!tabs[candidate].disabled) {
+            if (tabs[candidate] && !tabs[candidate].disabled) {
               nextIdx = candidate;
               break;
             }
@@ -111,7 +111,7 @@ export const Tabs: React.FC<TabsProps> = ({
           e.preventDefault();
           for (let i = 1; i <= tabs.length; i++) {
             const candidate = (idx - i + tabs.length) % tabs.length;
-            if (!tabs[candidate].disabled) {
+            if (tabs[candidate] && !tabs[candidate].disabled) {
               nextIdx = candidate;
               break;
             }
@@ -126,7 +126,7 @@ export const Tabs: React.FC<TabsProps> = ({
         case 'End': {
           e.preventDefault();
           for (let i = tabs.length - 1; i >= 0; i--) {
-            if (!tabs[i].disabled) {
+            if (tabs[i] && !tabs[i]!.disabled) {
               nextIdx = i;
               break;
             }
@@ -136,8 +136,8 @@ export const Tabs: React.FC<TabsProps> = ({
         default:
           return;
       }
-      if (nextIdx !== idx) {
-        changeActive(tabs[nextIdx].id);
+      if (nextIdx !== idx && tabs[nextIdx]) {
+        changeActive(tabs[nextIdx]!.id);
         tabsRef.current[nextIdx]?.focus();
       }
     },

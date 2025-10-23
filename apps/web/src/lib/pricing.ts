@@ -1,4 +1,4 @@
-import { prisma } from './prisma';
+import prisma from './prisma';
 import { UserRole } from './auth';
 
 interface PricingInput {
@@ -35,7 +35,7 @@ export async function getEffectiveUnitPrice(input: PricingInput): Promise<number
   // 1. Customer-specific
   if (clientId) {
     const customerEntry = entries.find(
-      (e) => e.scope === 'CUSTOMER' && e.customerId === clientId
+      (e: any) => e.scope === 'CUSTOMER' && e.customerId === clientId
     );
     if (customerEntry) {
       price = customerEntry.unitPriceCents;
@@ -44,7 +44,7 @@ export async function getEffectiveUnitPrice(input: PricingInput): Promise<number
 
   // 2. Global
   if (price === null) {
-    const globalEntry = entries.find((e) => e.scope === 'GLOBAL');
+    const globalEntry = entries.find((e: any) => e.scope === 'GLOBAL');
     if (globalEntry) {
       price = globalEntry.unitPriceCents;
     }
@@ -58,7 +58,7 @@ export async function getEffectiveUnitPrice(input: PricingInput): Promise<number
     price = product.defaultUnitPriceCents;
   }
 
-  return price;
+  return price ?? 0;
 }
 
 /**

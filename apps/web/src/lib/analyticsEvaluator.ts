@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 export async function evaluateSpec(spec: any) {
   const entity = spec?.query?.entity;
@@ -8,7 +8,7 @@ export async function evaluateSpec(spec: any) {
   if (entity === 'Invoice') {
     if (agg === 'sum' && field === 'balanceCents') {
       const rows = await prisma.invoice.findMany({ select: { balanceCents: true } });
-      return { kpi: rows.reduce((a, r:any)=> a + (r.balanceCents||0), 0) };
+      return { kpi: rows.reduce((a: number, r: any)=> a + (r.balanceCents||0), 0) };
     }
     if (agg === 'count') {
       const c = await prisma.invoice.count();
@@ -35,7 +35,7 @@ export async function evaluateSpec(spec: any) {
   if (entity === 'APInvoice') {
     if (agg === 'sum' && field === 'balanceCents') {
       const rows = await prisma.vendorInvoice.findMany({ select: { balanceCents: true } });
-      return { kpi: rows.reduce((a, r:any)=> a + (r.balanceCents||0), 0) };
+      return { kpi: rows.reduce((a: number, r: any)=> a + (r.balanceCents||0), 0) };
     }
   }
 

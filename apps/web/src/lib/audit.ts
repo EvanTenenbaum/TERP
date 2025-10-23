@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { headers } from 'next/headers';
 
 export async function logAudit(action: string, entity?: string, entityId?: string, metadata?: any) {

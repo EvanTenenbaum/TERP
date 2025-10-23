@@ -1,4 +1,5 @@
-import { prisma } from '../prisma';
+import type { Prisma } from '@prisma/client';
+import prisma from '../prisma';
 import { ERPError } from '../errors';
 import { getCurrentUserId } from '../auth';
 
@@ -24,7 +25,7 @@ export async function applyPaymentFIFO(input: ApplyPaymentInput): Promise<ApplyP
   const { paymentId, customerId } = input;
   const userId = getCurrentUserId();
 
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Fetch payment
     const payment = await tx.payment.findUnique({
       where: { id: paymentId },
@@ -43,7 +44,7 @@ export async function applyPaymentFIFO(input: ApplyPaymentInput): Promise<ApplyP
       where: { paymentId },
     });
 
-    const totalApplied = applications.reduce((sum, app) => sum + app.amountCents, 0);
+    const totalApplied = applications.reduce((sum: number, app: any) => sum + app.amountCents, 0);
     let remainingBalance = payment.amountCents - totalApplied;
 
     if (remainingBalance <= 0) {
@@ -73,7 +74,7 @@ export async function applyPaymentFIFO(input: ApplyPaymentInput): Promise<ApplyP
 
       // Calculate invoice balance
       const invoiceApplied = invoice.paymentApplications.reduce(
-        (sum, app) => sum + app.amountCents,
+        (sum: number, app: any) => sum + app.amountCents,
         0
       );
       const invoiceBalance = invoice.totalCents - invoiceApplied;

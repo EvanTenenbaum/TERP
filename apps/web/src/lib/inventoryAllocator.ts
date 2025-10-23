@@ -1,4 +1,5 @@
-import { prisma } from './prisma';
+import type { Prisma } from '@prisma/client';
+import prisma from './prisma';
 import { ERPError } from './errors';
 import { getCurrentUserId } from './auth';
 
@@ -27,7 +28,7 @@ export async function allocateFIFO(input: AllocateInput): Promise<AllocateResult
   const userId = getCurrentUserId();
 
   return await prisma.$transaction(
-    async (tx) => {
+    async (tx: Prisma.TransactionClient) => {
       // Fetch available lots (FIFO order - oldest first)
       const lots = await tx.inventoryLot.findMany({
         where: {

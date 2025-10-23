@@ -17,12 +17,12 @@ export default function VisualModePage() {
   ];
 
   const onTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
+    setTouchStart(e.targetTouches[0]!.clientX);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
     if (touchStart !== null) {
-      setSwipeOffset(e.targetTouches[0].clientX - touchStart);
+      setSwipeOffset(e.targetTouches[0]!.clientX - touchStart);
     }
   };
 
@@ -37,6 +37,8 @@ export default function VisualModePage() {
   };
 
   const currentCard = cards[currentIndex];
+
+  if (!currentCard) return <div>Loading...</div>;
 
   return (
     <div className="min-h-screen bg-c-bg flex flex-col p-4">

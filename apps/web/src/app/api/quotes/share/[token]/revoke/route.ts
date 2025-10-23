@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 
 export async function POST(_: Request, { params }: { params: { token: string } }) {

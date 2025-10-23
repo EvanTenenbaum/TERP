@@ -1,14 +1,15 @@
+import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 import { api } from '@/lib/api';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { ERPError } from '@/lib/errors';
 import { logAudit } from '@/lib/audit';
 import { startSpan } from '@/lib/observability';
 
 export const POST = api(z.object({ id: z.string().uuid() }), async ({ id }) => {
   return startSpan('order.ship', async () => {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const order = await tx.order.findUnique({ where: { id } });
       if (!order) throw new ERPError('NOT_FOUND', 'order_not_found');
       if ((order as any).status === 'SHIPPED') throw new ERPError('CONFLICT', 'already_shipped');
