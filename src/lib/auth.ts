@@ -4,6 +4,10 @@ import { ERPError } from '@/lib/errors';
 export type UserRole = 'SUPER_ADMIN' | 'SALES' | 'ACCOUNTING' | 'READ_ONLY';
 
 export function getCurrentUserId(): string {
+  // Allow dev bypass
+  if (process.env.REQUIRE_AUTH === 'false' || process.env.ALLOW_DEV_BYPASS === 'true') {
+    return 'dev-user-id';
+  }
   const h = headers();
   const uid = h.get('x-user-id');
   if (!uid) throw new ERPError('FORBIDDEN', 'auth_required');
@@ -11,6 +15,10 @@ export function getCurrentUserId(): string {
 }
 
 export function getCurrentRole(): UserRole {
+  // Allow dev bypass
+  if (process.env.REQUIRE_AUTH === 'false' || process.env.ALLOW_DEV_BYPASS === 'true') {
+    return 'SUPER_ADMIN';
+  }
   const h = headers();
   const role = h.get('x-user-role');
   if (!role) throw new ERPError('FORBIDDEN', 'role_required');

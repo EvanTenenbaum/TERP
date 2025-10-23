@@ -31,7 +31,8 @@ export default function QuotesPage() {
       const res = await fetch('/api/quotes');
       if (!res.ok) throw new Error('Failed to fetch quotes');
       const data = await res.json();
-      setQuotes(data);
+      // API returns { quotes: [], pagination: {} }
+      setQuotes(data.quotes || data);
     } catch (err: any) {
       setError(err.message);
     } finally {

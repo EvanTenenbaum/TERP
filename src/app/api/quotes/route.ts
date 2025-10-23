@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUserId } from '@/lib/auth';
+import { mockQuotes } from '@/lib/mockData';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,6 +73,21 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching quotes:', error);
+    
+    // Fallback to mock data if database is unavailable
+    if (error instanceof Error && (error.message.includes('database server') || error.message.includes('ECONNREFUSED'))) {
+      console.log('Database unavailable, using mock data');
+      return NextResponse.json({
+        quotes: mockQuotes,
+        pagination: {
+          total: mockQuotes.length,
+          limit: 50,
+          offset: 0,
+          hasMore: false,
+        },
+      });
+    }
+    
     return NextResponse.json(
       { error: 'Failed to fetch quotes', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
