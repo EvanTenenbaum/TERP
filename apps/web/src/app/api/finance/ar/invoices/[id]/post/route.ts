@@ -1,6 +1,6 @@
 import { api } from '@/lib/api';
 export const dynamic = 'force-dynamic';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { postARInvoice } from '@/lib/posting';
 

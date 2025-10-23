@@ -1,7 +1,8 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { ERPError } from '@/lib/errors';
 import { getEffectiveUnitPrice } from '@/lib/pricing';
 import { UserRole } from '@/lib/auth';
+import type { Prisma } from '@prisma/client';
 
 interface ConvertInput {
   quoteId: string;
@@ -11,7 +12,7 @@ interface ConvertInput {
 export async function convertQuoteToOrder(input: ConvertInput) {
   const { quoteId, userRole } = input;
 
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Fetch quote with items
     const quote = await tx.quote.findUnique({
       where: { id: quoteId },

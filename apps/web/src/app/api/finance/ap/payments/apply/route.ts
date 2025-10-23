@@ -1,12 +1,13 @@
+import type { Prisma } from '@prisma/client';
 import { api } from '@/lib/api';
 export const dynamic = 'force-dynamic';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
 const Input = z.object({ paymentId: z.string().uuid(), vendorId: z.string().uuid() });
 
 export const POST = api(Input, async ({ paymentId, vendorId }) => {
-  const res = await prisma.$transaction(async (tx) => {
+  const res = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const pay = await tx.vendorPayment.findUniqueOrThrow({ where: { id: paymentId } });
     let remaining = (pay as any).remainingCents ?? (pay as any).amountCents;
     const invs = await tx.vendorInvoice.findMany({ where: { vendorId, balanceCents: { gt: 0 } }, orderBy: { dueAt: 'asc' } });

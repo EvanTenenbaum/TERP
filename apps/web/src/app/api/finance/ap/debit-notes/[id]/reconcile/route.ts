@@ -1,7 +1,7 @@
 import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 import { api } from '@/lib/api';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 const Input = z.object({ id: z.string().uuid(), amountCents: z.number().int().nonnegative() });
 

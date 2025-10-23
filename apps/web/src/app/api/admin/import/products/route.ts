@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
 export const dynamic = 'force-dynamic';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 const Input = z.object({
   csv: z.string().min(1), // raw CSV string
@@ -11,7 +11,7 @@ const Input = z.object({
 function parseCsv(text: string): any[] {
   const lines = text.split(/\r?\n/).filter(Boolean);
   if (!lines.length) return [];
-  const headers = lines[0].split(',').map(h => h.trim());
+  const headers = lines[0]!.split(',').map(h => h.trim());
   const rows = lines.slice(1).map(line => {
     const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
     const obj: any = {};

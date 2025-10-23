@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 async function getAccountIdByCode(code: string) {
   const a = await prisma.gLAccount.findFirst({ where: { code } as any });

@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
 export const dynamic = 'force-dynamic';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { getCurrentRole } from '@/lib/auth';
 
 export const GET = api(z.object({ entity: z.string().optional(), entityId: z.string().optional(), limit: z.number().int().max(500).optional() }), async ({ entity, entityId, limit }) => {

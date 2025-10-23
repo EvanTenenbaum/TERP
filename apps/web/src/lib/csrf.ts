@@ -47,7 +47,7 @@ export function validateCsrfToken(
     if (tokenUserId !== userId) return false;
     
     // Verify token hasn't expired
-    const tokenTime = parseInt(timestamp, 10);
+    const tokenTime = parseInt(timestamp!, 10);
     if (isNaN(tokenTime)) return false;
     if (Date.now() - tokenTime > maxAgeMs) return false;
     
@@ -58,7 +58,7 @@ export function validateCsrfToken(
     const expectedSignature = hmac.digest('hex');
     
     // Constant-time comparison to prevent timing attacks
-    if (signature.length !== expectedSignature.length) return false;
+    if (!signature || signature.length !== expectedSignature.length) return false;
     
     let mismatch = 0;
     for (let i = 0; i < signature.length; i++) {

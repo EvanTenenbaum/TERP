@@ -1,6 +1,6 @@
 import { api } from '@/lib/api';
 export const dynamic = 'force-dynamic';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
 function bucketName(days: number) {
@@ -18,7 +18,7 @@ export const GET = api(z.object({ asOf: z.string().optional() }), async ({ asOf 
     if (!inv.dueAt) continue;
     const days = Math.floor((asOfDate.getTime() - new Date(inv.dueAt as any).getTime()) / 86400000);
     const b = bucketName(days);
-    buckets[b] += inv.balanceCents as any as number;
+    buckets[b]! += inv.balanceCents as any as number;
   }
   const out = Object.entries(buckets).map(([bucket, amountCents]) => ({ bucket, amountCents }));
   return { buckets: out };

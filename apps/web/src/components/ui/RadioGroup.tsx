@@ -51,7 +51,7 @@ export function RadioGroup<T extends string | number>({
     if (nextIdx !== -1 && nextIdx !== currentIdx) {
       event.preventDefault();
       const nextOption = options[nextIdx];
-      if (!nextOption.disabled) {
+      if (nextOption && !nextOption.disabled) {
         onChange(nextOption.value);
         radioRefs.current[nextIdx]?.focus();
       }

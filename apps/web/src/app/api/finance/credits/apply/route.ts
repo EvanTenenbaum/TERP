@@ -1,13 +1,14 @@
+import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 import { api } from '@/lib/api';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 
 const Input = z.object({ creditId: z.string().uuid(), invoiceId: z.string().uuid(), amountCents: z.number().int().positive() });
 
 export const POST = api(Input, async ({ creditId, invoiceId, amountCents }) => {
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const credit = await tx.customerCredit.findUniqueOrThrow({ where: { id: creditId } });
     if ((credit as any).remainingCents !== undefined && (credit as any).remainingCents < amountCents) {
       throw new Error('insufficient_credit');
