@@ -25,11 +25,13 @@ import {
 import { useDebounce } from "@/hooks/useDebounce";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { BatchDetailDrawer } from "@/components/inventory/BatchDetailDrawer";
+import { EditBatchModal } from "@/components/inventory/EditBatchModal";
 
 export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [editingBatch, setEditingBatch] = useState<number | null>(null);
 
   // Debounce search query (150ms as per spec)
   const debouncedSearch = useDebounce(searchQuery, 150);
@@ -311,6 +313,19 @@ export default function Inventory() {
         open={selectedBatch !== null}
         onClose={() => setSelectedBatch(null)}
       />
+
+      {/* Edit Batch Modal */}
+      {editingBatch && (
+        <EditBatchModal
+          batchId={editingBatch}
+          open={editingBatch !== null}
+          onClose={() => setEditingBatch(null)}
+          onSuccess={() => {
+            setEditingBatch(null);
+            // Refresh will happen automatically via tRPC cache invalidation
+          }}
+        />
+      )}
     </div>
   );
 }
