@@ -457,6 +457,49 @@ export const appRouter = router({
         return await inventoryDb.createStrain(input);
       }),
   }),
+
+  // COGS Management Router
+  cogs: router({
+    // Calculate COGS impact
+    calculateImpact: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        newCogs: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const { calculateCogsImpact } = await import("./cogsManagement");
+        return await calculateCogsImpact(input.batchId, input.newCogs);
+      }),
+    
+    // Update batch COGS
+    updateBatchCogs: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        newCogs: z.string(),
+        applyTo: z.enum(["PAST_SALES", "FUTURE_SALES", "BOTH"]),
+        reason: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { updateBatchCogs } = await import("./cogsManagement");
+        const userId = ctx.user?.id || 0;
+        return await updateBatchCogs(
+          input.batchId,
+          input.newCogs,
+          input.applyTo,
+          input.reason,
+          userId
+        );
+      }),
+    
+    // Get COGS history
+    getHistory: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .query(async ({ input }) => {
+        const { getCogHistory } = await import("./cogsManagement");
+        return await getCogHistory(input.batchId);
+      }),
+  }),
 });
+
 
 export type AppRouter = typeof appRouter;

@@ -435,3 +435,6 @@ export const grades = mysqlTable("grades", {
 export type Grade = typeof grades.$inferSelect;
 export type InsertGrade = typeof grades.$inferInsert;
 
+
+
+

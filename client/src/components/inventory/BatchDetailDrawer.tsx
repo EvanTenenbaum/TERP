@@ -30,6 +30,8 @@ import {
   History,
 } from "lucide-react";
 import { format } from "date-fns";
+import { CogsEditModal } from "./CogsEditModal";
+import { useState } from "react";
 
 interface BatchDetailDrawerProps {
   batchId: number | null;
@@ -38,7 +40,9 @@ interface BatchDetailDrawerProps {
 }
 
 export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerProps) {
-  const { data, isLoading } = trpc.inventory.getById.useQuery(batchId!, {
+  const [showCogsEdit, setShowCogsEdit] = useState(false);
+  
+  const { data, isLoading, refetch } = trpc.inventory.getById.useQuery(batchId!, {
     enabled: !!batchId && open,
   });
 
@@ -156,9 +160,18 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
 
             {/* COGS Details */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                <h3 className="font-semibold text-lg">Cost Details</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  <h3 className="font-semibold text-lg">Cost Details</h3>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowCogsEdit(true)}
+                >
+                  Edit COGS
+                </Button>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -193,6 +206,47 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                   <p className="font-medium">{batch.paymentTerms.replace(/_/g, " ")}</p>
                 </div>
               </div>
+            </div>
+
+            <Separator />
+
+            {/* Payment History */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                <h3 className="font-semibold text-lg">Payment History</h3>
+              </div>
+              <Card className="p-4">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Payment Terms:</span>
+                    <span className="font-medium">{batch.paymentTerms.replace(/_/g, " ")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Payment Status:</span>
+                    <Badge variant="secondary">Pending</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Payment tracking coming soon
+                  </p>
+                </div>
+              </Card>
+            </div>
+
+            <Separator />
+
+            {/* Sales History */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                <h3 className="font-semibold text-lg">Sales History</h3>
+              </div>
+              <Card className="p-4">
+                <div className="text-center text-sm text-muted-foreground">
+                  <p>No sales recorded</p>
+                  <p className="text-xs mt-1">Sales tracking coming soon</p>
+                </div>
+              </Card>
             </div>
 
             <Separator />
@@ -274,6 +328,21 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
           </div>
         )}
       </SheetContent>
+      
+      {/* COGS Edit Modal */}
+      {batch && (
+        <CogsEditModal
+          isOpen={showCogsEdit}
+          onClose={() => setShowCogsEdit(false)}
+          batchId={batch.id}
+          currentCogs={batch.unitCogs || "0"}
+          batchCode={batch.code}
+          onSuccess={() => {
+            refetch();
+            setShowCogsEdit(false);
+          }}
+        />
+      )}
     </Sheet>
   );
 }
