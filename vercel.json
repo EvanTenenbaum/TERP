@@ -1,7 +1,7 @@
 {
-  "buildCommand": "cd apps/web && pnpm run build",
+  "buildCommand": "cd apps/web && npx prisma generate --schema=../../packages/db/prisma/schema.prisma && cp -r ../../packages/db/node_modules/.prisma node_modules/ && npm run build",
   "outputDirectory": "apps/web/.next",
-  "installCommand": "pnpm install --frozen-lockfile",
+  "installCommand": "cd apps/web && npm install",
   "framework": null
 }
 
