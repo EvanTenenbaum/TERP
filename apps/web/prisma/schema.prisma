@@ -1,0 +1,454 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE ENTITIES
+// ============================================================================
+
+model Vendor {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorCode  String   @unique
+  companyName String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Customer {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code      String   @unique
+  name      String
+  termsDays Int      @default(30)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  priceBookEntries PriceBookEntry[]
+  quotes           Quote[]
+  orders           Order[]
+  invoices         Invoice[]
+  payments         Payment[]
+  returns          CustomerReturn[]
+}
+
+enum ABCClass {
+  A
+  B
+  C
+}
+
+model Product {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sku                   String    @unique
+  name                  String
+  defaultUnitPriceCents Int       @default(0)
+  abcClass              ABCClass?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  priceBookEntries   PriceBookEntry[]
+  inventoryLots      InventoryLot[]
+  quoteItems         QuoteItem[]
+  orderItems         OrderItem[]
+  replenishmentRules ReplenishmentRule[]
+  cycleCountTasks    CycleCountTask[]
+  adjustments        InventoryAdjustment[]
+  transfers          InventoryTransfer[]
+  customerReturns    CustomerReturn[]
+  vendorReturns      VendorReturn[]
+}
+
+model PriceBookEntry {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId      String   @db.Uuid
+  scope          String // GLOBAL, CUSTOMER, REGION, ROLE
+  customerId     String?  @db.Uuid
+  role           String? // For ROLE scope pricing
+  unitPriceCents Int
+  createdAt      DateTime @default(now())
+
+  product  Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([productId, scope])
+}
+
+// ============================================================================
+// INVENTORY
+// ============================================================================
+
+model InventoryLot {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId      String   @db.Uuid
+  onHandQty      Int      @default(0)
+  allocatedQty   Int      @default(0)
+  availableQty   Int      @default(0)
+  batchCreatedAt DateTime
+  createdAt      DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model CycleCountPlan {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  abcClass  String?
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  tasks CycleCountTask[]
+}
+
+model CycleCountTask {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  planId      String   @db.Uuid
+  productId   String   @db.Uuid
+  lotId       String?  @db.Uuid
+  expectedQty Int
+  countedQty  Int?
+  status      String   @default("OPEN") // OPEN, SUBMITTED, APPLIED
+  createdAt   DateTime @default(now())
+
+  plan    CycleCountPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id])
+
+  @@index([planId])
+}
+
+model InventoryAdjustment {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId     String   @db.Uuid
+  lotId         String?  @db.Uuid
+  quantityDelta Int
+  reason        String
+  createdAt     DateTime @default(now())
+  createdBy     String?
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model InventoryTransfer {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @db.Uuid
+  fromLotId String   @db.Uuid
+  toLotId   String   @db.Uuid
+  quantity  Int
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model CustomerReturn {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId String   @db.Uuid
+  orderId    String?  @db.Uuid
+  productId  String   @db.Uuid
+  lotId      String?  @db.Uuid
+  quantity   Int
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+}
+
+model VendorReturn {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId  String   @db.Uuid
+  poId      String?  @db.Uuid
+  productId String   @db.Uuid
+  lotId     String?  @db.Uuid
+  quantity  Int
+  reason    String?
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model ReplenishmentRule {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @db.Uuid
+  minQty    Int
+  targetQty Int
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+}
+
+// ============================================================================
+// SALES & ORDERS
+// ============================================================================
+
+model Quote {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId String   @db.Uuid
+  status     String   @default("OPEN") // OPEN, CONVERTED, EXPIRED
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  customer Customer    @relation(fields: [customerId], references: [id])
+  items    QuoteItem[]
+}
+
+model QuoteItem {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteId   String @db.Uuid
+  productId String @db.Uuid
+  quantity  Int
+
+  quote   Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId String    @db.Uuid
+  status     String    @default("PENDING") // PENDING, ALLOCATED, SHIPPED, CANCELLED
+  shippedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  customer Customer    @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  invoices Invoice[]
+
+  @@index([customerId, status])
+}
+
+model OrderItem {
+  id             String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId        String @db.Uuid
+  productId      String @db.Uuid
+  quantity       Int
+  unitPriceCents Int
+  cogsCents      Int    @default(0)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+// ============================================================================
+// FINANCE
+// ============================================================================
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  ACH
+  WIRE
+  CREDIT_CARD
+}
+
+model Invoice {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId   String   @db.Uuid
+  orderId      String?  @db.Uuid
+  issuedAt     DateTime
+  dueAt        DateTime
+  totalCents   Int
+  balanceCents Int
+  status       String   @default("OPEN") // OPEN, PARTIAL, PAID
+  createdAt    DateTime @default(now())
+
+  customer            Customer             @relation(fields: [customerId], references: [id])
+  order               Order?               @relation(fields: [orderId], references: [id])
+  paymentApplications PaymentApplication[]
+
+  @@index([customerId, status])
+}
+
+model Payment {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId     String        @db.Uuid
+  method         PaymentMethod
+  reference      String?
+  amountCents    Int
+  remainingCents Int
+  status         String        @default("UNAPPLIED") // UNAPPLIED, PARTIAL, APPLIED
+  createdAt      DateTime      @default(now())
+
+  customer     Customer             @relation(fields: [customerId], references: [id])
+  applications PaymentApplication[]
+
+  @@index([customerId])
+  @@index([customerId, status])
+}
+
+model PaymentApplication {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId   String   @db.Uuid
+  invoiceId   String   @db.Uuid
+  amountCents Int
+  createdAt   DateTime @default(now())
+  createdBy   String?
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([invoiceId])
+}
+
+// ============================================================================
+// ATTACHMENTS
+// ============================================================================
+
+model Attachment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entity      String?
+  entityId    String?
+  key         String
+  name        String
+  contentType String?
+  size        Int?
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  createdBy   String?
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model QuoteShareToken {
+  id        String    @id @default(uuid())
+  quoteId   String
+  token     String    @unique
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+}
+
+model VendorDebitNote {
+  id             String   @id @default(uuid())
+  vendorId       String
+  vendorReturnId String
+  amountCents    Int      @default(0)
+  status         String   @default("OPEN")
+  createdAt      DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  actorRole String?
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model VendorInvoice {
+  id            String    @id @default(uuid())
+  vendorId      String
+  invoiceNumber String
+  issuedAt      DateTime  @default(now())
+  dueAt         DateTime?
+  totalCents    Int       @default(0)
+  balanceCents  Int       @default(0)
+  status        String    @default("OPEN")
+}
+
+model VendorPayment {
+  id             String   @id @default(uuid())
+  vendorId       String
+  method         String
+  reference      String?
+  amountCents    Int
+  remainingCents Int
+  createdAt      DateTime @default(now())
+}
+
+model GLAccount {
+  id   String @id @default(uuid())
+  code String @unique
+  name String
+}
+
+model GLJournal {
+  id    String          @id @default(uuid())
+  date  DateTime        @default(now())
+  memo  String?
+  lines GLJournalLine[]
+}
+
+model GLJournalLine {
+  id          String    @id @default(uuid())
+  journalId   String
+  journal     GLJournal @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  accountId   String
+  debitCents  Int       @default(0)
+  creditCents Int       @default(0)
+  entity      String?
+  entityId    String?
+}
+
+model Report {
+  id        String           @id @default(uuid())
+  name      String
+  spec      Json
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @default(now())
+  snapshots ReportSnapshot[]
+}
+
+model ReportSnapshot {
+  id         String   @id @default(uuid())
+  reportId   String
+  report     Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  capturedAt DateTime @default(now())
+  data       Json
+}
+
+model Dashboard {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  widgets     DashboardWidget[]
+}
+
+model DashboardWidget {
+  id          String    @id @default(uuid())
+  dashboardId String
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  title       String
+  reportId    String?
+  viz         String    @default("auto")
+  position    Json      @default("{}")
+}
+
+model Reservation {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  lotId     String?
+  quantity  Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model CustomerCredit {
+  id             String   @id @default(uuid())
+  customerId     String
+  amountCents    Int
+  remainingCents Int
+  reason         String?
+  createdAt      DateTime @default(now())
+}
+// Note: Composite indexes added for performance
+// Invoice already has @@index([customerId, status])
+// Payment needs composite index
+// Order needs composite index
