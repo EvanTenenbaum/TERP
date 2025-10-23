@@ -1,0 +1,50 @@
+{
+  "name": "ERPv3 - Enterprise Resource Planning",
+  "short_name": "ERPv3",
+  "description": "Production-ready enterprise resource planning system with inventory, sales, and finance management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0066FF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity", "finance"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Sales & Quotes",
+      "short_name": "Sales",
+      "description": "Manage quotes and sales pipeline",
+      "url": "/quotes",
+      "icons": []
+    },
+    {
+      "name": "Inventory",
+      "short_name": "Inventory",
+      "description": "Manage stock and inventory",
+      "url": "/inventory/cycle-count",
+      "icons": []
+    },
+    {
+      "name": "Finance",
+      "short_name": "Finance",
+      "description": "Financial reports and payments",
+      "url": "/finance/dashboard",
+      "icons": []
+    }
+  ]
+}
+
