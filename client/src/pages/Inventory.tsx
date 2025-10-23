@@ -111,21 +111,21 @@ export default function Inventory() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Inventory</h1>
           <p className="text-muted-foreground mt-1">
             Manage batches, track stock levels, and control product lifecycle
           </p>
         </div>
-        <Button onClick={() => setShowIntakeModal(true)}>
+        <Button onClick={() => setShowIntakeModal(true)} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           New Intake
         </Button>
       </div>
 
       {/* Open Tasks Bar */}
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <Card className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
           <div className="flex items-center justify-between">
             <div>
@@ -191,7 +191,7 @@ export default function Inventory() {
       </div>
 
       {/* Inventory Table */}
-      <Card>
+      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>

@@ -145,7 +145,7 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle>New Inventory Intake</DialogTitle>
           <DialogDescription>
@@ -155,7 +155,7 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Vendor & Brand */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="vendorName">Vendor Name *</Label>
               <Input
@@ -191,7 +191,7 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
               <Select
@@ -304,7 +304,7 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
             )}
 
             {formData.cogsMode === "RANGE" && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="unitCogsMin">Unit COGS Min *</Label>
                   <Input
@@ -357,7 +357,7 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
           {/* Location */}
           <div className="space-y-4">
             <h3 className="font-semibold">Storage Location</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="siteCode">Site Code *</Label>
                 <Input
@@ -381,7 +381,7 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="locationZone">Zone</Label>
                 <Input
