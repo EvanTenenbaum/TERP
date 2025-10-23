@@ -259,7 +259,7 @@ export async function searchBatches(query: string, limit: number = 100) {
   const db = await getDb();
   if (!db) return [];
   
-  // Search by SKU, batch code, or product name
+  // Multi-field search: SKU, batch code, product name, vendor, brand, category, grade
   return await db
     .select({
       batch: batches,
@@ -274,7 +274,14 @@ export async function searchBatches(query: string, limit: number = 100) {
     .leftJoin(lots, eq(batches.lotId, lots.id))
     .leftJoin(vendors, eq(lots.vendorId, vendors.id))
     .where(
-      sql`${batches.sku} LIKE ${`%${query}%`} OR ${batches.code} LIKE ${`%${query}%`} OR ${products.nameCanonical} LIKE ${`%${query}%`}`
+      sql`${batches.sku} LIKE ${`%${query}%`} 
+          OR ${batches.code} LIKE ${`%${query}%`} 
+          OR ${products.nameCanonical} LIKE ${`%${query}%`}
+          OR ${vendors.name} LIKE ${`%${query}%`}
+          OR ${brands.name} LIKE ${`%${query}%`}
+          OR ${products.category} LIKE ${`%${query}%`}
+          OR ${products.subcategory} LIKE ${`%${query}%`}
+          OR ${batches.grade} LIKE ${`%${query}%`}`
     )
     .orderBy(desc(batches.createdAt))
     .limit(limit);

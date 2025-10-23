@@ -29,13 +29,24 @@ import { BatchDetailDrawer } from "@/components/inventory/BatchDetailDrawer";
 import { EditBatchModal } from "@/components/inventory/EditBatchModal";
 import { DashboardStats } from "@/components/inventory/DashboardStats";
 import { StockLevelChart } from "@/components/inventory/StockLevelChart";
+import { SearchHighlight } from "@/components/inventory/SearchHighlight";
+import { AdvancedFilters } from "@/components/inventory/AdvancedFilters";
+import { FilterChips } from "@/components/inventory/FilterChips";
+import { useInventoryFilters } from "@/hooks/useInventoryFilters";
+import { useInventorySort } from "@/hooks/useInventorySort";
+import { SortControls } from "@/components/inventory/SortControls";
 
 export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  
+  // Advanced filtering
+  const { filters, updateFilter, clearAllFilters, hasActiveFilters, activeFilterCount } = useInventoryFilters();
+  
+  // Sorting
+  const { sortState, toggleSort, sortData } = useInventorySort();
 
   // Debounce search query (150ms as per spec)
   const debouncedSearch = useDebounce(searchQuery, 150);
@@ -49,26 +60,77 @@ export default function Inventory() {
   // Fetch dashboard statistics
   const { data: dashboardStats } = trpc.inventory.dashboardStats.useQuery();
 
-  // Filter inventory by status if filter is active
-  const filteredInventory = useMemo(() => {
+  // Apply advanced filters and sorting to inventory
+  const filteredAndSortedInventory = useMemo(() => {
     if (!inventoryData) return [];
-    if (!statusFilter) return inventoryData;
     
-    // Special handling for LOW_STOCK filter (not a status)
-    if (statusFilter === "LOW_STOCK") {
-      return inventoryData.filter((item) => {
-        if (!item.batch) return false;
-        const onHand = parseFloat(item.batch.onHandQty);
-        const reserved = parseFloat(item.batch.reservedQty);
-        const quarantine = parseFloat(item.batch.quarantineQty);
-        const hold = parseFloat(item.batch.holdQty);
+    const filtered = inventoryData.filter((item) => {
+      const batch = item.batch;
+      const product = item.product;
+      const brand = item.brand;
+      const vendor = item.vendor;
+      
+      if (!batch) return false;
+      
+      // Status filter
+      if (filters.status.length > 0 && !filters.status.includes(batch.status)) {
+        return false;
+      }
+      
+      // Category filter
+      if (filters.category && product?.category !== filters.category) {
+        return false;
+      }
+      
+      // Subcategory filter
+      if (filters.subcategory && product?.subcategory !== filters.subcategory) {
+        return false;
+      }
+      
+      // Vendor filter
+      if (filters.vendor.length > 0 && !filters.vendor.includes(vendor?.name || "")) {
+        return false;
+      }
+      
+      // Brand filter
+      if (filters.brand.length > 0 && !filters.brand.includes(brand?.name || "")) {
+        return false;
+      }
+      
+      // Grade filter
+      if (filters.grade.length > 0 && !filters.grade.includes(batch.grade || "")) {
+        return false;
+      }
+      
+      // Stock level filter
+      if (filters.stockLevel !== "all") {
+        const onHand = parseFloat(batch.onHandQty);
+        const reserved = parseFloat(batch.reservedQty);
+        const quarantine = parseFloat(batch.quarantineQty);
+        const hold = parseFloat(batch.holdQty);
         const available = onHand - reserved - quarantine - hold;
-        return available <= 100; // Low stock threshold
-      });
-    }
+        
+        if (filters.stockLevel === "in_stock" && available <= 0) return false;
+        if (filters.stockLevel === "low_stock" && available > 100) return false;
+        if (filters.stockLevel === "out_of_stock" && available > 0) return false;
+      }
+      
+      // COGS range filter
+      if (filters.cogsRange.min !== null || filters.cogsRange.max !== null) {
+        const cogs = batch.unitCogs ? parseFloat(batch.unitCogs) : 0;
+        if (filters.cogsRange.min !== null && cogs < filters.cogsRange.min) return false;
+        if (filters.cogsRange.max !== null && cogs > filters.cogsRange.max) return false;
+      }
+      
+      return true;
+    });
     
-    return inventoryData.filter((item) => item.batch?.status === statusFilter);
-  }, [inventoryData, statusFilter]);
+    // Apply sorting
+    return sortData(filtered);
+  }, [inventoryData, filters, sortData]);
+  
+  // Alias for backward compatibility
+  const filteredInventory = filteredAndSortedInventory;
 
   // Calculate open tasks counters
   const openTasks = useMemo(() => {
@@ -160,8 +222,14 @@ export default function Inventory() {
           totalUnits={dashboardStats.totalUnits}
           awaitingIntakeCount={dashboardStats.statusCounts.AWAITING_INTAKE}
           lowStockCount={openTasks.lowStock}
-          onFilterChange={setStatusFilter}
-          activeFilter={statusFilter}
+          onFilterChange={(status) => {
+            if (status) {
+              updateFilter("status", [status]);
+            } else {
+              updateFilter("status", []);
+            }
+          }}
+          activeFilter={filters.status[0] || null}
         />
       )}
 
@@ -192,37 +260,54 @@ export default function Inventory() {
             className="pl-10"
           />
         </div>
-        {statusFilter && (
+        {hasActiveFilters && (
           <Button
             variant="outline"
-            onClick={() => setStatusFilter(null)}
+            onClick={clearAllFilters}
             className="whitespace-nowrap"
           >
-            Clear Filter
+            Clear All Filters ({activeFilterCount})
           </Button>
         )}
       </div>
 
-      {/* Active Filter Indicator */}
-      {statusFilter && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-blue-600" />
-              <p className="text-sm font-medium text-blue-900">
-                Showing {filteredInventory.length} {statusFilter === "AWAITING_INTAKE" ? "batches awaiting intake" : statusFilter === "LOW_STOCK" ? "low stock items" : `${statusFilter.toLowerCase().replace("_", " ")} batches`}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setStatusFilter(null)}
-              className="text-blue-600 hover:text-blue-700"
-            >
-              View All
-            </Button>
-          </div>
-        </div>
+      {/* Advanced Filters */}
+      <AdvancedFilters
+        filters={filters}
+        onUpdateFilter={updateFilter}
+        vendors={Array.from(new Set(inventoryData?.map(i => i.vendor?.name).filter((v): v is string => Boolean(v)) || []))}
+        brands={Array.from(new Set(inventoryData?.map(i => i.brand?.name).filter((b): b is string => Boolean(b)) || []))}
+        categories={Array.from(new Set(inventoryData?.map(i => i.product?.category).filter((c): c is string => Boolean(c)) || []))}
+        grades={Array.from(new Set(inventoryData?.map(i => i.batch?.grade).filter((g): g is string => Boolean(g)) || []))}
+      />
+
+      {/* Active Filter Chips */}
+      {hasActiveFilters && (
+        <FilterChips
+          filters={filters}
+          onRemoveFilter={(key, value) => {
+            if (key === "status" && value) {
+              updateFilter("status", filters.status.filter(s => s !== value));
+            } else if (key === "vendor" && value) {
+              updateFilter("vendor", filters.vendor.filter(v => v !== value));
+            } else if (key === "brand" && value) {
+              updateFilter("brand", filters.brand.filter(b => b !== value));
+            } else if (key === "grade" && value) {
+              updateFilter("grade", filters.grade.filter(g => g !== value));
+            } else if (key === "paymentStatus" && value) {
+              updateFilter("paymentStatus", filters.paymentStatus.filter(p => p !== value));
+            } else {
+              // For non-array filters, just clear them
+              if (key === "category") updateFilter("category", null);
+              if (key === "subcategory") updateFilter("subcategory", null);
+              if (key === "location") updateFilter("location", null);
+              if (key === "stockLevel") updateFilter("stockLevel", "all");
+              if (key === "dateRange") updateFilter("dateRange", { from: null, to: null });
+              if (key === "cogsRange") updateFilter("cogsRange", { min: null, max: null });
+            }
+          }}
+          onClearAll={clearAllFilters}
+        />
       )}
 
       {/* Inventory Table */}
@@ -231,15 +316,99 @@ export default function Inventory() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>SKU</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Brand</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead>Grade</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">On Hand</TableHead>
-                <TableHead className="text-right">Reserved</TableHead>
-                <TableHead className="text-right">Available</TableHead>
+                <TableHead>
+                  <SortControls
+                    column="sku"
+                    currentColumn={sortState.column}
+                    direction={sortState.direction}
+                    onSort={toggleSort}
+                  >
+                    SKU
+                  </SortControls>
+                </TableHead>
+                <TableHead>
+                  <SortControls
+                    column="product"
+                    currentColumn={sortState.column}
+                    direction={sortState.direction}
+                    onSort={toggleSort}
+                  >
+                    Product
+                  </SortControls>
+                </TableHead>
+                <TableHead>
+                  <SortControls
+                    column="brand"
+                    currentColumn={sortState.column}
+                    direction={sortState.direction}
+                    onSort={toggleSort}
+                  >
+                    Brand
+                  </SortControls>
+                </TableHead>
+                <TableHead>
+                  <SortControls
+                    column="vendor"
+                    currentColumn={sortState.column}
+                    direction={sortState.direction}
+                    onSort={toggleSort}
+                  >
+                    Vendor
+                  </SortControls>
+                </TableHead>
+                <TableHead>
+                  <SortControls
+                    column="grade"
+                    currentColumn={sortState.column}
+                    direction={sortState.direction}
+                    onSort={toggleSort}
+                  >
+                    Grade
+                  </SortControls>
+                </TableHead>
+                <TableHead>
+                  <SortControls
+                    column="status"
+                    currentColumn={sortState.column}
+                    direction={sortState.direction}
+                    onSort={toggleSort}
+                  >
+                    Status
+                  </SortControls>
+                </TableHead>
+                <TableHead className="text-right">
+                  <SortControls
+                    column="onHand"
+                    currentColumn={sortState.column}
+                    direction={sortState.direction}
+                    onSort={toggleSort}
+                    align="right"
+                  >
+                    On Hand
+                  </SortControls>
+                </TableHead>
+                <TableHead className="text-right">
+                  <SortControls
+                    column="reserved"
+                    currentColumn={sortState.column}
+                    direction={sortState.direction}
+                    onSort={toggleSort}
+                    align="right"
+                  >
+                    Reserved
+                  </SortControls>
+                </TableHead>
+                <TableHead className="text-right">
+                  <SortControls
+                    column="available"
+                    currentColumn={sortState.column}
+                    direction={sortState.direction}
+                    onSort={toggleSort}
+                    align="right"
+                  >
+                    Available
+                  </SortControls>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -283,12 +452,18 @@ export default function Inventory() {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setSelectedBatch(batch.id)}
                     >
-                      <TableCell className="font-mono text-sm">{batch.sku}</TableCell>
-                      <TableCell className="font-medium">
-                        {product?.nameCanonical || "Unknown"}
+                      <TableCell className="font-mono text-sm">
+                        <SearchHighlight text={batch.sku} query={debouncedSearch} />
                       </TableCell>
-                      <TableCell>{brand?.name || "Unknown"}</TableCell>
-                      <TableCell>{vendor?.name || "Unknown"}</TableCell>
+                      <TableCell className="font-medium">
+                        <SearchHighlight text={product?.nameCanonical || "Unknown"} query={debouncedSearch} />
+                      </TableCell>
+                      <TableCell>
+                        <SearchHighlight text={brand?.name || "Unknown"} query={debouncedSearch} />
+                      </TableCell>
+                      <TableCell>
+                        <SearchHighlight text={vendor?.name || "Unknown"} query={debouncedSearch} />
+                      </TableCell>
                       <TableCell>
                         {batch.grade ? (
                           <Badge variant="outline">{batch.grade}</Badge>
