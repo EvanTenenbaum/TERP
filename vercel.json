@@ -1,7 +1,8 @@
 {
-  "buildCommand": "cd apps/web && npm install && npm run build",
+  "buildCommand": "npm install -g pnpm && pnpm install && cd apps/web && pnpm run build",
   "outputDirectory": "apps/web/.next",
-  "installCommand": "cd apps/web && npm install",
-  "framework": null
+  "installCommand": "npm install -g pnpm && pnpm install",
+  "framework": null,
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./"
 }
 
