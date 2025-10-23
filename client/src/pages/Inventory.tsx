@@ -23,13 +23,13 @@ import {
   Pause,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
-import { IntakeModal } from "@/components/inventory/IntakeModal";
+import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { BatchDetailDrawer } from "@/components/inventory/BatchDetailDrawer";
 
 export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
-  const [showIntakeModal, setShowIntakeModal] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   // Debounce search query (150ms as per spec)
   const debouncedSearch = useDebounce(searchQuery, 150);
@@ -116,9 +116,9 @@ export default function Inventory() {
             Manage batches, track stock levels, and control product lifecycle
           </p>
         </div>
-        <Button onClick={() => setShowIntakeModal(true)} className="w-full sm:w-auto">
+        <Button onClick={() => setShowPurchaseModal(true)} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
-          New Intake
+          New Purchase
         </Button>
       </div>
 
@@ -222,7 +222,7 @@ export default function Inventory() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowIntakeModal(true)}
+                        onClick={() => setShowPurchaseModal(true)}
                       >
                         Create First Batch
                       </Button>
@@ -297,9 +297,9 @@ export default function Inventory() {
       </Card>
 
       {/* Intake Modal */}
-      <IntakeModal
-        open={showIntakeModal}
-        onClose={() => setShowIntakeModal(false)}
+      <PurchaseModal
+        open={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
         onSuccess={() => {
           // Refresh the list
         }}
