@@ -36,9 +36,8 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
     subcategory: "",
     grade: "A",
     quantity: "",
-    cogsMode: "FIXED" as "FIXED" | "FLOOR" | "RANGE",
+    cogsMode: "FIXED" as "FIXED" | "RANGE",
     unitCogs: "",
-    unitCogsFloor: "",
     unitCogsMin: "",
     unitCogsMax: "",
     paymentTerms: "NET_30" as "COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT" | "PARTIAL",
@@ -75,7 +74,6 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
       quantity: "",
       cogsMode: "FIXED",
       unitCogs: "",
-      unitCogsFloor: "",
       unitCogsMin: "",
       unitCogsMax: "",
       paymentTerms: "NET_30",
@@ -108,10 +106,7 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
       return;
     }
 
-    if (formData.cogsMode === "FLOOR" && !formData.unitCogsFloor) {
-      toast.error("Please enter unit COGS floor for FLOOR mode");
-      return;
-    }
+
 
     if (formData.cogsMode === "RANGE" && (!formData.unitCogsMin || !formData.unitCogsMax)) {
       toast.error("Please enter unit COGS min and max for RANGE mode");
@@ -128,11 +123,9 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
       quantity: parseFloat(formData.quantity),
       cogsMode: formData.cogsMode,
       unitCogs: formData.unitCogs || undefined,
-      unitCogsFloor: formData.unitCogsFloor || undefined,
       unitCogsMin: formData.unitCogsMin || undefined,
       unitCogsMax: formData.unitCogsMax || undefined,
       paymentTerms: formData.paymentTerms,
-      siteCode: formData.siteCode,
       location: {
         site: formData.locationSite,
         zone: formData.locationZone || undefined,
@@ -267,7 +260,6 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="FIXED">Fixed Price</SelectItem>
-                  <SelectItem value="FLOOR">Floor Price</SelectItem>
                   <SelectItem value="RANGE">Price Range</SelectItem>
                 </SelectContent>
               </Select>
@@ -288,20 +280,6 @@ export function IntakeModal({ open, onClose, onSuccess }: IntakeModalProps) {
               </div>
             )}
 
-            {formData.cogsMode === "FLOOR" && (
-              <div className="space-y-2">
-                <Label htmlFor="unitCogsFloor">Unit COGS Floor *</Label>
-                <Input
-                  id="unitCogsFloor"
-                  type="number"
-                  step="0.01"
-                  value={formData.unitCogsFloor}
-                  onChange={(e) => setFormData({ ...formData, unitCogsFloor: e.target.value })}
-                  placeholder="e.g., 20.00"
-                  required
-                />
-              </div>
-            )}
 
             {formData.cogsMode === "RANGE" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -392,7 +392,6 @@ export async function seedInventoryData() {
     code: lotCode,
     vendorId: vendorId,
     date: new Date(),
-    siteCode: "WH1",
     notes: "Initial inventory intake",
   });
   

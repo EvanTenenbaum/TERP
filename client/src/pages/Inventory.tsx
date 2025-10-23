@@ -54,9 +54,7 @@ export default function Inventory() {
       awaitingIntake: inventoryData.filter(
         (item) => item.batch?.status === "AWAITING_INTAKE"
       ).length,
-      qcPending: inventoryData.filter(
-        (item) => item.batch?.status === "QC_PENDING"
-      ).length,
+      qcPending: 0, // QC_PENDING status removed
       quarantined: inventoryData.filter(
         (item) => item.batch?.status === "QUARANTINED"
       ).length,

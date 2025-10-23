@@ -64,13 +64,11 @@ export const appRouter = router({
         subcategory: z.string().optional(),
         grade: z.string().optional(),
         quantity: z.number(),
-        cogsMode: z.enum(["FIXED", "FLOOR", "RANGE"]),
+        cogsMode: z.enum(["FIXED", "RANGE"]),
         unitCogs: z.string().optional(),
-        unitCogsFloor: z.string().optional(),
         unitCogsMin: z.string().optional(),
         unitCogsMax: z.string().optional(),
         paymentTerms: z.enum(["COD", "NET_7", "NET_15", "NET_30", "CONSIGNMENT", "PARTIAL"]),
-        siteCode: z.string(),
         location: z.object({
           site: z.string(),
           zone: z.string().optional(),
@@ -85,7 +83,6 @@ export const appRouter = router({
         const cogsValidation = inventoryUtils.validateCOGS(
           input.cogsMode,
           input.unitCogs,
-          input.unitCogsFloor,
           input.unitCogsMin,
           input.unitCogsMax
         );
@@ -127,14 +124,13 @@ export const appRouter = router({
         if (!product) throw new Error("Failed to create product");
 
         // Create or find lot
-        const lotCode = inventoryUtils.generateLotCode(new Date(), input.siteCode);
+        const lotCode = inventoryUtils.generateLotCode(new Date());
         let lot = await inventoryDb.getLotByCode(lotCode);
         if (!lot) {
           await inventoryDb.createLot({
             code: lotCode,
             vendorId: vendor.id,
             date: new Date(),
-            siteCode: input.siteCode,
           });
           lot = await inventoryDb.getLotByCode(lotCode);
         }
@@ -159,7 +155,6 @@ export const appRouter = router({
           isSample: 0,
           cogsMode: input.cogsMode,
           unitCogs: input.unitCogs,
-          unitCogsFloor: input.unitCogsFloor,
           unitCogsMin: input.unitCogsMin,
           unitCogsMax: input.unitCogsMax,
           paymentTerms: input.paymentTerms,

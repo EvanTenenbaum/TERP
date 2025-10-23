@@ -49,9 +49,9 @@ export async function seedInventoryData() {
   // Create lots
   const today = new Date();
   const lots = [
-    { code: "LOT-WH1-20250123", vendorId: 1, date: today, siteCode: "WH1" },
-    { code: "LOT-WH1-20250122", vendorId: 2, date: new Date(today.getTime() - 86400000), siteCode: "WH1" },
-    { code: "LOT-WH2-20250123", vendorId: 3, date: today, siteCode: "WH2" },
+    { code: "LOT-WH1-20250123", vendorId: 1, date: today },
+    { code: "LOT-WH1-20250122", vendorId: 2, date: new Date(today.getTime() - 86400000) },
+    { code: "LOT-WH2-20250123", vendorId: 3, date: today },
   ];
 
   for (const lot of lots) {
@@ -87,8 +87,9 @@ export async function seedInventoryData() {
       status: "LIVE" as const,
       grade: "A",
       isSample: 0,
-      cogsMode: "FLOOR" as const,
-      unitCogsFloor: "20.00",
+      cogsMode: "RANGE" as const,
+      unitCogsMin: "18.00",
+      unitCogsMax: "22.00",
       paymentTerms: "NET_30" as const,
       onHandQty: "750.00",
       reservedQty: "100.00",
@@ -101,7 +102,7 @@ export async function seedInventoryData() {
       sku: "CRAF-WEDD-250122-001",
       productId: 3,
       lotId: 2,
-      status: "QC_PENDING" as const,
+      status: "LIVE" as const,
       grade: "B",
       isSample: 0,
       cogsMode: "RANGE" as const,

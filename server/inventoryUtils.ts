@@ -96,9 +96,11 @@ export function generateSKU(
 /**
  * Generate Lot Code in format: LOT-YYYYMMDD-SSS
  */
-export function generateLotCode(date: Date, siteCode: string): string {
+export function generateLotCode(date: Date): string {
   const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
-  return `LOT-${dateStr}-${siteCode}`;
+  // Generate a simple sequence number (in production, this should come from DB)
+  const sequence = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `LOT-${dateStr}-${sequence}`;
 }
 
 /**
@@ -152,7 +154,6 @@ type CogsMode = "FIXED" | "FLOOR" | "RANGE";
 export function validateCOGS(
   mode: CogsMode,
   unitCogs?: string | null,
-  unitCogsFloor?: string | null,
   unitCogsMin?: string | null,
   unitCogsMax?: string | null
 ): { valid: boolean; error?: string } {
@@ -160,11 +161,6 @@ export function validateCOGS(
     case "FIXED":
       if (!unitCogs) {
         return { valid: false, error: "FIXED mode requires unitCogs" };
-      }
-      break;
-    case "FLOOR":
-      if (!unitCogsFloor) {
-        return { valid: false, error: "FLOOR mode requires unitCogsFloor" };
       }
       break;
     case "RANGE":
@@ -182,17 +178,18 @@ export function validateCOGS(
 }
 
 /**
- * Check if a sale price is below the COGS floor
+ * Check if a sale price is within valid COGS range
  */
-export function isPriceBelowFloor(
+export function isPriceValid(
   batch: Batch,
   salePrice: number
 ): boolean {
-  if (batch.cogsMode === "FLOOR" && batch.unitCogsFloor) {
-    const floor = parseFloat(batch.unitCogsFloor);
-    return salePrice < floor;
+  if (batch.cogsMode === "RANGE" && batch.unitCogsMin && batch.unitCogsMax) {
+    const min = parseFloat(batch.unitCogsMin);
+    const max = parseFloat(batch.unitCogsMax);
+    return salePrice >= min && salePrice <= max;
   }
-  return false;
+  return true; // FIXED mode has no price restrictions
 }
 
 // ============================================================================

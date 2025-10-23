@@ -171,12 +171,7 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                     <p className="font-medium">${parseFloat(batch.unitCogs).toFixed(2)}</p>
                   </div>
                 )}
-                {batch.cogsMode === "FLOOR" && batch.unitCogsFloor && (
-                  <div>
-                    <p className="text-muted-foreground">COGS Floor</p>
-                    <p className="font-medium">${parseFloat(batch.unitCogsFloor).toFixed(2)}</p>
-                  </div>
-                )}
+
                 {batch.cogsMode === "RANGE" && (
                   <>
                     <div>
