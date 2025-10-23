@@ -21,6 +21,7 @@ import {
   CheckCircle,
   XCircle,
   Pause,
+  Edit,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
@@ -32,6 +33,7 @@ export default function Inventory() {
   const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   // Debounce search query (150ms as per spec)
   const debouncedSearch = useDebounce(searchQuery, 150);
@@ -41,6 +43,27 @@ export default function Inventory() {
     query: debouncedSearch || undefined,
     limit: 100,
   });
+
+  // Filter inventory by status if filter is active
+  const filteredInventory = useMemo(() => {
+    if (!inventoryData) return [];
+    if (!statusFilter) return inventoryData;
+    
+    // Special handling for LOW_STOCK filter (not a status)
+    if (statusFilter === "LOW_STOCK") {
+      return inventoryData.filter((item) => {
+        if (!item.batch) return false;
+        const onHand = parseFloat(item.batch.onHandQty);
+        const reserved = parseFloat(item.batch.reservedQty);
+        const quarantine = parseFloat(item.batch.quarantineQty);
+        const hold = parseFloat(item.batch.holdQty);
+        const available = onHand - reserved - quarantine - hold;
+        return available <= 100; // Low stock threshold
+      });
+    }
+    
+    return inventoryData.filter((item) => item.batch?.status === statusFilter);
+  }, [inventoryData, statusFilter]);
 
   // Calculate open tasks counters
   const openTasks = useMemo(() => {
@@ -126,7 +149,14 @@ export default function Inventory() {
 
       {/* Open Tasks Bar */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <Card className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+        <Card 
+          className={`p-4 cursor-pointer transition-colors ${
+            statusFilter === "AWAITING_INTAKE" 
+              ? "bg-blue-50 border-blue-300 ring-2 ring-blue-500" 
+              : "hover:bg-muted/50"
+          }`}
+          onClick={() => setStatusFilter(statusFilter === "AWAITING_INTAKE" ? null : "AWAITING_INTAKE")}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Awaiting Intake</p>
@@ -136,17 +166,14 @@ export default function Inventory() {
           </div>
         </Card>
 
-        <Card className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">QC Pending</p>
-              <p className="text-2xl font-bold mt-1">{openTasks.qcPending}</p>
-            </div>
-            <Clock className="h-8 w-8 text-orange-600" />
-          </div>
-        </Card>
-
-        <Card className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+        <Card 
+          className={`p-4 cursor-pointer transition-colors ${
+            statusFilter === "QUARANTINED" 
+              ? "bg-red-50 border-red-300 ring-2 ring-red-500" 
+              : "hover:bg-muted/50"
+          }`}
+          onClick={() => setStatusFilter(statusFilter === "QUARANTINED" ? null : "QUARANTINED")}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Quarantined</p>
@@ -156,7 +183,14 @@ export default function Inventory() {
           </div>
         </Card>
 
-        <Card className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+        <Card 
+          className={`p-4 cursor-pointer transition-colors ${
+            statusFilter === "ON_HOLD" 
+              ? "bg-yellow-50 border-yellow-300 ring-2 ring-yellow-500" 
+              : "hover:bg-muted/50"
+          }`}
+          onClick={() => setStatusFilter(statusFilter === "ON_HOLD" ? null : "ON_HOLD")}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">On Hold</p>
@@ -166,7 +200,14 @@ export default function Inventory() {
           </div>
         </Card>
 
-        <Card className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+        <Card 
+          className={`p-4 cursor-pointer transition-colors ${
+            statusFilter === "LOW_STOCK" 
+              ? "bg-purple-50 border-purple-300 ring-2 ring-purple-500" 
+              : "hover:bg-muted/50"
+          }`}
+          onClick={() => setStatusFilter(statusFilter === "LOW_STOCK" ? null : "LOW_STOCK")}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
@@ -175,9 +216,22 @@ export default function Inventory() {
             <Package className="h-8 w-8 text-purple-600" />
           </div>
         </Card>
+
+        <Card 
+          className="p-4 cursor-pointer hover:bg-muted/50 transition-colors opacity-50"
+          title="QC Pending status has been removed"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">QC Pending</p>
+              <p className="text-2xl font-bold mt-1">{openTasks.qcPending}</p>
+            </div>
+            <Clock className="h-8 w-8 text-orange-600" />
+          </div>
+        </Card>
       </div>
 
-      {/* Search Bar */}
+      {/* Search Bar and Filter Status */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -188,7 +242,38 @@ export default function Inventory() {
             className="pl-10"
           />
         </div>
+        {statusFilter && (
+          <Button
+            variant="outline"
+            onClick={() => setStatusFilter(null)}
+            className="whitespace-nowrap"
+          >
+            Clear Filter
+          </Button>
+        )}
       </div>
+
+      {/* Active Filter Indicator */}
+      {statusFilter && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
+              <p className="text-sm font-medium text-blue-900">
+                Showing {filteredInventory.length} {statusFilter === "AWAITING_INTAKE" ? "batches awaiting intake" : statusFilter === "LOW_STOCK" ? "low stock items" : `${statusFilter.toLowerCase().replace("_", " ")} batches`}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStatusFilter(null)}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              View All
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Inventory Table */}
       <Card className="overflow-hidden">
@@ -232,7 +317,7 @@ export default function Inventory() {
                   </TableCell>
                 </TableRow>
               ) : (
-                inventoryData.map((item) => {
+                filteredInventory.map((item) => {
                   const batch = item.batch;
                   const product = item.product;
                   const brand = item.brand;
@@ -278,16 +363,32 @@ export default function Inventory() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedBatch(batch.id);
-                          }}
-                        >
-                          View
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedBatch(batch.id);
+                            }}
+                          >
+                            View
+                          </Button>
+                          {batch.status === "AWAITING_INTAKE" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingBatch(batch.id);
+                              }}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Intake
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
