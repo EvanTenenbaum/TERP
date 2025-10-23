@@ -21,9 +21,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@terp/db": ["../../packages/db/src"],
-      "@terp/types": ["../../packages/types/src"],
-      "@terp/config": ["../../packages/config/src"]
+
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

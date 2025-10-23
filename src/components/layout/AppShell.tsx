@@ -1,18 +1,18 @@
-'use client';
-import React from 'react';
-import { TopBar } from './TopBar';
+_**OVERWRITE**_
+import { AppHeader } from "@/components/layout/AppHeader";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 
-interface AppShellProps {
-  children: React.ReactNode;
-}
-
-export const AppShell: React.FC<AppShellProps> = ({ children }) => {
+export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col">
-      <TopBar />
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-7xl">
-        {children}
-      </main>
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <AppSidebar />
+      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+        <AppHeader />
+        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
-};
+}
+

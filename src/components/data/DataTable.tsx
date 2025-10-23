@@ -1,70 +1,128 @@
-'use client';
-import React from 'react';
-import { Badge } from '../ui/Badge';
+_**OVERWRITE**_
+"use client";
 
-export interface Column<T> {
-  key: string;
-  label: string;
-  render?: (row: T) => React.ReactNode;
-  sortable?: boolean;
+import * as React from "react";
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface DataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
 }
 
-interface DataTableProps<T> {
-  columns: Column<T>[];
-  data: T[];
-  onRowClick?: (row: T) => void;
-  keyExtractor?: (row: T) => string;
-}
-
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<TData, TValue>({
   columns,
   data,
-  onRowClick,
-  keyExtractor = (row) => row.id || String(Math.random()),
-}: DataTableProps<T>) {
+}: DataTableProps<TData, TValue>) {
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
+
   return (
-    <div className="overflow-x-auto" role="region" aria-label="Data table">
-      <table className="w-full" role="table">
-        <thead className="border-b border-[var(--c-border)]">
-          <tr role="row">
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                role="columnheader"
-                scope="col"
-                className="text-left px-4 py-3 text-sm font-medium text-[var(--c-mid)]"
-              >
-                {col.label}
-              </th>
+    <div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row) => (
-            <tr
-              key={keyExtractor(row)}
-              role="row"
-              onClick={() => onRowClick?.(row)}
-              onKeyDown={(e) => {
-                if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault();
-                  onRowClick(row);
-                }
-              }}
-              tabIndex={onRowClick ? 0 : undefined}
-              className={`border-b border-[var(--c-border)] ${
-                onRowClick ? 'cursor-pointer hover:bg-[var(--c-panel)] transition-colors focus:outline-none focus:ring-2 focus:ring-c-brand' : ''
-              }`}
-            >
-              {columns.map((col) => (
-                <td key={col.key} role="cell" className="px-4 py-3 text-sm text-[var(--c-ink)]">
-                  {col.render ? col.render(row) : row[col.key]}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 }
+
