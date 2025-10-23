@@ -5,6 +5,71 @@
 
 ---
 
+## [2025-10-23] - Codebase Cleanup
+
+### Removed
+- **lovable-backup/** directory (1.6MB)
+  - Unused Lovable frontend backup
+  - No references in active code
+  - Verified safe to remove
+
+- **Backup configuration files**
+  - `.env.example.old`
+  - `.env.local.backup`
+  - `package.json.old`
+
+### Changed
+- **Archived 24 legacy documentation files**
+  - Moved to `docs/archive/legacy-reports/`
+  - Superseded by The Bible
+  - Kept for historical reference only
+  - Created archive README explaining purpose
+
+### Kept
+- Essential documentation:
+  - `README.md` - Main project documentation
+  - `RUNBOOK.md` - Operational procedures
+  - `CONTRIBUTING.md` - Contribution guidelines
+  - `CRON_SETUP.md` - Cron job documentation
+  - `SENTRY_SETUP.md` - Monitoring setup
+  - `UX_FUNCTION_MAP.md` - UX reference
+  - `DEPRECATION.md` - Deprecation notices
+  - `.env.production.template` - Production config template
+
+### Decisions Made
+1. **Archive vs Delete**
+   - Chose to archive legacy docs instead of deleting
+   - Rationale: Preserve historical context while decluttering
+   - Impact: Cleaner main directory, history preserved
+
+2. **Safety First Approach**
+   - Created `pre-cleanup-backup` branch before cleanup
+   - Verified no code references to removed items
+   - Tested terp-redesign build after cleanup
+   - Rationale: Ensure no breaking changes
+
+### Technical Details
+- **Files Removed:** 1 directory + 3 backup files
+- **Files Archived:** 24 legacy documentation files
+- **Space Reclaimed:** ~2.5MB
+- **Build Status:** ✅ Successful (terp-redesign)
+- **Git Commit:** Clean up codebase
+
+### Testing
+- ✅ Verified no code references to removed files
+- ✅ Checked terp-redesign build (successful)
+- ✅ Created safety backup branch
+- ✅ Validated archive structure
+
+### Impact
+- Cleaner repository structure
+- The Bible is now the clear single source of truth
+- Easier navigation for new developers
+- Historical context preserved in archive
+- No breaking changes to active projects
+
+---
+
 ## [2025-10-23] - Initial terp-redesign Implementation
 
 ### Added
