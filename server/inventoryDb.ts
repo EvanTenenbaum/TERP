@@ -18,6 +18,7 @@ import {
   categories,
   subcategories,
   grades,
+  strains,
   type InsertVendor,
   type InsertBrand,
   type InsertProduct,
@@ -594,6 +595,75 @@ export async function deleteGrade(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(grades).where(eq(grades.id, id));
+  return { success: true };
+}
+
+
+
+
+// ============================================================================
+// STRAINS
+// ============================================================================
+
+export async function getAllStrains(query?: string, category?: "indica" | "sativa" | "hybrid", limit: number = 100) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let conditions = [];
+  
+  if (query) {
+    conditions.push(like(strains.name, `%${query}%`));
+  }
+  
+  if (category) {
+    conditions.push(eq(strains.category, category));
+  }
+  
+  if (conditions.length > 0) {
+    return await db.select().from(strains).where(and(...conditions)).limit(limit).orderBy(strains.name);
+  }
+  
+  return await db.select().from(strains).limit(limit).orderBy(strains.name);
+}
+
+export async function getStrainById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(strains).where(eq(strains.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function searchStrains(query: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db
+    .select()
+    .from(strains)
+    .where(like(strains.name, `%${query}%`))
+    .limit(20)
+    .orderBy(strains.name);
+}
+
+export async function createStrain(data: {
+  name: string;
+  category: "indica" | "sativa" | "hybrid";
+  description?: string;
+  aliases?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Standardize the name (lowercase, trim)
+  const standardizedName = data.name.toLowerCase().trim();
+  
+  await db.insert(strains).values({
+    name: data.name,
+    standardizedName: standardizedName,
+    category: data.category,
+    description: data.description || null,
+    aliases: data.aliases || null,
+  });
+  
   return { success: true };
 }
 

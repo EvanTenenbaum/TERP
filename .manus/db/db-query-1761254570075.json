@@ -1,0 +1,14 @@
+{
+  "query": "SELECT COUNT(*) as total, (SELECT name FROM strains LIMIT 1) as sample_name FROM strains;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3VCDwJ3cd5ekhng.root --database BnbuGpJyxab4suPN4jFq3M --execute SELECT COUNT(*) as total, (SELECT name FROM strains LIMIT 1) as sample_name FROM strains;",
+  "rows": [
+    {
+      "total": "400",
+      "sample_name": "100 OG"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tsample_name\n400\t100 OG\n",
+  "stderr": "",
+  "execution_time_ms": 124
+}

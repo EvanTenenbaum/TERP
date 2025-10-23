@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as count FROM strains;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3VCDwJ3cd5ekhng.root --database BnbuGpJyxab4suPN4jFq3M --execute SELECT COUNT(*) as count FROM strains;",
+  "rows": [
+    {
+      "count": "400"
+    }
+  ],
+  "messages": [],
+  "stdout": "count\n400\n",
+  "stderr": "",
+  "execution_time_ms": 761
+}
