@@ -708,7 +708,6 @@ export async function getDashboardStats() {
   const subcategoryBreakdown: Record<string, { units: number; value: number }> = {};
   const statusCounts: Record<string, number> = {
     AWAITING_INTAKE: 0,
-    QC_PENDING: 0,
     LIVE: 0,
     ON_HOLD: 0,
     QUARANTINED: 0,

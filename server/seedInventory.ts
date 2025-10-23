@@ -194,8 +194,8 @@ export async function seedInventoryData() {
       entity: "Batch" as const,
       entityId: 3,
       action: "CREATED" as const,
-      after: JSON.stringify({ status: "QC_PENDING", onHandQty: "500.00" }),
-      reason: "Initial intake - pending QC",
+      after: JSON.stringify({ status: "LIVE", onHandQty: "500.00" }),
+      reason: "Initial intake - now live",
     },
   ];
 

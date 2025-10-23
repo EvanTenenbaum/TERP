@@ -226,9 +226,7 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                     <span className="text-muted-foreground">Payment Status:</span>
                     <Badge variant="secondary">Pending</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Payment tracking coming soon
-                  </p>
+
                 </div>
               </Card>
             </div>
@@ -244,7 +242,7 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
               <Card className="p-4">
                 <div className="text-center text-sm text-muted-foreground">
                   <p>No sales recorded</p>
-                  <p className="text-xs mt-1">Sales tracking coming soon</p>
+
                 </div>
               </Card>
             </div>

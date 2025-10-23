@@ -206,7 +206,7 @@ export const appRouter = router({
     updateStatus: protectedProcedure
       .input(z.object({
         id: z.number(),
-        status: z.enum(["AWAITING_INTAKE", "QC_PENDING", "LIVE", "ON_HOLD", "QUARANTINED", "SOLD_OUT", "CLOSED"]),
+        status: z.enum(["AWAITING_INTAKE", "LIVE", "ON_HOLD", "QUARANTINED", "SOLD_OUT", "CLOSED"]),
         reason: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {

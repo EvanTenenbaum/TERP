@@ -37,7 +37,6 @@ export function hasAvailableQty(batch: Batch, requestedQty: number): boolean {
 
 type BatchStatus = 
   | "AWAITING_INTAKE"
-  | "QC_PENDING"
   | "LIVE"
   | "ON_HOLD"
   | "QUARANTINED"
@@ -48,8 +47,7 @@ type BatchStatus =
  * Valid status transitions map
  */
 const VALID_TRANSITIONS: Record<BatchStatus, BatchStatus[]> = {
-  AWAITING_INTAKE: ["QC_PENDING"],
-  QC_PENDING: ["LIVE", "QUARANTINED"],
+  AWAITING_INTAKE: ["LIVE", "QUARANTINED"],
   LIVE: ["ON_HOLD", "QUARANTINED", "SOLD_OUT"],
   ON_HOLD: ["LIVE", "QUARANTINED"],
   QUARANTINED: ["LIVE", "ON_HOLD", "CLOSED"],
@@ -146,7 +144,7 @@ export function normalizeProductName(input: string): string {
 // COGS VALIDATION
 // ============================================================================
 
-type CogsMode = "FIXED" | "FLOOR" | "RANGE";
+type CogsMode = "FIXED" | "RANGE";
 
 /**
  * Validate COGS configuration for a batch
