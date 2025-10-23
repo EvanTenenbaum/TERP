@@ -23,6 +23,8 @@ import {
   Pause,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { IntakeModal } from "@/components/inventory/IntakeModal";
+import { BatchDetailDrawer } from "@/components/inventory/BatchDetailDrawer";
 
 export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -296,8 +298,21 @@ export default function Inventory() {
         </div>
       </Card>
 
-      {/* TODO: Add Intake Modal */}
-      {/* TODO: Add Batch Detail Drawer */}
+      {/* Intake Modal */}
+      <IntakeModal
+        open={showIntakeModal}
+        onClose={() => setShowIntakeModal(false)}
+        onSuccess={() => {
+          // Refresh the list
+        }}
+      />
+
+      {/* Batch Detail Drawer */}
+      <BatchDetailDrawer
+        batchId={selectedBatch}
+        open={selectedBatch !== null}
+        onClose={() => setSelectedBatch(null)}
+      />
     </div>
   );
 }
