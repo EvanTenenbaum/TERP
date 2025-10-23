@@ -667,3 +667,106 @@ export async function createStrain(data: {
   return { success: true };
 }
 
+
+
+// ============================================================================
+// DASHBOARD STATISTICS
+// ============================================================================
+
+/**
+ * Get comprehensive dashboard statistics for inventory
+ * Includes inventory value, stock levels by category/subcategory, and status counts
+ */
+export async function getDashboardStats() {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Get all batches with product details for calculations
+  const allBatches = await db
+    .select({
+      batchId: batches.id,
+      status: batches.status,
+      onHandQty: batches.onHandQty,
+      unitCogs: batches.unitCogs,
+      category: products.category,
+      subcategory: products.subcategory,
+    })
+    .from(batches)
+    .leftJoin(products, eq(batches.productId, products.id));
+
+  // Calculate total inventory value
+  let totalInventoryValue = 0;
+  let totalUnits = 0;
+  const categoryBreakdown: Record<string, { units: number; value: number }> = {};
+  const subcategoryBreakdown: Record<string, { units: number; value: number }> = {};
+  const statusCounts: Record<string, number> = {
+    AWAITING_INTAKE: 0,
+    QC_PENDING: 0,
+    LIVE: 0,
+    ON_HOLD: 0,
+    QUARANTINED: 0,
+    SOLD_OUT: 0,
+    CLOSED: 0,
+  };
+
+  for (const batch of allBatches) {
+    const qty = parseFloat(batch.onHandQty);
+    const cogs = parseFloat(batch.unitCogs || "0");
+    const value = qty * cogs;
+
+    // Total inventory value
+    totalInventoryValue += value;
+    totalUnits += qty;
+
+    // Status counts
+    if (batch.status && statusCounts.hasOwnProperty(batch.status)) {
+      statusCounts[batch.status]++;
+    }
+
+    // Category breakdown
+    const category = batch.category || "Uncategorized";
+    if (!categoryBreakdown[category]) {
+      categoryBreakdown[category] = { units: 0, value: 0 };
+    }
+    categoryBreakdown[category].units += qty;
+    categoryBreakdown[category].value += value;
+
+    // Subcategory breakdown
+    const subcategory = batch.subcategory || "None";
+    if (!subcategoryBreakdown[subcategory]) {
+      subcategoryBreakdown[subcategory] = { units: 0, value: 0 };
+    }
+    subcategoryBreakdown[subcategory].units += qty;
+    subcategoryBreakdown[subcategory].value += value;
+  }
+
+  // Calculate average value per unit
+  const avgValuePerUnit = totalUnits > 0 ? totalInventoryValue / totalUnits : 0;
+
+  // Convert breakdowns to arrays and sort by value (descending)
+  const categoryStats = Object.entries(categoryBreakdown)
+    .map(([name, data]) => ({
+      name,
+      units: data.units,
+      value: data.value,
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const subcategoryStats = Object.entries(subcategoryBreakdown)
+    .map(([name, data]) => ({
+      name,
+      units: data.units,
+      value: data.value,
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  return {
+    totalInventoryValue,
+    avgValuePerUnit,
+    totalUnits,
+    statusCounts,
+    categoryStats,
+    subcategoryStats,
+  };
+}
+

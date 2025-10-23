@@ -27,6 +27,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { BatchDetailDrawer } from "@/components/inventory/BatchDetailDrawer";
 import { EditBatchModal } from "@/components/inventory/EditBatchModal";
+import { DashboardStats } from "@/components/inventory/DashboardStats";
+import { StockLevelChart } from "@/components/inventory/StockLevelChart";
 
 export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,6 +45,9 @@ export default function Inventory() {
     query: debouncedSearch || undefined,
     limit: 100,
   });
+
+  // Fetch dashboard statistics
+  const { data: dashboardStats } = trpc.inventory.dashboardStats.useQuery();
 
   // Filter inventory by status if filter is active
   const filteredInventory = useMemo(() => {
@@ -147,89 +152,34 @@ export default function Inventory() {
         </Button>
       </div>
 
-      {/* Open Tasks Bar */}
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <Card 
-          className={`p-4 cursor-pointer transition-colors ${
-            statusFilter === "AWAITING_INTAKE" 
-              ? "bg-blue-50 border-blue-300 ring-2 ring-blue-500" 
-              : "hover:bg-muted/50"
-          }`}
-          onClick={() => setStatusFilter(statusFilter === "AWAITING_INTAKE" ? null : "AWAITING_INTAKE")}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Awaiting Intake</p>
-              <p className="text-2xl font-bold mt-1">{openTasks.awaitingIntake}</p>
-            </div>
-            <Clock className="h-8 w-8 text-blue-600" />
-          </div>
-        </Card>
+      {/* Dashboard Statistics */}
+      {dashboardStats && (
+        <DashboardStats
+          totalInventoryValue={dashboardStats.totalInventoryValue}
+          avgValuePerUnit={dashboardStats.avgValuePerUnit}
+          totalUnits={dashboardStats.totalUnits}
+          awaitingIntakeCount={dashboardStats.statusCounts.AWAITING_INTAKE}
+          lowStockCount={openTasks.lowStock}
+          onFilterChange={setStatusFilter}
+          activeFilter={statusFilter}
+        />
+      )}
 
-        <Card 
-          className={`p-4 cursor-pointer transition-colors ${
-            statusFilter === "QUARANTINED" 
-              ? "bg-red-50 border-red-300 ring-2 ring-red-500" 
-              : "hover:bg-muted/50"
-          }`}
-          onClick={() => setStatusFilter(statusFilter === "QUARANTINED" ? null : "QUARANTINED")}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Quarantined</p>
-              <p className="text-2xl font-bold mt-1">{openTasks.quarantined}</p>
-            </div>
-            <AlertCircle className="h-8 w-8 text-red-600" />
-          </div>
-        </Card>
-
-        <Card 
-          className={`p-4 cursor-pointer transition-colors ${
-            statusFilter === "ON_HOLD" 
-              ? "bg-yellow-50 border-yellow-300 ring-2 ring-yellow-500" 
-              : "hover:bg-muted/50"
-          }`}
-          onClick={() => setStatusFilter(statusFilter === "ON_HOLD" ? null : "ON_HOLD")}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">On Hold</p>
-              <p className="text-2xl font-bold mt-1">{openTasks.onHold}</p>
-            </div>
-            <Pause className="h-8 w-8 text-yellow-600" />
-          </div>
-        </Card>
-
-        <Card 
-          className={`p-4 cursor-pointer transition-colors ${
-            statusFilter === "LOW_STOCK" 
-              ? "bg-purple-50 border-purple-300 ring-2 ring-purple-500" 
-              : "hover:bg-muted/50"
-          }`}
-          onClick={() => setStatusFilter(statusFilter === "LOW_STOCK" ? null : "LOW_STOCK")}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
-              <p className="text-2xl font-bold mt-1">{openTasks.lowStock}</p>
-            </div>
-            <Package className="h-8 w-8 text-purple-600" />
-          </div>
-        </Card>
-
-        <Card 
-          className="p-4 cursor-pointer hover:bg-muted/50 transition-colors opacity-50"
-          title="QC Pending status has been removed"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">QC Pending</p>
-              <p className="text-2xl font-bold mt-1">{openTasks.qcPending}</p>
-            </div>
-            <Clock className="h-8 w-8 text-orange-600" />
-          </div>
-        </Card>
-      </div>
+      {/* Stock Level Charts */}
+      {dashboardStats && (
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+          <StockLevelChart
+            title="Stock Levels by Category"
+            data={dashboardStats.categoryStats}
+            maxItems={5}
+          />
+          <StockLevelChart
+            title="Stock Levels by Subcategory"
+            data={dashboardStats.subcategoryStats}
+            maxItems={5}
+          />
+        </div>
+      )}
 
       {/* Search Bar and Filter Status */}
       <div className="flex items-center gap-4">

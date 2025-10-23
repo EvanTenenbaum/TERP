@@ -37,6 +37,14 @@ export const appRouter = router({
         return await inventoryDb.getBatchesWithDetails(input.limit);
       }),
 
+    // Get dashboard statistics
+    dashboardStats: protectedProcedure
+      .query(async () => {
+        const stats = await inventoryDb.getDashboardStats();
+        if (!stats) throw new Error("Failed to fetch dashboard statistics");
+        return stats;
+      }),
+
     // Get single batch by ID
     getById: protectedProcedure
       .input(z.number())
