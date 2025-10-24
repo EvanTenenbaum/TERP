@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, json, date } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -501,4 +501,308 @@ export const dashboardKpiConfigs = mysqlTable("dashboard_kpi_configs", {
 
 export type DashboardKpiConfig = typeof dashboardKpiConfigs.$inferSelect;
 export type InsertDashboardKpiConfig = typeof dashboardKpiConfigs.$inferInsert;
+
+
+
+
+// ============================================================================
+// ACCOUNTING MODULE SCHEMA - PHASE 1: CORE ACCOUNTING
+// ============================================================================
+
+/**
+ * Chart of Accounts
+ * Hierarchical account structure for double-entry accounting
+ */
+export const accounts = mysqlTable("accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  accountNumber: varchar("accountNumber", { length: 20 }).notNull().unique(),
+  accountName: varchar("accountName", { length: 255 }).notNull(),
+  accountType: mysqlEnum("accountType", ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]).notNull(),
+  parentAccountId: int("parentAccountId"),
+  isActive: boolean("isActive").default(true).notNull(),
+  normalBalance: mysqlEnum("normalBalance", ["DEBIT", "CREDIT"]).notNull(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Account = typeof accounts.$inferSelect;
+export type InsertAccount = typeof accounts.$inferInsert;
+
+/**
+ * General Ledger Entries
+ * Immutable double-entry accounting records
+ */
+export const ledgerEntries = mysqlTable("ledgerEntries", {
+  id: int("id").autoincrement().primaryKey(),
+  entryNumber: varchar("entryNumber", { length: 50 }).notNull().unique(),
+  entryDate: date("entryDate").notNull(),
+  accountId: int("accountId").notNull(),
+  debit: decimal("debit", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  credit: decimal("credit", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  description: text("description"),
+  referenceType: varchar("referenceType", { length: 50 }), // INVOICE, BILL, PAYMENT, EXPENSE, ADJUSTMENT
+  referenceId: int("referenceId"),
+  fiscalPeriodId: int("fiscalPeriodId").notNull(),
+  isManual: boolean("isManual").default(false).notNull(),
+  isPosted: boolean("isPosted").default(false).notNull(),
+  postedAt: timestamp("postedAt"),
+  postedBy: int("postedBy"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LedgerEntry = typeof ledgerEntries.$inferSelect;
+export type InsertLedgerEntry = typeof ledgerEntries.$inferInsert;
+
+/**
+ * Fiscal Periods
+ * Defines accounting periods for financial reporting and period close
+ */
+export const fiscalPeriods = mysqlTable("fiscalPeriods", {
+  id: int("id").autoincrement().primaryKey(),
+  periodName: varchar("periodName", { length: 100 }).notNull(),
+  startDate: date("startDate").notNull(),
+  endDate: date("endDate").notNull(),
+  fiscalYear: int("fiscalYear").notNull(),
+  status: mysqlEnum("status", ["OPEN", "CLOSED", "LOCKED"]).default("OPEN").notNull(),
+  closedAt: timestamp("closedAt"),
+  closedBy: int("closedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FiscalPeriod = typeof fiscalPeriods.$inferSelect;
+export type InsertFiscalPeriod = typeof fiscalPeriods.$inferInsert;
+
+
+
+
+// ============================================================================
+// ACCOUNTING MODULE SCHEMA - PHASE 2: AR/AP
+// ============================================================================
+
+/**
+ * Invoices (Accounts Receivable)
+ * Customer invoices for sales transactions
+ */
+export const invoices = mysqlTable("invoices", {
+  id: int("id").autoincrement().primaryKey(),
+  invoiceNumber: varchar("invoiceNumber", { length: 50 }).notNull().unique(),
+  customerId: int("customerId").notNull(), // Will link to clients table when created
+  invoiceDate: date("invoiceDate").notNull(),
+  dueDate: date("dueDate").notNull(),
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
+  taxAmount: decimal("taxAmount", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  discountAmount: decimal("discountAmount", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
+  amountPaid: decimal("amountPaid", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  amountDue: decimal("amountDue", { precision: 12, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["DRAFT", "SENT", "VIEWED", "PARTIAL", "PAID", "OVERDUE", "VOID"]).default("DRAFT").notNull(),
+  paymentTerms: varchar("paymentTerms", { length: 100 }),
+  notes: text("notes"),
+  referenceType: varchar("referenceType", { length: 50 }), // SALE, ORDER, CONTRACT
+  referenceId: int("referenceId"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;
+
+/**
+ * Invoice Line Items
+ * Individual items on an invoice
+ */
+export const invoiceLineItems = mysqlTable("invoiceLineItems", {
+  id: int("id").autoincrement().primaryKey(),
+  invoiceId: int("invoiceId").notNull(),
+  productId: int("productId"),
+  batchId: int("batchId"),
+  description: text("description").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitPrice: decimal("unitPrice", { precision: 12, scale: 2 }).notNull(),
+  taxRate: decimal("taxRate", { precision: 5, scale: 2 }).default("0.00").notNull(),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0.00").notNull(),
+  lineTotal: decimal("lineTotal", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type InvoiceLineItem = typeof invoiceLineItems.$inferSelect;
+export type InsertInvoiceLineItem = typeof invoiceLineItems.$inferInsert;
+
+/**
+ * Bills (Accounts Payable)
+ * Vendor bills for purchases
+ */
+export const bills = mysqlTable("bills", {
+  id: int("id").autoincrement().primaryKey(),
+  billNumber: varchar("billNumber", { length: 50 }).notNull().unique(),
+  vendorId: int("vendorId").notNull(),
+  billDate: date("billDate").notNull(),
+  dueDate: date("dueDate").notNull(),
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
+  taxAmount: decimal("taxAmount", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  discountAmount: decimal("discountAmount", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
+  amountPaid: decimal("amountPaid", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  amountDue: decimal("amountDue", { precision: 12, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["DRAFT", "PENDING", "APPROVED", "PARTIAL", "PAID", "OVERDUE", "VOID"]).default("DRAFT").notNull(),
+  paymentTerms: varchar("paymentTerms", { length: 100 }),
+  notes: text("notes"),
+  referenceType: varchar("referenceType", { length: 50 }), // LOT, PURCHASE_ORDER, SERVICE
+  referenceId: int("referenceId"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Bill = typeof bills.$inferSelect;
+export type InsertBill = typeof bills.$inferInsert;
+
+/**
+ * Bill Line Items
+ * Individual items on a bill
+ */
+export const billLineItems = mysqlTable("billLineItems", {
+  id: int("id").autoincrement().primaryKey(),
+  billId: int("billId").notNull(),
+  productId: int("productId"),
+  lotId: int("lotId"),
+  description: text("description").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitPrice: decimal("unitPrice", { precision: 12, scale: 2 }).notNull(),
+  taxRate: decimal("taxRate", { precision: 5, scale: 2 }).default("0.00").notNull(),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0.00").notNull(),
+  lineTotal: decimal("lineTotal", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type BillLineItem = typeof billLineItems.$inferSelect;
+export type InsertBillLineItem = typeof billLineItems.$inferInsert;
+
+/**
+ * Payments
+ * Unified payment tracking for both AR and AP
+ */
+export const payments = mysqlTable("payments", {
+  id: int("id").autoincrement().primaryKey(),
+  paymentNumber: varchar("paymentNumber", { length: 50 }).notNull().unique(),
+  paymentType: mysqlEnum("paymentType", ["RECEIVED", "SENT"]).notNull(), // RECEIVED = AR, SENT = AP
+  paymentDate: date("paymentDate").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  paymentMethod: mysqlEnum("paymentMethod", ["CASH", "CHECK", "WIRE", "ACH", "CREDIT_CARD", "DEBIT_CARD", "OTHER"]).notNull(),
+  referenceNumber: varchar("referenceNumber", { length: 100 }),
+  bankAccountId: int("bankAccountId"),
+  customerId: int("customerId"), // For AR payments
+  vendorId: int("vendorId"), // For AP payments
+  invoiceId: int("invoiceId"), // For AR payments
+  billId: int("billId"), // For AP payments
+  notes: text("notes"),
+  isReconciled: boolean("isReconciled").default(false).notNull(),
+  reconciledAt: timestamp("reconciledAt"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = typeof payments.$inferInsert;
+
+
+
+
+// ============================================================================
+// ACCOUNTING MODULE SCHEMA - PHASE 3: CASH & EXPENSES
+// ============================================================================
+
+/**
+ * Bank Accounts
+ * Company bank accounts for cash management
+ */
+export const bankAccounts = mysqlTable("bankAccounts", {
+  id: int("id").autoincrement().primaryKey(),
+  accountName: varchar("accountName", { length: 255 }).notNull(),
+  accountNumber: varchar("accountNumber", { length: 50 }).notNull(),
+  bankName: varchar("bankName", { length: 255 }).notNull(),
+  accountType: mysqlEnum("accountType", ["CHECKING", "SAVINGS", "MONEY_MARKET", "CREDIT_CARD"]).notNull(),
+  currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+  currentBalance: decimal("currentBalance", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  ledgerAccountId: int("ledgerAccountId"), // Link to Chart of Accounts
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BankAccount = typeof bankAccounts.$inferSelect;
+export type InsertBankAccount = typeof bankAccounts.$inferInsert;
+
+/**
+ * Bank Transactions
+ * Individual transactions in bank accounts
+ */
+export const bankTransactions = mysqlTable("bankTransactions", {
+  id: int("id").autoincrement().primaryKey(),
+  bankAccountId: int("bankAccountId").notNull(),
+  transactionDate: date("transactionDate").notNull(),
+  transactionType: mysqlEnum("transactionType", ["DEPOSIT", "WITHDRAWAL", "TRANSFER", "FEE", "INTEREST"]).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  description: text("description"),
+  referenceNumber: varchar("referenceNumber", { length: 100 }),
+  paymentId: int("paymentId"), // Link to payments table
+  isReconciled: boolean("isReconciled").default(false).notNull(),
+  reconciledAt: timestamp("reconciledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type BankTransaction = typeof bankTransactions.$inferSelect;
+export type InsertBankTransaction = typeof bankTransactions.$inferInsert;
+
+/**
+ * Expense Categories
+ * Hierarchical expense categorization
+ */
+export const expenseCategories = mysqlTable("expenseCategories", {
+  id: int("id").autoincrement().primaryKey(),
+  categoryName: varchar("categoryName", { length: 255 }).notNull(),
+  parentCategoryId: int("parentCategoryId"),
+  ledgerAccountId: int("ledgerAccountId"), // Link to Chart of Accounts
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ExpenseCategory = typeof expenseCategories.$inferSelect;
+export type InsertExpenseCategory = typeof expenseCategories.$inferInsert;
+
+/**
+ * Expenses
+ * Business expenses tracking
+ */
+export const expenses = mysqlTable("expenses", {
+  id: int("id").autoincrement().primaryKey(),
+  expenseNumber: varchar("expenseNumber", { length: 50 }).notNull().unique(),
+  expenseDate: date("expenseDate").notNull(),
+  categoryId: int("categoryId").notNull(),
+  vendorId: int("vendorId"),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  taxAmount: decimal("taxAmount", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
+  paymentMethod: mysqlEnum("paymentMethod", ["CASH", "CHECK", "CREDIT_CARD", "DEBIT_CARD", "BANK_TRANSFER", "OTHER"]).notNull(),
+  bankAccountId: int("bankAccountId"),
+  description: text("description"),
+  receiptUrl: varchar("receiptUrl", { length: 500 }),
+  billId: int("billId"), // Link to bills if expense is from a bill
+  isReimbursable: boolean("isReimbursable").default(false).notNull(),
+  isReimbursed: boolean("isReimbursed").default(false).notNull(),
+  reimbursedAt: timestamp("reimbursedAt"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = typeof expenses.$inferInsert;
 

@@ -1,0 +1,100 @@
+CREATE TABLE `billLineItems` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`billId` int NOT NULL,
+	`productId` int,
+	`lotId` int,
+	`description` text NOT NULL,
+	`quantity` decimal(10,2) NOT NULL,
+	`unitPrice` decimal(12,2) NOT NULL,
+	`taxRate` decimal(5,2) NOT NULL DEFAULT '0.00',
+	`discountPercent` decimal(5,2) NOT NULL DEFAULT '0.00',
+	`lineTotal` decimal(12,2) NOT NULL,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `billLineItems_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `bills` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`billNumber` varchar(50) NOT NULL,
+	`vendorId` int NOT NULL,
+	`billDate` date NOT NULL,
+	`dueDate` date NOT NULL,
+	`subtotal` decimal(12,2) NOT NULL,
+	`taxAmount` decimal(12,2) NOT NULL DEFAULT '0.00',
+	`discountAmount` decimal(12,2) NOT NULL DEFAULT '0.00',
+	`totalAmount` decimal(12,2) NOT NULL,
+	`amountPaid` decimal(12,2) NOT NULL DEFAULT '0.00',
+	`amountDue` decimal(12,2) NOT NULL,
+	`status` enum('DRAFT','PENDING','APPROVED','PARTIAL','PAID','OVERDUE','VOID') NOT NULL DEFAULT 'DRAFT',
+	`paymentTerms` varchar(100),
+	`notes` text,
+	`referenceType` varchar(50),
+	`referenceId` int,
+	`createdBy` int NOT NULL,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `bills_id` PRIMARY KEY(`id`),
+	CONSTRAINT `bills_billNumber_unique` UNIQUE(`billNumber`)
+);
+--> statement-breakpoint
+CREATE TABLE `invoiceLineItems` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`invoiceId` int NOT NULL,
+	`productId` int,
+	`batchId` int,
+	`description` text NOT NULL,
+	`quantity` decimal(10,2) NOT NULL,
+	`unitPrice` decimal(12,2) NOT NULL,
+	`taxRate` decimal(5,2) NOT NULL DEFAULT '0.00',
+	`discountPercent` decimal(5,2) NOT NULL DEFAULT '0.00',
+	`lineTotal` decimal(12,2) NOT NULL,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `invoiceLineItems_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `invoices` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`invoiceNumber` varchar(50) NOT NULL,
+	`customerId` int NOT NULL,
+	`invoiceDate` date NOT NULL,
+	`dueDate` date NOT NULL,
+	`subtotal` decimal(12,2) NOT NULL,
+	`taxAmount` decimal(12,2) NOT NULL DEFAULT '0.00',
+	`discountAmount` decimal(12,2) NOT NULL DEFAULT '0.00',
+	`totalAmount` decimal(12,2) NOT NULL,
+	`amountPaid` decimal(12,2) NOT NULL DEFAULT '0.00',
+	`amountDue` decimal(12,2) NOT NULL,
+	`status` enum('DRAFT','SENT','VIEWED','PARTIAL','PAID','OVERDUE','VOID') NOT NULL DEFAULT 'DRAFT',
+	`paymentTerms` varchar(100),
+	`notes` text,
+	`referenceType` varchar(50),
+	`referenceId` int,
+	`createdBy` int NOT NULL,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `invoices_id` PRIMARY KEY(`id`),
+	CONSTRAINT `invoices_invoiceNumber_unique` UNIQUE(`invoiceNumber`)
+);
+--> statement-breakpoint
+CREATE TABLE `payments` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`paymentNumber` varchar(50) NOT NULL,
+	`paymentType` enum('RECEIVED','SENT') NOT NULL,
+	`paymentDate` date NOT NULL,
+	`amount` decimal(12,2) NOT NULL,
+	`paymentMethod` enum('CASH','CHECK','WIRE','ACH','CREDIT_CARD','DEBIT_CARD','OTHER') NOT NULL,
+	`referenceNumber` varchar(100),
+	`bankAccountId` int,
+	`customerId` int,
+	`vendorId` int,
+	`invoiceId` int,
+	`billId` int,
+	`notes` text,
+	`isReconciled` boolean NOT NULL DEFAULT false,
+	`reconciledAt` timestamp,
+	`createdBy` int NOT NULL,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `payments_id` PRIMARY KEY(`id`),
+	CONSTRAINT `payments_paymentNumber_unique` UNIQUE(`paymentNumber`)
+);
