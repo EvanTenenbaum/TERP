@@ -35,6 +35,7 @@ import { FilterChips } from "@/components/inventory/FilterChips";
 import { useInventoryFilters } from "@/hooks/useInventoryFilters";
 import { useInventorySort } from "@/hooks/useInventorySort";
 import { SortControls } from "@/components/inventory/SortControls";
+import { InventoryCard } from "@/components/inventory/InventoryCard";
 
 export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -312,7 +313,7 @@ export default function Inventory() {
 
       {/* Inventory Table */}
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -521,6 +522,60 @@ export default function Inventory() {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4">
+          {isLoading ? (
+            <Card className="p-8">
+              <div className="text-center text-muted-foreground">Loading inventory...</div>
+            </Card>
+          ) : !inventoryData || inventoryData.length === 0 ? (
+            <Card className="p-8">
+              <div className="flex flex-col items-center gap-4">
+                <Package className="h-12 w-12 text-muted-foreground" />
+                <p className="text-muted-foreground">No inventory found</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPurchaseModal(true)}
+                >
+                  Create First Batch
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            filteredInventory.map((item) => {
+              const batch = item.batch;
+              const product = item.product;
+              const brand = item.brand;
+              const vendor = item.vendor;
+
+              if (!batch) return null;
+
+              const available = calculateAvailable(batch);
+
+              return (
+                <InventoryCard
+                  key={batch.id}
+                  batch={{
+                    id: batch.id,
+                    sku: batch.sku,
+                    productName: product?.nameCanonical || "Unknown",
+                    brandName: brand?.name || "Unknown",
+                    vendorName: vendor?.name || "Unknown",
+                    grade: batch.grade || "-",
+                    status: batch.status,
+                    onHandQty: batch.onHandQty,
+                    reservedQty: batch.reservedQty,
+                    availableQty: available.toString(),
+                  }}
+                  onView={(id) => setSelectedBatch(id)}
+                  onEdit={batch.status === "AWAITING_INTAKE" ? (id) => setEditingBatch(id) : undefined}
+                />
+              );
+            })
+          )}
         </div>
       </Card>
 
