@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, json } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -437,4 +437,68 @@ export type InsertGrade = typeof grades.$inferInsert;
 
 
 
+
+
+
+// ============================================================================
+// DASHBOARD MODULE SCHEMA
+// ============================================================================
+
+/**
+ * Scratch Pad Notes table
+ * Stores user's personal notes in an infinite scroll diary format
+ * Newest notes appear at the bottom (like chat/messaging apps)
+ */
+export const scratchPadNotes = mysqlTable("scratch_pad_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  isCompleted: boolean("isCompleted").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type ScratchPadNote = typeof scratchPadNotes.$inferSelect;
+export type InsertScratchPadNote = typeof scratchPadNotes.$inferInsert;
+
+/**
+ * Dashboard Widget Layouts table
+ * Stores user's customized widget positions and configurations
+ * Each user can have their own layout, with role-based defaults
+ */
+export const dashboardWidgetLayouts = mysqlTable("dashboard_widget_layouts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").references(() => users.id, { onDelete: "cascade" }),
+  role: mysqlEnum("role", ["user", "admin"]),
+  widgetType: varchar("widgetType", { length: 100 }).notNull(),
+  position: int("position").notNull(),
+  width: int("width").default(1).notNull(),
+  height: int("height").default(1).notNull(),
+  isVisible: boolean("isVisible").default(true).notNull(),
+  config: json("config"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DashboardWidgetLayout = typeof dashboardWidgetLayouts.$inferSelect;
+export type InsertDashboardWidgetLayout = typeof dashboardWidgetLayouts.$inferInsert;
+
+/**
+ * Dashboard KPI Configurations table
+ * Stores role-based KPI configurations (which KPIs to show, in what order)
+ * Admins can set defaults for each role
+ */
+export const dashboardKpiConfigs = mysqlTable("dashboard_kpi_configs", {
+  id: int("id").autoincrement().primaryKey(),
+  role: mysqlEnum("role", ["user", "admin"]).notNull(),
+  kpiType: varchar("kpiType", { length: 100 }).notNull(),
+  position: int("position").notNull(),
+  isVisible: boolean("isVisible").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DashboardKpiConfig = typeof dashboardKpiConfigs.$inferSelect;
+export type InsertDashboardKpiConfig = typeof dashboardKpiConfigs.$inferInsert;
 

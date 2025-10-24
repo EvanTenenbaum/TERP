@@ -5,6 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as inventoryDb from "./inventoryDb";
 import * as inventoryUtils from "./inventoryUtils";
+import * as scratchPadDb from "./scratchPadDb";
+import * as dashboardDb from "./dashboardDb";
 import { seedStrainsFromCSV } from "./seedStrains";
 import type { Batch } from "../drizzle/schema";
 
@@ -497,6 +499,158 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const { getCogHistory } = await import("./cogsManagement");
         return await getCogHistory(input.batchId);
+      }),
+  }),
+
+  // Scratch Pad Router
+  scratchPad: router({
+    // Get user's notes (infinite scroll)
+    list: protectedProcedure
+      .input(z.object({
+        limit: z.number().optional().default(50),
+        cursor: z.number().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await scratchPadDb.getUserNotes(ctx.user.id, input.limit, input.cursor);
+      }),
+
+    // Create new note
+    create: protectedProcedure
+      .input(z.object({
+        content: z.string().min(1).max(10000),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await scratchPadDb.createNote(ctx.user.id, input.content);
+      }),
+
+    // Update note content
+    update: protectedProcedure
+      .input(z.object({
+        noteId: z.number(),
+        content: z.string().min(1).max(10000),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await scratchPadDb.updateNote(input.noteId, ctx.user.id, input.content);
+      }),
+
+    // Toggle note completion
+    toggleComplete: protectedProcedure
+      .input(z.object({
+        noteId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await scratchPadDb.toggleNoteCompletion(input.noteId, ctx.user.id);
+      }),
+
+    // Delete note
+    delete: protectedProcedure
+      .input(z.object({
+        noteId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await scratchPadDb.deleteNote(input.noteId, ctx.user.id);
+      }),
+
+    // Get note count
+    count: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await scratchPadDb.getNoteCount(ctx.user.id);
+      }),
+  }),
+
+  // Dashboard Router
+  dashboard: router({
+    // Get user's widget layout
+    getLayout: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await dashboardDb.getUserWidgetLayout(ctx.user.id);
+      }),
+
+    // Save user's widget layout
+    saveLayout: protectedProcedure
+      .input(z.object({
+        widgets: z.array(z.object({
+          widgetType: z.string(),
+          position: z.number(),
+          width: z.number(),
+          height: z.number(),
+          isVisible: z.boolean(),
+          config: z.any().optional(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await dashboardDb.saveUserWidgetLayout(ctx.user.id, input.widgets);
+      }),
+
+    // Reset user's layout to role default
+    resetLayout: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await dashboardDb.resetUserWidgetLayout(ctx.user.id);
+      }),
+
+    // Get role default layout (admin only)
+    getRoleDefault: protectedProcedure
+      .input(z.object({
+        role: z.enum(["user", "admin"]),
+      }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user || ctx.user.role !== "admin") {
+          throw new Error("Forbidden: Admin only");
+        }
+        return await dashboardDb.getRoleDefaultLayout(input.role);
+      }),
+
+    // Save role default layout (admin only)
+    saveRoleDefault: protectedProcedure
+      .input(z.object({
+        role: z.enum(["user", "admin"]),
+        widgets: z.array(z.object({
+          widgetType: z.string(),
+          position: z.number(),
+          width: z.number(),
+          height: z.number(),
+          isVisible: z.boolean(),
+          config: z.any().optional(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user || ctx.user.role !== "admin") {
+          throw new Error("Forbidden: Admin only");
+        }
+        return await dashboardDb.saveRoleDefaultLayout(input.role, input.widgets);
+      }),
+
+    // Get KPI configuration for user's role
+    getKpiConfig: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await dashboardDb.getRoleKpiConfig(ctx.user.role);
+      }),
+
+    // Save KPI configuration for a role (admin only)
+    saveKpiConfig: protectedProcedure
+      .input(z.object({
+        role: z.enum(["user", "admin"]),
+        kpis: z.array(z.object({
+          kpiType: z.string(),
+          position: z.number(),
+          isVisible: z.boolean(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user || ctx.user.role !== "admin") {
+          throw new Error("Forbidden: Admin only");
+        }
+        return await dashboardDb.saveRoleKpiConfig(input.role, input.kpis);
       }),
   }),
 });
