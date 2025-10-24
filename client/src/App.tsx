@@ -9,16 +9,6 @@ import Inventory from "@/pages/Inventory";
 import { AppShell } from "./components/layout/AppShell";
 import Quotes from "./pages/Quotes";
 import Settings from "@/pages/Settings";
-import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
-import ChartOfAccounts from "@/pages/accounting/ChartOfAccounts";
-import GeneralLedger from "@/pages/accounting/GeneralLedger";
-import FiscalPeriods from "@/pages/accounting/FiscalPeriods";
-import Invoices from "@/pages/accounting/Invoices";
-import Bills from "@/pages/accounting/Bills";
-import Payments from "@/pages/accounting/Payments";
-import BankAccounts from "@/pages/accounting/BankAccounts";
-import BankTransactions from "@/pages/accounting/BankTransactions";
-import Expenses from "@/pages/accounting/Expenses";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -28,16 +18,6 @@ function Router() {
         <Route path={"/"} component={Home} />
         <Route path={"/quotes"} component={Quotes} />
         <Route path={"/inventory"} component={Inventory} />
-        <Route path={"/accounting/dashboard"} component={AccountingDashboard} />
-        <Route path={"/accounting/chart-of-accounts"} component={ChartOfAccounts} />
-        <Route path={"/accounting/general-ledger"} component={GeneralLedger} />
-        <Route path={"/accounting/fiscal-periods"} component={FiscalPeriods} />
-        <Route path={"/accounting/invoices"} component={Invoices} />
-        <Route path={"/accounting/bills"} component={Bills} />
-        <Route path={"/accounting/payments"} component={Payments} />
-        <Route path={"/accounting/bank-accounts"} component={BankAccounts} />
-        <Route path={"/accounting/bank-transactions"} component={BankTransactions} />
-        <Route path={"/accounting/expenses"} component={Expenses} />
         <Route path={"/settings"} component={Settings} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
