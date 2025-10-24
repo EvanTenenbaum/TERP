@@ -1,0 +1,42 @@
+{
+  "query": "SELECT \n  'accounts' as table_name, COUNT(*) as row_count FROM accounts\nUNION ALL\nSELECT 'fiscalPeriods', COUNT(*) FROM fiscalPeriods\nUNION ALL\nSELECT 'invoices', COUNT(*) FROM invoices\nUNION ALL\nSELECT 'bills', COUNT(*) FROM bills\nUNION ALL\nSELECT 'payments', COUNT(*) FROM payments\nUNION ALL\nSELECT 'bankAccounts', COUNT(*) FROM bankAccounts\nUNION ALL\nSELECT 'expenses', COUNT(*) FROM expenses\nUNION ALL\nSELECT 'expenseCategories', COUNT(*) FROM expenseCategories",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3VCDwJ3cd5ekhng.root --database BnbuGpJyxab4suPN4jFq3M --execute SELECT \n  'accounts' as table_name, COUNT(*) as row_count FROM accounts\nUNION ALL\nSELECT 'fiscalPeriods', COUNT(*) FROM fiscalPeriods\nUNION ALL\nSELECT 'invoices', COUNT(*) FROM invoices\nUNION ALL\nSELECT 'bills', COUNT(*) FROM bills\nUNION ALL\nSELECT 'payments', COUNT(*) FROM payments\nUNION ALL\nSELECT 'bankAccounts', COUNT(*) FROM bankAccounts\nUNION ALL\nSELECT 'expenses', COUNT(*) FROM expenses\nUNION ALL\nSELECT 'expenseCategories', COUNT(*) FROM expenseCategories",
+  "rows": [
+    {
+      "table_name": "accounts",
+      "row_count": "24"
+    },
+    {
+      "table_name": "invoices",
+      "row_count": "0"
+    },
+    {
+      "table_name": "bills",
+      "row_count": "0"
+    },
+    {
+      "table_name": "payments",
+      "row_count": "0"
+    },
+    {
+      "table_name": "fiscalPeriods",
+      "row_count": "8"
+    },
+    {
+      "table_name": "bankAccounts",
+      "row_count": "3"
+    },
+    {
+      "table_name": "expenses",
+      "row_count": "0"
+    },
+    {
+      "table_name": "expenseCategories",
+      "row_count": "8"
+    }
+  ],
+  "messages": [],
+  "stdout": "table_name\trow_count\naccounts\t24\ninvoices\t0\nbills\t0\npayments\t0\nfiscalPeriods\t8\nbankAccounts\t3\nexpenses\t0\nexpenseCategories\t8\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

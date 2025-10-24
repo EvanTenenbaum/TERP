@@ -1,0 +1,20 @@
+{
+  "query": "SELECT \n  (SELECT COUNT(*) FROM accounts) as accounts_count,\n  (SELECT COUNT(*) FROM fiscalPeriods) as fiscal_periods_count,\n  (SELECT COUNT(*) FROM invoices) as invoices_count,\n  (SELECT COUNT(*) FROM bills) as bills_count,\n  (SELECT COUNT(*) FROM payments) as payments_count,\n  (SELECT COUNT(*) FROM bankAccounts) as bank_accounts_count,\n  (SELECT COUNT(*) FROM expenses) as expenses_count,\n  (SELECT COUNT(*) FROM expenseCategories) as expense_categories_count",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3VCDwJ3cd5ekhng.root --database BnbuGpJyxab4suPN4jFq3M --execute SELECT \n  (SELECT COUNT(*) FROM accounts) as accounts_count,\n  (SELECT COUNT(*) FROM fiscalPeriods) as fiscal_periods_count,\n  (SELECT COUNT(*) FROM invoices) as invoices_count,\n  (SELECT COUNT(*) FROM bills) as bills_count,\n  (SELECT COUNT(*) FROM payments) as payments_count,\n  (SELECT COUNT(*) FROM bankAccounts) as bank_accounts_count,\n  (SELECT COUNT(*) FROM expenses) as expenses_count,\n  (SELECT COUNT(*) FROM expenseCategories) as expense_categories_count",
+  "rows": [
+    {
+      "accounts_count": "24",
+      "fiscal_periods_count": "8",
+      "invoices_count": "0",
+      "bills_count": "0",
+      "payments_count": "0",
+      "bank_accounts_count": "3",
+      "expenses_count": "0",
+      "expense_categories_count": "8"
+    }
+  ],
+  "messages": [],
+  "stdout": "accounts_count\tfiscal_periods_count\tinvoices_count\tbills_count\tpayments_count\tbank_accounts_count\texpenses_count\texpense_categories_count\n24\t8\t0\t0\t0\t3\t0\t8\n",
+  "stderr": "",
+  "execution_time_ms": 677
+}
