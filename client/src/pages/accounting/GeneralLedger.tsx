@@ -150,7 +150,7 @@ export default function GeneralLedger() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">General Ledger</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">General Ledger</h1>
           <p className="text-muted-foreground mt-1">
             View and manage all journal entries and transactions
           </p>
@@ -171,7 +171,7 @@ export default function GeneralLedger() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
@@ -212,7 +212,7 @@ export default function GeneralLedger() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input

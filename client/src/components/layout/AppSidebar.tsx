@@ -7,6 +7,7 @@ import {
   Users,
   Settings,
   BarChart3,
+  DollarSign,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,7 @@ const navigation = [
   { name: 'Sales & Quotes', href: '/quotes', icon: FileText },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
   { name: 'Inventory', href: '/inventory', icon: Package },
+  { name: 'Accounting', href: '/accounting/dashboard', icon: DollarSign },
   { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },

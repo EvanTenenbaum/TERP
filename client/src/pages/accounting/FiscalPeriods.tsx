@@ -200,7 +200,7 @@ export default function FiscalPeriods() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Fiscal Periods</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Fiscal Periods</h1>
           <p className="text-muted-foreground mt-1">
             Manage accounting periods and their status
           </p>
@@ -212,7 +212,7 @@ export default function FiscalPeriods() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Periods</CardTitle>

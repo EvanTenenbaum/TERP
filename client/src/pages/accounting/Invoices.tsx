@@ -87,14 +87,14 @@ export default function Invoices() {
   return (
     <div className="flex flex-col gap-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Invoices</h1>
           <p className="text-muted-foreground mt-1">
             Manage customer invoices and accounts receivable
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => setShowAging(!showAging)}>
             {showAging ? "Hide" : "Show"} AR Aging
           </Button>
@@ -106,7 +106,7 @@ export default function Invoices() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>

@@ -187,7 +187,7 @@ export default function AccountingDashboard() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {expenseBreakdown.slice(0, 6).map((item: any) => (
                 <div key={item.categoryId} className="flex items-center justify-between p-3 border rounded-lg">
                   <span className="text-sm font-medium">{item.categoryName}</span>
@@ -205,7 +205,7 @@ export default function AccountingDashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <Button 
               variant="outline" 
               className="h-20 flex-col gap-2"

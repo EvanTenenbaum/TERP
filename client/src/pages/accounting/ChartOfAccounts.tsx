@@ -169,7 +169,7 @@ export default function ChartOfAccounts() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Chart of Accounts</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Chart of Accounts</h1>
           <p className="text-muted-foreground mt-1">
             Manage your account structure and classifications
           </p>
@@ -181,7 +181,7 @@ export default function ChartOfAccounts() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Accounts</CardTitle>
