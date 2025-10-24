@@ -1,12 +1,16 @@
-import { Bell, Search, Settings, User, Menu } from 'lucide-react';
+import { Bell, Search, Settings, User, Menu, StickyNote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ScratchPad } from '@/components/dashboard/ScratchPad';
+import { useState } from 'react';
 
 interface AppHeaderProps {
   onMenuClick?: () => void;
 }
 
 export function AppHeader({ onMenuClick }: AppHeaderProps) {
+  const [scratchPadOpen, setScratchPadOpen] = useState(false);
+
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b border-border bg-card">
       {/* Mobile menu button */}
@@ -37,6 +41,15 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         <Button variant="ghost" size="icon" className="hidden sm:flex">
           <Bell className="h-5 w-5" />
         </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="hidden sm:flex"
+          onClick={() => setScratchPadOpen(true)}
+          title="Scratch Pad"
+        >
+          <StickyNote className="h-5 w-5" />
+        </Button>
         <Button variant="ghost" size="icon" className="hidden sm:flex">
           <Settings className="h-5 w-5" />
         </Button>
@@ -44,6 +57,8 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           <User className="h-5 w-5" />
         </Button>
       </div>
+      
+      <ScratchPad open={scratchPadOpen} onOpenChange={setScratchPadOpen} />
     </header>
   );
 }
