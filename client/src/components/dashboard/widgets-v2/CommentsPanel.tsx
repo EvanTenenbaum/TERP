@@ -18,7 +18,7 @@ export function CommentsPanel({ noteId }: CommentsPanelProps) {
   // Fetch comments
   const { data: comments, isLoading, refetch } = trpc.freeformNotes.comments.list.useQuery(
     { noteId },
-    { refetchInterval: 10000 } // Refresh every 10 seconds
+    { refetchInterval: false } // Manual refresh only (performance optimization)
   );
 
   // Add comment mutation

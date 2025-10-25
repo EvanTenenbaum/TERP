@@ -58,7 +58,7 @@ const activityLabels = {
 export function ActivityLogPanel({ noteId }: ActivityLogPanelProps) {
   const { data: activities, isLoading } = trpc.freeformNotes.activity.list.useQuery(
     { noteId, limit: 50 },
-    { refetchInterval: 30000 } // Refresh every 30 seconds
+    { refetchInterval: false } // Manual refresh only (performance optimization)
   );
 
   if (isLoading) {
