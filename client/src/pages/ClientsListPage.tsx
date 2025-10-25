@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { AddClientWizard } from "@/components/clients/AddClientWizard";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Search, Filter, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function ClientsListPage() {
+  const [, setLocation] = useLocation();
   const [addClientOpen, setAddClientOpen] = useState(false);
   
   // Filters and search state
@@ -270,7 +272,7 @@ export default function ClientsListPage() {
                     <TableRow
                       key={client.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => console.log(`View client ${client.id}`)}
+                      onClick={() => setLocation(`/clients/${client.id}`)}
                     >
                       <TableCell className="font-medium">{client.teriCode}</TableCell>
                       <TableCell>
@@ -319,7 +321,7 @@ export default function ClientsListPage() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            console.log(`View client ${client.id}`);
+                            setLocation(`/clients/${client.id}`);
                           }}
                         >
                           View
@@ -368,8 +370,8 @@ export default function ClientsListPage() {
         open={addClientOpen}
         onOpenChange={setAddClientOpen}
         onSuccess={(clientId) => {
-          console.log("Client created:", clientId);
-          // Optionally navigate to client profile or refresh list
+          // Navigate to client profile
+          setLocation(`/clients/${clientId}`);
         }}
       />
     </div>

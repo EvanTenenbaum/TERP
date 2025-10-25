@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
 import {
   ArrowLeft,
@@ -36,11 +46,9 @@ import {
   XCircle,
 } from "lucide-react";
 
-interface ClientProfilePageProps {
-  clientId: number;
-}
-
-export default function ClientProfilePage({ clientId }: ClientProfilePageProps) {
+export default function ClientProfilePage() {
+  const params = useParams<{ id: string }>();
+  const clientId = parseInt(params.id || "0", 10);
   const [activeTab, setActiveTab] = useState("overview");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
@@ -72,7 +80,17 @@ export default function ClientProfilePage({ clientId }: ClientProfilePageProps) 
   });
 
   // Mutations
-  const updateClientMutation = trpc.clients.update.useMutation();
+  const updateClientMutation = trpc.clients.update.useMutation({
+    onSuccess: () => {
+      setEditDialogOpen(false);
+    },
+  });
+  const createTransactionMutation = trpc.clients.transactions.create.useMutation({
+    onSuccess: () => {
+      refetchTransactions();
+      setTransactionDialogOpen(false);
+    },
+  });
   const recordPaymentMutation = trpc.clients.transactions.recordPayment.useMutation();
 
   if (clientLoading) {
@@ -583,6 +601,213 @@ export default function ClientProfilePage({ clientId }: ClientProfilePageProps) 
                 Cancel
               </Button>
               <Button type="submit">Record Payment</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Client Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Client</DialogTitle>
+            <DialogDescription>
+              Update client information for {client.teriCode}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              updateClientMutation.mutate({
+                clientId: client.id,
+                name: formData.get("name") as string,
+                email: (formData.get("email") as string) || undefined,
+                phone: (formData.get("phone") as string) || undefined,
+                address: (formData.get("address") as string) || undefined,
+                isBuyer: formData.get("isBuyer") === "on",
+                isSeller: formData.get("isSeller") === "on",
+                isBrand: formData.get("isBrand") === "on",
+                isReferee: formData.get("isReferee") === "on",
+                isContractor: formData.get("isContractor") === "on",
+              });
+            }}
+          >
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Client Name *</Label>
+                <Input
+                  id="edit-name"
+                  name="name"
+                  defaultValue={client.name}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  name="email"
+                  type="email"
+                  defaultValue={client.email || ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Phone</Label>
+                <Input
+                  id="edit-phone"
+                  name="phone"
+                  defaultValue={client.phone || ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-address">Address</Label>
+                <Textarea
+                  id="edit-address"
+                  name="address"
+                  defaultValue={client.address || ""}
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Client Types</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="edit-isBuyer" name="isBuyer" defaultChecked={client.isBuyer || false} />
+                    <Label htmlFor="edit-isBuyer" className="font-normal cursor-pointer">Buyer</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="edit-isSeller" name="isSeller" defaultChecked={client.isSeller || false} />
+                    <Label htmlFor="edit-isSeller" className="font-normal cursor-pointer">Seller</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="edit-isBrand" name="isBrand" defaultChecked={client.isBrand || false} />
+                    <Label htmlFor="edit-isBrand" className="font-normal cursor-pointer">Brand</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="edit-isReferee" name="isReferee" defaultChecked={client.isReferee || false} />
+                    <Label htmlFor="edit-isReferee" className="font-normal cursor-pointer">Referee</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="edit-isContractor" name="isContractor" defaultChecked={client.isContractor || false} />
+                    <Label htmlFor="edit-isContractor" className="font-normal cursor-pointer">Contractor</Label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateClientMutation.isPending}>
+                {updateClientMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Transaction Dialog */}
+      <Dialog open={transactionDialogOpen} onOpenChange={setTransactionDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Transaction</DialogTitle>
+            <DialogDescription>
+              Create a new transaction for {client.teriCode}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              createTransactionMutation.mutate({
+                clientId: client.id,
+                transactionType: formData.get("transactionType") as any,
+                transactionNumber: (formData.get("transactionNumber") as string) || undefined,
+                transactionDate: new Date(formData.get("transactionDate") as string),
+                amount: parseFloat(formData.get("amount") as string),
+                paymentStatus: (formData.get("paymentStatus") as any) || "PENDING",
+                notes: (formData.get("notes") as string) || undefined,
+              });
+            }}
+          >
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="transactionType">Transaction Type *</Label>
+                <Select name="transactionType" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INVOICE">Invoice</SelectItem>
+                    <SelectItem value="PAYMENT">Payment</SelectItem>
+                    <SelectItem value="QUOTE">Quote</SelectItem>
+                    <SelectItem value="ORDER">Order</SelectItem>
+                    <SelectItem value="REFUND">Refund</SelectItem>
+                    <SelectItem value="CREDIT">Credit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="transactionNumber">Transaction Number</Label>
+                <Input
+                  id="transactionNumber"
+                  name="transactionNumber"
+                  placeholder="e.g., INV-001"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="transactionDate">Transaction Date *</Label>
+                <Input
+                  id="transactionDate"
+                  name="transactionDate"
+                  type="date"
+                  defaultValue={new Date().toISOString().split("T")[0]}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount *</Label>
+                <Input
+                  id="amount"
+                  name="amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paymentStatus">Payment Status</Label>
+                <Select name="paymentStatus" defaultValue="PENDING">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="PAID">Paid</SelectItem>
+                    <SelectItem value="OVERDUE">Overdue</SelectItem>
+                    <SelectItem value="PARTIAL">Partial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  placeholder="Additional notes..."
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setTransactionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createTransactionMutation.isPending}>
+                {createTransactionMutation.isPending ? "Creating..." : "Create Transaction"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -19,7 +19,7 @@ const navigation = [
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
   { name: 'Inventory', href: '/inventory', icon: Package },
   { name: 'Accounting', href: '/accounting/dashboard', icon: DollarSign },
-  { name: 'Customers', href: '/customers', icon: Users },
+  { name: 'Clients', href: '/clients', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

@@ -20,6 +20,8 @@ import Payments from "@/pages/accounting/Payments";
 import BankAccounts from "@/pages/accounting/BankAccounts";
 import BankTransactions from "@/pages/accounting/BankTransactions";
 import Expenses from "@/pages/accounting/Expenses";
+import ClientsListPage from "@/pages/ClientsListPage";
+import ClientProfilePage from "@/pages/ClientProfilePage";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -40,6 +42,8 @@ function Router() {
         <Route path={"/accounting/bank-accounts"} component={BankAccounts} />
         <Route path={"/accounting/bank-transactions"} component={BankTransactions} />
         <Route path={"/accounting/expenses"} component={Expenses} />
+        <Route path={"/clients"} component={ClientsListPage} />
+        <Route path={"/clients/:id"} component={ClientProfilePage} />
         <Route path={"/settings"} component={Settings} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
