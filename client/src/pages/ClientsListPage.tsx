@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { AddClientWizard } from "@/components/clients/AddClientWizard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Search, Filter, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function ClientsListPage() {
+  const [addClientOpen, setAddClientOpen] = useState(false);
   
   // Filters and search state
   const [search, setSearch] = useState("");
@@ -99,7 +101,7 @@ export default function ClientsListPage() {
             Manage all clients, track transactions, and monitor debt
           </p>
         </div>
-        <Button onClick={() => console.log("Add new client")}>
+        <Button onClick={() => setAddClientOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add New Client
         </Button>
@@ -360,7 +362,16 @@ export default function ClientsListPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add Client Wizard */}
+      <AddClientWizard
+        open={addClientOpen}
+        onOpenChange={setAddClientOpen}
+        onSuccess={(clientId) => {
+          console.log("Client created:", clientId);
+          // Optionally navigate to client profile or refresh list
+        }}
+      />
     </div>
   );
 }
-
