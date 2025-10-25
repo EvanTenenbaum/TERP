@@ -4,4 +4,7 @@ export { InventorySnapshotWidget } from "./InventorySnapshotWidget";
 export { CashFlowWidget } from "./CashFlowWidget";
 export { TotalDebtWidget } from "./TotalDebtWidget";
 export { SalesComparisonWidget } from "./SalesComparisonWidget";
+export { CashCollectedLeaderboard } from "./CashCollectedLeaderboard";
+export { ClientDebtLeaderboard } from "./ClientDebtLeaderboard";
+export { ClientProfitMarginLeaderboard } from "./ClientProfitMarginLeaderboard";
 
