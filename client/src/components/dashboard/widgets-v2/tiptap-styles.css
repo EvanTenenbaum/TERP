@@ -1,0 +1,119 @@
+/* Tiptap Editor Styles - Nested Lists and Hierarchical Checkboxes */
+
+.tiptap-editor {
+  /* Task List (Checkboxes) */
+  ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  ul[data-type="taskList"] li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.25rem 0;
+  }
+
+  ul[data-type="taskList"] li > label {
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+    cursor: pointer;
+  }
+
+  ul[data-type="taskList"] li > div {
+    flex-grow: 1;
+  }
+
+  /* Nested task lists - indentation */
+  ul[data-type="taskList"] ul[data-type="taskList"] {
+    margin-left: 1.5rem;
+    padding-left: 0;
+    border-left: 2px solid hsl(var(--border));
+    padding-left: 0.75rem;
+  }
+
+  /* Checkbox styling */
+  ul[data-type="taskList"] input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    cursor: pointer;
+    accent-color: hsl(var(--primary));
+  }
+
+  /* Checked items - strikethrough */
+  ul[data-type="taskList"] li[data-checked="true"] > div {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+
+  /* Bullet Lists */
+  ul:not([data-type="taskList"]) {
+    padding-left: 1.5rem;
+  }
+
+  ul:not([data-type="taskList"]) ul {
+    margin-left: 1.5rem;
+    border-left: 2px solid hsl(var(--border));
+    padding-left: 0.75rem;
+  }
+
+  /* Numbered Lists */
+  ol {
+    padding-left: 1.5rem;
+  }
+
+  ol ol {
+    margin-left: 1.5rem;
+    border-left: 2px solid hsl(var(--border));
+    padding-left: 0.75rem;
+  }
+
+  /* List items */
+  li {
+    margin: 0.25rem 0;
+  }
+
+  /* Headings */
+  h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin: 1.5rem 0 1rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 1.25rem 0 0.75rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+  }
+
+  /* Paragraphs */
+  p {
+    margin: 0.5rem 0;
+  }
+
+  /* Placeholder */
+  p.is-editor-empty:first-child::before {
+    color: hsl(var(--muted-foreground));
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  /* Focus styles */
+  &:focus {
+    outline: none;
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+  }
+}
+

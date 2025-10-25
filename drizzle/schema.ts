@@ -806,3 +806,75 @@ export const expenses = mysqlTable("expenses", {
 export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = typeof expenses.$inferInsert;
 
+
+// ============================================================================
+// FREEFORM NOTES MODULE SCHEMA
+// ============================================================================
+
+/**
+ * Freeform Notes table
+ * Advanced rich-text notes with Tiptap editor (JSON content)
+ * Supports hierarchical lists, checkboxes, templates, and collaboration
+ */
+export const freeformNotes = mysqlTable("freeform_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 500 }).notNull().default("Untitled Note"),
+  content: json("content"), // Tiptap JSON content (rich text, nested lists, checkboxes)
+  templateType: varchar("templateType", { length: 100 }), // TO_DO, MEETING_NOTES, BRAINSTORM, GOALS, MESSAGE_BOARD, CUSTOM
+  tags: json("tags"), // Array of tag strings for categorization
+  isPinned: boolean("isPinned").default(false).notNull(),
+  isArchived: boolean("isArchived").default(false).notNull(),
+  sharedWith: json("sharedWith"), // Array of user IDs who have access
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  lastViewedAt: timestamp("lastViewedAt"),
+});
+
+export type FreeformNote = typeof freeformNotes.$inferSelect;
+export type InsertFreeformNote = typeof freeformNotes.$inferInsert;
+
+/**
+ * Note Comments table
+ * Collaboration feature: async comments on notes
+ */
+export const noteComments = mysqlTable("note_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  noteId: int("noteId").notNull().references(() => freeformNotes.id, { onDelete: "cascade" }),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  parentCommentId: int("parentCommentId"), // For threaded replies
+  isResolved: boolean("isResolved").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type NoteComment = typeof noteComments.$inferSelect;
+export type InsertNoteComment = typeof noteComments.$inferInsert;
+
+/**
+ * Note Activity table
+ * Activity log for collaboration and audit trail
+ */
+export const noteActivity = mysqlTable("note_activity", {
+  id: int("id").autoincrement().primaryKey(),
+  noteId: int("noteId").notNull().references(() => freeformNotes.id, { onDelete: "cascade" }),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  activityType: mysqlEnum("activityType", [
+    "CREATED",
+    "UPDATED",
+    "COMMENTED",
+    "SHARED",
+    "ARCHIVED",
+    "RESTORED",
+    "PINNED",
+    "UNPINNED",
+    "TEMPLATE_APPLIED"
+  ]).notNull(),
+  metadata: json("metadata"), // Additional context (e.g., template name, user shared with)
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type NoteActivity = typeof noteActivity.$inferSelect;
+export type InsertNoteActivity = typeof noteActivity.$inferInsert;
+

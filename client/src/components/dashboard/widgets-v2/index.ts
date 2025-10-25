@@ -7,4 +7,5 @@ export { SalesComparisonWidget } from "./SalesComparisonWidget";
 export { CashCollectedLeaderboard } from "./CashCollectedLeaderboard";
 export { ClientDebtLeaderboard } from "./ClientDebtLeaderboard";
 export { ClientProfitMarginLeaderboard } from "./ClientProfitMarginLeaderboard";
+export { FreeformNoteWidget } from "./FreeformNoteWidget";
 

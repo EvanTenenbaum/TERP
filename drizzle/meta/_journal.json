@@ -50,6 +50,13 @@
       "when": 1761281741350,
       "tag": "0006_chunky_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1761370288854,
+      "tag": "0007_sparkling_phantom_reporter",
+      "breakpoints": true
     }
   ]
 }
