@@ -1,7 +1,7 @@
 import { Bell, Search, Settings, User, Menu, StickyNote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScratchPad } from '@/components/dashboard/ScratchPad';
+import { FloatingScratchPad } from '@/components/FloatingScratchPad';
 import { useState } from 'react';
 
 interface AppHeaderProps {
@@ -58,7 +58,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         </Button>
       </div>
       
-      <ScratchPad open={scratchPadOpen} onOpenChange={setScratchPadOpen} />
+      <FloatingScratchPad isOpen={scratchPadOpen} onClose={() => setScratchPadOpen(false)} />
     </header>
   );
 }
