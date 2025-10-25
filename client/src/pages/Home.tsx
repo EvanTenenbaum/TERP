@@ -5,19 +5,23 @@ import { RecentQuotesWidget } from "@/components/dashboard/widgets/RecentQuotesW
 import { QuickActionsWidget } from "@/components/dashboard/widgets/QuickActionsWidget";
 import { InventoryAlertsWidget } from "@/components/dashboard/widgets/InventoryAlertsWidget";
 import { RevenueChartWidget } from "@/components/dashboard/widgets/RevenueChartWidget";
+import { trpc } from "@/lib/trpc";
 
 export default function Home() {
   const { user, loading, error, isAuthenticated } = useAuth();
 
-  // Mock KPI data - in production, this would come from tRPC
-  const kpiData = {
-    totalRevenue: 127500,
-    revenueChange: 18,
-    activeOrders: 18,
-    ordersChange: 8,
-    inventoryValue: 342000,
-    inventoryChange: 5,
-    lowStockCount: 3,
+  // Fetch real KPI data from tRPC
+  const { data: kpiData, isLoading: kpisLoading } = trpc.dashboard.getKpis.useQuery();
+
+  // Default values while loading
+  const displayKpiData = kpiData || {
+    totalRevenue: 0,
+    revenueChange: 0,
+    activeOrders: 0,
+    ordersChange: 0,
+    inventoryValue: 0,
+    inventoryChange: 0,
+    lowStockCount: 0,
   };
 
   return (
@@ -31,7 +35,7 @@ export default function Home() {
       </div>
 
       {/* KPI Summary Row */}
-      <KpiSummaryRow data={kpiData} loading={loading} />
+      <KpiSummaryRow data={displayKpiData} loading={loading || kpisLoading} />
 
       {/* Dashboard Widgets */}
       <DashboardGrid columns={2}>

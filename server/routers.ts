@@ -569,6 +569,40 @@ export const appRouter = router({
 
   // Dashboard Router
   dashboard: router({
+    // Get real-time KPI data
+    getKpis: protectedProcedure
+      .query(async () => {
+        // Get inventory stats
+        const inventoryStats = await inventoryDb.getDashboardStats();
+        
+        // Get accounting data
+        const outstandingReceivables = await arApDb.getOutstandingReceivables();
+        const paidInvoicesResult = await arApDb.getInvoices({ status: 'PAID' });
+        
+        // Calculate total revenue from paid invoices
+        const paidInvoices = paidInvoicesResult.invoices || [];
+        const totalRevenue = paidInvoices.reduce((sum: number, inv: any) => sum + Number(inv.totalAmount || 0), 0);
+        
+        // Calculate active orders (non-paid invoices)
+        const activeInvoicesResult = await arApDb.getInvoices({ status: 'SENT' });
+        const activeOrders = activeInvoicesResult.invoices?.length || 0;
+        
+        // Calculate inventory value
+        const inventoryValue = inventoryStats?.totalInventoryValue || 0;
+        
+        // Low stock count (estimate from status counts)
+        const lowStockCount = 0; // TODO: Add low stock threshold logic
+        
+        return {
+          totalRevenue,
+          revenueChange: 0, // TODO: Calculate from previous period
+          activeOrders,
+          ordersChange: 0, // TODO: Calculate from previous period
+          inventoryValue,
+          inventoryChange: 0, // TODO: Calculate from previous period
+          lowStockCount,
+        };
+      }),
     // Get user's widget layout
     getLayout: protectedProcedure
       .query(async ({ ctx }) => {

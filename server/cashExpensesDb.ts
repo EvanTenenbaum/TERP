@@ -274,11 +274,9 @@ export async function getBankAccountBalanceAtDate(bankAccountId: number, asOfDat
   const deposits = Number(result[0]?.deposits || 0);
   const withdrawals = Number(result[0]?.withdrawals || 0);
 
-  // Get account opening balance
-  const account = await getBankAccountById(bankAccountId);
-  const openingBalance = Number(account?.currentBalance || 0);
-
-  return openingBalance + deposits - withdrawals;
+  // Calculate balance from transactions only (assumes account started at 0)
+  // If you need to support opening balances, add an 'openingBalance' field to bankAccounts schema
+  return deposits - withdrawals;
 }
 
 // ============================================================================
