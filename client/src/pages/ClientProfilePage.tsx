@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
+import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
 import {
   ArrowLeft,
   Edit,
@@ -311,6 +312,12 @@ export default function ClientProfilePage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
+          {/* Credit Limit Widget (only for buyers) */}
+          {client.isBuyer && (
+            <CreditLimitWidget clientId={clientId} showAdjustControls={false} />
+          )}
+
+
           <Card>
             <CardHeader>
               <CardTitle>Client Information</CardTitle>
