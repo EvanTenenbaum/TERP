@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, json, date } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, json, date, index, unique } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -877,4 +877,108 @@ export const noteActivity = mysqlTable("note_activity", {
 
 export type NoteActivity = typeof noteActivity.$inferSelect;
 export type InsertNoteActivity = typeof noteActivity.$inferInsert;
+
+
+// ============================================================================
+// CLIENT MANAGEMENT SYSTEM
+// ============================================================================
+
+export const clients = mysqlTable("clients", {
+  id: int("id").primaryKey().autoincrement(),
+  teriCode: varchar("teri_code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  address: text("address"),
+  
+  // Client types (multi-role support)
+  isBuyer: boolean("is_buyer").default(false),
+  isSeller: boolean("is_seller").default(false),
+  isBrand: boolean("is_brand").default(false),
+  isReferee: boolean("is_referee").default(false),
+  isContractor: boolean("is_contractor").default(false),
+  
+  // Tags and metadata
+  tags: json("tags").$type<string[]>(),
+  
+  // Computed stats (updated via triggers or application logic)
+  totalSpent: decimal("total_spent", { precision: 15, scale: 2 }).default("0"),
+  totalProfit: decimal("total_profit", { precision: 15, scale: 2 }).default("0"),
+  avgProfitMargin: decimal("avg_profit_margin", { precision: 5, scale: 2 }).default("0"),
+  totalOwed: decimal("total_owed", { precision: 15, scale: 2 }).default("0"),
+  oldestDebtDays: int("oldest_debt_days").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  teriCodeIdx: index("idx_teri_code").on(table.teriCode),
+  totalOwedIdx: index("idx_total_owed").on(table.totalOwed),
+}));
+
+export type Client = typeof clients.$inferSelect;
+export type InsertClient = typeof clients.$inferInsert;
+
+export const clientTransactions = mysqlTable("client_transactions", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  
+  transactionType: mysqlEnum("transaction_type", ["INVOICE", "PAYMENT", "QUOTE", "ORDER", "REFUND", "CREDIT"]).notNull(),
+  transactionNumber: varchar("transaction_number", { length: 100 }),
+  transactionDate: date("transaction_date").notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  
+  // Payment tracking
+  paymentStatus: mysqlEnum("payment_status", ["PAID", "PENDING", "OVERDUE", "PARTIAL"]).default("PENDING"),
+  paymentDate: date("payment_date"),
+  paymentAmount: decimal("payment_amount", { precision: 15, scale: 2 }),
+  
+  notes: text("notes"),
+  metadata: json("metadata"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  transactionDateIdx: index("idx_transaction_date").on(table.transactionDate),
+  paymentStatusIdx: index("idx_payment_status").on(table.paymentStatus),
+}));
+
+export type ClientTransaction = typeof clientTransactions.$inferSelect;
+export type InsertClientTransaction = typeof clientTransactions.$inferInsert;
+
+export const clientActivity = mysqlTable("client_activity", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  activityType: mysqlEnum("activity_type", [
+    "CREATED",
+    "UPDATED",
+    "TRANSACTION_ADDED",
+    "PAYMENT_RECORDED",
+    "NOTE_ADDED",
+    "TAG_ADDED",
+    "TAG_REMOVED"
+  ]).notNull(),
+  
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+}));
+
+export type ClientActivity = typeof clientActivity.$inferSelect;
+export type InsertClientActivity = typeof clientActivity.$inferInsert;
+
+export const clientNotes = mysqlTable("client_notes", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  noteId: int("note_id").notNull().references(() => freeformNotes.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  uniqueClientNote: unique("unique_client_note").on(table.clientId, table.noteId),
+}));
+
+export type ClientNote = typeof clientNotes.$inferSelect;
+export type InsertClientNote = typeof clientNotes.$inferInsert;
 

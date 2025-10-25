@@ -57,6 +57,13 @@
       "when": 1761370288854,
       "tag": "0007_sparkling_phantom_reporter",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1761371323180,
+      "tag": "0008_premium_sauron",
+      "breakpoints": true
     }
   ]
 }

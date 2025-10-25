@@ -9,6 +9,7 @@ import {
   CashCollectedLeaderboard,
   ClientDebtLeaderboard,
   ClientProfitMarginLeaderboard,
+  FreeformNoteWidget,
 } from "@/components/dashboard/widgets-v2";
 import { DashboardCustomizer } from "@/components/dashboard/DashboardCustomizer";
 import { SwipeableWidgetContainer } from "@/components/dashboard/SwipeableWidgetContainer";
@@ -20,6 +21,7 @@ export default function Home() {
 
   // Map widget IDs to components
   const widgetComponents: Record<string, React.ReactElement> = {
+    "freeform-note": <div key="freeform-note" className="col-span-full h-[600px]"><FreeformNoteWidget /></div>,
     "sales-by-client": <SalesByClientWidget key="sales-by-client" />,
     "cash-flow": <CashFlowWidget key="cash-flow" />,
     "sales-comparison": <SalesComparisonWidget key="sales-comparison" />,

@@ -5,6 +5,14 @@ const STORAGE_KEY = "terp_widget_preferences";
 
 // Default widget configuration
 const DEFAULT_WIDGETS: WidgetConfig[] = [
+  // Productivity
+  {
+    id: "freeform-note",
+    name: "Freeform Note",
+    description: "Rich text note-taking with templates, comments, and collaboration",
+    enabled: true,
+    category: "productivity",
+  },
   // Analytics
   {
     id: "sales-by-client",

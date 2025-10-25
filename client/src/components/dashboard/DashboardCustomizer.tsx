@@ -18,7 +18,7 @@ export interface WidgetConfig {
   name: string;
   description: string;
   enabled: boolean;
-  category: "analytics" | "operations" | "leaderboards";
+  category: "analytics" | "operations" | "leaderboards" | "productivity";
 }
 
 interface DashboardCustomizerProps {
@@ -42,6 +42,7 @@ export function DashboardCustomizer({ widgets: initialWidgets, onSave }: Dashboa
   };
 
   const categories = {
+    productivity: widgets.filter((w) => w.category === "productivity"),
     analytics: widgets.filter((w) => w.category === "analytics"),
     operations: widgets.filter((w) => w.category === "operations"),
     leaderboards: widgets.filter((w) => w.category === "leaderboards"),
@@ -64,6 +65,32 @@ export function DashboardCustomizer({ widgets: initialWidgets, onSave }: Dashboa
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
+          {/* Productivity Widgets */}
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+              Productivity
+            </h3>
+            <div className="space-y-3">
+              {categories.productivity.map((widget) => (
+                <div key={widget.id} className="flex items-start justify-between space-x-3 p-3 rounded-lg border bg-card">
+                  <div className="flex-1">
+                    <Label htmlFor={widget.id} className="text-sm font-medium cursor-pointer">
+                      {widget.name}
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {widget.description}
+                    </p>
+                  </div>
+                  <Switch
+                    id={widget.id}
+                    checked={widget.enabled}
+                    onCheckedChange={() => toggleWidget(widget.id)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Analytics Widgets */}
           <div>
             <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
