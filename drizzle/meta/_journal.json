@@ -64,6 +64,13 @@
       "when": 1761371323180,
       "tag": "0008_premium_sauron",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1761373660439,
+      "tag": "0009_slow_silk_fever",
+      "breakpoints": true
     }
   ]
 }

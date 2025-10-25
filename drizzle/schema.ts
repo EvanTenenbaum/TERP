@@ -982,3 +982,154 @@ export const clientNotes = mysqlTable("client_notes", {
 export type ClientNote = typeof clientNotes.$inferSelect;
 export type InsertClientNote = typeof clientNotes.$inferInsert;
 
+
+// ============================================================================
+// CREDIT INTELLIGENCE SYSTEM
+// ============================================================================
+
+/**
+ * Credit Limit Configuration
+ * Stores the calculated credit limit and health metrics for each client
+ */
+export const clientCreditLimits = mysqlTable("client_credit_limits", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }).unique(),
+  
+  // Credit limit calculation
+  creditLimit: decimal("credit_limit", { precision: 15, scale: 2 }).notNull().default("0"),
+  currentExposure: decimal("current_exposure", { precision: 15, scale: 2 }).notNull().default("0"),
+  utilizationPercent: decimal("utilization_percent", { precision: 5, scale: 2 }).notNull().default("0"),
+  
+  // Composite credit health score (0-100)
+  creditHealthScore: decimal("credit_health_score", { precision: 5, scale: 2 }).notNull().default("0"),
+  
+  // Base capacity anchor
+  baseCapacity: decimal("base_capacity", { precision: 15, scale: 2 }).notNull().default("0"),
+  
+  // Adjustment factors
+  riskModifier: decimal("risk_modifier", { precision: 5, scale: 4 }).notNull().default("1"),
+  directionalFactor: decimal("directional_factor", { precision: 5, scale: 4 }).notNull().default("1"),
+  
+  // System state
+  mode: mysqlEnum("mode", ["LEARNING", "ACTIVE"]).notNull().default("LEARNING"),
+  confidenceScore: decimal("confidence_score", { precision: 5, scale: 2 }).notNull().default("0"),
+  dataReadiness: decimal("data_readiness", { precision: 5, scale: 2 }).notNull().default("0"),
+  
+  // Trend tracking
+  trend: mysqlEnum("trend", ["IMPROVING", "STABLE", "WORSENING"]).notNull().default("STABLE"),
+  
+  lastCalculated: timestamp("last_calculated").defaultNow().onUpdateNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+}));
+
+export type ClientCreditLimit = typeof clientCreditLimits.$inferSelect;
+export type InsertClientCreditLimit = typeof clientCreditLimits.$inferInsert;
+
+/**
+ * Credit Signal History
+ * Stores historical signal values for trend analysis and transparency
+ */
+export const creditSignalHistory = mysqlTable("credit_signal_history", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  
+  // Signal scores (0-100 each)
+  revenueMomentum: decimal("revenue_momentum", { precision: 5, scale: 2 }).notNull().default("0"),
+  cashCollectionStrength: decimal("cash_collection_strength", { precision: 5, scale: 2 }).notNull().default("0"),
+  profitabilityQuality: decimal("profitability_quality", { precision: 5, scale: 2 }).notNull().default("0"),
+  debtAgingRisk: decimal("debt_aging_risk", { precision: 5, scale: 2 }).notNull().default("0"),
+  repaymentVelocity: decimal("repayment_velocity", { precision: 5, scale: 2 }).notNull().default("0"),
+  tenureDepth: decimal("tenure_depth", { precision: 5, scale: 2 }).notNull().default("0"),
+  
+  // Directional indicators (-1, 0, 1 for down, stable, up)
+  revenueMomentumTrend: int("revenue_momentum_trend").notNull().default(0),
+  cashCollectionTrend: int("cash_collection_trend").notNull().default(0),
+  profitabilityTrend: int("profitability_trend").notNull().default(0),
+  debtAgingTrend: int("debt_aging_trend").notNull().default(0),
+  repaymentVelocityTrend: int("repayment_velocity_trend").notNull().default(0),
+  
+  // Metadata for debugging
+  calculationMetadata: json("calculation_metadata"),
+  
+  calculatedAt: timestamp("calculated_at").defaultNow(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  calculatedAtIdx: index("idx_calculated_at").on(table.calculatedAt),
+}));
+
+export type CreditSignalHistory = typeof creditSignalHistory.$inferSelect;
+export type InsertCreditSignalHistory = typeof creditSignalHistory.$inferInsert;
+
+/**
+ * Credit System Settings
+ * Global configuration for credit limit calculation weights
+ */
+export const creditSystemSettings = mysqlTable("credit_system_settings", {
+  id: int("id").primaryKey().autoincrement(),
+  
+  // Signal weights (must sum to 100)
+  revenueMomentumWeight: int("revenue_momentum_weight").notNull().default(20),
+  cashCollectionWeight: int("cash_collection_weight").notNull().default(25),
+  profitabilityWeight: int("profitability_weight").notNull().default(20),
+  debtAgingWeight: int("debt_aging_weight").notNull().default(15),
+  repaymentVelocityWeight: int("repayment_velocity_weight").notNull().default(10),
+  tenureWeight: int("tenure_weight").notNull().default(10),
+  
+  // System parameters
+  learningModeThreshold: int("learning_mode_threshold").notNull().default(3), // months
+  minInvoicesForActivation: int("min_invoices_for_activation").notNull().default(15),
+  directionalSensitivity: decimal("directional_sensitivity", { precision: 5, scale: 4 }).notNull().default("0.1"),
+  
+  // Capacity calculation parameters
+  revenueMultiplier: decimal("revenue_multiplier", { precision: 5, scale: 2 }).notNull().default("2"),
+  marginMultiplier: decimal("margin_multiplier", { precision: 5, scale: 2 }).notNull().default("2.5"),
+  
+  // Global limits
+  globalMinLimit: decimal("global_min_limit", { precision: 15, scale: 2 }).notNull().default("1000"),
+  globalMaxLimit: decimal("global_max_limit", { precision: 15, scale: 2 }).notNull().default("1000000"),
+  
+  updatedBy: int("updated_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+export type CreditSystemSettings = typeof creditSystemSettings.$inferSelect;
+export type InsertCreditSystemSettings = typeof creditSystemSettings.$inferInsert;
+
+/**
+ * Credit Audit Log
+ * Tracks significant changes to credit limits for compliance and analysis
+ */
+export const creditAuditLog = mysqlTable("credit_audit_log", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  
+  eventType: mysqlEnum("event_type", [
+    "LIMIT_CALCULATED",
+    "LIMIT_INCREASED",
+    "LIMIT_DECREASED",
+    "MODE_CHANGED",
+    "MANUAL_OVERRIDE",
+    "EXPOSURE_EXCEEDED"
+  ]).notNull(),
+  
+  oldValue: decimal("old_value", { precision: 15, scale: 2 }),
+  newValue: decimal("new_value", { precision: 15, scale: 2 }),
+  changePercent: decimal("change_percent", { precision: 5, scale: 2 }),
+  
+  reason: text("reason"),
+  metadata: json("metadata"),
+  
+  triggeredBy: int("triggered_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  createdAtIdx: index("idx_created_at").on(table.createdAt),
+}));
+
+export type CreditAuditLog = typeof creditAuditLog.$inferSelect;
+export type InsertCreditAuditLog = typeof creditAuditLog.$inferInsert;
+
