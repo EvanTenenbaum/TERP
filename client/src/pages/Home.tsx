@@ -1,28 +1,15 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { KpiSummaryRow } from "@/components/dashboard/KpiSummaryRow";
-import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
-import { RecentQuotesWidget } from "@/components/dashboard/widgets/RecentQuotesWidget";
-import { QuickActionsWidget } from "@/components/dashboard/widgets/QuickActionsWidget";
-import { InventoryAlertsWidget } from "@/components/dashboard/widgets/InventoryAlertsWidget";
-import { RevenueChartWidget } from "@/components/dashboard/widgets/RevenueChartWidget";
-import { trpc } from "@/lib/trpc";
+import {
+  SalesByClientWidget,
+  TransactionSnapshotWidget,
+  InventorySnapshotWidget,
+  CashFlowWidget,
+  TotalDebtWidget,
+  SalesComparisonWidget,
+} from "@/components/dashboard/widgets-v2";
 
 export default function Home() {
-  const { user, loading, error, isAuthenticated } = useAuth();
-
-  // Fetch real KPI data from tRPC
-  const { data: kpiData, isLoading: kpisLoading } = trpc.dashboard.getKpis.useQuery();
-
-  // Default values while loading
-  const displayKpiData = kpiData || {
-    totalRevenue: 0,
-    revenueChange: 0,
-    activeOrders: 0,
-    ordersChange: 0,
-    inventoryValue: 0,
-    inventoryChange: 0,
-    lowStockCount: 0,
-  };
+  const { user } = useAuth();
 
   return (
     <div className="space-y-6">
@@ -30,20 +17,27 @@ export default function Home() {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Welcome back{user?.name ? `, ${user.name}` : ""}! Here's an overview of your business.
+          Welcome back{user?.name ? `, ${user.name}` : ""}! Your business metrics at a glance.
         </p>
       </div>
 
-      {/* KPI Summary Row */}
-      <KpiSummaryRow data={displayKpiData} loading={loading || kpisLoading} />
+      {/* Top Row - Client Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SalesByClientWidget />
+        <CashFlowWidget />
+      </div>
 
-      {/* Dashboard Widgets */}
-      <DashboardGrid columns={2}>
-        <RecentQuotesWidget />
-        <QuickActionsWidget />
-        <InventoryAlertsWidget />
-        <RevenueChartWidget />
-      </DashboardGrid>
+      {/* Middle Row - Operations Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TransactionSnapshotWidget />
+        <InventorySnapshotWidget />
+      </div>
+
+      {/* Bottom Row - Analysis & Debt */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SalesComparisonWidget />
+        <TotalDebtWidget />
+      </div>
     </div>
   );
 }
