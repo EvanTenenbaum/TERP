@@ -9,6 +9,7 @@ import {
   BarChart3,
   DollarSign,
   X,
+  TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { APP_TITLE } from '@/const';
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Inventory', href: '/inventory', icon: Package },
   { name: 'Accounting', href: '/accounting/dashboard', icon: DollarSign },
   { name: 'Clients', href: '/clients', icon: Users },
+  { name: 'Credit Settings', href: '/credit-settings', icon: TrendingUp },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
