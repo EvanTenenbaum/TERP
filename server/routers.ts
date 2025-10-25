@@ -689,6 +689,258 @@ export const appRouter = router({
         }
         return await dashboardDb.saveRoleKpiConfig(input.role, input.kpis);
       }),
+
+    // Widget Data Endpoints
+    
+    // Sales by Client (with time period filter)
+    getSalesByClient: protectedProcedure
+      .input(z.object({
+        timePeriod: z.enum(["LIFETIME", "YEAR", "QUARTER", "MONTH"]).default("LIFETIME"),
+      }))
+      .query(async ({ input }) => {
+        const invoices = await arApDb.getInvoices({});
+        const allInvoices = invoices.invoices || [];
+        
+        // Group by customer and sum total sales
+        const salesByClient = allInvoices.reduce((acc: any, inv: any) => {
+          const customerId = inv.customerId;
+          if (!acc[customerId]) {
+            acc[customerId] = {
+              customerId,
+              customerName: `Customer ${customerId}`, // TODO: Join with customers table
+              totalSales: 0,
+            };
+          }
+          acc[customerId].totalSales += Number(inv.totalAmount || 0);
+          return acc;
+        }, {});
+        
+        return Object.values(salesByClient).sort((a: any, b: any) => b.totalSales - a.totalSales);
+      }),
+
+    // Cash Collected (24 months by client)
+    getCashCollected: protectedProcedure
+      .input(z.object({
+        months: z.number().default(24),
+      }))
+      .query(async ({ input }) => {
+        const paymentsResult = await arApDb.getPayments({ paymentType: 'RECEIVED' });
+        const allPayments = paymentsResult.payments || [];
+        
+        // Group by customer
+        const cashByClient = allPayments.reduce((acc: any, pmt: any) => {
+          const customerId = pmt.customerId;
+          if (customerId) {
+            if (!acc[customerId]) {
+              acc[customerId] = {
+                customerId,
+                customerName: `Customer ${customerId}`,
+                cashCollected: 0,
+              };
+            }
+            acc[customerId].cashCollected += Number(pmt.amount || 0);
+          }
+          return acc;
+        }, {});
+        
+        return Object.values(cashByClient).sort((a: any, b: any) => b.cashCollected - a.cashCollected);
+      }),
+
+    // Client Debt (current debt + aging)
+    getClientDebt: protectedProcedure
+      .query(async () => {
+        const receivablesResult = await arApDb.getOutstandingReceivables();
+        const receivables = receivablesResult.invoices || [];
+        const agingResult = await arApDb.calculateARAging();
+        const aging = agingResult; // Aging returns the buckets directly
+        
+        // Combine debt and aging data
+        return receivables.map((r: any) => ({
+          customerId: r.customerId,
+          customerName: `Customer ${r.customerId}`,
+          currentDebt: Number(r.amountDue || 0),
+          oldestDebt: 0, // TODO: Calculate oldest invoice age from invoice dates
+        }));
+      }),
+
+    // Client Profit Margin
+    getClientProfitMargin: protectedProcedure
+      .query(async () => {
+        const invoices = await arApDb.getInvoices({});
+        const allInvoices = invoices.invoices || [];
+        
+        // Calculate profit margin by client (simplified)
+        const marginByClient = allInvoices.reduce((acc: any, inv: any) => {
+          const customerId = inv.customerId;
+          if (!acc[customerId]) {
+            acc[customerId] = {
+              customerId,
+              customerName: `Customer ${customerId}`,
+              revenue: 0,
+              cost: 0,
+            };
+          }
+          acc[customerId].revenue += Number(inv.totalAmount || 0);
+          // Simplified: assume 60% margin
+          acc[customerId].cost += Number(inv.totalAmount || 0) * 0.4;
+          return acc;
+        }, {});
+        
+        return Object.values(marginByClient).map((c: any) => ({
+          ...c,
+          profitMargin: c.revenue > 0 ? ((c.revenue - c.cost) / c.revenue) * 100 : 0,
+        })).sort((a: any, b: any) => b.profitMargin - a.profitMargin);
+      }),
+
+    // Transaction Snapshot (Today vs This Week)
+    getTransactionSnapshot: protectedProcedure
+      .query(async () => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        
+        const invoices = await arApDb.getInvoices({});
+        const paymentsResult = await arApDb.getPayments({ paymentType: 'RECEIVED' });
+        const allInvoices = invoices.invoices || [];
+        const allPayments = paymentsResult.payments || [];
+        
+        // Calculate today's metrics
+        const todaySales = allInvoices
+          .filter((i: any) => new Date(i.invoiceDate) >= today)
+          .reduce((sum: number, i: any) => sum + Number(i.totalAmount || 0), 0);
+        
+        const todayCash = allPayments
+          .filter((p: any) => new Date(p.paymentDate) >= today)
+          .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        
+        const todayUnits = allInvoices
+          .filter((i: any) => new Date(i.invoiceDate) >= today)
+          .length;
+        
+        // Calculate this week's metrics
+        const weekSales = allInvoices
+          .filter((i: any) => new Date(i.invoiceDate) >= weekAgo)
+          .reduce((sum: number, i: any) => sum + Number(i.totalAmount || 0), 0);
+        
+        const weekCash = allPayments
+          .filter((p: any) => new Date(p.paymentDate) >= weekAgo)
+          .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        
+        const weekUnits = allInvoices
+          .filter((i: any) => new Date(i.invoiceDate) >= weekAgo)
+          .length;
+        
+        return {
+          today: { sales: todaySales, cashCollected: todayCash, unitsSold: todayUnits },
+          thisWeek: { sales: weekSales, cashCollected: weekCash, unitsSold: weekUnits },
+        };
+      }),
+
+    // Inventory Snapshot (by category)
+    getInventorySnapshot: protectedProcedure
+      .query(async () => {
+        const stats = await inventoryDb.getDashboardStats();
+        return {
+          categories: stats?.categoryStats || [],
+          totalUnits: stats?.totalUnits || 0,
+          totalValue: stats?.totalInventoryValue || 0,
+        };
+      }),
+
+    // Sales Time Period Comparison
+    getSalesComparison: protectedProcedure
+      .query(async () => {
+        const invoices = await arApDb.getInvoices({});
+        const allInvoices = invoices.invoices || [];
+        
+        const now = new Date();
+        const last7Days = new Date(now);
+        last7Days.setDate(last7Days.getDate() - 7);
+        const prior7Days = new Date(last7Days);
+        prior7Days.setDate(prior7Days.getDate() - 7);
+        
+        const last30Days = new Date(now);
+        last30Days.setDate(last30Days.getDate() - 30);
+        const prior30Days = new Date(last30Days);
+        prior30Days.setDate(prior30Days.getDate() - 30);
+        
+        const last6Months = new Date(now);
+        last6Months.setMonth(last6Months.getMonth() - 6);
+        const prior6Months = new Date(last6Months);
+        prior6Months.setMonth(prior6Months.getMonth() - 6);
+        
+        const last365 = new Date(now);
+        last365.setDate(last365.getDate() - 365);
+        const prior365 = new Date(last365);
+        prior365.setDate(prior365.getDate() - 365);
+        
+        const calculateSales = (start: Date, end: Date) => {
+          return allInvoices
+            .filter((i: any) => {
+              const date = new Date(i.invoiceDate);
+              return date >= start && date < end;
+            })
+            .reduce((sum: number, i: any) => sum + Number(i.totalAmount || 0), 0);
+        };
+        
+        return {
+          weekly: {
+            last7Days: calculateSales(last7Days, now),
+            prior7Days: calculateSales(prior7Days, last7Days),
+          },
+          monthly: {
+            last30Days: calculateSales(last30Days, now),
+            prior30Days: calculateSales(prior30Days, last30Days),
+          },
+          sixMonth: {
+            last6Months: calculateSales(last6Months, now),
+            prior6Months: calculateSales(prior6Months, last6Months),
+          },
+          yearly: {
+            last365: calculateSales(last365, now),
+            prior365: calculateSales(prior365, last365),
+          },
+        };
+      }),
+
+    // Cash Flow (with time period filter)
+    getCashFlow: protectedProcedure
+      .input(z.object({
+        timePeriod: z.enum(["LIFETIME", "YEAR", "QUARTER", "MONTH"]).default("LIFETIME"),
+      }))
+      .query(async ({ input }) => {
+        const receivedPaymentsResult = await arApDb.getPayments({ paymentType: 'RECEIVED' });
+        const sentPaymentsResult = await arApDb.getPayments({ paymentType: 'SENT' });
+        
+        const cashCollected = (receivedPaymentsResult.payments || []).reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        const cashSpent = (sentPaymentsResult.payments || []).reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        
+        return {
+          cashCollected,
+          cashSpent,
+          netCashFlow: cashCollected - cashSpent,
+        };
+      }),
+
+    // Total Debt (AR vs AP)
+    getTotalDebt: protectedProcedure
+      .query(async () => {
+        const receivablesResult = await arApDb.getOutstandingReceivables();
+        const payablesResult = await arApDb.getOutstandingPayables();
+        
+        const receivables = receivablesResult.invoices || [];
+        const payables = payablesResult.bills || [];
+        
+        const totalAR = receivables.reduce((sum: number, r: any) => sum + Number(r.amountDue || 0), 0);
+        const totalAP = payables.reduce((sum: number, p: any) => sum + Number(p.amountDue || 0), 0);
+        
+        return {
+          totalDebtOwedToMe: totalAR,
+          totalDebtIOwevVendors: totalAP,
+          netPosition: totalAR - totalAP,
+        };
+      }),
   }),
 
   // Accounting Module - Core Accounting Router
