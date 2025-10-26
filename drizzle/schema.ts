@@ -1903,3 +1903,166 @@ export type TagGroupMember = typeof tagGroupMembers.$inferSelect;
 export type InsertTagGroupMember = typeof tagGroupMembers.$inferInsert;
 
 
+
+
+
+/**
+ * Product Intake Sessions
+ * Tracks intake sessions where multiple batches are received from a vendor
+ */
+export const intakeSessions = mysqlTable("intake_sessions", {
+  id: int("id").primaryKey().autoincrement(),
+  sessionNumber: varchar("session_number", { length: 50 }).notNull().unique(),
+  vendorId: int("vendor_id").notNull().references(() => clients.id, { onDelete: "restrict" }),
+  status: mysqlEnum("status", ["IN_PROGRESS", "COMPLETED", "CANCELLED"]).notNull().default("IN_PROGRESS"),
+  
+  // Session-level details
+  receiveDate: date("receive_date").notNull(),
+  receivedBy: int("received_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+  
+  // Payment terms for entire session
+  paymentTerms: paymentTermsEnum.notNull(),
+  paymentDueDate: date("payment_due_date"),
+  totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).default("0"),
+  amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }).default("0"),
+  
+  // Notes
+  internalNotes: text("internal_notes"),
+  vendorNotes: text("vendor_notes"), // Shared with vendor on receipt
+  
+  // Receipt generation
+  receiptGenerated: boolean("receipt_generated").default(false),
+  receiptGeneratedAt: timestamp("receipt_generated_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  vendorIdIdx: index("idx_vendor_id").on(table.vendorId),
+  statusIdx: index("idx_status").on(table.status),
+  receiveDateIdx: index("idx_receive_date").on(table.receiveDate),
+}));
+
+export type IntakeSession = typeof intakeSessions.$inferSelect;
+export type InsertIntakeSession = typeof intakeSessions.$inferInsert;
+
+/**
+ * Intake Session Batches
+ * Links batches to intake sessions with batch-specific details
+ */
+export const intakeSessionBatches = mysqlTable("intake_session_batches", {
+  id: int("id").primaryKey().autoincrement(),
+  intakeSessionId: int("intake_session_id").notNull().references(() => intakeSessions.id, { onDelete: "cascade" }),
+  batchId: int("batch_id").notNull().references(() => batches.id, { onDelete: "cascade" }),
+  
+  // Batch-specific intake details
+  receivedQty: decimal("received_qty", { precision: 15, scale: 4 }).notNull(),
+  unitCost: decimal("unit_cost", { precision: 15, scale: 4 }).notNull(),
+  totalCost: decimal("total_cost", { precision: 15, scale: 4 }).notNull(),
+  
+  // Batch-specific notes
+  internalNotes: text("internal_notes"),
+  vendorNotes: text("vendor_notes"), // Shared with vendor on receipt
+  
+  // COGS agreement for this batch
+  cogsAgreement: text("cogs_agreement"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  intakeSessionIdIdx: index("idx_intake_session_id").on(table.intakeSessionId),
+  batchIdIdx: index("idx_batch_id").on(table.batchId),
+}));
+
+export type IntakeSessionBatch = typeof intakeSessionBatches.$inferSelect;
+export type InsertIntakeSessionBatch = typeof intakeSessionBatches.$inferInsert;
+
+/**
+ * Recurring Orders
+ * Defines automatic recurring orders for clients
+ */
+export const recurringOrders = mysqlTable("recurring_orders", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  
+  // Schedule configuration
+  frequency: mysqlEnum("frequency", ["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY"]).notNull(),
+  dayOfWeek: int("day_of_week"), // 0-6 for weekly
+  dayOfMonth: int("day_of_month"), // 1-31 for monthly
+  
+  // Order template
+  orderTemplate: json("order_template").$type<{
+    items: Array<{
+      productId: number;
+      quantity: number;
+      notes?: string;
+    }>;
+  }>().notNull(),
+  
+  // Status and dates
+  status: mysqlEnum("status", ["ACTIVE", "PAUSED", "CANCELLED"]).notNull().default("ACTIVE"),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  lastGeneratedDate: date("last_generated_date"),
+  nextGenerationDate: date("next_generation_date").notNull(),
+  
+  // Notifications
+  notifyClient: boolean("notify_client").default(true),
+  notifyEmail: varchar("notify_email", { length: 255 }),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  createdBy: int("created_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  statusIdx: index("idx_status").on(table.status),
+  nextGenerationDateIdx: index("idx_next_generation_date").on(table.nextGenerationDate),
+}));
+
+export type RecurringOrder = typeof recurringOrders.$inferSelect;
+export type InsertRecurringOrder = typeof recurringOrders.$inferInsert;
+
+/**
+ * Alert Configurations
+ * User-defined alert rules and thresholds
+ */
+export const alertConfigurations = mysqlTable("alert_configurations", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Alert type and target
+  alertType: mysqlEnum("alert_type", [
+    "LOW_STOCK",
+    "EXPIRING_BATCH",
+    "OVERDUE_PAYMENT",
+    "HIGH_VALUE_ORDER",
+    "SAMPLE_CONVERSION",
+    "CUSTOM"
+  ]).notNull(),
+  
+  // Target specification
+  targetType: mysqlEnum("target_type", ["GLOBAL", "PRODUCT", "BATCH", "CLIENT", "CATEGORY"]).notNull(),
+  targetId: int("target_id"), // NULL for GLOBAL, specific ID for others
+  
+  // Threshold configuration
+  thresholdValue: decimal("threshold_value", { precision: 15, scale: 4 }).notNull(),
+  thresholdOperator: mysqlEnum("threshold_operator", ["LESS_THAN", "GREATER_THAN", "EQUALS"]).notNull(),
+  
+  // Alert delivery
+  deliveryMethod: mysqlEnum("delivery_method", ["DASHBOARD", "EMAIL", "BOTH"]).notNull().default("DASHBOARD"),
+  emailAddress: varchar("email_address", { length: 255 }),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  userIdIdx: index("idx_user_id").on(table.userId),
+  alertTypeIdx: index("idx_alert_type").on(table.alertType),
+  isActiveIdx: index("idx_is_active").on(table.isActive),
+}));
+
+export type AlertConfiguration = typeof alertConfigurations.$inferSelect;
+export type InsertAlertConfiguration = typeof alertConfigurations.$inferInsert;
+

@@ -26,6 +26,8 @@ import { samplesRouter } from "./routers/samples";
 import { dashboardEnhancedRouter } from "./routers/dashboardEnhanced";
 import { salesSheetEnhancementsRouter } from "./routers/salesSheetEnhancements";
 import { advancedTagFeaturesRouter } from "./routers/advancedTagFeatures";
+import { productIntakeRouter } from "./routers/productIntake";
+import { orderEnhancementsRouter } from "./routers/orderEnhancements";
 
 export const appRouter = router({
   system: systemRouter,
@@ -53,6 +55,8 @@ export const appRouter = router({
   dashboardEnhanced: dashboardEnhancedRouter,
   salesSheetEnhancements: salesSheetEnhancementsRouter,
   advancedTagFeatures: advancedTagFeaturesRouter,
+  productIntake: productIntakeRouter,
+  orderEnhancements: orderEnhancementsRouter,
 });
 
 export type AppRouter = typeof appRouter;
