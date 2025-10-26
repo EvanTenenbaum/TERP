@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { CogsEditModal } from "./CogsEditModal";
+import { ClientInterestWidget } from "./ClientInterestWidget";
 import { useState } from "react";
 
 interface BatchDetailDrawerProps {
@@ -230,6 +231,11 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                 </div>
               </Card>
             </div>
+
+            <Separator />
+
+            {/* Client Interest */}
+            <ClientInterestWidget batchId={batchId} />
 
             <Separator />
 

@@ -30,7 +30,7 @@ import { productIntakeRouter } from "./routers/productIntake";
 import { orderEnhancementsRouter } from "./routers/orderEnhancements";
 import { clientNeedsEnhancedRouter } from "./routers/clientNeedsEnhanced";
 import { vendorSupplyRouter } from "./routers/vendorSupply";
-import { matchingRouter } from "./routers/matching";
+import { matchingEnhancedRouter } from "./routers/matchingEnhanced";
 
 export const appRouter = router({
   system: systemRouter,
@@ -62,7 +62,7 @@ export const appRouter = router({
   orderEnhancements: orderEnhancementsRouter,
   clientNeeds: clientNeedsEnhancedRouter,
   vendorSupply: vendorSupplyRouter,
-  matching: matchingRouter,
+  matching: matchingEnhancedRouter,
 });
 
 export type AppRouter = typeof appRouter;

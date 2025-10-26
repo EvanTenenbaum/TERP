@@ -596,3 +596,8 @@ export async function getAllActiveNeedsWithMatches(): Promise<MatchResult[]> {
   }
 }
 
+
+
+// Export reverse matching functions (simplified version)
+export { findClientNeedsForBatch, findClientNeedsForVendorSupply } from "./matchingEngineReverseSimplified";
+
