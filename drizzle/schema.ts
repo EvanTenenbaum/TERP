@@ -2066,3 +2066,136 @@ export const alertConfigurations = mysqlTable("alert_configurations", {
 export type AlertConfiguration = typeof alertConfigurations.$inferSelect;
 export type InsertAlertConfiguration = typeof alertConfigurations.$inferInsert;
 
+
+// ============================================================================
+// NEEDS & MATCHING MODULE SCHEMA
+// ============================================================================
+
+/**
+ * Client Needs
+ * Tracks what clients are looking for (explicit needs)
+ */
+export const clientNeeds = mysqlTable("client_needs", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  
+  // Need specification
+  strain: varchar("strain", { length: 255 }),
+  category: varchar("category", { length: 100 }),
+  subcategory: varchar("subcategory", { length: 100 }),
+  grade: varchar("grade", { length: 50 }),
+  
+  // Quantity and pricing
+  quantityMin: decimal("quantity_min", { precision: 15, scale: 4 }),
+  quantityMax: decimal("quantity_max", { precision: 15, scale: 4 }),
+  priceMax: decimal("price_max", { precision: 15, scale: 2 }),
+  
+  // Status and priority
+  status: mysqlEnum("status", ["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"]).notNull().default("ACTIVE"),
+  priority: mysqlEnum("priority", ["LOW", "MEDIUM", "HIGH", "URGENT"]).notNull().default("MEDIUM"),
+  
+  // Dates
+  neededBy: date("needed_by"),
+  expiresAt: timestamp("expires_at"),
+  fulfilledAt: timestamp("fulfilled_at"),
+  
+  // Notes
+  notes: text("notes"),
+  internalNotes: text("internal_notes"), // Staff only
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  createdBy: int("created_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  statusIdx: index("idx_status").on(table.status),
+  strainIdx: index("idx_strain").on(table.strain),
+  categoryIdx: index("idx_category").on(table.category),
+  priorityIdx: index("idx_priority").on(table.priority),
+}));
+
+export type ClientNeed = typeof clientNeeds.$inferSelect;
+export type InsertClientNeed = typeof clientNeeds.$inferInsert;
+
+/**
+ * Vendor Supply
+ * Tracks what vendors have available (not yet in inventory)
+ */
+export const vendorSupply = mysqlTable("vendor_supply", {
+  id: int("id").primaryKey().autoincrement(),
+  vendorId: int("vendor_id").notNull().references(() => vendors.id, { onDelete: "cascade" }),
+  
+  // Product specification
+  strain: varchar("strain", { length: 255 }),
+  category: varchar("category", { length: 100 }),
+  subcategory: varchar("subcategory", { length: 100 }),
+  grade: varchar("grade", { length: 50 }),
+  
+  // Quantity and pricing
+  quantityAvailable: decimal("quantity_available", { precision: 15, scale: 4 }).notNull(),
+  unitPrice: decimal("unit_price", { precision: 15, scale: 2 }),
+  
+  // Status and dates
+  status: mysqlEnum("status", ["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"]).notNull().default("AVAILABLE"),
+  availableUntil: timestamp("available_until"),
+  reservedAt: timestamp("reserved_at"),
+  purchasedAt: timestamp("purchased_at"),
+  
+  // Notes
+  notes: text("notes"),
+  internalNotes: text("internal_notes"), // Staff only
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  createdBy: int("created_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+}, (table) => ({
+  vendorIdIdx: index("idx_vendor_id").on(table.vendorId),
+  statusIdx: index("idx_status").on(table.status),
+  strainIdx: index("idx_strain").on(table.strain),
+  categoryIdx: index("idx_category").on(table.category),
+}));
+
+export type VendorSupply = typeof vendorSupply.$inferSelect;
+export type InsertVendorSupply = typeof vendorSupply.$inferInsert;
+
+/**
+ * Match Records
+ * Tracks matches for learning and analytics
+ */
+export const matchRecords = mysqlTable("match_records", {
+  id: int("id").primaryKey().autoincrement(),
+  
+  // Match participants
+  clientNeedId: int("client_need_id").references(() => clientNeeds.id, { onDelete: "set null" }),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  
+  // Match source (one of these will be set)
+  inventoryBatchId: int("inventory_batch_id").references(() => batches.id, { onDelete: "set null" }),
+  vendorSupplyId: int("vendor_supply_id").references(() => vendorSupply.id, { onDelete: "set null" }),
+  historicalOrderId: int("historical_order_id").references(() => orders.id, { onDelete: "set null" }),
+  
+  // Match details
+  matchType: mysqlEnum("match_type", ["EXACT", "CLOSE", "HISTORICAL"]).notNull(),
+  confidenceScore: decimal("confidence_score", { precision: 5, scale: 2 }).notNull(), // 0-100
+  matchReasons: json("match_reasons").$type<string[]>().notNull(),
+  
+  // User actions
+  userAction: mysqlEnum("user_action", ["CREATED_QUOTE", "CONTACTED_VENDOR", "DISMISSED", "NONE"]),
+  actionedAt: timestamp("actioned_at"),
+  actionedBy: int("actioned_by").references(() => users.id, { onDelete: "set null" }),
+  
+  // Result tracking
+  resultedInSale: boolean("resulted_in_sale").default(false),
+  saleOrderId: int("sale_order_id").references(() => orders.id, { onDelete: "set null" }),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  clientNeedIdIdx: index("idx_client_need_id").on(table.clientNeedId),
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  matchTypeIdx: index("idx_match_type").on(table.matchType),
+  userActionIdx: index("idx_user_action").on(table.userAction),
+}));
+
+export type MatchRecord = typeof matchRecords.$inferSelect;
+export type InsertMatchRecord = typeof matchRecords.$inferInsert;
+
