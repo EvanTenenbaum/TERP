@@ -31,11 +31,11 @@ export function CogsEditModal({
   const [reason, setReason] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  // Get COGS impact calculation
+  // Get COGS impact calculation (disabled until cogsManagement module is implemented)
   const { data: impact } = trpc.cogs.calculateImpact.useQuery(
     { batchId, newCogs },
-    { enabled: isOpen && newCogs !== currentCogs }
-  );
+    { enabled: false } // Disabled: COGS management module not yet implemented
+  ) as { data: { affectedSales: number; profitImpact: number } | undefined };
 
   // Mutation for updating COGS
   const updateCogsMutation = trpc.cogs.updateBatchCogs.useMutation({
