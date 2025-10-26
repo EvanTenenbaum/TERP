@@ -2,10 +2,16 @@
 
 ## In Progress
 
-### Sales Sheet Module
+### Sales Sheet Module - Backend Complete ✅
 - [x] Create pricing rules engine (% or $ markup/markdown by category/strain/tag/grade/metadata)
 - [x] Add pricing profile system (save and reuse pricing rules)
 - [x] Integrate pricing profiles into client profiles (buyers only)
+- [x] Add tRPC endpoints (11 endpoints for rules, profiles, client pricing)
+
+### Sales Sheet Module - Frontend Remaining
+- [ ] Build Pricing Rules Management Page UI
+- [ ] Build Pricing Profiles Management Page UI
+- [ ] Integrate pricing section into Client Profile Page
 - [ ] Build sales sheet creator with client selection
 - [ ] Add real-time inventory table with search/filter (non-blocking UI)
 - [ ] Implement add to sheet (individual/bulk select, prevent duplicates)
