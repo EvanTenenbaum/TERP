@@ -28,6 +28,8 @@ import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
+import NeedsManagementPage from "@/pages/NeedsManagementPage";
+import VendorSupplyPage from "@/pages/VendorSupplyPage";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -57,6 +59,8 @@ function Router() {
         <Route path={"/settings/cogs"} component={CogsSettingsPage} />
         <Route path={"/settings"} component={Settings} />
         <Route path={"/credit-settings"} component={CreditSettingsPage} />
+        <Route path={"/needs"} component={NeedsManagementPage} />
+        <Route path={"/vendor-supply"} component={VendorSupplyPage} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
