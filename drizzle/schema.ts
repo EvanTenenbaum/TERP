@@ -1466,13 +1466,13 @@ export const transactions = mysqlTable("transactions", {
   id: int("id").autoincrement().primaryKey(),
   transactionNumber: varchar("transactionNumber", { length: 50 }).notNull().unique(),
   transactionType: transactionTypeEnum.notNull(),
-  clientId: int("clientId").notNull(),
+  clientId: int("clientId").notNull().references(() => clients.id, { onDelete: "cascade" }),
   transactionDate: timestamp("transactionDate").notNull(),
   amount: varchar("amount", { length: 20 }).notNull(),
   status: transactionStatusEnum.notNull(),
   notes: text("notes"),
   metadata: text("metadata"), // JSON string for type-specific data
-  createdBy: int("createdBy").notNull(),
+  createdBy: int("createdBy").notNull().references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
@@ -1505,12 +1505,12 @@ export const transactionLinkTypeEnum = mysqlEnum("transactionLinkType", [
  */
 export const transactionLinks = mysqlTable("transactionLinks", {
   id: int("id").autoincrement().primaryKey(),
-  parentTransactionId: int("parentTransactionId").notNull(),
-  childTransactionId: int("childTransactionId").notNull(),
+  parentTransactionId: int("parentTransactionId").notNull().references(() => transactions.id, { onDelete: "cascade" }),
+  childTransactionId: int("childTransactionId").notNull().references(() => transactions.id, { onDelete: "cascade" }),
   linkType: transactionLinkTypeEnum.notNull(),
   linkAmount: varchar("linkAmount", { length: 20 }), // Amount of the link (for partial payments/refunds)
   notes: text("notes"),
-  createdBy: int("createdBy").notNull(),
+  createdBy: int("createdBy").notNull().references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   parentIdIdx: index("idx_transaction_links_parent").on(table.parentTransactionId),
@@ -1544,8 +1544,8 @@ export const creditStatusEnum = mysqlEnum("creditStatus", [
 export const credits = mysqlTable("credits", {
   id: int("id").autoincrement().primaryKey(),
   creditNumber: varchar("creditNumber", { length: 50 }).notNull().unique(),
-  clientId: int("clientId").notNull(),
-  transactionId: int("transactionId"), // Link to base transaction
+  clientId: int("clientId").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  transactionId: int("transactionId").references(() => transactions.id), // Link to base transaction
   creditAmount: varchar("creditAmount", { length: 20 }).notNull(),
   amountUsed: varchar("amountUsed", { length: 20 }).notNull().default("0"),
   amountRemaining: varchar("amountRemaining", { length: 20 }).notNull(),
@@ -1553,7 +1553,7 @@ export const credits = mysqlTable("credits", {
   expirationDate: timestamp("expirationDate"),
   status: creditStatusEnum.notNull().default("ACTIVE"),
   notes: text("notes"),
-  createdBy: int("createdBy").notNull(),
+  createdBy: int("createdBy").notNull().references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
@@ -1571,12 +1571,12 @@ export type InsertCredit = typeof credits.$inferInsert;
  */
 export const creditApplications = mysqlTable("creditApplications", {
   id: int("id").autoincrement().primaryKey(),
-  creditId: int("creditId").notNull(),
-  invoiceId: int("invoiceId").notNull(),
+  creditId: int("creditId").notNull().references(() => credits.id, { onDelete: "cascade" }),
+  invoiceId: int("invoiceId").notNull().references(() => transactions.id, { onDelete: "cascade" }),
   amountApplied: varchar("amountApplied", { length: 20 }).notNull(),
   appliedDate: timestamp("appliedDate").notNull(),
   notes: text("notes"),
-  appliedBy: int("appliedBy").notNull(),
+  appliedBy: int("appliedBy").notNull().references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   creditIdIdx: index("idx_credit_applications_credit").on(table.creditId),
@@ -1638,7 +1638,7 @@ export const inventoryMovementTypeEnum = mysqlEnum("inventoryMovementType", [
  */
 export const inventoryMovements = mysqlTable("inventoryMovements", {
   id: int("id").autoincrement().primaryKey(),
-  batchId: int("batchId").notNull(),
+  batchId: int("batchId").notNull().references(() => batches.id, { onDelete: "cascade" }),
   movementType: inventoryMovementTypeEnum.notNull(),
   quantityChange: varchar("quantityChange", { length: 20 }).notNull(), // Can be negative
   quantityBefore: varchar("quantityBefore", { length: 20 }).notNull(),
@@ -1646,7 +1646,7 @@ export const inventoryMovements = mysqlTable("inventoryMovements", {
   referenceType: varchar("referenceType", { length: 50 }), // "ORDER", "REFUND", "ADJUSTMENT", etc.
   referenceId: int("referenceId"),
   reason: text("reason"),
-  performedBy: int("performedBy").notNull(),
+  performedBy: int("performedBy").notNull().references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   batchIdIdx: index("idx_inventory_movements_batch").on(table.batchId),

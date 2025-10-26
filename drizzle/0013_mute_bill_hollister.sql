@@ -1,0 +1,13 @@
+ALTER TABLE `creditApplications` ADD CONSTRAINT `creditApplications_creditId_credits_id_fk` FOREIGN KEY (`creditId`) REFERENCES `credits`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `creditApplications` ADD CONSTRAINT `creditApplications_invoiceId_transactions_id_fk` FOREIGN KEY (`invoiceId`) REFERENCES `transactions`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `creditApplications` ADD CONSTRAINT `creditApplications_appliedBy_users_id_fk` FOREIGN KEY (`appliedBy`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `credits` ADD CONSTRAINT `credits_clientId_clients_id_fk` FOREIGN KEY (`clientId`) REFERENCES `clients`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `credits` ADD CONSTRAINT `credits_transactionId_transactions_id_fk` FOREIGN KEY (`transactionId`) REFERENCES `transactions`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `credits` ADD CONSTRAINT `credits_createdBy_users_id_fk` FOREIGN KEY (`createdBy`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `inventoryMovements` ADD CONSTRAINT `inventoryMovements_batchId_batches_id_fk` FOREIGN KEY (`batchId`) REFERENCES `batches`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `inventoryMovements` ADD CONSTRAINT `inventoryMovements_performedBy_users_id_fk` FOREIGN KEY (`performedBy`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `transactionLinks` ADD CONSTRAINT `transactionLinks_parentTransactionId_transactions_id_fk` FOREIGN KEY (`parentTransactionId`) REFERENCES `transactions`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `transactionLinks` ADD CONSTRAINT `transactionLinks_childTransactionId_transactions_id_fk` FOREIGN KEY (`childTransactionId`) REFERENCES `transactions`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `transactionLinks` ADD CONSTRAINT `transactionLinks_createdBy_users_id_fk` FOREIGN KEY (`createdBy`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `transactions` ADD CONSTRAINT `transactions_clientId_clients_id_fk` FOREIGN KEY (`clientId`) REFERENCES `clients`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `transactions` ADD CONSTRAINT `transactions_createdBy_users_id_fk` FOREIGN KEY (`createdBy`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;

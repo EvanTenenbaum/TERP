@@ -53,6 +53,11 @@ export async function recordInventoryMovement(movement: InsertInventoryMovement)
 
 /**
  * Decrease inventory for a sale
+ * 
+ * ⚠️ RACE CONDITION RISK: This function should be wrapped in a database transaction
+ * to prevent concurrent sales from the same batch causing negative inventory.
+ * Consider using SELECT ... FOR UPDATE on the batch record.
+ * 
  * @param batchId Batch ID
  * @param quantity Quantity to decrease
  * @param referenceType Reference type (e.g., "ORDER", "SALE")

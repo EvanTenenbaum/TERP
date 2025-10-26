@@ -182,6 +182,11 @@ export async function linkTransactions(
       throw new Error(`Child transaction ${childId} not found`);
     }
     
+    // Prevent self-reference
+    if (parentId === childId) {
+      throw new Error("Cannot link a transaction to itself");
+    }
+    
     // Check if link already exists
     const [existingLink] = await db
       .select()
@@ -195,6 +200,21 @@ export async function linkTransactions(
     
     if (existingLink) {
       throw new Error("Transaction link already exists");
+    }
+    
+    // Check for circular reference (if child is already a parent of parent)
+    const [reverseLink] = await db
+      .select()
+      .from(transactionLinks)
+      .where(
+        and(
+          eq(transactionLinks.parentTransactionId, childId),
+          eq(transactionLinks.childTransactionId, parentId)
+        )
+      );
+    
+    if (reverseLink) {
+      throw new Error("Cannot create circular reference: child transaction is already a parent of parent transaction");
     }
     
     // Create the link

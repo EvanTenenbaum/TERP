@@ -176,12 +176,17 @@ export async function getClientCreditBalance(clientId: number): Promise<number> 
 }
 
 /**
- * Apply a credit to an invoice
+ * Apply credit to an invoice
+ * 
+ * ⚠️ RACE CONDITION RISK: This function should be wrapped in a database transaction
+ * to prevent concurrent applications of the same credit. Consider using SELECT ... FOR UPDATE
+ * on the credit record to lock it during the operation.
+ * 
  * @param creditId Credit ID
- * @param invoiceId Invoice ID
- * @param amountToApply Amount to apply from the credit
- * @param appliedBy User ID who applied the credit
- * @param notes Optional notes about the application
+ * @param invoiceId Invoice ID (transaction ID)
+ * @param amountToApply Amount to apply
+ * @param appliedBy User ID applying the credit
+ * @param notes Optional notes
  * @returns The created credit application
  */
 export async function applyCredit(
