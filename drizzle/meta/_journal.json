@@ -85,6 +85,13 @@
       "when": 1761444019861,
       "tag": "0011_noisy_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1761462676291,
+      "tag": "0012_daffy_shotgun",
+      "breakpoints": true
     }
   ]
 }

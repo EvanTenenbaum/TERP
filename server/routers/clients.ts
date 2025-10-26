@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import * as clientsDb from "../clientsDb";
+import * as transactionsDb from "../transactionsDb";
 
 export const clientsRouter = router({
   // List clients with pagination and filters
@@ -169,6 +170,44 @@ export const clientsRouter = router({
       .input(z.object({ transactionId: z.number() }))
       .mutation(async ({ input }) => {
         return await clientsDb.deleteTransaction(input.transactionId);
+      }),
+
+    // Link transactions (e.g., refund to original sale)
+    linkTransaction: protectedProcedure
+      .input(z.object({
+        parentTransactionId: z.number(),
+        childTransactionId: z.number(),
+        linkType: z.enum(["REFUND_OF", "PAYMENT_FOR", "CREDIT_APPLIED_TO", "CONVERTED_FROM", "PARTIAL_OF", "RELATED_TO"]),
+        linkAmount: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await transactionsDb.linkTransactions(
+          input.parentTransactionId,
+          input.childTransactionId,
+          input.linkType,
+          ctx.user.id,
+          input.linkAmount,
+          input.notes
+        );
+      }),
+
+    // Get transaction with relationships
+    getWithRelationships: protectedProcedure
+      .input(z.object({ transactionId: z.number() }))
+      .query(async ({ input }) => {
+        return await transactionsDb.getTransactionWithRelationships(input.transactionId);
+      }),
+
+    // Get transaction history with relationship counts
+    getHistory: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        limit: z.number().optional().default(50),
+      }))
+      .query(async ({ input }) => {
+        return await transactionsDb.getClientTransactionHistory(input.clientId, input.limit);
       }),
   }),
 

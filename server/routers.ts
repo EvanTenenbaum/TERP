@@ -13,6 +13,9 @@ import { accountingRouter } from "./routers/accounting";
 import { freeformNotesRouter } from "./routers/freeformNotes";
 import { clientsRouter } from "./routers/clients";
 import { creditRouter } from "./routers/credit";
+import { creditsRouter } from "./routers/credits";
+import { badDebtRouter } from "./routers/badDebt";
+import { inventoryMovementsRouter } from "./routers/inventoryMovements";
 import { pricingRouter } from "./routers/pricing";
 import { salesSheetsRouter } from "./routers/salesSheets";
 import { ordersRouter } from "./routers/orders";
@@ -30,6 +33,9 @@ export const appRouter = router({
   freeformNotes: freeformNotesRouter,
   clients: clientsRouter,
   credit: creditRouter,
+  credits: creditsRouter,
+  badDebt: badDebtRouter,
+  inventoryMovements: inventoryMovementsRouter,
   pricing: pricingRouter,
   salesSheets: salesSheetsRouter,
   orders: ordersRouter,

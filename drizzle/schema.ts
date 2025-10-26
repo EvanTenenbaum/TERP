@@ -1421,3 +1421,240 @@ export const cogsRules = mysqlTable("cogs_rules", {
 export type CogsRule = typeof cogsRules.$inferSelect;
 export type InsertCogsRule = typeof cogsRules.$inferInsert;
 
+
+
+// ============================================================================
+// TRANSACTION RELATIONSHIP MODEL
+// ============================================================================
+
+/**
+ * Transaction Type Enum
+ * Defines all possible transaction types in the system
+ */
+export const transactionTypeEnum = mysqlEnum("transactionType", [
+  "INVOICE",
+  "PAYMENT",
+  "REFUND",
+  "CREDIT",
+  "QUOTE",
+  "ORDER",
+  "SALE"
+]);
+
+/**
+ * Transaction Status Enum
+ * Defines the lifecycle status of a transaction
+ */
+export const transactionStatusEnum = mysqlEnum("transactionStatus", [
+  "DRAFT",
+  "PENDING",
+  "CONFIRMED",
+  "COMPLETED",
+  "PARTIAL",
+  "PAID",
+  "OVERDUE",
+  "VOID",
+  "WRITTEN_OFF"
+]);
+
+/**
+ * Base Transactions Table
+ * Central table that all transaction types reference
+ * Provides a unified view of all business transactions
+ */
+export const transactions = mysqlTable("transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  transactionNumber: varchar("transactionNumber", { length: 50 }).notNull().unique(),
+  transactionType: transactionTypeEnum.notNull(),
+  clientId: int("clientId").notNull(),
+  transactionDate: timestamp("transactionDate").notNull(),
+  amount: varchar("amount", { length: 20 }).notNull(),
+  status: transactionStatusEnum.notNull(),
+  notes: text("notes"),
+  metadata: text("metadata"), // JSON string for type-specific data
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  clientIdIdx: index("idx_transactions_client_id").on(table.clientId),
+  transactionTypeIdx: index("idx_transactions_type").on(table.transactionType),
+  transactionDateIdx: index("idx_transactions_date").on(table.transactionDate),
+  statusIdx: index("idx_transactions_status").on(table.status),
+}));
+
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = typeof transactions.$inferInsert;
+
+/**
+ * Transaction Link Type Enum
+ * Defines the type of relationship between transactions
+ */
+export const transactionLinkTypeEnum = mysqlEnum("transactionLinkType", [
+  "REFUND_OF",          // Child is a refund of parent
+  "PAYMENT_FOR",        // Child is a payment for parent
+  "CREDIT_APPLIED_TO",  // Child credit is applied to parent invoice
+  "CONVERTED_FROM",     // Child is converted from parent (e.g., quote to order)
+  "PARTIAL_OF",         // Child is a partial payment/refund of parent
+  "RELATED_TO"          // General relationship
+]);
+
+/**
+ * Transaction Links Table
+ * Establishes parent-child relationships between transactions
+ * Enables tracking of refunds to original sales, payments to invoices, etc.
+ */
+export const transactionLinks = mysqlTable("transactionLinks", {
+  id: int("id").autoincrement().primaryKey(),
+  parentTransactionId: int("parentTransactionId").notNull(),
+  childTransactionId: int("childTransactionId").notNull(),
+  linkType: transactionLinkTypeEnum.notNull(),
+  linkAmount: varchar("linkAmount", { length: 20 }), // Amount of the link (for partial payments/refunds)
+  notes: text("notes"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  parentIdIdx: index("idx_transaction_links_parent").on(table.parentTransactionId),
+  childIdIdx: index("idx_transaction_links_child").on(table.childTransactionId),
+  linkTypeIdx: index("idx_transaction_links_type").on(table.linkType),
+}));
+
+export type TransactionLink = typeof transactionLinks.$inferSelect;
+export type InsertTransactionLink = typeof transactionLinks.$inferInsert;
+
+// ============================================================================
+// CREDIT MANAGEMENT SYSTEM
+// ============================================================================
+
+/**
+ * Credit Status Enum
+ * Defines the lifecycle status of a credit
+ */
+export const creditStatusEnum = mysqlEnum("creditStatus", [
+  "ACTIVE",
+  "PARTIALLY_USED",
+  "FULLY_USED",
+  "EXPIRED",
+  "VOID"
+]);
+
+/**
+ * Credits Table
+ * Manages customer credits (store credit, promotional credits, goodwill gestures)
+ */
+export const credits = mysqlTable("credits", {
+  id: int("id").autoincrement().primaryKey(),
+  creditNumber: varchar("creditNumber", { length: 50 }).notNull().unique(),
+  clientId: int("clientId").notNull(),
+  transactionId: int("transactionId"), // Link to base transaction
+  creditAmount: varchar("creditAmount", { length: 20 }).notNull(),
+  amountUsed: varchar("amountUsed", { length: 20 }).notNull().default("0"),
+  amountRemaining: varchar("amountRemaining", { length: 20 }).notNull(),
+  creditReason: varchar("creditReason", { length: 100 }),
+  expirationDate: timestamp("expirationDate"),
+  status: creditStatusEnum.notNull().default("ACTIVE"),
+  notes: text("notes"),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  clientIdIdx: index("idx_credits_client_id").on(table.clientId),
+  statusIdx: index("idx_credits_status").on(table.status),
+  expirationDateIdx: index("idx_credits_expiration").on(table.expirationDate),
+}));
+
+export type Credit = typeof credits.$inferSelect;
+export type InsertCredit = typeof credits.$inferInsert;
+
+/**
+ * Credit Applications Table
+ * Tracks when credits are applied to invoices
+ */
+export const creditApplications = mysqlTable("creditApplications", {
+  id: int("id").autoincrement().primaryKey(),
+  creditId: int("creditId").notNull(),
+  invoiceId: int("invoiceId").notNull(),
+  amountApplied: varchar("amountApplied", { length: 20 }).notNull(),
+  appliedDate: timestamp("appliedDate").notNull(),
+  notes: text("notes"),
+  appliedBy: int("appliedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  creditIdIdx: index("idx_credit_applications_credit").on(table.creditId),
+  invoiceIdIdx: index("idx_credit_applications_invoice").on(table.invoiceId),
+}));
+
+export type CreditApplication = typeof creditApplications.$inferSelect;
+export type InsertCreditApplication = typeof creditApplications.$inferInsert;
+
+// ============================================================================
+// CUSTOMIZABLE PAYMENT METHODS
+// ============================================================================
+
+/**
+ * Payment Methods Table
+ * Allows customizable payment methods instead of hardcoded enum
+ */
+export const paymentMethods = mysqlTable("paymentMethods", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  isActive: int("isActive").notNull().default(1),
+  sortOrder: int("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  isActiveIdx: index("idx_payment_methods_active").on(table.isActive),
+  sortOrderIdx: index("idx_payment_methods_sort").on(table.sortOrder),
+}));
+
+export type PaymentMethod = typeof paymentMethods.$inferSelect;
+export type InsertPaymentMethod = typeof paymentMethods.$inferInsert;
+
+// ============================================================================
+// INVENTORY MOVEMENT TRACKING (Phase 2 Preparation)
+// ============================================================================
+
+/**
+ * Inventory Movement Type Enum
+ * Defines all types of inventory quantity changes
+ */
+export const inventoryMovementTypeEnum = mysqlEnum("inventoryMovementType", [
+  "INTAKE",
+  "SALE",
+  "REFUND_RETURN",
+  "ADJUSTMENT",
+  "QUARANTINE",
+  "RELEASE_FROM_QUARANTINE",
+  "DISPOSAL",
+  "TRANSFER",
+  "SAMPLE"
+]);
+
+/**
+ * Inventory Movements Table
+ * Comprehensive audit trail of all inventory quantity changes
+ * Links inventory changes to business transactions
+ */
+export const inventoryMovements = mysqlTable("inventoryMovements", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: int("batchId").notNull(),
+  movementType: inventoryMovementTypeEnum.notNull(),
+  quantityChange: varchar("quantityChange", { length: 20 }).notNull(), // Can be negative
+  quantityBefore: varchar("quantityBefore", { length: 20 }).notNull(),
+  quantityAfter: varchar("quantityAfter", { length: 20 }).notNull(),
+  referenceType: varchar("referenceType", { length: 50 }), // "ORDER", "REFUND", "ADJUSTMENT", etc.
+  referenceId: int("referenceId"),
+  reason: text("reason"),
+  performedBy: int("performedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  batchIdIdx: index("idx_inventory_movements_batch").on(table.batchId),
+  movementTypeIdx: index("idx_inventory_movements_type").on(table.movementType),
+  referenceIdx: index("idx_inventory_movements_reference").on(table.referenceType, table.referenceId),
+  createdAtIdx: index("idx_inventory_movements_created").on(table.createdAt),
+}));
+
+export type InventoryMovement = typeof inventoryMovements.$inferSelect;
+export type InsertInventoryMovement = typeof inventoryMovements.$inferInsert;
+
