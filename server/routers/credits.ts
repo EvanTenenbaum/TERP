@@ -71,7 +71,7 @@ export const creditsRouter = router({
     }),
 
   // Apply credit to an invoice
-  apply: protectedProcedure
+  applyCredit: protectedProcedure
     .input(z.object({
       creditId: z.number(),
       invoiceId: z.number(),
