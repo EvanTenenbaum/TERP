@@ -19,6 +19,9 @@ import { inventoryMovementsRouter } from "./routers/inventoryMovements";
 import { pricingRouter } from "./routers/pricing";
 import { salesSheetsRouter } from "./routers/salesSheets";
 import { ordersRouter } from "./routers/orders";
+import { auditLogsRouter } from "./routers/auditLogs";
+import { configurationRouter } from "./routers/configuration";
+import { accountingHooksRouter } from "./routers/accountingHooks";
 
 export const appRouter = router({
   system: systemRouter,
@@ -39,6 +42,9 @@ export const appRouter = router({
   pricing: pricingRouter,
   salesSheets: salesSheetsRouter,
   orders: ordersRouter,
+  auditLogs: auditLogsRouter,
+  configuration: configurationRouter,
+  accountingHooks: accountingHooksRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -10,6 +10,8 @@
 
 import * as inventoryMovementsDb from "./inventoryMovementsDb";
 import * as transactionsDb from "./transactionsDb";
+import * as accountingHooks from "./accountingHooks";
+import * as cogsCalculation from "./cogsCalculation";
 
 /**
  * Process a sale transaction - decrease inventory
@@ -72,6 +74,38 @@ export async function processSaleInventory(
       }
       throw error;
     }
+  }
+  
+  // Post accounting entries for the sale
+  try {
+    const transaction = await transactionsDb.getTransactionById(saleData.transactionId);
+    if (transaction) {
+      await accountingHooks.postSaleGLEntries({
+        transactionId: saleData.transactionId,
+        transactionNumber: transaction.transactionNumber,
+        clientId: transaction.clientId,
+        amount: transaction.amount,
+        transactionDate: new Date(transaction.transactionDate),
+        userId
+      });
+      
+      // Calculate and post COGS
+      const cogsResult = await cogsCalculation.calculateSaleCOGS(
+        { lineItems: saleData.lineItems },
+        transaction.clientId
+      );
+      
+      await accountingHooks.postCOGSGLEntries({
+        transactionId: saleData.transactionId,
+        transactionNumber: transaction.transactionNumber,
+        cogsAmount: cogsResult.totalCOGS.toFixed(2),
+        transactionDate: new Date(transaction.transactionDate),
+        userId
+      });
+    }
+  } catch (error) {
+    console.error("Error posting accounting entries:", error);
+    // Don't fail the sale if GL posting fails
   }
   
   return movements;
