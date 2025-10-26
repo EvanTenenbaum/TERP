@@ -241,6 +241,8 @@ export const batches = mysqlTable("batches", {
   status: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
   grade: varchar("grade", { length: 10 }),
   isSample: int("isSample").notNull().default(0), // 0 = false, 1 = true
+  sampleOnly: int("sampleOnly").notNull().default(0), // 0 = false, 1 = true (batch can only be sampled, not sold)
+  sampleAvailable: int("sampleAvailable").notNull().default(0), // 0 = false, 1 = true (batch can be used for samples)
   cogsMode: cogsModeEnum.notNull(),
   unitCogs: varchar("unitCogs", { length: 20 }), // FIXED
   unitCogsMin: varchar("unitCogsMin", { length: 20 }), // RANGE
@@ -1231,6 +1233,9 @@ export const salesSheetTemplates = mysqlTable("sales_sheet_templates", {
   createdBy: int("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   lastUsedAt: timestamp("last_used_at"),
+  expirationDate: timestamp("expiration_date"),
+  isActive: int("is_active").notNull().default(1), // 0 = inactive, 1 = active
+  currentVersion: int("current_version").notNull().default(1),
 }, (table) => ({
   clientIdIdx: index("idx_client_id").on(table.clientId),
   createdByIdx: index("idx_created_by").on(table.createdBy),
@@ -1339,6 +1344,7 @@ export const orders = mysqlTable("orders", {
   // Conversion tracking
   convertedFromOrderId: int("converted_from_order_id").references((): any => orders.id),
   convertedAt: timestamp("converted_at"),
+  relatedSampleRequestId: int("related_sample_request_id"), // Link to sample request if order came from sample
   
   // Metadata
   notes: text("notes"),
@@ -1657,4 +1663,243 @@ export const inventoryMovements = mysqlTable("inventoryMovements", {
 
 export type InventoryMovement = typeof inventoryMovements.$inferSelect;
 export type InsertInventoryMovement = typeof inventoryMovements.$inferInsert;
+
+
+// ============================================================================
+// SAMPLE MANAGEMENT MODULE (Phase 6)
+// ============================================================================
+
+/**
+ * Sample Request Status Enum
+ * Tracks the lifecycle of a sample request
+ */
+export const sampleRequestStatusEnum = mysqlEnum("sampleRequestStatus", [
+  "PENDING",
+  "FULFILLED",
+  "CANCELLED"
+]);
+
+/**
+ * Sample Requests Table
+ * Tracks all sample requests from clients
+ * Includes monthly allocation tracking and conversion metrics
+ */
+export const sampleRequests = mysqlTable("sampleRequests", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  requestedBy: int("requestedBy").notNull().references(() => users.id),
+  requestDate: timestamp("requestDate").defaultNow().notNull(),
+  products: json("products").$type<Array<{productId: number, quantity: string}>>().notNull(), // Array of {productId, quantity}
+  status: sampleRequestStatusEnum.notNull().default("PENDING"),
+  fulfilledDate: timestamp("fulfilledDate"),
+  fulfilledBy: int("fulfilledBy").references(() => users.id),
+  cancelledDate: timestamp("cancelledDate"),
+  cancelledBy: int("cancelledBy").references(() => users.id),
+  cancellationReason: text("cancellationReason"),
+  notes: text("notes"),
+  totalCost: decimal("totalCost", { precision: 10, scale: 2 }), // COGS of samples
+  relatedOrderId: int("relatedOrderId").references(() => orders.id), // If sample led to order
+  conversionDate: timestamp("conversionDate"), // When sample converted to sale
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  clientIdIdx: index("idx_sample_requests_client").on(table.clientId),
+  statusIdx: index("idx_sample_requests_status").on(table.status),
+  requestDateIdx: index("idx_sample_requests_date").on(table.requestDate),
+  relatedOrderIdx: index("idx_sample_requests_order").on(table.relatedOrderId),
+}));
+
+export type SampleRequest = typeof sampleRequests.$inferSelect;
+export type InsertSampleRequest = typeof sampleRequests.$inferInsert;
+
+/**
+ * Sample Allocations Table
+ * Tracks monthly sample allocation limits per client
+ */
+export const sampleAllocations = mysqlTable("sampleAllocations", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  monthYear: varchar("monthYear", { length: 7 }).notNull(), // Format: "2025-10"
+  allocatedQuantity: varchar("allocatedQuantity", { length: 20 }).notNull(), // e.g., "7.0" grams
+  usedQuantity: varchar("usedQuantity", { length: 20 }).notNull().default("0"),
+  remainingQuantity: varchar("remainingQuantity", { length: 20 }).notNull(), // computed
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  clientMonthIdx: index("idx_sample_allocations_client_month").on(table.clientId, table.monthYear),
+  uniqueClientMonth: index("idx_sample_allocations_unique").on(table.clientId, table.monthYear),
+}));
+
+export type SampleAllocation = typeof sampleAllocations.$inferSelect;
+export type InsertSampleAllocation = typeof sampleAllocations.$inferInsert;
+
+
+
+// ============================================================================
+// DASHBOARD ENHANCEMENTS (Phase 7)
+// ============================================================================
+
+/**
+ * Inventory Alert Type Enum
+ * Defines different types of inventory alerts
+ */
+export const inventoryAlertTypeEnum = mysqlEnum("inventoryAlertType", [
+  "LOW_STOCK",
+  "EXPIRING",
+  "OVERSTOCK",
+  "SLOW_MOVING"
+]);
+
+/**
+ * Alert Severity Enum
+ */
+export const alertSeverityEnum = mysqlEnum("alertSeverity", [
+  "LOW",
+  "MEDIUM",
+  "HIGH"
+]);
+
+/**
+ * Alert Status Enum
+ */
+export const alertStatusEnum = mysqlEnum("alertStatus", [
+  "ACTIVE",
+  "ACKNOWLEDGED",
+  "RESOLVED"
+]);
+
+/**
+ * Inventory Alerts Table
+ * Tracks inventory-related alerts for dashboard
+ */
+export const inventoryAlerts = mysqlTable("inventoryAlerts", {
+  id: int("id").autoincrement().primaryKey(),
+  alertType: inventoryAlertTypeEnum.notNull(),
+  batchId: int("batchId").notNull().references(() => batches.id, { onDelete: "cascade" }),
+  threshold: decimal("threshold", { precision: 10, scale: 2 }),
+  currentValue: decimal("currentValue", { precision: 10, scale: 2 }),
+  severity: alertSeverityEnum.notNull(),
+  status: alertStatusEnum.notNull().default("ACTIVE"),
+  message: text("message"),
+  acknowledgedBy: int("acknowledgedBy").references(() => users.id),
+  acknowledgedAt: timestamp("acknowledgedAt"),
+  resolvedAt: timestamp("resolvedAt"),
+  resolution: text("resolution"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  batchIdIdx: index("idx_inventory_alerts_batch").on(table.batchId),
+  statusIdx: index("idx_inventory_alerts_status").on(table.status),
+  alertTypeIdx: index("idx_inventory_alerts_type").on(table.alertType),
+  severityIdx: index("idx_inventory_alerts_severity").on(table.severity),
+}));
+
+export type InventoryAlert = typeof inventoryAlerts.$inferSelect;
+export type InsertInventoryAlert = typeof inventoryAlerts.$inferInsert;
+
+/**
+ * User Dashboard Preferences Table
+ * Stores per-user dashboard widget visibility and configuration
+ */
+export const userDashboardPreferences = mysqlTable("userDashboardPreferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  widgetId: varchar("widgetId", { length: 100 }).notNull(), // e.g., "sales_performance", "ar_aging"
+  isVisible: int("isVisible").notNull().default(1), // 0 = hidden, 1 = visible
+  sortOrder: int("sortOrder").notNull().default(0),
+  config: json("config"), // Widget-specific configuration
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userWidgetIdx: index("idx_user_dashboard_prefs_user_widget").on(table.userId, table.widgetId),
+}));
+
+export type UserDashboardPreference = typeof userDashboardPreferences.$inferSelect;
+export type InsertUserDashboardPreference = typeof userDashboardPreferences.$inferInsert;
+
+
+
+// ============================================================================
+// SALES SHEET ENHANCEMENTS (Phase 8)
+// ============================================================================
+
+/**
+ * Sales Sheet Versions Table
+ * Tracks version history of sales sheet templates
+ */
+export const salesSheetVersions = mysqlTable("salesSheetVersions", {
+  id: int("id").autoincrement().primaryKey(),
+  templateId: int("templateId").notNull().references(() => salesSheetTemplates.id, { onDelete: "cascade" }),
+  versionNumber: int("versionNumber").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  filters: json("filters").notNull(),
+  selectedItems: json("selected_items").notNull(),
+  columnVisibility: json("column_visibility").notNull(),
+  changes: text("changes"), // Description of what changed
+  createdBy: int("createdBy").notNull().references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  templateVersionIdx: index("idx_sales_sheet_versions_template").on(table.templateId, table.versionNumber),
+}));
+
+export type SalesSheetVersion = typeof salesSheetVersions.$inferSelect;
+export type InsertSalesSheetVersion = typeof salesSheetVersions.$inferInsert;
+
+
+
+// ============================================================================
+// ADVANCED TAG FEATURES (Phase 9)
+// ============================================================================
+
+/**
+ * Tag Hierarchy Table
+ * Supports parent-child relationships for tags
+ */
+export const tagHierarchy = mysqlTable("tagHierarchy", {
+  id: int("id").autoincrement().primaryKey(),
+  parentTagId: int("parentTagId").notNull().references(() => tags.id, { onDelete: "cascade" }),
+  childTagId: int("childTagId").notNull().references(() => tags.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  parentChildIdx: index("idx_tag_hierarchy_parent_child").on(table.parentTagId, table.childTagId),
+  uniqueRelation: index("idx_tag_hierarchy_unique").on(table.parentTagId, table.childTagId),
+}));
+
+export type TagHierarchy = typeof tagHierarchy.$inferSelect;
+export type InsertTagHierarchy = typeof tagHierarchy.$inferInsert;
+
+/**
+ * Tag Groups Table
+ * Logical groupings of tags for easier management
+ */
+export const tagGroups = mysqlTable("tagGroups", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 7 }), // Hex color code
+  createdBy: int("createdBy").notNull().references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TagGroup = typeof tagGroups.$inferSelect;
+export type InsertTagGroup = typeof tagGroups.$inferInsert;
+
+/**
+ * Tag Group Members Table
+ * Many-to-many relationship between tags and tag groups
+ */
+export const tagGroupMembers = mysqlTable("tagGroupMembers", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("groupId").notNull().references(() => tagGroups.id, { onDelete: "cascade" }),
+  tagId: int("tagId").notNull().references(() => tags.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  groupTagIdx: index("idx_tag_group_members_group_tag").on(table.groupId, table.tagId),
+}));
+
+export type TagGroupMember = typeof tagGroupMembers.$inferSelect;
+export type InsertTagGroupMember = typeof tagGroupMembers.$inferInsert;
+
 

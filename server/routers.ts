@@ -22,6 +22,10 @@ import { ordersRouter } from "./routers/orders";
 import { auditLogsRouter } from "./routers/auditLogs";
 import { configurationRouter } from "./routers/configuration";
 import { accountingHooksRouter } from "./routers/accountingHooks";
+import { samplesRouter } from "./routers/samples";
+import { dashboardEnhancedRouter } from "./routers/dashboardEnhanced";
+import { salesSheetEnhancementsRouter } from "./routers/salesSheetEnhancements";
+import { advancedTagFeaturesRouter } from "./routers/advancedTagFeatures";
 
 export const appRouter = router({
   system: systemRouter,
@@ -45,6 +49,10 @@ export const appRouter = router({
   auditLogs: auditLogsRouter,
   configuration: configurationRouter,
   accountingHooks: accountingHooksRouter,
+  samples: samplesRouter,
+  dashboardEnhanced: dashboardEnhancedRouter,
+  salesSheetEnhancements: salesSheetEnhancementsRouter,
+  advancedTagFeatures: advancedTagFeaturesRouter,
 });
 
 export type AppRouter = typeof appRouter;
