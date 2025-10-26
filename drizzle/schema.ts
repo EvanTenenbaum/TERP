@@ -1317,6 +1317,7 @@ export const orders = mysqlTable("orders", {
   orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
   orderType: orderTypeEnum.notNull(),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  clientNeedId: int("client_need_id"), // Link to client need if order was created from a need
   
   // Items (same structure for both quotes and sales)
   items: json("items").notNull(),

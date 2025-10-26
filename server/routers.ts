@@ -28,7 +28,7 @@ import { salesSheetEnhancementsRouter } from "./routers/salesSheetEnhancements";
 import { advancedTagFeaturesRouter } from "./routers/advancedTagFeatures";
 import { productIntakeRouter } from "./routers/productIntake";
 import { orderEnhancementsRouter } from "./routers/orderEnhancements";
-import { clientNeedsRouter } from "./routers/clientNeeds";
+import { clientNeedsEnhancedRouter } from "./routers/clientNeedsEnhanced";
 import { vendorSupplyRouter } from "./routers/vendorSupply";
 import { matchingRouter } from "./routers/matching";
 
@@ -60,7 +60,7 @@ export const appRouter = router({
   advancedTagFeatures: advancedTagFeaturesRouter,
   productIntake: productIntakeRouter,
   orderEnhancements: orderEnhancementsRouter,
-  clientNeeds: clientNeedsRouter,
+  clientNeeds: clientNeedsEnhancedRouter,
   vendorSupply: vendorSupplyRouter,
   matching: matchingRouter,
 });
