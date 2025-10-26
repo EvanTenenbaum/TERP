@@ -17,6 +17,7 @@ import * as clientsDb from "./clientsDb";
 import * as creditEngine from "./creditEngine";
 import * as pricingEngine from "./pricingEngine";
 import * as salesSheetsDb from "./salesSheetsDb";
+import * as ordersDb from "./ordersDb";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2434,8 +2435,97 @@ export const appRouter = router({
         await salesSheetsDb.deleteTemplate(input.templateId);
         return { success: true };
       }),
+    }),
+  // Orders Router (Unified Quotes + Sales)
+  orders: router({
+    // Create
+    create: protectedProcedure
+      .input(z.object({
+        orderType: z.enum(['QUOTE', 'SALE']),
+        clientId: z.number(),
+        items: z.array(z.object({
+          batchId: z.number(),
+          displayName: z.string().optional(),
+          quantity: z.number(),
+          unitPrice: z.number(),
+          isSample: z.boolean(),
+          overridePrice: z.number().optional(),
+          overrideCogs: z.number().optional(),
+        })),
+        validUntil: z.string().optional(),
+        paymentTerms: z.enum(['NET_7', 'NET_15', 'NET_30', 'COD', 'PARTIAL', 'CONSIGNMENT']).optional(),
+        cashPayment: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await ordersDb.createOrder({
+          ...input,
+          createdBy: ctx.user?.id || 1,
+        });
+      }),
+    // Read
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await ordersDb.getOrderById(input.id);
+      }),
+    getByClient: protectedProcedure
+      .input(z.object({ 
+        clientId: z.number(),
+        orderType: z.enum(['QUOTE', 'SALE']).optional(),
+      }))
+      .query(async ({ input }) => {
+        return await ordersDb.getOrdersByClient(input.clientId, input.orderType);
+      }),
+    getAll: protectedProcedure
+      .input(z.object({
+        orderType: z.enum(['QUOTE', 'SALE']).optional(),
+        quoteStatus: z.string().optional(),
+        saleStatus: z.string().optional(),
+        limit: z.number().optional(),
+        offset: z.number().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await ordersDb.getAllOrders(input);
+      }),
+    // Update
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        notes: z.string().optional(),
+        validUntil: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...updates } = input;
+        return await ordersDb.updateOrder(id, updates);
+      }),
+    // Delete
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await ordersDb.deleteOrder(input.id);
+        return { success: true };
+      }),
+    // Convert
+    convertToSale: protectedProcedure
+      .input(z.object({
+        quoteId: z.number(),
+        paymentTerms: z.enum(['NET_7', 'NET_15', 'NET_30', 'COD', 'PARTIAL', 'CONSIGNMENT']),
+        cashPayment: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await ordersDb.convertQuoteToSale(input);
+      }),
+    // Export
+    export: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        format: z.enum(['pdf', 'clipboard', 'image']),
+      }))
+      .mutation(async ({ input }) => {
+        return await ordersDb.exportOrder(input.id, input.format);
+      }),
   }),
 });
-
-
 export type AppRouter = typeof appRouter;

@@ -249,6 +249,7 @@ export const batches = mysqlTable("batches", {
   amountPaid: varchar("amountPaid", { length: 20 }).default("0"), // For COD/Partial tracking
   metadata: text("metadata"), // JSON string: test results, harvest code, COA, etc.
   onHandQty: varchar("onHandQty", { length: 20 }).notNull().default("0"),
+  sampleQty: varchar("sampleQty", { length: 20 }).notNull().default("0"),
   reservedQty: varchar("reservedQty", { length: 20 }).notNull().default("0"),
   quarantineQty: varchar("quarantineQty", { length: 20 }).notNull().default("0"),
   holdQty: varchar("holdQty", { length: 20 }).notNull().default("0"),
@@ -883,6 +884,16 @@ export type InsertNoteActivity = typeof noteActivity.$inferInsert;
 // CLIENT MANAGEMENT SYSTEM
 // ============================================================================
 
+/**
+ * COGS Adjustment Type Enum
+ * Types of COGS adjustments at client level
+ */
+export const cogsAdjustmentTypeEnum = mysqlEnum("cogsAdjustmentType", [
+  "NONE",
+  "PERCENTAGE",
+  "FIXED_AMOUNT"
+]);
+
 export const clients = mysqlTable("clients", {
   id: int("id").primaryKey().autoincrement(),
   teriCode: varchar("teri_code", { length: 50 }).notNull().unique(),
@@ -904,6 +915,11 @@ export const clients = mysqlTable("clients", {
   // Pricing configuration
   pricingProfileId: int("pricing_profile_id"),
   customPricingRules: json("custom_pricing_rules"),
+  
+  // COGS configuration
+  cogsAdjustmentType: cogsAdjustmentTypeEnum.default("NONE"),
+  cogsAdjustmentValue: decimal("cogs_adjustment_value", { precision: 10, scale: 4 }).default("0"),
+  autoDeferConsignment: boolean("auto_defer_consignment").default(false),
   
   // Computed stats (updated via triggers or application logic)
   totalSpent: decimal("total_spent", { precision: 15, scale: 2 }).default("0"),
@@ -1248,4 +1264,160 @@ export const salesSheetHistory = mysqlTable("sales_sheet_history", {
 
 export type SalesSheetHistory = typeof salesSheetHistory.$inferSelect;
 export type InsertSalesSheetHistory = typeof salesSheetHistory.$inferInsert;
+
+
+
+// ============================================================================
+// QUOTE/SALES MODULE SCHEMA
+// ============================================================================
+
+/**
+ * Order Type Enum
+ * Unified type for quotes and sales
+ */
+export const orderTypeEnum = mysqlEnum("orderType", ["QUOTE", "SALE"]);
+
+/**
+ * Quote Status Enum
+ * Lifecycle states for quotes
+ */
+export const quoteStatusEnum = mysqlEnum("quoteStatus", [
+  "DRAFT",
+  "SENT",
+  "VIEWED",
+  "ACCEPTED",
+  "REJECTED",
+  "EXPIRED",
+  "CONVERTED"
+]);
+
+/**
+ * Sale Status Enum
+ * Lifecycle states for sales
+ */
+export const saleStatusEnum = mysqlEnum("saleStatus", [
+  "PENDING",
+  "PARTIAL",
+  "PAID",
+  "OVERDUE",
+  "CANCELLED"
+]);
+
+/**
+ * Orders Table (Unified Quotes + Sales)
+ * Combines quotes and sales into a single table for simplicity
+ */
+export const orders = mysqlTable("orders", {
+  id: int("id").primaryKey().autoincrement(),
+  orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
+  orderType: orderTypeEnum.notNull(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  
+  // Items (same structure for both quotes and sales)
+  items: json("items").notNull(),
+  
+  // Financials
+  subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
+  tax: decimal("tax", { precision: 15, scale: 2 }).default("0"),
+  discount: decimal("discount", { precision: 15, scale: 2 }).default("0"),
+  total: decimal("total", { precision: 15, scale: 2 }).notNull(),
+  totalCogs: decimal("total_cogs", { precision: 15, scale: 2 }),
+  totalMargin: decimal("total_margin", { precision: 15, scale: 2 }),
+  avgMarginPercent: decimal("avg_margin_percent", { precision: 5, scale: 2 }),
+  
+  // Quote-specific fields (NULL for sales)
+  validUntil: date("valid_until"),
+  quoteStatus: quoteStatusEnum,
+  
+  // Sale-specific fields (NULL for quotes)
+  paymentTerms: paymentTermsEnum,
+  cashPayment: decimal("cash_payment", { precision: 15, scale: 2 }).default("0"),
+  dueDate: date("due_date"),
+  saleStatus: saleStatusEnum,
+  invoiceId: int("invoice_id"),
+  
+  // Conversion tracking
+  convertedFromOrderId: int("converted_from_order_id").references((): any => orders.id),
+  convertedAt: timestamp("converted_at"),
+  
+  // Metadata
+  notes: text("notes"),
+  createdBy: int("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  orderTypeIdx: index("idx_order_type").on(table.orderType),
+  quoteStatusIdx: index("idx_quote_status").on(table.quoteStatus),
+  saleStatusIdx: index("idx_sale_status").on(table.saleStatus),
+  createdAtIdx: index("idx_created_at").on(table.createdAt),
+}));
+
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = typeof orders.$inferInsert;
+
+/**
+ * Sample Inventory Log
+ * Tracks sample inventory allocations and consumption
+ */
+export const sampleInventoryLog = mysqlTable("sample_inventory_log", {
+  id: int("id").primaryKey().autoincrement(),
+  batchId: int("batch_id").notNull().references(() => batches.id, { onDelete: "cascade" }),
+  orderId: int("order_id").references(() => orders.id, { onDelete: "cascade" }),
+  
+  quantity: decimal("quantity", { precision: 15, scale: 4 }).notNull(),
+  action: mysqlEnum("action", ["ALLOCATED", "RELEASED", "CONSUMED"]).notNull(),
+  
+  notes: text("notes"),
+  createdBy: int("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  batchIdIdx: index("idx_batch_id").on(table.batchId),
+  orderIdIdx: index("idx_order_id").on(table.orderId),
+  createdAtIdx: index("idx_created_at").on(table.createdAt),
+}));
+
+export type SampleInventoryLog = typeof sampleInventoryLog.$inferSelect;
+export type InsertSampleInventoryLog = typeof sampleInventoryLog.$inferInsert;
+
+/**
+ * COGS Rules (Optional - Simple Version)
+ * Global rules for COGS calculation
+ */
+export const cogsRules = mysqlTable("cogs_rules", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  
+  // Simple condition (not complex engine)
+  conditionField: mysqlEnum("condition_field", [
+    "QUANTITY",
+    "TOTAL_VALUE",
+    "CLIENT_TIER",
+    "PAYMENT_TERMS"
+  ]),
+  conditionOperator: mysqlEnum("condition_operator", ["GT", "GTE", "LT", "LTE", "EQ"]),
+  conditionValue: decimal("condition_value", { precision: 15, scale: 4 }),
+  
+  // Adjustment
+  adjustmentType: mysqlEnum("adjustment_type", [
+    "PERCENTAGE",
+    "FIXED_AMOUNT",
+    "USE_MIN",
+    "USE_MAX"
+  ]),
+  adjustmentValue: decimal("adjustment_value", { precision: 10, scale: 4 }),
+  
+  priority: int("priority").default(0),
+  isActive: boolean("is_active").default(true),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  priorityIdx: index("idx_priority").on(table.priority),
+  isActiveIdx: index("idx_is_active").on(table.isActive),
+}));
+
+export type CogsRule = typeof cogsRules.$inferSelect;
+export type InsertCogsRule = typeof cogsRules.$inferInsert;
 

@@ -41,11 +41,12 @@
   - Mobile-first responsive design
   - Progressive disclosure of complexity
 
-- **Current Status:** Production-ready with 4 major modules implemented
+- **Current Status:** Production-ready with 5 major modules implemented
   - ✅ Dashboard & Homepage
   - ✅ Inventory Management
   - ✅ Accounting Module (complete double-entry system)
   - ✅ Sales Sheet Module (dynamic pricing & sales sheet generation)
+  - ✅ Quote/Sales Module (unified orders with brilliant COGS UX)
 
 ---
 
@@ -504,6 +505,234 @@ Complete dynamic pricing and sales sheet generation system with rule-based prici
 2. **Column Visibility:** Schema supports column configuration, but UI toggle not yet built
 3. **History View:** Save functionality works, but dedicated history viewing page not yet created
 4. **Batch Integration:** Currently uses basic batch fields; could be enhanced with product/lot relationships
+
+---
+
+### 5. Quote/Sales Module (Complete)
+
+**Location:** `/client/src/pages/OrderCreatorPage.tsx`, `/client/src/components/orders/`, `/client/src/components/cogs/`
+
+**Overview:**
+Comprehensive quote and sales order management system with unified orders structure, brilliant progressive disclosure UX for COGS, and Hybrid Smart COGS calculation. Enables users to create quotes, convert them to sales, manage payment terms, track samples, and monitor credit limits with real-time margin visibility.
+
+#### 5.1 COGS Calculation Engine
+
+**Backend:** `server/cogsCalculator.ts`, `server/ordersDb.ts`
+
+**Features:**
+- **FIXED Mode:** Uses exact COGS value from batch
+- **RANGE Mode:** Calculates midpoint between min/max COGS
+- **Client Adjustments:** Percentage or fixed amount discounts per client
+- **Consignment Estimation:** Default 60% of sale price for consignment deals
+- **Real-time Margin Calculation:** Automatic margin and margin percentage updates
+
+**Database Tables:**
+1. **orders** - Unified quotes and sales structure
+   - Fields: id, orderNumber, orderType (QUOTE/SALE), clientId, subtotal, totalCogs, totalMargin, avgMarginPercent, validUntil, quoteStatus, paymentTerms, cashPayment, dueDate, notes, createdBy, createdAt, updatedAt
+   - Order Types: QUOTE, SALE
+   - Quote Status: DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
+   - Payment Terms: COD, NET_7, NET_15, NET_30, PARTIAL, CONSIGNMENT
+
+2. **orderItems** - Line items with COGS tracking
+   - Fields: id, orderId, batchId, displayName, originalName, quantity, unitPrice, isSample, overridePrice, overrideCogs, unitCogs, cogsMode, cogsSource, unitMargin, marginPercent, lineTotal, lineCogs, lineMargin
+   - COGS Modes: FIXED, RANGE
+   - COGS Sources: CALCULATED, MIDPOINT, CLIENT_ADJUSTED, MANUAL, CONSIGNMENT_ESTIMATE
+
+3. **sampleInventoryLog** - Sample tracking
+   - Fields: id, batchId, orderId, quantity, clientId, notes, createdAt
+
+4. **cogsRules** - Optional advanced rules (future enhancement)
+   - Fields: id, name, description, ruleType, conditions, adjustmentType, adjustmentValue, priority, isActive, createdAt, updatedAt
+
+**Schema Updates:**
+- Added `cogsAdjustmentType` and `cogsAdjustmentValue` to `clients` table
+- Added `sampleQty` to `batches` table
+
+#### 5.2 Order Management Pages
+
+**Pages:**
+
+1. **Order Creator** (`/orders/create`)
+   - Quote/Sale toggle with dynamic UI
+   - Client selection with credit limit integration
+   - 60/40 split layout (inventory browser + order preview)
+   - Credit limit banner for sales (5-tier alert system)
+   - Real-time totals with progressive disclosure
+   - Quote-specific fields (valid until date)
+   - Sale-specific fields (payment terms, cash payment)
+   - Notes field
+   - Create order with validation
+
+2. **COGS Settings** (`/settings/cogs`)
+   - Global COGS settings tab:
+     - Auto-calculation toggle
+     - Manual adjustment permissions
+     - COGS visibility settings
+     - Consignment defaults (60% estimation)
+     - Margin thresholds (color-coded categories)
+   - Client adjustments tab:
+     - Client search and filter
+     - COGS adjustment type (None, Percentage, Fixed Amount)
+     - Adjustment value input
+     - Quick add form
+
+3. **Client Profile - Pricing Tab** (updated)
+   - COGS configuration section added
+   - Adjustment type selector
+   - Adjustment value input
+   - Integration with existing pricing rules
+
+#### 5.3 Order Components
+
+**Key Components:**
+
+1. **OrderPreview** (`OrderPreview.tsx`)
+   - Item list with scroll area
+   - Progressive disclosure totals:
+     - Level 1: Total + Margin %
+     - Level 2: COGS breakdown (click to expand)
+   - Quote/Sale specific fields
+   - Payment terms selector
+   - Conditional cash payment input
+   - Notes textarea
+   - Create order button with validation
+
+2. **OrderItemCard** (`OrderItemCard.tsx`)
+   - Display name editing (preserves original name)
+   - Quantity and unit price controls
+   - Sample toggle
+   - 3-level COGS disclosure:
+     - Level 1: Margin % badge (default)
+     - Level 2: COGS details popover (hover/click)
+     - Level 3: Full adjustment modal (power users)
+   - Real-time line total calculation
+   - Remove item button
+
+3. **CogsAdjustmentModal** (`CogsAdjustmentModal.tsx`)
+   - Smart COGS suggestion (midpoint for RANGE mode)
+   - Custom COGS input with validation
+   - Visual slider for RANGE mode
+   - Real-time margin updates
+   - Current vs. new margin comparison
+   - Save changes button
+
+4. **CreditLimitBanner** (`CreditLimitBanner.tsx`)
+   - 5 alert states:
+     - Excellent (0-75%): Green, checkmark
+     - Good (75-90%): Yellow, warning
+     - Fair (90-100%): Orange, alert
+     - Warning (100%+): Red, alert circle
+     - Exceeded: Red, X circle
+   - Progress bar visualization
+   - Current vs. new exposure display
+   - Credit limit, current exposure, after order
+   - Warning messages for over-limit scenarios
+
+5. **CogsGlobalSettings** (`CogsGlobalSettings.tsx`)
+   - Auto-calculation toggle
+   - Manual adjustment permissions
+   - COGS visibility settings
+   - Consignment defaults input
+   - Margin thresholds configuration
+   - Color-coded badge previews
+
+6. **CogsClientSettings** (`CogsClientSettings.tsx`)
+   - Client search input
+   - Client table with adjustments
+   - Adjustment type badges
+   - Edit buttons per client
+   - Quick add form
+
+#### 5.4 Features
+
+**Quote Creation:**
+- Create quotes with customizable items from inventory
+- Edit display names (preserves original system names)
+- Mark items as samples (tracked separately)
+- Override prices per item
+- Set valid until date
+- Add notes
+- Real-time margin visibility
+
+**Sale Creation:**
+- Convert quotes to sales (one-click)
+- Create sales directly
+- Payment terms selection (6 options)
+- Conditional cash payment input for partial payments
+- Credit limit validation with visual warnings
+- Automatic invoice generation (integration ready)
+- Complete accounting integration (integration ready)
+- Sample inventory tracking
+
+**COGS Management:**
+- Brilliant progressive disclosure UX (3 levels)
+- Auto-calculation based on batch mode (FIXED/RANGE)
+- Client-specific COGS adjustments (percentage or fixed)
+- Manual COGS override per item
+- Smart suggestions (midpoint for RANGE)
+- Visual slider for RANGE adjustments
+- Real-time margin updates
+- Color-coded margin categories (5 tiers)
+
+**Credit Limit Integration:**
+- Real-time credit utilization display
+- 5-tier alert system (excellent → exceeded)
+- Current exposure tracking
+- New exposure calculation
+- Progress bar visualization
+- Warning messages for over-limit scenarios
+- Block sales over limit (configurable)
+
+#### 5.5 tRPC Endpoints
+
+**Orders Router:**
+- `orders.create` - Create quote or sale
+- `orders.getById` - Get order by ID
+- `orders.listByClient` - List orders for a client
+- `orders.listAll` - List all orders
+- `orders.convertQuoteToSale` - Convert quote to sale
+
+#### 5.6 UX/UI Design Principles
+
+**Progressive Disclosure:**
+- **Level 1 (Novice):** Simple margin percentage badge
+- **Level 2 (Intermediate):** COGS breakdown on hover/click
+- **Level 3 (Power User):** Full adjustment modal with controls
+
+**Smart Defaults:**
+- System auto-calculates COGS using rules
+- FIXED mode → instant lock
+- RANGE mode → midpoint
+- Consignment → 60% estimation
+- User rarely needs to intervene
+
+**Empowerment Without Confusion:**
+- Novice users never see "COGS", just profit
+- Power users: 2 clicks to adjust anything
+- All users: Visual feedback, clear state
+
+#### 5.7 Known Limitations (By Design)
+
+1. **COGS Rules Engine:** Basic implementation (client-level adjustments only)
+   - Advanced rules (volume tiers, product-specific) not implemented
+   - Can be added in future phases if needed
+
+2. **Deferred COGS:** Not implemented
+   - Uses estimation (60% of sale price) for consignment
+   - Full deferred COGS workflow can be added later
+
+3. **Export Functionality:** Not implemented in this phase
+   - Planned for future enhancement (PDF, Excel, image)
+   - Can use browser print or third-party tools
+
+4. **Order History:** Basic tracking only
+   - Full order management (edit, cancel, refund) not implemented
+   - Can be added in future phases
+
+5. **Integration Dependencies:**
+   - Credit Engine: Assumes integration with existing credit module
+   - Accounting Module: Sale creation should trigger accounting entries (not tested)
+   - Inventory Module: Sample tracking should update inventory (not tested)
 
 ---
 

@@ -19,7 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Tag, TrendingUp, TrendingDown, Plus, Trash } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tag, TrendingUp, TrendingDown, Plus, Trash, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 
 interface PricingConfigTabProps {
@@ -183,6 +184,55 @@ export function PricingConfigTab({ clientId }: PricingConfigTabProps) {
                 </Table>
               </div>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* COGS Configuration */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <DollarSign className="h-5 w-5" />
+            <div>
+              <CardTitle>COGS Configuration</CardTitle>
+              <CardDescription>
+                Configure cost of goods sold adjustments for this client
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <Label>COGS Adjustment Type</Label>
+            <Select defaultValue="NONE">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NONE">No Adjustment</SelectItem>
+                <SelectItem value="PERCENTAGE">Percentage Discount</SelectItem>
+                <SelectItem value="FIXED_AMOUNT">Fixed Amount Discount</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Adjustment Value</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+            />
+            <p className="text-xs text-muted-foreground">
+              This adjustment will be applied to COGS calculations for all orders from this client
+            </p>
+          </div>
+
+          <div className="flex justify-end">
+            <Button>
+              Save COGS Settings
+            </Button>
           </div>
         </CardContent>
       </Card>

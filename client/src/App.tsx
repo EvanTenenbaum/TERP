@@ -26,6 +26,8 @@ import CreditSettingsPage from "@/pages/CreditSettingsPage";
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
+import OrderCreatorPage from "@/pages/OrderCreatorPage";
+import CogsSettingsPage from "@/pages/CogsSettingsPage";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -51,6 +53,8 @@ function Router() {
         <Route path={"/pricing/rules"} component={PricingRulesPage} />
         <Route path={"/pricing/profiles"} component={PricingProfilesPage} />
         <Route path={"/sales-sheets"} component={SalesSheetCreatorPage} />
+        <Route path={"/orders/create"} component={OrderCreatorPage} />
+        <Route path={"/settings/cogs"} component={CogsSettingsPage} />
         <Route path={"/settings"} component={Settings} />
         <Route path={"/credit-settings"} component={CreditSettingsPage} />
         <Route path={"/404"} component={NotFound} />
