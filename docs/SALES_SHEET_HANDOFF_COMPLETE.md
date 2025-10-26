@@ -304,9 +304,11 @@ $ pnpm run dev
 ## Contact & Questions
 
 For questions about this implementation, refer to:
+- **`docs/MASTER_DEVELOPMENT_PROMPT.md`** - **START HERE** - Comprehensive development prompt
 - `docs/SALES_SHEET_IMPLEMENTATION_STATUS.md` - Detailed implementation status
 - `docs/NEXT_SESSION_PROMPT.md` - Continuation instructions
-- `docs/PARALLEL_DEVELOPMENT_PROTOCOL.md` - Development protocols
+- `docs/DEVELOPMENT_PROTOCOLS.md` - The Bible (core protocols)
+- `docs/PARALLEL_DEVELOPMENT_PROTOCOL.md` - Parallel development guidelines
 
 ---
 

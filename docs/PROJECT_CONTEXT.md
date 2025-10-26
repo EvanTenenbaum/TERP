@@ -563,7 +563,25 @@ All pages follow consistent mobile-first responsive patterns:
 
 ## Development Workflow
 
-### Starting Development
+### 🎯 CRITICAL: Master Development Prompt
+
+**Before starting ANY work on TERP, you MUST read:**
+
+**`docs/MASTER_DEVELOPMENT_PROMPT.md`** ← START HERE ALWAYS
+
+This comprehensive master prompt ensures you follow ALL protocols, standards, and best practices. It includes:
+- Required reading list
+- Mandatory protocols (non-negotiable)
+- System integration & change management
+- Production-ready code standards
+- Breaking change protocol
+- **Context documentation update requirements (MANDATORY after each phase)**
+- Parallel development protocol (enhanced)
+- TERP design system standards
+- Quality assurance checklist
+- Standard development workflow
+
+### Starting a New Session
 
 1. **Navigate to project:**
    ```bash
