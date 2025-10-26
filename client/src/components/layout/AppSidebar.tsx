@@ -10,6 +10,8 @@ import {
   DollarSign,
   X,
   TrendingUp,
+  Tag,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { APP_TITLE } from '@/const';
@@ -17,10 +19,13 @@ import { APP_TITLE } from '@/const';
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Sales & Quotes', href: '/quotes', icon: FileText },
+  { name: 'Sales Sheets', href: '/sales-sheets', icon: Layers },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
   { name: 'Inventory', href: '/inventory', icon: Package },
   { name: 'Accounting', href: '/accounting/dashboard', icon: DollarSign },
   { name: 'Clients', href: '/clients', icon: Users },
+  { name: 'Pricing Rules', href: '/pricing/rules', icon: Tag },
+  { name: 'Pricing Profiles', href: '/pricing/profiles', icon: TrendingUp },
   { name: 'Credit Settings', href: '/credit-settings', icon: TrendingUp },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },

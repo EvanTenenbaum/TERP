@@ -23,6 +23,9 @@ import Expenses from "@/pages/accounting/Expenses";
 import ClientsListPage from "@/pages/ClientsListPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
 import CreditSettingsPage from "@/pages/CreditSettingsPage";
+import PricingRulesPage from "@/pages/PricingRulesPage";
+import PricingProfilesPage from "@/pages/PricingProfilesPage";
+import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -45,6 +48,9 @@ function Router() {
         <Route path={"/accounting/expenses"} component={Expenses} />
         <Route path={"/clients"} component={ClientsListPage} />
         <Route path={"/clients/:id"} component={ClientProfilePage} />
+        <Route path={"/pricing/rules"} component={PricingRulesPage} />
+        <Route path={"/pricing/profiles"} component={PricingProfilesPage} />
+        <Route path={"/sales-sheets"} component={SalesSheetCreatorPage} />
         <Route path={"/settings"} component={Settings} />
         <Route path={"/credit-settings"} component={CreditSettingsPage} />
         <Route path={"/404"} component={NotFound} />

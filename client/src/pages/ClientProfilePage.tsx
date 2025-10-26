@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
 import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
+import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
 import {
   ArrowLeft,
   Edit,
@@ -303,10 +304,11 @@ export default function ClientProfilePage() {
 
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
 
@@ -544,6 +546,10 @@ export default function ClientProfilePage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        {/* Pricing Tab */}
+        <TabsContent value="pricing">
+          <PricingConfigTab clientId={clientId} />
         </TabsContent>
 
         {/* Notes Tab */}
