@@ -2,7 +2,25 @@
 
 ## In Progress
 
-(No tasks in progress)
+### Sales Sheet Module
+- [x] Create pricing rules engine (% or $ markup/markdown by category/strain/tag/grade/metadata)
+- [x] Add pricing profile system (save and reuse pricing rules)
+- [x] Integrate pricing profiles into client profiles (buyers only)
+- [ ] Build sales sheet creator with client selection
+- [ ] Add real-time inventory table with search/filter (non-blocking UI)
+- [ ] Implement add to sheet (individual/bulk select, prevent duplicates)
+- [ ] Create live sales sheet preview (reorderable, deletable items)
+- [ ] Add customizable column display options
+- [ ] Implement line-by-line price override
+- [ ] Add template view system (client-specific and universal)
+- [ ] Implement save to client history
+- [ ] Add export options (clipboard for WhatsApp/Signal, PDF, image)
+
+### Unified Sales Module (Future)
+- [ ] Design unified Sales module architecture
+- [ ] Build Quote → Sale conversion workflow
+- [ ] Create transaction review and edit table
+- [ ] Add customer/role-specific pricing integration
 
 ## Completed
 

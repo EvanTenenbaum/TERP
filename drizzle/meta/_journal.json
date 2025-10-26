@@ -71,6 +71,20 @@
       "when": 1761373660439,
       "tag": "0009_slow_silk_fever",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1761443918660,
+      "tag": "0010_left_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1761444019861,
+      "tag": "0011_noisy_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

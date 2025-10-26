@@ -901,6 +901,10 @@ export const clients = mysqlTable("clients", {
   // Tags and metadata
   tags: json("tags").$type<string[]>(),
   
+  // Pricing configuration
+  pricingProfileId: int("pricing_profile_id"),
+  customPricingRules: json("custom_pricing_rules"),
+  
   // Computed stats (updated via triggers or application logic)
   totalSpent: decimal("total_spent", { precision: 15, scale: 2 }).default("0"),
   totalProfit: decimal("total_profit", { precision: 15, scale: 2 }).default("0"),
@@ -1132,4 +1136,116 @@ export const creditAuditLog = mysqlTable("credit_audit_log", {
 
 export type CreditAuditLog = typeof creditAuditLog.$inferSelect;
 export type InsertCreditAuditLog = typeof creditAuditLog.$inferInsert;
+
+
+// ============================================================================
+// PRICING RULES & SALES SHEETS
+// ============================================================================
+
+/**
+ * Pricing Rules
+ * Define pricing adjustments based on conditions (category, strain, grade, etc.)
+ */
+export const pricingRules = mysqlTable("pricing_rules", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  
+  // Adjustment configuration
+  adjustmentType: mysqlEnum("adjustment_type", [
+    "PERCENT_MARKUP",
+    "PERCENT_MARKDOWN", 
+    "DOLLAR_MARKUP",
+    "DOLLAR_MARKDOWN"
+  ]).notNull(),
+  adjustmentValue: decimal("adjustment_value", { precision: 10, scale: 2 }).notNull(),
+  
+  // Conditions (JSON: { category: "Flower", grade: "A", ... })
+  conditions: json("conditions").notNull(),
+  logicType: mysqlEnum("logic_type", ["AND", "OR"]).default("AND"),
+  priority: int("priority").default(0),
+  
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  priorityIdx: index("idx_priority").on(table.priority),
+}));
+
+export type PricingRule = typeof pricingRules.$inferSelect;
+export type InsertPricingRule = typeof pricingRules.$inferInsert;
+
+/**
+ * Pricing Profiles
+ * Named collections of pricing rules for reuse across clients
+ */
+export const pricingProfiles = mysqlTable("pricing_profiles", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  
+  // Array of rule IDs with priorities: [{ ruleId: 1, priority: 1 }, ...]
+  rules: json("rules").notNull(),
+  
+  createdBy: int("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+export type PricingProfile = typeof pricingProfiles.$inferSelect;
+export type InsertPricingProfile = typeof pricingProfiles.$inferInsert;
+
+/**
+ * Sales Sheet Templates
+ * Saved configurations for quick sales sheet creation
+ */
+export const salesSheetTemplates = mysqlTable("sales_sheet_templates", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  
+  // NULL for universal templates, specific ID for client-specific
+  clientId: int("client_id").references(() => clients.id, { onDelete: "cascade" }),
+  
+  // Configuration JSON
+  filters: json("filters").notNull(), // { category: "Flower", grade: "A", ... }
+  selectedItems: json("selected_items").notNull(), // Array of inventory item IDs
+  columnVisibility: json("column_visibility").notNull(), // { price: true, vendor: false, ... }
+  
+  createdBy: int("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUsedAt: timestamp("last_used_at"),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  createdByIdx: index("idx_created_by").on(table.createdBy),
+}));
+
+export type SalesSheetTemplate = typeof salesSheetTemplates.$inferSelect;
+export type InsertSalesSheetTemplate = typeof salesSheetTemplates.$inferInsert;
+
+/**
+ * Sales Sheet History
+ * Record of completed sales sheets sent to clients
+ */
+export const salesSheetHistory = mysqlTable("sales_sheet_history", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  createdBy: int("created_by").notNull().references(() => users.id),
+  templateId: int("template_id").references(() => salesSheetTemplates.id, { onDelete: "set null" }),
+  
+  // Items with pricing: [{ itemId: 1, price: 150, quantity: 10, overridePrice: 140 }, ...]
+  items: json("items").notNull(),
+  totalValue: decimal("total_value", { precision: 15, scale: 2 }).notNull(),
+  itemCount: int("item_count").notNull(),
+  
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  createdByIdx: index("idx_created_by").on(table.createdBy),
+  createdAtIdx: index("idx_created_at").on(table.createdAt),
+}));
+
+export type SalesSheetHistory = typeof salesSheetHistory.$inferSelect;
+export type InsertSalesSheetHistory = typeof salesSheetHistory.$inferInsert;
 
