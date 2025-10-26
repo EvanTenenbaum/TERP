@@ -5,7 +5,7 @@
     "buildCommand": "pnpm install && pnpm build"
   },
   "deploy": {
-    "startCommand": "pnpm db:push && node dist/index.js",
+    "startCommand": "node scripts/migrate.js && node dist/index.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
