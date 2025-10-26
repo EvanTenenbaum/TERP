@@ -1,7 +1,7 @@
 # TERP Project Context
 
 **Version:** 2.0  
-**Last Updated:** October 24, 2025  
+**Last Updated:** October 25, 2025  
 **Purpose:** Complete system overview for seamless handoff between Manus sessions
 
 ---
@@ -41,10 +41,11 @@
   - Mobile-first responsive design
   - Progressive disclosure of complexity
 
-- **Current Status:** Production-ready with 3 major modules implemented
+- **Current Status:** Production-ready with 4 major modules implemented
   - ✅ Dashboard & Homepage
   - ✅ Inventory Management
   - ✅ Accounting Module (complete double-entry system)
+  - ✅ Sales Sheet Module (dynamic pricing & sales sheet generation)
 
 ---
 
@@ -91,10 +92,13 @@
 2. Sales & Quotes (/quotes) - Placeholder
 3. Orders (/orders) - Placeholder
 4. Inventory (/inventory) - ✅ Complete
-5. **Accounting (/accounting/dashboard)** - ✅ Complete
-6. Customers (/customers) - Placeholder
-7. Analytics (/analytics) - Placeholder
-8. Settings (/settings) - Placeholder
+5. **Sales Sheets (/sales-sheets)** - ✅ Complete
+6. **Pricing Rules (/pricing/rules)** - ✅ Complete
+7. **Pricing Profiles (/pricing/profiles)** - ✅ Complete
+8. **Accounting (/accounting/dashboard)** - ✅ Complete
+9. Customers (/customers) - Placeholder
+10. Analytics (/analytics) - Placeholder
+11. Settings (/settings) - Placeholder
 
 ---
 
@@ -349,6 +353,157 @@ Complete double-entry accounting system with AR/AP management, cash tracking, ex
 6. **JournalEntryForm** - Form for posting journal entries
 
 **Location:** `/client/src/components/accounting/`
+
+---
+
+### 4. Sales Sheet Module (Complete)
+
+**Location:** `/client/src/pages/` and `/client/src/components/sales/`, `/client/src/components/pricing/`
+
+**Overview:**
+Complete dynamic pricing and sales sheet generation system with rule-based pricing, client-specific configurations, and multiple export formats.
+
+#### 4.1 Pricing Engine
+
+**Backend:** `server/pricingEngine.ts`, `server/salesSheetsDb.ts`
+
+**Features:**
+- Rule-based pricing calculations
+- 4 adjustment types: % markup, % markdown, $ markup, $ markdown
+- Condition matching with AND/OR logic
+- Priority-based rule application
+- Client-specific pricing profiles
+- Retail price calculation from base prices
+
+**Database Tables:**
+1. **pricing_rules** - Pricing adjustment rules
+   - Fields: id, name, description, adjustmentType, adjustmentValue, conditions (JSON), logicType, priority, isActive
+   - Adjustment Types: PERCENT_MARKUP, PERCENT_MARKDOWN, DOLLAR_MARKUP, DOLLAR_MARKDOWN
+   - Logic Types: AND, OR
+
+2. **pricing_profiles** - Collections of pricing rules
+   - Fields: id, name, description, rules (JSON array), createdBy, createdAt, updatedAt
+   - Rules format: [{ ruleId: 1, priority: 1 }, ...]
+
+3. **sales_sheet_templates** - Saved configurations
+   - Fields: id, name, description, clientId, filters (JSON), selectedItems (JSON), columnVisibility (JSON), createdBy, createdAt, lastUsedAt
+
+4. **sales_sheet_history** - Completed sales sheets
+   - Fields: id, clientId, createdBy, templateId, items (JSON), totalValue, itemCount, notes, createdAt
+
+#### 4.2 Pricing Management Pages
+
+**Pages:**
+
+1. **Pricing Rules** (`/pricing/rules`)
+   - List all pricing rules with search
+   - Create/Edit/Delete pricing rules
+   - Rule builder UI:
+     - Adjustment type selector
+     - Adjustment value input
+     - Condition builder (key-value pairs)
+     - Logic type selector (AND/OR)
+     - Priority input
+   - Visual indicators (TrendingUp/TrendingDown icons)
+   - Badge display for adjustments
+
+2. **Pricing Profiles** (`/pricing/profiles`)
+   - List all pricing profiles
+   - Create/Edit/Delete profiles
+   - Profile builder UI:
+     - Rule selection with checkboxes
+     - Priority assignment per rule
+     - Rule count display
+   - Apply profiles to clients
+
+3. **Client Pricing Configuration** (Tab in Client Profile)
+   - Apply pricing profile dropdown
+   - Display active pricing rules for client
+   - Visual rule details (adjustment, conditions, priority, status)
+
+#### 4.3 Sales Sheet Creator
+
+**Page:** `/sales-sheets`
+
+**Features:**
+- Client selection dropdown (loads pricing automatically)
+- Two-panel layout:
+  - Left: Inventory browser (60% width)
+  - Right: Sales sheet preview (40% width)
+- Real-time inventory with client-specific pricing
+- Search and filter functionality
+- Duplicate prevention
+- Bulk and single item selection
+
+**Components:**
+
+1. **InventoryBrowser** (`/client/src/components/sales/InventoryBrowser.tsx`)
+   - Search and filter inventory
+   - Table view with columns: Checkbox, Item Name, Category, Quantity, Base Price, Retail Price, Markup %
+   - Bulk actions: Select All, Clear Selection, Add Selected
+   - Single item add button
+   - Visual feedback for selected items
+
+2. **SalesSheetPreview** (`/client/src/components/sales/SalesSheetPreview.tsx`)
+   - Live preview of selected items
+   - Drag-and-drop reordering (@dnd-kit)
+   - Inline price override functionality
+   - Price override indicators (strike-through, badges)
+   - Total item count and value calculation
+   - Export options:
+     - Copy to clipboard (plain text)
+     - Export as PDF (jsPDF)
+     - Export as PNG image (html2canvas)
+   - Save to history
+   - Clear all button
+
+3. **PricingConfigTab** (`/client/src/components/pricing/PricingConfigTab.tsx`)
+   - Client pricing configuration
+   - Apply pricing profile to client
+   - Display active pricing rules
+
+#### API Layer (Sales Sheet tRPC Endpoints)
+
+**19 Sales Sheet Endpoints:**
+
+**Pricing (`pricing.*`):**
+- `listRules` - Get all pricing rules
+- `createRule` - Create new pricing rule
+- `updateRule` - Update existing rule
+- `deleteRule` - Delete pricing rule
+- `listProfiles` - Get all pricing profiles
+- `createProfile` - Create new profile
+- `updateProfile` - Update existing profile
+- `deleteProfile` - Delete profile
+- `applyProfileToClient` - Apply profile to client
+- `getClientPricingRules` - Get client's active rules
+
+**Sales Sheets (`salesSheets.*`):**
+- `getInventory` - Get inventory with client-specific pricing
+- `save` - Save sales sheet to history
+- `getHistory` - Get client's sales sheet history
+- `getById` - Get specific sales sheet
+- `delete` - Delete sales sheet
+- `createTemplate` - Create reusable template
+- `getTemplates` - Get available templates
+- `loadTemplate` - Load template configuration
+- `deleteTemplate` - Delete template
+
+#### Dependencies Added
+
+**NPM Packages:**
+- `@dnd-kit/core@6.3.1` - Drag-and-drop core
+- `@dnd-kit/sortable@10.0.0` - Sortable drag-and-drop
+- `@dnd-kit/utilities@3.2.2` - Drag-and-drop utilities
+- `html2canvas@1.4.1` - HTML to canvas conversion
+- `jspdf@3.0.3` - PDF generation
+
+#### Known Limitations
+
+1. **Template UI:** Backend infrastructure complete, but UI for template management not yet implemented
+2. **Column Visibility:** Schema supports column configuration, but UI toggle not yet built
+3. **History View:** Save functionality works, but dedicated history viewing page not yet created
+4. **Batch Integration:** Currently uses basic batch fields; could be enhanced with product/lot relationships
 
 ---
 
@@ -734,7 +889,7 @@ When handing off to a new Manus session, ensure:
 
 ---
 
-**Last Updated:** October 24, 2025  
+**Last Updated:** October 25, 2025  
 **Current Version:** 023542e6  
 **Status:** Production-ready with 3 complete modules (Dashboard, Inventory, Accounting)  
 **Next Session:** Ready to implement any module or enhancement with full context
