@@ -365,4 +365,39 @@ export const inventoryRouter = router({
           }
         }),
     }),
+    
+    // Profitability analysis
+    profitability: router({
+      // Get batch profitability
+      batch: protectedProcedure
+        .input(z.number())
+        .query(async ({ input }) => {
+          try {
+            return await inventoryDb.calculateBatchProfitability(input);
+          } catch (error) {
+            handleError(error, "inventory.profitability.batch");
+          }
+        }),
+      
+      // Get top profitable batches
+      top: protectedProcedure
+        .input(z.number().optional().default(10))
+        .query(async ({ input }) => {
+          try {
+            return await inventoryDb.getTopProfitableBatches(input);
+          } catch (error) {
+            handleError(error, "inventory.profitability.top");
+          }
+        }),
+      
+      // Get overall summary
+      summary: protectedProcedure
+        .query(async () => {
+          try {
+            return await inventoryDb.getProfitabilitySummary();
+          } catch (error) {
+            handleError(error, "inventory.profitability.summary");
+          }
+        }),
+    }),
   })
