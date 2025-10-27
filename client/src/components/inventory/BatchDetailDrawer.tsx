@@ -28,12 +28,14 @@ import {
   DollarSign,
   Package,
   History,
+  Calculator,
   TrendingUp,
   Percent,
 } from "lucide-react";
 import { format } from "date-fns";
 import { CogsEditModal } from "./CogsEditModal";
 import { ClientInterestWidget } from "./ClientInterestWidget";
+import { PriceSimulationModal } from "./PriceSimulationModal";
 import { useState } from "react";
 
 // Profitability Section Component
@@ -157,6 +159,7 @@ interface BatchDetailDrawerProps {
 
 export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerProps) {
   const [showCogsEdit, setShowCogsEdit] = useState(false);
+  const [showPriceSimulation, setShowPriceSimulation] = useState(false);
   
   const { data, isLoading, refetch } = trpc.inventory.getById.useQuery(batchId!, {
     enabled: !!batchId && open,
@@ -281,13 +284,23 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                   <DollarSign className="h-5 w-5" />
                   <h3 className="font-semibold text-lg">Cost Details</h3>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowCogsEdit(true)}
-                >
-                  Edit COGS
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowCogsEdit(true)}
+                  >
+                    Edit COGS
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowPriceSimulation(true)}
+                  >
+                    <Calculator className="h-4 w-4 mr-1" />
+                    Price Simulation
+                  </Button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -465,6 +478,21 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
             refetch();
             setShowCogsEdit(false);
           }}
+        />
+      )}
+      
+      {/* Price Simulation Modal */}
+      {batch && (
+        <PriceSimulationModal
+          open={showPriceSimulation}
+          onOpenChange={setShowPriceSimulation}
+          batch={{
+            id: batch.id,
+            sku: batch.sku,
+            unitCogs: batch.unitCogs,
+            onHandQty: batch.onHandQty,
+          }}
+          currentAvgPrice={0} // TODO: Calculate from profitability data
         />
       )}
     </Sheet>
