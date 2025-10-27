@@ -8,6 +8,7 @@ import {
   SalesComparisonWidget,
   FreeformNoteWidget,
 } from "@/components/dashboard/widgets-v2";
+import { ProfitabilityWidget } from "@/components/dashboard/widgets-v2/ProfitabilityWidget";
 
 export default function DashboardV2() {
   return (
@@ -37,6 +38,11 @@ export default function DashboardV2() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SalesComparisonWidget />
           <TotalDebtWidget />
+        </div>
+        
+        {/* Profitability Row */}
+        <div className="grid grid-cols-1 gap-6">
+          <ProfitabilityWidget />
         </div>
 
         {/* Freeform Note Widget - Full Width */}
