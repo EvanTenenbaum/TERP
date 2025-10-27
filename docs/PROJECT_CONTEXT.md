@@ -1117,11 +1117,61 @@ webdev_execute_sql          # Run SQL queries
 
 ---
 
+## Future Architecture Compatibility
+
+**CRITICAL:** TERP is evolving toward a secure home office architecture (8-week roadmap). All development MUST be forward-compatible.
+
+### Quick Rules (Full details in MANUS_AGENT_CONTEXT.md)
+
+**1. Use Abstractions:**
+```typescript
+// ✅ GOOD
+import { authProvider } from '../_core/authProvider';
+import { dataProvider } from '../_core/dataProvider';
+
+// ❌ BAD - Direct calls (will need refactoring)
+import { getAuth } from '@clerk/express';
+import { getDb } from '../db';
+```
+
+**2. Design for Offline:**
+```typescript
+// ✅ Return full objects + metadata
+return {
+  order,  // Full object
+  affectedRecords: { orders: [order.id] },
+  timestamp: new Date(),
+};
+
+// ❌ Just return ID (requires another query)
+return { orderId };
+```
+
+**3. Keep Code Organized:**
+- Routers: THIN (< 50 lines per procedure)
+- Business logic: In `*Db.ts` files
+- Use abstractions: `authProvider`, `dataProvider`
+
+**4. Schema Evolution:**
+- Only additive changes (no renames/deletions)
+- New fields must be nullable or have defaults
+
+### Pre-Push Checklist
+- [ ] Uses `authProvider`/`dataProvider` interfaces
+- [ ] Returns full objects (not IDs)
+- [ ] Schema changes are additive
+- [ ] Router < 50 lines per procedure
+
+**See:** `docs/MANUS_AGENT_CONTEXT.md` for quick reference, `docs/PRODUCT_DEVELOPMENT_STRATEGY.md` for full strategy.
+
+---
+
 ## Session Handoff Checklist
 
 When handing off to a new Manus session, ensure:
 
 - ✅ Read this document (PROJECT_CONTEXT.md)
+- ✅ Read MANUS_AGENT_CONTEXT.md (quick compatibility guide)
 - ✅ Read DEVELOPMENT_PROTOCOLS.md (The Bible)
 - ✅ Run `webdev_check_status` to verify system health
 - ✅ Check latest checkpoint version
@@ -1131,6 +1181,7 @@ When handing off to a new Manus session, ensure:
 - ✅ Understand tRPC API organization
 - ✅ Know mobile optimization patterns
 - ✅ Follow production-ready code standards
+- ✅ **Follow future architecture compatibility rules**
 
 **Zero guesswork needed. Everything is documented.**
 
