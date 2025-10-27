@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FloatingScratchPad } from '@/components/FloatingScratchPad';
 import { useState } from 'react';
-import versionInfo from '../../../version.json';
+import versionInfo from '../../version.json';
 
 interface AppHeaderProps {
   onMenuClick?: () => void;
