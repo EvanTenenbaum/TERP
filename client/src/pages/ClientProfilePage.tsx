@@ -36,6 +36,8 @@ import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
 import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
 import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
 import { ClientNeedsTab } from "@/components/needs/ClientNeedsTab";
+import { CommunicationTimeline } from "@/components/clients/CommunicationTimeline";
+import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
 import {
   ArrowLeft,
   Edit,
@@ -59,6 +61,7 @@ export default function ClientProfilePage() {
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [transactionSearch, setTransactionSearch] = useState("");
   const [paymentSearch, setPaymentSearch] = useState("");
+  const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
 
   // Fetch client data
   const { data: client, isLoading: clientLoading } = trpc.clients.getById.useQuery({
@@ -305,12 +308,13 @@ export default function ClientProfilePage() {
 
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="needs">Needs & History</TabsTrigger>
+          <TabsTrigger value="communications">Communications</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
 
@@ -560,6 +564,14 @@ export default function ClientProfilePage() {
           <ClientNeedsTab clientId={clientId} />
         </TabsContent>
 
+        {/* Communications Tab */}
+        <TabsContent value="communications" className="space-y-4">
+          <CommunicationTimeline
+            clientId={clientId}
+            onAddClick={() => setCommunicationModalOpen(true)}
+          />
+        </TabsContent>
+
         <TabsContent value="notes" className="space-y-4">
           <Card>
             <CardHeader>
@@ -574,6 +586,16 @@ export default function ClientProfilePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Communication Modal */}
+      <AddCommunicationModal
+        clientId={clientId}
+        open={communicationModalOpen}
+        onOpenChange={setCommunicationModalOpen}
+        onSuccess={() => {
+          // Refetch communications will happen automatically via tRPC
+        }}
+      />
 
       {/* Record Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
