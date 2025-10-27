@@ -38,11 +38,28 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+// Get Clerk session token and add to requests
+const getClerkToken = async () => {
+  // Clerk stores session in __clerk_db_jwt cookie or __session
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === '__session' || name === '__clerk_db_jwt') {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+};
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      async headers() {
+        const token = await getClerkToken();
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      },
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
