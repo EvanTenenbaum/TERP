@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
+import { handleError, AppError } from "../_core/errors";
 import * as inventoryDb from "../inventoryDb";
 import * as inventoryUtils from "../inventoryUtils";
 import type { Batch } from "../../drizzle/schema";
@@ -12,36 +13,48 @@ export const inventoryRouter = router({
         limit: z.number().optional().default(100),
       }))
       .query(async ({ input }) => {
-        if (input.query) {
-          return await inventoryDb.searchBatches(input.query, input.limit);
+        try {
+          if (input.query) {
+            return await inventoryDb.searchBatches(input.query, input.limit);
+          }
+          return await inventoryDb.getBatchesWithDetails(input.limit);
+        } catch (error) {
+          handleError(error, "inventory.list");
         }
-        return await inventoryDb.getBatchesWithDetails(input.limit);
       }),
 
     // Get dashboard statistics
     dashboardStats: protectedProcedure
       .query(async () => {
-        const stats = await inventoryDb.getDashboardStats();
-        if (!stats) throw new Error("Failed to fetch dashboard statistics");
-        return stats;
+        try {
+          const stats = await inventoryDb.getDashboardStats();
+          if (!stats) throw new AppError("Failed to fetch dashboard statistics", "INTERNAL_SERVER_ERROR");
+          return stats;
+        } catch (error) {
+          handleError(error, "inventory.dashboardStats");
+        }
       }),
 
     // Get single batch by ID
     getById: protectedProcedure
       .input(z.number())
       .query(async ({ input }) => {
-        const batch = await inventoryDb.getBatchById(input);
-        if (!batch) throw new Error("Batch not found");
-        
-        const locations = await inventoryDb.getBatchLocations(input);
-        const auditLogs = await inventoryDb.getAuditLogsForEntity("Batch", input);
-        
-        return {
-          batch,
-          locations,
-          auditLogs,
-          availableQty: inventoryUtils.calculateAvailableQty(batch),
-        };
+        try {
+          const batch = await inventoryDb.getBatchById(input);
+          if (!batch) throw new AppError("Batch not found", "NOT_FOUND", 404);
+          
+          const locations = await inventoryDb.getBatchLocations(input);
+          const auditLogs = await inventoryDb.getAuditLogsForEntity("Batch", input);
+          
+          return {
+            batch,
+            locations,
+            auditLogs,
+            availableQty: inventoryUtils.calculateAvailableQty(batch),
+          };
+        } catch (error) {
+          handleError(error, "inventory.getById");
+        }
       }),
 
     // Create new batch (intake)

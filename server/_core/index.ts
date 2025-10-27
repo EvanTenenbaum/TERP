@@ -7,6 +7,7 @@ import { registerClerkOAuthRoutes } from "./clerkAuth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { apiLimiter, authLimiter } from "./rateLimiter";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -35,6 +36,11 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerClerkOAuthRoutes(app);
+  
+  // Apply rate limiting
+  app.use("/api/trpc", apiLimiter);
+  app.use("/api/trpc/auth", authLimiter);
+  
   // tRPC API
   app.use(
     "/api/trpc",
