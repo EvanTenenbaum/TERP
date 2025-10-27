@@ -1,2 +1,18 @@
-{"version":"3.3.0","commit":"600c621","date":"2025-10-27","description":"Phase 3.3: Bulk Actions for Inventory Management"}
-
+{
+  "version": "3.5.0",
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "commit": "$(git rev-parse HEAD)",
+  "features": [
+    "Order Fulfillment Status Tracking",
+    "Returns Management Integration",
+    "Functional Quotes with Conversion",
+    "Communication Logging for CRM",
+    "Dashboard Drill-downs with URL Params",
+    "Saved Filter Views for Inventory",
+    "Data Export (CSV) for Inventory and Orders",
+    "Bulk Actions for Inventory",
+    "Profitability Analysis",
+    "Price Simulation Tool"
+  ],
+  "completionStatus": "100% - All 10 features complete"
+}
