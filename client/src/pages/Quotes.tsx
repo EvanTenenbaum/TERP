@@ -228,16 +228,16 @@ export default function Quotes() {
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-3">
                         <h3 className="font-semibold text-lg">{quote.orderNumber}</h3>
-                        {getStatusBadge(quote.quoteStatus)}
+                        {getStatusBadge(quote.quoteStatus || 'DRAFT')}
                       </div>
                       <div className="text-sm text-muted-foreground space-y-1">
-                        <div>Client: {getClientName(quote.clientId)}</div>
+                        <div>Client: {getClientName(quote.clientId || 0)}</div>
                         <div>
                           Created: {quote.createdAt ? format(new Date(quote.createdAt), 'MMM d, yyyy h:mm a') : 'N/A'}
                         </div>
                         {quote.validUntil && (
                           <div>
-                            Valid until: {format(new Date(quote.validUntil as string), 'MMM d, yyyy')}
+                            Valid until: {quote.validUntil ? format(new Date(quote.validUntil), 'MMM d, yyyy') : 'N/A'}
                           </div>
                         )}
                       </div>

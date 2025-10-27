@@ -237,6 +237,7 @@ export default function Inventory() {
   
   // Alias for backward compatibility
   const filteredInventory = filteredAndSortedInventory;
+  const filteredBatches = filteredAndSortedInventory;
 
   // Calculate open tasks counters
   const openTasks = useMemo(() => {
