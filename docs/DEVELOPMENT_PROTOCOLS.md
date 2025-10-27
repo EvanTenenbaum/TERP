@@ -493,6 +493,78 @@ When working on TERP in future sessions:
 
 ---
 
+## Deployment Monitoring Protocol
+
+### ALWAYS Monitor Deployments After Push
+
+Whenever code is pushed to GitHub, **immediately monitor the deployment** to catch issues early.
+
+#### Required Actions After Every `git push`:
+
+1. **Wait for Build** (2-3 minutes)
+   - Don't assume success
+   - Actively wait and monitor
+
+2. **Check Deployment Status**
+   - Render: Check deployment logs in dashboard or via API
+   - Railway: Check deployment status and logs
+   - Vercel: Check deployment status
+
+3. **Verify Application Health**
+   - Load the production URL
+   - Check for 502/500 errors
+   - Verify critical pages load
+   - Check browser console for errors
+
+4. **Review Deployment Logs**
+   - Look for ERROR messages
+   - Check migration success
+   - Verify environment variables loaded
+   - Confirm server started successfully
+
+5. **Take Immediate Action on Failures**
+   - Don't wait for user to report issues
+   - Debug and fix immediately
+   - Roll back if necessary
+
+#### Deployment Credentials
+
+Stored in: `/docs/DEPLOYMENT_CREDENTIALS.md` (DO NOT COMMIT TO PUBLIC REPOS)
+
+- **Render API Key:** For autonomous deployment monitoring
+- **Railway Token:** For CLI access and monitoring
+
+#### Autonomous Monitoring Commands
+
+**Render:**
+```bash
+# Check service status
+curl -H "Authorization: Bearer $RENDER_API_KEY" \
+  https://api.render.com/v1/services
+
+# Get deployment logs
+curl -H "Authorization: Bearer $RENDER_API_KEY" \
+  https://api.render.com/v1/services/{serviceId}/deploys
+```
+
+**Railway:**
+```bash
+export RAILWAY_TOKEN=your_token
+railway status
+railway logs
+```
+
+### Why This Matters
+
+- **Catch issues immediately** before they affect users
+- **Faster debugging** with fresh context
+- **Production reliability** through proactive monitoring
+- **Autonomous operation** reduces manual intervention
+
+**Remember:** A successful `git push` doesn't mean successful deployment. Always verify!
+
+---
+
 ## Version History
 
 **v2.0 - October 24, 2025**
