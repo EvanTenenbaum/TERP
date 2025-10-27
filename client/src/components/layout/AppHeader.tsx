@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FloatingScratchPad } from '@/components/FloatingScratchPad';
 import { useState } from 'react';
+import versionInfo from '../../../version.json';
 
 interface AppHeaderProps {
   onMenuClick?: () => void;
@@ -23,6 +24,16 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
       >
         <Menu className="h-5 w-5" />
       </Button>
+
+      {/* Version Display */}
+      <div className="flex items-center gap-2 mr-4">
+        <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
+          v{versionInfo.version}
+        </span>
+        <span className="text-xs text-muted-foreground font-mono">
+          {versionInfo.commit}
+        </span>
+      </div>
 
       {/* Search bar */}
       <div className="flex items-center flex-1 max-w-2xl">

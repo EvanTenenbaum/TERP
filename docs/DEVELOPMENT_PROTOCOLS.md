@@ -1,7 +1,7 @@
 # TERP Development Protocols
 
-**Version:** 1.0  
-**Last Updated:** October 24, 2025  
+**Version:** 2.1  
+**Last Updated:** October 27, 2025  
 **Purpose:** Ensure systematic integration, production-ready code, and maintainable architecture throughout TERP development
 
 ---
@@ -12,7 +12,9 @@
 2. [Production-Ready Code Standard](#production-ready-code-standard)
 3. [Breaking Change Protocol](#breaking-change-protocol)
 4. [Quality Standards Checklist](#quality-standards-checklist)
-5. [Reference Documentation](#reference-documentation)
+5. [Deployment Monitoring Protocol](#deployment-monitoring-protocol)
+6. [Version Management Protocol](#version-management-protocol)
+7. [Reference Documentation](#reference-documentation)
 
 ---
 
@@ -565,7 +567,83 @@ railway logs
 
 ---
 
+## Version Management Protocol
+
+### MANDATORY: Update Version on Every GitHub Push
+
+To ensure version traceability and deployment verification, **every single GitHub push MUST include a version update**.
+
+#### Version File Location
+
+`/version.json` in the project root:
+
+```json
+{
+  "version": "1.0.0",
+  "commit": "abc1234",
+  "date": "2025-10-27",
+  "description": "Brief description of changes"
+}
+```
+
+#### Required Actions Before Every `git push`:
+
+1. **Update Commit Hash**
+   ```bash
+   # Get current commit hash (short form)
+   git rev-parse --short HEAD
+   ```
+   - Update `commit` field in `version.json` with the current commit hash
+
+2. **Update Date**
+   - Set `date` field to current date in YYYY-MM-DD format
+
+3. **Update Description**
+   - Briefly describe what changed in this push
+   - Examples: "Added version display", "Fixed login bug", "Updated accounting module"
+
+4. **Increment Version (if applicable)**
+   - For major features: increment minor version (1.0.0 → 1.1.0)
+   - For bug fixes: increment patch version (1.0.0 → 1.0.1)
+   - For breaking changes: increment major version (1.0.0 → 2.0.0)
+
+#### Version Display Implementation
+
+The version is displayed persistently in the application header:
+
+- **Desktop:** Shows both version number and commit hash
+- **Mobile:** Shows commit hash only (space-constrained)
+- **Location:** `client/src/components/layout/AppHeader.tsx`
+- **Import:** `import versionInfo from '../../../version.json'`
+
+#### Why This Matters
+
+- **Deployment Verification:** User can verify they're working with the correct deployed version
+- **Debugging:** Quickly identify which code version is running in production
+- **Traceability:** Link production issues to specific commits
+- **Accountability:** Clear history of what changed and when
+
+#### Enforcement
+
+**This is a MANDATORY protocol. Every Manus agent MUST:**
+
+1. Check `version.json` before pushing to GitHub
+2. Update the commit hash to match the current HEAD
+3. Update the date to current date
+4. Update the description with a brief summary of changes
+5. Only then proceed with `git push`
+
+**Failure to update version.json is a protocol violation.**
+
+---
+
 ## Version History
+
+**v2.1 - October 27, 2025**
+- Added Version Management Protocol (MANDATORY)
+- Implemented persistent version display in header
+- Added version.json for version tracking
+- Updated tsconfig.json to support JSON imports
 
 **v2.0 - October 24, 2025**
 - Added complete accounting module documentation
