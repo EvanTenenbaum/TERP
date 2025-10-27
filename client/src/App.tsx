@@ -30,12 +30,16 @@ import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
+import SignIn from "@/pages/SignIn";
+import SignUp from "@/pages/SignUp";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <AppShell>
       <Switch>
+        <Route path="/sign-in" component={SignIn} />
+        <Route path="/sign-up" component={SignUp} />
         <Route path="/" component={Home} />
         <Route path="/dashboard" component={DashboardV2} />
         <Route path={"/quotes"} component={Quotes} />
