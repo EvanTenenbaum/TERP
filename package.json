@@ -21,6 +21,7 @@
     "@clerk/backend": "^2.19.0",
     "@clerk/clerk-react": "^5.53.3",
     "@clerk/clerk-sdk-node": "^5.1.6",
+    "@clerk/express": "^1.7.42",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
