@@ -456,7 +456,7 @@ export default function Inventory() {
                     checked={selectedBatchIds.size === filteredBatches?.length && filteredBatches.length > 0}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedBatchIds(new Set(filteredBatches?.map(b => b.id) || []));
+                        setSelectedBatchIds(new Set(filteredBatches?.map(b => b.batch?.id).filter(id => id !== undefined) as number[] || []));
                       } else {
                         setSelectedBatchIds(new Set());
                       }
