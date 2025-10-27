@@ -858,3 +858,90 @@ export async function deleteInventoryView(viewId: number, userId: number) {
   
   return { success: true };
 }
+
+// ============================================================================
+// BULK OPERATIONS
+// ============================================================================
+
+/**
+ * Bulk update batch status
+ * Updates multiple batches at once with validation
+ */
+export async function bulkUpdateBatchStatus(
+  batchIds: number[],
+  newStatus: string,
+  userId: number
+): Promise<{ success: boolean; updated: number }> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  return await db.transaction(async (tx) => {
+    let updated = 0;
+    
+    for (const batchId of batchIds) {
+      // Get current batch
+      const [batch] = await tx.select().from(batches).where(eq(batches.id, batchId));
+      if (!batch) continue;
+      
+      // Skip if already SOLD_OUT or CLOSED
+      if (batch.status === 'SOLD_OUT' || batch.status === 'CLOSED') {
+        continue;
+      }
+      
+      // Update status
+      await tx.update(batches)
+        .set({ 
+          status: newStatus as any,
+          updatedAt: new Date(),
+        })
+        .where(eq(batches.id, batchId));
+      
+      updated++;
+    }
+    
+    return { success: true, updated };
+  });
+}
+
+/**
+ * Bulk delete batches
+ * Soft delete by setting status to CLOSED
+ */
+export async function bulkDeleteBatches(
+  batchIds: number[],
+  userId: number
+): Promise<{ success: boolean; deleted: number }> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  return await db.transaction(async (tx) => {
+    let deleted = 0;
+    
+    for (const batchId of batchIds) {
+      // Get current batch
+      const [batch] = await tx.select().from(batches).where(eq(batches.id, batchId));
+      if (!batch) continue;
+      
+      // Skip if has remaining inventory
+      const onHand = parseFloat(batch.onHandQty);
+      if (onHand > 0) {
+        throw new Error(
+          `Cannot delete batch ${batchId}: Still has ${onHand} units in stock. ` +
+          `Please move or sell inventory before deleting.`
+        );
+      }
+      
+      // Soft delete by setting status to CLOSED
+      await tx.update(batches)
+        .set({ 
+          status: 'CLOSED',
+          updatedAt: new Date(),
+        })
+        .where(eq(batches.id, batchId));
+      
+      deleted++;
+    }
+    
+    return { success: true, deleted };
+  });
+}
