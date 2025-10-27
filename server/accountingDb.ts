@@ -289,49 +289,52 @@ export async function postJournalEntry(params: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Generate entry number
-  const entryNumber = await generateEntryNumber();
+  // Use transaction to ensure debit and credit are created atomically
+  return await db.transaction(async (tx) => {
+    // Generate entry number
+    const entryNumber = await generateEntryNumber();
 
-  const entryDateStr = params.entryDate.toISOString().split("T")[0];
-  const postedAtTimestamp = new Date();
+    const entryDateStr = params.entryDate.toISOString().split("T")[0];
+    const postedAtTimestamp = new Date();
 
-  // Create debit entry
-  await db.insert(ledgerEntries).values({
-    entryNumber,
-    entryDate: entryDateStr as any,
-    accountId: params.debitAccountId,
-    debit: params.amount.toFixed(2),
-    credit: "0.00",
-    description: params.description,
-    fiscalPeriodId: params.fiscalPeriodId,
-    referenceType: params.referenceType,
-    referenceId: params.referenceId,
-    isManual: true,
-    isPosted: true,
-    postedAt: postedAtTimestamp,
-    postedBy: params.createdBy,
-    createdBy: params.createdBy,
+    // Create debit entry
+    await tx.insert(ledgerEntries).values({
+      entryNumber,
+      entryDate: entryDateStr as any,
+      accountId: params.debitAccountId,
+      debit: params.amount.toFixed(2),
+      credit: "0.00",
+      description: params.description,
+      fiscalPeriodId: params.fiscalPeriodId,
+      referenceType: params.referenceType,
+      referenceId: params.referenceId,
+      isManual: true,
+      isPosted: true,
+      postedAt: postedAtTimestamp,
+      postedBy: params.createdBy,
+      createdBy: params.createdBy,
+    });
+
+    // Create credit entry
+    await tx.insert(ledgerEntries).values({
+      entryNumber,
+      entryDate: entryDateStr as any,
+      accountId: params.creditAccountId,
+      debit: "0.00",
+      credit: params.amount.toFixed(2),
+      description: params.description,
+      fiscalPeriodId: params.fiscalPeriodId,
+      referenceType: params.referenceType,
+      referenceId: params.referenceId,
+      isManual: true,
+      isPosted: true,
+      postedAt: postedAtTimestamp,
+      postedBy: params.createdBy,
+      createdBy: params.createdBy,
+    });
+
+    return entryNumber;
   });
-
-  // Create credit entry
-  await db.insert(ledgerEntries).values({
-    entryNumber,
-    entryDate: entryDateStr as any,
-    accountId: params.creditAccountId,
-    debit: "0.00",
-    credit: params.amount.toFixed(2),
-    description: params.description,
-    fiscalPeriodId: params.fiscalPeriodId,
-    referenceType: params.referenceType,
-    referenceId: params.referenceId,
-    isManual: true,
-    isPosted: true,
-    postedAt: postedAtTimestamp,
-    postedBy: params.createdBy,
-    createdBy: params.createdBy,
-  });
-
-  return entryNumber;
 }
 
 /**
