@@ -28,11 +28,126 @@ import {
   DollarSign,
   Package,
   History,
+  TrendingUp,
+  Percent,
 } from "lucide-react";
 import { format } from "date-fns";
 import { CogsEditModal } from "./CogsEditModal";
 import { ClientInterestWidget } from "./ClientInterestWidget";
 import { useState } from "react";
+
+// Profitability Section Component
+function ProfitabilitySection({ batchId }: { batchId: number }) {
+  const { data: profitability, isLoading } = trpc.inventory.profitability.batch.useQuery(batchId);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const formatPercent = (value: number) => {
+    return `${value.toFixed(1)}%`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          <h3 className="font-semibold text-lg">Profitability</h3>
+        </div>
+        <Card className="p-4">
+          <div className="text-sm text-muted-foreground">Loading...</div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!profitability || profitability.unitsSold === 0) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          <h3 className="font-semibold text-lg">Profitability</h3>
+        </div>
+        <Card className="p-4">
+          <div className="text-sm text-muted-foreground">No sales data available</div>
+        </Card>
+      </div>
+    );
+  }
+
+  const profitColor = profitability.grossProfit >= 0 ? 'text-green-600' : 'text-red-600';
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-5 w-5" />
+        <h3 className="font-semibold text-lg">Profitability</h3>
+      </div>
+      <Card className="p-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">Units Sold</div>
+            <div className="text-lg font-semibold">{profitability.unitsSold}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">Avg Price</div>
+            <div className="text-lg font-semibold">{formatCurrency(profitability.avgSellingPrice)}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">Total Revenue</div>
+            <div className="text-lg font-semibold text-green-600">{formatCurrency(profitability.totalRevenue)}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">Total Cost</div>
+            <div className="text-lg font-semibold">{formatCurrency(profitability.totalCost)}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+              <DollarSign className="h-3 w-3" />
+              Gross Profit
+            </div>
+            <div className={`text-xl font-bold ${profitColor}`}>
+              {formatCurrency(profitability.grossProfit)}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+              <Percent className="h-3 w-3" />
+              Margin
+            </div>
+            <div className={`text-xl font-bold ${profitColor}`}>
+              {formatPercent(profitability.marginPercent)}
+            </div>
+          </div>
+        </div>
+        {profitability.remainingUnits > 0 && (
+          <div className="mt-4 pt-4 border-t">
+            <div className="text-sm text-muted-foreground mb-2">Potential (Remaining Inventory)</div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <span className="text-muted-foreground">Units: </span>
+                <span className="font-semibold">{profitability.remainingUnits}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Revenue: </span>
+                <span className="font-semibold">{formatCurrency(profitability.potentialRevenue)}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Potential Profit: </span>
+                <span className="font-semibold text-blue-600">{formatCurrency(profitability.potentialProfit)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
 
 interface BatchDetailDrawerProps {
   batchId: number | null;
@@ -236,6 +351,11 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
 
             {/* Client Interest */}
             <ClientInterestWidget batchId={batchId} />
+
+            <Separator />
+
+            {/* Profitability */}
+            <ProfitabilitySection batchId={batchId} />
 
             <Separator />
 

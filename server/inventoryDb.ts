@@ -19,6 +19,7 @@ import {
   subcategories,
   grades,
   strains,
+  orders,
   type InsertVendor,
   type InsertBrand,
   type InsertProduct,
@@ -944,4 +945,187 @@ export async function bulkDeleteBatches(
     
     return { success: true, deleted };
   });
+}
+
+// ============================================================================
+// PROFITABILITY ANALYSIS
+// ============================================================================
+
+/**
+ * Calculate profitability metrics for a batch
+ */
+export async function calculateBatchProfitability(batchId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  // Get batch details
+  const [batch] = await db.select().from(batches).where(eq(batches.id, batchId));
+  if (!batch) throw new Error('Batch not found');
+  
+  // Get all orders that include this batch
+  const allOrders = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.orderType, 'SALE'));
+  
+  // Calculate totals
+  const unitCogs = parseFloat(batch.unitCogs || '0');
+  let totalRevenue = 0;
+  let totalCost = 0;
+  let unitsSold = 0;
+  
+  // Parse order items and find items for this batch
+  for (const order of allOrders) {
+    if (!order.items) continue;
+    
+    try {
+      const items = JSON.parse(order.items as string) as Array<{
+        batchId: number;
+        quantity: number;
+        unitPrice?: number;
+        isSample?: boolean;
+      }>;
+      
+      for (const item of items) {
+        if (item.batchId === batchId && !item.isSample) {
+          const qty = item.quantity;
+          const price = item.unitPrice || 0;
+          totalRevenue += qty * price;
+          totalCost += qty * unitCogs;
+          unitsSold += qty;
+        }
+      }
+    } catch (e) {
+      // Skip orders with invalid JSON
+      continue;
+    }
+  }
+  
+  const grossProfit = totalRevenue - totalCost;
+  const marginPercent = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+  
+  // Calculate potential profit (remaining inventory)
+  const onHand = parseFloat(batch.onHandQty);
+  const avgSellingPrice = unitsSold > 0 ? totalRevenue / unitsSold : 0;
+  const potentialRevenue = onHand * avgSellingPrice;
+  const potentialCost = onHand * unitCogs;
+  const potentialProfit = potentialRevenue - potentialCost;
+  
+  return {
+    batchId,
+    unitCogs,
+    unitsSold,
+    totalRevenue,
+    totalCost,
+    grossProfit,
+    marginPercent,
+    avgSellingPrice,
+    remainingUnits: onHand,
+    potentialRevenue,
+    potentialProfit,
+  };
+}
+
+/**
+ * Get top profitable batches
+ */
+export async function getTopProfitableBatches(limit: number = 10) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  // Get all batches
+  const allBatches = await db.select().from(batches);
+  
+  // Calculate profitability for each and collect results
+  const results = [];
+  for (const batch of allBatches) {
+    const profitability = await calculateBatchProfitability(batch.id);
+    
+    // Only include batches with sales
+    if (profitability.unitsSold > 0) {
+      results.push({
+        ...profitability,
+        sku: batch.sku,
+        status: batch.status,
+      });
+    }
+  }
+  
+  // Sort by gross profit and limit
+  return results
+    .sort((a, b) => b.grossProfit - a.grossProfit)
+    .slice(0, limit);
+}
+
+/**
+ * Get overall profitability summary
+ */
+export async function getProfitabilitySummary() {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  // Get all sale orders
+  const allOrders = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.orderType, 'SALE'));
+  
+  let totalRevenue = 0;
+  let totalCost = 0;
+  let totalUnits = 0;
+  const batchIds = new Set<number>();
+  
+  // Cache batches to avoid repeated queries
+  const batchCache = new Map<number, any>();
+  
+  for (const order of allOrders) {
+    if (!order.items) continue;
+    
+    try {
+      const items = JSON.parse(order.items as string) as Array<{
+        batchId: number;
+        quantity: number;
+        unitPrice?: number;
+        isSample?: boolean;
+      }>;
+      
+      for (const item of items) {
+        if (item.isSample) continue;
+        
+        batchIds.add(item.batchId);
+        const qty = item.quantity;
+        const price = item.unitPrice || 0;
+        totalRevenue += qty * price;
+        totalUnits += qty;
+        
+        // Get batch cost (with caching)
+        if (!batchCache.has(item.batchId)) {
+          const [batch] = await db.select().from(batches).where(eq(batches.id, item.batchId));
+          if (batch) {
+            batchCache.set(item.batchId, batch);
+          }
+        }
+        
+        const batch = batchCache.get(item.batchId);
+        if (batch) {
+          totalCost += qty * parseFloat(batch.unitCogs || '0');
+        }
+      }
+    } catch (e) {
+      // Skip orders with invalid JSON
+      continue;
+    }
+  }
+  
+  const grossProfit = totalRevenue - totalCost;
+  const avgMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+  
+  return {
+    totalRevenue,
+    totalCost,
+    grossProfit,
+    avgMargin,
+    totalUnits,
+    batchesWithSales: batchIds.size,
+  };
 }
