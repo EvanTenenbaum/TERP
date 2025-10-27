@@ -8,6 +8,9 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { apiLimiter, authLimiter } from "./rateLimiter";
+import { initMonitoring, getRequestHandler, getErrorHandler } from "./monitoring";
+import { requestLogger } from "./requestLogger";
+import { logger, replaceConsole } from "./logger";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -29,8 +32,20 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Initialize monitoring
+  initMonitoring();
+  
+  // Replace console with structured logger
+  replaceConsole();
+  
   const app = express();
   const server = createServer(app);
+  
+  // Sentry request handler (must be first)
+  app.use(getRequestHandler());
+  
+  // Request logging
+  app.use(requestLogger);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -63,8 +78,11 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
+  // Sentry error handler (must be last)
+  app.use(getErrorHandler());
+  
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    logger.info(`Server running on http://localhost:${port}/`);
   });
 }
 

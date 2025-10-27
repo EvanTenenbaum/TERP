@@ -1,29 +1,35 @@
+import pino from "pino";
+
+const isDevelopment = process.env.NODE_ENV === "development";
+
+export const logger = pino({
+  level: isDevelopment ? "debug" : "info",
+  transport: isDevelopment
+    ? {
+        target: "pino-pretty",
+        options: {
+          colorize: true,
+          translateTime: "HH:MM:ss Z",
+          ignore: "pid,hostname",
+        },
+      }
+    : undefined,
+  formatters: {
+    level: (label) => {
+      return { level: label };
+    },
+  },
+  timestamp: pino.stdTimeFunctions.isoTime,
+});
+
 /**
- * Centralized logging utility
- * This is a basic implementation that will be enhanced in P0.4
+ * Replace console methods with logger
+ * Call this in server startup
  */
-
-interface LogContext {
-  [key: string]: any;
+export function replaceConsole() {
+  console.log = (...args: any[]) => logger.info(args);
+  console.error = (...args: any[]) => logger.error(args);
+  console.warn = (...args: any[]) => logger.warn(args);
+  console.debug = (...args: any[]) => logger.debug(args);
 }
-
-class Logger {
-  info(message: string, context?: LogContext) {
-    console.log(`[INFO] ${message}`, context || "");
-  }
-
-  error(message: string, context?: LogContext) {
-    console.error(`[ERROR] ${message}`, context || "");
-  }
-
-  warn(message: string, context?: LogContext) {
-    console.warn(`[WARN] ${message}`, context || "");
-  }
-
-  debug(message: string, context?: LogContext) {
-    console.debug(`[DEBUG] ${message}`, context || "");
-  }
-}
-
-export const logger = new Logger();
 
