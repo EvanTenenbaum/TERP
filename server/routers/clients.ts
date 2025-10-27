@@ -258,7 +258,6 @@ export const clientsRouter = router({
       .query(async ({ input }) => {
         return await clientsDb.getClientNoteId(input.clientId);
       }),
-
     linkNote: protectedProcedure
       .input(z.object({
         clientId: z.number(),
@@ -269,5 +268,33 @@ export const clientsRouter = router({
         return await clientsDb.linkNoteToClient(input.clientId, input.noteId);
       }),
   }),
-});
+
+  // Client communications
+  communications: router({
+    list: protectedProcedure
+      .input(z.object({ 
+        clientId: z.number(),
+        type: z.enum(['CALL', 'EMAIL', 'MEETING', 'NOTE']).optional(),
+      }))
+      .query(async ({ input }) => {
+        return await clientsDb.getClientCommunications(input.clientId, input.type);
+      }),
+    
+    add: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        type: z.enum(['CALL', 'EMAIL', 'MEETING', 'NOTE']),
+        subject: z.string().min(1).max(255),
+        notes: z.string().optional(),
+        communicatedAt: z.string(), // ISO date string
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Unauthorized");
+        return await clientsDb.addCommunication({
+          ...input,
+          loggedBy: ctx.user.id,
+        });
+      }),
+  }),
+});;
 

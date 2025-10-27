@@ -940,6 +940,39 @@ export const clients = mysqlTable("clients", {
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = typeof clients.$inferInsert;
 
+/**
+ * Communication Type Enum
+ * Types of client communications
+ */
+export const communicationTypeEnum = mysqlEnum("communicationType", [
+  "CALL",
+  "EMAIL",
+  "MEETING",
+  "NOTE"
+]);
+
+/**
+ * Client Communications Table
+ * Tracks all communications with clients
+ */
+export const clientCommunications = mysqlTable("client_communications", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  type: communicationTypeEnum.notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  notes: text("notes"),
+  communicatedAt: timestamp("communicated_at").notNull(),
+  loggedBy: int("logged_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  communicatedAtIdx: index("idx_communicated_at").on(table.communicatedAt),
+  typeIdx: index("idx_type").on(table.type),
+}));
+
+export type ClientCommunication = typeof clientCommunications.$inferSelect;
+export type InsertClientCommunication = typeof clientCommunications.$inferInsert;
+
 export const clientTransactions = mysqlTable("client_transactions", {
   id: int("id").primaryKey().autoincrement(),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
