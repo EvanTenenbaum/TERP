@@ -91,4 +91,24 @@ export const ordersRouter = router({
       .mutation(async ({ input }) => {
         return await ordersDb.exportOrder(input.id, input.format);
       }),
+    
+    // Fulfillment Status Management
+    updateOrderStatus: protectedProcedure
+      .input(z.object({
+        orderId: z.number(),
+        newStatus: z.enum(['PENDING', 'PACKED', 'SHIPPED']),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await ordersDb.updateOrderStatus({
+          ...input,
+          userId: ctx.user?.id || 1,
+        });
+      }),
+    
+    getOrderStatusHistory: protectedProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ input }) => {
+        return await ordersDb.getOrderStatusHistory(input.orderId);
+      }),
   })
