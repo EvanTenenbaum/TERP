@@ -135,4 +135,21 @@ export const ordersRouter = router({
       .query(async ({ input }) => {
         return await ordersDb.getOrderReturns(input.orderId);
       }),
+    
+    // Quote to Sale Conversion
+    convertQuoteToSale: protectedProcedure
+      .input(z.object({ 
+        quoteId: z.number(),
+        paymentTerms: z.enum(['NET_7', 'NET_15', 'NET_30', 'COD', 'PARTIAL', 'CONSIGNMENT']).optional(),
+        cashPayment: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await ordersDb.convertQuoteToSale({
+          quoteId: input.quoteId,
+          paymentTerms: input.paymentTerms || 'NET_30',
+          cashPayment: input.cashPayment,
+          notes: input.notes,
+        });
+      }),
   })
