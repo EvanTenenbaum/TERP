@@ -293,4 +293,48 @@ export const inventoryRouter = router({
         await inventoryDb.seedInventoryData();
         return { success: true };
       }),
+    
+    // Saved Views Management
+    views: router({
+      // Get all views for current user
+      list: protectedProcedure
+        .query(async ({ ctx }) => {
+          try {
+            return await inventoryDb.getUserInventoryViews(ctx.user.id);
+          } catch (error) {
+            handleError(error, "inventory.views.list");
+          }
+        }),
+      
+      // Save a new view
+      save: protectedProcedure
+        .input(z.object({
+          name: z.string().min(1).max(100),
+          filters: z.any(), // JSON object
+          isShared: z.boolean().optional().default(false),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          try {
+            return await inventoryDb.saveInventoryView({
+              name: input.name,
+              filters: input.filters,
+              createdBy: ctx.user.id,
+              isShared: input.isShared,
+            });
+          } catch (error) {
+            handleError(error, "inventory.views.save");
+          }
+        }),
+      
+      // Delete a view
+      delete: protectedProcedure
+        .input(z.number())
+        .mutation(async ({ input, ctx }) => {
+          try {
+            return await inventoryDb.deleteInventoryView(input, ctx.user.id);
+          } catch (error) {
+            handleError(error, "inventory.views.delete");
+          }
+        }),
+    }),
   })

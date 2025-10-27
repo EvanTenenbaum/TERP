@@ -1903,6 +1903,25 @@ export type InventoryAlert = typeof inventoryAlerts.$inferSelect;
 export type InsertInventoryAlert = typeof inventoryAlerts.$inferInsert;
 
 /**
+ * Inventory Saved Views Table
+ * Stores user-defined filter combinations for quick access
+ */
+export const inventoryViews = mysqlTable("inventoryViews", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  filters: json("filters").notNull(), // Stores filter state as JSON
+  createdBy: int("createdBy").references(() => users.id, { onDelete: "cascade" }),
+  isShared: int("isShared").notNull().default(0), // 0 = private, 1 = shared
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  createdByIdx: index("idx_inventory_views_created_by").on(table.createdBy),
+}));
+
+export type InventoryView = typeof inventoryViews.$inferSelect;
+export type InsertInventoryView = typeof inventoryViews.$inferInsert;
+
+/**
  * User Dashboard Preferences Table
  * Stores per-user dashboard widget visibility and configuration
  */
