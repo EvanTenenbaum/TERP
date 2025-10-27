@@ -1,13 +1,16 @@
 # TERP Project Context
 
-**Version:** 2.0  
-**Last Updated:** October 25, 2025  
+**Version:** 2.1  
+**Last Updated:** October 27, 2025  
 **Purpose:** Complete system overview for seamless handoff between Manus sessions
+
+**📖 New to TERP?** Start with [AGENT_ONBOARDING.md](./AGENT_ONBOARDING.md) for a quick orientation guide.
 
 ---
 
 ## Table of Contents
 
+0. [Documentation Structure](#documentation-structure)
 1. [Project Overview](#project-overview)
 2. [System Architecture](#system-architecture)
 3. [Implemented Modules](#implemented-modules)
@@ -18,6 +21,65 @@
 8. [Development Workflow](#development-workflow)
 9. [Known Issues & Limitations](#known-issues--limitations)
 10. [Next Steps & Roadmap](#next-steps--roadmap)
+
+---
+
+## Documentation Structure
+
+**TERP uses a structured documentation system for seamless agent handoffs and continuous development.**
+
+### Essential Documents (Read First)
+
+1. **[AGENT_ONBOARDING.md](./AGENT_ONBOARDING.md)** - Quick start guide for new agents
+2. **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** (this file) - Overall project state
+3. **[DEVELOPMENT_PROTOCOLS.md](./DEVELOPMENT_PROTOCOLS.md)** - **THE BIBLE** - all development rules
+4. **[roadmaps/ACTIVE.md](./roadmaps/ACTIVE.md)** - Current active roadmap
+5. **[notes/user-feedback.md](./notes/user-feedback.md)** - **Check every session** - owner's feedback
+6. **[HANDOFF_CONTEXT.md](./HANDOFF_CONTEXT.md)** - Latest session handoff
+
+### Documentation Directories
+
+```
+/docs/
+├── AGENT_ONBOARDING.md          # Start here for new agents
+├── NEW_AGENT_PROMPT.md          # Quick prompt to give new agents
+├── PROJECT_CONTEXT.md            # This file - overall project state
+├── DEVELOPMENT_PROTOCOLS.md      # Development rules and standards
+├── HANDOFF_CONTEXT.md            # Latest session handoff
+├── CHANGELOG.md                  # Completed work history
+│
+├── roadmaps/                     # All implementation roadmaps
+│   ├── README.md                 # Master index of all roadmaps
+│   ├── ACTIVE.md                 # Current active roadmap
+│   └── [specific-roadmaps].md    # Individual roadmap files
+│
+├── notes/                        # Owner's feedback and thoughts
+│   ├── README.md                 # How to use notes
+│   ├── user-feedback.md          # Owner's ongoing feedback (check every session!)
+│   ├── feature-ideas.md          # Future feature ideas
+│   └── known-issues.md           # Bugs and technical debt
+│
+└── specs/                        # Detailed specifications
+    └── [various-specs].md        # Module specifications
+```
+
+### Agent Workflow
+
+**At Start of Session:**
+1. Read `notes/user-feedback.md` - check for new feedback
+2. Read `HANDOFF_CONTEXT.md` - see what last agent did
+3. Read `roadmaps/ACTIVE.md` - understand current work
+
+**During Work:**
+1. Follow `DEVELOPMENT_PROTOCOLS.md` strictly
+2. Update roadmap as you complete tasks
+3. Commit changes regularly
+
+**Before Ending:**
+1. Update roadmap with progress
+2. Update `HANDOFF_CONTEXT.md` with status
+3. Update `CHANGELOG.md` with completed work
+4. Commit and push all changes
 
 ---
 
