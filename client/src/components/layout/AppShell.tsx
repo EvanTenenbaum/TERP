@@ -1,4 +1,6 @@
-import { ReactNode, useState } from 'react';
+import { useAuth } from "@clerk/clerk-react";
+import { ReactNode, useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { AppSidebar } from './AppSidebar';
 import { AppHeader } from './AppHeader';
 
@@ -8,6 +10,29 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    // Only redirect if Clerk has loaded and user is not signed in
+    if (isLoaded && !isSignedIn) {
+      setLocation('/sign-in');
+    }
+  }, [isLoaded, isSignedIn, setLocation]);
+
+  // Show loading state while Clerk is loading
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not signed in (will redirect)
+  if (!isSignedIn) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
