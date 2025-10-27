@@ -11,6 +11,8 @@ import { apiLimiter, authLimiter } from "./rateLimiter";
 import { initMonitoring, getRequestHandler, getErrorHandler } from "./monitoring";
 import { requestLogger } from "./requestLogger";
 import { logger, replaceConsole } from "./logger";
+import { performHealthCheck, livenessCheck, readinessCheck } from "./healthCheck";
+import { setupGracefulShutdown } from "./gracefulShutdown";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -56,6 +58,23 @@ async function startServer() {
   app.use("/api/trpc", apiLimiter);
   app.use("/api/trpc/auth", authLimiter);
   
+  // Health check endpoints
+  app.get("/health", async (req, res) => {
+    const health = await performHealthCheck();
+    const statusCode = health.status === "healthy" ? 200 : health.status === "degraded" ? 200 : 503;
+    res.status(statusCode).json(health);
+  });
+  
+  app.get("/health/live", (req, res) => {
+    res.json(livenessCheck());
+  });
+  
+  app.get("/health/ready", async (req, res) => {
+    const ready = await readinessCheck();
+    const statusCode = ready.status === "ok" ? 200 : 503;
+    res.status(statusCode).json(ready);
+  });
+  
   // tRPC API
   app.use(
     "/api/trpc",
@@ -81,8 +100,12 @@ async function startServer() {
   // Sentry error handler (must be last)
   app.use(getErrorHandler());
   
+  // Setup graceful shutdown
+  setupGracefulShutdown();
+  
   server.listen(port, () => {
     logger.info(`Server running on http://localhost:${port}/`);
+    logger.info(`Health check available at http://localhost:${port}/health`);
   });
 }
 
