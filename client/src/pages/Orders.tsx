@@ -21,6 +21,8 @@ import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { OrderStatusTimeline } from '@/components/orders/OrderStatusTimeline';
 import { ShipOrderModal } from '@/components/orders/ShipOrderModal';
+import { ProcessReturnModal } from '@/components/orders/ProcessReturnModal';
+import { ReturnHistorySection } from '@/components/orders/ReturnHistorySection';
 import { 
   Search, 
   Package, 
@@ -28,7 +30,8 @@ import {
   CheckCircle2, 
   Clock,
   Eye,
-  PlusCircle 
+  PlusCircle,
+  PackageX
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLocation } from 'wouter';
@@ -39,6 +42,7 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showShipModal, setShowShipModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
 
   // Fetch clients for name lookup
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -260,26 +264,34 @@ export default function Orders() {
                 {/* Status Section */}
                 <div>
                   <h3 className="font-semibold mb-3">Fulfillment Status</h3>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <OrderStatusBadge 
                       status={selectedOrder.fulfillmentStatus || 'PENDING'} 
                       className="text-base px-4 py-2"
                     />
-                    {selectedOrder.fulfillmentStatus !== 'SHIPPED' && (
-                      <Button onClick={handleStatusChange}>
-                        {selectedOrder.fulfillmentStatus === 'PENDING' ? (
-                          <>
-                            <Package className="h-4 w-4 mr-2" />
-                            Mark as Packed
-                          </>
-                        ) : (
-                          <>
-                            <Truck className="h-4 w-4 mr-2" />
-                            Mark as Shipped
-                          </>
-                        )}
-                      </Button>
-                    )}
+                    <div className="flex gap-2">
+                      {selectedOrder.fulfillmentStatus === 'SHIPPED' && (
+                        <Button variant="outline" onClick={() => setShowReturnModal(true)}>
+                          <PackageX className="h-4 w-4 mr-2" />
+                          Process Return
+                        </Button>
+                      )}
+                      {selectedOrder.fulfillmentStatus !== 'SHIPPED' && (
+                        <Button onClick={handleStatusChange}>
+                          {selectedOrder.fulfillmentStatus === 'PENDING' ? (
+                            <>
+                              <Package className="h-4 w-4 mr-2" />
+                              Mark as Packed
+                            </>
+                          ) : (
+                            <>
+                              <Truck className="h-4 w-4 mr-2" />
+                              Mark as Shipped
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -376,6 +388,13 @@ export default function Orders() {
                     </div>
                   </>
                 )}
+
+                {/* Returns History */}
+                <Separator />
+                <div>
+                  <h3 className="font-semibold mb-3">Returns History</h3>
+                  <ReturnHistorySection orderId={selectedOrder.id} />
+                </div>
               </div>
             </>
           )}
@@ -389,6 +408,21 @@ export default function Orders() {
           currentStatus={selectedOrder.fulfillmentStatus || 'PENDING'}
           open={showShipModal}
           onClose={() => setShowShipModal(false)}
+          onSuccess={handleStatusChangeSuccess}
+        />
+      )}
+
+      {/* Process Return Modal */}
+      {selectedOrder && (
+        <ProcessReturnModal
+          orderId={selectedOrder.id}
+          orderItems={(selectedOrder.items as any[])?.map((item: any) => ({
+            batchId: item.batchId,
+            displayName: item.displayName,
+            quantity: item.quantity,
+          })) || []}
+          open={showReturnModal}
+          onClose={() => setShowReturnModal(false)}
           onSuccess={handleStatusChangeSuccess}
         />
       )}
