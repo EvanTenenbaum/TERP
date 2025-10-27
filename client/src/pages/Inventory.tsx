@@ -42,6 +42,9 @@ import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
 import { SaveViewModal } from "@/components/inventory/SaveViewModal";
 import { exportToCSVWithLabels } from "@/utils/exportToCSV";
 import { toast } from "sonner";
+import { BulkActionsBar } from "@/components/inventory/BulkActionsBar";
+import { BulkConfirmDialog } from "@/components/inventory/BulkConfirmDialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Inventory() {
   const [location] = useLocation();
@@ -50,6 +53,9 @@ export default function Inventory() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<number | null>(null);
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
+  const [selectedBatchIds, setSelectedBatchIds] = useState<Set<number>>(new Set());
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [bulkAction, setBulkAction] = useState<{ type: 'status' | 'delete'; value?: string }>({ type: 'status' });
   
   // Advanced filtering
   const { filters, updateFilter, clearAllFilters, hasActiveFilters, activeFilterCount } = useInventoryFilters();
@@ -85,6 +91,53 @@ export default function Inventory() {
       toast.success(`Exported ${filteredBatches.length} batches`);
     } catch (error: any) {
       toast.error(error.message || 'Export failed');
+    }
+  };
+  
+  // Bulk action mutations
+  const bulkUpdateStatusMutation = trpc.inventory.bulk.updateStatus.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Updated ${data.updated} batches`);
+      setSelectedBatchIds(new Set());
+      setShowBulkConfirm(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update batches');
+    },
+  });
+  
+  const bulkDeleteMutation = trpc.inventory.bulk.delete.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Deleted ${data.deleted} batches`);
+      setSelectedBatchIds(new Set());
+      setShowBulkConfirm(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to delete batches');
+    },
+  });
+  
+  // Bulk action handlers
+  const handleBulkStatusChange = (newStatus: string) => {
+    setBulkAction({ type: 'status', value: newStatus });
+    setShowBulkConfirm(true);
+  };
+  
+  const handleBulkDelete = () => {
+    setBulkAction({ type: 'delete' });
+    setShowBulkConfirm(true);
+  };
+  
+  const handleBulkConfirm = () => {
+    const batchIds = Array.from(selectedBatchIds);
+    
+    if (bulkAction.type === 'status' && bulkAction.value) {
+      bulkUpdateStatusMutation.mutate({
+        batchIds,
+        newStatus: bulkAction.value as any,
+      });
+    } else if (bulkAction.type === 'delete') {
+      bulkDeleteMutation.mutate(batchIds);
     }
   };
   
@@ -397,6 +450,18 @@ export default function Inventory() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedBatchIds.size === filteredBatches?.length && filteredBatches.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedBatchIds(new Set(filteredBatches?.map(b => b.id) || []));
+                      } else {
+                        setSelectedBatchIds(new Set());
+                      }
+                    }}
+                  />
+                </TableHead>
                 <TableHead>
                   <SortControls
                     column="sku"
@@ -531,9 +596,28 @@ export default function Inventory() {
                     <TableRow
                       key={batch.id}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedBatch(batch.id)}
                     >
-                      <TableCell className="font-mono text-sm">
+                      <TableCell
+                        className="w-12"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={selectedBatchIds.has(batch.id)}
+                          onCheckedChange={(checked) => {
+                            const newSelected = new Set(selectedBatchIds);
+                            if (checked) {
+                              newSelected.add(batch.id);
+                            } else {
+                              newSelected.delete(batch.id);
+                            }
+                            setSelectedBatchIds(newSelected);
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell
+                        className="font-mono text-sm"
+                        onClick={() => setSelectedBatch(batch.id)}
+                      >
                         <SearchHighlight text={batch.sku} query={debouncedSearch} />
                       </TableCell>
                       <TableCell className="font-medium">
@@ -696,6 +780,30 @@ export default function Inventory() {
         onSuccess={() => {
           // Refresh will happen automatically via tRPC
         }}
+      />
+      
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedCount={selectedBatchIds.size}
+        onClearSelection={() => setSelectedBatchIds(new Set())}
+        onStatusChange={handleBulkStatusChange}
+        onDelete={handleBulkDelete}
+      />
+      
+      {/* Bulk Confirm Dialog */}
+      <BulkConfirmDialog
+        open={showBulkConfirm}
+        onOpenChange={setShowBulkConfirm}
+        title={bulkAction.type === 'delete' ? 'Delete Batches' : 'Update Status'}
+        description={
+          bulkAction.type === 'delete'
+            ? 'Are you sure you want to delete these batches? This action cannot be undone.'
+            : `Change status to ${bulkAction.value}?`
+        }
+        selectedCount={selectedBatchIds.size}
+        actionLabel={bulkAction.type === 'delete' ? 'Delete' : 'Update'}
+        onConfirm={handleBulkConfirm}
+        variant={bulkAction.type === 'delete' ? 'destructive' : 'default'}
       />
     </div>
   );

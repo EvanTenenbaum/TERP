@@ -337,4 +337,32 @@ export const inventoryRouter = router({
           }
         }),
     }),
+    
+    // Bulk operations
+    bulk: router({
+      // Bulk update status
+      updateStatus: protectedProcedure
+        .input(z.object({
+          batchIds: z.array(z.number()),
+          newStatus: z.enum(['AWAITING_INTAKE', 'LIVE', 'PHOTOGRAPHY_COMPLETE', 'ON_HOLD', 'QUARANTINED', 'SOLD_OUT', 'CLOSED']),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          try {
+            return await inventoryDb.bulkUpdateBatchStatus(input.batchIds, input.newStatus, ctx.user.id);
+          } catch (error) {
+            handleError(error, "inventory.bulk.updateStatus");
+          }
+        }),
+      
+      // Bulk delete
+      delete: protectedProcedure
+        .input(z.array(z.number()))
+        .mutation(async ({ input, ctx }) => {
+          try {
+            return await inventoryDb.bulkDeleteBatches(input, ctx.user.id);
+          } catch (error) {
+            handleError(error, "inventory.bulk.delete");
+          }
+        }),
+    }),
   })
