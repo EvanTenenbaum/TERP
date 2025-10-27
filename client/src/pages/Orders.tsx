@@ -57,8 +57,8 @@ export default function Orders() {
     try {
       const exportData = filteredOrders.map(order => ({
         id: order.id,
-        clientName: clientNames[order.clientId] || 'Unknown',
-        totalAmount: order.totalAmount,
+        clientName: getClientName(order.clientId),
+        totalAmount: (order as any).totalAmount || 0,
         saleStatus: order.saleStatus,
         fulfillmentStatus: order.fulfillmentStatus,
         createdAt: order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd') : '',
