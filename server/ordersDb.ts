@@ -358,6 +358,7 @@ export async function getAllOrders(filters?: {
     results = await db
       .select()
       .from(orders)
+      .leftJoin(clients, eq(orders.clientId, clients.id))
       .where(and(...conditions))
       .orderBy(desc(orders.createdAt))
       .limit(limit)
@@ -366,12 +367,17 @@ export async function getAllOrders(filters?: {
     results = await db
       .select()
       .from(orders)
+      .leftJoin(clients, eq(orders.clientId, clients.id))
       .orderBy(desc(orders.createdAt))
       .limit(limit)
       .offset(offset);
   }
   
-  return results;
+  // Transform results to include client data
+  return results.map(row => ({
+    ...row.orders,
+    client: row.clients,
+  })) as any;
 }
 
 // ============================================================================
@@ -591,5 +597,134 @@ export async function exportOrder(
   // TODO: Implement export logic
   // For now, return a placeholder
   return `Export ${format} for order ${order.orderNumber}`;
+}
+
+
+
+// ============================================================================
+// FULFILLMENT STATUS MANAGEMENT
+// ============================================================================
+
+/**
+ * Update order fulfillment status
+ * Handles status transitions and inventory decrements
+ */
+export async function updateOrderStatus(input: {
+  orderId: number;
+  newStatus: 'PENDING' | 'PACKED' | 'SHIPPED';
+  notes?: string;
+  userId: number;
+}): Promise<{ success: boolean; newStatus: string }> {
+  const { orderId, newStatus, notes, userId } = input;
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  return await db.transaction(async (tx) => {
+    // Get current order
+    const [order] = await tx.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) {
+      throw new Error('Order not found');
+    }
+    
+    const oldStatus = order.fulfillmentStatus || 'PENDING';
+    
+    // Validate status transition
+    if (oldStatus === 'SHIPPED') {
+      throw new Error('Cannot change status of shipped order');
+    }
+    if (oldStatus === 'PACKED' && newStatus === 'PENDING') {
+      throw new Error('Cannot move packed order back to pending');
+    }
+    
+    // Prepare update data
+    const updateData: any = { fulfillmentStatus: newStatus };
+    if (newStatus === 'PACKED') {
+      updateData.packedAt = new Date();
+      updateData.packedBy = userId;
+    }
+    if (newStatus === 'SHIPPED') {
+      updateData.shippedAt = new Date();
+      updateData.shippedBy = userId;
+      
+      // Decrement inventory when shipped
+      await decrementInventoryForOrder(tx, orderId, order.items as any);
+    }
+    
+    // Update order status
+    await tx.update(orders)
+      .set(updateData)
+      .where(eq(orders.id, orderId));
+    
+    // Log status change in history
+    const { orderStatusHistory } = await import('../drizzle/schema');
+    await tx.insert(orderStatusHistory).values({
+      orderId,
+      fromStatus: oldStatus as any,
+      toStatus: newStatus as any,
+      changedBy: userId,
+      notes,
+    });
+    
+    return { success: true, newStatus };
+  });
+}
+
+/**
+ * Get order status history
+ */
+export async function getOrderStatusHistory(orderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { orderStatusHistory, users } = await import('../drizzle/schema');
+  
+  return await db.select({
+    id: orderStatusHistory.id,
+    orderId: orderStatusHistory.orderId,
+    fromStatus: orderStatusHistory.fromStatus,
+    toStatus: orderStatusHistory.toStatus,
+    changedBy: orderStatusHistory.changedBy,
+    changedByName: users.name,
+    changedAt: orderStatusHistory.changedAt,
+    notes: orderStatusHistory.notes,
+  })
+    .from(orderStatusHistory)
+    .leftJoin(users, eq(orderStatusHistory.changedBy, users.id))
+    .where(eq(orderStatusHistory.orderId, orderId))
+    .orderBy(orderStatusHistory.changedAt);
+}
+
+/**
+ * Decrement inventory for order items when shipped
+ * Uses row-level locking to prevent race conditions
+ */
+async function decrementInventoryForOrder(
+  tx: any,
+  orderId: number,
+  items: OrderItem[]
+) {
+  const { inventoryMovements } = await import('../drizzle/schema');
+  
+  for (const item of items) {
+    if (!item.batchId || item.isSample) continue; // Skip samples
+    
+    // Decrement batch quantity with row-level locking
+    await tx.execute(sql`
+      UPDATE batches 
+      SET onHandQty = CAST(onHandQty AS DECIMAL(15,4)) - ${item.quantity}
+      WHERE id = ${item.batchId}
+      FOR UPDATE
+    `);
+    
+    // Log inventory movement
+    await tx.insert(inventoryMovements).values({
+      batchId: item.batchId,
+      movementType: 'SALE',
+      quantity: -item.quantity,
+      referenceType: 'ORDER',
+      referenceId: orderId,
+      notes: `Shipped order #${orderId}`,
+      createdBy: 1, // System
+    });
+  }
 }
 

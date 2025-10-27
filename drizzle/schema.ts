@@ -1298,7 +1298,7 @@ export const quoteStatusEnum = mysqlEnum("quoteStatus", [
 
 /**
  * Sale Status Enum
- * Lifecycle states for sales
+ * Lifecycle states for sales (PAYMENT STATUS)
  */
 export const saleStatusEnum = mysqlEnum("saleStatus", [
   "PENDING",
@@ -1306,6 +1306,17 @@ export const saleStatusEnum = mysqlEnum("saleStatus", [
   "PAID",
   "OVERDUE",
   "CANCELLED"
+]);
+
+/**
+ * Fulfillment Status Enum
+ * Lifecycle states for order fulfillment (SHIPPING STATUS)
+ * Separate from payment status to track physical order processing
+ */
+export const fulfillmentStatusEnum = mysqlEnum("fulfillmentStatus", [
+  "PENDING",
+  "PACKED",
+  "SHIPPED"
 ]);
 
 /**
@@ -1342,6 +1353,13 @@ export const orders = mysqlTable("orders", {
   saleStatus: saleStatusEnum,
   invoiceId: int("invoice_id"),
   
+  // Fulfillment tracking (for SALE orders)
+  fulfillmentStatus: fulfillmentStatusEnum.default("PENDING"),
+  packedAt: timestamp("packed_at"),
+  packedBy: int("packed_by").references(() => users.id),
+  shippedAt: timestamp("shipped_at"),
+  shippedBy: int("shipped_by").references(() => users.id),
+  
   // Conversion tracking
   convertedFromOrderId: int("converted_from_order_id").references((): any => orders.id),
   convertedAt: timestamp("converted_at"),
@@ -1362,6 +1380,26 @@ export const orders = mysqlTable("orders", {
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
+
+/**
+ * Order Status History
+ * Tracks all fulfillment status changes for orders
+ */
+export const orderStatusHistory = mysqlTable("order_status_history", {
+  id: int("id").primaryKey().autoincrement(),
+  orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  fromStatus: fulfillmentStatusEnum,
+  toStatus: fulfillmentStatusEnum.notNull(),
+  changedBy: int("changed_by").notNull().references(() => users.id),
+  changedAt: timestamp("changed_at").defaultNow().notNull(),
+  notes: text("notes"),
+}, (table) => ({
+  orderIdIdx: index("idx_order_id").on(table.orderId),
+  changedAtIdx: index("idx_changed_at").on(table.changedAt),
+}));
+
+export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
+export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
 
 /**
  * Sample Inventory Log
