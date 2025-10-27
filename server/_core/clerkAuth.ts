@@ -1,127 +1,77 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
+import { clerkMiddleware, requireAuth, getAuth } from "@clerk/express";
 import { createClerkClient } from "@clerk/backend";
+import type { Express, Request, Response, NextFunction } from "express";
+import type { User } from "../../drizzle/schema";
+import * as db from "../db";
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
 });
-import type { Express, Request, Response } from "express";
-import { SignJWT, jwtVerify } from "jose";
-import type { User } from "../../drizzle/schema";
-import * as db from "../db";
-import { getSessionCookieOptions } from "./cookies";
-import { ENV } from "./env";
-
-const isNonEmptyString = (value: unknown): value is string =>
-  typeof value === "string" && value.length > 0;
-
-export type SessionPayload = {
-  openId: string;
-  appId: string;
-  name: string;
-};
 
 class ClerkAuthService {
-  private getSessionSecret() {
-    const secret = ENV.cookieSecret;
-    return new TextEncoder().encode(secret);
-  }
-
-  async createSessionToken(
-    userId: string,
-    options: { expiresInMs?: number; name?: string } = {}
-  ): Promise<string> {
-    return this.signSession(
-      {
-        openId: userId,
-        appId: ENV.appId,
-        name: options.name || "",
-      },
-      options
-    );
-  }
-
-  async signSession(
-    payload: SessionPayload,
-    options: { expiresInMs?: number } = {}
-  ): Promise<string> {
-    const issuedAt = Date.now();
-    const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
-    const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000);
-    const secretKey = this.getSessionSecret();
-
-    return new SignJWT({
-      openId: payload.openId,
-      appId: payload.appId,
-      name: payload.name,
-    })
-      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-      .setExpirationTime(expirationSeconds)
-      .sign(secretKey);
-  }
-
-  async verifySession(
-    cookieValue: string | undefined | null
-  ): Promise<{ openId: string; appId: string; name: string } | null> {
-    if (!cookieValue) {
-      return null;
-    }
-
+  /**
+   * Authenticate a request using Clerk session
+   * This expects Clerk middleware to have already run
+   */
+  async authenticateRequest(req: Request): Promise<User> {
     try {
-      const secretKey = this.getSessionSecret();
-      const { payload } = await jwtVerify(cookieValue, secretKey, {
-        algorithms: ["HS256"],
-      });
-      const { openId, appId, name } = payload as Record<string, unknown>;
-
-      if (
-        !isNonEmptyString(openId) ||
-        !isNonEmptyString(appId) ||
-        !isNonEmptyString(name)
-      ) {
-        return null;
+      // Get auth from Clerk middleware
+      const auth = getAuth(req);
+      
+      if (!auth || !auth.userId) {
+        throw ForbiddenError("Not authenticated");
       }
 
-      return { openId, appId, name };
+      const userId = auth.userId;
+
+      // Get user from Clerk
+      const clerkUser = await clerkClient.users.getUser(userId);
+      
+      // Sync user to local database
+      await db.upsertUser({
+        openId: clerkUser.id,
+        name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || null,
+        email: clerkUser.emailAddresses?.[0]?.emailAddress || null,
+        loginMethod: "clerk",
+        lastSignedIn: new Date(),
+      });
+
+      // Get user from database
+      const user = await db.getUser(clerkUser.id);
+      
+      if (!user) {
+        throw ForbiddenError("User not found in database");
+      }
+
+      return user;
     } catch (error) {
-      return null;
+      console.error("[Clerk Auth] Authentication failed:", error);
+      throw ForbiddenError("Authentication failed");
     }
   }
 
-  async authenticateRequest(req: Request): Promise<User> {
-    const cookies = req.headers.cookie?.split(";").reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split("=");
-      acc[key] = value;
-      return acc;
-    }, {} as Record<string, string>) || {};
+  /**
+   * Get Clerk middleware for Express
+   */
+  getMiddleware() {
+    return clerkMiddleware();
+  }
 
-    const sessionCookie = cookies[COOKIE_NAME];
-    const session = await this.verifySession(sessionCookie);
-
-    if (!session) {
-      throw ForbiddenError("Invalid session cookie");
-    }
-
-    const sessionUserId = session.openId;
-    const signedInAt = new Date();
-    let user = await db.getUser(sessionUserId);
-
-    if (!user) {
-      throw ForbiddenError("User not found");
-    }
-
-    await db.upsertUser({
-      openId: user.openId,
-      lastSignedIn: signedInAt,
-    });
-
-    return user;
+  /**
+   * Get Clerk requireAuth middleware
+   */
+  getRequireAuthMiddleware() {
+    return requireAuth();
   }
 }
 
 export const clerkAuth = new ClerkAuthService();
 
 export function registerClerkOAuthRoutes(app: Express) {
+  // Apply Clerk middleware to all routes
+  app.use(clerkAuth.getMiddleware());
+
   // Clerk webhook to sync users
   app.post("/api/clerk/webhook", async (req: Request, res: Response) => {
     try {
@@ -142,41 +92,6 @@ export function registerClerkOAuthRoutes(app: Express) {
     } catch (error) {
       console.error("[Clerk] Webhook failed", error);
       res.status(500).json({ error: "Webhook processing failed" });
-    }
-  });
-
-  // Clerk callback handler
-  app.get("/api/auth/callback", async (req: Request, res: Response) => {
-    try {
-      const clerkUserId = req.query.userId as string;
-      
-      if (!clerkUserId) {
-        res.status(400).json({ error: "userId required" });
-        return;
-      }
-
-      const clerkUser = await clerkClient.users.getUser(clerkUserId);
-      
-      await db.upsertUser({
-        openId: clerkUser.id,
-        name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || null,
-        email: clerkUser.emailAddresses?.[0]?.emailAddress || null,
-        loginMethod: "clerk",
-        lastSignedIn: new Date(),
-      });
-
-      const sessionToken = await clerkAuth.createSessionToken(clerkUser.id, {
-        name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
-        expiresInMs: ONE_YEAR_MS,
-      });
-
-      const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-
-      res.redirect(302, "/");
-    } catch (error) {
-      console.error("[Clerk] Callback failed", error);
-      res.status(500).json({ error: "Authentication failed" });
     }
   });
 }
