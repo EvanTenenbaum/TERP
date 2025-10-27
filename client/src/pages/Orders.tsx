@@ -31,10 +31,13 @@ import {
   Clock,
   Eye,
   PlusCircle,
-  PackageX
+  PackageX,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLocation } from 'wouter';
+import { exportToCSVWithLabels } from '@/utils/exportToCSV';
+import { toast } from 'sonner';
 
 export default function Orders() {
   const [, setLocation] = useLocation();
@@ -43,6 +46,45 @@ export default function Orders() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showShipModal, setShowShipModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  
+  // Export handler
+  const handleExport = () => {
+    if (!filteredOrders || filteredOrders.length === 0) {
+      toast.error('No orders to export');
+      return;
+    }
+    
+    try {
+      const exportData = filteredOrders.map(order => ({
+        id: order.id,
+        clientName: clientNames[order.clientId] || 'Unknown',
+        totalAmount: order.totalAmount,
+        saleStatus: order.saleStatus,
+        fulfillmentStatus: order.fulfillmentStatus,
+        createdAt: order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd') : '',
+        packedAt: order.packedAt ? format(new Date(order.packedAt), 'yyyy-MM-dd') : '',
+        shippedAt: order.shippedAt ? format(new Date(order.shippedAt), 'yyyy-MM-dd') : '',
+      }));
+      
+      exportToCSVWithLabels(
+        exportData,
+        [
+          { key: 'id', label: 'Order ID' },
+          { key: 'clientName', label: 'Client' },
+          { key: 'totalAmount', label: 'Total Amount' },
+          { key: 'saleStatus', label: 'Payment Status' },
+          { key: 'fulfillmentStatus', label: 'Fulfillment Status' },
+          { key: 'createdAt', label: 'Created Date' },
+          { key: 'packedAt', label: 'Packed Date' },
+          { key: 'shippedAt', label: 'Shipped Date' },
+        ],
+        'orders'
+      );
+      toast.success(`Exported ${filteredOrders.length} orders`);
+    } catch (error: any) {
+      toast.error(error.message || 'Export failed');
+    }
+  };
   
   // Apply URL params on mount
   useEffect(() => {
@@ -114,10 +156,20 @@ export default function Orders() {
             Manage sales orders and track fulfillment status
           </p>
         </div>
-        <Button onClick={() => setLocation('/orders/create')}>
-          <PlusCircle className="h-4 w-4 mr-2" />
-          New Order
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleExport}
+            variant="outline"
+            disabled={!filteredOrders || filteredOrders.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button onClick={() => setLocation('/orders/create')}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            New Order
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}

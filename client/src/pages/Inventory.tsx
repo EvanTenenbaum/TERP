@@ -23,6 +23,7 @@ import {
   XCircle,
   Pause,
   Edit,
+  Download,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
@@ -39,6 +40,8 @@ import { SortControls } from "@/components/inventory/SortControls";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
 import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
 import { SaveViewModal } from "@/components/inventory/SaveViewModal";
+import { exportToCSVWithLabels } from "@/utils/exportToCSV";
+import { toast } from "sonner";
 
 export default function Inventory() {
   const [location] = useLocation();
@@ -50,6 +53,40 @@ export default function Inventory() {
   
   // Advanced filtering
   const { filters, updateFilter, clearAllFilters, hasActiveFilters, activeFilterCount } = useInventoryFilters();
+  
+  // Export handler
+  const handleExport = () => {
+    if (!filteredBatches || filteredBatches.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    
+    try {
+      exportToCSVWithLabels(
+        filteredBatches,
+        [
+          { key: 'id', label: 'Batch ID' },
+          { key: 'productName', label: 'Product Name' },
+          { key: 'category', label: 'Category' },
+          { key: 'vendor', label: 'Vendor' },
+          { key: 'brand', label: 'Brand' },
+          { key: 'status', label: 'Status' },
+          { key: 'quantityAvailable', label: 'Available' },
+          { key: 'quantityReserved', label: 'Reserved' },
+          { key: 'quantityInTransit', label: 'In Transit' },
+          { key: 'quantityOnHold', label: 'On Hold' },
+          { key: 'quantityDamaged', label: 'Damaged' },
+          { key: 'unitCost', label: 'Unit Cost' },
+          { key: 'totalValue', label: 'Total Value' },
+          { key: 'purchaseDate', label: 'Purchase Date' },
+        ],
+        'inventory'
+      );
+      toast.success(`Exported ${filteredBatches.length} batches`);
+    } catch (error: any) {
+      toast.error(error.message || 'Export failed');
+    }
+  };
   
   // Apply URL params on mount
   useEffect(() => {
@@ -241,6 +278,15 @@ export default function Inventory() {
           >
             <Plus className="h-4 w-4 mr-2" />
             Save View
+          </Button>
+          <Button
+            onClick={handleExport}
+            variant="outline"
+            disabled={!filteredBatches || filteredBatches.length === 0}
+            className="w-full sm:w-auto"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
           </Button>
           <Button onClick={() => setShowPurchaseModal(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
