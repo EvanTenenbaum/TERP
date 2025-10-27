@@ -940,6 +940,39 @@ export const clients = mysqlTable("clients", {
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = typeof clients.$inferInsert;
 
+/**
+ * Communication Type Enum
+ * Types of client communications
+ */
+export const communicationTypeEnum = mysqlEnum("communicationType", [
+  "CALL",
+  "EMAIL",
+  "MEETING",
+  "NOTE"
+]);
+
+/**
+ * Client Communications Table
+ * Tracks all communications with clients
+ */
+export const clientCommunications = mysqlTable("client_communications", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  type: communicationTypeEnum.notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  notes: text("notes"),
+  communicatedAt: timestamp("communicated_at").notNull(),
+  loggedBy: int("logged_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_id").on(table.clientId),
+  communicatedAtIdx: index("idx_communicated_at").on(table.communicatedAt),
+  typeIdx: index("idx_type").on(table.type),
+}));
+
+export type ClientCommunication = typeof clientCommunications.$inferSelect;
+export type InsertClientCommunication = typeof clientCommunications.$inferInsert;
+
 export const clientTransactions = mysqlTable("client_transactions", {
   id: int("id").primaryKey().autoincrement(),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
@@ -1298,7 +1331,7 @@ export const quoteStatusEnum = mysqlEnum("quoteStatus", [
 
 /**
  * Sale Status Enum
- * Lifecycle states for sales
+ * Lifecycle states for sales (PAYMENT STATUS)
  */
 export const saleStatusEnum = mysqlEnum("saleStatus", [
   "PENDING",
@@ -1306,6 +1339,17 @@ export const saleStatusEnum = mysqlEnum("saleStatus", [
   "PAID",
   "OVERDUE",
   "CANCELLED"
+]);
+
+/**
+ * Fulfillment Status Enum
+ * Lifecycle states for order fulfillment (SHIPPING STATUS)
+ * Separate from payment status to track physical order processing
+ */
+export const fulfillmentStatusEnum = mysqlEnum("fulfillmentStatus", [
+  "PENDING",
+  "PACKED",
+  "SHIPPED"
 ]);
 
 /**
@@ -1342,6 +1386,13 @@ export const orders = mysqlTable("orders", {
   saleStatus: saleStatusEnum,
   invoiceId: int("invoice_id"),
   
+  // Fulfillment tracking (for SALE orders)
+  fulfillmentStatus: fulfillmentStatusEnum.default("PENDING"),
+  packedAt: timestamp("packed_at"),
+  packedBy: int("packed_by").references(() => users.id),
+  shippedAt: timestamp("shipped_at"),
+  shippedBy: int("shipped_by").references(() => users.id),
+  
   // Conversion tracking
   convertedFromOrderId: int("converted_from_order_id").references((): any => orders.id),
   convertedAt: timestamp("converted_at"),
@@ -1362,6 +1413,58 @@ export const orders = mysqlTable("orders", {
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
+
+/**
+ * Order Status History
+ * Tracks all fulfillment status changes for orders
+ */
+export const orderStatusHistory = mysqlTable("order_status_history", {
+  id: int("id").primaryKey().autoincrement(),
+  orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  fromStatus: fulfillmentStatusEnum,
+  toStatus: fulfillmentStatusEnum.notNull(),
+  changedBy: int("changed_by").notNull().references(() => users.id),
+  changedAt: timestamp("changed_at").defaultNow().notNull(),
+  notes: text("notes"),
+}, (table) => ({
+  orderIdIdx: index("idx_order_id").on(table.orderId),
+  changedAtIdx: index("idx_changed_at").on(table.changedAt),
+}));
+
+export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
+export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
+
+/**
+ * Return Reason Enum
+ * Reasons for order returns
+ */
+export const returnReasonEnum = mysqlEnum("returnReason", [
+  "DEFECTIVE",
+  "WRONG_ITEM",
+  "NOT_AS_DESCRIBED",
+  "CUSTOMER_CHANGED_MIND",
+  "OTHER"
+]);
+
+/**
+ * Returns Table
+ * Tracks returns for orders with automatic inventory restocking
+ */
+export const returns = mysqlTable("returns", {
+  id: int("id").primaryKey().autoincrement(),
+  orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  items: json("items").notNull(), // Array of { batchId, quantity, reason }
+  reason: returnReasonEnum.notNull(),
+  notes: text("notes"),
+  processedBy: int("processed_by").notNull().references(() => users.id),
+  processedAt: timestamp("processed_at").defaultNow().notNull(),
+}, (table) => ({
+  orderIdIdx: index("idx_order_id").on(table.orderId),
+  processedAtIdx: index("idx_processed_at").on(table.processedAt),
+}));
+
+export type Return = typeof returns.$inferSelect;
+export type InsertReturn = typeof returns.$inferInsert;
 
 /**
  * Sample Inventory Log
@@ -1629,6 +1732,7 @@ export type InsertPaymentMethod = typeof paymentMethods.$inferInsert;
 export const inventoryMovementTypeEnum = mysqlEnum("inventoryMovementType", [
   "INTAKE",
   "SALE",
+  "RETURN",
   "REFUND_RETURN",
   "ADJUSTMENT",
   "QUARANTINE",
@@ -1797,6 +1901,25 @@ export const inventoryAlerts = mysqlTable("inventoryAlerts", {
 
 export type InventoryAlert = typeof inventoryAlerts.$inferSelect;
 export type InsertInventoryAlert = typeof inventoryAlerts.$inferInsert;
+
+/**
+ * Inventory Saved Views Table
+ * Stores user-defined filter combinations for quick access
+ */
+export const inventoryViews = mysqlTable("inventoryViews", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  filters: json("filters").notNull(), // Stores filter state as JSON
+  createdBy: int("createdBy").references(() => users.id, { onDelete: "cascade" }),
+  isShared: int("isShared").notNull().default(0), // 0 = private, 1 = shared
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  createdByIdx: index("idx_inventory_views_created_by").on(table.createdBy),
+}));
+
+export type InventoryView = typeof inventoryViews.$inferSelect;
+export type InsertInventoryView = typeof inventoryViews.$inferInsert;
 
 /**
  * User Dashboard Preferences Table

@@ -358,6 +358,7 @@ export async function getAllOrders(filters?: {
     results = await db
       .select()
       .from(orders)
+      .leftJoin(clients, eq(orders.clientId, clients.id))
       .where(and(...conditions))
       .orderBy(desc(orders.createdAt))
       .limit(limit)
@@ -366,12 +367,17 @@ export async function getAllOrders(filters?: {
     results = await db
       .select()
       .from(orders)
+      .leftJoin(clients, eq(orders.clientId, clients.id))
       .orderBy(desc(orders.createdAt))
       .limit(limit)
       .offset(offset);
   }
   
-  return results;
+  // Transform results to include client data
+  return results.map(row => ({
+    ...row.orders,
+    client: row.clients,
+  })) as any;
 }
 
 // ============================================================================
@@ -592,4 +598,232 @@ export async function exportOrder(
   // For now, return a placeholder
   return `Export ${format} for order ${order.orderNumber}`;
 }
+
+
+
+// ============================================================================
+// FULFILLMENT STATUS MANAGEMENT
+// ============================================================================
+
+/**
+ * Update order fulfillment status
+ * Handles status transitions and inventory decrements
+ */
+export async function updateOrderStatus(input: {
+  orderId: number;
+  newStatus: 'PENDING' | 'PACKED' | 'SHIPPED';
+  notes?: string;
+  userId: number;
+}): Promise<{ success: boolean; newStatus: string }> {
+  const { orderId, newStatus, notes, userId } = input;
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  return await db.transaction(async (tx) => {
+    // Get current order
+    const [order] = await tx.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) {
+      throw new Error('Order not found');
+    }
+    
+    const oldStatus = order.fulfillmentStatus || 'PENDING';
+    
+    // Validate status transition
+    if (oldStatus === 'SHIPPED') {
+      throw new Error('Cannot change status of shipped order');
+    }
+    if (oldStatus === 'PACKED' && newStatus === 'PENDING') {
+      throw new Error('Cannot move packed order back to pending');
+    }
+    
+    // Prepare update data
+    const updateData: any = { fulfillmentStatus: newStatus };
+    if (newStatus === 'PACKED') {
+      updateData.packedAt = new Date();
+      updateData.packedBy = userId;
+    }
+    if (newStatus === 'SHIPPED') {
+      updateData.shippedAt = new Date();
+      updateData.shippedBy = userId;
+      
+      // Decrement inventory when shipped
+      await decrementInventoryForOrder(tx, orderId, order.items as any);
+    }
+    
+    // Update order status
+    await tx.update(orders)
+      .set(updateData)
+      .where(eq(orders.id, orderId));
+    
+    // Log status change in history
+    const { orderStatusHistory } = await import('../drizzle/schema');
+    await tx.insert(orderStatusHistory).values({
+      orderId,
+      fromStatus: oldStatus as any,
+      toStatus: newStatus as any,
+      changedBy: userId,
+      notes,
+    });
+    
+    return { success: true, newStatus };
+  });
+}
+
+/**
+ * Get order status history
+ */
+export async function getOrderStatusHistory(orderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { orderStatusHistory, users } = await import('../drizzle/schema');
+  
+  return await db.select({
+    id: orderStatusHistory.id,
+    orderId: orderStatusHistory.orderId,
+    fromStatus: orderStatusHistory.fromStatus,
+    toStatus: orderStatusHistory.toStatus,
+    changedBy: orderStatusHistory.changedBy,
+    changedByName: users.name,
+    changedAt: orderStatusHistory.changedAt,
+    notes: orderStatusHistory.notes,
+  })
+    .from(orderStatusHistory)
+    .leftJoin(users, eq(orderStatusHistory.changedBy, users.id))
+    .where(eq(orderStatusHistory.orderId, orderId))
+    .orderBy(orderStatusHistory.changedAt);
+}
+
+/**
+ * Decrement inventory for order items when shipped
+ * Uses row-level locking to prevent race conditions
+ */
+async function decrementInventoryForOrder(
+  tx: any,
+  orderId: number,
+  items: OrderItem[]
+) {
+  const { inventoryMovements } = await import('../drizzle/schema');
+  
+  for (const item of items) {
+    if (!item.batchId || item.isSample) continue; // Skip samples
+    
+    // Decrement batch quantity with row-level locking
+    await tx.execute(sql`
+      UPDATE batches 
+      SET onHandQty = CAST(onHandQty AS DECIMAL(15,4)) - ${item.quantity}
+      WHERE id = ${item.batchId}
+      FOR UPDATE
+    `);
+    
+    // Log inventory movement
+    await tx.insert(inventoryMovements).values({
+      batchId: item.batchId,
+      movementType: 'SALE',
+      quantity: -item.quantity,
+      referenceType: 'ORDER',
+      referenceId: orderId,
+      notes: `Shipped order #${orderId}`,
+      createdBy: 1, // System
+    });
+  }
+}
+
+
+
+// ============================================================================
+// RETURNS MANAGEMENT
+// ============================================================================
+
+/**
+ * Process a return for an order
+ * Automatically restocks inventory
+ */
+export async function processReturn(input: {
+  orderId: number;
+  items: Array<{ batchId: number; quantity: number }>;
+  reason: 'DEFECTIVE' | 'WRONG_ITEM' | 'NOT_AS_DESCRIBED' | 'CUSTOMER_CHANGED_MIND' | 'OTHER';
+  notes?: string;
+  userId: number;
+}): Promise<{ success: boolean; returnId: number }> {
+  const { orderId, items, reason, notes, userId } = input;
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  return await db.transaction(async (tx) => {
+    // Verify order exists
+    const [order] = await tx.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) {
+      throw new Error('Order not found');
+    }
+    
+    // Create return record
+    const { returns } = await import('../drizzle/schema');
+    const [returnRecord] = await tx.insert(returns).values({
+      orderId,
+      items: JSON.stringify(items),
+      reason,
+      notes,
+      processedBy: userId,
+    }).$returningId();
+    
+    // Restock inventory for each returned item
+    const { inventoryMovements } = await import('../drizzle/schema');
+    for (const item of items) {
+      // Get current batch quantity
+      const [batch] = await tx.select().from(batches).where(eq(batches.id, item.batchId));
+      if (!batch) continue;
+      
+      const quantityBefore = parseFloat(batch.onHandQty);
+      const quantityAfter = quantityBefore + item.quantity;
+      
+      // Increment batch quantity
+      await tx.execute(sql`
+        UPDATE batches 
+        SET onHandQty = CAST(onHandQty AS DECIMAL(15,4)) + ${item.quantity}
+        WHERE id = ${item.batchId}
+      `);
+      
+      // Log inventory movement
+      await tx.insert(inventoryMovements).values({
+        batchId: item.batchId,
+        movementType: 'RETURN',
+        quantityChange: item.quantity.toString(),
+        quantityBefore: quantityBefore.toString(),
+        quantityAfter: quantityAfter.toString(),
+        referenceType: 'RETURN',
+        referenceId: returnRecord.id,
+        reason: `Return from order #${orderId}: ${reason}`,
+        performedBy: userId,
+      });
+    }
+    
+    return { success: true, returnId: returnRecord.id };
+  });
+}
+
+/**
+ * Get all returns for an order
+ */
+export async function getOrderReturns(orderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { returns, users } = await import('../drizzle/schema');
+  
+  return await db.select({
+    id: returns.id,
+    orderId: returns.orderId,
+    items: returns.items,
+    reason: returns.reason,
+    notes: returns.notes,
+    processedBy: returns.processedBy,
+    processedByName: users.name,
+    processedAt: returns.processedAt,
+  })
+    .from(returns)
+    .leftJoin(users, eq(returns.processedBy, users.id))
+    .where(eq(returns.orderId, orderId))
+    .orderBy(desc(returns.processedAt));
+}
+
+
 

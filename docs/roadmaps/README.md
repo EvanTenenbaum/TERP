@@ -1,51 +1,46 @@
-# TERP Roadmaps
+# TERP Roadmaps - Master Index
 
-This directory contains all development roadmaps for TERP. Each roadmap is a detailed implementation plan for a specific feature, module, or system improvement.
+**Purpose:** Central tracking of all implementation roadmaps for TERP development.
 
----
-
-## How to Use This Directory
-
-### For Development Agents
-
-1. **Check ACTIVE.md** to see which roadmap is currently being worked on
-2. **Read the active roadmap** completely before starting work
-3. **Follow the phases** in order
-4. **Update status** as you complete phases
-5. **Mark complete** when all success criteria are met
-
-### For Planning
-
-1. **Create new roadmaps** following the template below
-2. **Save to this directory** with descriptive name
-3. **Update this README** to add to the index
-4. **Set status and priority**
-5. **Wait for activation** (don't implement immediately)
+**Last Updated:** October 27, 2025
 
 ---
 
-## Roadmap Status Legend
+## Active Roadmap
 
-- 🔵 **Planned** - Roadmap created, not yet ready to start
-- 🟠 **Ready to Start** - All dependencies met, can begin implementation
-- 🟢 **In Progress** - Currently being worked on (see ACTIVE.md)
-- ✅ **Complete** - All phases finished, success criteria met
-- ⏸️ **Paused** - Started but temporarily on hold
-- ❌ **Cancelled** - No longer needed or superseded
+**Current Focus:** [Default Values Implementation](./defaults-implementation.md)
 
----
-
-## Priority Levels
-
-- **High** - Critical for core functionality or blocking other work
-- **Medium** - Important but not blocking
-- **Low** - Nice to have, can be deferred
+**Status:** 🟡 Ready to Start  
+**Estimated Effort:** 22-29 days  
+**Started:** Not yet  
+**Current Phase:** Phase 1 - Master Data & Foundation
 
 ---
 
-## Roadmap Index
+## All Roadmaps
 
-### 1. Realistic Mock Data Generation
+### 1. Default Values Implementation
+**Status:** 🟡 Ready to Start  
+**Priority:** High  
+**Files:**
+- [Implementation Roadmap](./defaults-implementation.md) - 10-phase implementation plan
+- [Specifications](./defaults-specifications.md) - Complete user specifications
+- [Analysis](./defaults-analysis.md) - Detailed analysis of all areas needing defaults
+
+**Summary:** Implement default values for all dropdowns, customizations, and system settings to ensure smooth first-time user experience.
+
+**Key Deliverables:**
+- Master data seeding (locations, categories, grades, expense categories)
+- Simplified accounting (cash/crypto payments, simple bank ledger)
+- Advanced pricing rules with complex conditional logic
+- Per-client pricing profiles (hidden from client view)
+- COGS adjustments by Flower subcategory
+- Smart low inventory alerts
+- Comprehensive dashboard with 6 default KPIs
+
+---
+
+### 2. Realistic Mock Data Generation
 **Status:** 🔵 Planned  
 **Priority:** High  
 **Files:**
@@ -71,6 +66,77 @@ Build a comprehensive mock data generation system that creates hyper-realistic b
 - Long-tail distribution (whales = 70% of purchases)
 - No email addresses or physical addresses for clients
 - Realistic consignment, returns, and AR aging
+
+---
+
+### 3. [Future Roadmap Name]
+**Status:** 🔵 Planned  
+**Priority:** TBD  
+**Files:** TBD
+
+---
+
+## Roadmap Status Legend
+
+- 🟢 **Complete** - All phases finished, tested, and deployed
+- 🟡 **In Progress** - Currently being worked on
+- 🟠 **Ready to Start** - Specifications complete, ready for implementation
+- 🔵 **Planned** - Identified but not yet specified
+- ⏸️ **Paused** - Started but temporarily on hold
+- ⚪ **On Hold** - Paused for dependencies or other reasons
+- 🔴 **Blocked** - Cannot proceed due to blockers
+- ❌ **Cancelled** - No longer needed or superseded
+
+---
+
+## Priority Levels
+
+- **High** - Critical for core functionality or blocking other work
+- **Medium** - Important but not blocking
+- **Low** - Nice to have, can be deferred
+
+---
+
+## How to Use This System
+
+### For Development Agents
+
+**Before Starting Work:**
+1. Read this README to see the active roadmap
+2. Open the active roadmap file
+3. Check `../notes/user-feedback.md` for latest feedback (if exists)
+4. Review `../HANDOFF_CONTEXT.md` for what the last agent did (if exists)
+5. Review `../DEVELOPMENT_PROTOCOLS.md` for development standards
+
+**During Work:**
+1. Update the roadmap file as you complete phases
+2. Check off completed tasks using `- [x]` syntax
+3. Update status and progress notes
+4. Commit changes regularly with descriptive messages
+
+**Before Finishing:**
+1. Update the roadmap with current status
+2. Update `../HANDOFF_CONTEXT.md` with what you did and what's next (if exists)
+3. Update `../CHANGELOG.md` with completed work
+4. Commit and push all changes
+
+---
+
+### For Project Owner
+
+**Adding New Roadmaps:**
+1. Create a new markdown file in this directory
+2. Add entry to this README with status and summary
+3. Update "Active Roadmap" section if it's the new focus
+
+**Providing Feedback:**
+1. Add thoughts to `../notes/user-feedback.md`
+2. Agents check this file at start of every session
+3. Organize by date with clear headings
+
+**Switching Active Roadmap:**
+1. Update "Active Roadmap" section in this README
+2. Inform the next agent which roadmap to work on
 
 ---
 
@@ -131,6 +197,7 @@ Build a comprehensive mock data generation system that creates hyper-realistic b
 - Be descriptive and specific
 - Examples:
   - `realistic-mock-data-generation.md`
+  - `defaults-implementation.md`
   - `client-portal.md`
   - `inventory-optimization.md`
   - `reporting-dashboard.md`
@@ -154,50 +221,14 @@ git push origin main
 
 ---
 
-## Active Roadmap
-
-The currently active roadmap is tracked in `ACTIVE.md` (if it exists).
-
-**To activate a roadmap:**
-1. Create `docs/roadmaps/ACTIVE.md`
-2. Link to the active roadmap
-3. Update status to 🟢 In Progress
-4. Development agents will work on this roadmap
-
-**Example ACTIVE.md:**
-```markdown
-# Currently Active Roadmap
-
-**Roadmap:** [Realistic Mock Data Generation](./realistic-mock-data-generation.md)
-**Status:** 🟢 In Progress
-**Started:** October 27, 2025
-**Current Phase:** Phase 2 - Client Distribution Generator
-
----
-
-## Progress
-
-- [x] Phase 1: Foundation & Architecture
-- [ ] Phase 2: Client Distribution Generator (IN PROGRESS)
-- [ ] Phase 3: Inventory & Pricing Generator
-- [ ] Phase 4: Order Generation
-- [ ] Phase 5: Invoicing & AR
-- [ ] Phase 6: Accounting & Ledger
-- [ ] Phase 7: Supporting Data
-- [ ] Phase 8: CLI & Instance Management
-- [ ] Phase 9: Documentation & Testing
-```
-
----
-
 ## Roadmap Lifecycle
 
 1. **Created** → Roadmap written and saved
 2. **Planned** → Added to index, status set to 🔵
 3. **Ready** → Dependencies met, status set to 🟠
-4. **Activated** → Added to ACTIVE.md, status set to 🟢
+4. **Activated** → Set as active roadmap, status set to 🟡
 5. **In Progress** → Development agent working on it
-6. **Complete** → All phases done, status set to ✅
+6. **Complete** → All phases done, status set to 🟢
 7. **Archived** → Moved to archive/ subdirectory (optional)
 
 ---
@@ -228,9 +259,19 @@ The currently active roadmap is tracked in `ACTIVE.md` (if it exists).
 - ✅ Verify all success criteria met
 - ✅ Run full testing checklist
 - ✅ Update documentation
-- ✅ Mark status as ✅ Complete
-- ✅ Remove from ACTIVE.md
+- ✅ Mark status as 🟢 Complete
+- ✅ Update this README
 - ✅ Commit and push changes
+
+---
+
+## Related Documentation
+
+- [Project Context](../PROJECT_CONTEXT.md) - Overall project state
+- [Development Protocols](../DEVELOPMENT_PROTOCOLS.md) - Development standards and rules
+- [Changelog](../CHANGELOG.md) - Completed work history
+- [Manus Agent Context](../MANUS_AGENT_CONTEXT.md) - Quick reference for AI agents
+- [Product Development Strategy](../PRODUCT_DEVELOPMENT_STRATEGY.md) - Future architecture strategy
 
 ---
 
@@ -244,7 +285,12 @@ The currently active roadmap is tracked in `ACTIVE.md` (if it exists).
 ---
 
 **Last Updated:** October 27, 2025  
-**Total Roadmaps:** 1  
-**Active Roadmaps:** 0  
+**Total Roadmaps:** 2  
+**Active Roadmaps:** 1 (Default Values Implementation)  
 **Completed Roadmaps:** 0
+
+---
+
+**Maintained by:** Development agents  
+**Reviewed by:** Project owner
 

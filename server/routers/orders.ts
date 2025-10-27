@@ -91,4 +91,65 @@ export const ordersRouter = router({
       .mutation(async ({ input }) => {
         return await ordersDb.exportOrder(input.id, input.format);
       }),
+    
+    // Fulfillment Status Management
+    updateOrderStatus: protectedProcedure
+      .input(z.object({
+        orderId: z.number(),
+        newStatus: z.enum(['PENDING', 'PACKED', 'SHIPPED']),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await ordersDb.updateOrderStatus({
+          ...input,
+          userId: ctx.user?.id || 1,
+        });
+      }),
+    
+    getOrderStatusHistory: protectedProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ input }) => {
+        return await ordersDb.getOrderStatusHistory(input.orderId);
+      }),
+    
+    // Returns Management
+    processReturn: protectedProcedure
+      .input(z.object({
+        orderId: z.number(),
+        items: z.array(z.object({
+          batchId: z.number(),
+          quantity: z.number(),
+        })),
+        reason: z.enum(['DEFECTIVE', 'WRONG_ITEM', 'NOT_AS_DESCRIBED', 'CUSTOMER_CHANGED_MIND', 'OTHER']),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await ordersDb.processReturn({
+          ...input,
+          userId: ctx.user?.id || 1,
+        });
+      }),
+    
+    getOrderReturns: protectedProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ input }) => {
+        return await ordersDb.getOrderReturns(input.orderId);
+      }),
+    
+    // Quote to Sale Conversion
+    convertQuoteToSale: protectedProcedure
+      .input(z.object({ 
+        quoteId: z.number(),
+        paymentTerms: z.enum(['NET_7', 'NET_15', 'NET_30', 'COD', 'PARTIAL', 'CONSIGNMENT']).optional(),
+        cashPayment: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await ordersDb.convertQuoteToSale({
+          quoteId: input.quoteId,
+          paymentTerms: input.paymentTerms || 'NET_30',
+          cashPayment: input.cashPayment,
+          notes: input.notes,
+        });
+      }),
   })

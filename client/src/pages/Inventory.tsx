@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -22,6 +23,7 @@ import {
   XCircle,
   Pause,
   Edit,
+  Download,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
@@ -36,15 +38,65 @@ import { useInventoryFilters } from "@/hooks/useInventoryFilters";
 import { useInventorySort } from "@/hooks/useInventorySort";
 import { SortControls } from "@/components/inventory/SortControls";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
+import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
+import { SaveViewModal } from "@/components/inventory/SaveViewModal";
+import { exportToCSVWithLabels } from "@/utils/exportToCSV";
+import { toast } from "sonner";
 
 export default function Inventory() {
+  const [location] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<number | null>(null);
+  const [showSaveViewModal, setShowSaveViewModal] = useState(false);
   
   // Advanced filtering
   const { filters, updateFilter, clearAllFilters, hasActiveFilters, activeFilterCount } = useInventoryFilters();
+  
+  // Export handler
+  const handleExport = () => {
+    if (!filteredBatches || filteredBatches.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    
+    try {
+      exportToCSVWithLabels(
+        filteredBatches,
+        [
+          { key: 'id', label: 'Batch ID' },
+          { key: 'productName', label: 'Product Name' },
+          { key: 'category', label: 'Category' },
+          { key: 'vendor', label: 'Vendor' },
+          { key: 'brand', label: 'Brand' },
+          { key: 'status', label: 'Status' },
+          { key: 'quantityAvailable', label: 'Available' },
+          { key: 'quantityReserved', label: 'Reserved' },
+          { key: 'quantityInTransit', label: 'In Transit' },
+          { key: 'quantityOnHold', label: 'On Hold' },
+          { key: 'quantityDamaged', label: 'Damaged' },
+          { key: 'unitCost', label: 'Unit Cost' },
+          { key: 'totalValue', label: 'Total Value' },
+          { key: 'purchaseDate', label: 'Purchase Date' },
+        ],
+        'inventory'
+      );
+      toast.success(`Exported ${filteredBatches.length} batches`);
+    } catch (error: any) {
+      toast.error(error.message || 'Export failed');
+    }
+  };
+  
+  // Apply URL params on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get('category');
+    
+    if (category) {
+      updateFilter('category', category);
+    }
+  }, []);
   
   // Sorting
   const { sortState, toggleSort, sortData } = useInventorySort();
@@ -209,10 +261,38 @@ export default function Inventory() {
             Manage batches, track stock levels, and control product lifecycle
           </p>
         </div>
-        <Button onClick={() => setShowPurchaseModal(true)} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          New Purchase
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <SavedViewsDropdown
+            onApplyView={(filters) => {
+              // Apply all filters from the saved view
+              Object.entries(filters).forEach(([key, value]) => {
+                updateFilter(key as any, value as any);
+              });
+            }}
+          />
+          <Button
+            onClick={() => setShowSaveViewModal(true)}
+            variant="outline"
+            disabled={!hasActiveFilters}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Save View
+          </Button>
+          <Button
+            onClick={handleExport}
+            variant="outline"
+            disabled={!filteredBatches || filteredBatches.length === 0}
+            className="w-full sm:w-auto"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button onClick={() => setShowPurchaseModal(true)} className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            New Purchase
+          </Button>
+        </div>
       </div>
 
       {/* Dashboard Statistics */}
@@ -607,6 +687,16 @@ export default function Inventory() {
           }}
         />
       )}
+      
+      {/* Save View Modal */}
+      <SaveViewModal
+        open={showSaveViewModal}
+        onOpenChange={setShowSaveViewModal}
+        filters={filters}
+        onSuccess={() => {
+          // Refresh will happen automatically via tRPC
+        }}
+      />
     </div>
   );
 }
