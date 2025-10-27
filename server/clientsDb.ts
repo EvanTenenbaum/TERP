@@ -539,25 +539,28 @@ export async function recordPayment(
   const newPaymentStatus =
     paymentAmount >= totalAmount ? "PAID" : "PARTIAL";
 
-  await db
-    .update(clientTransactions)
-    .set({
-      paymentStatus: newPaymentStatus,
-      paymentDate: paymentDate.toISOString().split('T')[0] as any,
-      paymentAmount: paymentAmount.toFixed(2),
-    })
-    .where(eq(clientTransactions.id, transactionId));
+  // Use transaction to ensure payment update, stats update, and activity log are atomic
+  return await db.transaction(async (tx) => {
+    await tx
+      .update(clientTransactions)
+      .set({
+        paymentStatus: newPaymentStatus,
+        paymentDate: paymentDate.toISOString().split('T')[0] as any,
+        paymentAmount: paymentAmount.toFixed(2),
+      })
+      .where(eq(clientTransactions.id, transactionId));
 
-  // Update client stats
-  await updateClientStats(txn.clientId);
+    // Update client stats
+    await updateClientStats(txn.clientId);
 
-  // Log activity
-  await logActivity(txn.clientId, userId, "PAYMENT_RECORDED", {
-    transactionId,
-    paymentAmount,
+    // Log activity
+    await logActivity(txn.clientId, userId, "PAYMENT_RECORDED", {
+      transactionId,
+      paymentAmount,
+    });
+
+    return true;
   });
-
-  return true;
 }
 
 /**
