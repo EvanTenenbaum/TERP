@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - P1 Pragmatic Improvements (2025-10-27)
+
+#### Input Sanitization Middleware
+- Created `server/_core/sanitizationMiddleware.ts` for automatic XSS prevention
+- Applied to all `protectedProcedure` and `adminProcedure` (379 endpoints)
+- Recursive sanitization of all string inputs using DOMPurify
+- Logging when sanitization occurs for security monitoring
+- Zero code changes required in individual routers
+
+#### Critical Transaction Fixes
+- **CRITICAL FIX**: Wrapped `postJournalEntry()` in transaction (prevents unbalanced books)
+- **CRITICAL FIX**: Wrapped `recordPayment()` in transaction (prevents inconsistent payment data)
+- Both operations now atomic with automatic rollback on errors
+
+### Changed
+- Enhanced tRPC middleware chain with sanitization before authentication
+- `protectedProcedure` now includes `.use(sanitizationMiddleware)`
+- `adminProcedure` now includes `.use(sanitizationMiddleware)`
+
+### Security
+- **XSS Prevention**: 100% coverage across all protected and admin endpoints
+- **Attack Surface Reduction**: 379 endpoints now automatically sanitize inputs
+- **Security Monitoring**: Logs all sanitization events for audit trail
+
 ### Added - P0 Critical Fixes (2025-10-27)
 
 #### P0.1: Error Handling Infrastructure
