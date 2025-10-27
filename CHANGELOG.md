@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - P2 Performance & Operational Excellence (2025-10-27)
+
+#### Connection Pooling
+- Created `server/_core/connectionPool.ts` for MySQL connection pooling
+- Configured pool with 10 connections, unlimited queue, keep-alive enabled
+- Automatic pool statistics logging every 5 minutes
+- Integrated into `server/db.ts` for all database operations
+
+#### Health Check Endpoints
+- Created `server/_core/healthCheck.ts` with comprehensive health monitoring
+- `/health` - Full health check (database, memory, connection pool)
+- `/health/live` - Liveness probe (always returns OK if server is running)
+- `/health/ready` - Readiness probe (returns OK if server can handle requests)
+- Health status: healthy, degraded, or unhealthy based on checks
+
+#### Graceful Shutdown
+- Created `server/_core/gracefulShutdown.ts` for zero-downtime deploys
+- Handles SIGTERM, SIGINT signals gracefully
+- Handles uncaughtException and unhandledRejection
+- Closes database connection pool before exit
+- Extensible shutdown handler registration system
+
+### Changed
+- Database connections now use connection pooling instead of single connection
+- Server startup now includes graceful shutdown handlers
+- Health check endpoints available on server startup
+
+### Performance
+- **Connection Pooling**: Reuses database connections for better performance
+- **Scalability**: Supports up to 10 concurrent database connections
+- **Zero-Downtime**: Graceful shutdown enables rolling deployments
+
 ### Added - P1 Pragmatic Improvements (2025-10-27)
 
 #### Input Sanitization Middleware
