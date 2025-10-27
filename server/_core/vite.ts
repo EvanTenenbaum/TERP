@@ -63,10 +63,12 @@ export function serveStatic(app: Express) {
   // fall through to index.html if the file doesn't exist
   // but don't catch /health or /api routes
   app.use((req, res, next) => {
-    // Skip health check and API routes
-    if (req.path.startsWith('/health') || req.path.startsWith('/api')) {
+    const reqPath = req.path;
+    // Skip health check and API routes - let them 404 if not handled
+    if (reqPath.startsWith('/health') || reqPath.startsWith('/api')) {
       return next();
     }
+    // Only serve index.html for non-API routes
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
