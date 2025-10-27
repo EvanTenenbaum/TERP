@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -38,6 +39,7 @@ import { SortControls } from "@/components/inventory/SortControls";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
 
 export default function Inventory() {
+  const [location] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -45,6 +47,16 @@ export default function Inventory() {
   
   // Advanced filtering
   const { filters, updateFilter, clearAllFilters, hasActiveFilters, activeFilterCount } = useInventoryFilters();
+  
+  // Apply URL params on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get('category');
+    
+    if (category) {
+      updateFilter('category', category);
+    }
+  }, []);
   
   // Sorting
   const { sortState, toggleSort, sortData } = useInventorySort();
