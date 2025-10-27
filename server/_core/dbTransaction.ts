@@ -16,7 +16,7 @@ export async function withTransaction<T>(
       const result = await callback(tx);
       return result;
     } catch (error) {
-      logger.error("Transaction failed, rolling back", { error });
+      logger.error({ error }, "Transaction failed, rolling back");
       throw error;
     }
   });
@@ -52,11 +52,10 @@ export async function withRetryableTransaction<T>(
       const delay = 100 * Math.pow(2, attempt);
       await new Promise((resolve) => setTimeout(resolve, delay));
 
-      logger.warn(`Retrying transaction after ${delay}ms`, {
-        attempt: attempt + 1,
-        maxRetries,
-        error: lastError.message,
-      });
+      logger.warn(
+        { attempt: attempt + 1, maxRetries, error: lastError.message },
+        `Retrying transaction after ${delay}ms`
+      );
     }
   }
 

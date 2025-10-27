@@ -21,7 +21,7 @@ export class AppError extends Error {
  * Logs errors with context and converts to TRPCError
  */
 export function handleError(error: unknown, context: string): never {
-  logger.error(`Error in ${context}`, { error });
+  logger.error({ error }, `Error in ${context}`);
 
   if (error instanceof AppError) {
     throw new TRPCError({
