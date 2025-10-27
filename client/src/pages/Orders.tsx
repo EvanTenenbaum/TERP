@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,16 @@ export default function Orders() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showShipModal, setShowShipModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  
+  // Apply URL params on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status');
+    
+    if (status && ['PENDING', 'PACKED', 'SHIPPED'].includes(status)) {
+      setStatusFilter(status);
+    }
+  }, []);
 
   // Fetch clients for name lookup
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -112,7 +122,7 @@ export default function Orders() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('PENDING')}>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -123,7 +133,7 @@ export default function Orders() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('PACKED')}>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -134,7 +144,7 @@ export default function Orders() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('SHIPPED')}>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -145,7 +155,7 @@ export default function Orders() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('ALL')}>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>

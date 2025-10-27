@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 
 export function InventorySnapshotWidget() {
+  const [, setLocation] = useLocation();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const { data, isLoading } = trpc.dashboard.getInventorySnapshot.useQuery();
 
@@ -49,17 +51,27 @@ export function InventorySnapshotWidget() {
                 {data.categories.map((category: any, index: number) => (
                   <TableRow 
                     key={category.name}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => toggleCategory(category.name)}
+                    className="cursor-pointer hover:bg-muted/50 group"
+                    onClick={(e) => {
+                      // If clicking the chevron area, toggle. Otherwise, navigate
+                      if ((e.target as HTMLElement).closest('.toggle-icon')) {
+                        toggleCategory(category.name);
+                      } else {
+                        setLocation(`/inventory?category=${encodeURIComponent(category.name)}`);
+                      }
+                    }}
                   >
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        {expandedCategories.has(category.name) ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        <span className="toggle-icon">
+                          {expandedCategories.has(category.name) ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </span>
                         <span>{index + 1}. {category.name}</span>
+                        <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-mono">{category.units}</TableCell>
