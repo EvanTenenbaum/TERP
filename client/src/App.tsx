@@ -27,6 +27,7 @@ import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
+import Orders from "@/pages/Orders";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
@@ -64,6 +65,7 @@ function Router() {
               <Route path={"/pricing/rules"} component={PricingRulesPage} />
               <Route path={"/pricing/profiles"} component={PricingProfilesPage} />
               <Route path={"/sales-sheets"} component={SalesSheetCreatorPage} />
+              <Route path={"/orders"} component={Orders} />
               <Route path={"/orders/create"} component={OrderCreatorPage} />
               <Route path={"/settings/cogs"} component={CogsSettingsPage} />
               <Route path={"/settings"} component={Settings} />

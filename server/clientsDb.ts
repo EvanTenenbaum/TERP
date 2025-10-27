@@ -749,3 +749,73 @@ export async function getClientNoteId(clientId: number) {
   return result[0]?.noteId || null;
 }
 
+
+// ============================================================================
+// CLIENT COMMUNICATIONS
+// ============================================================================
+
+/**
+ * Get all communications for a client
+ */
+export async function getClientCommunications(
+  clientId: number,
+  type?: 'CALL' | 'EMAIL' | 'MEETING' | 'NOTE'
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { clientCommunications, users } = await import('../drizzle/schema');
+  
+  // Build where conditions
+  const conditions = [eq(clientCommunications.clientId, clientId)];
+  if (type) {
+    conditions.push(eq(clientCommunications.type, type));
+  }
+  
+  const query = db
+    .select({
+      id: clientCommunications.id,
+      clientId: clientCommunications.clientId,
+      type: clientCommunications.type,
+      subject: clientCommunications.subject,
+      notes: clientCommunications.notes,
+      communicatedAt: clientCommunications.communicatedAt,
+      loggedBy: clientCommunications.loggedBy,
+      loggedByName: users.name,
+      createdAt: clientCommunications.createdAt,
+    })
+    .from(clientCommunications)
+    .leftJoin(users, eq(clientCommunications.loggedBy, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(clientCommunications.communicatedAt));
+  
+  return await query;
+}
+
+/**
+ * Add a communication log entry
+ */
+export async function addCommunication(input: {
+  clientId: number;
+  type: 'CALL' | 'EMAIL' | 'MEETING' | 'NOTE';
+  subject: string;
+  notes?: string;
+  communicatedAt: string;
+  loggedBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { clientCommunications } = await import('../drizzle/schema');
+  
+  const [result] = await db.insert(clientCommunications).values({
+    clientId: input.clientId,
+    type: input.type,
+    subject: input.subject,
+    notes: input.notes,
+    communicatedAt: new Date(input.communicatedAt),
+    loggedBy: input.loggedBy,
+  }).$returningId();
+  
+  return { success: true, id: result.id };
+}
