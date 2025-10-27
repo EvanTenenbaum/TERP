@@ -3,7 +3,7 @@
  * Provides reusable database queries for inventory operations
  */
 
-import { eq, and, like, desc, sql } from "drizzle-orm";
+import { eq, and, or, like, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   vendors,
@@ -776,3 +776,85 @@ export async function getDashboardStats() {
   };
 }
 
+
+// ============================================================================
+// SAVED VIEWS MANAGEMENT
+// ============================================================================
+
+/**
+ * Get all inventory views for a user (their own + shared views)
+ */
+export async function getUserInventoryViews(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { inventoryViews, users } = await import('../drizzle/schema');
+  
+  const views = await db
+    .select({
+      id: inventoryViews.id,
+      name: inventoryViews.name,
+      filters: inventoryViews.filters,
+      createdBy: inventoryViews.createdBy,
+      createdByName: users.name,
+      isShared: inventoryViews.isShared,
+      createdAt: inventoryViews.createdAt,
+    })
+    .from(inventoryViews)
+    .leftJoin(users, eq(inventoryViews.createdBy, users.id))
+    .where(
+      or(
+        eq(inventoryViews.createdBy, userId),
+        eq(inventoryViews.isShared, 1)
+      )
+    )
+    .orderBy(desc(inventoryViews.createdAt));
+  
+  return views;
+}
+
+/**
+ * Save a new inventory view
+ */
+export async function saveInventoryView(input: {
+  name: string;
+  filters: any;
+  createdBy: number;
+  isShared?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { inventoryViews } = await import('../drizzle/schema');
+  
+  const [result] = await db.insert(inventoryViews).values({
+    name: input.name,
+    filters: input.filters,
+    createdBy: input.createdBy,
+    isShared: input.isShared ? 1 : 0,
+  }).$returningId();
+  
+  return { success: true, id: result.id };
+}
+
+/**
+ * Delete an inventory view (only if user owns it)
+ */
+export async function deleteInventoryView(viewId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { inventoryViews } = await import('../drizzle/schema');
+  
+  // Only allow deletion if user created the view
+  await db
+    .delete(inventoryViews)
+    .where(
+      and(
+        eq(inventoryViews.id, viewId),
+        eq(inventoryViews.createdBy, userId)
+      )
+    );
+  
+  return { success: true };
+}

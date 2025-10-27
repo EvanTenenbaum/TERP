@@ -37,6 +37,8 @@ import { useInventoryFilters } from "@/hooks/useInventoryFilters";
 import { useInventorySort } from "@/hooks/useInventorySort";
 import { SortControls } from "@/components/inventory/SortControls";
 import { InventoryCard } from "@/components/inventory/InventoryCard";
+import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
+import { SaveViewModal } from "@/components/inventory/SaveViewModal";
 
 export default function Inventory() {
   const [location] = useLocation();
@@ -44,6 +46,7 @@ export default function Inventory() {
   const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<number | null>(null);
+  const [showSaveViewModal, setShowSaveViewModal] = useState(false);
   
   // Advanced filtering
   const { filters, updateFilter, clearAllFilters, hasActiveFilters, activeFilterCount } = useInventoryFilters();
@@ -221,10 +224,29 @@ export default function Inventory() {
             Manage batches, track stock levels, and control product lifecycle
           </p>
         </div>
-        <Button onClick={() => setShowPurchaseModal(true)} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          New Purchase
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <SavedViewsDropdown
+            onApplyView={(filters) => {
+              // Apply all filters from the saved view
+              Object.entries(filters).forEach(([key, value]) => {
+                updateFilter(key as any, value as any);
+              });
+            }}
+          />
+          <Button
+            onClick={() => setShowSaveViewModal(true)}
+            variant="outline"
+            disabled={!hasActiveFilters}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Save View
+          </Button>
+          <Button onClick={() => setShowPurchaseModal(true)} className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            New Purchase
+          </Button>
+        </div>
       </div>
 
       {/* Dashboard Statistics */}
@@ -619,6 +641,16 @@ export default function Inventory() {
           }}
         />
       )}
+      
+      {/* Save View Modal */}
+      <SaveViewModal
+        open={showSaveViewModal}
+        onOpenChange={setShowSaveViewModal}
+        filters={filters}
+        onSuccess={() => {
+          // Refresh will happen automatically via tRPC
+        }}
+      />
     </div>
   );
 }
