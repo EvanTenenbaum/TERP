@@ -494,6 +494,18 @@ export async function convertQuoteToSale(
       throw new Error(`Order ${input.quoteId} is not a quote`);
     }
     
+    // Check if quote has expired
+    if (quote.validUntil) {
+      const expirationDate = new Date(quote.validUntil);
+      const now = new Date();
+      if (expirationDate < now) {
+        throw new Error(
+          `Quote has expired on ${expirationDate.toLocaleDateString()}. ` +
+          `Please request a new quote with current pricing.`
+        );
+      }
+    }
+    
     // 2. Parse quote items
     const quoteItems = JSON.parse(quote.items as string) as OrderItem[];
     
@@ -615,7 +627,10 @@ export async function updateOrderStatus(input: {
   notes?: string;
   userId: number;
 }): Promise<{ success: boolean; newStatus: string }> {
-  const { orderId, newStatus, notes, userId } = input;
+  const { orderId, newStatus, userId } = input;
+  
+  // Sanitize notes input
+  const sanitizedNotes = input.notes ? input.notes.trim().substring(0, 5000) : undefined;
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   
@@ -646,6 +661,25 @@ export async function updateOrderStatus(input: {
       updateData.shippedAt = new Date();
       updateData.shippedBy = userId;
       
+      // Check inventory availability before shipping
+      const orderItems = order.items as Array<{ batchId: number; quantity: number; isSample?: boolean }>;
+      for (const item of orderItems) {
+        if (item.isSample) continue; // Skip samples
+        
+        const [batch] = await tx.select().from(batches).where(eq(batches.id, item.batchId));
+        if (!batch) {
+          throw new Error(`Batch ${item.batchId} not found`);
+        }
+        
+        const available = parseFloat(batch.onHandQty);
+        if (available < item.quantity) {
+          throw new Error(
+            `Insufficient inventory for batch ${item.batchId}. ` +
+            `Required: ${item.quantity}, Available: ${available}`
+          );
+        }
+      }
+      
       // Decrement inventory when shipped
       await decrementInventoryForOrder(tx, orderId, order.items as any);
     }
@@ -662,7 +696,7 @@ export async function updateOrderStatus(input: {
       fromStatus: oldStatus as any,
       toStatus: newStatus as any,
       changedBy: userId,
-      notes,
+      notes: sanitizedNotes,
     });
     
     return { success: true, newStatus };
@@ -745,7 +779,10 @@ export async function processReturn(input: {
   notes?: string;
   userId: number;
 }): Promise<{ success: boolean; returnId: number }> {
-  const { orderId, items, reason, notes, userId } = input;
+  const { orderId, items, reason, userId } = input;
+  
+  // Sanitize notes input to prevent XSS
+  const sanitizedNotes = input.notes ? input.notes.trim().substring(0, 5000) : undefined;
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   
@@ -756,13 +793,51 @@ export async function processReturn(input: {
       throw new Error('Order not found');
     }
     
-    // Create return record
+    // Validate return quantities
+    const orderItems = order.items as Array<{ batchId: number; quantity: number }>;
+    
+    // Get existing returns for this order
     const { returns } = await import('../drizzle/schema');
+    const existingReturns = await tx.select().from(returns).where(eq(returns.orderId, orderId));
+    
+    // Calculate total returned per batch
+    const returnedByBatch = new Map<number, number>();
+    for (const existingReturn of existingReturns) {
+      const returnItems = JSON.parse(existingReturn.items as string) as Array<{ batchId: number; quantity: number }>;
+      for (const item of returnItems) {
+        returnedByBatch.set(item.batchId, (returnedByBatch.get(item.batchId) || 0) + item.quantity);
+      }
+    }
+    
+    // Validate each return item
+    for (const returnItem of items) {
+      const orderItem = orderItems.find(i => i.batchId === returnItem.batchId);
+      if (!orderItem) {
+        throw new Error(`Batch ${returnItem.batchId} not found in original order`);
+      }
+      
+      const alreadyReturned = returnedByBatch.get(returnItem.batchId) || 0;
+      const totalReturning = alreadyReturned + returnItem.quantity;
+      
+      if (totalReturning > orderItem.quantity) {
+        throw new Error(
+          `Cannot return ${returnItem.quantity} units of batch ${returnItem.batchId}. ` +
+          `Original order: ${orderItem.quantity}, already returned: ${alreadyReturned}, ` +
+          `maximum returnable: ${orderItem.quantity - alreadyReturned}`
+        );
+      }
+      
+      if (returnItem.quantity <= 0) {
+        throw new Error('Return quantity must be greater than zero');
+      }
+    }
+    
+    // Create return record (returns already imported above)
     const [returnRecord] = await tx.insert(returns).values({
       orderId,
       items: JSON.stringify(items),
       reason,
-      notes,
+      notes: sanitizedNotes,
       processedBy: userId,
     }).$returningId();
     

@@ -806,13 +806,17 @@ export async function addCommunication(input: {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   
+  // Sanitize inputs
+  const sanitizedSubject = input.subject.trim().substring(0, 255);
+  const sanitizedNotes = input.notes ? input.notes.trim().substring(0, 5000) : undefined;
+  
   const { clientCommunications } = await import('../drizzle/schema');
   
   const [result] = await db.insert(clientCommunications).values({
     clientId: input.clientId,
     type: input.type,
-    subject: input.subject,
-    notes: input.notes,
+    subject: sanitizedSubject,
+    notes: sanitizedNotes,
     communicatedAt: new Date(input.communicatedAt),
     loggedBy: input.loggedBy,
   }).$returningId();

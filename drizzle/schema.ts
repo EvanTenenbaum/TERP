@@ -1408,6 +1408,7 @@ export const orders = mysqlTable("orders", {
   orderTypeIdx: index("idx_order_type").on(table.orderType),
   quoteStatusIdx: index("idx_quote_status").on(table.quoteStatus),
   saleStatusIdx: index("idx_sale_status").on(table.saleStatus),
+  fulfillmentStatusIdx: index("idx_fulfillment_status").on(table.fulfillmentStatus),
   createdAtIdx: index("idx_created_at").on(table.createdAt),
 }));
 
