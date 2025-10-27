@@ -637,7 +637,310 @@ The version is displayed persistently in the application header:
 
 ---
 
+## 13. Future Architecture Compatibility Protocol
+
+### Context
+
+TERP is evolving toward a **secure home office architecture** with:
+- Air-gapped core server
+- VPN-only access (WireGuard)
+- Multi-factor authentication (VPN + device certificate + biometric)
+- Offline-first Progressive Web App (PWA)
+- Redis caching layer
+- Comprehensive monitoring (Prometheus + Grafana)
+
+This evolution is planned for **8 weeks / 160 hours** of implementation work.
+
+### The Challenge
+
+How do we continue current development without creating work that will need to be undone or redone when implementing this vision?
+
+### The Solution
+
+All development work MUST be **forward-compatible** with the future architecture by following these protocols.
+
+---
+
+### 13.1 Authentication Abstraction
+
+**Rule:** Use `authProvider` interface, never call authentication provider (Clerk) directly.
+
+**Why:** When we add MFA (multi-factor authentication), we can replace the implementation without changing any calling code.
+
+**Implementation:**
+
+```typescript
+// ✅ GOOD - Uses abstraction
+import { authProvider } from '../_core/authProvider';
+const user = await authProvider.requireAuth(req);
+
+// ❌ BAD - Direct Clerk call (will need refactoring)
+import { getAuth } from '@clerk/express';
+const { userId } = getAuth(req);
+```
+
+**Files:**
+- `server/_core/authProvider.ts` - Authentication abstraction interface
+- All routers MUST use this interface
+
+**Verification:**
+- [ ] No direct Clerk imports in new code
+- [ ] All authentication uses `authProvider` interface
+
+---
+
+### 13.2 Data Access Abstraction
+
+**Rule:** Use `dataProvider` interface, never call `getDb()` directly.
+
+**Why:** When we add Redis caching and offline sync, we can intercept all data access without changing business logic.
+
+**Implementation:**
+
+```typescript
+// ✅ GOOD - Uses abstraction
+import { dataProvider } from '../_core/dataProvider';
+const orders = await dataProvider.query(db => 
+  db.select().from(orders).where(eq(orders.orgId, orgId))
+);
+
+// ❌ BAD - Direct database call (will need refactoring)
+import { getDb } from '../db';
+const db = await getDb();
+const orders = await db.select().from(orders);
+```
+
+**Files:**
+- `server/_core/dataProvider.ts` - Data access abstraction interface
+- All `*Db.ts` files MUST use this interface
+
+**Verification:**
+- [ ] No direct `getDb()` calls in new code
+- [ ] All data access uses `dataProvider` interface
+
+---
+
+### 13.3 Offline-First API Design
+
+**Rule:** All mutation endpoints MUST return full objects, timestamps, and affected records.
+
+**Why:** Enables optimistic UI updates, conflict resolution, and cache invalidation for offline-first PWA.
+
+**Implementation:**
+
+```typescript
+// ✅ GOOD - Offline-friendly response
+export const ordersRouter = router({
+  create: protectedProcedure
+    .input(createOrderSchema)
+    .mutation(async ({ input, ctx }) => {
+      const order = await ordersDb.createOrder(input, ctx.user.organizationId);
+      return {
+        order,  // Full object for optimistic update
+        affectedRecords: {  // For cache invalidation
+          orders: [order.id],
+          inventory: order.items.map(i => i.inventoryId),
+        },
+        timestamp: new Date(),  // For conflict resolution
+      };
+    }),
+});
+
+// ❌ BAD - Not offline-friendly (requires another query)
+export const ordersRouter = router({
+  create: protectedProcedure
+    .input(createOrderSchema)
+    .mutation(async ({ input, ctx }) => {
+      const orderId = await ordersDb.createOrder(input);
+      return { orderId };  // Client needs to fetch full object!
+    }),
+});
+```
+
+**Required Response Fields:**
+- `[resource]`: Full object that was created/updated
+- `affectedRecords`: Object mapping resource types to affected IDs
+- `timestamp`: ISO timestamp for conflict resolution
+
+**Verification:**
+- [ ] Mutation returns full object (not just ID)
+- [ ] Response includes `affectedRecords`
+- [ ] Response includes `timestamp`
+
+---
+
+### 13.4 Schema Evolution
+
+**Rule:** All schema changes MUST be additive, never breaking.
+
+**Why:** Enables zero-downtime deployments and backward compatibility during the 8-week transition.
+
+**Implementation:**
+
+```typescript
+// ✅ GOOD - Additive change (backward compatible)
+export const users = mysqlTable('users', {
+  id: serial('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull(),
+  // ... existing fields ...
+  
+  // NEW: Nullable for backward compatibility
+  mfaEnabled: boolean('mfa_enabled').default(false),
+  deviceCertificateRequired: boolean('device_certificate_required').default(false),
+});
+
+// ❌ BAD - Breaking change (renames field)
+export const users = mysqlTable('users', {
+  id: serial('id').primaryKey(),
+  emailAddress: varchar('email_address', { length: 255 }),  // RENAMED - BREAKS CODE!
+});
+```
+
+**Rules:**
+- **NEVER** rename existing columns (add new ones instead)
+- **NEVER** delete existing tables (mark as deprecated instead)
+- **ALWAYS** make new fields nullable or provide defaults
+- **ALWAYS** use migrations for schema changes
+
+**Verification:**
+- [ ] No renamed columns
+- [ ] No deleted tables
+- [ ] New fields are nullable or have defaults
+- [ ] Migration file created
+
+---
+
+### 13.5 Code Organization
+
+**Rule:** Routers THIN (< 50 lines per procedure), Business logic in `*Db.ts` files.
+
+**Why:** Keeps authentication, validation, and business logic separated for easier refactoring.
+
+**File Structure:**
+
+```
+server/
+├── _core/                    # Core infrastructure (abstraction layer)
+│   ├── authProvider.ts       # Authentication abstraction
+│   ├── dataProvider.ts       # Data access abstraction
+│   ├── errors.ts             # Error handling
+│   ├── logger.ts             # Logging
+│   └── monitoring.ts         # Monitoring
+├── auth/                     # Authentication logic (FUTURE: MFA goes here)
+│   └── (reserved for future)
+├── routers/                  # API endpoints (THIN - just validation & delegation)
+│   ├── orders.ts
+│   ├── inventory.ts
+│   └── ...
+├── *Db.ts                    # Business logic (THICK - all logic here)
+│   ├── ordersDb.ts
+│   ├── inventoryDb.ts
+│   └── ...
+└── utils/                    # Shared utilities
+```
+
+**Router Pattern (THIN):**
+
+```typescript
+// ✅ GOOD - Thin router (< 50 lines per procedure)
+export const ordersRouter = router({
+  create: protectedProcedure
+    .input(createOrderSchema)
+    .mutation(async ({ input, ctx }) => {
+      return await ordersDb.createOrder(input, ctx.user.organizationId);
+    }),
+});
+
+// ❌ BAD - Fat router with business logic
+export const ordersRouter = router({
+  create: protectedProcedure
+    .input(createOrderSchema)
+    .mutation(async ({ input, ctx }) => {
+      // 100+ lines of business logic here - BAD!
+      const db = await getDb();
+      const order = await db.transaction(async (tx) => {
+        // Complex business logic...
+      });
+      return order;
+    }),
+});
+```
+
+**Business Logic Pattern (THICK):**
+
+```typescript
+// ✅ GOOD - Business logic in ordersDb.ts
+export async function createOrder(input: CreateOrderInput, orgId: number) {
+  return await dataProvider.transaction(async (tx) => {
+    // All business logic here
+    // Validation, calculations, database operations
+    // Can be 100+ lines - that's fine!
+  });
+}
+```
+
+**Verification:**
+- [ ] Router procedures < 50 lines
+- [ ] Business logic in `*Db.ts` files
+- [ ] No database queries in routers
+
+---
+
+### 13.6 Pre-Push Compatibility Checklist
+
+**MANDATORY:** Before every `git push`, verify:
+
+**Authentication:**
+- [ ] Uses `authProvider` interface (not Clerk directly)
+- [ ] No direct authentication provider imports in new code
+
+**Data Access:**
+- [ ] Uses `dataProvider` interface (not `getDb()` directly)
+- [ ] No direct database access in new code
+
+**API Design:**
+- [ ] Mutations return full objects (not just IDs)
+- [ ] Responses include `affectedRecords`
+- [ ] Responses include `timestamp`
+
+**Schema:**
+- [ ] Schema changes are additive only
+- [ ] No renamed columns or deleted tables
+- [ ] New fields are nullable or have defaults
+- [ ] Migration file created
+
+**Code Organization:**
+- [ ] Router procedures < 50 lines
+- [ ] Business logic in `*Db.ts` files
+- [ ] No business logic in routers
+
+**Failure to meet these criteria is a protocol violation.**
+
+---
+
+### 13.7 Reference Documents
+
+**For Detailed Guidance:**
+- `docs/PRODUCT_DEVELOPMENT_STRATEGY.md` - Full 8-week implementation strategy
+- `docs/MANUS_AGENT_CONTEXT.md` - Quick reference for AI agents
+- `docs/TERP_Codebase_Implementation_Specification.md` - Complete future architecture spec
+
+**For Quick Reference:**
+- See `docs/MANUS_AGENT_CONTEXT.md` for code examples and patterns
+
+---
+
 ## Version History
+
+**v3.0 - October 27, 2025**
+- Added Future Architecture Compatibility Protocol (Section 13)
+- Documented authentication abstraction requirements
+- Documented data access abstraction requirements
+- Documented offline-first API design patterns
+- Documented schema evolution rules
+- Added pre-push compatibility checklist
+- Created reference to PRODUCT_DEVELOPMENT_STRATEGY.md
+- Created reference to MANUS_AGENT_CONTEXT.md
 
 **v2.1 - October 27, 2025**
 - Added Version Management Protocol (MANDATORY)
