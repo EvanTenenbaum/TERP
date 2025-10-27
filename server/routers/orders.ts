@@ -111,4 +111,28 @@ export const ordersRouter = router({
       .query(async ({ input }) => {
         return await ordersDb.getOrderStatusHistory(input.orderId);
       }),
+    
+    // Returns Management
+    processReturn: protectedProcedure
+      .input(z.object({
+        orderId: z.number(),
+        items: z.array(z.object({
+          batchId: z.number(),
+          quantity: z.number(),
+        })),
+        reason: z.enum(['DEFECTIVE', 'WRONG_ITEM', 'NOT_AS_DESCRIBED', 'CUSTOMER_CHANGED_MIND', 'OTHER']),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await ordersDb.processReturn({
+          ...input,
+          userId: ctx.user?.id || 1,
+        });
+      }),
+    
+    getOrderReturns: protectedProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ input }) => {
+        return await ordersDb.getOrderReturns(input.orderId);
+      }),
   })

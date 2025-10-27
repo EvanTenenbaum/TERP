@@ -1402,6 +1402,38 @@ export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
 export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
 
 /**
+ * Return Reason Enum
+ * Reasons for order returns
+ */
+export const returnReasonEnum = mysqlEnum("returnReason", [
+  "DEFECTIVE",
+  "WRONG_ITEM",
+  "NOT_AS_DESCRIBED",
+  "CUSTOMER_CHANGED_MIND",
+  "OTHER"
+]);
+
+/**
+ * Returns Table
+ * Tracks returns for orders with automatic inventory restocking
+ */
+export const returns = mysqlTable("returns", {
+  id: int("id").primaryKey().autoincrement(),
+  orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  items: json("items").notNull(), // Array of { batchId, quantity, reason }
+  reason: returnReasonEnum.notNull(),
+  notes: text("notes"),
+  processedBy: int("processed_by").notNull().references(() => users.id),
+  processedAt: timestamp("processed_at").defaultNow().notNull(),
+}, (table) => ({
+  orderIdIdx: index("idx_order_id").on(table.orderId),
+  processedAtIdx: index("idx_processed_at").on(table.processedAt),
+}));
+
+export type Return = typeof returns.$inferSelect;
+export type InsertReturn = typeof returns.$inferInsert;
+
+/**
  * Sample Inventory Log
  * Tracks sample inventory allocations and consumption
  */
@@ -1667,6 +1699,7 @@ export type InsertPaymentMethod = typeof paymentMethods.$inferInsert;
 export const inventoryMovementTypeEnum = mysqlEnum("inventoryMovementType", [
   "INTAKE",
   "SALE",
+  "RETURN",
   "REFUND_RETURN",
   "ADJUSTMENT",
   "QUARANTINE",
