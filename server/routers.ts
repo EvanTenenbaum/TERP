@@ -31,6 +31,7 @@ import { orderEnhancementsRouter } from "./routers/orderEnhancements";
 import { clientNeedsEnhancedRouter } from "./routers/clientNeedsEnhanced";
 import { vendorSupplyRouter } from "./routers/vendorSupply";
 import { matchingEnhancedRouter } from "./routers/matchingEnhanced";
+import { userManagementRouter } from "./routers/userManagement";
 
 export const appRouter = router({
   system: systemRouter,
@@ -63,6 +64,7 @@ export const appRouter = router({
   clientNeeds: clientNeedsEnhancedRouter,
   vendorSupply: vendorSupplyRouter,
   matching: matchingEnhancedRouter,
+  userManagement: userManagementRouter,
 });
 
 export type AppRouter = typeof appRouter;

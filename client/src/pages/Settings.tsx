@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Edit2, Save, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { UserManagement } from "@/components/UserManagement";
 
 export default function Settings() {
   return (
@@ -18,12 +19,17 @@ export default function Settings() {
         </p>
       </div>
 
-      <Tabs defaultValue="locations" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto">
+      <Tabs defaultValue="users" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="locations">Locations</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="users" className="space-y-4">
+          <UserManagement />
+        </TabsContent>
 
         <TabsContent value="locations" className="space-y-4">
           <LocationsManager />
