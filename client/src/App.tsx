@@ -8,7 +8,6 @@ import Home from "./pages/Home";
 import DashboardV2 from "./pages/DashboardV2";
 import Inventory from "@/pages/Inventory";
 import { AppShell } from "./components/layout/AppShell";
-import Quotes from "./pages/Quotes";
 import Settings from "@/pages/Settings";
 import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
 import ChartOfAccounts from "@/pages/accounting/ChartOfAccounts";
@@ -46,7 +45,6 @@ function Router() {
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/dashboard" component={DashboardV2} />
-              <Route path="/quotes" component={Quotes} />
               <Route path="/inventory" component={Inventory} />
               <Route path="/accounting/dashboard" component={AccountingDashboard} />
               <Route path="/accounting/chart-of-accounts" component={ChartOfAccounts} />
