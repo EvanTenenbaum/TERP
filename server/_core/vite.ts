@@ -72,7 +72,18 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve static files with aggressive cache busting
+  app.use(express.static(distPath, {
+    maxAge: 0,
+    etag: false,
+    lastModified: false,
+    setHeaders: (res, path) => {
+      // Force no-cache for all assets to prevent mobile browser caching issues
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }));
 
   // fall through to index.html if the file doesn't exist
   // but don't catch /health, /api, or /assets routes
