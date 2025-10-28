@@ -11,32 +11,30 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
+// QA MODE: Disabled redirect for testing
 const redirectToLoginIfUnauthorized = (error: unknown) => {
-  if (!(error instanceof TRPCClientError)) return;
-  if (typeof window === "undefined") return;
-
-  const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
-
-  if (!isUnauthorized) return;
-
-  window.location.href = getLoginUrl();
+  // Temporarily disabled for QA testing
+  // TODO: Re-enable after QA
+  return;
 };
 
-queryClient.getQueryCache().subscribe(event => {
-  if (event.type === "updated" && event.action.type === "error") {
-    const error = event.query.state.error;
-    redirectToLoginIfUnauthorized(error);
-    console.error("[API Query Error]", error);
-  }
-});
+// QA MODE: Disabled error redirect subscriptions
+// TODO: Re-enable after QA
+// queryClient.getQueryCache().subscribe(event => {
+//   if (event.type === "updated" && event.action.type === "error") {
+//     const error = event.query.state.error;
+//     redirectToLoginIfUnauthorized(error);
+//     console.error("[API Query Error]", error);
+//   }
+// });
 
-queryClient.getMutationCache().subscribe(event => {
-  if (event.type === "updated" && event.action.type === "error") {
-    const error = event.mutation.state.error;
-    redirectToLoginIfUnauthorized(error);
-    console.error("[API Mutation Error]", error);
-  }
-});
+// queryClient.getMutationCache().subscribe(event => {
+//   if (event.type === "updated" && event.action.type === "error") {
+//     const error = event.mutation.state.error;
+//     redirectToLoginIfUnauthorized(error);
+//     console.error("[API Mutation Error]", error);
+//   }
+// });
 
 // Get Clerk session token and add to requests
 const getClerkToken = async () => {
