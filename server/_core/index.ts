@@ -13,6 +13,9 @@ import { requestLogger } from "./requestLogger";
 import { logger, replaceConsole } from "./logger";
 import { performHealthCheck, livenessCheck, readinessCheck } from "./healthCheck";
 import { setupGracefulShutdown } from "./gracefulShutdown";
+import { seedAllDefaults } from "../services/seedDefaults";
+import { simpleAuth } from "./simpleAuth";
+import { getUserByEmail } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -39,6 +42,21 @@ async function startServer() {
   
   // Replace console with structured logger
   replaceConsole();
+  
+  // Seed default data and create admin user on first startup
+  try {
+    logger.info("Checking for default data and admin user...");
+    await seedAllDefaults();
+    
+    // Create admin user if it doesn't exist
+    const adminExists = await getUserByEmail("Evan");
+    if (!adminExists) {
+      await simpleAuth.createUser("Evan", "oliver", "Evan (Admin)");
+      logger.info("Admin user created: Evan / oliver");
+    }
+  } catch (error) {
+    logger.warn({ msg: "Failed to seed defaults or create admin user", error });
+  }
   
   const app = express();
   const server = createServer(app);
