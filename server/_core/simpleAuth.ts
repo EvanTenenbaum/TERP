@@ -189,12 +189,12 @@ export function registerSimpleAuthRoutes(app: Express) {
     }
   });
 
-  // Database migration endpoint (for schema updates)
-  app.post("/api/auth/migrate", async (req, res) => {
+  // Database schema push endpoint (for schema updates)
+  app.post("/api/auth/push-schema", async (req, res) => {
     try {
-      const { runMigrations } = await import("../services/migrate");
-      await runMigrations();
-      res.json({ success: true, message: "Migrations completed successfully" });
+      const { pushSchema } = await import("../services/pushSchema");
+      const result = await pushSchema();
+      res.json({ success: true, message: "Schema pushed successfully", output: result.output });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
