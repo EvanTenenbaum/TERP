@@ -670,15 +670,40 @@ export async function confirmDraftOrder(input: {
     // 2. Parse draft items
     const draftItems = JSON.parse(draft.items as string) as OrderItem[];
     
-    // 3. Calculate due date
+    // 3. Check inventory availability
+    for (const item of draftItems) {
+      const batch = await tx
+        .select()
+        .from(batches)
+        .where(eq(batches.id, item.batchId))
+        .limit(1)
+        .then(rows => rows[0]);
+      
+      if (!batch) {
+        throw new Error(`Batch ${item.batchId} not found`);
+      }
+      
+      const availableQty = item.isSample 
+        ? parseFloat(batch.sampleQty as string)
+        : parseFloat(batch.onHandQty as string);
+      
+      if (availableQty < item.quantity) {
+        throw new Error(
+          `Insufficient inventory for ${item.displayName}. ` +
+          `Available: ${availableQty}, Required: ${item.quantity}`
+        );
+      }
+    }
+    
+    // 4. Calculate due date
     const dueDate = calculateDueDate(input.paymentTerms);
     
-    // 4. Determine payment status
+    // 5. Determine payment status
     const cashPayment = input.cashPayment || 0;
     const total = parseFloat(draft.total as string);
     const saleStatus = cashPayment >= total ? 'PAID' : cashPayment > 0 ? 'PARTIAL' : 'PENDING';
     
-    // 5. Update order to confirmed
+    // 6. Update order to confirmed
     await tx.update(orders)
       .set({
         isDraft: false,
@@ -693,7 +718,7 @@ export async function confirmDraftOrder(input: {
       })
       .where(eq(orders.id, input.orderId));
     
-    // 6. Reduce inventory
+    // 7. Reduce inventory
     for (const item of draftItems) {
       if (item.isSample) {
         await tx.update(batches)
@@ -908,6 +933,39 @@ export async function updateDraftOrder(input: {
     }
     
     return updated;
+  });
+}
+
+/**
+ * Delete a draft order
+ * Only draft orders can be deleted
+ */
+export async function deleteDraftOrder(input: {
+  orderId: number;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.transaction(async (tx) => {
+    // 1. Get the draft order
+    const draft = await tx
+      .select()
+      .from(orders)
+      .where(eq(orders.id, input.orderId))
+      .limit(1)
+      .then(rows => rows[0]);
+    
+    if (!draft) {
+      throw new Error(`Order ${input.orderId} not found`);
+    }
+    
+    if (!draft.isDraft) {
+      throw new Error(`Order ${input.orderId} is not a draft and cannot be deleted`);
+    }
+    
+    // 2. Delete the draft order
+    await tx.delete(orders)
+      .where(eq(orders.id, input.orderId));
   });
 }
 

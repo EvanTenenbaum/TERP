@@ -25,6 +25,7 @@ import { ShipOrderModal } from '@/components/orders/ShipOrderModal';
 import { ProcessReturnModal } from '@/components/orders/ProcessReturnModal';
 import { ReturnHistorySection } from '@/components/orders/ReturnHistorySection';
 import { ConfirmDraftModal } from '@/components/orders/ConfirmDraftModal';
+import { DeleteDraftModal } from '@/components/orders/DeleteDraftModal';
 import { 
   Search, 
   Package, 
@@ -52,6 +53,7 @@ export default function Orders() {
   const [showShipModal, setShowShipModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
   // Fetch clients for name lookup
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -129,6 +131,10 @@ export default function Orders() {
     if (selectedOrder) {
       setLocation(`/orders/create?draftId=${selectedOrder.id}`);
     }
+  };
+
+  const handleDeleteDraft = () => {
+    setShowDeleteModal(true);
   };
 
   // Export handler
@@ -245,12 +251,13 @@ export default function Orders() {
           <Card>
             <CardContent className="pt-6">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search by order number or client name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
+                  aria-label="Search draft orders"
                 />
               </div>
             </CardContent>
@@ -267,8 +274,20 @@ export default function Orders() {
                   Loading draft orders...
                 </div>
               ) : filteredDrafts.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No draft orders found
+                <div className="text-center py-12 px-4">
+                  <FileText className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No draft orders</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    {searchQuery 
+                      ? 'No draft orders match your search. Try a different search term.'
+                      : 'Create a draft order to save work in progress without reducing inventory.'}
+                  </p>
+                  {!searchQuery && (
+                    <Button onClick={() => setLocation('/orders/create')}>
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Create Draft Order
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -364,19 +383,20 @@ export default function Orders() {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="Search by order number or client name..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
+                      aria-label="Search confirmed orders"
                     />
                   </div>
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[180px]" aria-label="Filter by fulfillment status">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">All Statuses</SelectItem>
                     <SelectItem value="PENDING">Pending</SelectItem>
@@ -520,6 +540,9 @@ export default function Orders() {
                     <Button className="w-full" variant="default" onClick={handleConfirmDraft}>
                       Confirm Order
                     </Button>
+                    <Button className="w-full" variant="destructive" onClick={handleDeleteDraft}>
+                      Delete Draft
+                    </Button>
                   </>
                 ) : (
                   <>
@@ -603,6 +626,21 @@ export default function Orders() {
             refetchConfirmed();
             setSelectedOrder(null);
             setShowConfirmModal(false);
+          }}
+        />
+      )}
+
+      {/* Delete Draft Modal */}
+      {showDeleteModal && selectedOrder && (
+        <DeleteDraftModal
+          orderId={selectedOrder.id}
+          orderNumber={selectedOrder.orderNumber}
+          open={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onSuccess={() => {
+            refetchDrafts();
+            setSelectedOrder(null);
+            setShowDeleteModal(false);
           }}
         />
       )}
