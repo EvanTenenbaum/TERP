@@ -1,8 +1,11 @@
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth } from '@clerk/clerk-react';
 import { ReactNode, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { AppSidebar } from './AppSidebar';
 import { AppHeader } from './AppHeader';
+
+// QA MODE: Bypass authentication for testing
+const QA_MODE = import.meta.env.VITE_QA_MODE === 'true';
 
 interface AppShellProps {
   children: ReactNode;
@@ -14,24 +17,30 @@ export function AppShell({ children }: AppShellProps) {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    // Skip auth check in QA mode
+    if (QA_MODE) return;
+    
     // Only redirect if Clerk has loaded and user is not signed in
     if (isLoaded && !isSignedIn) {
       setLocation('/sign-in');
     }
   }, [isLoaded, isSignedIn, setLocation]);
 
-  // Show loading state while Clerk is loading
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
+  // Skip loading check in QA mode
+  if (!QA_MODE) {
+    // Show loading state while Clerk is loading
+    if (!isLoaded) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      );
+    }
 
-  // Don't render anything if not signed in (will redirect)
-  if (!isSignedIn) {
-    return null;
+    // Don't render anything if not signed in (will redirect)
+    if (!isSignedIn) {
+      return null;
+    }
   }
 
   return (
