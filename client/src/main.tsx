@@ -9,7 +9,16 @@ import "./index.css";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1, // Retry failed queries once
+      retry: (failureCount, error: any) => {
+        // Don't retry on 401 (auth), 403 (forbidden), 404 (not found), or 429 (rate limit)
+        const status = error?.data?.httpStatus || error?.status;
+        if ([401, 403, 404, 429].includes(status)) {
+          return false;
+        }
+        // Retry other errors up to 2 times
+        return failureCount < 2;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
       onError: (error: any) => {
         // Log all query errors for debugging
         console.error('[tRPC Query Error]', {
