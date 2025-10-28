@@ -8,7 +8,10 @@ import { trpc } from "@/lib/trpc";
 export function CashCollectedLeaderboard() {
   const [months, setMonths] = useState(24);
   
-  const { data, isLoading } = trpc.dashboard.getCashCollected.useQuery({ months });
+  const { data, isLoading } = trpc.dashboard.getCashCollected.useQuery(
+    { months },
+    { refetchInterval: 60000 } // Refetch every 60 seconds
+  );
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;

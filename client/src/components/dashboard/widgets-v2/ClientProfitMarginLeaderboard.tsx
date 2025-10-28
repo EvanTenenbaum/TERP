@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
 export function ClientProfitMarginLeaderboard() {
-  const { data, isLoading } = trpc.dashboard.getClientProfitMargin.useQuery();
+  const { data, isLoading } = trpc.dashboard.getClientProfitMargin.useQuery(), { refetchInterval: 60000 });
 
   const formatPercent = (value: number) => {
     return `${value.toFixed(0)}%`;

@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useDebounceCallback } from "@/hooks/useDebounceCallback";
 import {
   Bold,
   Italic,
@@ -54,7 +54,10 @@ export function FreeformNoteWidget({ noteId, onNoteDeleted }: FreeformNoteWidget
   // Load existing note if noteId provided
   const { data: existingNote, isLoading: isLoadingNote } = trpc.freeformNotes.getById.useQuery(
     { noteId: currentNoteId! },
-    { enabled: !!currentNoteId }
+    { 
+      enabled: !!currentNoteId,
+      refetchInterval: false, // Don't auto-refetch, only on manual actions
+    }
   );
 
   const editor = useEditor({
@@ -146,7 +149,7 @@ export function FreeformNoteWidget({ noteId, onNoteDeleted }: FreeformNoteWidget
     }
   };
 
-  const debouncedSave = useDebounce((content: any) => {
+  const debouncedSave = useDebounceCallback((content: any) => {
     setIsSaving(true);
     updateNoteMutation.mutate(
       {
