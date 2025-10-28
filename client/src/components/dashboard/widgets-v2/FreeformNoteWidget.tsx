@@ -45,6 +45,7 @@ export function FreeformNoteWidget({ noteId, onNoteDeleted }: FreeformNoteWidget
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [widgetSize, setWidgetSize] = useState<WidgetSize>("standard");
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // tRPC mutations
   const createNoteMutation = trpc.freeformNotes.create.useMutation();
@@ -107,15 +108,24 @@ export function FreeformNoteWidget({ noteId, onNoteDeleted }: FreeformNoteWidget
 
   // Load existing note content
   useEffect(() => {
-    if (existingNote && editor) {
+    if (existingNote && editor && !isInitialized) {
       setTitle(existingNote.title);
       editor.commands.setContent(existingNote.content as any);
       setLastSaved(new Date(existingNote.updatedAt));
+      setIsInitialized(true);
+    } else if (!existingNote && editor && !isInitialized) {
+      // No existing note, mark as initialized to allow saves
+      setIsInitialized(true);
     }
-  }, [existingNote, editor]);
+  }, [existingNote, editor, isInitialized]);
 
   // Auto-save with debounce
   const handleContentChange = (content: any) => {
+    // Don't save during initialization
+    if (!isInitialized) {
+      return;
+    }
+    
     if (!currentNoteId) {
       // Create new note
       createNoteMutation.mutate(
