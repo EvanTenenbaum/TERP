@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
 import * as badDebtDb from "../badDebtDb";
 
 export const badDebtRouter = router({
