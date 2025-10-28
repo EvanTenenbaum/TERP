@@ -56,6 +56,16 @@ export function serveStatic(app: Express) {
     process.env.NODE_ENV === "development"
       ? path.resolve(__dirname, "../..", "dist", "public")
       : path.resolve(__dirname, "public");
+  
+  console.log('[serveStatic] __dirname:', __dirname);
+  console.log('[serveStatic] distPath:', distPath);
+  console.log('[serveStatic] distPath exists:', fs.existsSync(distPath));
+  
+  if (fs.existsSync(distPath)) {
+    const files = fs.readdirSync(distPath);
+    console.log('[serveStatic] Files in distPath:', files);
+  }
+  
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -65,14 +75,14 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  // but don't catch /health or /api routes
+  // but don't catch /health, /api, or /assets routes
   app.use((req, res, next) => {
     const reqPath = req.path;
-    // Skip health check and API routes - let them 404 if not handled
-    if (reqPath.startsWith('/health') || reqPath.startsWith('/api')) {
+    // Skip health check, API routes, and assets - let them 404 if not handled
+    if (reqPath.startsWith('/health') || reqPath.startsWith('/api') || reqPath.startsWith('/assets')) {
       return next();
     }
-    // Only serve index.html for non-API routes
+    // Only serve index.html for non-API, non-asset routes
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
