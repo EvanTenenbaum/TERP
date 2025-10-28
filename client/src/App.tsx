@@ -40,37 +40,37 @@ function Router() {
       <Route path="/login" component={Login} />
       
       {/* Protected routes - wrapped in AppShell */}
-      <Route path="/">
-        {() => (
+      <Route>
+        {(params) => (
           <AppShell>
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/dashboard" component={DashboardV2} />
-              <Route path={"/quotes"} component={Quotes} />
-              <Route path={"/inventory"} component={Inventory} />
-              <Route path={"/accounting/dashboard"} component={AccountingDashboard} />
-              <Route path={"/accounting/chart-of-accounts"} component={ChartOfAccounts} />
-              <Route path={"/accounting/general-ledger"} component={GeneralLedger} />
-              <Route path={"/accounting/fiscal-periods"} component={FiscalPeriods} />
-              <Route path={"/accounting/invoices"} component={Invoices} />
-              <Route path={"/accounting/bills"} component={Bills} />
-              <Route path={"/accounting/payments"} component={Payments} />
-              <Route path={"/accounting/bank-accounts"} component={BankAccounts} />
-              <Route path={"/accounting/bank-transactions"} component={BankTransactions} />
-              <Route path={"/accounting/expenses"} component={Expenses} />
-              <Route path={"/clients"} component={ClientsListPage} />
-              <Route path={"/clients/:id"} component={ClientProfilePage} />
-              <Route path={"/pricing/rules"} component={PricingRulesPage} />
-              <Route path={"/pricing/profiles"} component={PricingProfilesPage} />
-              <Route path={"/sales-sheets"} component={SalesSheetCreatorPage} />
-              <Route path={"/orders"} component={Orders} />
-              <Route path={"/orders/create"} component={OrderCreatorPage} />
-              <Route path={"/settings/cogs"} component={CogsSettingsPage} />
-              <Route path={"/settings"} component={Settings} />
-              <Route path={"/credit-settings"} component={CreditSettingsPage} />
-              <Route path={"/needs"} component={NeedsManagementPage} />
-              <Route path={"/vendor-supply"} component={VendorSupplyPage} />
-              <Route path={"/404"} component={NotFound} />
+              <Route path="/quotes" component={Quotes} />
+              <Route path="/inventory" component={Inventory} />
+              <Route path="/accounting/dashboard" component={AccountingDashboard} />
+              <Route path="/accounting/chart-of-accounts" component={ChartOfAccounts} />
+              <Route path="/accounting/general-ledger" component={GeneralLedger} />
+              <Route path="/accounting/fiscal-periods" component={FiscalPeriods} />
+              <Route path="/accounting/invoices" component={Invoices} />
+              <Route path="/accounting/bills" component={Bills} />
+              <Route path="/accounting/payments" component={Payments} />
+              <Route path="/accounting/bank-accounts" component={BankAccounts} />
+              <Route path="/accounting/bank-transactions" component={BankTransactions} />
+              <Route path="/accounting/expenses" component={Expenses} />
+              <Route path="/clients" component={ClientsListPage} />
+              <Route path="/clients/:id" component={ClientProfilePage} />
+              <Route path="/pricing/rules" component={PricingRulesPage} />
+              <Route path="/pricing/profiles" component={PricingProfilesPage} />
+              <Route path="/sales-sheets" component={SalesSheetCreatorPage} />
+              <Route path="/orders" component={Orders} />
+              <Route path="/orders/create" component={OrderCreatorPage} />
+              <Route path="/settings/cogs" component={CogsSettingsPage} />
+              <Route path="/settings" component={Settings} />
+              <Route path="/credit-settings" component={CreditSettingsPage} />
+              <Route path="/needs" component={NeedsManagementPage} />
+              <Route path="/vendor-supply" component={VendorSupplyPage} />
+              <Route path="/404" component={NotFound} />
               {/* Final fallback route */}
               <Route component={NotFound} />
             </Switch>
