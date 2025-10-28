@@ -188,5 +188,22 @@ export function registerSimpleAuthRoutes(app: Express) {
       res.status(401).json({ error: "Not authenticated" });
     }
   });
+
+  // Create first user (for initial setup)
+  app.post("/api/auth/create-first-user", async (req: Request, res: Response) => {
+    try {
+      const { username, password, name } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password required" });
+      }
+
+      const user = await simpleAuth.createUser(username, password, name);
+      res.json({ success: true, user: { name: user.name, email: user.email } });
+    } catch (error) {
+      console.error("[Auth] Create first user failed", error);
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to create user" });
+    }
+  });
 }
 
