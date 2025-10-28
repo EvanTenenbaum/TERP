@@ -10,15 +10,19 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, ShoppingCart } from "lucide-react";
+import { FileText, ShoppingCart, UserPlus } from "lucide-react";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { OrderPreview } from "@/components/orders/OrderPreview";
 import { CreditLimitBanner } from "@/components/orders/CreditLimitBanner";
+import { AddCustomerOverlay } from "@/components/orders/AddCustomerOverlay";
+import { Button } from "@/components/ui/button";
 
 export default function OrderCreatorPage() {
-  const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("QUOTE");
+  const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
+  const [isDraft, setIsDraft] = useState<boolean>(true);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
 
   // Fetch clients
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -124,18 +128,35 @@ export default function OrderCreatorPage() {
 
             {/* Client Selector */}
             <div>
-              <Label htmlFor="client-select">Select Client</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="client-select">Select Customer</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddCustomer(true)}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  New Customer
+                </Button>
+              </div>
               <Select
                 value={selectedClientId?.toString() || ""}
                 onValueChange={(value) => {
-                  setSelectedClientId(parseInt(value));
-                  setSelectedItems([]); // Clear items when changing client
+                  if (value === "__new__") {
+                    setShowAddCustomer(true);
+                  } else {
+                    setSelectedClientId(parseInt(value));
+                    setSelectedItems([]); // Clear items when changing client
+                  }
                 }}
               >
-                <SelectTrigger id="client-select" className="mt-2">
-                  <SelectValue placeholder="Choose a client..." />
+                <SelectTrigger id="client-select">
+                  <SelectValue placeholder="Choose a customer..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__new__" className="font-semibold text-primary">
+                    + New Customer
+                  </SelectItem>
                   {clients?.filter((c) => c.isBuyer).map((client) => (
                     <SelectItem key={client.id} value={client.id.toString()}>
                       {client.name}
@@ -170,6 +191,7 @@ export default function OrderCreatorPage() {
                 <div className="lg:col-span-2">
                   <OrderPreview
                     orderType={orderType}
+                    isDraft={isDraft}
                     clientId={selectedClientId}
                     items={selectedItems}
                     onRemoveItem={handleRemoveItem}
@@ -187,6 +209,16 @@ export default function OrderCreatorPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Add Customer Overlay */}
+      <AddCustomerOverlay
+        open={showAddCustomer}
+        onOpenChange={setShowAddCustomer}
+        onSuccess={(clientId) => {
+          setSelectedClientId(clientId);
+          setSelectedItems([]);
+        }}
+      />
     </div>
   );
 }
