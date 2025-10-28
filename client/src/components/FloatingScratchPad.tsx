@@ -76,7 +76,10 @@ export function FloatingScratchPad({ isOpen, onClose }: { isOpen: boolean; onClo
   }, [isOpen, onClose, preferences.isFloating]);
 
   // Load scratch pad content from API
-  const { data: notesList } = trpc.scratchPad.list.useQuery({ limit: 1 });
+  const { data: notesList } = trpc.scratchPad.list.useQuery(
+    { limit: 1 },
+    { refetchInterval: false } // Don't auto-refetch to prevent save loops
+  );
   const createMutation = trpc.scratchPad.create.useMutation();
   const updateMutation = trpc.scratchPad.update.useMutation();
   const [noteId, setNoteId] = useState<number | null>(null);
@@ -97,21 +100,35 @@ export function FloatingScratchPad({ isOpen, onClose }: { isOpen: boolean; onClo
   }, [preferences]);
 
   // Auto-save content
+  const initialContentRef = useRef<string>("");
+  
+  // Store initial content when notesList loads
+  useEffect(() => {
+    if (notesList?.notes && notesList.notes.length > 0) {
+      initialContentRef.current = notesList.notes[0].content;
+    }
+  }, [notesList]);
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!noteId) {
         // Create new note if none exists
         if (content.trim()) {
           createMutation.mutate({ content }, {
-            onSuccess: (data) => setNoteId(data.insertId),
+            onSuccess: (data) => {
+              setNoteId(data.insertId);
+              initialContentRef.current = content;
+            },
           });
         }
-      } else if (content !== notesList?.notes[0]?.content) {
+      } else if (content !== initialContentRef.current) {
+        // Only save if content actually changed from initial
         updateMutation.mutate({ noteId, content });
+        initialContentRef.current = content;
       }
     }, 1000);
     return () => clearTimeout(timer);
-  }, [content, noteId, notesList, createMutation, updateMutation]);
+  }, [content, noteId]); // Removed notesList, createMutation, updateMutation from deps
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (preferences.isLocked || !preferences.isFloating) return;
