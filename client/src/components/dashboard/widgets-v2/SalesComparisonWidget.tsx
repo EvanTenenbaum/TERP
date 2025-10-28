@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
 export function SalesComparisonWidget() {
-  const { data, isLoading } = trpc.dashboard.getSalesComparison.useQuery();
+  const { data, isLoading } = trpc.dashboard.getSalesComparison.useQuery(), { refetchInterval: 60000 });
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;

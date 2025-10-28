@@ -10,7 +10,7 @@ type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
 export function CashFlowWidget() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
   
-  const { data, isLoading } = trpc.dashboard.getCashFlow.useQuery({ timePeriod });
+  const { data, isLoading } = trpc.dashboard.getCashFlow.useQuery({ timePeriod }), { refetchInterval: 60000 });
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

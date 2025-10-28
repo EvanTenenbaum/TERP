@@ -9,7 +9,7 @@ import { useLocation } from "wouter";
 export function InventorySnapshotWidget() {
   const [, setLocation] = useLocation();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const { data, isLoading } = trpc.dashboard.getInventorySnapshot.useQuery();
+  const { data, isLoading } = trpc.dashboard.getInventorySnapshot.useQuery(), { refetchInterval: 60000 });
 
   const toggleCategory = (categoryName: string) => {
     const newExpanded = new Set(expandedCategories);
