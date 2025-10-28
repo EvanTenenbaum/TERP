@@ -1,12 +1,12 @@
-export const ENV = {
+export const env = {
   appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
+  JWT_SECRET: process.env.JWT_SECRET ?? "terp-secret-key-change-in-production",
   databaseUrl: process.env.DATABASE_URL ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-  clerkPublishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "",
-  clerkSecretKey: process.env.CLERK_SECRET_KEY ?? "",
 };
+
+// Legacy export for compatibility
+export const ENV = env;
