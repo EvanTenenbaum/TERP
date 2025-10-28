@@ -1360,6 +1360,7 @@ export const orders = mysqlTable("orders", {
   id: int("id").primaryKey().autoincrement(),
   orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
   orderType: orderTypeEnum.notNull(),
+  isDraft: boolean("is_draft").notNull().default(true),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   clientNeedId: int("client_need_id"), // Link to client need if order was created from a need
   
@@ -1396,6 +1397,7 @@ export const orders = mysqlTable("orders", {
   // Conversion tracking
   convertedFromOrderId: int("converted_from_order_id").references((): any => orders.id),
   convertedAt: timestamp("converted_at"),
+  confirmedAt: timestamp("confirmed_at"),
   relatedSampleRequestId: int("related_sample_request_id"), // Link to sample request if order came from sample
   
   // Metadata
@@ -1406,6 +1408,7 @@ export const orders = mysqlTable("orders", {
 }, (table) => ({
   clientIdIdx: index("idx_client_id").on(table.clientId),
   orderTypeIdx: index("idx_order_type").on(table.orderType),
+  isDraftIdx: index("idx_is_draft").on(table.isDraft),
   quoteStatusIdx: index("idx_quote_status").on(table.quoteStatus),
   saleStatusIdx: index("idx_sale_status").on(table.saleStatus),
   fulfillmentStatusIdx: index("idx_fulfillment_status").on(table.fulfillmentStatus),

@@ -49,6 +49,7 @@ export interface OrderItem {
 
 export interface CreateOrderInput {
   orderType: 'QUOTE' | 'SALE';
+  isDraft?: boolean; // NEW: Support draft orders
   clientId: number;
   items: {
     batchId: number;
@@ -60,10 +61,10 @@ export interface CreateOrderInput {
     overrideCogs?: number;
   }[];
   
-  // Quote-specific
+  // Draft-specific
   validUntil?: string;
   
-  // Sale-specific
+  // Confirmed order-specific
   paymentTerms?: 'NET_7' | 'NET_15' | 'NET_30' | 'COD' | 'PARTIAL' | 'CONSIGNMENT';
   cashPayment?: number;
   
@@ -187,21 +188,27 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     const totalMargin = subtotal - totalCogs;
     const avgMarginPercent = subtotal > 0 ? (totalMargin / subtotal) * 100 : 0;
     
-    // 4. Generate order number
-    const orderNumber = input.orderType === 'QUOTE' 
-      ? `Q-${Date.now()}`
-      : `S-${Date.now()}`;
+    // 4. Determine if draft (support both old and new API)
+    const isDraft = input.isDraft !== undefined 
+      ? input.isDraft 
+      : input.orderType === 'QUOTE';
     
-    // 5. Calculate due date for sales
+    // 5. Generate order number
+    const orderNumber = isDraft 
+      ? `D-${Date.now()}`
+      : `O-${Date.now()}`;
+    
+    // 6. Calculate due date for confirmed orders
     let dueDate: Date | undefined;
-    if (input.orderType === 'SALE' && input.paymentTerms) {
+    if (!isDraft && input.paymentTerms) {
       dueDate = calculateDueDate(input.paymentTerms);
     }
     
-    // 6. Create order record
+    // 7. Create order record
     await tx.insert(orders).values({
       orderNumber,
       orderType: input.orderType,
+      isDraft,
       clientId: input.clientId,
       items: JSON.stringify(processedItems),
       subtotal: subtotal.toString(),
@@ -216,7 +223,8 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       paymentTerms: input.paymentTerms,
       cashPayment: input.cashPayment?.toString() || '0',
       dueDate: dueDate,
-      saleStatus: input.orderType === 'SALE' ? 'PENDING' : undefined,
+      saleStatus: !isDraft && input.orderType === 'SALE' ? 'PENDING' : undefined,
+      fulfillmentStatus: !isDraft ? 'PENDING' : undefined,
       notes: input.notes,
       createdBy: input.createdBy,
     });
@@ -229,8 +237,8 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       .limit(1)
       .then(rows => rows[0]);
     
-    // 7. If SALE, reduce inventory
-    if (input.orderType === 'SALE') {
+    // 8. If confirmed order (not draft), reduce inventory
+    if (!isDraft) {
       for (const item of processedItems) {
         if (item.isSample) {
           // Reduce sample_qty
@@ -322,8 +330,10 @@ export async function getOrdersByClient(
  */
 export async function getAllOrders(filters?: {
   orderType?: 'QUOTE' | 'SALE';
+  isDraft?: boolean;
   quoteStatus?: string;
   saleStatus?: string;
+  fulfillmentStatus?: string;
   limit?: number;
   offset?: number;
 }): Promise<Order[]> {
@@ -332,8 +342,10 @@ export async function getAllOrders(filters?: {
   
   const {
     orderType,
+    isDraft,
     quoteStatus,
     saleStatus,
+    fulfillmentStatus,
     limit = 50,
     offset = 0,
   } = filters || {};
@@ -344,12 +356,20 @@ export async function getAllOrders(filters?: {
     conditions.push(eq(orders.orderType, orderType));
   }
   
+  if (isDraft !== undefined) {
+    conditions.push(eq(orders.isDraft, isDraft));
+  }
+  
   if (quoteStatus) {
     conditions.push(eq(orders.quoteStatus, quoteStatus as any));
   }
   
   if (saleStatus) {
     conditions.push(eq(orders.saleStatus, saleStatus as any));
+  }
+  
+  if (fulfillmentStatus) {
+    conditions.push(eq(orders.fulfillmentStatus, fulfillmentStatus as any));
   }
   
   let results;
@@ -611,6 +631,285 @@ export async function exportOrder(
   return `Export ${format} for order ${order.orderNumber}`;
 }
 
+// NEW FUNCTIONS TO ADD TO ordersDb.ts
+
+// ============================================================================
+// CONFIRM DRAFT ORDER
+// ============================================================================
+
+/**
+ * Confirm a draft order (convert to confirmed order)
+ */
+export async function confirmDraftOrder(input: {
+  orderId: number;
+  paymentTerms: 'NET_7' | 'NET_15' | 'NET_30' | 'COD' | 'PARTIAL' | 'CONSIGNMENT';
+  cashPayment?: number;
+  notes?: string;
+  confirmedBy: number;
+}): Promise<Order> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.transaction(async (tx) => {
+    // 1. Get the draft order
+    const draft = await tx
+      .select()
+      .from(orders)
+      .where(eq(orders.id, input.orderId))
+      .limit(1)
+      .then(rows => rows[0]);
+    
+    if (!draft) {
+      throw new Error(`Order ${input.orderId} not found`);
+    }
+    
+    if (!draft.isDraft) {
+      throw new Error(`Order ${input.orderId} is not a draft`);
+    }
+    
+    // 2. Parse draft items
+    const draftItems = JSON.parse(draft.items as string) as OrderItem[];
+    
+    // 3. Calculate due date
+    const dueDate = calculateDueDate(input.paymentTerms);
+    
+    // 4. Determine payment status
+    const cashPayment = input.cashPayment || 0;
+    const total = parseFloat(draft.total as string);
+    const saleStatus = cashPayment >= total ? 'PAID' : cashPayment > 0 ? 'PARTIAL' : 'PENDING';
+    
+    // 5. Update order to confirmed
+    await tx.update(orders)
+      .set({
+        isDraft: false,
+        orderType: 'SALE',
+        paymentTerms: input.paymentTerms,
+        cashPayment: cashPayment.toString(),
+        dueDate: dueDate,
+        saleStatus: saleStatus,
+        fulfillmentStatus: 'PENDING',
+        notes: input.notes || draft.notes,
+        confirmedAt: new Date(),
+      })
+      .where(eq(orders.id, input.orderId));
+    
+    // 6. Reduce inventory
+    for (const item of draftItems) {
+      if (item.isSample) {
+        await tx.update(batches)
+          .set({ 
+            sampleQty: sql`CAST(${batches.sampleQty} AS DECIMAL(15,4)) - ${item.quantity}` 
+          })
+          .where(eq(batches.id, item.batchId));
+        
+        await tx.insert(sampleInventoryLog).values({
+          batchId: item.batchId,
+          orderId: input.orderId,
+          quantity: item.quantity.toString(),
+          action: 'CONSUMED',
+          createdBy: input.confirmedBy,
+        });
+      } else {
+        await tx.update(batches)
+          .set({ 
+            onHandQty: sql`CAST(${batches.onHandQty} AS DECIMAL(15,4)) - ${item.quantity}` 
+          })
+          .where(eq(batches.id, item.batchId));
+      }
+    }
+    
+    // 7. Get the confirmed order
+    const confirmed = await tx
+      .select()
+      .from(orders)
+      .where(eq(orders.id, input.orderId))
+      .limit(1)
+      .then(rows => rows[0]);
+    
+    if (!confirmed) {
+      throw new Error('Failed to confirm order');
+    }
+    
+    return confirmed;
+  });
+}
+
+// ============================================================================
+// UPDATE DRAFT ORDER
+// ============================================================================
+
+/**
+ * Update a draft order (items, pricing, notes)
+ */
+export async function updateDraftOrder(input: {
+  orderId: number;
+  items?: {
+    batchId: number;
+    displayName?: string;
+    quantity: number;
+    unitPrice: number;
+    isSample: boolean;
+    overridePrice?: number;
+    overrideCogs?: number;
+  }[];
+  validUntil?: string;
+  notes?: string;
+}): Promise<Order> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.transaction(async (tx) => {
+    // 1. Get the draft order
+    const draft = await tx
+      .select()
+      .from(orders)
+      .where(eq(orders.id, input.orderId))
+      .limit(1)
+      .then(rows => rows[0]);
+    
+    if (!draft) {
+      throw new Error(`Order ${input.orderId} not found`);
+    }
+    
+    if (!draft.isDraft) {
+      throw new Error(`Order ${input.orderId} is not a draft and cannot be edited`);
+    }
+    
+    // 2. If items are being updated, recalculate everything
+    if (input.items) {
+      // Get client for COGS calculation
+      const client = await tx
+        .select()
+        .from(clients)
+        .where(eq(clients.id, draft.clientId))
+        .limit(1)
+        .then(rows => rows[0]);
+      
+      if (!client) {
+        throw new Error(`Client ${draft.clientId} not found`);
+      }
+      
+      // Process each item and calculate COGS
+      const processedItems: OrderItem[] = [];
+      
+      for (const item of input.items) {
+        // Get batch details
+        const batch = await tx
+          .select()
+          .from(batches)
+          .where(eq(batches.id, item.batchId))
+          .limit(1)
+          .then(rows => rows[0]);
+        
+        if (!batch) {
+          throw new Error(`Batch ${item.batchId} not found`);
+        }
+        
+        // Calculate COGS (unless overridden)
+        let cogsResult;
+        if (item.overrideCogs !== undefined) {
+          const finalPrice = item.overridePrice || item.unitPrice;
+          const unitMargin = finalPrice - item.overrideCogs;
+          const marginPercent = finalPrice > 0 ? (unitMargin / finalPrice) * 100 : 0;
+          
+          cogsResult = {
+            unitCogs: item.overrideCogs,
+            cogsSource: 'MANUAL' as const,
+            unitMargin,
+            marginPercent,
+          };
+        } else {
+          cogsResult = calculateCogs({
+            batch: {
+              id: batch.id,
+              cogsMode: batch.cogsMode,
+              unitCogs: batch.unitCogs,
+              unitCogsMin: batch.unitCogsMin,
+              unitCogsMax: batch.unitCogsMax,
+            },
+            client: {
+              id: client.id,
+              cogsAdjustmentType: client.cogsAdjustmentType || 'NONE',
+              cogsAdjustmentValue: client.cogsAdjustmentValue || '0',
+            },
+            context: {
+              quantity: item.quantity,
+              salePrice: item.overridePrice || item.unitPrice,
+            },
+          });
+        }
+        
+        const finalPrice = item.overridePrice || item.unitPrice;
+        const lineTotal = item.quantity * finalPrice;
+        const lineCogs = item.quantity * cogsResult.unitCogs;
+        const lineMargin = lineTotal - lineCogs;
+        
+        processedItems.push({
+          batchId: item.batchId,
+          displayName: item.displayName || batch.sku,
+          originalName: batch.sku,
+          quantity: item.quantity,
+          unitPrice: finalPrice,
+          isSample: item.isSample,
+          unitCogs: cogsResult.unitCogs,
+          cogsMode: batch.cogsMode,
+          cogsSource: cogsResult.cogsSource,
+          appliedRule: cogsResult.appliedRule,
+          unitMargin: cogsResult.unitMargin,
+          marginPercent: cogsResult.marginPercent,
+          lineTotal,
+          lineCogs,
+          lineMargin,
+          overridePrice: item.overridePrice,
+          overrideCogs: item.overrideCogs,
+        });
+      }
+      
+      // Calculate totals
+      const subtotal = processedItems.reduce((sum, item) => sum + item.lineTotal, 0);
+      const totalCogs = processedItems.reduce((sum, item) => sum + item.lineCogs, 0);
+      const totalMargin = subtotal - totalCogs;
+      const avgMarginPercent = subtotal > 0 ? (totalMargin / subtotal) * 100 : 0;
+      
+      // Update order with new items and totals
+      await tx.update(orders)
+        .set({
+          items: JSON.stringify(processedItems),
+          subtotal: subtotal.toString(),
+          total: subtotal.toString(),
+          totalCogs: totalCogs.toString(),
+          totalMargin: totalMargin.toString(),
+          avgMarginPercent: avgMarginPercent.toString(),
+          validUntil: input.validUntil ? new Date(input.validUntil) : draft.validUntil,
+          notes: input.notes || draft.notes,
+        })
+        .where(eq(orders.id, input.orderId));
+    } else {
+      // Just update notes and validUntil
+      const updateData: any = {};
+      if (input.validUntil) updateData.validUntil = new Date(input.validUntil);
+      if (input.notes) updateData.notes = input.notes;
+      
+      await tx.update(orders)
+        .set(updateData)
+        .where(eq(orders.id, input.orderId));
+    }
+    
+    // 3. Return updated order
+    const updated = await tx
+      .select()
+      .from(orders)
+      .where(eq(orders.id, input.orderId))
+      .limit(1)
+      .then(rows => rows[0]);
+    
+    if (!updated) {
+      throw new Error('Failed to update draft order');
+    }
+    
+    return updated;
+  });
+}
 
 
 // ============================================================================
