@@ -9,6 +9,8 @@ import "./index.css";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
       retry: (failureCount, error: any) => {
         // Don't retry on 401 (auth), 403 (forbidden), 404 (not found), or 429 (rate limit)
         const status = error?.data?.httpStatus || error?.status;
