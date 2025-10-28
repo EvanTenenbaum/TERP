@@ -189,8 +189,27 @@ export function registerSimpleAuthRoutes(app: Express) {
     }
   });
 
-  // Create first user (for initial setup)
-  app.post("/api/auth/create-first-user", async (req: Request, res: Response) => {
+  // Manual seed endpoint (for initial setup)
+  app.post("/api/auth/seed", async (req, res) => {
+    try {
+      const { seedAllDefaults } = await import("../services/seedDefaults");
+      await seedAllDefaults();
+      
+      // Create admin user
+      const { getUserByEmail } = await import("../db");
+      const adminExists = await getUserByEmail("Evan");
+      if (!adminExists) {
+        await simpleAuth.createUser("Evan", "oliver", "Evan (Admin)");
+      }
+      
+      res.json({ success: true, message: "Seeding completed successfully" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create first user endpoint (for initial setup)
+  app.post("/api/auth/create-first-user", async (req, res) => {esponse) => {
     try {
       const { username, password, name } = req.body;
 
