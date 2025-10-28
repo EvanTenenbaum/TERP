@@ -40,6 +40,7 @@ import { CogsAdjustmentModal } from "./CogsAdjustmentModal";
 
 interface OrderPreviewProps {
   orderType: "QUOTE" | "SALE";
+  isDraft?: boolean;
   clientId: number;
   items: any[];
   onRemoveItem: (batchId: number) => void;
@@ -50,6 +51,7 @@ interface OrderPreviewProps {
 
 export function OrderPreview({
   orderType,
+  isDraft = true,
   clientId,
   items,
   onRemoveItem,
@@ -110,6 +112,7 @@ export function OrderPreview({
 
     createOrderMutation.mutate({
       orderType,
+      isDraft,
       clientId,
       items: items.map((item) => ({
         batchId: item.batchId,
@@ -121,8 +124,8 @@ export function OrderPreview({
         overrideCogs: item.overrideCogs,
       })),
       validUntil: orderType === "QUOTE" ? validUntil : undefined,
-      paymentTerms: orderType === "SALE" ? (paymentTerms as any) : undefined,
-      cashPayment: orderType === "SALE" && paymentTerms === "PARTIAL" ? cashPayment : undefined,
+      paymentTerms: !isDraft && orderType === "SALE" ? (paymentTerms as any) : undefined,
+      cashPayment: !isDraft && orderType === "SALE" && paymentTerms === "PARTIAL" ? cashPayment : undefined,
       notes,
     });
   };
@@ -296,15 +299,15 @@ export function OrderPreview({
               >
                 {createOrderMutation.isPending ? (
                   "Creating..."
-                ) : orderType === "QUOTE" ? (
+                ) : isDraft ? (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save Quote
+                    Save as Draft
                   </>
                 ) : (
                   <>
                     <ShoppingCart className="h-4 w-4 mr-2" />
-                    Create Sale
+                    Confirm & Create Order
                   </>
                 )}
               </Button>
