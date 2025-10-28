@@ -10,7 +10,10 @@ type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
 export function SalesByClientWidget() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
   
-  const { data, isLoading } = trpc.dashboard.getSalesByClient.useQuery({ timePeriod }), { refetchInterval: 60000 });
+  const { data, isLoading } = trpc.dashboard.getSalesByClient.useQuery(
+    { timePeriod },
+    { refetchInterval: 60000 }
+  );
 
   return (
     <Card>
