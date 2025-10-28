@@ -6,7 +6,35 @@ import superjson from "superjson";
 import App from "./App";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1, // Retry failed queries once
+      onError: (error: any) => {
+        // Log all query errors for debugging
+        console.error('[tRPC Query Error]', {
+          message: error?.message || 'Unknown error',
+          code: error?.data?.code,
+          httpStatus: error?.data?.httpStatus,
+          path: error?.data?.path,
+          stack: error?.stack,
+        });
+      },
+    },
+    mutations: {
+      onError: (error: any) => {
+        // Log all mutation errors for debugging
+        console.error('[tRPC Mutation Error]', {
+          message: error?.message || 'Unknown error',
+          code: error?.data?.code,
+          httpStatus: error?.data?.httpStatus,
+          path: error?.data?.path,
+          stack: error?.stack,
+        });
+      },
+    },
+  },
+});
 
 const trpcClient = trpc.createClient({
   links: [
