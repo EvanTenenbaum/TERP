@@ -4,7 +4,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
 export function TransactionSnapshotWidget() {
-  const { data, isLoading } = trpc.dashboard.getTransactionSnapshot.useQuery(), { refetchInterval: 60000 });
+  const { data, isLoading } = trpc.dashboard.getTransactionSnapshot.useQuery(
+    undefined,
+    { refetchInterval: 60000 }
+  );
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
