@@ -18,9 +18,9 @@ import { APP_TITLE } from '@/const';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Sales & Quotes', href: '/quotes', icon: FileText },
+  { name: 'Orders', href: '/orders', icon: ShoppingCart },
   { name: 'Sales Sheets', href: '/sales-sheets', icon: Layers },
-  { name: 'Create Order', href: '/orders/create', icon: ShoppingCart },
+  { name: 'Create Order', href: '/orders/create', icon: FileText },
   { name: 'Inventory', href: '/inventory', icon: Package },
   { name: 'Accounting', href: '/accounting/dashboard', icon: DollarSign },
   { name: 'Clients', href: '/clients', icon: Users },
