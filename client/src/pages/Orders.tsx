@@ -548,7 +548,7 @@ export default function Orders() {
               {!selectedOrder.isDraft && (
                 <>
                   <Separator />
-                  <OrderStatusTimeline order={selectedOrder} />
+                  <OrderStatusTimeline orderId={selectedOrder.id} />
                 </>
               )}
 
@@ -567,9 +567,10 @@ export default function Orders() {
       {/* Ship Order Modal */}
       {showShipModal && selectedOrder && (
         <ShipOrderModal
+          orderId={selectedOrder.id}
+          currentStatus={selectedOrder.fulfillmentStatus || 'PENDING'}
           open={showShipModal}
-          onOpenChange={setShowShipModal}
-          order={selectedOrder}
+          onClose={() => setShowShipModal(false)}
           onSuccess={handleStatusChangeSuccess}
         />
       )}
@@ -577,9 +578,10 @@ export default function Orders() {
       {/* Process Return Modal */}
       {showReturnModal && selectedOrder && (
         <ProcessReturnModal
+          orderId={selectedOrder.id}
+          orderItems={selectedOrder.items || []}
           open={showReturnModal}
-          onOpenChange={setShowReturnModal}
-          order={selectedOrder}
+          onClose={() => setShowReturnModal(false)}
           onSuccess={() => {
             refetchConfirmed();
             setSelectedOrder(null);
