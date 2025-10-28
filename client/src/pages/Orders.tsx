@@ -24,6 +24,7 @@ import { OrderStatusTimeline } from '@/components/orders/OrderStatusTimeline';
 import { ShipOrderModal } from '@/components/orders/ShipOrderModal';
 import { ProcessReturnModal } from '@/components/orders/ProcessReturnModal';
 import { ReturnHistorySection } from '@/components/orders/ReturnHistorySection';
+import { ConfirmDraftModal } from '@/components/orders/ConfirmDraftModal';
 import { 
   Search, 
   Package, 
@@ -589,9 +590,21 @@ export default function Orders() {
         />
       )}
 
-      {/* TODO: Confirm Draft Modal - to be implemented */}
+      {/* Confirm Draft Modal */}
       {showConfirmModal && selectedOrder && (
-        <div>Confirm Draft Modal - Coming in Phase 5</div>
+        <ConfirmDraftModal
+          orderId={selectedOrder.id}
+          orderNumber={selectedOrder.orderNumber}
+          totalAmount={selectedOrder.totalAmount}
+          open={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+          onSuccess={() => {
+            refetchDrafts();
+            refetchConfirmed();
+            setSelectedOrder(null);
+            setShowConfirmModal(false);
+          }}
+        />
       )}
     </div>
   );
