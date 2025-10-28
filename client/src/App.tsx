@@ -31,15 +31,13 @@ import Orders from "@/pages/Orders";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
-import SignIn from "@/pages/SignIn";
-import SignUp from "@/pages/SignUp";
+import Login from "@/pages/Login";
 
 function Router() {
   return (
     <Switch>
       {/* Public routes - no AppShell */}
-      <Route path="/sign-in" component={SignIn} />
-      <Route path="/sign-up" component={SignUp} />
+      <Route path="/login" component={Login} />
       
       {/* Protected routes - wrapped in AppShell */}
       <Route path="/">
