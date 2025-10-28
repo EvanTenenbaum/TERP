@@ -39,10 +39,16 @@ export function AddCustomerOverlay({ open, onOpenChange, onSuccess }: AddCustome
   const createClientMutation = trpc.clients.create.useMutation({
     onSuccess: (data) => {
       if (data) {
+        toast.success('Customer created successfully!');
         onSuccess(data as number);
         onOpenChange(false);
         resetForm();
       }
+    },
+    onError: (error: any) => {
+      toast.error('Failed to create customer', {
+        description: error.message || 'Please try again',
+      });
     },
   });
 
@@ -59,13 +65,23 @@ export function AddCustomerOverlay({ open, onOpenChange, onSuccess }: AddCustome
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createClientMutation.mutateAsync({
-      ...formData,
-      isSeller: false,
-      isBrand: false,
-      isReferee: false,
-      isContractor: false,
-    });
+    
+    if (!formData.teriCode.trim() || !formData.name.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
+    try {
+      await createClientMutation.mutateAsync({
+        ...formData,
+        isSeller: false,
+        isBrand: false,
+        isReferee: false,
+        isContractor: false,
+      });
+    } catch (error) {
+      // Error already handled by onError callback
+    }
   };
 
   const canSubmit = formData.teriCode.trim() !== "" && formData.name.trim() !== "";

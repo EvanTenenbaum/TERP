@@ -120,6 +120,15 @@ export const ordersRouter = router({
       .mutation(async ({ input }) => {
         return await ordersDb.updateDraftOrder(input);
       }),
+    
+    // Delete Draft Order (NEW)
+    deleteDraftOrder: protectedProcedure
+      .input(z.object({
+        orderId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        return await ordersDb.deleteDraftOrder(input);
+      }),
     // Export
     export: protectedProcedure
       .input(z.object({
