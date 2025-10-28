@@ -209,7 +209,7 @@ export function registerSimpleAuthRoutes(app: Express) {
   });
 
   // Create first user endpoint (for initial setup)
-  app.post("/api/auth/create-first-user", async (req, res) => {esponse) => {
+  app.post("/api/auth/create-first-user", async (req, res) => {
     try {
       const { username, password, name } = req.body;
 
