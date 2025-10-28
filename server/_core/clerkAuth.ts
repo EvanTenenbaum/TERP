@@ -9,12 +9,38 @@ const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
 });
 
+// QA MODE: Set to true to bypass authentication for testing
+const QA_MODE = process.env.QA_MODE === "true";
+
 class ClerkAuthService {
   /**
    * Authenticate a request using Clerk session
    * This expects Clerk middleware to have already run
    */
   async authenticateRequest(req: Request): Promise<User> {
+    // QA MODE: Return mock user for testing
+    if (QA_MODE) {
+      console.log("[Clerk Auth] QA MODE ACTIVE - Bypassing authentication");
+      
+      // Try to get or create QA test user
+      let qaUser = await db.getUser("qa_test_user");
+      
+      if (!qaUser) {
+        await db.upsertUser({
+          openId: "qa_test_user",
+          name: "QA Test User",
+          email: "qa@test.com",
+          loginMethod: "qa_bypass",
+          lastSignedIn: new Date(),
+        });
+        qaUser = await db.getUser("qa_test_user");
+      }
+      
+      if (qaUser) {
+        return qaUser;
+      }
+    }
+
     try {
       // Get auth from Clerk middleware
       const auth = getAuth(req);
