@@ -7,6 +7,7 @@ export const ordersRouter = router({
     create: protectedProcedure
       .input(z.object({
         orderType: z.enum(['QUOTE', 'SALE']),
+        isDraft: z.boolean().optional(),
         clientId: z.number(),
         items: z.array(z.object({
           batchId: z.number(),
@@ -45,8 +46,10 @@ export const ordersRouter = router({
     getAll: protectedProcedure
       .input(z.object({
         orderType: z.enum(['QUOTE', 'SALE']).optional(),
+        isDraft: z.boolean().optional(),
         quoteStatus: z.string().optional(),
         saleStatus: z.string().optional(),
+        fulfillmentStatus: z.string().optional(),
         limit: z.number().optional(),
         offset: z.number().optional(),
       }).optional())
@@ -71,7 +74,7 @@ export const ordersRouter = router({
         await ordersDb.deleteOrder(input.id);
         return { success: true };
       }),
-    // Convert
+    // Convert (backward compatibility)
     convertToSale: protectedProcedure
       .input(z.object({
         quoteId: z.number(),
@@ -81,6 +84,41 @@ export const ordersRouter = router({
       }))
       .mutation(async ({ input }) => {
         return await ordersDb.convertQuoteToSale(input);
+      }),
+    
+    // Confirm Draft Order (NEW)
+    confirmDraftOrder: protectedProcedure
+      .input(z.object({
+        orderId: z.number(),
+        paymentTerms: z.enum(['NET_7', 'NET_15', 'NET_30', 'COD', 'PARTIAL', 'CONSIGNMENT']),
+        cashPayment: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await ordersDb.confirmDraftOrder({
+          ...input,
+          confirmedBy: ctx.user?.id || 1,
+        });
+      }),
+    
+    // Update Draft Order (NEW)
+    updateDraftOrder: protectedProcedure
+      .input(z.object({
+        orderId: z.number(),
+        items: z.array(z.object({
+          batchId: z.number(),
+          displayName: z.string().optional(),
+          quantity: z.number(),
+          unitPrice: z.number(),
+          isSample: z.boolean(),
+          overridePrice: z.number().optional(),
+          overrideCogs: z.number().optional(),
+        })).optional(),
+        validUntil: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await ordersDb.updateDraftOrder(input);
       }),
     // Export
     export: protectedProcedure
