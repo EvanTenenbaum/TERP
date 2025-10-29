@@ -261,7 +261,8 @@ async function calculateInventoryMetrics(
     };
   }
   
-  if (metricIds.includes('inventory_expiring_soon')) {
+  // Expiring Soon - DISABLED: expirationDate column doesn't exist in schema
+  if (false && metricIds.includes('inventory_expiring_soon')) {
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
     
