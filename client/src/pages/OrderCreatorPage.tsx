@@ -18,7 +18,6 @@ import { AddCustomerOverlay } from "@/components/orders/AddCustomerOverlay";
 import { Button } from "@/components/ui/button";
 
 export default function OrderCreatorPage() {
-  const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
   const [isDraft, setIsDraft] = useState<boolean>(true);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
@@ -92,38 +91,30 @@ export default function OrderCreatorPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            {orderType === "QUOTE" ? (
-              <FileText className="h-6 w-6" />
-            ) : (
-              <ShoppingCart className="h-6 w-6" />
-            )}
+            <ShoppingCart className="h-6 w-6" />
             <div>
               <CardTitle className="text-2xl">
-                {orderType === "QUOTE" ? "Quote Creator" : "Sale Creator"}
+                {isDraft ? "Create Draft Order" : "Create Order"}
               </CardTitle>
               <CardDescription>
-                {orderType === "QUOTE"
-                  ? "Create quotes with dynamic pricing and convert to sales"
-                  : "Create sales orders with payment terms and inventory tracking"}
+                {isDraft
+                  ? "Create a draft order (no inventory reduction)"
+                  : "Create a confirmed order (inventory will be reduced)"}
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {/* Order Type Selector */}
-            <div>
-              <Label>Order Type</Label>
-              <Tabs
-                value={orderType}
-                onValueChange={(value) => setOrderType(value as "QUOTE" | "SALE")}
-                className="mt-2"
-              >
-                <TabsList className="grid w-full max-w-md grid-cols-2">
-                  <TabsTrigger value="QUOTE">Quote</TabsTrigger>
-                  <TabsTrigger value="SALE">Sale</TabsTrigger>
-                </TabsList>
-              </Tabs>
+            {/* Order Mode Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900">
+                {isDraft ? (
+                  <span><strong>Draft Mode:</strong> Save your order as a draft. No inventory will be reduced until you confirm it.</span>
+                ) : (
+                  <span><strong>Confirmed Mode:</strong> This order will be confirmed immediately and inventory will be reduced.</span>
+                )}
+              </p>
             </div>
 
             {/* Client Selector */}
@@ -166,8 +157,8 @@ export default function OrderCreatorPage() {
               </Select>
             </div>
 
-            {/* Credit Limit Banner (only for sales) */}
-            {selectedClientId && orderType === "SALE" && clientDetails && (
+            {/* Credit Limit Banner */}
+            {selectedClientId && clientDetails && (
               <CreditLimitBanner
                 client={clientDetails}
                 orderTotal={selectedItems.reduce((sum, item) => sum + item.lineTotal, 0)}
@@ -190,7 +181,7 @@ export default function OrderCreatorPage() {
                 {/* Right Panel: Order Preview (40%) */}
                 <div className="lg:col-span-2">
                   <OrderPreview
-                    orderType={orderType}
+                    orderType="SALE"
                     isDraft={isDraft}
                     clientId={selectedClientId}
                     items={selectedItems}
