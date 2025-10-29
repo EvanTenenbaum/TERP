@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "last_updated": "2025-10-29T00:00:00Z",
+  "total_count": 0,
+  "by_type": {
+    "IDEA": 0,
+    "FEAT": 0,
+    "BUG": 0,
+    "IMPROVE": 0,
+    "TECH": 0
+  },
+  "by_status": {
+    "inbox": 0,
+    "backlog": 0,
+    "planned": 0,
+    "in-progress": 0,
+    "completed": 0,
+    "on-hold": 0,
+    "archived": 0
+  },
+  "registry": {}
+}
