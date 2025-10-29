@@ -158,14 +158,14 @@ async function calculateInventoryMetrics(
   // Single optimized query that calculates ALL metrics at once
   const [aggregates] = await db
     .select({
-      totalValue: sum(sql`${batches.onHandQty}::numeric * ${batches.unitCogs}::numeric`),
+      totalValue: sum(sql`CAST(${batches.onHandQty} AS DECIMAL(15,2)) * CAST(${batches.unitCogs} AS DECIMAL(15,2))`),
       totalUnits: sum(batches.onHandQty),
-      avgCogs: sql<number>`AVG(${batches.unitCogs}::numeric)`,
+      avgCogs: sql<number>`AVG(CAST(${batches.unitCogs} AS DECIMAL(15,2)))`,
       awaitingIntake: count(sql`CASE WHEN ${batches.status} = 'AWAITING_INTAKE' THEN 1 END`),
       quarantined: count(sql`CASE WHEN ${batches.status} = 'QUARANTINED' THEN 1 END`),
       onHold: count(sql`CASE WHEN ${batches.status} = 'ON_HOLD' THEN 1 END`),
       live: count(sql`CASE WHEN ${batches.status} = 'LIVE' THEN 1 END`),
-      lowStock: count(sql`CASE WHEN (${batches.onHandQty}::numeric - ${batches.reservedQty}::numeric - ${batches.quarantineQty}::numeric - ${batches.holdQty}::numeric) <= 100 THEN 1 END`),
+      lowStock: count(sql`CASE WHEN (CAST(${batches.onHandQty} AS DECIMAL(15,2)) - CAST(${batches.reservedQty} AS DECIMAL(15,2)) - CAST(${batches.quarantineQty} AS DECIMAL(15,2)) - CAST(${batches.holdQty} AS DECIMAL(15,2))) <= 100 THEN 1 END`),
       totalBatches: count(),
     })
     .from(batches);
@@ -753,7 +753,7 @@ async function calculateVendorSupplyMetrics(
       available: count(sql`CASE WHEN ${vendorSupply.status} = 'AVAILABLE' THEN 1 END`),
       reserved: count(sql`CASE WHEN ${vendorSupply.status} = 'RESERVED' THEN 1 END`),
       sold: count(sql`CASE WHEN ${vendorSupply.status} = 'SOLD' THEN 1 END`),
-      totalValue: sum(sql`${vendorSupply.quantity}::numeric * ${vendorSupply.unitPrice}::numeric`),
+      totalValue: sum(sql`CAST(${vendorSupply.quantity} AS DECIMAL(15,2)) * CAST(${vendorSupply.unitPrice} AS DECIMAL(15,2))`),
     })
     .from(vendorSupply);
   
@@ -870,7 +870,7 @@ async function calculateClientsMetrics(
       buyers: count(sql`CASE WHEN ${clients.isBuyer} = true THEN 1 END`),
       sellers: count(sql`CASE WHEN ${clients.isSeller} = true THEN 1 END`),
       brands: count(sql`CASE WHEN ${clients.isBrand} = true THEN 1 END`),
-      withDebt: count(sql`CASE WHEN ${clients.debt}::numeric > 0 THEN 1 END`),
+      withDebt: count(sql`CASE WHEN CAST(${clients.debt} AS DECIMAL(15,2)) > 0 THEN 1 END`),
       totalDebt: sum(clients.debt),
     })
     .from(clients);
