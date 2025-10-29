@@ -22,8 +22,8 @@ import {
   getDefaultMetricsForModule,
 } from "@/lib/data-cards/metricConfigs";
 import {
-  getUserMetricPreferences,
-  setUserMetricPreferences,
+  getMetricIdsForModule,
+  saveMetricIdsForModule,
 } from "@/lib/data-cards/preferences";
 
 interface DataCardConfigDropdownProps {
@@ -45,7 +45,7 @@ export function DataCardConfigDropdown({
   useEffect(() => {
     if (open) {
       // Load current preferences when dropdown opens
-      const currentPrefs = getUserMetricPreferences(moduleId);
+      const currentPrefs = getMetricIdsForModule(moduleId);
       if (currentPrefs && currentPrefs.length > 0) {
         setSelectedMetricIds(currentPrefs);
       } else {
@@ -73,7 +73,7 @@ export function DataCardConfigDropdown({
 
   const handleSave = () => {
     if (selectedMetricIds.length > 0 && selectedMetricIds.length <= maxCards) {
-      setUserMetricPreferences(moduleId, selectedMetricIds);
+      saveMetricIdsForModule(moduleId, selectedMetricIds);
       setOpen(false);
       onSave?.();
     }
@@ -82,7 +82,7 @@ export function DataCardConfigDropdown({
   const handleReset = () => {
     const defaultIds = defaultMetrics.map((m) => m.id);
     setSelectedMetricIds(defaultIds);
-    setUserMetricPreferences(moduleId, defaultIds);
+    saveMetricIdsForModule(moduleId, defaultIds);
     setOpen(false);
     onSave?.();
   };
