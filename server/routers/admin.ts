@@ -279,14 +279,27 @@ export const adminRouter = router({
       
       try {
         const totalStrains = await db.select({ count: sql<number>`COUNT(*)` }).from(strains);
-        const openthcStrains = await db.execute(sql`
-          SELECT COUNT(*) as count FROM strains WHERE openthcId IS NOT NULL
-        `);
+        
+        // Try to count OpenTHC strains, but handle case where column doesn't exist yet
+        let openthcCount = 0;
+        let columnsExist = false;
+        try {
+          const openthcStrains = await db.execute(sql`
+            SELECT COUNT(*) as count FROM strains WHERE openthcId IS NOT NULL
+          `);
+          openthcCount = (openthcStrains as any)[0]?.count || 0;
+          columnsExist = true;
+        } catch (error) {
+          // Column doesn't exist yet - this is fine, system not set up
+          columnsExist = false;
+        }
         
         return {
           totalStrains: totalStrains[0]?.count || 0,
-          openthcStrains: (openthcStrains as any)[0]?.count || 0,
-          systemReady: (openthcStrains as any)[0]?.count > 10000,
+          openthcStrains: openthcCount,
+          systemReady: openthcCount > 10000,
+          columnsExist: columnsExist,
+          needsSetup: !columnsExist,
         };
       } catch (error) {
         throw new Error(`Failed to get status: ${error instanceof Error ? error.message : 'Unknown'}`);
