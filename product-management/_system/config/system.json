@@ -1,0 +1,76 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "TERP",
+    "full_name": "TERP ERP System",
+    "description": "Modern, world-class ERP system redesign",
+    "repository": "EvanTenenbaum/TERP",
+    "created": "2025-10-29T00:00:00Z"
+  },
+  "id_system": {
+    "prefix": "TERP",
+    "types": {
+      "IDEA": "Raw ideas from inbox",
+      "FEAT": "Promoted features",
+      "BUG": "Bug reports",
+      "IMPROVE": "Improvements to existing features",
+      "TECH": "Technical debt/refactoring"
+    },
+    "next_ids": {
+      "IDEA": 1,
+      "FEAT": 1,
+      "BUG": 1,
+      "IMPROVE": 1,
+      "TECH": 1
+    }
+  },
+  "automation": {
+    "codebase_analysis": {
+      "enabled": true,
+      "schedule": "daily",
+      "incremental": true,
+      "cache_enabled": true
+    },
+    "dependency_tracking": {
+      "enabled": true,
+      "auto_update": true
+    },
+    "roadmap_sync": {
+      "enabled": true,
+      "auto_update": true
+    }
+  },
+  "qa": {
+    "auto_trigger": true,
+    "default_level": 3,
+    "levels": {
+      "1": "Quick check (automated)",
+      "2": "Feature QA (automated + basic manual)",
+      "3": "Comprehensive QA (full manual)",
+      "4": "Release QA (full system)"
+    }
+  },
+  "reference_system": {
+    "enabled": true,
+    "format": "[TYPE-ID]",
+    "examples": [
+      "[FEAT-015] - Reference a feature",
+      "[IDEA-042] - Reference an idea",
+      "[BUG-008] - Reference a bug",
+      "[@codebase/architecture] - Reference architecture doc",
+      "[@module/inventory] - Reference inventory module",
+      "[@roadmap] - Reference current roadmap"
+    ]
+  },
+  "paths": {
+    "root": "/home/ubuntu/TERP/product-management",
+    "system": "_system",
+    "codebase": "codebase",
+    "features": "features",
+    "ideas": "ideas",
+    "bugs": "bugs",
+    "prds": "prds",
+    "roadmap": "roadmap",
+    "context": "context"
+  }
+}
