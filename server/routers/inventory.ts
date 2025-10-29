@@ -20,6 +20,7 @@ export const inventoryRouter = router({
           return await inventoryDb.getBatchesWithDetails(input.limit);
         } catch (error) {
           handleError(error, "inventory.list");
+          throw error;
         }
       }),
 
@@ -32,6 +33,7 @@ export const inventoryRouter = router({
           return stats;
         } catch (error) {
           handleError(error, "inventory.dashboardStats");
+          throw error;
         }
       }),
 
@@ -54,6 +56,7 @@ export const inventoryRouter = router({
           };
         } catch (error) {
           handleError(error, "inventory.getById");
+          throw error;
         }
       }),
 
@@ -303,6 +306,7 @@ export const inventoryRouter = router({
             return await inventoryDb.getUserInventoryViews(ctx.user.id);
           } catch (error) {
             handleError(error, "inventory.views.list");
+            throw error;
           }
         }),
       
@@ -323,6 +327,7 @@ export const inventoryRouter = router({
             });
           } catch (error) {
             handleError(error, "inventory.views.save");
+            throw error;
           }
         }),
       
@@ -334,6 +339,7 @@ export const inventoryRouter = router({
             return await inventoryDb.deleteInventoryView(input, ctx.user.id);
           } catch (error) {
             handleError(error, "inventory.views.delete");
+            throw error;
           }
         }),
     }),
@@ -351,6 +357,7 @@ export const inventoryRouter = router({
             return await inventoryDb.bulkUpdateBatchStatus(input.batchIds, input.newStatus, ctx.user.id);
           } catch (error) {
             handleError(error, "inventory.bulk.updateStatus");
+            throw error;
           }
         }),
       
@@ -362,6 +369,7 @@ export const inventoryRouter = router({
             return await inventoryDb.bulkDeleteBatches(input, ctx.user.id);
           } catch (error) {
             handleError(error, "inventory.bulk.delete");
+            throw error;
           }
         }),
     }),
@@ -376,6 +384,7 @@ export const inventoryRouter = router({
             return await inventoryDb.calculateBatchProfitability(input);
           } catch (error) {
             handleError(error, "inventory.profitability.batch");
+            throw error;
           }
         }),
       
@@ -387,6 +396,7 @@ export const inventoryRouter = router({
             return await inventoryDb.getTopProfitableBatches(input);
           } catch (error) {
             handleError(error, "inventory.profitability.top");
+            throw error;
           }
         }),
       
@@ -397,6 +407,7 @@ export const inventoryRouter = router({
             return await inventoryDb.getProfitabilitySummary();
           } catch (error) {
             handleError(error, "inventory.profitability.summary");
+            throw error;
           }
         }),
     }),
