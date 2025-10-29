@@ -3,7 +3,8 @@
  * Manages inventory filter state and logic
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useLocation } from "wouter";
 
 export interface InventoryFilters {
   status: string[];
@@ -46,7 +47,35 @@ export const defaultFilters: InventoryFilters = {
 };
 
 export function useInventoryFilters() {
-  const [filters, setFilters] = useState<InventoryFilters>(defaultFilters);
+  const [location] = useLocation();
+  
+  // Initialize filters from URL parameters
+  const getInitialFilters = (): InventoryFilters => {
+    const params = new URLSearchParams(window.location.search);
+    const initialFilters = { ...defaultFilters };
+    
+    // Check for stockLevel parameter (from data cards)
+    const stockLevel = params.get('stockLevel');
+    if (stockLevel && ['in_stock', 'low_stock', 'out_of_stock'].includes(stockLevel)) {
+      initialFilters.stockLevel = stockLevel as any;
+    }
+    
+    // Check for status parameter
+    const status = params.get('status');
+    if (status) {
+      initialFilters.status = status.split(',');
+    }
+    
+    // Check for category parameter
+    const category = params.get('category');
+    if (category) {
+      initialFilters.category = category;
+    }
+    
+    return initialFilters;
+  };
+  
+  const [filters, setFilters] = useState<InventoryFilters>(getInitialFilters);
 
   const updateFilter = <K extends keyof InventoryFilters>(
     key: K,

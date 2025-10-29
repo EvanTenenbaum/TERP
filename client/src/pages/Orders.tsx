@@ -47,9 +47,20 @@ import { DataCardSection } from '@/components/data-cards';
 
 export default function Orders() {
   const [, setLocation] = useLocation();
+  
+  // Initialize filters from URL parameters
+  const getInitialStatusFilter = () => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status');
+    if (status && ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].includes(status)) {
+      return status;
+    }
+    return 'ALL';
+  };
+  
   const [activeTab, setActiveTab] = useState<'draft' | 'confirmed'>('confirmed');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>(getInitialStatusFilter);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showShipModal, setShowShipModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
