@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, CheckSquare, Square } from "lucide-react";
+import { StrainFamilyIndicator, OutOfStockAlert } from "@/components/strain/StrainComponents";
 
 interface InventoryBrowserProps {
   inventory: any[];
@@ -172,12 +173,22 @@ export function InventoryBrowser({
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        {item.name}
-                        {alreadyInSheet && (
-                          <Badge variant="secondary" className="ml-2 text-xs">
-                            In Sheet
-                          </Badge>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            {item.name}
+                            {alreadyInSheet && (
+                              <Badge variant="secondary" className="text-xs">
+                                In Sheet
+                              </Badge>
+                            )}
+                          </div>
+                          {item.strainId && (
+                            <StrainFamilyIndicator strainId={item.strainId} />
+                          )}
+                          {item.quantity <= 0 && item.strainId && (
+                            <span className="text-xs text-destructive">Out of stock</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{item.category || "N/A"}</Badge>
