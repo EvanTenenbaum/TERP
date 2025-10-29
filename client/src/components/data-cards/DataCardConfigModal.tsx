@@ -71,6 +71,11 @@ export function DataCardConfigModal({
     return null;
   }
   
+  // Don't render content if modal is not open (prevents rendering errors)
+  if (!open) {
+    return null;
+  }
+  
   const maxCards = moduleConfig.maxCards;
   const isValid = selectedMetricIds.length > 0 && selectedMetricIds.length <= maxCards;
   
