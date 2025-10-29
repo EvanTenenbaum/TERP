@@ -117,16 +117,6 @@ export const adminImportRouter = router({
             continue;
           }
 
-          // Check if already exists
-          const existing = await db.execute(sql`
-            SELECT id FROM strains WHERE openthcId = ${strain.id} LIMIT 1
-          `);
-          
-          if ((existing as any[]).length > 0) {
-            skipped++;
-            continue;
-          }
-
           const category = normalizeCategory(strain.type);
           const standardizedName = standardizeName(name);
           const description = strain.type ? `Type: ${strain.type}` : null;
@@ -140,17 +130,30 @@ export const adminImportRouter = router({
             openthcId: strain.id,
             openthcStub: strain.stub,
           });
-
-          imported++;
         } catch (error) {
           console.error(`Error processing strain: ${strain.name}`, error);
           skipped++;
         }
       }
 
-      // Insert all at once
+      // Insert all at once, handling duplicates
       if (strainsToInsert.length > 0) {
-        await db.insert(strains).values(strainsToInsert);
+        try {
+          await db.insert(strains).values(strainsToInsert);
+          imported = strainsToInsert.length;
+        } catch (error) {
+          // If bulk insert fails due to duplicates, insert one by one
+          console.log('Bulk insert failed, trying individual inserts...');
+          for (const strain of strainsToInsert) {
+            try {
+              await db.insert(strains).values([strain]);
+              imported++;
+            } catch (e) {
+              // Likely a duplicate, skip it
+              skipped++;
+            }
+          }
+        }
       }
 
       const nextOffset = input.offset + input.batchSize;
