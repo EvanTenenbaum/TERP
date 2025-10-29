@@ -2,6 +2,12 @@ import { getDb } from "./db";
 import { strains } from "../drizzle/schema";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 interface OpenTHCStrain {
   id: string;
@@ -46,11 +52,25 @@ export async function importOpenTHCStrainsFromJSON() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const jsonPath = path.join(__dirname, "../openthc_strains.json");
+  // Try multiple possible paths for the JSON file
+  const possiblePaths = [
+    path.join(__dirname, "../openthc_strains.json"),
+    path.join(process.cwd(), "openthc_strains.json"),
+    path.join(process.cwd(), "server/openthc_strains.json"),
+    "/app/openthc_strains.json", // DigitalOcean app platform
+  ];
   
-  if (!fs.existsSync(jsonPath)) {
-    console.error("OpenTHC strains JSON file not found:", jsonPath);
-    return { success: false, message: "JSON file not found" };
+  let jsonPath = null;
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      jsonPath = p;
+      break;
+    }
+  }
+  
+  if (!jsonPath) {
+    console.error("OpenTHC strains JSON file not found in any of these paths:", possiblePaths);
+    return { success: false, message: "JSON file not found", imported: 0, skipped: 0 };
   }
 
   console.log("Reading OpenTHC strains JSON file...");
@@ -125,7 +145,7 @@ export async function importOpenTHCStrainsFromJSON() {
 
   return {
     success: true,
-    processed: processedCount,
+    imported: processedCount,
     skipped: skippedCount,
     withType: withTypeCount,
     withoutType: withoutTypeCount,
