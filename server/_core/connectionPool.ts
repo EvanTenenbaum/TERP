@@ -41,14 +41,27 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
 
   const poolConfig = { ...defaultConfig, ...config };
 
+  // Parse SSL configuration from DATABASE_URL
+  // mysql2 doesn't recognize 'ssl-mode=REQUIRED', needs explicit ssl object
+  const needsSSL = databaseUrl.includes('ssl-mode=REQUIRED') || 
+                   databaseUrl.includes('sslmode=require') || 
+                   databaseUrl.includes('ssl=true');
+  
+  const sslConfig = needsSSL ? {
+    ssl: {
+      rejectUnauthorized: false // DigitalOcean managed DB uses valid certs
+    }
+  } : {};
+
   logger.info({
     msg: "Creating MySQL connection pool",
-    config: poolConfig,
+    config: { ...poolConfig, ssl: needsSSL },
   });
 
   pool = mysql.createPool({
     uri: databaseUrl,
     ...poolConfig,
+    ...sslConfig,
   });
 
   // Handle pool errors
