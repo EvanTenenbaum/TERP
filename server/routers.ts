@@ -36,6 +36,7 @@ import { dataCardMetricsRouter } from "./routers/dataCardMetrics";
 import { adminRouter } from "./routers/admin";
 import { adminImportRouter } from "./routers/adminImport";
 import { analyticsRouter } from "./routers/analytics";
+import { adminMigrationsRouter } from "./routers/adminMigrations";
 
 export const appRouter = router({
   system: systemRouter,
@@ -73,6 +74,7 @@ export const appRouter = router({
   admin: adminRouter,
   adminImport: adminImportRouter,
   analytics: analyticsRouter,
+  adminMigrations: adminMigrationsRouter,
 });
 
 export type AppRouter = typeof appRouter;
