@@ -494,17 +494,17 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     },
   },
   
-  vendor_sold: {
-    id: 'vendor_sold',
-    label: 'Sold Items',
-    description: 'Items already sold',
+  vendor_purchased: {
+    id: 'vendor_purchased',
+    label: 'Purchased Items',
+    description: 'Items already purchased',
     icon: CheckCircle,
     color: 'text-green-600',
     format: 'count',
     category: 'operational',
     destination: {
       path: '/vendor-supply',
-      getParams: () => ({ status: 'SOLD' }),
+      getParams: () => ({ status: 'PURCHASED' }),
     },
   },
   
@@ -739,7 +739,7 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       'vendor_reserved',
       'vendor_total',
       'vendor_expiring',
-      'vendor_sold',
+      'vendor_purchased',
       'vendor_by_vendor',
       'vendor_total_value',
     ],
