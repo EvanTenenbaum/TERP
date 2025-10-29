@@ -108,6 +108,7 @@ export type InsertBrand = typeof brands.$inferInsert;
 /**
  * Strain Library table
  * Centralized library of cannabis strains for standardization
+ * UPDATED: Added OpenTHC VDB integration fields
  */
 export const strains = mysqlTable("strains", {
   id: int("id").autoincrement().primaryKey(),
@@ -116,6 +117,9 @@ export const strains = mysqlTable("strains", {
   aliases: text("aliases"), // JSON array of alternative names
   category: varchar("category", { length: 50 }), // Indica, Sativa, Hybrid
   description: text("description"),
+  // OpenTHC VDB Integration
+  openthcId: varchar("openthcId", { length: 255 }), // OpenTHC Universal Unique ID
+  openthcStub: varchar("openthcStub", { length: 255 }), // OpenTHC URL slug
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
