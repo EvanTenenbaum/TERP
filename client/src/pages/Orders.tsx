@@ -43,6 +43,7 @@ import { format } from 'date-fns';
 import { useLocation } from 'wouter';
 import { exportToCSVWithLabels } from '@/utils/exportToCSV';
 import { toast } from 'sonner';
+import { DataCardSection } from '@/components/data-cards';
 
 export default function Orders() {
   const [, setLocation] = useLocation();
@@ -330,52 +331,7 @@ export default function Orders() {
         {/* Confirmed Orders Tab */}
         <TabsContent value="confirmed" className="space-y-6">
           {/* Confirmed Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('PENDING')}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                    <p className="text-2xl font-bold">{confirmedStats.pending}</p>
-                  </div>
-                  <Clock className="h-8 w-8 text-yellow-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('PACKED')}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Packed</p>
-                    <p className="text-2xl font-bold">{confirmedStats.packed}</p>
-                  </div>
-                  <Package className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('SHIPPED')}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Shipped</p>
-                    <p className="text-2xl font-bold">{confirmedStats.shipped}</p>
-                  </div>
-                  <Truck className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('ALL')}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
-                    <p className="text-2xl font-bold">{confirmedStats.total}</p>
-                  </div>
-                  <CheckCircle2 className="h-8 w-8 text-gray-600" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <DataCardSection moduleId="orders" />
 
           {/* Filters */}
           <Card>
