@@ -7,10 +7,24 @@ export function formatValue(
   value: number | string,
   format: 'currency' | 'number' | 'percentage' | 'count'
 ): string {
+  // Convert to number
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   
-  if (isNaN(numValue)) {
-    return String(value);
+  // Handle invalid values
+  if (numValue === null || numValue === undefined || isNaN(numValue) || !isFinite(numValue)) {
+    // Return default zero value for the format
+    switch (format) {
+      case 'currency':
+        return '$0.00';
+      case 'number':
+        return '0';
+      case 'percentage':
+        return '0.00%';
+      case 'count':
+        return '0';
+      default:
+        return '0';
+    }
   }
   
   switch (format) {
@@ -18,7 +32,7 @@ export function formatValue(
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(numValue);
     
@@ -30,16 +44,15 @@ export function formatValue(
     
     case 'percentage':
       return new Intl.NumberFormat('en-US', {
-        style: 'percent',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1,
-      }).format(numValue / 100);
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(numValue) + '%';
     
     case 'count':
       return new Intl.NumberFormat('en-US', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-      }).format(numValue);
+      }).format(Math.round(numValue));
     
     default:
       return String(value);
