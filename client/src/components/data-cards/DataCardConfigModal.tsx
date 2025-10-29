@@ -56,12 +56,18 @@ export function DataCardConfigModal({
     if (open) {
       setSelectedMetricIds(currentMetricIds);
       setError(null);
-      // Track modal opened
-      trackConfigModalOpened(moduleId);
+      // Track modal opened (with error handling)
+      try {
+        trackConfigModalOpened(moduleId);
+      } catch (err) {
+        console.warn('Failed to track modal opened:', err);
+      }
     }
   }, [open, currentMetricIds, moduleId]);
   
-  if (!moduleConfig) {
+  // Early return if config is not available
+  if (!moduleConfig || !availableMetrics || availableMetrics.length === 0) {
+    console.error('Invalid module config or metrics:', { moduleId, moduleConfig, availableMetrics });
     return null;
   }
   
@@ -90,7 +96,11 @@ export function DataCardConfigModal({
     }
     
     // Track metrics customization
-    trackMetricsCustomized(moduleId, selectedMetricIds, currentMetricIds);
+    try {
+      trackMetricsCustomized(moduleId, selectedMetricIds, currentMetricIds);
+    } catch (err) {
+      console.warn('Failed to track metrics customized:', err);
+    }
     
     saveMetricIdsForModule(moduleId, selectedMetricIds);
     onSave?.();
@@ -104,7 +114,11 @@ export function DataCardConfigModal({
     setError(null);
     
     // Track reset
-    trackMetricsReset(moduleId, defaultIds);
+    try {
+      trackMetricsReset(moduleId, defaultIds);
+    } catch (err) {
+      console.warn('Failed to track metrics reset:', err);
+    }
   };
   
   const handleCancel = () => {
@@ -112,7 +126,11 @@ export function DataCardConfigModal({
     setError(null);
     
     // Track cancel
-    trackConfigModalCancelled(moduleId);
+    try {
+      trackConfigModalCancelled(moduleId);
+    } catch (err) {
+      console.warn('Failed to track modal cancelled:', err);
+    }
     
     onOpenChange(false);
   };
@@ -161,6 +179,12 @@ export function DataCardConfigModal({
                   const isSelected = selectedMetricIds.includes(metric.id);
                   const isDisabled = !isSelected && selectedMetricIds.length >= maxCards;
                   const Icon = metric.icon;
+                  
+                  // Safety check for icon
+                  if (!Icon) {
+                    console.warn('Missing icon for metric:', metric.id);
+                    return null;
+                  }
                   
                   return (
                     <div
