@@ -60,16 +60,6 @@ export function getValidMetricIds(moduleId: string): string[] {
       'inventory_by_category',
       'inventory_expiring_soon',
     ],
-    quotes: [
-      'quotes_total',
-      'quotes_draft',
-      'quotes_sent',
-      'quotes_accepted',
-      'quotes_rejected',
-      'quotes_expired',
-      'quotes_total_value',
-      'quotes_this_month',
-    ],
     orders: [
       'orders_total',
       'orders_pending',
@@ -128,8 +118,6 @@ export async function calculateMetrics(
   switch (moduleId) {
     case 'inventory':
       return await calculateInventoryMetrics(metricIds);
-    case 'quotes':
-      return await calculateQuotesMetrics(metricIds);
     case 'orders':
       return await calculateOrdersMetrics(metricIds);
     case 'accounting':
@@ -279,114 +267,6 @@ async function calculateInventoryMetrics(
     results['inventory_expiring_soon'] = {
       value: result?.count || 0,
       subtext: 'expiring in 30 days',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  
-  return results;
-}
-
-// ============================================================================
-// QUOTES METRICS
-// ============================================================================
-
-async function calculateQuotesMetrics(
-  metricIds: string[]
-): Promise<Record<string, MetricResult>> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  
-  const results: Record<string, MetricResult> = {};
-  
-  // Single optimized query for all quote metrics
-  // Quotes are stored in orders table with orderType = 'QUOTE'
-  const [aggregates] = await db
-    .select({
-      total: count(),
-      draft: count(sql`CASE WHEN ${orders.quoteStatus} = 'DRAFT' THEN 1 END`),
-      sent: count(sql`CASE WHEN ${orders.quoteStatus} = 'SENT' THEN 1 END`),
-      accepted: count(sql`CASE WHEN ${orders.quoteStatus} = 'ACCEPTED' THEN 1 END`),
-      rejected: count(sql`CASE WHEN ${orders.quoteStatus} = 'REJECTED' THEN 1 END`),
-      expired: count(sql`CASE WHEN ${orders.quoteStatus} = 'EXPIRED' THEN 1 END`),
-      totalValue: sum(orders.total),
-    })
-    .from(orders)
-    .where(eq(orders.orderType, 'QUOTE'));
-  
-  if (metricIds.includes('quotes_total')) {
-    results['quotes_total'] = {
-      value: Number(aggregates.total) || 0,
-      subtext: 'all quotes',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  
-  if (metricIds.includes('quotes_draft')) {
-    results['quotes_draft'] = {
-      value: Number(aggregates.draft) || 0,
-      subtext: 'in draft',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  
-  if (metricIds.includes('quotes_sent')) {
-    results['quotes_sent'] = {
-      value: Number(aggregates.sent) || 0,
-      subtext: 'sent to clients',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  
-  if (metricIds.includes('quotes_accepted')) {
-    results['quotes_accepted'] = {
-      value: Number(aggregates.accepted) || 0,
-      subtext: 'accepted',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  
-  if (metricIds.includes('quotes_rejected')) {
-    results['quotes_rejected'] = {
-      value: Number(aggregates.rejected) || 0,
-      subtext: 'rejected',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  
-  if (metricIds.includes('quotes_expired')) {
-    results['quotes_expired'] = {
-      value: Number(aggregates.expired) || 0,
-      subtext: 'expired',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  
-  if (metricIds.includes('quotes_total_value')) {
-    results['quotes_total_value'] = {
-      value: Number(aggregates.totalValue) || 0,
-      subtext: 'total quote value',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  
-  if (metricIds.includes('quotes_this_month')) {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-    
-    const [result] = await db
-      .select({ count: count() })
-      .from(orders)
-      .where(
-        and(
-          eq(orders.orderType, 'QUOTE'),
-          gte(orders.createdAt, startOfMonth)
-        )
-      );
-    
-    results['quotes_this_month'] = {
-      value: result?.count || 0,
-      subtext: 'this month',
       updatedAt: new Date().toISOString(),
     };
   }
@@ -871,8 +751,8 @@ async function calculateClientsMetrics(
       buyers: count(sql`CASE WHEN ${clients.isBuyer} = true THEN 1 END`),
       sellers: count(sql`CASE WHEN ${clients.isSeller} = true THEN 1 END`),
       brands: count(sql`CASE WHEN ${clients.isBrand} = true THEN 1 END`),
-      withDebt: count(sql`CASE WHEN CAST(${clients.debt} AS DECIMAL(15,2)) > 0 THEN 1 END`),
-      totalDebt: sum(clients.debt),
+      withDebt: count(sql`CASE WHEN CAST(${clients.totalOwed} AS DECIMAL(15,2)) > 0 THEN 1 END`),
+      totalDebt: sum(clients.totalOwed),
     })
     .from(clients);
   
@@ -942,20 +822,19 @@ async function calculateClientsMetrics(
   }
   
   if (metricIds.includes('clients_top_buyer')) {
-    // Get top buyer by total purchase amount
+    // Get top buyer by total purchase amount (using pre-calculated totalSpent)
     const [topBuyer] = await db
       .select({
-        clientId: orders.clientId,
-        totalPurchases: sum(orders.total),
+        name: clients.name,
+        totalSpent: clients.totalSpent,
       })
-      .from(orders)
-      .groupBy(orders.clientId)
-      .orderBy(desc(sum(orders.total)))
+      .from(clients)
+      .orderBy(desc(clients.totalSpent))
       .limit(1);
     
     results['clients_top_buyer'] = {
-      value: Number(topBuyer?.totalPurchases) || 0,
-      subtext: 'top buyer volume',
+      value: Number(topBuyer?.totalSpent) || 0,
+      subtext: topBuyer?.name || 'top buyer',
       updatedAt: new Date().toISOString(),
     };
   }
