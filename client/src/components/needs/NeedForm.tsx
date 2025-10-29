@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { StrainInput } from "@/components/inventory/StrainInput";
 
 /**
  * Need Form Component
@@ -49,6 +50,7 @@ export function NeedForm({
 
   const [formData, setFormData] = useState({
     strain: initialData?.strain || "",
+    strainId: initialData?.strainId || null,
     category: initialData?.category || "",
     subcategory: initialData?.subcategory || "",
     grade: initialData?.grade || "",
@@ -114,6 +116,7 @@ export function NeedForm({
         ...formData,
         // Convert empty strings to undefined
         strain: formData.strain || undefined,
+        strainId: formData.strainId || undefined,
         category: formData.category || undefined,
         subcategory: formData.subcategory || undefined,
         grade: formData.grade || undefined,
@@ -185,10 +188,14 @@ export function NeedForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="strain">Strain</Label>
-                <Input
-                  id="strain"
+                <StrainInput
                   value={formData.strain}
-                  onChange={(e) => handleChange("strain", e.target.value)}
+                  strainId={formData.strainId}
+                  onChange={(name, id) => {
+                    setFormData(prev => ({ ...prev, strain: name, strainId: id }));
+                    setError(null);
+                    setIsDuplicate(false);
+                  }}
                   placeholder="e.g., Blue Dream"
                 />
               </div>
