@@ -8,4 +8,5 @@ export { CashCollectedLeaderboard } from "./CashCollectedLeaderboard";
 export { ClientDebtLeaderboard } from "./ClientDebtLeaderboard";
 export { ClientProfitMarginLeaderboard } from "./ClientProfitMarginLeaderboard";
 export { FreeformNoteWidget } from "./FreeformNoteWidget";
+export { TopStrainFamiliesWidget } from "./TopStrainFamiliesWidget";
 
