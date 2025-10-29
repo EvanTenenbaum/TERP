@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Filter, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { DataCardSection } from "@/components/data-cards";
 
 export default function ClientsListPage() {
   const [, setLocation] = useLocation();
@@ -108,6 +109,9 @@ export default function ClientsListPage() {
           Add New Client
         </Button>
       </div>
+
+      {/* Client Statistics */}
+      <DataCardSection moduleId="clients" />
 
       {/* Search and Filters */}
       <Card>
