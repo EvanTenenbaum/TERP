@@ -3,10 +3,12 @@
  * Grid container for data cards with data fetching and navigation
  */
 
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { DataCard } from "./DataCard";
 import { getMetricConfig, getMetricIdsForModule } from "@/lib/data-cards";
 import { trpc } from "@/lib/trpc";
+import { trackCardsViewed, trackCardError } from "@/lib/data-cards/analytics";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
@@ -31,6 +33,22 @@ export function DataCardGrid({ moduleId, className }: DataCardGridProps) {
       retry: 2,
     }
   );
+  
+  // Track cards viewed when data loads
+  useEffect(() => {
+    if (data && !isLoading) {
+      trackCardsViewed(moduleId, metricIds);
+    }
+  }, [data, isLoading, moduleId, metricIds]);
+  
+  // Track errors
+  useEffect(() => {
+    if (error) {
+      metricIds.forEach(metricId => {
+        trackCardError(moduleId, metricId, error.message);
+      });
+    }
+  }, [error, moduleId, metricIds]);
   
   const handleCardClick = (metricId: string) => {
     const metricConfig = getMetricConfig(metricId);

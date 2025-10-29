@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { MetricConfig, MetricResult } from "@/lib/data-cards/types";
 import { formatValue, formatTrend } from "@/lib/data-cards/formatters";
+import { trackCardClick } from "@/lib/data-cards/analytics";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface DataCardProps {
@@ -22,6 +23,13 @@ export function DataCard({ metric, data, onClick, isLoading }: DataCardProps) {
   
   const handleClick = () => {
     if (onClick && !isLoading) {
+      // Track card click for analytics
+      const destination = metric.destination?.path || '#';
+      trackCardClick(
+        metric.id.split('_')[0], // Extract module ID from metric ID
+        metric.id,
+        destination
+      );
       onClick();
     }
   };
