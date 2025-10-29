@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Upload, X } from "lucide-react";
+import { StrainInput } from "@/components/inventory/StrainInput";
 import { useDebounce } from "@/hooks/useDebounce";
 
 interface PurchaseModalProps {
@@ -32,6 +33,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   const [formData, setFormData] = useState({
     vendorName: "",
     brandName: "",
+    strainId: null as number | null,
     strainName: "",
     productName: "",
     category: "",
@@ -49,15 +51,12 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
 
   const [vendorSearch, setVendorSearch] = useState("");
   const [brandSearch, setBrandSearch] = useState("");
-  const [strainSearch, setStrainSearch] = useState("");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
   const [showBrandDropdown, setShowBrandDropdown] = useState(false);
-  const [showStrainDropdown, setShowStrainDropdown] = useState(false);
 
   const debouncedVendorSearch = useDebounce(vendorSearch, 300);
   const debouncedBrandSearch = useDebounce(brandSearch, 300);
-  const debouncedStrainSearch = useDebounce(strainSearch, 300);
 
   // Fetch autocomplete data
   const { data: vendors } = trpc.inventory.vendors.useQuery(
@@ -70,10 +69,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     { enabled: debouncedBrandSearch.length > 0 }
   );
 
-  const { data: strains } = trpc.strains.search.useQuery(
-    { query: debouncedStrainSearch },
-    { enabled: debouncedStrainSearch.length > 0 }
-  );
+
 
   // Fetch settings data
   const { data: categories } = trpc.settings.categories.list.useQuery();
@@ -96,6 +92,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     setFormData({
       vendorName: "",
       brandName: "",
+      strainId: null,
       strainName: "",
       productName: "",
       category: "",
@@ -112,7 +109,6 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     });
     setVendorSearch("");
     setBrandSearch("");
-    setStrainSearch("");
     setMediaFiles([]);
   };
 
@@ -158,6 +154,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
       category: formData.category,
       subcategory: formData.subcategory || undefined,
       grade: formData.grade,
+      strainId: formData.strainId,
       quantity: parseFloat(formData.quantity),
       cogsMode: formData.cogsMode,
       unitCogs: formData.cogsMode === "FIXED" ? formData.unitCogs : undefined,
@@ -266,40 +263,17 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
             </div>
           </div>
 
-          {/* Strain Autocomplete */}
+          {/* Strain Input with Fuzzy Matching */}
           <div className="space-y-2">
             <Label htmlFor="strain">Strain (Optional)</Label>
-            <div className="relative">
-              <Input
-                id="strain"
-                value={strainSearch}
-                onChange={(e) => {
-                  setStrainSearch(e.target.value);
-                  setFormData({ ...formData, strainName: e.target.value });
-                  setShowStrainDropdown(true);
-                }}
-                onFocus={() => setShowStrainDropdown(true)}
-                placeholder="Start typing strain name..."
-              />
-              {showStrainDropdown && strains && strains.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-                  {strains.map((strain) => (
-                    <div
-                      key={strain.id}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
-                      onClick={() => {
-                        setStrainSearch(strain.name);
-                        setFormData({ ...formData, strainName: strain.name });
-                        setShowStrainDropdown(false);
-                      }}
-                    >
-                      <span>{strain.name}</span>
-                      <span className="text-sm text-gray-500 capitalize">{strain.category}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <StrainInput
+              value={formData.strainId}
+              onChange={(strainId, strainName) => {
+                setFormData({ ...formData, strainId, strainName });
+              }}
+              category={formData.category as "indica" | "sativa" | "hybrid" | null}
+              placeholder="Search for a strain..."
+            />
           </div>
 
           {/* Product Name */}
