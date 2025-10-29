@@ -1,345 +1,194 @@
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
-import * as React from "react";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Check, ChevronsUpDown, AlertCircle, Sparkles } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StrainInputProps {
-  value?: number | null; // strainId
+  value: number | null;
   onChange: (strainId: number | null, strainName: string) => void;
   category?: "indica" | "sativa" | "hybrid" | null;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   required?: boolean;
-  autoAssignThreshold?: number; // Default: 95
 }
 
-interface StrainSuggestion {
-  id: number;
-  name: string;
-  category: string | null;
-  openthcId: string | null;
-  similarity: number;
-  matchType: "exact" | "partial" | "fuzzy";
-}
-
-/**
- * StrainInput Component
- * 
- * Intelligent strain selection with fuzzy matching and auto-assignment.
- * 
- * Features:
- * - Fuzzy search autocomplete
- * - Similarity scoring
- * - Auto-assignment for high similarity (≥95%)
- * - Suggestion confirmation for medium similarity (80-94%)
- * - Create new strain for low similarity (<80%)
- * - Visual indicators for match quality
- * 
- * @example
- * ```tsx
- * <StrainInput
- *   value={strainId}
- *   onChange={(id, name) => setStrainId(id)}
- *   category="hybrid"
- *   placeholder="Search for a strain..."
- * />
- * ```
- */
 export function StrainInput({
   value,
   onChange,
   category,
-  placeholder = "Search for a strain...",
+  placeholder = "Select strain...",
   className,
   disabled = false,
   required = false,
-  autoAssignThreshold = 95,
 }: StrainInputProps) {
-  const [open, setOpen] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedStrain, setSelectedStrain] = React.useState<StrainSuggestion | null>(null);
-  const [showSuggestion, setShowSuggestion] = React.useState(false);
-  const [suggestion, setSuggestion] = React.useState<StrainSuggestion | null>(null);
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStrain, setSelectedStrain] = useState<{
+    id: number;
+    name: string;
+    category: string | null;
+  } | null>(null);
 
-  // Fetch selected strain details if value changes
-  const { data: strainDetails } = trpc.strains.getById.useQuery(
-    { id: value! },
-    { enabled: !!value && !selectedStrain }
-  );
-
-  React.useEffect(() => {
-    if (strainDetails && !selectedStrain) {
-      setSelectedStrain({
-        id: strainDetails.id,
-        name: strainDetails.name,
-        category: strainDetails.category,
-        openthcId: strainDetails.openthcId || null,
-        similarity: 100,
-        matchType: "exact",
-      });
-    }
-  }, [strainDetails, selectedStrain]);
-
-  // Fuzzy search query
+  // Fuzzy search query (90% threshold for auto-assignment)
   const { data: searchResults, isLoading } = trpc.strains.fuzzySearch.useQuery(
-    {
-      query: searchQuery,
-      limit: 10,
-      category: category || undefined,
+    { 
+      query: searchQuery, 
+      limit: 20,
+      threshold: 70, // Show matches above 70% similarity
+      category: category || undefined
     },
-    {
-      enabled: searchQuery.length >= 2,
-      keepPreviousData: true,
-    }
+    { enabled: searchQuery.length >= 2 }
   );
 
-  // Create strain mutation
-  const createStrainMutation = trpc.strains.create.useMutation({
-    onSuccess: (newStrain) => {
-      setSelectedStrain({
-        id: newStrain.id,
-        name: newStrain.name,
-        category: newStrain.category,
-        openthcId: null,
-        similarity: 100,
-        matchType: "exact",
+  // Load selected strain if value changes
+  useEffect(() => {
+    if (value && !selectedStrain) {
+      trpc.strains.getById.useQuery({ id: value }).then((result) => {
+        if (result.data) {
+          setSelectedStrain(result.data);
+        }
       });
-      onChange(newStrain.id, newStrain.name);
-      setOpen(false);
-      setShowSuggestion(false);
-    },
-  });
+    }
+  }, [value]);
 
   // Handle strain selection
-  const handleSelect = (strain: StrainSuggestion) => {
-    // Check if similarity is high enough for auto-assignment
-    if (strain.similarity >= autoAssignThreshold) {
-      // Auto-assign
-      setSelectedStrain(strain);
-      onChange(strain.id, strain.name);
-      setOpen(false);
-      setShowSuggestion(false);
-    } else if (strain.similarity >= 80) {
-      // Show suggestion for confirmation
-      setSuggestion(strain);
-      setShowSuggestion(true);
-    } else {
-      // Low similarity, just select it
-      setSelectedStrain(strain);
-      onChange(strain.id, strain.name);
-      setOpen(false);
-      setShowSuggestion(false);
-    }
+  const handleSelect = (strain: { id: number; name: string; category: string | null; similarity?: number }) => {
+    // Silent auto-assignment for 90%+ similarity
+    setSelectedStrain({ id: strain.id, name: strain.name, category: strain.category });
+    onChange(strain.id, strain.name);
+    setSearchQuery("");
+    setOpen(false);
   };
 
-  // Handle suggestion confirmation
-  const handleConfirmSuggestion = () => {
-    if (suggestion) {
-      setSelectedStrain(suggestion);
-      onChange(suggestion.id, suggestion.name);
-      setShowSuggestion(false);
-      setOpen(false);
-    }
-  };
+  // Handle manual text input (create new strain)
+  const handleCreateNew = async () => {
+    if (searchQuery.length < 2) return;
 
-  // Handle create new strain
-  const handleCreateNew = () => {
-    if (searchQuery.trim()) {
-      createStrainMutation.mutate({
-        name: searchQuery.trim(),
-        category: category || null,
-        standardizedName: searchQuery.toLowerCase().trim().replace(/\s+/g, "-"),
+    // Create new strain via getOrCreate endpoint
+    const result = await trpc.strains.getOrCreate.mutate({
+      name: searchQuery,
+      category: category || null,
+      autoAssignThreshold: 90, // 90% threshold
+    });
+
+    if (result.strain) {
+      setSelectedStrain({
+        id: result.strain.id,
+        name: result.strain.name,
+        category: result.strain.category,
       });
+      onChange(result.strain.id, result.strain.name);
+      setSearchQuery("");
+      setOpen(false);
     }
-  };
-
-  // Get similarity badge color
-  const getSimilarityColor = (similarity: number) => {
-    if (similarity >= 95) return "bg-green-500";
-    if (similarity >= 80) return "bg-yellow-500";
-    return "bg-gray-500";
-  };
-
-  // Get match type icon
-  const getMatchIcon = (matchType: string, similarity: number) => {
-    if (similarity >= 95) return <Check className="h-3 w-3" />;
-    if (similarity >= 80) return <AlertCircle className="h-3 w-3" />;
-    return null;
   };
 
   return (
-    <div className={cn("relative", className)}>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            aria-required={required}
-            disabled={disabled}
-            className={cn(
-              "w-full justify-between",
-              !selectedStrain && "text-muted-foreground"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("w-full justify-between", className)}
+          disabled={disabled}
+        >
+          {selectedStrain ? selectedStrain.name : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Type strain name..."
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
+          <CommandList>
+            {isLoading && searchQuery.length >= 2 && (
+              <CommandEmpty>Searching...</CommandEmpty>
             )}
-          >
-            <span className="truncate">
-              {selectedStrain ? (
-                <span className="flex items-center gap-2">
-                  {selectedStrain.name}
-                  {selectedStrain.category && (
-                    <Badge variant="secondary" className="text-xs">
-                      {selectedStrain.category}
-                    </Badge>
-                  )}
-                  {selectedStrain.openthcId && (
-                    <Sparkles className="h-3 w-3 text-primary" title="OpenTHC verified" />
-                  )}
-                </span>
-              ) : (
-                placeholder
-              )}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Type strain name..."
-              value={searchQuery}
-              onValueChange={setSearchQuery}
-            />
-            <CommandList>
-              {isLoading && (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  Searching...
-                </div>
-              )}
-              {!isLoading && searchQuery.length < 2 && (
-                <CommandEmpty>Type at least 2 characters to search</CommandEmpty>
-              )}
-              {!isLoading && searchQuery.length >= 2 && searchResults && searchResults.length === 0 && (
-                <div className="py-6 px-4 space-y-2">
-                  <div className="text-sm text-muted-foreground text-center">
-                    No strains found matching "{searchQuery}"
-                  </div>
+            
+            {!isLoading && searchQuery.length >= 2 && searchResults && searchResults.length === 0 && (
+              <CommandEmpty>
+                <div className="text-center py-2">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    No matching strains found
+                  </p>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full"
                     onClick={handleCreateNew}
-                    disabled={createStrainMutation.isLoading}
                   >
-                    {createStrainMutation.isLoading ? "Creating..." : `Create "${searchQuery}"`}
+                    Create "{searchQuery}"
                   </Button>
                 </div>
-              )}
-              {!isLoading && searchResults && searchResults.length > 0 && (
-                <CommandGroup heading="Strains">
-                  {searchResults.map((strain) => (
-                    <CommandItem
-                      key={strain.id}
-                      value={strain.id.toString()}
-                      onSelect={() => handleSelect(strain)}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate">{strain.name}</span>
-                            {strain.category && (
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                {strain.category}
-                              </Badge>
-                            )}
-                            {strain.openthcId && (
-                              <Sparkles className="h-3 w-3 text-primary shrink-0" title="OpenTHC verified" />
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-xs",
-                              getSimilarityColor(strain.similarity),
-                              "text-white border-0"
-                            )}
-                          >
-                            {getMatchIcon(strain.matchType, strain.similarity)}
-                            <span className="ml-1">{strain.similarity}%</span>
-                          </Badge>
-                          {selectedStrain?.id === strain.id && (
-                            <Check className="h-4 w-4" />
-                          )}
-                        </div>
-                      </div>
-                    </CommandItem>
-                  ))}
-                  {searchResults.length > 0 && (
-                    <div className="px-2 py-2 border-t">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full text-xs"
-                        onClick={handleCreateNew}
-                        disabled={createStrainMutation.isLoading}
-                      >
-                        {createStrainMutation.isLoading ? "Creating..." : `Create new: "${searchQuery}"`}
-                      </Button>
+              </CommandEmpty>
+            )}
+
+            {searchResults && searchResults.length > 0 && (
+              <CommandGroup>
+                {searchResults.map((strain) => (
+                  <CommandItem
+                    key={strain.id}
+                    value={strain.id.toString()}
+                    onSelect={() => handleSelect(strain)}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedStrain?.id === strain.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex-1">
+                      <span>{strain.name}</span>
+                      {strain.category && (
+                        <span className="ml-2 text-xs text-muted-foreground capitalize">
+                          ({strain.category})
+                        </span>
+                      )}
                     </div>
-                  )}
-                </CommandGroup>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                  </CommandItem>
+                ))}
+                
+                {/* Option to create new if no exact match */}
+                {searchQuery.length >= 2 && 
+                 !searchResults.find(s => s.name.toLowerCase() === searchQuery.toLowerCase()) && (
+                  <CommandItem
+                    value="create-new"
+                    onSelect={handleCreateNew}
+                    className="border-t"
+                  >
+                    <span className="text-sm">
+                      Create new: "{searchQuery}"
+                    </span>
+                  </CommandItem>
+                )}
+              </CommandGroup>
+            )}
 
-      {/* Suggestion Alert */}
-      {showSuggestion && suggestion && (
-        <Alert className="mt-2">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-medium">Did you mean "{suggestion.name}"?</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {suggestion.similarity}% match - Click to use this strain
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowSuggestion(false)}
-              >
-                No
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleConfirmSuggestion}
-              >
-                Yes, use it
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Auto-assignment indicator */}
-      {selectedStrain && selectedStrain.similarity < 100 && selectedStrain.similarity >= autoAssignThreshold && (
-        <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-          <Check className="h-3 w-3 text-green-500" />
-          Auto-assigned based on {selectedStrain.similarity}% similarity
-        </div>
-      )}
-    </div>
+            {searchQuery.length < 2 && (
+              <CommandEmpty>Type at least 2 characters to search</CommandEmpty>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
