@@ -2216,6 +2216,7 @@ export const clientNeeds = mysqlTable("client_needs", {
   
   // Need specification
   strain: varchar("strain", { length: 255 }),
+  strainId: int("strainId").references(() => strains.id, { onDelete: "set null" }),
   category: varchar("category", { length: 100 }),
   subcategory: varchar("subcategory", { length: 100 }),
   grade: varchar("grade", { length: 50 }),
