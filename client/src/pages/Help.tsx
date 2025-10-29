@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, BookOpen, Package, ShoppingCart, Users, BarChart3, DollarSign } from 'lucide-react';
 
 export default function Help() {
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Clear search when component mounts
+  useEffect(() => {
+    setSearchQuery('');
+  }, []);
 
   const sections = [
     {
@@ -95,6 +100,7 @@ export default function Help() {
             <input
               type="text"
               placeholder="Search for help topics..."
+              aria-label="Search help topics"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
