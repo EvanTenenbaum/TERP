@@ -72,16 +72,23 @@ export function serveStatic(app: Express) {
     );
   }
 
-  // Serve static files with aggressive cache busting
+  // Serve static files with proper cache headers
   app.use(express.static(distPath, {
-    maxAge: 0,
-    etag: false,
-    lastModified: false,
-    setHeaders: (res, path) => {
-      // Force no-cache for all assets to prevent mobile browser caching issues
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
+    setHeaders: (res, filePath) => {
+      // HTML files: no cache (always check for updates)
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+      // Hashed assets (JS, CSS with hash in filename): long-term cache (1 year)
+      else if (/\.(js|css)$/.test(filePath) && /-[a-zA-Z0-9]{8,}\.(js|css)$/.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      // Other assets: short-term cache (1 day)
+      else {
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+      }
     }
   }));
 
@@ -94,6 +101,9 @@ export function serveStatic(app: Express) {
       return next();
     }
     // Only serve index.html for non-API, non-asset routes
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
