@@ -29,10 +29,28 @@ export default function ClientsListPage() {
   const [, setLocation] = useLocation();
   const [addClientOpen, setAddClientOpen] = useState(false);
   
+  // Initialize filters from URL parameters
+  const getInitialHasDebt = () => {
+    const params = new URLSearchParams(window.location.search);
+    const debtParam = params.get('hasDebt');
+    if (debtParam === 'true') return true;
+    if (debtParam === 'false') return false;
+    return undefined;
+  };
+  
+  const getInitialClientTypes = () => {
+    const params = new URLSearchParams(window.location.search);
+    const typesParam = params.get('clientTypes');
+    if (typesParam) {
+      return typesParam.split(',') as ("buyer" | "seller" | "brand" | "referee" | "contractor")[];
+    }
+    return [];
+  };
+  
   // Filters and search state
   const [search, setSearch] = useState("");
-  const [clientTypes, setClientTypes] = useState<("buyer" | "seller" | "brand" | "referee" | "contractor")[]>([]);
-  const [hasDebt, setHasDebt] = useState<boolean | undefined>(undefined);
+  const [clientTypes, setClientTypes] = useState<("buyer" | "seller" | "brand" | "referee" | "contractor")[]>(getInitialClientTypes);
+  const [hasDebt, setHasDebt] = useState<boolean | undefined>(getInitialHasDebt);
   const [page, setPage] = useState(0);
   const limit = 50;
 

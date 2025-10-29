@@ -21,7 +21,18 @@ import { DataCardSection } from "@/components/data-cards";
  */
 
 export default function VendorSupplyPage() {
+  // Initialize filters from URL parameters
+  const getInitialStatusFilter = () => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status');
+    if (status && ['AVAILABLE', 'RESERVED', 'PURCHASED', 'EXPIRED'].includes(status)) {
+      return status;
+    }
+    return null;
+  };
+  
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(getInitialStatusFilter);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Fetch all vendor supply items
@@ -29,15 +40,17 @@ export default function VendorSupplyPage() {
 
   const supplyItems = supplyData?.data || [];
 
-  // Filter supply items based on search
+  // Filter supply items based on search and status
   const filteredItems = supplyItems.filter((item: any) => {
     const matchesSearch =
       !searchQuery ||
       item.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.vendorName?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = !statusFilter || item.status === statusFilter;
 
-    return matchesSearch;
+    return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
