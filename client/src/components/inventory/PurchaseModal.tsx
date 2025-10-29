@@ -116,8 +116,21 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     e.preventDefault();
 
     // Validation
-    if (!formData.vendorName || !formData.brandName || !formData.productName) {
+    const isFlowerCategory = formData.category?.toLowerCase() === "flower";
+    
+    if (!formData.vendorName || !formData.brandName) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+    
+    // For flower, require strain name; for others, require product name
+    if (isFlowerCategory && !formData.strainName) {
+      toast.error("Please select a strain for flower products");
+      return;
+    }
+    
+    if (!isFlowerCategory && !formData.productName) {
+      toast.error("Please enter a product name");
       return;
     }
 
@@ -263,30 +276,52 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
             </div>
           </div>
 
-          {/* Strain Input with Fuzzy Matching */}
-          <div className="space-y-2">
-            <Label htmlFor="strain">Strain (Optional)</Label>
-            <StrainInput
-              value={formData.strainId}
-              onChange={(strainId, strainName) => {
-                setFormData({ ...formData, strainId, strainName });
-              }}
-              category={formData.category as "indica" | "sativa" | "hybrid" | null}
-              placeholder="Search for a strain..."
-            />
-          </div>
+          {/* Conditional: Flower = Strain Only, Others = Product + Strain */}
+          {formData.category?.toLowerCase() === "flower" ? (
+            // FLOWER: Only show strain input (required)
+            <div className="space-y-2">
+              <Label htmlFor="strain">Strain Name *</Label>
+              <StrainInput
+                value={formData.strainId}
+                onChange={(strainId, strainName) => {
+                  // For flower, strain name IS the product name
+                  setFormData({ ...formData, strainId, strainName, productName: strainName });
+                }}
+                category={formData.category as "indica" | "sativa" | "hybrid" | null}
+                placeholder="Enter strain name..."
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                For flower products, the strain name is used as the product name
+              </p>
+            </div>
+          ) : (
+            // NON-FLOWER: Show product name + optional strain
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="productName">Product Name *</Label>
+                <Input
+                  id="productName"
+                  value={formData.productName}
+                  onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                  placeholder="e.g., Gummy Bears, Vape Cartridge"
+                  required
+                />
+              </div>
 
-          {/* Product Name */}
-          <div className="space-y-2">
-            <Label htmlFor="productName">Product Name *</Label>
-            <Input
-              id="productName"
-              value={formData.productName}
-              onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-              placeholder="e.g., Blue Dream 1oz Flower"
-              required
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="strain">Strain (Optional)</Label>
+                <StrainInput
+                  value={formData.strainId}
+                  onChange={(strainId, strainName) => {
+                    setFormData({ ...formData, strainId, strainName });
+                  }}
+                  category={formData.category as "indica" | "sativa" | "hybrid" | null}
+                  placeholder="Search for a strain..."
+                />
+              </div>
+            </>
+          )}
 
           {/* Category and Grade */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
