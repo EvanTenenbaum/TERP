@@ -49,6 +49,7 @@ export const dataCardMetricsRouter = router({
         return metrics;
       } catch (error) {
         handleError(error, "dataCardMetrics.getForModule");
+        throw error; // Re-throw to send error response to client
       }
     }),
   
@@ -72,6 +73,7 @@ export const dataCardMetricsRouter = router({
         };
       } catch (error) {
         handleError(error, "dataCardMetrics.getAvailableMetrics");
+        throw error; // Re-throw to send error response to client
       }
     }),
 });
