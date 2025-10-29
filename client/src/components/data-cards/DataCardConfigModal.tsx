@@ -22,6 +22,12 @@ import {
   saveMetricIdsForModule,
   resetModulePreferences,
 } from "@/lib/data-cards";
+import {
+  trackConfigModalOpened,
+  trackMetricsCustomized,
+  trackMetricsReset,
+  trackConfigModalCancelled,
+} from "@/lib/data-cards/analytics";
 import { cn } from "@/lib/utils";
 import { AlertCircle } from "lucide-react";
 
@@ -50,8 +56,10 @@ export function DataCardConfigModal({
     if (open) {
       setSelectedMetricIds(currentMetricIds);
       setError(null);
+      // Track modal opened
+      trackConfigModalOpened(moduleId);
     }
-  }, [open, currentMetricIds]);
+  }, [open, currentMetricIds, moduleId]);
   
   if (!moduleConfig) {
     return null;
@@ -81,6 +89,9 @@ export function DataCardConfigModal({
       return;
     }
     
+    // Track metrics customization
+    trackMetricsCustomized(moduleId, selectedMetricIds, currentMetricIds);
+    
     saveMetricIdsForModule(moduleId, selectedMetricIds);
     onSave?.();
     onOpenChange(false);
@@ -91,11 +102,18 @@ export function DataCardConfigModal({
     const defaultIds = moduleConfig.defaultMetrics;
     setSelectedMetricIds(defaultIds);
     setError(null);
+    
+    // Track reset
+    trackMetricsReset(moduleId, defaultIds);
   };
   
   const handleCancel = () => {
     setSelectedMetricIds(currentMetricIds);
     setError(null);
+    
+    // Track cancel
+    trackConfigModalCancelled(moduleId);
+    
     onOpenChange(false);
   };
   

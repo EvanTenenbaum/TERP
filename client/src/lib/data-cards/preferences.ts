@@ -20,6 +20,10 @@ export function getPreferences(): DataCardPreferences {
     if (!stored) return {};
     
     const preferences = JSON.parse(stored) as DataCardPreferences;
+    // Handle null or invalid preferences
+    if (!preferences || typeof preferences !== 'object') {
+      return {};
+    }
     return preferences;
   } catch (error) {
     console.error('Failed to load data card preferences:', error);
