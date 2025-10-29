@@ -551,7 +551,7 @@ async function calculateAccountingMetrics(
   if (metricIds.includes('accounting_cash')) {
     const [cashResult] = await db
       .select({
-        total: sum(bankAccounts.balance),
+        total: sum(bankAccounts.currentBalance),
       })
       .from(bankAccounts);
     
@@ -679,7 +679,7 @@ async function calculateAccountingMetrics(
     
     const [result] = await db
       .select({
-        total: sum(bills.amount),
+        total: sum(bills.totalAmount),
       })
       .from(bills)
       .where(gte(bills.createdAt, startOfMonth));
@@ -699,7 +699,7 @@ async function calculateAccountingMetrics(
     
     const [result] = await db
       .select({
-        total: sum(invoices.amount),
+        total: sum(invoices.totalAmount),
       })
       .from(invoices)
       .where(
@@ -946,11 +946,11 @@ async function calculateClientsMetrics(
     const [topBuyer] = await db
       .select({
         clientId: orders.clientId,
-        totalPurchases: sum(orders.totalAmount),
+        totalPurchases: sum(orders.total),
       })
       .from(orders)
       .groupBy(orders.clientId)
-      .orderBy(desc(sum(orders.totalAmount)))
+      .orderBy(desc(sum(orders.total)))
       .limit(1);
     
     results['clients_top_buyer'] = {
