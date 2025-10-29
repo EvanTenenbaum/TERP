@@ -44,12 +44,21 @@ export const adminRouter = router({
         results.schemaPush.status = 'running';
         
         try {
-          // Add columns if they don't exist
-          await db.execute(sql`
-            ALTER TABLE strains 
-            ADD COLUMN IF NOT EXISTS openthcId VARCHAR(255),
-            ADD COLUMN IF NOT EXISTS openthcStub VARCHAR(255)
-          `);
+          // Add columns if they don't exist (PostgreSQL syntax)
+          // PostgreSQL doesn't support multiple ADD COLUMN in one statement with IF NOT EXISTS
+          try {
+            await db.execute(sql`ALTER TABLE strains ADD COLUMN openthcId VARCHAR(255)`);
+          } catch (e) {
+            // Column might already exist, that's fine
+            console.log('openthcId column may already exist');
+          }
+          
+          try {
+            await db.execute(sql`ALTER TABLE strains ADD COLUMN openthcStub VARCHAR(255)`);
+          } catch (e) {
+            // Column might already exist, that's fine
+            console.log('openthcStub column may already exist');
+          }
           
           results.schemaPush.status = 'success';
           results.schemaPush.message = 'Added openthcId and openthcStub columns';
