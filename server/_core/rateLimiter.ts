@@ -6,7 +6,7 @@ import rateLimit from "express-rate-limit";
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 1000, // Increased from 100 to support normal app usage
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
@@ -34,7 +34,7 @@ export const authLimiter = rateLimit({
  */
 export const strictLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10,
+  max: 100, // Increased from 10 to support batch operations
   message: "Rate limit exceeded. Please slow down.",
   standardHeaders: true,
   legacyHeaders: false,
