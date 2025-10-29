@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { strainService } from "../services/strainService";
 import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
 import { seedStrainsFromCSV } from "../seedStrains";
@@ -38,19 +39,48 @@ export const strainsRouter = router({
     getFamily: protectedProcedure
       .input(z.object({ strainId: z.number() }))
       .query(async ({ input }) => {
-        const strain = await inventoryDb.getStrainById(input.strainId);
-        if (!strain) throw new TRPCError({ code: 'NOT_FOUND', message: 'Strain not found' });
-        
-        // If this strain has a parent, get all siblings
-        if (strain.parentStrainId) {
-          const parent = await inventoryDb.getStrainById(strain.parentStrainId);
-          const siblings = await inventoryDb.getStrainsByParent(strain.parentStrainId);
-          return { parent, variants: siblings, isVariant: true };
+        try {
+          return await strainService.getStrainFamily(input.strainId);
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to get strain family',
+            cause: error,
+          });
         }
-        
-        // If this strain IS a parent, get all children
-        const children = await inventoryDb.getStrainsByParent(strain.id);
-        return { parent: strain, variants: children, isVariant: false };
+      }),
+    
+    // Get strain family statistics
+    getFamilyStats: protectedProcedure
+      .input(z.object({ familyId: z.number() }))
+      .query(async ({ input }) => {
+        try {
+          return await strainService.getFamilyStats(input.familyId);
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to get family stats',
+            cause: error,
+          });
+        }
+      }),
+    
+    // Get products in strain family
+    getProductsByFamily: protectedProcedure
+      .input(z.object({ 
+        familyId: z.number(),
+        includeOutOfStock: z.boolean().optional().default(false)
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await strainService.getProductsByFamily(input.familyId, input.includeOutOfStock);
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to get family products',
+            cause: error,
+          });
+        }
       }),
     // Search strains (for autocomplete)
     search: protectedProcedure
