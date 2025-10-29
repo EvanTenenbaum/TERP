@@ -5,9 +5,7 @@
 
 import { useState } from "react";
 import { DataCardGrid } from "./DataCardGrid";
-import { DataCardConfigModal } from "./DataCardConfigModal";
-import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { DataCardConfigDropdown } from "./DataCardConfigDropdown";
 import { cn } from "@/lib/utils";
 
 interface DataCardSectionProps {
@@ -33,26 +31,14 @@ export function DataCardSection({
     <div className={cn("space-y-4", className)}>
       {showConfigButton && (
         <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setConfigOpen(true)}
-            className="gap-2"
-          >
-            <Settings className="h-4 w-4" />
-            Customize Metrics
-          </Button>
+          <DataCardConfigDropdown
+            moduleId={moduleId}
+            onSave={handleSave}
+          />
         </div>
       )}
       
       <DataCardGrid key={refreshKey} moduleId={moduleId} />
-      
-      <DataCardConfigModal
-        moduleId={moduleId}
-        open={configOpen}
-        onOpenChange={setConfigOpen}
-        onSave={handleSave}
-      />
     </div>
   );
 }
