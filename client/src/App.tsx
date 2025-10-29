@@ -31,6 +31,7 @@ import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
 import Login from "@/pages/Login";
+import Help from "@/pages/Help";
 
 function Router() {
   return (
@@ -68,6 +69,7 @@ function Router() {
               <Route path="/credit-settings" component={CreditSettingsPage} />
               <Route path="/needs" component={NeedsManagementPage} />
               <Route path="/vendor-supply" component={VendorSupplyPage} />
+              <Route path="/help" component={Help} />
               <Route path="/404" component={NotFound} />
               {/* Final fallback route */}
               <Route component={NotFound} />

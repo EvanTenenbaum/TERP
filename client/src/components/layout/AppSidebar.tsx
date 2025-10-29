@@ -12,6 +12,7 @@ import {
   TrendingUp,
   Tag,
   Layers,
+  HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { APP_TITLE } from '@/const';
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'COGS Settings', href: '/settings/cogs', icon: DollarSign },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Help', href: '/help', icon: HelpCircle },
 ];
 
 interface AppSidebarProps {
