@@ -10,6 +10,8 @@ export const apiLimiter = rateLimit({
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
+  // Trust proxy headers from DigitalOcean App Platform
+  trustProxy: true,
 });
 
 /**
@@ -23,6 +25,7 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: true,
 });
 
 /**
@@ -35,5 +38,6 @@ export const strictLimiter = rateLimit({
   message: "Rate limit exceeded. Please slow down.",
   standardHeaders: true,
   legacyHeaders: false,
+  trustProxy: true,
 });
 
