@@ -69,6 +69,7 @@ export const inventoryRouter = router({
         category: z.string(),
         subcategory: z.string().optional(),
         grade: z.string().optional(),
+        strainId: z.number().nullable().optional(),
         quantity: z.number(),
         cogsMode: z.enum(["FIXED", "RANGE"]),
         unitCogs: z.string().optional(),
@@ -123,6 +124,7 @@ export const inventoryRouter = router({
             nameCanonical: normalizedProductName,
             category: input.category,
             subcategory: input.subcategory,
+            strainId: input.strainId || null,
           });
           product = await inventoryDb.findProductByNameAndBrand(normalizedProductName, brand.id);
         }
