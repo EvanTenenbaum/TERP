@@ -71,11 +71,6 @@ export function DataCardConfigModal({
     return null;
   }
   
-  // Don't render content if modal is not open (prevents rendering errors)
-  if (!open) {
-    return null;
-  }
-  
   const maxCards = moduleConfig.maxCards;
   const isValid = selectedMetricIds.length > 0 && selectedMetricIds.length <= maxCards;
   
@@ -153,6 +148,7 @@ export function DataCardConfigModal({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && (
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Customize {moduleConfig.moduleName} Metrics</DialogTitle>
@@ -257,6 +253,7 @@ export function DataCardConfigModal({
           </div>
         </DialogFooter>
       </DialogContent>
+      )}
     </Dialog>
   );
 }
