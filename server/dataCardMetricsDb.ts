@@ -633,8 +633,8 @@ async function calculateVendorSupplyMetrics(
       total: count(),
       available: count(sql`CASE WHEN ${vendorSupply.status} = 'AVAILABLE' THEN 1 END`),
       reserved: count(sql`CASE WHEN ${vendorSupply.status} = 'RESERVED' THEN 1 END`),
-      sold: count(sql`CASE WHEN ${vendorSupply.status} = 'SOLD' THEN 1 END`),
-      totalValue: sum(sql`CAST(${vendorSupply.quantity} AS DECIMAL(15,2)) * CAST(${vendorSupply.unitPrice} AS DECIMAL(15,2))`),
+      purchased: count(sql`CASE WHEN ${vendorSupply.status} = 'PURCHASED' THEN 1 END`),
+      totalValue: sum(sql`CAST(${vendorSupply.quantityAvailable} AS DECIMAL(15,2)) * CAST(${vendorSupply.unitPrice} AS DECIMAL(15,2))`),
     })
     .from(vendorSupply);
   
@@ -662,10 +662,10 @@ async function calculateVendorSupplyMetrics(
     };
   }
   
-  if (metricIds.includes('vendor_sold')) {
-    results['vendor_sold'] = {
-      value: Number(aggregates.sold) || 0,
-      subtext: 'items sold',
+  if (metricIds.includes('vendor_purchased')) {
+    results['vendor_purchased'] = {
+      value: Number(aggregates.purchased) || 0,
+      subtext: 'items purchased',
       updatedAt: new Date().toISOString(),
     };
   }
@@ -687,8 +687,9 @@ async function calculateVendorSupplyMetrics(
       .from(vendorSupply)
       .where(
         and(
-          lte(vendorSupply.expirationDate, thirtyDaysFromNow),
-          gte(vendorSupply.expirationDate, new Date())
+          eq(vendorSupply.status, 'AVAILABLE'),
+          lte(vendorSupply.availableUntil, thirtyDaysFromNow),
+          gte(vendorSupply.availableUntil, new Date())
         )
       );
     
