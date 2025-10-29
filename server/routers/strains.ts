@@ -33,6 +33,25 @@ export const strainsRouter = router({
       .query(async ({ input }) => {
         return await inventoryDb.getStrainById(input.id);
       }),
+    
+    // Get strain family (parent and all variants)
+    getFamily: protectedProcedure
+      .input(z.object({ strainId: z.number() }))
+      .query(async ({ input }) => {
+        const strain = await inventoryDb.getStrainById(input.strainId);
+        if (!strain) throw new TRPCError({ code: 'NOT_FOUND', message: 'Strain not found' });
+        
+        // If this strain has a parent, get all siblings
+        if (strain.parentStrainId) {
+          const parent = await inventoryDb.getStrainById(strain.parentStrainId);
+          const siblings = await inventoryDb.getStrainsByParent(strain.parentStrainId);
+          return { parent, variants: siblings, isVariant: true };
+        }
+        
+        // If this strain IS a parent, get all children
+        const children = await inventoryDb.getStrainsByParent(strain.id);
+        return { parent: strain, variants: children, isVariant: false };
+      }),
     // Search strains (for autocomplete)
     search: protectedProcedure
       .input(z.object({ query: z.string() }))
