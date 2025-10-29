@@ -18,6 +18,7 @@ import { getDb } from "./db";
 import { strains } from "../drizzle/schema";
 import { eq, sql, like, or } from "drizzle-orm";
 import { generateStrainULID } from "./ulid";
+import { extractBaseStrainName, suggestParentStrain } from "./strainFamilyDetector";
 
 /**
  * Normalize strain name for matching
@@ -418,7 +419,44 @@ export async function getOrCreateStrain(
       // Generate ULID for new strain (compatible with OpenTHC format)
       const newULID = generateStrainULID();
       
-      // Create new strain
+      // Extract base strain name for family detection
+      const baseName = extractBaseStrainName(inputName);
+      
+      // Find parent strain if base name exists
+      let parentStrainId: number | null = null;
+      if (baseName) {
+        const parentStrain = await tx
+          .select()
+          .from(strains)
+          .where(
+            or(
+              eq(strains.name, baseName),
+              eq(strains.baseStrainName, baseName)
+            )
+          )
+          .limit(1);
+        
+        if (parentStrain.length > 0) {
+          parentStrainId = parentStrain[0].id;
+        } else if (inputName.toLowerCase() !== baseName.toLowerCase()) {
+          // Create parent strain if it doesn't exist and this is a variant
+          const parentULID = generateStrainULID();
+          const parentResult = await tx.insert(strains).values({
+            name: baseName,
+            standardizedName: normalizeStrainName(baseName),
+            category: category || null,
+            description: null,
+            aliases: null,
+            openthcId: parentULID,
+            openthcStub: normalizeStrainName(baseName),
+            baseStrainName: baseName,
+            parentStrainId: null,
+          });
+          parentStrainId = Number(parentResult.insertId);
+        }
+      }
+      
+      // Create new strain with family links
       const newStrain = await tx.insert(strains).values({
         name: inputName,
         standardizedName: normalized,
@@ -427,6 +465,8 @@ export async function getOrCreateStrain(
         aliases: null,
         openthcId: newULID,
         openthcStub: normalized,
+        baseStrainName: baseName,
+        parentStrainId: parentStrainId,
       });
       
       return {

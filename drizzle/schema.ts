@@ -120,6 +120,9 @@ export const strains = mysqlTable("strains", {
   // OpenTHC VDB Integration
   openthcId: varchar("openthcId", { length: 255 }), // OpenTHC Universal Unique ID
   openthcStub: varchar("openthcStub", { length: 255 }), // OpenTHC URL slug
+  // Strain Family Support
+  parentStrainId: int("parentStrainId"), // Links to parent strain for variants (e.g., "White Runtz" -> "Runtz")
+  baseStrainName: varchar("baseStrainName", { length: 255 }), // Extracted base name for family grouping
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
