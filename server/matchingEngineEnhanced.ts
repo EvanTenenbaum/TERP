@@ -5,6 +5,7 @@ import type { ClientNeed, VendorSupply } from "../drizzle/schema";
 import { getClientPricingRules, calculateRetailPrice, type InventoryItem } from "./pricingEngine";
 import { findHistoricalBuyers, type HistoricalMatch } from "./historicalAnalysis";
 import { recordMatch } from "./matchRecordsDb";
+import { strainService } from "./services/strainService";
 
 /**
  * Match types and confidence levels
@@ -32,9 +33,10 @@ export interface MatchResult {
  * Calculate match confidence based on field matches
  * Enhanced version with quantity and price validation
  */
-function calculateMatchConfidence(
+async function calculateMatchConfidence(
   need: {
     strain?: string | null;
+    strainId?: number | null;
     category?: string | null;
     subcategory?: string | null;
     grade?: string | null;
@@ -44,30 +46,54 @@ function calculateMatchConfidence(
   },
   candidate: {
     strain?: string | null;
+    strainId?: number | null;
     category?: string | null;
     subcategory?: string | null;
     grade?: string | null;
     calculatedPrice?: number | null;
     availableQuantity?: number | null;
   }
-): { confidence: number; reasons: string[] } {
+): Promise<{ confidence: number; reasons: string[] }> {
   let confidence = 0;
   const reasons: string[] = [];
 
-  // Strain match (40 points)
-  if (need.strain && candidate.strain) {
+  // Strain match (40 points) - Use strainId for family matching
+  if (need.strainId && candidate.strainId) {
+    // Exact strain ID match
+    if (need.strainId === candidate.strainId) {
+      confidence += 40;
+      reasons.push("Exact strain match");
+    } else {
+      // Check if they're in the same strain family
+      try {
+        const needFamily = await strainService.getStrainFamily(need.strainId);
+        const candidateFamily = await strainService.getStrainFamily(candidate.strainId);
+        
+        const needFamilyId = needFamily?.parent?.id || need.strainId;
+        const candidateFamilyId = candidateFamily?.parent?.id || candidate.strainId;
+        
+        if (needFamilyId === candidateFamilyId) {
+          confidence += 30;
+          reasons.push(`Same strain family (${needFamily?.parent?.name || 'Unknown'})`);
+        }
+      } catch (error) {
+        console.error('Error checking strain family:', error);
+      }
+    }
+  } else if (need.strain && candidate.strain) {
+    // Fallback to text matching for backward compatibility
     const needStrain = need.strain.toLowerCase().trim();
     const candidateStrain = candidate.strain.toLowerCase().trim();
     
     if (needStrain === candidateStrain) {
       confidence += 40;
-      reasons.push("Exact strain match");
+      reasons.push("Exact strain match (text)");
     } else if (
       needStrain.includes(candidateStrain) ||
       candidateStrain.includes(needStrain)
     ) {
       confidence += 20;
-      reasons.push("Partial strain match");
+      reasons.push("Partial strain match (text)");
     }
   }
 
@@ -234,8 +260,9 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
       const calculatedPrice = await calculateBatchSellingPrice(batch, product, need.clientId);
       const availableQuantity = parseFloat(batch.onHandQty);
 
-      const { confidence, reasons } = calculateMatchConfidence(need, {
+      const { confidence, reasons } = await calculateMatchConfidence(need, {
         strain: product?.nameCanonical, // Using product name as proxy for strain
+        strainId: product?.strainId,
         category: product?.category,
         subcategory: product?.subcategory,
         grade: batch.grade,
@@ -279,7 +306,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
       const availableQuantity = parseFloat(supply.quantityAvailable);
       const unitPrice = supply.unitPrice ? parseFloat(supply.unitPrice) : null;
 
-      const { confidence, reasons } = calculateMatchConfidence(need, {
+      const { confidence, reasons } = await calculateMatchConfidence(need, {
         strain: supply.strain,
         category: supply.category,
         subcategory: supply.subcategory,
@@ -391,8 +418,9 @@ export async function findBuyersForInventory(batchId: number): Promise<MatchResu
       // Calculate selling price for this specific client
       const calculatedPrice = await calculateBatchSellingPrice(batch, product, need.clientId);
 
-      const { confidence, reasons } = calculateMatchConfidence(need, {
+      const { confidence, reasons } = await calculateMatchConfidence(need, {
         strain: product?.nameCanonical,
+        strainId: product?.strainId,
         category: product?.category,
         subcategory: product?.subcategory,
         grade: batch.grade,
@@ -510,7 +538,7 @@ export async function findBuyersForVendorSupply(supplyId: number): Promise<Match
     const results: MatchResult[] = [];
 
     for (const need of activeNeeds) {
-      const { confidence, reasons } = calculateMatchConfidence(need, {
+      const { confidence, reasons } = await calculateMatchConfidence(need, {
         strain: supply.strain,
         category: supply.category,
         subcategory: supply.subcategory,
