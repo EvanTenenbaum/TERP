@@ -29,7 +29,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { PurchaseModal } from "@/components/inventory/PurchaseModal";
 import { BatchDetailDrawer } from "@/components/inventory/BatchDetailDrawer";
 import { EditBatchModal } from "@/components/inventory/EditBatchModal";
-import { DashboardStats } from "@/components/inventory/DashboardStats";
+import { DataCardSection } from "@/components/data-cards";
 import { StockLevelChart } from "@/components/inventory/StockLevelChart";
 import { SearchHighlight } from "@/components/inventory/SearchHighlight";
 import { AdvancedFilters } from "@/components/inventory/AdvancedFilters";
@@ -144,10 +144,38 @@ export default function Inventory() {
   // Apply URL params on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const category = params.get('category');
     
+    // Handle category filter
+    const category = params.get('category');
     if (category) {
       updateFilter('category', category);
+    }
+    
+    // Handle status filter
+    const status = params.get('status');
+    if (status) {
+      updateFilter('status', [status]);
+    }
+    
+    // Handle stock level filter
+    const stockLevel = params.get('stockLevel');
+    if (stockLevel && (stockLevel === 'low_stock' || stockLevel === 'in_stock' || stockLevel === 'out_of_stock')) {
+      updateFilter('stockLevel', stockLevel);
+    }
+    
+    // Handle sort parameters
+    const sortBy = params.get('sortBy');
+    const sortOrder = params.get('sortOrder');
+    if (sortBy && sortOrder) {
+      // Note: This assumes sortState has a way to be set programmatically
+      // If not, this can be handled differently
+    }
+    
+    // Handle expiring within filter
+    const expiringWithin = params.get('expiringWithin');
+    if (expiringWithin) {
+      // This would need to be added to the filters if not already present
+      // For now, we'll skip this as it requires filter schema changes
     }
   }, []);
   
@@ -350,23 +378,7 @@ export default function Inventory() {
       </div>
 
       {/* Dashboard Statistics */}
-      {dashboardStats && (
-        <DashboardStats
-          totalInventoryValue={dashboardStats.totalInventoryValue}
-          avgValuePerUnit={dashboardStats.avgValuePerUnit}
-          totalUnits={dashboardStats.totalUnits}
-          awaitingIntakeCount={dashboardStats.statusCounts.AWAITING_INTAKE}
-          lowStockCount={openTasks.lowStock}
-          onFilterChange={(status) => {
-            if (status) {
-              updateFilter("status", [status]);
-            } else {
-              updateFilter("status", []);
-            }
-          }}
-          activeFilter={filters.status[0] || null}
-        />
-      )}
+      <DataCardSection moduleId="inventory" />
 
       {/* Stock Level Charts */}
       {dashboardStats && (
