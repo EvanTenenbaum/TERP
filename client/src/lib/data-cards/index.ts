@@ -7,3 +7,4 @@ export * from './types';
 export * from './formatters';
 export * from './metricConfigs';
 export * from './preferences';
+export * from './analytics';
