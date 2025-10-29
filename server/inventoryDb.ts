@@ -5,6 +5,7 @@
 
 import { eq, and, or, like, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
+import { generateStrainULID } from "./ulid";
 import {
   vendors,
   brands,
@@ -661,18 +662,33 @@ export async function createStrain(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  // Standardize the name (lowercase, trim)
-  const standardizedName = data.name.toLowerCase().trim();
+  // Standardize the name (lowercase, trim, remove special chars)
+  const standardizedName = data.name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
   
-  await db.insert(strains).values({
+  // Generate ULID for new strain (compatible with OpenTHC format)
+  const newULID = generateStrainULID();
+  
+  const result = await db.insert(strains).values({
     name: data.name,
     standardizedName: standardizedName,
     category: data.category,
     description: data.description || null,
     aliases: data.aliases || null,
+    openthcId: newULID,
+    openthcStub: standardizedName,
   });
   
-  return { success: true };
+  return { 
+    success: true,
+    strainId: Number(result.insertId),
+    openthcId: newULID,
+  };
 }
 
 
