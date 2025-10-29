@@ -33,6 +33,7 @@ import { vendorSupplyRouter } from "./routers/vendorSupply";
 import { matchingEnhancedRouter } from "./routers/matchingEnhanced";
 import { userManagementRouter } from "./routers/userManagement";
 import { dataCardMetricsRouter } from "./routers/dataCardMetrics";
+import { adminRouter } from "./routers/admin";
 
 export const appRouter = router({
   system: systemRouter,
@@ -67,6 +68,7 @@ export const appRouter = router({
   matching: matchingEnhancedRouter,
   userManagement: userManagementRouter,
   dataCardMetrics: dataCardMetricsRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;
