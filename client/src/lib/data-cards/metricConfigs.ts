@@ -785,7 +785,7 @@ export const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       'inventory_total_units',
       'inventory_live_batches',
       'inventory_by_category',
-      'inventory_expiring_soon',
+      // 'inventory_expiring_soon', // DISABLED: expirationDate column doesn't exist
     ],
     maxCards: 4,
   },
