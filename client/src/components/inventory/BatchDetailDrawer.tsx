@@ -37,6 +37,7 @@ import { CogsEditModal } from "./CogsEditModal";
 import { ClientInterestWidget } from "./ClientInterestWidget";
 import { PriceSimulationModal } from "./PriceSimulationModal";
 import { useState } from "react";
+import { StrainInfo, RelatedProducts } from "@/components/strain/StrainComponents";
 
 // Profitability Section Component
 function ProfitabilitySection({ batchId }: { batchId: number }) {
@@ -273,7 +274,24 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                   <p className="font-medium">{batch.isSample ? "Yes" : "No"}</p>
                 </div>
               </div>
+              {batch.product?.strainId && (
+                <div className="pt-2">
+                  <p className="text-muted-foreground text-sm mb-2">Strain</p>
+                  <StrainInfo strainId={batch.product.strainId} />
+                </div>
+              )}
             </div>
+
+            {/* Related Products (if out of stock) */}
+            {availableQty <= 0 && batch.product?.strainId && (
+              <>
+                <Separator />
+                <RelatedProducts 
+                  strainId={batch.product.strainId}
+                  currentProductId={batch.productId}
+                />
+              </>
+            )}
 
             <Separator />
 
