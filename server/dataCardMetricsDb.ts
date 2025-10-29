@@ -308,7 +308,7 @@ async function calculateQuotesMetrics(
       accepted: count(sql`CASE WHEN ${orders.quoteStatus} = 'ACCEPTED' THEN 1 END`),
       rejected: count(sql`CASE WHEN ${orders.quoteStatus} = 'REJECTED' THEN 1 END`),
       expired: count(sql`CASE WHEN ${orders.quoteStatus} = 'EXPIRED' THEN 1 END`),
-      totalValue: sum(orders.totalAmount),
+      totalValue: sum(orders.total),
     })
     .from(orders)
     .where(eq(orders.orderType, 'QUOTE'));
@@ -415,7 +415,7 @@ async function calculateOrdersMetrics(
       packed: count(sql`CASE WHEN ${orders.fulfillmentStatus} = 'PACKED' THEN 1 END`),
       shipped: count(sql`CASE WHEN ${orders.fulfillmentStatus} = 'SHIPPED' THEN 1 END`),
       delivered: count(sql`CASE WHEN ${orders.fulfillmentStatus} = 'DELIVERED' THEN 1 END`),
-      totalValue: sum(orders.totalAmount),
+      totalValue: sum(orders.total),
     })
     .from(orders)
     .where(eq(orders.orderType, 'SALE'));
