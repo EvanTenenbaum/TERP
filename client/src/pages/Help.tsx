@@ -21,7 +21,21 @@ export default function Help() {
         'Understanding key metrics',
         'Drill-down navigation'
       ],
-      details: 'The Dashboard provides a comprehensive overview of your business with customizable data cards, real-time metrics, and quick access to important information. You can customize which cards appear, drill down into specific metrics, and track key performance indicators at a glance.'
+      training: `**Welcome to Your Dashboard** (Yes, we know you've seen it already)
+
+Think of this as your business's Instagram feed, except instead of food pics, you get actual useful data. Revolutionary, right?
+
+**The Quick Win:**
+Those colorful cards at the top? They're not just pretty—click any number to drill down into the details. It's like clicking a hashtag, but for your inventory. Mind = blown.
+
+**Customization (The Fun Part):**
+Hit that "Customize Dashboard" button and drag cards around like you're rearranging furniture. Don't like seeing "Low Stock" first thing in the morning? Move it. We won't judge your avoidance tactics.
+
+**Pro Tip:**
+The "Quick Notes" section is perfect for those "I'll remember this later" moments (spoiler: you won't). Write it down. Future you will thank present you.
+
+**What's Actually Happening Behind The Scenes:**
+TERP is constantly calculating trends, flagging urgent stuff, and basically being that overachieving friend who has their life together. You're welcome.`
     },
     {
       id: 'inventory',
@@ -36,7 +50,27 @@ export default function Help() {
         'Profitability analysis',
         'Price simulation tool'
       ],
-      details: 'TERP\'s inventory system uses a batch-based approach with detailed location tracking. Each batch has its own lifecycle, cost tracking (COGS), and profitability metrics. The system automatically calculates margins, tracks stock levels, and provides powerful tools for price simulation and profitability analysis.'
+      training: `**Inventory: Where Your Money Lives**
+
+Look, we get it. Inventory management sounds about as exciting as watching paint dry. But this is where your actual money is sitting, so... maybe pay attention? 😅
+
+**The Batch System (It's Not Complicated, Promise):**
+Every product gets a batch. Think of batches like individual Pokémon—each one has its own stats, location, and value. Gotta track 'em all.
+
+**Location Hierarchy (Sounds Fancy, Isn't):**
+Site → Zone → Rack → Shelf → Bin. It's basically like giving your product a full mailing address. "Hey Purple Haze, you live at Warehouse A, Zone 2, Rack 5, Shelf B, Bin 3." Now you can actually find it.
+
+**The Profitability Magic:**
+See those margin percentages? TERP calculates those automatically. No spreadsheets, no calculators, no crying. Just instant "am I making money on this?" answers.
+
+**Price Simulation (The Crystal Ball):**
+Want to see what happens if you change your price? Use the simulation tool. It's like a time machine, but for pricing decisions. Way cooler than it sounds.
+
+**Real Talk:**
+That "Low Stock" alert? Don't ignore it. We've seen what happens. It's not pretty.
+
+**The Secret Sauce:**
+TERP tracks your COGS (Cost of Goods Sold) automatically. Fixed price? Range pricing? We handle both. You just focus on selling stuff.`
     },
     {
       id: 'orders',
@@ -49,7 +83,29 @@ export default function Help() {
         'Processing returns',
         'Order status history'
       ],
-      details: 'Manage your entire order lifecycle from quote creation through fulfillment and delivery. Track order status, process returns, and maintain a complete audit trail. The system automatically updates inventory levels and provides real-time visibility into order fulfillment progress.'
+      training: `**Orders: The Money-Making Part** 💰
+
+This is where the magic happens. Well, "magic" might be overselling it. This is where you turn inventory into cash. Better?
+
+**The Workflow (Easier Than Making Coffee):**
+1. **PENDING** - Customer said yes, you haven't done anything yet
+2. **PACKED** - You actually put stuff in a box (look at you go!)
+3. **SHIPPED** - It's gone. Not your problem anymore. Freedom!
+
+**Creating Orders (The Fast Way):**
+Click "Create Order" → Pick a client → Add products → Hit save. Done. You just made money. Feel good about yourself.
+
+**Quotes (For The Indecisive Customers):**
+Some customers need to "think about it." Fine. Create a quote. When they finally decide (next week, next month, who knows), convert it to an order with one click. Boom.
+
+**Returns (The Sad Part):**
+Sometimes stuff comes back. It happens. Process the return, and TERP automatically puts inventory back on the shelf and adjusts your numbers. We've got your back.
+
+**The Audit Trail:**
+Every status change is tracked. Who did what, when. It's like a security camera for your orders. Useful when someone asks "where's my order?" (Spoiler: it's in the system, always has been).
+
+**Pro Tip:**
+Use the order history to see patterns. "Oh, Customer X always orders on Fridays." Now you know. Knowledge is power.`
     },
     {
       id: 'clients',
@@ -62,7 +118,27 @@ export default function Help() {
         'Tracking client needs',
         'Viewing order history'
       ],
-      details: 'Maintain detailed client profiles with contact information, communication history, and order tracking. View complete order history, track client preferences, and build stronger relationships through organized client management.'
+      training: `**Clients: The People Who Pay You** (Important, Right?)
+
+Let's be honest—without clients, you're just a person with a lot of inventory and some fancy software. So yeah, this section matters.
+
+**Client Profiles (The Basics):**
+Name, contact info, TERI code (that's their ID), client type. Standard stuff. But here's the cool part: TERP tracks EVERYTHING they've ever ordered. It's like having a perfect memory, except you don't have to pretend to remember their birthday.
+
+**Communication Logging (Your New Best Friend):**
+Had a phone call? Log it. Sent an email? Log it. Made a promise you'll definitely forget? LOG IT. Future you will be so grateful when a client asks "what did we talk about last month?"
+
+**Order History (The Good Stuff):**
+Click any client → See every order they've ever placed. When, what, how much. It's like their shopping biography. Use this to spot patterns, predict needs, or just look smart in meetings.
+
+**The Secret Weapon:**
+See that "Total Sales" number? That's how much money this client has given you. Ever. Use this information wisely (hint: maybe be extra nice to your top 10).
+
+**Real Talk:**
+The clients with the most orders aren't always the most profitable. Check those margins. Sometimes your "best" client is actually... not. Sorry to break it to you.
+
+**Pro Move:**
+Before calling a client, pull up their profile. Glance at recent orders. Now you sound prepared and professional. You're welcome.`
     },
     {
       id: 'profitability',
@@ -75,7 +151,33 @@ export default function Help() {
         'Price simulation',
         'Top performers report'
       ],
-      details: 'Analyze profitability at the batch level with detailed margin and markup calculations. Use the price simulation tool to model different pricing scenarios and identify your top-performing products. TERP automatically calculates ROI and provides actionable insights for pricing decisions.'
+      training: `**Profitability: The "Are We Actually Making Money?" Section**
+
+Revenue is vanity. Profit is sanity. Cash is reality. Let's talk sanity.
+
+**Margin vs. Markup (Yes, They're Different):**
+- **Margin:** What % of the sale price is profit. "I sold it for $100, made $30 profit = 30% margin"
+- **Markup:** How much you marked it up from cost. "Cost me $70, sold for $100 = 43% markup"
+
+TERP shows both because we're not monsters. Use whichever makes you feel better about your pricing.
+
+**The Profitability Dashboard (Your New Obsession):**
+See which products are printing money and which are... not. Sort by margin. Prepare to be surprised. That product you thought was a winner? Yeah, about that...
+
+**Top Performers Report (The Winners Circle):**
+Your best products, ranked by actual profit. Not revenue. Not volume. PROFIT. This is the list that matters. Focus here.
+
+**Price Simulation (The "What If" Game):**
+"What if I raised the price by 5%?" Click, type, see the answer. No math required. It's beautiful.
+
+**The Harsh Truth:**
+You're probably selling some stuff at a loss and don't know it. TERP knows. Check the red numbers. Fix them. Your accountant will stop crying.
+
+**Pro Tip:**
+Run profitability reports monthly. Not yearly. Monthly. Things change fast. Stay on top of it or get buried.
+
+**The Reality Check:**
+High volume ≠ high profit. Sometimes your best move is to sell less of the low-margin stuff and more of the good stuff. Revolutionary, we know.`
     }
   ];
 
@@ -160,14 +262,38 @@ export default function Help() {
                 
                 {/* Expanded Content */}
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-gray-200 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <h4 className="font-semibold text-gray-900 mb-2">More Information</h4>
-                    <p className="text-sm text-gray-600 mb-3">
-                      {section.details}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
-                      <FileText className="w-4 h-4" />
-                      <span>See complete training guide below for detailed walkthroughs with screenshots</span>
+                  <div className="mt-6 pt-6 border-t border-gray-200 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="prose prose-sm max-w-none">
+                      <div 
+                        className="text-gray-700 leading-relaxed"
+                        dangerouslySetInnerHTML={{ 
+                          __html: section.training
+                            .split('\n\n')
+                            .map(para => {
+                              // Handle bold text
+                              para = para.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                              // Handle list items
+                              if (para.trim().startsWith('-')) {
+                                const items = para.split('\n').map(item => 
+                                  item.trim().startsWith('-') 
+                                    ? `<li>${item.substring(1).trim()}</li>` 
+                                    : item
+                                ).join('');
+                                return `<ul class="list-disc pl-5 space-y-1">${items}</ul>`;
+                              }
+                              // Handle numbered lists
+                              if (/^\d+\./.test(para.trim())) {
+                                const items = para.split('\n').map(item => {
+                                  const match = item.match(/^\d+\.\s*(.+)/);
+                                  return match ? `<li>${match[1]}</li>` : item;
+                                }).join('');
+                                return `<ol class="list-decimal pl-5 space-y-1">${items}</ol>`;
+                              }
+                              return `<p class="mb-3">${para}</p>`;
+                            })
+                            .join('')
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -200,9 +326,9 @@ export default function Help() {
                   📚 Complete Training Guide
                 </h3>
                 <p className="text-gray-700 mb-6">
-                  Download our comprehensive training guide with screenshots, step-by-step instructions, 
-                  and detailed explanations of all TERP features. Perfect for new users and as a reference 
-                  for experienced users.
+                  Want the full experience? Download our comprehensive training guide with screenshots, 
+                  step-by-step instructions, and all the details we couldn't fit in these cards. 
+                  It's like this, but longer. And with pictures.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <a 
@@ -225,8 +351,8 @@ export default function Help() {
                   </a>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
-                  💡 <strong>Tip:</strong> The training guide includes real screenshots from TERP, 
-                  detailed workflows, and "Backend Intelligence" sections that explain how features work.
+                  💡 <strong>Pro tip:</strong> The PDF has real screenshots from TERP and "Backend Intelligence" 
+                  sections that explain what's happening under the hood. Nerd out responsibly.
                 </p>
               </div>
             </div>
@@ -237,11 +363,11 @@ export default function Help() {
         <div className="mt-8">
           <div className="bg-gray-100 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Need More Help?
+              Still Confused? (It Happens)
             </h3>
             <p className="text-gray-700">
-              Can't find what you're looking for? Contact your system administrator or 
-              check the complete training guide above for detailed walkthroughs with screenshots.
+              Can't find what you're looking for? Hit up your system administrator. 
+              They probably know the answer. Or at least know who to ask. That's what they're there for.
             </p>
           </div>
         </div>
