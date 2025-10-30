@@ -202,12 +202,12 @@ export const vipPortalRouter = router({
   }),
 
   // ============================================================================
-  // DASHBOARD
+  // CONFIGURATION
   // ============================================================================
   
-  dashboard: router({
+  config: router({
     // Get portal configuration
-    getConfig: publicProcedure
+    get: publicProcedure
       .input(z.object({
         clientId: z.number(),
       }))
@@ -234,7 +234,13 @@ export const vipPortalRouter = router({
 
         return config;
       }),
+  }),
 
+  // ============================================================================
+  // DASHBOARD
+  // ============================================================================
+  
+  dashboard: router({
     // Get dashboard KPIs
     getKPIs: publicProcedure
       .input(z.object({
