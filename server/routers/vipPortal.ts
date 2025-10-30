@@ -705,7 +705,7 @@ export const vipPortalRouter = router({
                   .from(invoices)
                   .where(
                     and(
-                      eq(invoices.clientId, client.id),
+                      eq(invoices.customerId, client.id),
                       gte(invoices.invoiceDate, ytdStart)
                     )
                   );
@@ -740,7 +740,7 @@ export const vipPortalRouter = router({
                   .from(invoices)
                   .where(
                     and(
-                      eq(invoices.clientId, client.id),
+                      eq(invoices.customerId, client.id),
                       gte(invoices.invoiceDate, ninetyDaysAgo)
                     )
                   );
@@ -751,8 +751,8 @@ export const vipPortalRouter = router({
               case 'credit_utilization': {
                 // Calculate credit utilization percentage
                 if (client.creditLimit && client.creditLimit > 0) {
-                  const currentBalance = client.currentBalance || 0;
-                  metricValue = (currentBalance / client.creditLimit) * 100;
+                  const currentExposure = Number(client.currentExposure) || 0;
+                  metricValue = (currentExposure / Number(client.creditLimit)) * 100;
                 } else {
                   metricValue = 0;
                 }
