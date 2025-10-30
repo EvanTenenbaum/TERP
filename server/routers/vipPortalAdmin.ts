@@ -398,4 +398,76 @@ export const vipPortalAdminRouter = router({
         return { success: true };
       }),
   }),
+
+  // ============================================================================
+  // LEADERBOARD CONFIGURATION
+  // ============================================================================
+  
+  leaderboard: router({
+    // Get leaderboard configuration for a client
+    getConfig: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const config = await db.query.vipPortalConfigurations.findFirst({
+          where: eq(vipPortalConfigurations.clientId, input.clientId),
+        });
+
+        if (!config) {
+          return {
+            moduleLeaderboardEnabled: false,
+            leaderboardMetrics: [],
+            leaderboardDisplayMode: 'black_box',
+          };
+        }
+
+        const featuresConfig = config.featuresConfig as any || {};
+        return {
+          moduleLeaderboardEnabled: config.moduleLeaderboardEnabled || false,
+          leaderboardMetrics: featuresConfig.leaderboardMetrics || [],
+          leaderboardDisplayMode: featuresConfig.leaderboardDisplayMode || 'black_box',
+        };
+      }),
+
+    // Update leaderboard configuration for a client
+    updateConfig: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        moduleLeaderboardEnabled: z.boolean(),
+        leaderboardMetrics: z.array(z.string()),
+        leaderboardDisplayMode: z.enum(['black_box', 'transparent']),
+      }))
+      .mutation(async ({ input }) => {
+        // Get existing config
+        const existingConfig = await db.query.vipPortalConfigurations.findFirst({
+          where: eq(vipPortalConfigurations.clientId, input.clientId),
+        });
+
+        const featuresConfig = (existingConfig?.featuresConfig as any) || {};
+        featuresConfig.leaderboardMetrics = input.leaderboardMetrics;
+        featuresConfig.leaderboardDisplayMode = input.leaderboardDisplayMode;
+
+        if (existingConfig) {
+          // Update existing config
+          await db
+            .update(vipPortalConfigurations)
+            .set({
+              moduleLeaderboardEnabled: input.moduleLeaderboardEnabled,
+              featuresConfig: featuresConfig,
+              updatedAt: new Date(),
+            })
+            .where(eq(vipPortalConfigurations.clientId, input.clientId));
+        } else {
+          // Create new config
+          await db.insert(vipPortalConfigurations).values({
+            clientId: input.clientId,
+            moduleLeaderboardEnabled: input.moduleLeaderboardEnabled,
+            featuresConfig: featuresConfig,
+          });
+        }
+
+        return { success: true };
+      }),
+  }),
 });
