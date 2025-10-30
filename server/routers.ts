@@ -39,6 +39,8 @@ import { analyticsRouter } from "./routers/analytics";
 import { adminMigrationsRouter } from "./routers/adminMigrations";
 import { adminQuickFixRouter } from "./routers/adminQuickFix";
 import { adminSchemaPushRouter } from "./routers/adminSchemaPush";
+import { vipPortalRouter } from "./routers/vipPortal";
+import { vipPortalAdminRouter } from "./routers/vipPortalAdmin";
 
 export const appRouter = router({
   system: systemRouter,
@@ -79,6 +81,8 @@ export const appRouter = router({
   adminMigrations: adminMigrationsRouter,
   adminQuickFix: adminQuickFixRouter,
   adminSchemaPush: adminSchemaPushRouter,
+  vipPortal: vipPortalRouter,
+  vipPortalAdmin: vipPortalAdminRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -127,7 +127,7 @@
     "@vitest/ui": "^4.0.3",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
-    "drizzle-kit": "^0.31.4",
+    "drizzle-kit": "^0.31.6",
     "esbuild": "^0.25.0",
     "eslint": "^9.38.0",
     "eslint-plugin-react": "^7.37.5",
