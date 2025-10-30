@@ -127,7 +127,7 @@ export function AccountsReceivable({ clientId, config }: AccountsReceivableProps
       {/* Invoices List - Mobile-First Card Layout */}
       <div className="space-y-3">
         {arData?.invoices && arData.invoices.length > 0 ? (
-          arData.invoices.map((invoice) => (
+          arData.invoices.map((invoice: any) => (
             <Card 
               key={invoice.id} 
               className={`overflow-hidden ${

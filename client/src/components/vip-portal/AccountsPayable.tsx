@@ -127,7 +127,7 @@ export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
       {/* Bills List - Mobile-First Card Layout */}
       <div className="space-y-3">
         {apData?.bills && apData.bills.length > 0 ? (
-          apData.bills.map((bill) => (
+          apData.bills.map((bill: any) => (
             <Card 
               key={bill.id} 
               className={`overflow-hidden ${
