@@ -32,12 +32,17 @@ import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
+import VIPPortalConfigPage from "@/pages/VIPPortalConfigPage";
+import VIPLogin from "@/pages/vip-portal/VIPLogin";
+import VIPDashboard from "@/pages/vip-portal/VIPDashboard";
 
 function Router() {
   return (
     <Switch>
       {/* Public routes - no AppShell */}
       <Route path="/login" component={Login} />
+      <Route path="/vip-portal/login" component={VIPLogin} />
+      <Route path="/vip-portal/dashboard" component={VIPDashboard} />
       
       {/* Protected routes - wrapped in AppShell */}
       <Route>
@@ -70,6 +75,7 @@ function Router() {
               <Route path="/needs" component={NeedsManagementPage} />
               <Route path="/vendor-supply" component={VendorSupplyPage} />
               <Route path="/help" component={Help} />
+              <Route path="/clients/:clientId/vip-portal-config" component={VIPPortalConfigPage} />
               <Route path="/404" component={NotFound} />
               {/* Final fallback route */}
               <Route component={NotFound} />
