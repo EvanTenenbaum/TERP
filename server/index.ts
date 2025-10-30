@@ -2,11 +2,15 @@ import express from "express";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
+import { runAutoMigrations } from "./autoMigrate.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function startServer() {
+  // Run auto-migrations on startup
+  await runAutoMigrations();
+
   const app = express();
   const server = createServer(app);
 
