@@ -1,6 +1,8 @@
 import { getDb } from "./db";
 import { sql } from "drizzle-orm";
 
+let db: Awaited<ReturnType<typeof getDb>>;
+
 /**
  * Auto-migration script
  * Runs on app startup to ensure database schema is up to date
@@ -17,6 +19,13 @@ export async function runAutoMigrations() {
 
   console.log("🔄 Running auto-migrations...");
   const startTime = Date.now();
+
+  // Initialize database connection
+  db = await getDb();
+  if (!db) {
+    console.error("❌ Database connection failed");
+    return;
+  }
 
   try {
     // Add openthcId column

@@ -15,6 +15,9 @@ export const adminMigrationsRouter = router({
    * Run all pending migrations
    */
   runAllMigrations: publicProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database connection failed");
+    
     const results: any[] = [];
     const startTime = Date.now();
 
