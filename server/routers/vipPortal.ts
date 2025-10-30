@@ -7,10 +7,11 @@ import {
   vipPortalConfigurations,
   clientNeeds,
   vendorSupply,
-  orders,
-  transactions
+  invoices,
+  bills,
+  clientTransactions,
 } from "../../drizzle/schema";
-import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte, sql, like, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 
@@ -195,6 +196,33 @@ export const vipPortalRouter = router({
   // ============================================================================
   
   dashboard: router({
+    // Get portal configuration
+    getConfig: publicProcedure
+      .input(z.object({
+        clientId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const config = await db.query.vipPortalConfigurations.findFirst({
+          where: eq(vipPortalConfigurations.clientId, input.clientId),
+        });
+
+        if (!config) {
+          // Return default configuration
+          return {
+            moduleArEnabled: true,
+            moduleApEnabled: true,
+            moduleTransactionHistoryEnabled: true,
+            moduleMarketplaceNeedsEnabled: true,
+            moduleMarketplaceSupplyEnabled: true,
+            moduleCreditCenterEnabled: false,
+            moduleVipTierEnabled: false,
+            featuresConfig: {},
+          };
+        }
+
+        return config;
+      }),
+
     // Get dashboard KPIs
     getKPIs: publicProcedure
       .input(z.object({
@@ -212,48 +240,37 @@ export const vipPortalRouter = router({
           });
         }
 
-        // Calculate YTD spend
+        // Calculate YTD spend from transactions
         const ytdStart = new Date(new Date().getFullYear(), 0, 1);
-        const ytdOrders = await db.query.orders.findMany({
-          where: and(
-            eq(orders.clientId, input.clientId),
-            gte(orders.createdAt, ytdStart)
-          ),
-        });
+        const ytdTransactions = await db
+          .select()
+          .from(clientTransactions)
+          .where(and(
+            eq(clientTransactions.clientId, input.clientId),
+            gte(clientTransactions.transactionDate, ytdStart.toISOString().split('T')[0]),
+            eq(clientTransactions.transactionType, "INVOICE")
+          ));
 
-        const ytdSpend = ytdOrders.reduce((sum, order) => sum + parseFloat(order.totalAmount || "0"), 0);
+        const ytdSpend = ytdTransactions.reduce(
+          (sum, tx) => sum + parseFloat(tx.amount.toString()), 
+          0
+        );
+
+        // Count active needs and supply
+        const activeNeeds = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(clientNeeds)
+          .where(and(
+            eq(clientNeeds.clientId, input.clientId),
+            eq(clientNeeds.status, "ACTIVE")
+          ));
 
         return {
           currentBalance: parseFloat(client.totalOwed || "0"),
           ytdSpend,
           creditUtilization: 0, // TODO: Calculate based on credit limit
-          activeNeedsCount: 0, // TODO: Count active needs
-          activeSupplyCount: 0, // TODO: Count active supply
-        };
-      }),
-  }),
-
-  // ============================================================================
-  // TRANSACTIONS
-  // ============================================================================
-  
-  transactions: router({
-    // List transactions with filters
-    list: publicProcedure
-      .input(z.object({
-        clientId: z.number(),
-        limit: z.number().optional().default(50),
-        offset: z.number().optional().default(0),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-        type: z.enum(["INVOICE", "PAYMENT", "ORDER", "QUOTE"]).optional(),
-        status: z.enum(["PAID", "PENDING", "OVERDUE", "CANCELLED"]).optional(),
-      }))
-      .query(async ({ input }) => {
-        // TODO: Implement transaction listing
-        return {
-          transactions: [],
-          total: 0,
+          activeNeedsCount: Number(activeNeeds[0]?.count || 0),
+          activeSupplyCount: 0, // TODO: Count active supply when schema is updated
         };
       }),
   }),
@@ -263,17 +280,53 @@ export const vipPortalRouter = router({
   // ============================================================================
   
   ar: router({
-    // List outstanding AR
-    list: publicProcedure
+    getInvoices: publicProcedure
       .input(z.object({
         clientId: z.number(),
+        search: z.string().optional(),
+        status: z.string().optional(),
       }))
       .query(async ({ input }) => {
-        // TODO: Implement AR listing
+        const { clientId, search, status } = input;
+        
+        // Build query conditions
+        let conditions = [eq(invoices.customerId, clientId)];
+        
+        if (search) {
+          conditions.push(like(invoices.invoiceNumber, `%${search}%`));
+        }
+        
+        if (status) {
+          conditions.push(eq(invoices.status, status as any));
+        }
+        
+        // Fetch invoices
+        const clientInvoices = await db
+          .select()
+          .from(invoices)
+          .where(and(...conditions))
+          .orderBy(desc(invoices.invoiceDate));
+        
+        // Calculate summary
+        const totalOutstanding = clientInvoices
+          .filter(inv => inv.status !== "PAID" && inv.status !== "VOID")
+          .reduce((sum, inv) => sum + parseFloat(inv.amountDue.toString()), 0);
+        
+        const overdueAmount = clientInvoices
+          .filter(inv => inv.status === "OVERDUE")
+          .reduce((sum, inv) => sum + parseFloat(inv.amountDue.toString()), 0);
+        
+        const openInvoiceCount = clientInvoices
+          .filter(inv => inv.status !== "PAID" && inv.status !== "VOID")
+          .length;
+        
         return {
-          invoices: [],
-          totalOutstanding: 0,
-          totalOverdue: 0,
+          summary: {
+            totalOutstanding,
+            overdueAmount,
+            openInvoiceCount,
+          },
+          invoices: clientInvoices,
         };
       }),
   }),
@@ -283,61 +336,112 @@ export const vipPortalRouter = router({
   // ============================================================================
   
   ap: router({
-    // List outstanding AP
-    list: publicProcedure
+    getBills: publicProcedure
       .input(z.object({
         clientId: z.number(),
+        search: z.string().optional(),
+        status: z.string().optional(),
       }))
       .query(async ({ input }) => {
-        // TODO: Implement AP listing
+        const { clientId, search, status } = input;
+        
+        // Build query conditions
+        let conditions = [eq(bills.vendorId, clientId)];
+        
+        if (search) {
+          conditions.push(like(bills.billNumber, `%${search}%`));
+        }
+        
+        if (status) {
+          conditions.push(eq(bills.status, status as any));
+        }
+        
+        // Fetch bills
+        const clientBills = await db
+          .select()
+          .from(bills)
+          .where(and(...conditions))
+          .orderBy(desc(bills.billDate));
+        
+        // Calculate summary
+        const totalOwed = clientBills
+          .filter(bill => bill.status !== "PAID" && bill.status !== "VOID")
+          .reduce((sum, bill) => sum + parseFloat(bill.amountDue.toString()), 0);
+        
+        const overdueAmount = clientBills
+          .filter(bill => bill.status === "OVERDUE")
+          .reduce((sum, bill) => sum + parseFloat(bill.amountDue.toString()), 0);
+        
+        const openBillCount = clientBills
+          .filter(bill => bill.status !== "PAID" && bill.status !== "VOID")
+          .length;
+        
         return {
-          bills: [],
-          totalOwed: 0,
+          summary: {
+            totalOwed,
+            overdueAmount,
+            openBillCount,
+          },
+          bills: clientBills,
         };
       }),
   }),
 
   // ============================================================================
-  // CREDIT CENTER
+  // TRANSACTION HISTORY
   // ============================================================================
   
-  credit: router({
-    // Get credit summary
-    getSummary: publicProcedure
+  transactions: router({
+    getHistory: publicProcedure
       .input(z.object({
         clientId: z.number(),
+        search: z.string().optional(),
+        type: z.string().optional(),
+        status: z.string().optional(),
       }))
       .query(async ({ input }) => {
-        // TODO: Implement credit summary
+        const { clientId, search, type, status } = input;
+        
+        // Build query conditions
+        let conditions = [eq(clientTransactions.clientId, clientId)];
+        
+        if (search) {
+          conditions.push(like(clientTransactions.transactionNumber, `%${search}%`));
+        }
+        
+        if (type) {
+          conditions.push(eq(clientTransactions.transactionType, type as any));
+        }
+        
+        if (status) {
+          conditions.push(eq(clientTransactions.paymentStatus, status as any));
+        }
+        
+        // Fetch transactions
+        const txList = await db
+          .select()
+          .from(clientTransactions)
+          .where(and(...conditions))
+          .orderBy(desc(clientTransactions.transactionDate))
+          .limit(100);
+        
+        // Calculate summary
+        const totalCount = txList.length;
+        const totalValue = txList.reduce(
+          (sum, tx) => sum + parseFloat(tx.amount.toString()), 
+          0
+        );
+        const lastTransactionDate = txList.length > 0 
+          ? txList[0].transactionDate 
+          : null;
+        
         return {
-          creditLimit: 0,
-          creditUsage: 0,
-          availableCredit: 0,
-          utilizationPercentage: 0,
-          recommendations: [],
-        };
-      }),
-  }),
-
-  // ============================================================================
-  // VIP TIER
-  // ============================================================================
-  
-  tier: router({
-    // Get tier status
-    getStatus: publicProcedure
-      .input(z.object({
-        clientId: z.number(),
-      }))
-      .query(async ({ input }) => {
-        // TODO: Implement tier status
-        return {
-          currentTier: "SILVER",
-          nextTier: "GOLD",
-          progress: 0,
-          requirements: [],
-          rewards: [],
-          recommendations: [],
+          summary: {
+            totalCount,
+            totalValue,
+            lastTransactionDate,
+          },
+          transactions: txList,
         };
       }),
   }),
@@ -347,24 +451,19 @@ export const vipPortalRouter = router({
   // ============================================================================
   
   marketplace: router({
-    // List client needs
-    listNeeds: publicProcedure
+    // Get client needs
+    getNeeds: publicProcedure
       .input(z.object({
         clientId: z.number(),
-        status: z.enum(["ACTIVE", "FULFILLED", "EXPIRED", "CANCELLED"]).optional(),
       }))
       .query(async ({ input }) => {
-        const needs = await db.query.clientNeeds.findMany({
-          where: input.status 
-            ? and(
-                eq(clientNeeds.clientId, input.clientId),
-                eq(clientNeeds.status, input.status)
-              )
-            : eq(clientNeeds.clientId, input.clientId),
-          orderBy: [desc(clientNeeds.createdAt)],
-        });
+        const needs = await db
+          .select()
+          .from(clientNeeds)
+          .where(eq(clientNeeds.clientId, input.clientId))
+          .orderBy(desc(clientNeeds.createdAt));
 
-        return { needs };
+        return needs;
       }),
 
     // Create client need
@@ -372,48 +471,60 @@ export const vipPortalRouter = router({
       .input(z.object({
         clientId: z.number(),
         strain: z.string().optional(),
-        category: z.string().optional(),
-        subcategory: z.string().optional(),
-        grade: z.string().optional(),
-        quantityMin: z.number().optional(),
-        quantityMax: z.number().optional(),
+        category: z.string(),
+        quantity: z.number(),
+        unit: z.string(),
         priceMax: z.number().optional(),
-        expiresAt: z.date(),
         notes: z.string().optional(),
+        expiresInDays: z.number().default(5),
       }))
-      .mutation(async ({ input, ctx }) => {
-        const [need] = await db.insert(clientNeeds).values({
-          ...input,
+      .mutation(async ({ input }) => {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + input.expiresInDays);
+
+        const [result] = await db.insert(clientNeeds).values({
+          clientId: input.clientId,
+          strain: input.strain,
+          category: input.category,
+          quantityMin: input.quantity,
+          quantityMax: input.quantity,
+          priceMax: input.priceMax?.toString(),
+          notes: input.notes,
+          expiresAt: expiresAt.toISOString().split('T')[0],
           status: "ACTIVE",
           priority: "MEDIUM",
           createdBy: 1, // TODO: Get from session
         });
 
-        return { needId: need.insertId };
+        return { needId: result.insertId };
       }),
 
     // Update client need
     updateNeed: publicProcedure
       .input(z.object({
-        needId: z.number(),
+        id: z.number(),
         clientId: z.number(),
         strain: z.string().optional(),
-        category: z.string().optional(),
-        subcategory: z.string().optional(),
-        grade: z.string().optional(),
-        quantityMin: z.number().optional(),
-        quantityMax: z.number().optional(),
+        category: z.string(),
+        quantity: z.number(),
+        unit: z.string(),
         priceMax: z.number().optional(),
-        expiresAt: z.date().optional(),
         notes: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        const { needId, clientId, ...updateData } = input;
+        const { id, clientId, ...updateData } = input;
 
         await db.update(clientNeeds)
-          .set(updateData)
+          .set({
+            strain: updateData.strain,
+            category: updateData.category,
+            quantityMin: updateData.quantity,
+            quantityMax: updateData.quantity,
+            priceMax: updateData.priceMax?.toString(),
+            notes: updateData.notes,
+          })
           .where(and(
-            eq(clientNeeds.id, needId),
+            eq(clientNeeds.id, id),
             eq(clientNeeds.clientId, clientId)
           ));
 
@@ -423,115 +534,77 @@ export const vipPortalRouter = router({
     // Cancel client need
     cancelNeed: publicProcedure
       .input(z.object({
-        needId: z.number(),
+        id: z.number(),
         clientId: z.number(),
       }))
       .mutation(async ({ input }) => {
         await db.update(clientNeeds)
           .set({ status: "CANCELLED" })
           .where(and(
-            eq(clientNeeds.id, input.needId),
+            eq(clientNeeds.id, input.id),
             eq(clientNeeds.clientId, input.clientId)
           ));
 
         return { success: true };
       }),
 
-    // List vendor supply (client's own supply listings)
-    listSupply: publicProcedure
+    // Get client supply listings
+    getSupply: publicProcedure
       .input(z.object({
         clientId: z.number(),
-        status: z.enum(["AVAILABLE", "RESERVED", "PURCHASED", "EXPIRED"]).optional(),
       }))
       .query(async ({ input }) => {
-        // Note: vendorSupply uses vendorId, but for VIP clients we need to link to clientId
-        // This may require a schema update or a junction table
-        // For now, returning empty array as placeholder
-        return { supply: [] };
+        // For now, returning empty array as vendorSupply uses vendorId
+        // In production, this would require a schema update or junction table
+        // to link clients to their supply listings
+        return [];
       }),
 
     // Create supply listing
     createSupply: publicProcedure
       .input(z.object({
         clientId: z.number(),
-        strain: z.string().optional(),
-        category: z.string().optional(),
-        subcategory: z.string().optional(),
-        grade: z.string().optional(),
-        quantityAvailable: z.number(),
-        unitPrice: z.number().optional(),
-        availableUntil: z.date().optional(),
+        strain: z.string(),
+        category: z.string(),
+        quantity: z.number(),
+        unit: z.string(),
+        priceMin: z.number().optional(),
+        priceMax: z.number().optional(),
         notes: z.string().optional(),
+        expiresInDays: z.number().default(5),
       }))
       .mutation(async ({ input }) => {
-        // TODO: Implement supply creation
-        // This requires linking vendorSupply to clients
+        // TODO: Implement supply creation when schema is updated
         return { supplyId: 0 };
       }),
 
     // Update supply listing
     updateSupply: publicProcedure
       .input(z.object({
-        supplyId: z.number(),
+        id: z.number(),
         clientId: z.number(),
-        strain: z.string().optional(),
-        category: z.string().optional(),
-        subcategory: z.string().optional(),
-        grade: z.string().optional(),
-        quantityAvailable: z.number().optional(),
-        unitPrice: z.number().optional(),
-        availableUntil: z.date().optional(),
+        strain: z.string(),
+        category: z.string(),
+        quantity: z.number(),
+        unit: z.string(),
+        priceMin: z.number().optional(),
+        priceMax: z.number().optional(),
         notes: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        // TODO: Implement supply update
+        // TODO: Implement supply update when schema is updated
         return { success: true };
       }),
 
     // Cancel supply listing
     cancelSupply: publicProcedure
       .input(z.object({
-        supplyId: z.number(),
+        id: z.number(),
         clientId: z.number(),
       }))
       .mutation(async ({ input }) => {
-        // TODO: Implement supply cancellation
+        // TODO: Implement supply cancellation when schema is updated
         return { success: true };
-      }),
-  }),
-
-  // ============================================================================
-  // PORTAL CONFIGURATION (Read-only for client)
-  // ============================================================================
-  
-  config: router({
-    // Get portal configuration for client
-    get: publicProcedure
-      .input(z.object({
-        clientId: z.number(),
-      }))
-      .query(async ({ input }) => {
-        const config = await db.query.vipPortalConfigurations.findFirst({
-          where: eq(vipPortalConfigurations.clientId, input.clientId),
-        });
-
-        if (!config) {
-          // Return default configuration
-          return {
-            moduleDashboardEnabled: true,
-            moduleArEnabled: true,
-            moduleApEnabled: true,
-            moduleTransactionHistoryEnabled: true,
-            moduleVipTierEnabled: true,
-            moduleCreditCenterEnabled: true,
-            moduleMarketplaceNeedsEnabled: true,
-            moduleMarketplaceSupplyEnabled: true,
-            featuresConfig: {},
-            advancedOptions: {},
-          };
-        }
-
-        return config;
       }),
   }),
 });
