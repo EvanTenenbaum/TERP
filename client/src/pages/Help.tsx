@@ -21,21 +21,25 @@ export default function Help() {
         'Understanding key metrics',
         'Drill-down navigation'
       ],
-      training: `**Welcome to Your Dashboard** (Yes, we know you've seen it already)
+      training: `**Getting Started with Your Dashboard**
 
-Think of this as your business's Instagram feed, except instead of food pics, you get actual useful data. Revolutionary, right?
+The Dashboard provides a real-time overview of your business through customizable data cards. Each card displays key metrics and can be clicked to drill down into detailed views.
 
-**The Quick Win:**
-Those colorful cards at the top? They're not just pretty—click any number to drill down into the details. It's like clicking a hashtag, but for your inventory. Mind = blown.
+**Customization**
 
-**Customization (The Fun Part):**
-Hit that "Customize Dashboard" button and drag cards around like you're rearranging furniture. Don't like seeing "Low Stock" first thing in the morning? Move it. We won't judge your avoidance tactics.
+Click "Customize Dashboard" to add, remove, or rearrange cards. Your layout preferences are saved automatically. Cards can be organized by priority—place your most critical metrics at the top for quick access.
 
-**Pro Tip:**
-The "Quick Notes" section is perfect for those "I'll remember this later" moments (spoiler: you won't). Write it down. Future you will thank present you.
+**Drill-Down Navigation**
 
-**What's Actually Happening Behind The Scenes:**
-TERP is constantly calculating trends, flagging urgent stuff, and basically being that overachieving friend who has their life together. You're welcome.`
+Click any metric value to view the underlying data. For example, clicking "Total Inventory Value" filters the inventory view to show all contributing batches. This makes it easy to investigate trends or verify calculations.
+
+**Quick Notes**
+
+Use the notes section to track important reminders or action items. These persist across sessions and are visible only to you.
+
+**What's Happening Behind the Scenes**
+
+TERP continuously aggregates data from inventory, orders, and clients to calculate dashboard metrics in real-time. Trends are computed automatically based on historical data, and alerts are triggered when thresholds are exceeded.`
     },
     {
       id: 'inventory',
@@ -50,27 +54,33 @@ TERP is constantly calculating trends, flagging urgent stuff, and basically bein
         'Profitability analysis',
         'Price simulation tool'
       ],
-      training: `**Inventory: Where Your Money Lives**
+      training: `**Understanding Batch-Based Inventory**
 
-Look, we get it. Inventory management sounds about as exciting as watching paint dry. But this is where your actual money is sitting, so... maybe pay attention? 😅
+TERP uses a batch system where each product lot is tracked individually with its own cost, location, and profitability metrics. This granular approach provides precise margin calculations and inventory visibility.
 
-**The Batch System (It's Not Complicated, Promise):**
-Every product gets a batch. Think of batches like individual Pokémon—each one has its own stats, location, and value. Gotta track 'em all.
+**Location Hierarchy**
 
-**Location Hierarchy (Sounds Fancy, Isn't):**
-Site → Zone → Rack → Shelf → Bin. It's basically like giving your product a full mailing address. "Hey Purple Haze, you live at Warehouse A, Zone 2, Rack 5, Shelf B, Bin 3." Now you can actually find it.
+Locations follow a five-tier structure: Site → Zone → Rack → Shelf → Bin. This hierarchy allows you to track inventory at any level of detail, from warehouse-wide views down to specific bin locations.
 
-**The Profitability Magic:**
-See those margin percentages? TERP calculates those automatically. No spreadsheets, no calculators, no crying. Just instant "am I making money on this?" answers.
+**Batch Lifecycle**
 
-**Price Simulation (The Crystal Ball):**
-Want to see what happens if you change your price? Use the simulation tool. It's like a time machine, but for pricing decisions. Way cooler than it sounds.
+Each batch progresses through states as it moves through your system. Status changes are logged automatically, creating an audit trail from receipt to sale.
 
-**Real Talk:**
-That "Low Stock" alert? Don't ignore it. We've seen what happens. It's not pretty.
+**COGS Tracking**
 
-**The Secret Sauce:**
-TERP tracks your COGS (Cost of Goods Sold) automatically. Fixed price? Range pricing? We handle both. You just focus on selling stuff.`
+TERP supports both fixed-price and range-based COGS. Fixed pricing assigns a single cost to a batch, while range pricing tracks minimum and maximum costs for products with variable supplier pricing.
+
+**Profitability Analysis**
+
+Margin percentages are calculated automatically for each batch using the formula: (Sale Price - COGS) / Sale Price. This provides instant visibility into which products are most profitable.
+
+**Price Simulation**
+
+The simulation tool lets you model pricing changes before implementing them. Adjust the price and immediately see the impact on margin, markup, and projected profit.
+
+**Best Practice**
+
+Low stock alerts exist for a reason. Set appropriate thresholds and monitor them regularly to avoid stockouts.`
     },
     {
       id: 'orders',
@@ -83,29 +93,35 @@ TERP tracks your COGS (Cost of Goods Sold) automatically. Fixed price? Range pri
         'Processing returns',
         'Order status history'
       ],
-      training: `**Orders: The Money-Making Part** 💰
+      training: `**Order Workflow Overview**
 
-This is where the magic happens. Well, "magic" might be overselling it. This is where you turn inventory into cash. Better?
+Orders progress through three primary states:
 
-**The Workflow (Easier Than Making Coffee):**
-1. **PENDING** - Customer said yes, you haven't done anything yet
-2. **PACKED** - You actually put stuff in a box (look at you go!)
-3. **SHIPPED** - It's gone. Not your problem anymore. Freedom!
+1. **PENDING** - Order created, awaiting fulfillment
+2. **PACKED** - Items prepared for shipment
+3. **SHIPPED** - Order dispatched to customer
 
-**Creating Orders (The Fast Way):**
-Click "Create Order" → Pick a client → Add products → Hit save. Done. You just made money. Feel good about yourself.
+Each status change is timestamped and logged for tracking purposes.
 
-**Quotes (For The Indecisive Customers):**
-Some customers need to "think about it." Fine. Create a quote. When they finally decide (next week, next month, who knows), convert it to an order with one click. Boom.
+**Creating Orders**
 
-**Returns (The Sad Part):**
-Sometimes stuff comes back. It happens. Process the return, and TERP automatically puts inventory back on the shelf and adjusts your numbers. We've got your back.
+Navigate to "Create Order," select a client, add products, and save. The system automatically reserves inventory and calculates totals based on the client's pricing profile.
 
-**The Audit Trail:**
-Every status change is tracked. Who did what, when. It's like a security camera for your orders. Useful when someone asks "where's my order?" (Spoiler: it's in the system, always has been).
+**Working with Quotes**
 
-**Pro Tip:**
-Use the order history to see patterns. "Oh, Customer X always orders on Fridays." Now you know. Knowledge is power.`
+Quotes function as draft orders. Create a quote when pricing needs approval or the customer is evaluating options. Convert quotes to orders with a single click when ready to fulfill.
+
+**Processing Returns**
+
+When processing a return, TERP automatically returns inventory to available stock and adjusts financial records. The original order maintains a complete history of the return transaction.
+
+**Audit Trail**
+
+Every status change, modification, and note is logged with a timestamp and user attribution. This creates a complete record of each order's lifecycle.
+
+**Useful Pattern**
+
+Review order history by client to identify purchasing patterns. This data can inform inventory planning and reveal opportunities for proactive outreach.`
     },
     {
       id: 'clients',
@@ -118,27 +134,29 @@ Use the order history to see patterns. "Oh, Customer X always orders on Fridays.
         'Tracking client needs',
         'Viewing order history'
       ],
-      training: `**Clients: The People Who Pay You** (Important, Right?)
+      training: `**Client Profile Management**
 
-Let's be honest—without clients, you're just a person with a lot of inventory and some fancy software. So yeah, this section matters.
+Each client profile contains contact information, TERI code (unique identifier), client type classification, and a complete order history. This centralized view provides context for every customer interaction.
 
-**Client Profiles (The Basics):**
-Name, contact info, TERI code (that's their ID), client type. Standard stuff. But here's the cool part: TERP tracks EVERYTHING they've ever ordered. It's like having a perfect memory, except you don't have to pretend to remember their birthday.
+**Communication Logging**
 
-**Communication Logging (Your New Best Friend):**
-Had a phone call? Log it. Sent an email? Log it. Made a promise you'll definitely forget? LOG IT. Future you will be so grateful when a client asks "what did we talk about last month?"
+Log calls, emails, and meetings directly in the client profile. Include dates, topics discussed, and any commitments made. This creates a searchable record that's accessible to your entire team.
 
-**Order History (The Good Stuff):**
-Click any client → See every order they've ever placed. When, what, how much. It's like their shopping biography. Use this to spot patterns, predict needs, or just look smart in meetings.
+**Order History Analysis**
 
-**The Secret Weapon:**
-See that "Total Sales" number? That's how much money this client has given you. Ever. Use this information wisely (hint: maybe be extra nice to your top 10).
+The order history shows every transaction with a client, sorted chronologically. Use this to identify purchasing patterns, seasonal trends, or changes in buying behavior.
 
-**Real Talk:**
-The clients with the most orders aren't always the most profitable. Check those margins. Sometimes your "best" client is actually... not. Sorry to break it to you.
+**Total Sales Tracking**
 
-**Pro Move:**
-Before calling a client, pull up their profile. Glance at recent orders. Now you sound prepared and professional. You're welcome.`
+The "Total Sales" metric displays lifetime revenue from each client. Sort clients by this value to identify your highest-value relationships.
+
+**Important Note**
+
+High order volume doesn't always correlate with high profitability. Cross-reference order history with margin data to understand true client value.
+
+**Preparation Strategy**
+
+Before client calls, review their profile and recent order history. This context allows for more informed conversations and demonstrates attention to detail.`
     },
     {
       id: 'profitability',
@@ -151,33 +169,38 @@ Before calling a client, pull up their profile. Glance at recent orders. Now you
         'Price simulation',
         'Top performers report'
       ],
-      training: `**Profitability: The "Are We Actually Making Money?" Section**
+      training: `**Understanding Profitability Metrics**
 
-Revenue is vanity. Profit is sanity. Cash is reality. Let's talk sanity.
+Revenue indicates sales volume. Profit indicates business health. TERP focuses on profit-based analysis to support informed pricing decisions.
 
-**Margin vs. Markup (Yes, They're Different):**
-- **Margin:** What % of the sale price is profit. "I sold it for $100, made $30 profit = 30% margin"
-- **Markup:** How much you marked it up from cost. "Cost me $70, sold for $100 = 43% markup"
+**Margin vs. Markup**
 
-TERP shows both because we're not monsters. Use whichever makes you feel better about your pricing.
+These terms are often confused but represent different calculations:
 
-**The Profitability Dashboard (Your New Obsession):**
-See which products are printing money and which are... not. Sort by margin. Prepare to be surprised. That product you thought was a winner? Yeah, about that...
+- **Margin:** Profit as a percentage of sale price. Example: $100 sale with $30 profit = 30% margin
+- **Markup:** Profit as a percentage of cost. Example: $70 cost sold for $100 = 43% markup
 
-**Top Performers Report (The Winners Circle):**
-Your best products, ranked by actual profit. Not revenue. Not volume. PROFIT. This is the list that matters. Focus here.
+TERP displays both metrics for complete visibility.
 
-**Price Simulation (The "What If" Game):**
-"What if I raised the price by 5%?" Click, type, see the answer. No math required. It's beautiful.
+**Profitability Dashboard**
 
-**The Harsh Truth:**
-You're probably selling some stuff at a loss and don't know it. TERP knows. Check the red numbers. Fix them. Your accountant will stop crying.
+Sort products by margin to identify your most and least profitable items. This view often reveals surprising patterns in product performance.
 
-**Pro Tip:**
-Run profitability reports monthly. Not yearly. Monthly. Things change fast. Stay on top of it or get buried.
+**Top Performers Report**
 
-**The Reality Check:**
-High volume ≠ high profit. Sometimes your best move is to sell less of the low-margin stuff and more of the good stuff. Revolutionary, we know.`
+This report ranks products by total profit contribution—not revenue or volume. Focus optimization efforts on this list for maximum impact.
+
+**Price Simulation**
+
+Model pricing changes before implementation. Enter a new price to see immediate calculations of resulting margin, markup, and profit impact.
+
+**Common Discovery**
+
+Many businesses unknowingly sell certain products at a loss or minimal margin. Regular profitability reviews help identify and correct these situations.
+
+**Recommended Cadence**
+
+Run profitability analysis monthly rather than quarterly or annually. Market conditions and costs change frequently enough to warrant regular review.`
     }
   ];
 
@@ -279,7 +302,7 @@ High volume ≠ high profit. Sometimes your best move is to sell less of the low
                                     ? `<li>${item.substring(1).trim()}</li>` 
                                     : item
                                 ).join('');
-                                return `<ul class="list-disc pl-5 space-y-1">${items}</ul>`;
+                                return `<ul class="list-disc pl-5 space-y-1 my-3">${items}</ul>`;
                               }
                               // Handle numbered lists
                               if (/^\d+\./.test(para.trim())) {
@@ -287,7 +310,7 @@ High volume ≠ high profit. Sometimes your best move is to sell less of the low
                                   const match = item.match(/^\d+\.\s*(.+)/);
                                   return match ? `<li>${match[1]}</li>` : item;
                                 }).join('');
-                                return `<ol class="list-decimal pl-5 space-y-1">${items}</ol>`;
+                                return `<ol class="list-decimal pl-5 space-y-1 my-3">${items}</ol>`;
                               }
                               return `<p class="mb-3">${para}</p>`;
                             })
@@ -326,9 +349,9 @@ High volume ≠ high profit. Sometimes your best move is to sell less of the low
                   📚 Complete Training Guide
                 </h3>
                 <p className="text-gray-700 mb-6">
-                  Want the full experience? Download our comprehensive training guide with screenshots, 
-                  step-by-step instructions, and all the details we couldn't fit in these cards. 
-                  It's like this, but longer. And with pictures.
+                  Download the comprehensive training guide with screenshots, detailed workflows, 
+                  and step-by-step instructions for all TERP features. Includes technical explanations 
+                  and best practices for each module.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <a 
@@ -351,8 +374,8 @@ High volume ≠ high profit. Sometimes your best move is to sell less of the low
                   </a>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
-                  💡 <strong>Pro tip:</strong> The PDF has real screenshots from TERP and "Backend Intelligence" 
-                  sections that explain what's happening under the hood. Nerd out responsibly.
+                  The PDF includes real screenshots from TERP and "Backend Intelligence" sections 
+                  that explain system architecture and automated processes.
                 </p>
               </div>
             </div>
@@ -363,11 +386,10 @@ High volume ≠ high profit. Sometimes your best move is to sell less of the low
         <div className="mt-8">
           <div className="bg-gray-100 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Still Confused? (It Happens)
+              Need Additional Help?
             </h3>
             <p className="text-gray-700">
-              Can't find what you're looking for? Hit up your system administrator. 
-              They probably know the answer. Or at least know who to ask. That's what they're there for.
+              Contact your system administrator for questions not covered in this documentation.
             </p>
           </div>
         </div>
