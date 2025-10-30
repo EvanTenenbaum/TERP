@@ -6,7 +6,7 @@ import { getDb as getDatabase } from '../db';
 
 let _cachedDb: Awaited<ReturnType<typeof getDatabase>> | null = null;
 
-export async function db() {
+export async function getDbInstance() {
   if (!_cachedDb) {
     _cachedDb = await getDatabase();
   }
@@ -14,7 +14,7 @@ export async function db() {
 }
 
 // For query builder pattern used in VIP portal
-export const db = {
+export const dbQueryBuilder = {
   query: {} as any,
   select: () => ({} as any),
   insert: () => ({} as any),
