@@ -2360,6 +2360,7 @@ export const vipPortalConfigurations = mysqlTable("vip_portal_configurations", {
   moduleCreditCenterEnabled: boolean("module_credit_center_enabled").default(true).notNull(),
   moduleMarketplaceNeedsEnabled: boolean("module_marketplace_needs_enabled").default(true).notNull(),
   moduleMarketplaceSupplyEnabled: boolean("module_marketplace_supply_enabled").default(true).notNull(),
+  moduleLeaderboardEnabled: boolean("module_leaderboard_enabled").default(false).notNull(),
   
   // Feature-level controls (stored as JSON for flexibility)
   featuresConfig: json("features_config").$type<{
@@ -2421,7 +2422,17 @@ export const vipPortalConfigurations = mysqlTable("vip_portal_configurations", {
       allowNewStrain?: boolean;
       showTags?: boolean;
     };
+    leaderboard?: {
+      showSuggestions?: boolean;
+      showRankings?: boolean;
+    };
   }>(),
+  
+  // Leaderboard-specific configuration
+  leaderboardType: varchar("leaderboard_type", { length: 50 }).default('ytd_spend'),
+  leaderboardDisplayMode: varchar("leaderboard_display_mode", { length: 20 }).default('blackbox'),
+  leaderboardShowSuggestions: boolean("leaderboard_show_suggestions").default(true),
+  leaderboardMinimumClients: int("leaderboard_minimum_clients").default(5),
   
   // Advanced options
   advancedOptions: json("advanced_options").$type<{
