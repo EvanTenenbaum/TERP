@@ -1,4 +1,5 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, json, date, index, unique } from "drizzle-orm/mysql-core";
+import { relations } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -2488,3 +2489,18 @@ export const vipPortalAuth = mysqlTable("vip_portal_auth", {
 
 export type VipPortalAuth = typeof vipPortalAuth.$inferSelect;
 export type InsertVipPortalAuth = typeof vipPortalAuth.$inferInsert;
+
+// VIP Portal Relations
+export const vipPortalAuthRelations = relations(vipPortalAuth, ({ one }) => ({
+  client: one(clients, {
+    fields: [vipPortalAuth.clientId],
+    references: [clients.id],
+  }),
+}));
+
+export const vipPortalConfigurationsRelations = relations(vipPortalConfigurations, ({ one }) => ({
+  client: one(clients, {
+    fields: [vipPortalConfigurations.clientId],
+    references: [clients.id],
+  }),
+}));
