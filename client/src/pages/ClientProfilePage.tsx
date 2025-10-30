@@ -49,10 +49,13 @@ import {
   Plus,
   CheckCircle,
   XCircle,
+  Settings,
 } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function ClientProfilePage() {
   const params = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
   const clientId = parseInt(params.id || "0", 10);
   const [activeTab, setActiveTab] = useState("overview");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -248,10 +251,21 @@ export default function ClientProfilePage() {
                 <p className="text-sm text-muted-foreground">{client.phone}</p>
               )}
             </div>
-            <Button onClick={() => setEditDialogOpen(true)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Client
-            </Button>
+            <div className="flex gap-2">
+              {client.vipPortalEnabled && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setLocation(`/clients/${clientId}/vip-portal-config`)}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  VIP Portal Config
+                </Button>
+              )}
+              <Button onClick={() => setEditDialogOpen(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Client
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
