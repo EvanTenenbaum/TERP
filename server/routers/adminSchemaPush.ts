@@ -12,6 +12,9 @@ export const adminSchemaPushRouter = router({
    * Push all schema changes to database
    */
   pushSchema: publicProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database connection failed");
+    
     const results: any[] = [];
     const startTime = Date.now();
 
