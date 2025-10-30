@@ -11,6 +11,9 @@ export const adminQuickFixRouter = router({
    * Check if columns exist
    */
   checkColumns: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database connection failed");
+    
     try {
       const strainsColumns = await db.execute(sql`
         SELECT COLUMN_NAME 
@@ -39,9 +42,12 @@ export const adminQuickFixRouter = router({
    * Add missing columns one by one
    */
   addMissingColumns: publicProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database connection failed");
+    
     const results: any[] = [];
 
-    try {
+    try{
       // Add openthcId
       try {
         await db.execute(sql`
