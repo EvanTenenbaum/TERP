@@ -254,18 +254,20 @@ async function calculateInventoryMetrics(
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
     
-    const [result] = await db
-      .select({ count: count() })
-      .from(batches)
-      .where(
-        and(
-          lte(batches.expirationDate, thirtyDaysFromNow),
-          gte(batches.expirationDate, new Date())
-        )
-      );
+    // Note: expirationDate field doesn't exist in batches table
+    // TODO: Add expirationDate to batches schema or remove this metric
+    // const [result] = await db
+    //   .select({ count: count() })
+    //   .from(batches)
+    //   .where(
+    //     and(
+    //       lte(batches.expirationDate, thirtyDaysFromNow),
+    //       gte(batches.expirationDate, new Date())
+    //     )
+    //   );
     
     results['inventory_expiring_soon'] = {
-      value: result?.count || 0,
+      value: 0, // Disabled until expirationDate is added to schema
       subtext: 'expiring in 30 days',
       updatedAt: new Date().toISOString(),
     };
@@ -373,35 +375,33 @@ async function calculateOrdersMetrics(
   if (metricIds.includes('orders_overdue')) {
     const now = new Date();
     
-    const [result] = await db
-      .select({ count: count() })
-      .from(orders)
-      .where(
-        and(
-          eq(orders.orderType, 'SALE'),
-          lte(orders.expectedShipDate, now),
-          eq(orders.fulfillmentStatus, 'PENDING')
-        )
-      );
+    // Note: expectedShipDate field doesn't exist in orders table
+    // TODO: Add expectedShipDate to orders schema or use different field
+    // const [result] = await db
+    //   .select({ count: count() })
+    //   .from(orders)
+    //   .where(
+    //     and(
+    //       eq(orders.orderType, 'SALE'),
+    //       lte(orders.expectedShipDate, now),
+    //       eq(orders.fulfillmentStatus, 'PENDING')
+    //     )
+    //   );
     
     results['orders_overdue'] = {
-      value: result?.count || 0,
+      value: 0, // Disabled until expectedShipDate is added to schema
       subtext: 'overdue shipments',
       updatedAt: new Date().toISOString(),
     };
   }
   
   if (metricIds.includes('orders_returns')) {
-    // Count orders with returns
+    // Count orders with returns (using returns table)
+    // Note: hasReturns field doesn't exist, using returns table instead
+    const { returns: returnsTable } = await import('../drizzle/schema');
     const [result] = await db
-      .select({ count: count() })
-      .from(orders)
-      .where(
-        and(
-          eq(orders.orderType, 'SALE'),
-          eq(orders.hasReturns, true)
-        )
-      );
+      .select({ count: sql<number>`COUNT(DISTINCT ${returnsTable.orderId})` })
+      .from(returnsTable);
     
     results['orders_returns'] = {
       value: result?.count || 0,
