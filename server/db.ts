@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users } from "../drizzle/schema";
+import * as schema from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { getConnectionPool } from './_core/connectionPool';
 import { logger } from './_core/logger';
@@ -13,7 +14,7 @@ export async function getDb() {
     try {
       // Use connection pool for better performance
       const pool = getConnectionPool();
-      _db = drizzle(pool as any); // Pool is compatible with drizzle
+      _db = drizzle(pool as any, { schema, mode: 'default' }); // Pool is compatible with drizzle
       logger.info("Database connection established with connection pooling");
     } catch (error) {
       logger.warn({ msg: "Failed to connect to database", error });

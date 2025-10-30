@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { db } from "../db";
 import { 
   clients, 
   vipPortalAuth, 
@@ -27,8 +27,6 @@ export const vipPortalAdminRouter = router({
         offset: z.number().optional().default(0),
       }))
       .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const vipClients = await db.query.clients.findMany({
           where: eq(clients.vipPortalEnabled, true),
           limit: input.limit,
@@ -47,8 +45,6 @@ export const vipPortalAdminRouter = router({
         initialPassword: z.string().min(8),
       }))
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         // Check if client exists
         const client = await db.query.clients.findFirst({
           where: eq(clients.id, input.clientId),
@@ -162,8 +158,6 @@ export const vipPortalAdminRouter = router({
         clientId: z.number(),
       }))
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         await db.update(clients)
           .set({ vipPortalEnabled: false })
           .where(eq(clients.id, input.clientId));
@@ -177,8 +171,6 @@ export const vipPortalAdminRouter = router({
         clientId: z.number(),
       }))
       .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const client = await db.query.clients.findFirst({
           where: eq(clients.id, input.clientId),
         });
@@ -205,8 +197,6 @@ export const vipPortalAdminRouter = router({
         clientId: z.number(),
       }))
       .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const config = await db.query.vipPortalConfigurations.findFirst({
           where: eq(vipPortalConfigurations.clientId, input.clientId),
         });
@@ -237,8 +227,6 @@ export const vipPortalAdminRouter = router({
         advancedOptions: z.any().optional(),
       }))
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const { clientId, ...updateData } = input;
 
         await db.update(vipPortalConfigurations)
@@ -255,8 +243,6 @@ export const vipPortalAdminRouter = router({
         template: z.enum(["FULL_ACCESS", "FINANCIAL_ONLY", "MARKETPLACE_ONLY", "BASIC"]),
       }))
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         let templateConfig: any = {};
 
         switch (input.template) {
@@ -327,8 +313,6 @@ export const vipPortalAdminRouter = router({
         targetClientId: z.number(),
       }))
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const sourceConfig = await db.query.vipPortalConfigurations.findFirst({
           where: eq(vipPortalConfigurations.clientId, input.sourceClientId),
         });
@@ -410,8 +394,6 @@ export const vipPortalAdminRouter = router({
         tiers: z.array(z.any()),
       }))
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         // TODO: Implement tier configuration storage
         return { success: true };
       }),
@@ -428,8 +410,6 @@ export const vipPortalAdminRouter = router({
         clientId: z.number(),
       }))
       .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const config = await db.query.vipPortalConfigurations.findFirst({
           where: eq(vipPortalConfigurations.clientId, input.clientId),
         });
@@ -459,8 +439,6 @@ export const vipPortalAdminRouter = router({
         leaderboardDisplayMode: z.enum(['black_box', 'transparent']),
       }))
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         // Get existing config
         const existingConfig = await db.query.vipPortalConfigurations.findFirst({
           where: eq(vipPortalConfigurations.clientId, input.clientId),

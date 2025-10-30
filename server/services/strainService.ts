@@ -10,10 +10,10 @@
  * - Easy to test
  */
 
-import { db } from "../db";
+import { getDb } from "../db";
 import { strains, products, batches, clients } from "../../drizzle/schema";
 import { eq, and, or, like, sql, desc, isNull } from "drizzle-orm";
-import { fuzzySearchStrains, getOrCreateStrain } from "../strainMatcher";
+import { findFuzzyStrainMatches, getOrCreateStrain } from "../strainMatcher";
 
 // Cache for frequently accessed data
 const cache = new Map<string, { data: any; timestamp: number }>();
