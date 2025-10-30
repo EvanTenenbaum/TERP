@@ -24,6 +24,10 @@ import {
 import { trpc } from "@/lib/trpc";
 import { useVIPPortalAuth } from "@/hooks/useVIPPortalAuth";
 import { MarketplaceNeeds } from "@/components/vip-portal/MarketplaceNeeds";
+import { AccountsReceivable } from "@/components/vip-portal/AccountsReceivable";
+import { AccountsPayable } from "@/components/vip-portal/AccountsPayable";
+import { TransactionHistory } from "@/components/vip-portal/TransactionHistory";
+import { MarketplaceSupply } from "@/components/vip-portal/MarketplaceSupply";
 
 export default function VIPDashboard() {
   const { clientId, clientName, logout } = useVIPPortalAuth();
@@ -258,34 +262,12 @@ export default function VIPDashboard() {
 
           {/* AR Tab */}
           {activeTab === "ar" && config.moduleArEnabled && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Accounts Receivable</CardTitle>
-                <CardDescription className="text-sm">
-                  Outstanding invoices and payments owed
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  AR module coming soon...
-                </p>
-              </CardContent>
-            </Card>
+            <AccountsReceivable clientId={clientId} config={config} />
           )}
 
           {/* AP Tab */}
           {activeTab === "ap" && config.moduleApEnabled && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Accounts Payable</CardTitle>
-                <CardDescription className="text-sm">Bills and payments you owe</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  AP module coming soon...
-                </p>
-              </CardContent>
-            </Card>
+            <AccountsPayable clientId={clientId} config={config} />
           )}
 
           {/* Needs Tab */}
@@ -293,21 +275,14 @@ export default function VIPDashboard() {
             <MarketplaceNeeds clientId={clientId} config={config} />
           )}
 
+          {/* Transactions Tab */}
+          {activeTab === "transactions" && config.moduleTransactionHistoryEnabled && (
+            <TransactionHistory clientId={clientId} config={config} />
+          )}
+
           {/* Supply Tab */}
           {activeTab === "supply" && config.moduleMarketplaceSupplyEnabled && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg md:text-xl">My Supply</CardTitle>
-                <CardDescription className="text-sm">
-                  Products you have available for sale
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Supply marketplace coming soon...
-                </p>
-              </CardContent>
-            </Card>
+            <MarketplaceSupply clientId={clientId} config={config} />
           )}
         </div>
       </div>
