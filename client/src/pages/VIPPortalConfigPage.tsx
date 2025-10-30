@@ -93,6 +93,20 @@ export default function VIPPortalConfigPage() {
     });
   };
 
+  const handleLeaderboardTypeChange = (value: string) => {
+    updateConfigMutation.mutate({
+      clientId: parseInt(clientId || "0"),
+      leaderboardType: value,
+    });
+  };
+
+  const handleLeaderboardDisplayModeChange = (value: string) => {
+    updateConfigMutation.mutate({
+      clientId: parseInt(clientId || "0"),
+      leaderboardDisplayMode: value,
+    });
+  };
+
   if (!config || !client) {
     return <div className="p-6">Loading...</div>;
   }
@@ -176,32 +190,27 @@ export default function VIPPortalConfigPage() {
       ],
     },
     {
-      id: "marketplaceNeeds",
-      title: "Marketplace - Needs",
-      field: "moduleMarketplaceNeedsEnabled",
-      enabled: config.moduleMarketplaceNeedsEnabled,
-      features: [
-        { id: "allowCreate", label: "Allow Creating New Needs" },
-        { id: "showActiveListings", label: "Show Active Needs Listings" },
-        { id: "allowEdit", label: "Allow Editing Needs" },
-        { id: "allowCancel", label: "Allow Canceling Needs" },
-        { id: "showTemplates", label: "Show Saved Templates" },
-        { id: "requireExpiration", label: "Require Expiration Duration" },
-      ],
-    },
-    {
       id: "marketplaceSupply",
       title: "Marketplace - Supply",
       field: "moduleMarketplaceSupplyEnabled",
       enabled: config.moduleMarketplaceSupplyEnabled,
       features: [
-        { id: "allowCreate", label: "Allow Creating New Supply Listings" },
-        { id: "showActiveListings", label: "Show Active Supply Listings" },
+        { id: "allowCreate", label: "Allow Creating Supply Listings" },
         { id: "allowEdit", label: "Allow Editing Supply" },
         { id: "allowCancel", label: "Allow Canceling Supply" },
         { id: "showTemplates", label: "Show Saved Templates" },
         { id: "allowNewStrain", label: "Allow New Strain Entry" },
         { id: "showTags", label: "Show Tag Selection" },
+      ],
+    },
+    {
+      id: "leaderboard",
+      title: "Leaderboard",
+      field: "moduleLeaderboardEnabled",
+      enabled: config.moduleLeaderboardEnabled || false,
+      features: [
+        { id: "showSuggestions", label: "Show Improvement Suggestions" },
+        { id: "showRankings", label: "Show Full Rankings List" },
       ],
     },
   ];
@@ -281,6 +290,47 @@ export default function VIPPortalConfigPage() {
 
               {expandedModules.includes(module.id) && module.enabled && (
                 <div className="border-t p-4 space-y-3 bg-muted/30">
+                  {/* Leaderboard-specific controls */}
+                  {module.id === 'leaderboard' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Leaderboard Type</Label>
+                        <Select
+                          value={config.leaderboardType || 'ytd_spend'}
+                          onValueChange={(value) => handleLeaderboardTypeChange(value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ytd_spend">YTD Spend</SelectItem>
+                            <SelectItem value="payment_speed">Payment Speed</SelectItem>
+                            <SelectItem value="order_frequency">Order Frequency</SelectItem>
+                            <SelectItem value="credit_utilization">Credit Utilization</SelectItem>
+                            <SelectItem value="ontime_payment_rate">On-Time Payment Rate</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Display Mode</Label>
+                        <Select
+                          value={config.leaderboardDisplayMode || 'blackbox'}
+                          onValueChange={(value) => handleLeaderboardDisplayModeChange(value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="blackbox">Black Box (Ranks Only)</SelectItem>
+                            <SelectItem value="transparent">Transparent (Ranks + Values)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="border-t pt-3 mt-3" />
+                    </>
+                  )}
+                  
+                  {/* Feature toggles */}
                   {module.features.map((feature) => {
                     const featureValue = config.featuresConfig?.[module.id]?.[feature.id] ?? true;
                     return (

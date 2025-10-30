@@ -607,4 +607,222 @@ export const vipPortalRouter = router({
         return { success: true };
       }),
   }),
+
+  // ============================================================================
+  // LEADERBOARD
+  // ============================================================================
+  
+  leaderboard: router({
+    // Get leaderboard data for client
+    getLeaderboard: publicProcedure
+      .input(z.object({
+        clientId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        // Get client's VIP portal configuration
+        const config = await db.query.vipPortalConfigurations.findFirst({
+          where: eq(vipPortalConfigurations.clientId, input.clientId),
+        });
+
+        if (!config || !config.moduleLeaderboardEnabled) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Leaderboard not enabled for this client",
+          });
+        }
+
+        const leaderboardType = config.leaderboardType || 'ytd_spend';
+        const displayMode = config.leaderboardDisplayMode || 'blackbox';
+        const showSuggestions = config.featuresConfig?.leaderboard?.showSuggestions ?? true;
+
+        // Get all VIP clients
+        const vipClients = await db.query.clients.findMany({
+          where: eq(clients.vipPortalEnabled, true),
+        });
+
+        if (vipClients.length < (config.leaderboardMinimumClients || 5)) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `Leaderboard requires at least ${config.leaderboardMinimumClients || 5} VIP clients`,
+          });
+        }
+
+        // Calculate metrics for each client
+        const clientMetrics = await Promise.all(
+          vipClients.map(async (client) => {
+            let metricValue = 0;
+
+            switch (leaderboardType) {
+              case 'ytd_spend': {
+                // Calculate YTD spend from invoices
+                const ytdStart = new Date(new Date().getFullYear(), 0, 1);
+                const result = await db
+                  .select({ total: sql<number>`COALESCE(SUM(${invoices.totalAmount}), 0)` })
+                  .from(invoices)
+                  .where(
+                    and(
+                      eq(invoices.clientId, client.id),
+                      gte(invoices.invoiceDate, ytdStart)
+                    )
+                  );
+                metricValue = result[0]?.total || 0;
+                break;
+              }
+
+              case 'payment_speed': {
+                // Calculate average days to pay
+                const result = await db
+                  .select({
+                    avgDays: sql<number>`AVG(JULIANDAY(${clientTransactions.paymentDate}) - JULIANDAY(${clientTransactions.transactionDate}))`
+                  })
+                  .from(clientTransactions)
+                  .where(
+                    and(
+                      eq(clientTransactions.clientId, client.id),
+                      eq(clientTransactions.transactionType, 'PAYMENT'),
+                      sql`${clientTransactions.paymentDate} IS NOT NULL`
+                    )
+                  );
+                metricValue = result[0]?.avgDays || 0;
+                break;
+              }
+
+              case 'order_frequency': {
+                // Count orders in last 90 days
+                const ninetyDaysAgo = new Date();
+                ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+                const result = await db
+                  .select({ count: sql<number>`COUNT(*)` })
+                  .from(invoices)
+                  .where(
+                    and(
+                      eq(invoices.clientId, client.id),
+                      gte(invoices.invoiceDate, ninetyDaysAgo)
+                    )
+                  );
+                metricValue = result[0]?.count || 0;
+                break;
+              }
+
+              case 'credit_utilization': {
+                // Calculate credit utilization percentage
+                if (client.creditLimit && client.creditLimit > 0) {
+                  const currentBalance = client.currentBalance || 0;
+                  metricValue = (currentBalance / client.creditLimit) * 100;
+                } else {
+                  metricValue = 0;
+                }
+                break;
+              }
+
+              case 'ontime_payment_rate': {
+                // Calculate on-time payment rate
+                const totalPayments = await db
+                  .select({ count: sql<number>`COUNT(*)` })
+                  .from(clientTransactions)
+                  .where(
+                    and(
+                      eq(clientTransactions.clientId, client.id),
+                      eq(clientTransactions.transactionType, 'PAYMENT')
+                    )
+                  );
+
+                const ontimePayments = await db
+                  .select({ count: sql<number>`COUNT(*)` })
+                  .from(clientTransactions)
+                  .where(
+                    and(
+                      eq(clientTransactions.clientId, client.id),
+                      eq(clientTransactions.transactionType, 'PAYMENT'),
+                      sql`${clientTransactions.paymentDate} <= ${clientTransactions.dueDate}`
+                    )
+                  );
+
+                const total = totalPayments[0]?.count || 0;
+                const ontime = ontimePayments[0]?.count || 0;
+                metricValue = total > 0 ? (ontime / total) * 100 : 0;
+                break;
+              }
+            }
+
+            return {
+              clientId: client.id,
+              metricValue,
+            };
+          })
+        );
+
+        // Sort by metric value (higher is better for most, except payment_speed)
+        const sortedMetrics = clientMetrics.sort((a, b) => {
+          if (leaderboardType === 'payment_speed') {
+            return a.metricValue - b.metricValue; // Lower is better
+          }
+          return b.metricValue - a.metricValue; // Higher is better
+        });
+
+        // Assign ranks
+        const rankedClients = sortedMetrics.map((metric, index) => ({
+          ...metric,
+          rank: index + 1,
+        }));
+
+        // Find current client's rank
+        const clientRank = rankedClients.find(r => r.clientId === input.clientId);
+        if (!clientRank) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Client not found in leaderboard",
+          });
+        }
+
+        // Get entries to display (top 3, client's position, and surrounding ranks)
+        const entriesToShow = new Set<number>();
+        
+        // Add top 3
+        entriesToShow.add(1);
+        entriesToShow.add(2);
+        entriesToShow.add(3);
+        
+        // Add client's rank and surrounding
+        entriesToShow.add(clientRank.rank);
+        if (clientRank.rank > 1) entriesToShow.add(clientRank.rank - 1);
+        if (clientRank.rank < rankedClients.length) entriesToShow.add(clientRank.rank + 1);
+        
+        // Add last place
+        entriesToShow.add(rankedClients.length);
+
+        const entries = rankedClients
+          .filter(r => entriesToShow.has(r.rank))
+          .map(r => ({
+            rank: r.rank,
+            clientId: r.clientId,
+            metricValue: r.metricValue,
+            isCurrentClient: r.clientId === input.clientId,
+          }));
+
+        // Generate suggestions using the recommendations engine
+        const { generateLeaderboardRecommendations } = await import('../lib/leaderboardRecommendations');
+        const recommendations = generateLeaderboardRecommendations(
+          {
+            leaderboardType,
+            displayMode,
+            clientRank: clientRank.rank,
+            totalClients: rankedClients.length,
+            clientMetricValue: clientRank.metricValue,
+            entries,
+          },
+          showSuggestions
+        );
+
+        return {
+          leaderboardType,
+          displayMode,
+          clientRank: clientRank.rank,
+          totalClients: rankedClients.length,
+          entries,
+          suggestions: recommendations.suggestions,
+          lastUpdated: new Date().toISOString(),
+        };
+      }),
+  }),
 });
