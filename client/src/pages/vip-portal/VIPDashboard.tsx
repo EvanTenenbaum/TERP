@@ -28,6 +28,7 @@ import { AccountsReceivable } from "@/components/vip-portal/AccountsReceivable";
 import { AccountsPayable } from "@/components/vip-portal/AccountsPayable";
 import { TransactionHistory } from "@/components/vip-portal/TransactionHistory";
 import { MarketplaceSupply } from "@/components/vip-portal/MarketplaceSupply";
+import { Leaderboard } from "@/components/vip-portal/Leaderboard";
 
 export default function VIPDashboard() {
   const { clientId, clientName, logout } = useVIPPortalAuth();
@@ -54,6 +55,7 @@ export default function VIPDashboard() {
     { id: "ap", label: "Payables", enabled: config.moduleApEnabled },
     { id: "needs", label: "My Needs", enabled: config.moduleMarketplaceNeedsEnabled },
     { id: "supply", label: "My Supply", enabled: config.moduleMarketplaceSupplyEnabled },
+    { id: "leaderboard", label: "Leaderboard", enabled: config.moduleLeaderboardEnabled },
   ].filter(tab => tab.enabled);
 
   return (
@@ -283,6 +285,11 @@ export default function VIPDashboard() {
           {/* Supply Tab */}
           {activeTab === "supply" && config.moduleMarketplaceSupplyEnabled && (
             <MarketplaceSupply clientId={clientId} config={config} />
+          )}
+
+          {/* Leaderboard Tab */}
+          {activeTab === "leaderboard" && config.moduleLeaderboardEnabled && (
+            <Leaderboard clientId={clientId} config={config} />
           )}
         </div>
       </div>
