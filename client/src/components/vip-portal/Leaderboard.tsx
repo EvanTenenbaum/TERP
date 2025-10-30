@@ -177,7 +177,7 @@ export function Leaderboard({ clientId, config }: LeaderboardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {entries.map((entry) => (
+            {entries.map((entry: any) => (
               <div
                 key={entry.rank}
                 className={`
