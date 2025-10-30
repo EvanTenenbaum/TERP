@@ -34,7 +34,7 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedNeed, setSelectedNeed] = useState<any>(null);
 
-  const { data: needs, refetch } = trpc.vipPortal.marketplace.listNeeds.useQuery({
+  const { data: needs, refetch } = trpc.vipPortal.marketplace.getNeeds.useQuery({
     clientId,
     status: "ACTIVE",
   });
@@ -88,7 +88,7 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
 
   const handleCancel = (needId: number) => {
     if (confirm("Are you sure you want to cancel this need?")) {
-      cancelMutation.mutate({ needId, clientId });
+      cancelMutation.mutate({ id: needId, clientId });
     }
   };
 
@@ -112,7 +112,7 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
       {config.featuresConfig?.marketplaceNeeds?.showActiveListings && (
         <div className="space-y-3">
           {needs?.needs && needs.needs.length > 0 ? (
-            needs.needs.map((need) => (
+            needs.needs.map((need: any) => (
               <Card key={need.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
@@ -231,7 +231,7 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
           need={selectedNeed}
-          onSubmit={(data) => updateMutation.mutate({ needId: selectedNeed.id, clientId, ...data })}
+          onSubmit={(data: any) => updateMutation.mutate({ needId: selectedNeed.id, clientId, ...data })}
           config={config}
         />
       )}

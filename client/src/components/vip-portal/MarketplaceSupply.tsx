@@ -118,7 +118,7 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
 
   const handleCancel = (id: number) => {
     if (confirm("Are you sure you want to cancel this supply listing?")) {
-      cancelSupply.mutate({ id });
+      cancelSupply.mutate({ id, clientId });
     }
   };
 
@@ -286,7 +286,7 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
       {/* Supply Listings - Mobile-First Card Layout */}
       <div className="space-y-3">
         {supplyData && supplyData.length > 0 ? (
-          supplyData.map((supply) => (
+          supplyData.map((supply: any) => (
             <Card key={supply.id} className="overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
