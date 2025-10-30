@@ -37,6 +37,9 @@ export class StrainService {
    */
   async getStrainWithFamily(strainId: number) {
     return getCached(`strain:${strainId}:family`, async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
+      
       const strain = await db.query.strains.findFirst({
         where: eq(strains.id, strainId),
       });
@@ -69,6 +72,9 @@ export class StrainService {
     const familyId = strain.parentStrainId || strainId;
 
     return getCached(`family:${familyId}:variants`, async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
+      
       // Get parent strain
       const parent = await db.query.strains.findFirst({
         where: eq(strains.id, familyId),
@@ -95,6 +101,9 @@ export class StrainService {
    */
   async getFamilyStats(familyId: number) {
     return getCached(`family:${familyId}:stats`, async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
+      
       const result = await db.execute(sql`
         SELECT * FROM strain_family_stats
         WHERE family_id = ${familyId}
@@ -112,7 +121,10 @@ export class StrainService {
     if (!family) return [];
 
     // Get all products in the same family
-    const variantIds = family.variants.map(v => v.id);
+    const db = await getDb();
+    if (!db) throw new Error("Database connection failed");
+    
+    const variantIds = family.variants.map((v: any) => v.id);
     
     const familyProducts = await db.query.products.findMany({
       where: sql`${products.strainId} IN (${sql.join(variantIds, sql`, `)})`,
@@ -120,7 +132,7 @@ export class StrainService {
 
     // Exclude the current product if specified
     return excludeProductId
-      ? familyProducts.filter(p => p.id !== excludeProductId)
+      ? familyProducts.filter((p: any) => p.id !== excludeProductId)
       : familyProducts;
   }
 
@@ -129,6 +141,9 @@ export class StrainService {
    */
   async getClientPreferences(clientId: number) {
     return getCached(`client:${clientId}:preferences`, async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
+      
       const result = await db.execute(sql`
         SELECT * FROM client_strain_preferences
         WHERE client_id = ${clientId}
@@ -154,6 +169,9 @@ export class StrainService {
    * Get products in a strain family with inventory
    */
   async getProductsByFamily(familyId: number, includeOutOfStock = false) {
+    const db = await getDb();
+    if (!db) throw new Error("Database connection failed");
+    
     const result = await db.execute(sql`
       SELECT 
         p.*,
