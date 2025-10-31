@@ -194,7 +194,7 @@ export class StrainService {
    * Fuzzy search for strains with auto-assignment
    */
   async searchAndMatch(query: string, category?: string, threshold = 90) {
-    return fuzzySearchStrains(query, category, threshold);
+    return findFuzzyStrainMatches(query, category, threshold);
   }
 
   /**
@@ -244,7 +244,7 @@ export class StrainService {
    */
   async findMatchingFamily(strainName: string) {
     // Use fuzzy matching to find similar strains
-    const matches = await fuzzySearchStrains(strainName, undefined, 80);
+    const matches = await findFuzzyStrainMatches(strainName, undefined, 80);
     
     if (matches.length === 0) return null;
 
