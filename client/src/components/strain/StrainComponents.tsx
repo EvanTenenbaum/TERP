@@ -272,7 +272,7 @@ export function StrainInfo({
   
   return (
     <div className="flex items-center gap-2">
-      {family.category && <StrainCategoryBadge category={family.category} />}
+      {family.parent?.category && <StrainCategoryBadge category={family.parent.category} />}
       {family.parent && <StrainFamilyBadge strainId={strainId} />}
     </div>
   );
