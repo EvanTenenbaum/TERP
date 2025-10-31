@@ -34,19 +34,19 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { CogsEditModal } from "./CogsEditModal";
-import { ClientInterestWidget } from "./ClientInterestWidget";
+import { PotentialBuyersWidget } from "./PotentialBuyersWidget";
 import { PriceSimulationModal } from "./PriceSimulationModal";
 import { useState } from "react";
-import { StrainInfo, RelatedProducts } from "@/components/strain/StrainComponents";
 
 // Profitability Section Component
 function ProfitabilitySection({ batchId }: { batchId: number }) {
-  const { data: profitability, isLoading } = trpc.inventory.profitability.batch.useQuery(batchId);
+  const { data: profitability, isLoading } =
+    trpc.inventory.profitability.batch.useQuery(batchId);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 2,
     }).format(value);
   };
@@ -77,13 +77,16 @@ function ProfitabilitySection({ batchId }: { batchId: number }) {
           <h3 className="font-semibold text-lg">Profitability</h3>
         </div>
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground">No sales data available</div>
+          <div className="text-sm text-muted-foreground">
+            No sales data available
+          </div>
         </Card>
       </div>
     );
   }
 
-  const profitColor = profitability.grossProfit >= 0 ? 'text-green-600' : 'text-red-600';
+  const profitColor =
+    profitability.grossProfit >= 0 ? "text-green-600" : "text-red-600";
 
   return (
     <div className="space-y-3">
@@ -95,19 +98,29 @@ function ProfitabilitySection({ batchId }: { batchId: number }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-sm text-muted-foreground mb-1">Units Sold</div>
-            <div className="text-lg font-semibold">{profitability.unitsSold}</div>
+            <div className="text-lg font-semibold">
+              {profitability.unitsSold}
+            </div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground mb-1">Avg Price</div>
-            <div className="text-lg font-semibold">{formatCurrency(profitability.avgSellingPrice)}</div>
+            <div className="text-lg font-semibold">
+              {formatCurrency(profitability.avgSellingPrice)}
+            </div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">Total Revenue</div>
-            <div className="text-lg font-semibold text-green-600">{formatCurrency(profitability.totalRevenue)}</div>
+            <div className="text-sm text-muted-foreground mb-1">
+              Total Revenue
+            </div>
+            <div className="text-lg font-semibold text-green-600">
+              {formatCurrency(profitability.totalRevenue)}
+            </div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground mb-1">Total Cost</div>
-            <div className="text-lg font-semibold">{formatCurrency(profitability.totalCost)}</div>
+            <div className="text-lg font-semibold">
+              {formatCurrency(profitability.totalCost)}
+            </div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
@@ -130,19 +143,29 @@ function ProfitabilitySection({ batchId }: { batchId: number }) {
         </div>
         {profitability.remainingUnits > 0 && (
           <div className="mt-4 pt-4 border-t">
-            <div className="text-sm text-muted-foreground mb-2">Potential (Remaining Inventory)</div>
+            <div className="text-sm text-muted-foreground mb-2">
+              Potential (Remaining Inventory)
+            </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <span className="text-muted-foreground">Units: </span>
-                <span className="font-semibold">{profitability.remainingUnits}</span>
+                <span className="font-semibold">
+                  {profitability.remainingUnits}
+                </span>
               </div>
               <div>
                 <span className="text-muted-foreground">Revenue: </span>
-                <span className="font-semibold">{formatCurrency(profitability.potentialRevenue)}</span>
+                <span className="font-semibold">
+                  {formatCurrency(profitability.potentialRevenue)}
+                </span>
               </div>
               <div className="col-span-2">
-                <span className="text-muted-foreground">Potential Profit: </span>
-                <span className="font-semibold text-blue-600">{formatCurrency(profitability.potentialProfit)}</span>
+                <span className="text-muted-foreground">
+                  Potential Profit:{" "}
+                </span>
+                <span className="font-semibold text-blue-600">
+                  {formatCurrency(profitability.potentialProfit)}
+                </span>
               </div>
             </div>
           </div>
@@ -158,13 +181,20 @@ interface BatchDetailDrawerProps {
   onClose: () => void;
 }
 
-export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerProps) {
+export function BatchDetailDrawer({
+  batchId,
+  open,
+  onClose,
+}: BatchDetailDrawerProps) {
   const [showCogsEdit, setShowCogsEdit] = useState(false);
   const [showPriceSimulation, setShowPriceSimulation] = useState(false);
-  
-  const { data, isLoading, refetch } = trpc.inventory.getById.useQuery(batchId!, {
-    enabled: !!batchId && open,
-  });
+
+  const { data, isLoading, refetch } = trpc.inventory.getById.useQuery(
+    batchId as number,
+    {
+      enabled: !!batchId && open,
+    }
+  );
 
   if (!batchId || !open) return null;
 
@@ -175,12 +205,24 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
 
   // Get status badge
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { variant: any; icon: any; label: string }> = {
-      AWAITING_INTAKE: { variant: "secondary", icon: Clock, label: "Awaiting Intake" },
+    const statusConfig: Record<
+      string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { variant: any; icon: any; label: string }
+    > = {
+      AWAITING_INTAKE: {
+        variant: "secondary",
+        icon: Clock,
+        label: "Awaiting Intake",
+      },
       QC_PENDING: { variant: "secondary", icon: Clock, label: "QC Pending" },
       LIVE: { variant: "default", icon: CheckCircle, label: "Live" },
       ON_HOLD: { variant: "secondary", icon: Pause, label: "On Hold" },
-      QUARANTINED: { variant: "destructive", icon: AlertCircle, label: "Quarantined" },
+      QUARANTINED: {
+        variant: "destructive",
+        icon: AlertCircle,
+        label: "Quarantined",
+      },
       SOLD_OUT: { variant: "secondary", icon: XCircle, label: "Sold Out" },
       CLOSED: { variant: "secondary", icon: XCircle, label: "Closed" },
     };
@@ -214,15 +256,11 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                 <Package className="h-6 w-6" />
                 {batch.sku}
               </SheetTitle>
-              <SheetDescription>
-                Batch Code: {batch.code}
-              </SheetDescription>
+              <SheetDescription>Batch Code: {batch.code}</SheetDescription>
             </SheetHeader>
 
             {/* Status */}
-            <div>
-              {getStatusBadge(batch.status)}
-            </div>
+            <div>{getStatusBadge(batch.status)}</div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-4">
@@ -231,7 +269,9 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                   <Package className="h-4 w-4" />
                   <span className="text-sm">On Hand</span>
                 </div>
-                <p className="text-2xl font-bold">{parseFloat(batch.onHandQty).toFixed(2)}</p>
+                <p className="text-2xl font-bold">
+                  {parseFloat(batch.onHandQty).toFixed(2)}
+                </p>
               </Card>
 
               <Card className="p-4">
@@ -239,7 +279,9 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                   <CheckCircle className="h-4 w-4" />
                   <span className="text-sm">Available</span>
                 </div>
-                <p className="text-2xl font-bold text-green-600">{availableQty.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {availableQty.toFixed(2)}
+                </p>
               </Card>
 
               <Card className="p-4">
@@ -247,7 +289,9 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                   <Clock className="h-4 w-4" />
                   <span className="text-sm">Reserved</span>
                 </div>
-                <p className="text-2xl font-bold">{parseFloat(batch.reservedQty).toFixed(2)}</p>
+                <p className="text-2xl font-bold">
+                  {parseFloat(batch.reservedQty).toFixed(2)}
+                </p>
               </Card>
 
               <Card className="p-4">
@@ -255,7 +299,9 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">Quarantine</span>
                 </div>
-                <p className="text-2xl font-bold">{parseFloat(batch.quarantineQty).toFixed(2)}</p>
+                <p className="text-2xl font-bold">
+                  {parseFloat(batch.quarantineQty).toFixed(2)}
+                </p>
               </Card>
             </div>
 
@@ -306,15 +352,15 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                   <h3 className="font-semibold text-lg">Cost Details</h3>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setShowCogsEdit(true)}
                   >
                     Edit COGS
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setShowPriceSimulation(true)}
                   >
@@ -331,7 +377,9 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                 {batch.cogsMode === "FIXED" && batch.unitCogs && (
                   <div>
                     <p className="text-muted-foreground">Unit COGS</p>
-                    <p className="font-medium">${parseFloat(batch.unitCogs).toFixed(2)}</p>
+                    <p className="font-medium">
+                      ${parseFloat(batch.unitCogs).toFixed(2)}
+                    </p>
                   </div>
                 )}
 
@@ -340,20 +388,28 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                     <div>
                       <p className="text-muted-foreground">COGS Min</p>
                       <p className="font-medium">
-                        ${batch.unitCogsMin ? parseFloat(batch.unitCogsMin).toFixed(2) : "N/A"}
+                        $
+                        {batch.unitCogsMin
+                          ? parseFloat(batch.unitCogsMin).toFixed(2)
+                          : "N/A"}
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">COGS Max</p>
                       <p className="font-medium">
-                        ${batch.unitCogsMax ? parseFloat(batch.unitCogsMax).toFixed(2) : "N/A"}
+                        $
+                        {batch.unitCogsMax
+                          ? parseFloat(batch.unitCogsMax).toFixed(2)
+                          : "N/A"}
                       </p>
                     </div>
                   </>
                 )}
                 <div>
                   <p className="text-muted-foreground">Payment Terms</p>
-                  <p className="font-medium">{batch.paymentTerms.replace(/_/g, " ")}</p>
+                  <p className="font-medium">
+                    {batch.paymentTerms.replace(/_/g, " ")}
+                  </p>
                 </div>
               </div>
             </div>
@@ -369,22 +425,34 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
               <Card className="p-4">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Payment Terms:</span>
-                    <span className="font-medium">{batch.paymentTerms.replace(/_/g, " ")}</span>
+                    <span className="text-muted-foreground">
+                      Payment Terms:
+                    </span>
+                    <span className="font-medium">
+                      {batch.paymentTerms.replace(/_/g, " ")}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Payment Status:</span>
+                    <span className="text-muted-foreground">
+                      Payment Status:
+                    </span>
                     <Badge variant="secondary">Pending</Badge>
                   </div>
-
                 </div>
               </Card>
             </div>
 
             <Separator />
 
-            {/* Client Interest */}
-            <ClientInterestWidget batchId={batchId} />
+            {/* Potential Buyers - Enhanced matching with historical and predictive */}
+            <PotentialBuyersWidget
+              batchId={batchId}
+              productData={{
+                grade: batch.grade,
+                // Product details would come from batch->product join
+                // For now, let batchId drive the matching
+              }}
+            />
 
             <Separator />
 
@@ -402,7 +470,6 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
               <Card className="p-4">
                 <div className="text-center text-sm text-muted-foreground">
                   <p>No sales recorded</p>
-
                 </div>
               </Card>
             </div>
@@ -416,21 +483,30 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                 <h3 className="font-semibold text-lg">Storage Locations</h3>
               </div>
               {locations.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No locations recorded</p>
+                <p className="text-sm text-muted-foreground">
+                  No locations recorded
+                </p>
               ) : (
                 <div className="space-y-2">
-                  {locations.map((location) => (
+                  {locations.map(location => (
                     <Card key={location.id} className="p-3">
                       <div className="flex justify-between items-start">
                         <div className="text-sm">
                           <p className="font-medium">{location.site}</p>
                           <p className="text-muted-foreground">
-                            {[location.zone, location.rack, location.shelf, location.bin]
+                            {[
+                              location.zone,
+                              location.rack,
+                              location.shelf,
+                              location.bin,
+                            ]
                               .filter(Boolean)
                               .join(" / ") || "No specific location"}
                           </p>
                         </div>
-                        <Badge variant="outline">{parseFloat(location.qty).toFixed(2)}</Badge>
+                        <Badge variant="outline">
+                          {parseFloat(location.qty).toFixed(2)}
+                        </Badge>
                       </div>
                     </Card>
                   ))}
@@ -459,13 +535,20 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {auditLogs.slice(0, 10).map((log) => (
+                      {auditLogs.slice(0, 10).map(log => (
                         <TableRow key={log.id}>
-                          <TableCell className="font-medium">{log.action}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(log.createdAt), "MMM d, yyyy HH:mm")}
+                          <TableCell className="font-medium">
+                            {log.action}
                           </TableCell>
-                          <TableCell className="text-sm">{log.reason || "-"}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(
+                              new Date(log.createdAt),
+                              "MMM d, yyyy HH:mm"
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {log.reason || "-"}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -486,7 +569,7 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
           </div>
         )}
       </SheetContent>
-      
+
       {/* COGS Edit Modal */}
       {batch && (
         <CogsEditModal
@@ -501,7 +584,7 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
           }}
         />
       )}
-      
+
       {/* Price Simulation Modal */}
       {batch && (
         <PriceSimulationModal
@@ -519,4 +602,3 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
     </Sheet>
   );
 }
-
