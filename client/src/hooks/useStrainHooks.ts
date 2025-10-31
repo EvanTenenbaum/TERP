@@ -43,9 +43,9 @@ export function useStrainFamilyVariants(strainId: number | null | undefined) {
     { 
       enabled: !!strainId,
       select: (data) => ({
-        parent: data.parent,
-        variants: data.variants,
-        variantCount: data.variants.length - 1,
+        parent: data?.parent,
+        variants: data?.variants || [],
+        variantCount: (data?.variants?.length || 1) - 1,
       }),
     }
   );
@@ -69,7 +69,7 @@ export function useStrainSuggestions(
   return {
     alternatives: family.data?.variants.filter(v => v.id !== strainId) || [],
     parent: family.data?.parent,
-    isVariant: family.data?.isVariant || false,
+    isVariant: !!family.data?.parent,
     isLoading: family.isLoading,
     error: family.error,
   };
@@ -144,7 +144,7 @@ export function useStrainSearch(
   threshold = 90
 ) {
   return trpc.strains.fuzzySearch.useQuery(
-    { query, category, threshold },
+    { query, category: category || undefined, threshold },
     { 
       enabled: query.length >= 2,
       staleTime: 30 * 1000, // 30 seconds

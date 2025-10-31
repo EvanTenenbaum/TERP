@@ -50,12 +50,12 @@ export default function VIPDashboard() {
   }
 
   const tabs = [
-    { id: "dashboard", label: "Dashboard", enabled: config.moduleDashboardEnabled },
-    { id: "ar", label: "Receivables", enabled: config.moduleArEnabled },
-    { id: "ap", label: "Payables", enabled: config.moduleApEnabled },
-    { id: "needs", label: "My Needs", enabled: config.moduleMarketplaceNeedsEnabled },
-    { id: "supply", label: "My Supply", enabled: config.moduleMarketplaceSupplyEnabled },
-    { id: "leaderboard", label: "Leaderboard", enabled: config.moduleLeaderboardEnabled },
+    { id: "dashboard", label: "Dashboard", enabled: 'moduleDashboardEnabled' in config ? config.moduleDashboardEnabled : false },
+    { id: "ar", label: "Receivables", enabled: 'moduleArEnabled' in config ? config.moduleArEnabled : false },
+    { id: "ap", label: "Payables", enabled: 'moduleApEnabled' in config ? config.moduleApEnabled : false },
+    { id: "needs", label: "My Needs", enabled: 'moduleMarketplaceNeedsEnabled' in config ? config.moduleMarketplaceNeedsEnabled : false },
+    { id: "supply", label: "My Supply", enabled: 'moduleMarketplaceSupplyEnabled' in config ? config.moduleMarketplaceSupplyEnabled : false },
+    { id: "leaderboard", label: "Leaderboard", enabled: 'moduleLeaderboardEnabled' in config ? config.moduleLeaderboardEnabled : false },
   ].filter(tab => tab.enabled);
 
   return (
@@ -137,9 +137,9 @@ export default function VIPDashboard() {
         {/* Content Sections */}
         <div className="space-y-4 md:space-y-6">
           {/* Dashboard */}
-          {activeTab === "dashboard" && config.moduleDashboardEnabled && (
+          {activeTab === "dashboard" && 'moduleDashboardEnabled' in config && config.moduleDashboardEnabled && (
             <div className="space-y-4 md:space-y-6">
-              {config.featuresConfig?.dashboard?.showGreeting && (
+              {'featuresConfig' in config && config.featuresConfig?.dashboard?.showGreeting && (
                 <div className="text-center md:text-left">
                   <h2 className="text-2xl md:text-3xl font-bold">Welcome back!</h2>
                   <p className="text-sm md:text-base text-muted-foreground mt-1">
@@ -150,7 +150,7 @@ export default function VIPDashboard() {
 
               {/* KPI Cards - Mobile Optimized */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                {config.featuresConfig?.dashboard?.showCurrentBalance && (
+                {'featuresConfig' in config && config.featuresConfig?.dashboard?.showCurrentBalance && (
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Balance</CardTitle>
@@ -165,7 +165,7 @@ export default function VIPDashboard() {
                   </Card>
                 )}
 
-                {config.featuresConfig?.dashboard?.showYtdSpend && (
+                {'featuresConfig' in config && config.featuresConfig?.dashboard?.showYtdSpend && (
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">YTD Spend</CardTitle>
@@ -210,7 +210,7 @@ export default function VIPDashboard() {
               </div>
 
               {/* Quick Actions - Mobile Optimized */}
-              {config.featuresConfig?.dashboard?.showQuickLinks && (
+              {'featuresConfig' in config && config.featuresConfig?.dashboard?.showQuickLinks && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg md:text-xl">Quick Actions</CardTitle>
@@ -288,7 +288,7 @@ export default function VIPDashboard() {
           )}
 
           {/* Leaderboard Tab */}
-          {activeTab === "leaderboard" && config.moduleLeaderboardEnabled && (
+          {activeTab === "leaderboard" && 'moduleLeaderboardEnabled' in config && config.moduleLeaderboardEnabled && (
             <Leaderboard clientId={clientId} config={config} />
           )}
         </div>
