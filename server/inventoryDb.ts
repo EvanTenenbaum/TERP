@@ -686,7 +686,7 @@ export async function createStrain(data: {
   
   return { 
     success: true,
-    strainId: Number(result.insertId),
+    strainId: Number((result as any).insertId || (result as any)[0]?.insertId),
     openthcId: newULID,
   };
 }

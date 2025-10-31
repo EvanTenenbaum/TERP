@@ -171,6 +171,9 @@ export const adminMigrationsRouter = router({
    * Check migration status
    */
   checkMigrationStatus: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database connection failed");
+    
     const checks: any[] = [];
 
     try {

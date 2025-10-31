@@ -165,6 +165,9 @@ export const adminQuickFixRouter = router({
    * Add strainId to client_needs
    */
   addStrainIdToClientNeeds: publicProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database connection failed");
+    
     const results: any[] = [];
 
     try {
