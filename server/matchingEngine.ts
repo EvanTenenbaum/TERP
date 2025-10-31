@@ -39,6 +39,7 @@ export interface MatchResult {
 function calculateMatchConfidence(
   need: {
     strain?: string | null;
+    strainType?: string | null;
     category?: string | null;
     subcategory?: string | null;
     grade?: string | null;
@@ -46,6 +47,7 @@ function calculateMatchConfidence(
   },
   candidate: {
     strain?: string | null;
+    strainType?: string | null;
     category?: string | null;
     subcategory?: string | null;
     grade?: string | null;
@@ -71,6 +73,28 @@ function calculateMatchConfidence(
         // Partial match (e.g., "Blue Dream" matches "Blue Dream #5")
         confidence += 30;
         reasons.push("Strain variant match");
+      }
+    }
+  }
+
+  // Strain Type match (15 points) - Indica, Sativa, Hybrid, CBD
+  if (need.strainType || candidate.strainType) {
+    if (need.strainType && need.strainType.toUpperCase() === "ANY") {
+      // Client accepts any strain type
+      confidence += 12;
+      reasons.push("Flexible strain type criteria (any type accepted)");
+    } else if (need.strainType && candidate.strainType) {
+      const needType = need.strainType.toUpperCase();
+      const candidateType = candidate.strainType.toUpperCase();
+
+      if (needType === candidateType) {
+        // Perfect strain type match
+        confidence += 15;
+        reasons.push(`Strain type match (${candidateType})`);
+      } else if (needType === "HYBRID" || candidateType === "HYBRID") {
+        // Hybrid can partially match Indica or Sativa
+        confidence += 7;
+        reasons.push("Partial strain type match (Hybrid compatibility)");
       }
     }
   }
@@ -205,6 +229,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
       // For now, we'll use grade as the main matching field
       const { confidence, reasons } = calculateMatchConfidence(need, {
         strain: null, // Would need to join with products table
+        strainType: null, // Would need to join with products table
         category: null, // Would need to join with products table
         subcategory: null,
         grade: batch.grade,
@@ -232,6 +257,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
     for (const supply of vendorMatches) {
       const { confidence, reasons } = calculateMatchConfidence(need, {
         strain: supply.strain,
+        strainType: supply.strainType,
         category: supply.category,
         subcategory: supply.subcategory,
         grade: supply.grade,
@@ -330,6 +356,7 @@ export async function findBuyersForInventory(
     for (const need of activeNeeds) {
       const { confidence, reasons } = calculateMatchConfidence(need, {
         strain: null, // Would need to join with products table
+        strainType: null, // Would need to join with products table
         category: null, // Would need to join with products table
         subcategory: null,
         grade: batch.grade,
@@ -399,6 +426,7 @@ export async function findBuyersForVendorSupply(
     for (const need of activeNeeds) {
       const { confidence, reasons } = calculateMatchConfidence(need, {
         strain: supply.strain,
+        strainType: supply.strainType,
         category: supply.category,
         subcategory: supply.subcategory,
         grade: supply.grade,
