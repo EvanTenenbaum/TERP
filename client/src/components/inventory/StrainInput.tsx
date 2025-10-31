@@ -49,22 +49,23 @@ export function StrainInput({
     { 
       query: searchQuery, 
       limit: 20,
-      threshold: 70, // Show matches above 70% similarity
-      category: category || undefined
+      // threshold removed - not supported by API
+      // category removed - not supported by API
     },
     { enabled: searchQuery.length >= 2 }
   );
 
   // Load selected strain if value changes
+  const { data: strainData } = trpc.strains.getById.useQuery(
+    { id: value! },
+    { enabled: !!value && !selectedStrain }
+  );
+
   useEffect(() => {
-    if (value && !selectedStrain) {
-      trpc.strains.getById.useQuery({ id: value }).then((result) => {
-        if (result.data) {
-          setSelectedStrain(result.data);
-        }
-      });
+    if (strainData && !selectedStrain) {
+      setSelectedStrain(strainData);
     }
-  }, [value]);
+  }, [strainData, selectedStrain]);
 
   // Handle strain selection
   const handleSelect = (strain: { id: number; name: string; category: string | null; similarity?: number }) => {
@@ -75,24 +76,28 @@ export function StrainInput({
     setOpen(false);
   };
 
+  // Create strain mutation
+  const createStrainMutation = trpc.strains.getOrCreate.useMutation();
+
   // Handle manual text input (create new strain)
   const handleCreateNew = async () => {
     if (searchQuery.length < 2) return;
 
     // Create new strain via getOrCreate endpoint
-    const result = await trpc.strains.getOrCreate.mutate({
+    const result = await createStrainMutation.mutateAsync({
       name: searchQuery,
-      category: category || null,
+      category: (category as "indica" | "sativa" | "hybrid" | undefined) || undefined,
       autoAssignThreshold: 90, // 90% threshold
     });
 
-    if (result.strain) {
+    if (result.strainId) {
+      // Use the search query as the name since we just created it
       setSelectedStrain({
-        id: result.strain.id,
-        name: result.strain.name,
-        category: result.strain.category,
+        id: result.strainId,
+        name: searchQuery,
+        category: category,
       });
-      onChange(result.strain.id, result.strain.name);
+      onChange(result.strainId, searchQuery);
       setSearchQuery("");
       setOpen(false);
     }
