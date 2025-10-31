@@ -36,7 +36,6 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
 
   const { data: needs, refetch } = trpc.vipPortal.marketplace.getNeeds.useQuery({
     clientId,
-    status: "ACTIVE",
   });
 
   const createMutation = trpc.vipPortal.marketplace.createNeed.useMutation({
@@ -111,8 +110,8 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
       {/* Active Needs - Mobile-First Card Layout */}
       {config.featuresConfig?.marketplaceNeeds?.showActiveListings && (
         <div className="space-y-3">
-          {needs?.needs && needs.needs.length > 0 ? (
-            needs.needs.map((need: any) => (
+          {needs && needs.length > 0 ? (
+            needs.map((need: any) => (
               <Card key={need.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">

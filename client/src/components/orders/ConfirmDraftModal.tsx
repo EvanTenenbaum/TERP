@@ -49,7 +49,7 @@ export function ConfirmDraftModal({
     try {
       await confirmMutation.mutateAsync({
         orderId,
-        paymentTerms,
+        paymentTerms: paymentTerms as "COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT" | "PARTIAL",
         cashPayment: paymentTerms === 'PARTIAL' ? parseFloat(cashPayment) : undefined,
       });
 
