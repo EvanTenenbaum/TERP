@@ -449,7 +449,7 @@ async function calculateAccountingMetrics(
         total: sum(invoices.amountDue),
       })
       .from(invoices)
-      .where(eq(invoices.status, 'OUTSTANDING'));
+      .where(sql`${invoices.status} IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')`); // All unpaid statuses
     
     results['accounting_ar'] = {
       value: Number(arResult?.total) || 0,
@@ -465,7 +465,7 @@ async function calculateAccountingMetrics(
         total: sum(bills.amountDue),
       })
       .from(bills)
-      .where(eq(bills.status, 'OUTSTANDING'));
+      .where(sql`${bills.status} IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')`); // All unpaid statuses
     
     results['accounting_ap'] = {
       value: Number(apResult?.total) || 0,
@@ -497,7 +497,7 @@ async function calculateAccountingMetrics(
       .from(invoices)
       .where(
         and(
-          eq(invoices.status, 'OUTSTANDING'),
+          sql`${invoices.status} IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')`,
           lte(invoices.dueDate, now)
         )
       );
@@ -520,7 +520,7 @@ async function calculateAccountingMetrics(
       .from(bills)
       .where(
         and(
-          eq(bills.status, 'OUTSTANDING'),
+          sql`${bills.status} IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')`,
           lte(bills.dueDate, now)
         )
       );
