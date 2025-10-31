@@ -1,9 +1,17 @@
-import { eq, and, or, sql, inArray } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { clientNeeds, vendorSupply, batches, orders, products, clients } from "../drizzle/schema";
-import type { ClientNeed, VendorSupply } from "../drizzle/schema";
-import { getClientPricingRules, calculateRetailPrice, type InventoryItem } from "./pricingEngine";
-import { findHistoricalBuyers, type HistoricalMatch } from "./historicalAnalysis";
+import {
+  clientNeeds,
+  vendorSupply,
+  batches,
+  products,
+} from "../drizzle/schema";
+import {
+  getClientPricingRules,
+  calculateRetailPrice,
+  type InventoryItem,
+} from "./pricingEngine";
+import { findHistoricalBuyers } from "./historicalAnalysis";
 import { recordMatch } from "./matchRecordsDb";
 import { strainService } from "./services/strainService";
 
@@ -18,7 +26,8 @@ export interface Match {
   reasons: string[];
   source: "INVENTORY" | "VENDOR" | "HISTORICAL";
   sourceId: number;
-  sourceData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sourceData: any; // Can be batch, vendor supply, or historical data - TODO: improve typing
   calculatedPrice?: number; // For inventory matches with pricing
   availableQuantity?: number; // For inventory/vendor matches
 }
@@ -37,6 +46,7 @@ async function calculateMatchConfidence(
   need: {
     strain?: string | null;
     strainId?: number | null;
+    strainType?: string | null;
     category?: string | null;
     subcategory?: string | null;
     grade?: string | null;
@@ -47,6 +57,7 @@ async function calculateMatchConfidence(
   candidate: {
     strain?: string | null;
     strainId?: number | null;
+    strainType?: string | null;
     category?: string | null;
     subcategory?: string | null;
     grade?: string | null;
@@ -67,24 +78,29 @@ async function calculateMatchConfidence(
       // Check if they're in the same strain family
       try {
         const needFamily = await strainService.getStrainFamily(need.strainId);
-        const candidateFamily = await strainService.getStrainFamily(candidate.strainId);
-        
+        const candidateFamily = await strainService.getStrainFamily(
+          candidate.strainId
+        );
+
         const needFamilyId = needFamily?.parent?.id || need.strainId;
-        const candidateFamilyId = candidateFamily?.parent?.id || candidate.strainId;
-        
+        const candidateFamilyId =
+          candidateFamily?.parent?.id || candidate.strainId;
+
         if (needFamilyId === candidateFamilyId) {
           confidence += 30;
-          reasons.push(`Same strain family (${needFamily?.parent?.name || 'Unknown'})`);
+          reasons.push(
+            `Same strain family (${needFamily?.parent?.name || "Unknown"})`
+          );
         }
       } catch (error) {
-        console.error('Error checking strain family:', error);
+        console.error("Error checking strain family:", error);
       }
     }
   } else if (need.strain && candidate.strain) {
     // Fallback to text matching for backward compatibility
     const needStrain = need.strain.toLowerCase().trim();
     const candidateStrain = candidate.strain.toLowerCase().trim();
-    
+
     if (needStrain === candidateStrain) {
       confidence += 40;
       reasons.push("Exact strain match (text)");
@@ -94,6 +110,28 @@ async function calculateMatchConfidence(
     ) {
       confidence += 20;
       reasons.push("Partial strain match (text)");
+    }
+  }
+
+  // Strain Type match (15 points) - Indica, Sativa, Hybrid, CBD
+  if (need.strainType || candidate.strainType) {
+    if (need.strainType && need.strainType.toUpperCase() === "ANY") {
+      // Client accepts any strain type
+      confidence += 12;
+      reasons.push("Flexible strain type criteria (any type accepted)");
+    } else if (need.strainType && candidate.strainType) {
+      const needType = need.strainType.toUpperCase();
+      const candidateType = candidate.strainType.toUpperCase();
+
+      if (needType === candidateType) {
+        // Perfect strain type match
+        confidence += 15;
+        reasons.push(`Strain type match (${candidateType})`);
+      } else if (needType === "HYBRID" || candidateType === "HYBRID") {
+        // Hybrid can partially match Indica or Sativa
+        confidence += 7;
+        reasons.push("Partial strain type match (Hybrid compatibility)");
+      }
     }
   }
 
@@ -107,7 +145,9 @@ async function calculateMatchConfidence(
 
   // Subcategory match (15 points)
   if (need.subcategory && candidate.subcategory) {
-    if (need.subcategory.toLowerCase() === candidate.subcategory.toLowerCase()) {
+    if (
+      need.subcategory.toLowerCase() === candidate.subcategory.toLowerCase()
+    ) {
       confidence += 15;
       reasons.push("Subcategory match");
     }
@@ -122,31 +162,84 @@ async function calculateMatchConfidence(
   }
 
   // Price validation (5 points bonus, or penalty if over budget)
-  if (need.priceMax && candidate.calculatedPrice !== null && candidate.calculatedPrice !== undefined) {
+  if (
+    need.priceMax &&
+    candidate.calculatedPrice !== null &&
+    candidate.calculatedPrice !== undefined
+  ) {
     const maxPrice = parseFloat(need.priceMax);
-    
+
     if (candidate.calculatedPrice <= maxPrice) {
       confidence += 5;
       reasons.push("Within price budget");
     } else {
       confidence -= 10;
-      reasons.push(`Over budget ($${candidate.calculatedPrice.toFixed(2)} > $${maxPrice.toFixed(2)})`);
+      reasons.push(
+        `Over budget ($${candidate.calculatedPrice.toFixed(2)} > $${maxPrice.toFixed(2)})`
+      );
     }
   }
 
-  // Quantity validation
-  if (candidate.availableQuantity !== null && candidate.availableQuantity !== undefined) {
+  // Quantity validation with tolerance (±10-20%)
+  if (
+    candidate.availableQuantity !== null &&
+    candidate.availableQuantity !== undefined
+  ) {
     const available = candidate.availableQuantity;
     const minQty = need.quantityMin ? parseFloat(need.quantityMin) : 0;
     const maxQty = need.quantityMax ? parseFloat(need.quantityMax) : Infinity;
 
     if (available >= minQty && available <= maxQty) {
-      reasons.push(`Sufficient quantity (${available} units)`);
-    } else if (available < minQty) {
-      confidence -= 15;
-      reasons.push(`Insufficient quantity (${available} < ${minQty})`);
-    } else if (available > maxQty) {
-      reasons.push(`Excess quantity available (${available} > ${maxQty})`);
+      // Perfect - within requested range
+      confidence += 5;
+      reasons.push(`Quantity in range (${available} units)`);
+    } else if (minQty > 0) {
+      // Check tolerance for minimum
+      const minTolerance10 = minQty * 0.9; // 10% under
+      const minTolerance20 = minQty * 0.8; // 20% under
+
+      if (available >= minTolerance10 && available < minQty) {
+        // Within 10% tolerance
+        confidence += 2;
+        reasons.push(
+          `Slightly under quantity (${available} vs ${minQty} min, within 10%)`
+        );
+      } else if (available >= minTolerance20 && available < minTolerance10) {
+        // Within 20% tolerance
+        confidence += 0;
+        reasons.push(
+          `Under quantity (${available} vs ${minQty} min, within 20%)`
+        );
+      } else if (available < minQty) {
+        // More than 20% under
+        confidence -= 10;
+        reasons.push(`Significantly under quantity (${available} < ${minQty})`);
+      }
+
+      // Check tolerance for maximum
+      if (maxQty !== Infinity) {
+        const maxTolerance10 = maxQty * 1.1; // 10% over
+        const maxTolerance20 = maxQty * 1.2; // 20% over
+
+        if (available > maxQty && available <= maxTolerance10) {
+          // Within 10% over tolerance
+          confidence += 2;
+          reasons.push(
+            `Slightly over quantity (${available} vs ${maxQty} max, within 10%)`
+          );
+        } else if (available > maxTolerance10 && available <= maxTolerance20) {
+          // Within 20% over tolerance
+          confidence += 0;
+          reasons.push(
+            `Over quantity (${available} vs ${maxQty} max, within 20%)`
+          );
+        } else if (available > maxTolerance20) {
+          // More than 20% over
+          reasons.push(
+            `Significantly over quantity (${available} > ${maxQty})`
+          );
+        }
+      }
     }
   }
 
@@ -159,6 +252,7 @@ async function calculateMatchConfidence(
 /**
  * Get batch with product details for matching
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getBatchWithProduct(db: any, batchId: number) {
   const [batch] = await db
     .select({
@@ -176,7 +270,9 @@ async function getBatchWithProduct(db: any, batchId: number) {
  * Calculate selling price for a batch for a specific client
  */
 async function calculateBatchSellingPrice(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   batch: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   product: any,
   clientId: number
 ): Promise<number | null> {
@@ -257,7 +353,11 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
       const product = result.product;
 
       // Calculate selling price for this client
-      const calculatedPrice = await calculateBatchSellingPrice(batch, product, need.clientId);
+      const calculatedPrice = await calculateBatchSellingPrice(
+        batch,
+        product,
+        need.clientId
+      );
       const availableQuantity = parseFloat(batch.onHandQty);
 
       const { confidence, reasons } = await calculateMatchConfidence(need, {
@@ -308,6 +408,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
 
       const { confidence, reasons } = await calculateMatchConfidence(need, {
         strain: supply.strain,
+        strainType: supply.strainType,
         category: supply.category,
         subcategory: supply.subcategory,
         grade: supply.grade,
@@ -384,14 +485,18 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
     };
   } catch (error) {
     console.error("Error finding matches for need:", error);
-    throw new Error(`Failed to find matches: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to find matches: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
 /**
  * Find potential buyers for inventory item (ENHANCED)
  */
-export async function findBuyersForInventory(batchId: number): Promise<MatchResult[]> {
+export async function findBuyersForInventory(
+  batchId: number
+): Promise<MatchResult[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -416,11 +521,16 @@ export async function findBuyersForInventory(batchId: number): Promise<MatchResu
 
     for (const need of activeNeeds) {
       // Calculate selling price for this specific client
-      const calculatedPrice = await calculateBatchSellingPrice(batch, product, need.clientId);
+      const calculatedPrice = await calculateBatchSellingPrice(
+        batch,
+        product,
+        need.clientId
+      );
 
       const { confidence, reasons } = await calculateMatchConfidence(need, {
         strain: product?.nameCanonical,
         strainId: product?.strainId,
+        strainType: null, // TODO: Get from strain library via strainId
         category: product?.category,
         subcategory: product?.subcategory,
         grade: batch.grade,
@@ -504,14 +614,18 @@ export async function findBuyersForInventory(batchId: number): Promise<MatchResu
     return results;
   } catch (error) {
     console.error("Error finding buyers for inventory:", error);
-    throw new Error(`Failed to find buyers: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to find buyers: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
 /**
  * Find potential buyers for vendor supply (ENHANCED)
  */
-export async function findBuyersForVendorSupply(supplyId: number): Promise<MatchResult[]> {
+export async function findBuyersForVendorSupply(
+  supplyId: number
+): Promise<MatchResult[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -540,6 +654,7 @@ export async function findBuyersForVendorSupply(supplyId: number): Promise<Match
     for (const need of activeNeeds) {
       const { confidence, reasons } = await calculateMatchConfidence(need, {
         strain: supply.strain,
+        strainType: supply.strainType,
         category: supply.category,
         subcategory: supply.subcategory,
         grade: supply.grade,
@@ -583,7 +698,9 @@ export async function findBuyersForVendorSupply(supplyId: number): Promise<Match
     return results;
   } catch (error) {
     console.error("Error finding buyers for vendor supply:", error);
-    throw new Error(`Failed to find buyers: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to find buyers: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -620,12 +737,14 @@ export async function getAllActiveNeedsWithMatches(): Promise<MatchResult[]> {
     return results;
   } catch (error) {
     console.error("Error getting all active needs with matches:", error);
-    throw new Error(`Failed to get active needs with matches: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to get active needs with matches: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
-
-
 // Export reverse matching functions (simplified version)
-export { findClientNeedsForBatch, findClientNeedsForVendorSupply } from "./matchingEngineReverseSimplified";
-
+export {
+  findClientNeedsForBatch,
+  findClientNeedsForVendorSupply,
+} from "./matchingEngineReverseSimplified";
