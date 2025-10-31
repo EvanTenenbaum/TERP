@@ -7,6 +7,7 @@ import {
   normalizeGrade,
   normalizeCategory,
 } from "./utils/strainAliases";
+import { findHistoricalBuyers } from "./historicalAnalysis";
 
 /**
  * Match types and confidence levels
@@ -19,7 +20,8 @@ export interface Match {
   reasons: string[];
   source: "INVENTORY" | "VENDOR" | "HISTORICAL";
   sourceId: number;
-  sourceData: unknown; // Can be batch, vendor supply, or historical data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sourceData: any; // Can be batch, vendor supply, or historical data - TODO: improve typing
 }
 
 export interface MatchResult {
@@ -245,6 +247,37 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
           sourceId: supply.id,
           sourceData: supply,
         });
+      }
+    }
+
+    // 3. Check historical matches (clients who previously bought similar products)
+    // Only include if strain/category is specified (not "any")
+    if (need.strain && need.strain.toLowerCase().trim() !== "any") {
+      try {
+        const historicalMatches = await findHistoricalBuyers({
+          strain: need.strain,
+          category: need.category,
+          subcategory: need.subcategory,
+          grade: need.grade,
+        });
+
+        // Add historical matches to the list (they already have HISTORICAL type)
+        for (const histMatch of historicalMatches) {
+          // Only include if confidence is good enough and not already matched as EXACT/CLOSE
+          if (histMatch.confidence >= 50) {
+            matches.push({
+              type: "HISTORICAL",
+              confidence: histMatch.confidence,
+              reasons: histMatch.reasons,
+              source: "HISTORICAL",
+              sourceId: histMatch.sourceId,
+              sourceData: histMatch.sourceData,
+            });
+          }
+        }
+      } catch (error) {
+        // Don't fail the whole match if historical fails
+        console.error("Error finding historical matches:", error);
       }
     }
 
