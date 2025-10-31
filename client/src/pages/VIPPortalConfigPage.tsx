@@ -72,7 +72,7 @@ export default function VIPPortalConfigPage() {
 
   const handleFeatureToggle = (module: string, feature: string, value: boolean) => {
     const currentFeatures = config?.featuresConfig || {};
-    const moduleFeatures = currentFeatures[module] || {};
+    const moduleFeatures = (currentFeatures as any)[module] || {};
     
     updateConfigMutation.mutate({
       clientId: parseInt(clientId || "0"),
@@ -97,14 +97,14 @@ export default function VIPPortalConfigPage() {
     updateConfigMutation.mutate({
       clientId: parseInt(clientId || "0"),
       leaderboardType: value,
-    });
+    } as any);
   };
 
   const handleLeaderboardDisplayModeChange = (value: string) => {
     updateConfigMutation.mutate({
       clientId: parseInt(clientId || "0"),
       leaderboardDisplayMode: value,
-    });
+    } as any);
   };
 
   if (!config || !client) {
@@ -332,7 +332,7 @@ export default function VIPPortalConfigPage() {
                   
                   {/* Feature toggles */}
                   {module.features.map((feature) => {
-                    const featureValue = config.featuresConfig?.[module.id]?.[feature.id] ?? true;
+                    const featureValue = (config.featuresConfig as any)?.[module.id]?.[feature.id] ?? true;
                     return (
                       <div key={feature.id} className="flex items-center justify-between">
                         <Label className="text-sm font-normal cursor-pointer">
