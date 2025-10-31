@@ -25,7 +25,8 @@ export const matchingRouter = router({
         console.error("Error finding matches for need:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to find matches",
+          error:
+            error instanceof Error ? error.message : "Failed to find matches",
         };
       }
     }),
@@ -37,7 +38,9 @@ export const matchingRouter = router({
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       try {
-        const buyers = await matchingEngine.findBuyersForInventory(input.batchId);
+        const buyers = await matchingEngine.findBuyersForInventory(
+          input.batchId
+        );
 
         return {
           success: true,
@@ -47,7 +50,8 @@ export const matchingRouter = router({
         console.error("Error finding buyers for inventory:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to find buyers",
+          error:
+            error instanceof Error ? error.message : "Failed to find buyers",
         };
       }
     }),
@@ -59,7 +63,9 @@ export const matchingRouter = router({
     .input(z.object({ supplyId: z.number() }))
     .query(async ({ input }) => {
       try {
-        const buyers = await matchingEngine.findBuyersForVendorSupply(input.supplyId);
+        const buyers = await matchingEngine.findBuyersForVendorSupply(
+          input.supplyId
+        );
 
         return {
           success: true,
@@ -69,7 +75,8 @@ export const matchingRouter = router({
         console.error("Error finding buyers for vendor supply:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to find buyers",
+          error:
+            error instanceof Error ? error.message : "Failed to find buyers",
         };
       }
     }),
@@ -77,23 +84,25 @@ export const matchingRouter = router({
   /**
    * Get all active needs with their best matches
    */
-  getAllActiveNeedsWithMatches: publicProcedure
-    .query(async () => {
-      try {
-        const results = await matchingEngine.getAllActiveNeedsWithMatches();
+  getAllActiveNeedsWithMatches: publicProcedure.query(async () => {
+    try {
+      const results = await matchingEngine.getAllActiveNeedsWithMatches();
 
-        return {
-          success: true,
-          data: results,
-        };
-      } catch (error) {
-        console.error("Error getting active needs with matches:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to get active needs with matches",
-        };
-      }
-    }),
+      return {
+        success: true,
+        data: results,
+      };
+    } catch (error) {
+      console.error("Error getting active needs with matches:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to get active needs with matches",
+      };
+    }
+  }),
 
   /**
    * Analyze purchase history for a client
@@ -120,7 +129,10 @@ export const matchingRouter = router({
         console.error("Error analyzing client purchase history:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to analyze purchase history",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to analyze purchase history",
         };
       }
     }),
@@ -154,7 +166,10 @@ export const matchingRouter = router({
         console.error("Error finding historical buyers:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to find historical buyers",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to find historical buyers",
         };
       }
     }),
@@ -170,7 +185,9 @@ export const matchingRouter = router({
     )
     .query(async ({ input }) => {
       try {
-        const lapsedBuyers = await historicalAnalysis.getLapsedBuyers(input.daysThreshold);
+        const lapsedBuyers = await historicalAnalysis.getLapsedBuyers(
+          input.daysThreshold
+        );
 
         return {
           success: true,
@@ -180,7 +197,10 @@ export const matchingRouter = router({
         console.error("Error getting lapsed buyers:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to get lapsed buyers",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to get lapsed buyers",
         };
       }
     }),
@@ -196,9 +216,10 @@ export const matchingRouter = router({
     )
     .query(async ({ input }) => {
       try {
-        const opportunities = await historicalAnalysis.getProactiveOpportunities(
-          input.daysThreshold
-        );
+        const opportunities =
+          await historicalAnalysis.getProactiveOpportunities(
+            input.daysThreshold
+          );
 
         return {
           success: true,
@@ -208,9 +229,80 @@ export const matchingRouter = router({
         console.error("Error getting proactive opportunities:", error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Failed to get proactive opportunities",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to get proactive opportunities",
+        };
+      }
+    }),
+
+  /**
+   * Predict reorder for a specific client and item
+   */
+  predictReorder: publicProcedure
+    .input(
+      z.object({
+        clientId: z.number(),
+        strain: z.string().optional(),
+        category: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const prediction = await historicalAnalysis.predictReorder(
+          input.clientId,
+          input.strain,
+          input.category
+        );
+
+        return {
+          success: true,
+          data: prediction,
+        };
+      } catch (error) {
+        console.error("Error predicting reorder:", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to predict reorder",
+        };
+      }
+    }),
+
+  /**
+   * Get all predictive reorder opportunities
+   */
+  getPredictiveReorderOpportunities: publicProcedure
+    .input(
+      z.object({
+        lookAheadDays: z.number().default(30),
+        minOrderCount: z.number().default(3),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const predictions =
+          await historicalAnalysis.getPredictiveReorderOpportunities(
+            input.lookAheadDays,
+            input.minOrderCount
+          );
+
+        return {
+          success: true,
+          data: predictions,
+        };
+      } catch (error) {
+        console.error("Error getting predictive reorder opportunities:", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to get predictive reorder opportunities",
         };
       }
     }),
 });
-
