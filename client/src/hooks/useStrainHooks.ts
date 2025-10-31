@@ -144,7 +144,7 @@ export function useStrainSearch(
   threshold = 90
 ) {
   return trpc.strains.fuzzySearch.useQuery(
-    { query, category: category || undefined, threshold },
+    { query }, // category and threshold not supported by API
     { 
       enabled: query.length >= 2,
       staleTime: 30 * 1000, // 30 seconds
