@@ -305,7 +305,7 @@ export const inventoryRouter = router({
       list: protectedProcedure
         .query(async ({ ctx }) => {
           try {
-            return await inventoryDb.getUserInventoryViews(ctx.user.id);
+            return await inventoryDb.getUserInventoryViews(ctx.user!.id);
           } catch (error) {
             handleError(error, "inventory.views.list");
             throw error;
@@ -324,7 +324,7 @@ export const inventoryRouter = router({
             return await inventoryDb.saveInventoryView({
               name: input.name,
               filters: input.filters,
-              createdBy: ctx.user.id,
+              createdBy: ctx.user!.id,
               isShared: input.isShared,
             });
           } catch (error) {
@@ -338,7 +338,7 @@ export const inventoryRouter = router({
         .input(z.number())
         .mutation(async ({ input, ctx }) => {
           try {
-            return await inventoryDb.deleteInventoryView(input, ctx.user.id);
+            return await inventoryDb.deleteInventoryView(input, ctx.user!.id);
           } catch (error) {
             handleError(error, "inventory.views.delete");
             throw error;
@@ -356,7 +356,7 @@ export const inventoryRouter = router({
         }))
         .mutation(async ({ input, ctx }) => {
           try {
-            return await inventoryDb.bulkUpdateBatchStatus(input.batchIds, input.newStatus, ctx.user.id);
+            return await inventoryDb.bulkUpdateBatchStatus(input.batchIds, input.newStatus, ctx.user!.id);
           } catch (error) {
             handleError(error, "inventory.bulk.updateStatus");
             throw error;
@@ -368,7 +368,7 @@ export const inventoryRouter = router({
         .input(z.array(z.number()))
         .mutation(async ({ input, ctx }) => {
           try {
-            return await inventoryDb.bulkDeleteBatches(input, ctx.user.id);
+            return await inventoryDb.bulkDeleteBatches(input, ctx.user!.id);
           } catch (error) {
             handleError(error, "inventory.bulk.delete");
             throw error;
