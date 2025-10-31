@@ -180,7 +180,7 @@ async function calculateMatchConfidence(
     }
   }
 
-  // Quantity validation
+  // Quantity validation with tolerance (±10-20%)
   if (
     candidate.availableQuantity !== null &&
     candidate.availableQuantity !== undefined
@@ -190,12 +190,56 @@ async function calculateMatchConfidence(
     const maxQty = need.quantityMax ? parseFloat(need.quantityMax) : Infinity;
 
     if (available >= minQty && available <= maxQty) {
-      reasons.push(`Sufficient quantity (${available} units)`);
-    } else if (available < minQty) {
-      confidence -= 15;
-      reasons.push(`Insufficient quantity (${available} < ${minQty})`);
-    } else if (available > maxQty) {
-      reasons.push(`Excess quantity available (${available} > ${maxQty})`);
+      // Perfect - within requested range
+      confidence += 5;
+      reasons.push(`Quantity in range (${available} units)`);
+    } else if (minQty > 0) {
+      // Check tolerance for minimum
+      const minTolerance10 = minQty * 0.9; // 10% under
+      const minTolerance20 = minQty * 0.8; // 20% under
+
+      if (available >= minTolerance10 && available < minQty) {
+        // Within 10% tolerance
+        confidence += 2;
+        reasons.push(
+          `Slightly under quantity (${available} vs ${minQty} min, within 10%)`
+        );
+      } else if (available >= minTolerance20 && available < minTolerance10) {
+        // Within 20% tolerance
+        confidence += 0;
+        reasons.push(
+          `Under quantity (${available} vs ${minQty} min, within 20%)`
+        );
+      } else if (available < minQty) {
+        // More than 20% under
+        confidence -= 10;
+        reasons.push(`Significantly under quantity (${available} < ${minQty})`);
+      }
+
+      // Check tolerance for maximum
+      if (maxQty !== Infinity) {
+        const maxTolerance10 = maxQty * 1.1; // 10% over
+        const maxTolerance20 = maxQty * 1.2; // 20% over
+
+        if (available > maxQty && available <= maxTolerance10) {
+          // Within 10% over tolerance
+          confidence += 2;
+          reasons.push(
+            `Slightly over quantity (${available} vs ${maxQty} max, within 10%)`
+          );
+        } else if (available > maxTolerance10 && available <= maxTolerance20) {
+          // Within 20% over tolerance
+          confidence += 0;
+          reasons.push(
+            `Over quantity (${available} vs ${maxQty} max, within 20%)`
+          );
+        } else if (available > maxTolerance20) {
+          // More than 20% over
+          reasons.push(
+            `Significantly over quantity (${available} > ${maxQty})`
+          );
+        }
+      }
     }
   }
 
