@@ -26,12 +26,16 @@ export function DataCardGrid({ moduleId, className }: DataCardGridProps) {
   
   // Fetch metric data
   const { data, isLoading, error } = trpc.dataCardMetrics.getForModule.useQuery(
-    { moduleId, metricIds },
+    { 
+      moduleId: moduleId as "clients" | "orders" | "vendor_supply" | "inventory" | "accounting" | "quotes", 
+      metricIds: metricIds as any 
+    }, // Type cast to fix overload mismatch
     {
+      enabled: metricIds.length > 0,
       staleTime: 5 * 60 * 1000, // 5 minutes
       refetchOnWindowFocus: false,
       retry: 2,
-    }
+    } as any // Type cast to fix overload mismatch
   );
   
   // Track cards viewed when data loads

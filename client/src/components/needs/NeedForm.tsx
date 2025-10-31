@@ -132,6 +132,7 @@ export function NeedForm({
       // Reset form on success
       setFormData({
         strain: "",
+        strainId: null,
         category: "",
         subcategory: "",
         grade: "",
@@ -189,10 +190,9 @@ export function NeedForm({
               <div className="space-y-2">
                 <Label htmlFor="strain">Strain</Label>
                 <StrainInput
-                  value={formData.strain}
-                  strainId={formData.strainId}
-                  onChange={(name, id) => {
-                    setFormData(prev => ({ ...prev, strain: name, strainId: id }));
+                  value={formData.strainId}
+                  onChange={(strainId, strainName) => {
+                    setFormData(prev => ({ ...prev, strain: strainName, strainId }));
                     setError(null);
                     setIsDuplicate(false);
                   }}
