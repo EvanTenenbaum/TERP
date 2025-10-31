@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'wouter';
+import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
   FileText,
@@ -13,25 +13,27 @@ import {
   Tag,
   Layers,
   HelpCircle,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { APP_TITLE } from '@/const';
+  Target,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { APP_TITLE } from "@/const";
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Orders', href: '/orders', icon: ShoppingCart },
-  { name: 'Sales Sheets', href: '/sales-sheets', icon: Layers },
-  { name: 'Create Order', href: '/orders/create', icon: FileText },
-  { name: 'Inventory', href: '/inventory', icon: Package },
-  { name: 'Accounting', href: '/accounting/dashboard', icon: DollarSign },
-  { name: 'Clients', href: '/clients', icon: Users },
-  { name: 'Pricing Rules', href: '/pricing/rules', icon: Tag },
-  { name: 'Pricing Profiles', href: '/pricing/profiles', icon: TrendingUp },
-  { name: 'Credit Settings', href: '/credit-settings', icon: TrendingUp },
-  { name: 'COGS Settings', href: '/settings/cogs', icon: DollarSign },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
-  { name: 'Help', href: '/help', icon: HelpCircle },
+  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Orders", href: "/orders", icon: ShoppingCart },
+  { name: "Sales Sheets", href: "/sales-sheets", icon: Layers },
+  { name: "Create Order", href: "/orders/create", icon: FileText },
+  { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Matchmaking", href: "/matchmaking", icon: Target },
+  { name: "Accounting", href: "/accounting/dashboard", icon: DollarSign },
+  { name: "Clients", href: "/clients", icon: Users },
+  { name: "Pricing Rules", href: "/pricing/rules", icon: Tag },
+  { name: "Pricing Profiles", href: "/pricing/profiles", icon: TrendingUp },
+  { name: "Credit Settings", href: "/credit-settings", icon: TrendingUp },
+  { name: "COGS Settings", href: "/settings/cogs", icon: DollarSign },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Help", href: "/help", icon: HelpCircle },
 ];
 
 interface AppSidebarProps {
@@ -55,10 +57,10 @@ export function AppSidebar({ open = false, onClose }: AppSidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'flex flex-col w-64 bg-card border-r border-border transition-transform duration-300 ease-in-out z-50',
-          'md:relative md:translate-x-0',
-          'fixed inset-y-0 left-0',
-          open ? 'translate-x-0' : '-translate-x-full'
+          "flex flex-col w-64 bg-card border-r border-border transition-transform duration-300 ease-in-out z-50",
+          "md:relative md:translate-x-0",
+          "fixed inset-y-0 left-0",
+          open ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-border">
@@ -74,7 +76,7 @@ export function AppSidebar({ open = false, onClose }: AppSidebarProps) {
 
         <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-1">
-            {navigation.map((item) => {
+            {navigation.map(item => {
               const isActive = location === item.href;
               const Icon = item.icon;
 
@@ -84,10 +86,10 @@ export function AppSidebar({ open = false, onClose }: AppSidebarProps) {
                     <a
                       onClick={onClose}
                       className={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                         isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                       )}
                     >
                       <Icon className="h-5 w-5" />
@@ -103,4 +105,3 @@ export function AppSidebar({ open = false, onClose }: AppSidebarProps) {
     </>
   );
 }
-
