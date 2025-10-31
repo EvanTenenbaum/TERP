@@ -95,7 +95,7 @@ export function StrainInput({
       setSelectedStrain({
         id: result.strainId,
         name: searchQuery,
-        category: category,
+        category: category || null,
       });
       onChange(result.strainId, searchQuery);
       setSearchQuery("");
