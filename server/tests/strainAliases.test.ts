@@ -8,6 +8,9 @@ import {
   normalizeGrade,
   normalizeCategory,
   normalizeUnit,
+  getBaseStrainName,
+  getStrainVariant,
+  strainsMatchWithVariants,
 } from "../utils/strainAliases";
 
 describe("strainAliases", () => {
@@ -83,6 +86,105 @@ describe("strainAliases", () => {
       expect(strainsMatch(null, "Blue Dream")).toBe(false);
       expect(strainsMatch("Blue Dream", null)).toBe(false);
       expect(strainsMatch(null, null)).toBe(false);
+    });
+
+    // Numbered variant matching tests (Phase 3 Day 11)
+    it("should match base strain with numbered variant", () => {
+      expect(strainsMatch("Blue Dream", "Blue Dream #5")).toBe(true);
+      expect(strainsMatch("Blue Dream #5", "Blue Dream")).toBe(true);
+      expect(strainsMatch("Gorilla Glue", "Gorilla Glue #4")).toBe(true);
+      expect(strainsMatch("Gelato", "Gelato #41")).toBe(true);
+    });
+
+    it("should match same numbered variants exactly", () => {
+      expect(strainsMatch("Blue Dream #5", "Blue Dream #5")).toBe(true);
+      expect(strainsMatch("Gorilla Glue #4", "Gorilla Glue #4")).toBe(true);
+      expect(strainsMatch("Gelato #41", "Gelato #41")).toBe(true);
+    });
+
+    it("should NOT match different numbered variants", () => {
+      expect(strainsMatch("Blue Dream #5", "Blue Dream #6")).toBe(false);
+      expect(strainsMatch("Gorilla Glue #4", "Gorilla Glue #5")).toBe(false);
+      expect(strainsMatch("Gelato #41", "Gelato #33")).toBe(false);
+    });
+
+    it("should match aliases with numbered variants", () => {
+      expect(strainsMatch("GG4", "Gorilla Glue #4")).toBe(true);
+      expect(strainsMatch("GSC", "Girl Scout Cookies #3")).toBe(true);
+      expect(strainsMatch("GG4", "Gorilla Glue")).toBe(true);
+    });
+  });
+
+  describe("getBaseStrainName", () => {
+    it("should extract base name from numbered variants", () => {
+      expect(getBaseStrainName("Blue Dream #5")).toBe("blue dream");
+      expect(getBaseStrainName("Gorilla Glue #4")).toBe("gorilla glue");
+      expect(getBaseStrainName("Gelato #41")).toBe("gelato");
+    });
+
+    it("should return original name for non-variants", () => {
+      expect(getBaseStrainName("Blue Dream")).toBe("blue dream");
+      expect(getBaseStrainName("OG Kush")).toBe("og kush");
+    });
+
+    it("should handle null/undefined", () => {
+      expect(getBaseStrainName(null)).toBe("");
+      expect(getBaseStrainName(undefined)).toBe("");
+    });
+  });
+
+  describe("getStrainVariant", () => {
+    it("should extract variant number", () => {
+      expect(getStrainVariant("Blue Dream #5")).toBe("5");
+      expect(getStrainVariant("Gorilla Glue #4")).toBe("4");
+      expect(getStrainVariant("Gelato #41")).toBe("41");
+    });
+
+    it("should return null for non-variants", () => {
+      expect(getStrainVariant("Blue Dream")).toBe(null);
+      expect(getStrainVariant("OG Kush")).toBe(null);
+    });
+
+    it("should handle null/undefined", () => {
+      expect(getStrainVariant(null)).toBe(null);
+      expect(getStrainVariant(undefined)).toBe(null);
+    });
+  });
+
+  describe("strainsMatchWithVariants", () => {
+    it("should match base strain with variant (generic + specific)", () => {
+      expect(strainsMatchWithVariants("Blue Dream", "Blue Dream #5")).toBe(
+        true
+      );
+      expect(strainsMatchWithVariants("Gorilla Glue", "Gorilla Glue #4")).toBe(
+        true
+      );
+    });
+
+    it("should match same variants exactly", () => {
+      expect(strainsMatchWithVariants("Blue Dream #5", "Blue Dream #5")).toBe(
+        true
+      );
+      expect(
+        strainsMatchWithVariants("Gorilla Glue #4", "Gorilla Glue #4")
+      ).toBe(true);
+    });
+
+    it("should NOT match different variants", () => {
+      expect(strainsMatchWithVariants("Blue Dream #5", "Blue Dream #6")).toBe(
+        false
+      );
+      expect(
+        strainsMatchWithVariants("Gorilla Glue #4", "Gorilla Glue #5")
+      ).toBe(false);
+    });
+
+    it("should work with aliases and variants", () => {
+      expect(strainsMatchWithVariants("GG4", "Gorilla Glue #4")).toBe(true);
+      expect(strainsMatchWithVariants("GG4", "Gorilla Glue")).toBe(true);
+      expect(strainsMatchWithVariants("GSC", "Girl Scout Cookies #3")).toBe(
+        true
+      );
     });
   });
 
