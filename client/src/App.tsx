@@ -30,6 +30,7 @@ import Orders from "@/pages/Orders";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
+import MatchmakingServicePage from "@/pages/MatchmakingServicePage";
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
 import VIPPortalConfigPage from "@/pages/VIPPortalConfigPage";
@@ -43,24 +44,42 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/vip-portal/login" component={VIPLogin} />
       <Route path="/vip-portal/dashboard" component={VIPDashboard} />
-      
+
       {/* Protected routes - wrapped in AppShell */}
       <Route>
-        {(params) => (
+        {() => (
           <AppShell>
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/dashboard" component={DashboardV2} />
               <Route path="/inventory" component={Inventory} />
-              <Route path="/accounting/dashboard" component={AccountingDashboard} />
-              <Route path="/accounting/chart-of-accounts" component={ChartOfAccounts} />
-              <Route path="/accounting/general-ledger" component={GeneralLedger} />
-              <Route path="/accounting/fiscal-periods" component={FiscalPeriods} />
+              <Route
+                path="/accounting/dashboard"
+                component={AccountingDashboard}
+              />
+              <Route
+                path="/accounting/chart-of-accounts"
+                component={ChartOfAccounts}
+              />
+              <Route
+                path="/accounting/general-ledger"
+                component={GeneralLedger}
+              />
+              <Route
+                path="/accounting/fiscal-periods"
+                component={FiscalPeriods}
+              />
               <Route path="/accounting/invoices" component={Invoices} />
               <Route path="/accounting/bills" component={Bills} />
               <Route path="/accounting/payments" component={Payments} />
-              <Route path="/accounting/bank-accounts" component={BankAccounts} />
-              <Route path="/accounting/bank-transactions" component={BankTransactions} />
+              <Route
+                path="/accounting/bank-accounts"
+                component={BankAccounts}
+              />
+              <Route
+                path="/accounting/bank-transactions"
+                component={BankTransactions}
+              />
               <Route path="/accounting/expenses" component={Expenses} />
               <Route path="/clients" component={ClientsListPage} />
               <Route path="/clients/:id" component={ClientProfilePage} />
@@ -74,8 +93,12 @@ function Router() {
               <Route path="/credit-settings" component={CreditSettingsPage} />
               <Route path="/needs" component={NeedsManagementPage} />
               <Route path="/vendor-supply" component={VendorSupplyPage} />
+              <Route path="/matchmaking" component={MatchmakingServicePage} />
               <Route path="/help" component={Help} />
-              <Route path="/clients/:clientId/vip-portal-config" component={VIPPortalConfigPage} />
+              <Route
+                path="/clients/:clientId/vip-portal-config"
+                component={VIPPortalConfigPage}
+              />
               <Route path="/404" component={NotFound} />
               {/* Final fallback route */}
               <Route component={NotFound} />
@@ -109,4 +132,3 @@ function App() {
 }
 
 export default App;
-

@@ -7,6 +7,7 @@ import {
   TotalDebtWidget,
   SalesComparisonWidget,
   FreeformNoteWidget,
+  MatchmakingOpportunitiesWidget,
 } from "@/components/dashboard/widgets-v2";
 import { ProfitabilityWidget } from "@/components/dashboard/widgets-v2/ProfitabilityWidget";
 
@@ -39,10 +40,15 @@ export default function DashboardV2() {
           <SalesComparisonWidget />
           <TotalDebtWidget />
         </div>
-        
+
         {/* Profitability Row */}
         <div className="grid grid-cols-1 gap-6">
           <ProfitabilityWidget />
+        </div>
+
+        {/* Matchmaking Opportunities Row */}
+        <div className="grid grid-cols-1 gap-6">
+          <MatchmakingOpportunitiesWidget />
         </div>
 
         {/* Freeform Note Widget - Full Width */}
@@ -55,4 +61,3 @@ export default function DashboardV2() {
     </DashboardLayout>
   );
 }
-
