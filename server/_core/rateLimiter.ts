@@ -11,8 +11,7 @@ export const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   // Trust proxy headers from DigitalOcean App Platform
-  trustProxy: true,
-});
+} as any);
 
 /**
  * Authentication endpoint rate limiter
@@ -25,8 +24,7 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true,
-});
+} as any);
 
 /**
  * Strict rate limiter for sensitive operations
@@ -38,6 +36,5 @@ export const strictLimiter = rateLimit({
   message: "Rate limit exceeded. Please slow down.",
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true,
-});
+} as any);
 
