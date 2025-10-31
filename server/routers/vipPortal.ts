@@ -520,7 +520,7 @@ export const vipPortalRouter = router({
           quantityMax: input.quantity?.toString(),
           priceMax: input.priceMax?.toString(),
           notes: input.notes,
-          expiresAt: expiresAt.toISOString().split('T')[0],
+          expiresAt: expiresAt, // timestamp type expects Date object
           status: "ACTIVE",
           priority: "MEDIUM",
           createdBy: 1, // TODO: Get from session
