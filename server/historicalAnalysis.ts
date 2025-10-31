@@ -422,7 +422,7 @@ export async function predictReorder(
 
         if (matchesStrain && matchesCategory) {
           relevantOrders.push({
-            date: new Date(order.createdAt),
+            date: new Date(order.createdAt || new Date()),
             quantity: parseFloat(item.quantity || "0"),
             price: parseFloat(item.price || "0"),
           });
