@@ -187,21 +187,21 @@ export class StrainService {
       ORDER BY total_inventory DESC
     `);
 
-    return result.rows;
+    return (result as any).rows || result;
   }
 
   /**
    * Fuzzy search for strains with auto-assignment
    */
   async searchAndMatch(query: string, category?: string, threshold = 90) {
-    return findFuzzyStrainMatches(query, category, threshold);
+    return findFuzzyStrainMatches(query, category ? Number(category) : undefined, threshold);
   }
 
   /**
    * Get or create strain with family detection
    */
   async getOrCreate(name: string, category?: string, threshold = 90) {
-    return getOrCreateStrain(name, category, threshold);
+    return getOrCreateStrain(name, category as 'indica' | 'sativa' | 'hybrid' | undefined, threshold);
   }
 
   /**
