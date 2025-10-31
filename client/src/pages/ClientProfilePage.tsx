@@ -4,7 +4,13 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -38,6 +44,7 @@ import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
 import { ClientNeedsTab } from "@/components/needs/ClientNeedsTab";
 import { CommunicationTimeline } from "@/components/clients/CommunicationTimeline";
 import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
+import { PurchasePatternsWidget } from "@/components/clients/PurchasePatternsWidget";
 import {
   ArrowLeft,
   Edit,
@@ -48,7 +55,6 @@ import {
   Search,
   Plus,
   CheckCircle,
-  XCircle,
   Settings,
 } from "lucide-react";
 import { useLocation } from "wouter";
@@ -61,22 +67,27 @@ export default function ClientProfilePage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [transactionSearch, setTransactionSearch] = useState("");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
 
   // Fetch client data
-  const { data: client, isLoading: clientLoading } = trpc.clients.getById.useQuery({
-    clientId,
-  });
+  const { data: client, isLoading: clientLoading } =
+    trpc.clients.getById.useQuery({
+      clientId,
+    });
 
   // Fetch transactions
-  const { data: transactions, isLoading: transactionsLoading, refetch: refetchTransactions } =
-    trpc.clients.transactions.list.useQuery({
-      clientId,
-      search: transactionSearch || undefined,
-    });
+  const {
+    data: transactions,
+    isLoading: transactionsLoading,
+    refetch: refetchTransactions,
+  } = trpc.clients.transactions.list.useQuery({
+    clientId,
+    search: transactionSearch || undefined,
+  });
 
   // Fetch activity log
   const { data: activities } = trpc.clients.activity.list.useQuery({
@@ -94,13 +105,15 @@ export default function ClientProfilePage() {
       setEditDialogOpen(false);
     },
   });
-  const createTransactionMutation = trpc.clients.transactions.create.useMutation({
-    onSuccess: () => {
-      refetchTransactions();
-      setTransactionDialogOpen(false);
-    },
-  });
-  const recordPaymentMutation = trpc.clients.transactions.recordPayment.useMutation();
+  const createTransactionMutation =
+    trpc.clients.transactions.create.useMutation({
+      onSuccess: () => {
+        refetchTransactions();
+        setTransactionDialogOpen(false);
+      },
+    });
+  const recordPaymentMutation =
+    trpc.clients.transactions.recordPayment.useMutation();
 
   if (clientLoading) {
     return (
@@ -125,12 +138,17 @@ export default function ClientProfilePage() {
 
   // Get client type badges
   const getClientTypeBadges = () => {
-    const badges: { label: string; variant: "default" | "secondary" | "outline" }[] = [];
+    const badges: {
+      label: string;
+      variant: "default" | "secondary" | "outline";
+    }[] = [];
     if (client.isBuyer) badges.push({ label: "Buyer", variant: "default" });
     if (client.isSeller) badges.push({ label: "Seller", variant: "secondary" });
     if (client.isBrand) badges.push({ label: "Brand", variant: "outline" });
-    if (client.isReferee) badges.push({ label: "Referee", variant: "secondary" });
-    if (client.isContractor) badges.push({ label: "Contractor", variant: "outline" });
+    if (client.isReferee)
+      badges.push({ label: "Referee", variant: "secondary" });
+    if (client.isContractor)
+      badges.push({ label: "Contractor", variant: "outline" });
     return badges;
   };
 
@@ -160,22 +178,24 @@ export default function ClientProfilePage() {
 
   // Get payment status badge
   const getPaymentStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    const variants: Record<
+      string,
+      "default" | "secondary" | "destructive" | "outline"
+    > = {
       PAID: "default",
       PENDING: "secondary",
       OVERDUE: "destructive",
       PARTIAL: "outline",
     };
-    return (
-      <Badge variant={variants[status] || "outline"}>
-        {status}
-      </Badge>
-    );
+    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
   // Get transaction type badge
   const getTransactionTypeBadge = (type: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    const variants: Record<
+      string,
+      "default" | "secondary" | "destructive" | "outline"
+    > = {
       INVOICE: "default",
       PAYMENT: "default",
       QUOTE: "secondary",
@@ -183,29 +203,36 @@ export default function ClientProfilePage() {
       REFUND: "destructive",
       CREDIT: "outline",
     };
-    return (
-      <Badge variant={variants[type] || "outline"}>
-        {type}
-      </Badge>
-    );
+    return <Badge variant={variants[type] || "outline"}>{type}</Badge>;
   };
 
   // Filter paid transactions for payment history
-  const paidTransactions = transactions?.filter((txn: any) => 
-    txn.paymentStatus === "PAID" && txn.paymentDate
-  ) || [];
+  const paidTransactions =
+    transactions?.filter(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (txn: any) => txn.paymentStatus === "PAID" && txn.paymentDate
+    ) || [];
 
   // Filter by payment search
-  const filteredPayments = paidTransactions.filter((txn: any) => {
-    if (!paymentSearch) return true;
-    return (
-      txn.transactionNumber?.toLowerCase().includes(paymentSearch.toLowerCase()) ||
-      txn.transactionType?.toLowerCase().includes(paymentSearch.toLowerCase())
-    );
-  });
+  const filteredPayments = paidTransactions.filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (txn: any) => {
+      if (!paymentSearch) return true;
+      return (
+        txn.transactionNumber
+          ?.toLowerCase()
+          .includes(paymentSearch.toLowerCase()) ||
+        txn.transactionType?.toLowerCase().includes(paymentSearch.toLowerCase())
+      );
+    }
+  );
 
   // Handle record payment
-  const handleRecordPayment = async (transactionId: number, paymentAmount: number, paymentDate: Date) => {
+  const handleRecordPayment = async (
+    transactionId: number,
+    paymentAmount: number,
+    paymentDate: Date
+  ) => {
     await recordPaymentMutation.mutateAsync({
       transactionId,
       paymentAmount,
@@ -253,9 +280,11 @@ export default function ClientProfilePage() {
             </div>
             <div className="flex gap-2">
               {client.vipPortalEnabled && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => setLocation(`/clients/${clientId}/vip-portal-config`)}
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setLocation(`/clients/${clientId}/vip-portal-config`)
+                  }
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   VIP Portal Config
@@ -278,7 +307,9 @@ export default function ClientProfilePage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(client.totalSpent || 0)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(client.totalSpent || 0)}
+            </div>
           </CardContent>
         </Card>
 
@@ -288,17 +319,23 @@ export default function ClientProfilePage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(client.totalProfit || 0)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(client.totalProfit || 0)}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Profit Margin</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg Profit Margin
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPercentage(client.avgProfitMargin || 0)}</div>
+            <div className="text-2xl font-bold">
+              {formatPercentage(client.avgProfitMargin || 0)}
+            </div>
           </CardContent>
         </Card>
 
@@ -308,7 +345,9 @@ export default function ClientProfilePage() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${parseFloat(client.totalOwed as string) > 0 ? "text-destructive" : ""}`}>
+            <div
+              className={`text-2xl font-bold ${parseFloat(client.totalOwed as string) > 0 ? "text-destructive" : ""}`}
+            >
               {formatCurrency(client.totalOwed || 0)}
             </div>
             {client.oldestDebtDays && client.oldestDebtDays > 0 && (
@@ -339,6 +378,8 @@ export default function ClientProfilePage() {
             <CreditLimitWidget clientId={clientId} showAdjustControls={false} />
           )}
 
+          {/* Purchase Patterns Widget (only for buyers) */}
+          {client.isBuyer && <PurchasePatternsWidget clientId={clientId} />}
 
           <Card>
             <CardHeader>
@@ -347,29 +388,43 @@ export default function ClientProfilePage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">TERI Code</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    TERI Code
+                  </Label>
                   <p className="text-base">{client.teriCode}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Name</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Name
+                  </Label>
                   <p className="text-base">{client.name}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Email
+                  </Label>
                   <p className="text-base">{client.email || "-"}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Phone
+                  </Label>
                   <p className="text-base">{client.phone || "-"}</p>
                 </div>
                 <div className="col-span-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Address</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Address
+                  </Label>
                   <p className="text-base">{client.address || "-"}</p>
                 </div>
                 <div className="col-span-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Tags</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Tags
+                  </Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {client.tags && Array.isArray(client.tags) && client.tags.length > 0 ? (
+                    {client.tags &&
+                    Array.isArray(client.tags) &&
+                    client.tags.length > 0 ? (
                       (client.tags as string[]).map((tag, idx) => (
                         <Badge key={idx} variant="outline">
                           {tag}
@@ -392,20 +447,29 @@ export default function ClientProfilePage() {
             <CardContent>
               {activities && activities.length > 0 ? (
                 <div className="space-y-3">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {activities.slice(0, 5).map((activity: any) => (
-                    <div key={activity.id} className="flex items-start gap-3 text-sm">
+                    <div
+                      key={activity.id}
+                      className="flex items-start gap-3 text-sm"
+                    >
                       <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
                       <div className="flex-1">
-                        <p className="font-medium">{activity.activityType.replace(/_/g, " ")}</p>
+                        <p className="font-medium">
+                          {activity.activityType.replace(/_/g, " ")}
+                        </p>
                         <p className="text-muted-foreground">
-                          by {activity.userName || "Unknown"} • {formatDate(activity.createdAt)}
+                          by {activity.userName || "Unknown"} •{" "}
+                          {formatDate(activity.createdAt)}
                         </p>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-4">No activity yet</p>
+                <p className="text-muted-foreground text-center py-4">
+                  No activity yet
+                </p>
               )}
             </CardContent>
           </Card>
@@ -418,7 +482,9 @@ export default function ClientProfilePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Transaction History</CardTitle>
-                  <CardDescription>All transactions (invoices, quotes, orders, etc.)</CardDescription>
+                  <CardDescription>
+                    All transactions (invoices, quotes, orders, etc.)
+                  </CardDescription>
                 </div>
                 <Button onClick={() => setTransactionDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -433,18 +499,22 @@ export default function ClientProfilePage() {
                 <Input
                   placeholder="Search transactions..."
                   value={transactionSearch}
-                  onChange={(e) => setTransactionSearch(e.target.value)}
+                  onChange={e => setTransactionSearch(e.target.value)}
                   className="pl-9"
                 />
               </div>
 
               {/* Transactions Table */}
               {transactionsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading transactions...</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading transactions...
+                </div>
               ) : !transactions || transactions.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p className="text-lg font-medium">No transactions found</p>
-                  <p className="text-sm mt-2">Add a transaction to get started</p>
+                  <p className="text-sm mt-2">
+                    Add a transaction to get started
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -461,16 +531,27 @@ export default function ClientProfilePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {transactions.map((txn: any) => (
                         <TableRow key={txn.id}>
-                          <TableCell className="font-medium">{txn.transactionNumber || "-"}</TableCell>
-                          <TableCell>{getTransactionTypeBadge(txn.transactionType)}</TableCell>
-                          <TableCell>{formatDate(txn.transactionDate)}</TableCell>
+                          <TableCell className="font-medium">
+                            {txn.transactionNumber || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {getTransactionTypeBadge(txn.transactionType)}
+                          </TableCell>
+                          <TableCell>
+                            {formatDate(txn.transactionDate)}
+                          </TableCell>
                           <TableCell className="text-right font-medium">
                             {formatCurrency(txn.amount)}
                           </TableCell>
-                          <TableCell>{getPaymentStatusBadge(txn.paymentStatus)}</TableCell>
-                          <TableCell className="max-w-xs truncate">{txn.notes || "-"}</TableCell>
+                          <TableCell>
+                            {getPaymentStatusBadge(txn.paymentStatus)}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {txn.notes || "-"}
+                          </TableCell>
                           <TableCell className="text-right">
                             {txn.paymentStatus !== "PAID" && (
                               <Button
@@ -501,7 +582,9 @@ export default function ClientProfilePage() {
             <CardHeader>
               <div>
                 <CardTitle>Payment History</CardTitle>
-                <CardDescription>All completed payments for this client</CardDescription>
+                <CardDescription>
+                  All completed payments for this client
+                </CardDescription>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -511,19 +594,24 @@ export default function ClientProfilePage() {
                 <Input
                   placeholder="Search payments..."
                   value={paymentSearch}
-                  onChange={(e) => setPaymentSearch(e.target.value)}
+                  onChange={e => setPaymentSearch(e.target.value)}
                   className="pl-9"
                 />
               </div>
 
               {/* Payments Table */}
               {transactionsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading payments...</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading payments...
+                </div>
               ) : filteredPayments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg font-medium">No payments found</p>
-                  <p className="text-sm mt-2">Payments will appear here once transactions are marked as paid</p>
+                  <p className="text-sm mt-2">
+                    Payments will appear here once transactions are marked as
+                    paid
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -534,18 +622,31 @@ export default function ClientProfilePage() {
                         <TableHead>Type</TableHead>
                         <TableHead>Transaction Date</TableHead>
                         <TableHead>Payment Date</TableHead>
-                        <TableHead className="text-right">Amount Paid</TableHead>
-                        <TableHead className="text-right">Transaction Amount</TableHead>
+                        <TableHead className="text-right">
+                          Amount Paid
+                        </TableHead>
+                        <TableHead className="text-right">
+                          Transaction Amount
+                        </TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {filteredPayments.map((txn: any) => (
                         <TableRow key={txn.id}>
-                          <TableCell className="font-medium">{txn.transactionNumber || "-"}</TableCell>
-                          <TableCell>{getTransactionTypeBadge(txn.transactionType)}</TableCell>
-                          <TableCell>{formatDate(txn.transactionDate)}</TableCell>
-                          <TableCell className="font-medium">{formatDate(txn.paymentDate)}</TableCell>
+                          <TableCell className="font-medium">
+                            {txn.transactionNumber || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {getTransactionTypeBadge(txn.transactionType)}
+                          </TableCell>
+                          <TableCell>
+                            {formatDate(txn.transactionDate)}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {formatDate(txn.paymentDate)}
+                          </TableCell>
                           <TableCell className="text-right font-medium text-green-600">
                             {formatCurrency(txn.paymentAmount || txn.amount)}
                           </TableCell>
@@ -555,7 +656,9 @@ export default function ClientProfilePage() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <CheckCircle className="h-4 w-4 text-green-600" />
-                              <span className="text-green-600 font-medium">Paid</span>
+                              <span className="text-green-600 font-medium">
+                                Paid
+                              </span>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -617,16 +720,25 @@ export default function ClientProfilePage() {
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
             <DialogDescription>
-              Record a payment for transaction {selectedTransaction?.transactionNumber}
+              Record a payment for transaction{" "}
+              {selectedTransaction?.transactionNumber}
             </DialogDescription>
           </DialogHeader>
           <form
-            onSubmit={(e) => {
+            onSubmit={e => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              const paymentAmount = parseFloat(formData.get("paymentAmount") as string);
-              const paymentDate = new Date(formData.get("paymentDate") as string);
-              handleRecordPayment(selectedTransaction.id, paymentAmount, paymentDate);
+              const paymentAmount = parseFloat(
+                formData.get("paymentAmount") as string
+              );
+              const paymentDate = new Date(
+                formData.get("paymentDate") as string
+              );
+              handleRecordPayment(
+                selectedTransaction.id,
+                paymentAmount,
+                paymentDate
+              );
             }}
           >
             <div className="space-y-4 py-4">
@@ -653,7 +765,11 @@ export default function ClientProfilePage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPaymentDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Record Payment</Button>
@@ -672,7 +788,7 @@ export default function ClientProfilePage() {
             </DialogDescription>
           </DialogHeader>
           <form
-            onSubmit={(e) => {
+            onSubmit={e => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
               updateClientMutation.mutate({
@@ -729,30 +845,79 @@ export default function ClientProfilePage() {
                 <Label>Client Types</Label>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="edit-isBuyer" name="isBuyer" defaultChecked={client.isBuyer || false} />
-                    <Label htmlFor="edit-isBuyer" className="font-normal cursor-pointer">Buyer</Label>
+                    <Checkbox
+                      id="edit-isBuyer"
+                      name="isBuyer"
+                      defaultChecked={client.isBuyer || false}
+                    />
+                    <Label
+                      htmlFor="edit-isBuyer"
+                      className="font-normal cursor-pointer"
+                    >
+                      Buyer
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="edit-isSeller" name="isSeller" defaultChecked={client.isSeller || false} />
-                    <Label htmlFor="edit-isSeller" className="font-normal cursor-pointer">Seller</Label>
+                    <Checkbox
+                      id="edit-isSeller"
+                      name="isSeller"
+                      defaultChecked={client.isSeller || false}
+                    />
+                    <Label
+                      htmlFor="edit-isSeller"
+                      className="font-normal cursor-pointer"
+                    >
+                      Seller
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="edit-isBrand" name="isBrand" defaultChecked={client.isBrand || false} />
-                    <Label htmlFor="edit-isBrand" className="font-normal cursor-pointer">Brand</Label>
+                    <Checkbox
+                      id="edit-isBrand"
+                      name="isBrand"
+                      defaultChecked={client.isBrand || false}
+                    />
+                    <Label
+                      htmlFor="edit-isBrand"
+                      className="font-normal cursor-pointer"
+                    >
+                      Brand
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="edit-isReferee" name="isReferee" defaultChecked={client.isReferee || false} />
-                    <Label htmlFor="edit-isReferee" className="font-normal cursor-pointer">Referee</Label>
+                    <Checkbox
+                      id="edit-isReferee"
+                      name="isReferee"
+                      defaultChecked={client.isReferee || false}
+                    />
+                    <Label
+                      htmlFor="edit-isReferee"
+                      className="font-normal cursor-pointer"
+                    >
+                      Referee
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="edit-isContractor" name="isContractor" defaultChecked={client.isContractor || false} />
-                    <Label htmlFor="edit-isContractor" className="font-normal cursor-pointer">Contractor</Label>
+                    <Checkbox
+                      id="edit-isContractor"
+                      name="isContractor"
+                      defaultChecked={client.isContractor || false}
+                    />
+                    <Label
+                      htmlFor="edit-isContractor"
+                      className="font-normal cursor-pointer"
+                    >
+                      Contractor
+                    </Label>
                   </div>
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={updateClientMutation.isPending}>
@@ -764,7 +929,10 @@ export default function ClientProfilePage() {
       </Dialog>
 
       {/* Add Transaction Dialog */}
-      <Dialog open={transactionDialogOpen} onOpenChange={setTransactionDialogOpen}>
+      <Dialog
+        open={transactionDialogOpen}
+        onOpenChange={setTransactionDialogOpen}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add Transaction</DialogTitle>
@@ -773,16 +941,22 @@ export default function ClientProfilePage() {
             </DialogDescription>
           </DialogHeader>
           <form
-            onSubmit={(e) => {
+            onSubmit={e => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
               createTransactionMutation.mutate({
                 clientId: client.id,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 transactionType: formData.get("transactionType") as any,
-                transactionNumber: (formData.get("transactionNumber") as string) || undefined,
-                transactionDate: new Date(formData.get("transactionDate") as string),
+                transactionNumber:
+                  (formData.get("transactionNumber") as string) || undefined,
+                transactionDate: new Date(
+                  formData.get("transactionDate") as string
+                ),
                 amount: parseFloat(formData.get("amount") as string),
-                paymentStatus: (formData.get("paymentStatus") as any) || "PENDING",
+                paymentStatus:
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (formData.get("paymentStatus") as any) || "PENDING",
                 notes: (formData.get("notes") as string) || undefined,
               });
             }}
@@ -858,11 +1032,20 @@ export default function ClientProfilePage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setTransactionDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setTransactionDialogOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={createTransactionMutation.isPending}>
-                {createTransactionMutation.isPending ? "Creating..." : "Create Transaction"}
+              <Button
+                type="submit"
+                disabled={createTransactionMutation.isPending}
+              >
+                {createTransactionMutation.isPending
+                  ? "Creating..."
+                  : "Create Transaction"}
               </Button>
             </DialogFooter>
           </form>
@@ -871,4 +1054,3 @@ export default function ClientProfilePage() {
     </div>
   );
 }
-
