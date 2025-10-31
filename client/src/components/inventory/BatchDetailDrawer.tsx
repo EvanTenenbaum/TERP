@@ -274,15 +274,17 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                   <p className="font-medium">{batch.isSample ? "Yes" : "No"}</p>
                 </div>
               </div>
+              {/* TODO: Re-enable when API includes product relation
               {batch.product?.strainId && (
                 <div className="pt-2">
                   <p className="text-muted-foreground text-sm mb-2">Strain</p>
                   <StrainInfo strainId={batch.product.strainId} />
                 </div>
               )}
+              */}
             </div>
 
-            {/* Related Products (if out of stock) */}
+            {/* TODO: Re-enable when API includes product relation
             {availableQty <= 0 && batch.product?.strainId && (
               <>
                 <Separator />
@@ -292,6 +294,7 @@ export function BatchDetailDrawer({ batchId, open, onClose }: BatchDetailDrawerP
                 />
               </>
             )}
+            */}
 
             <Separator />
 
