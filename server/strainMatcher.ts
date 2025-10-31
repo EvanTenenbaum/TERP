@@ -452,7 +452,7 @@ export async function getOrCreateStrain(
             baseStrainName: baseName,
             parentStrainId: null,
           });
-          parentStrainId = Number(parentResult.insertId);
+          parentStrainId = Number((parentResult as any).insertId || (parentResult as any)[0]?.insertId);
         }
       }
       
@@ -470,7 +470,7 @@ export async function getOrCreateStrain(
       });
       
       return {
-        strainId: Number(newStrain.insertId),
+        strainId: Number((newStrain as any).insertId || (newStrain as any)[0]?.insertId),
         wasCreated: true,
       };
     });

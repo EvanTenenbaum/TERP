@@ -198,6 +198,9 @@ export const adminSchemaPushRouter = router({
    * Verify schema was pushed successfully
    */
   verifySchema: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database connection failed");
+    
     try {
       // Check strains columns
       const strainsColumns = await db.execute(sql`
