@@ -107,9 +107,9 @@ export class StrainService {
       const result = await db.execute(sql`
         SELECT * FROM strain_family_stats
         WHERE family_id = ${familyId}
-      `);
+      `) as any;
 
-      return result.rows[0] || null;
+      return (result.rows || result)[0] || null;
     });
   }
 
@@ -149,9 +149,9 @@ export class StrainService {
         WHERE client_id = ${clientId}
         ORDER BY purchase_count DESC, total_revenue DESC
         LIMIT 10
-      `);
+      `) as any;
 
-      const preferences = result.rows as any[];
+      const preferences = (result.rows || result) as any[];
       
       // Calculate percentages
       const totalPurchases = preferences.reduce((sum, p) => sum + Number(p.purchase_count), 0);
@@ -208,6 +208,9 @@ export class StrainService {
    * Get top selling strain families
    */
   async getTopFamilies(limit = 10, startDate?: Date, endDate?: Date) {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    
     return getCached(`top:families:${limit}:${startDate}:${endDate}`, async () => {
       let dateFilter = sql``;
       if (startDate && endDate) {
@@ -233,9 +236,9 @@ export class StrainService {
           COALESCE(parent.name, s.name)
         ORDER BY total_revenue DESC
         LIMIT ${limit}
-      `);
+      `) as any;
 
-      return result.rows;
+      return result.rows || result;
     });
   }
 
@@ -257,6 +260,9 @@ export class StrainService {
    * Get strain family trends over time
    */
   async getFamilyTrends(familyId: number, months = 6) {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
 
@@ -271,18 +277,19 @@ export class StrainService {
       INNER JOIN batches b ON ti.batchId = b.id
       INNER JOIN products p ON b.productId = p.id
       INNER JOIN strains s ON p.strainId = s.id
-      WHERE (s.id = ${familyId} OR s.parentStrainId = ${familyId})
+      LEFT JOIN strains parent ON s.parentStrainId = parent.id
+      WHERE (parent.id = ${familyId} OR (s.id = ${familyId} AND s.parentStrainId IS NULL))
         AND t.type = 'sale'
         AND t.createdAt >= ${startDate.toISOString()}
       GROUP BY DATE_FORMAT(t.createdAt, '%Y-%m')
-      ORDER BY month ASC
-    `);
+      ORDER BY month DESC
+    `) as any;
 
-    return result.rows;
+    return result.rows || result;
   }
 
   /**
-   * Clear cache (useful for testing or after bulk updates)
+   * Clear cache
    */
   clearCache() {
     cache.clear();
