@@ -21,16 +21,7 @@ const queryClient = new QueryClient({
         return failureCount < 2;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-      onError: (error: any) => {
-        // Log all query errors for debugging
-        console.error('[tRPC Query Error]', {
-          message: error?.message || 'Unknown error',
-          code: error?.data?.code,
-          httpStatus: error?.data?.httpStatus,
-          path: error?.data?.path,
-          stack: error?.stack,
-        });
-      },
+      // onError removed - use onError in individual queries if needed
     },
     mutations: {
       onError: (error: any) => {
