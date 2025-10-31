@@ -27,9 +27,9 @@ export const adminRouter = router({
     .mutation(async () => {
       const startTime = Date.now();
       const results = {
-        schemaPush: { status: 'pending' as const, message: '', duration: 0 },
-        indexCreation: { status: 'pending' as const, message: '', duration: 0 },
-        strainImport: { status: 'pending' as const, message: '', duration: 0 },
+        schemaPush: { status: 'pending' as 'pending' | 'running' | 'success' | 'error', message: '', duration: 0 },
+        indexCreation: { status: 'pending' as 'pending' | 'running' | 'success' | 'error', message: '', duration: 0 },
+        strainImport: { status: 'pending' as 'pending' | 'running' | 'success' | 'error', message: '', duration: 0 },
       };
       
       const db = await getDb();
