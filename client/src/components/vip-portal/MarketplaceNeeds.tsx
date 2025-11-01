@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,7 +86,7 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   };
 
   const handleCancel = (needId: number) => {
-    if (confirm("Are you sure you want to cancel this need?")) {
+    if (window.confirm("Are you sure you want to cancel this need?")) {
       cancelMutation.mutate({ id: needId, clientId });
     }
   };
@@ -241,6 +241,7 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
 function CreateNeedDialog({ open, onOpenChange, onSubmit, config }: any) {
   const [formData, setFormData] = useState({
     strain: "",
+    productName: "",
     category: "",
     subcategory: "",
     grade: "",
@@ -260,6 +261,7 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config }: any) {
     });
     setFormData({
       strain: "",
+      productName: "",
       category: "",
       subcategory: "",
       grade: "",
@@ -282,16 +284,6 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config }: any) {
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="strain">Strain (Optional)</Label>
-              <Input
-                id="strain"
-                value={formData.strain}
-                onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
-                placeholder="e.g., Blue Dream"
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
               <Select
                 value={formData.category}
@@ -304,10 +296,58 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config }: any) {
                   <SelectItem value="FLOWER">Flower</SelectItem>
                   <SelectItem value="CONCENTRATE">Concentrate</SelectItem>
                   <SelectItem value="VAPE">Vape</SelectItem>
+                  <SelectItem value="EDIBLE">Edible</SelectItem>
                   <SelectItem value="OTHER">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Conditional: Flower vs Non-Flower */}
+            {formData.category === "FLOWER" ? (
+              // FLOWER: Only strain input
+              <div className="space-y-2">
+                <Label htmlFor="strain">Strain *</Label>
+                <Input
+                  id="strain"
+                  value={formData.strain}
+                  onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                  placeholder="e.g., Blue Dream"
+                  required
+                />
+              </div>
+            ) : formData.category ? (
+              // NON-FLOWER: Product name + optional strain
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="productName">Product Name (or Strain) *</Label>
+                  <Input
+                    id="productName"
+                    value={formData.productName}
+                    onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                    placeholder="e.g., Ceramic 510 Cart, Mixed Fruit Gummies"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="strain">Strain (Optional)</Label>
+                  <Input
+                    id="strain"
+                    value={formData.strain}
+                    onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                    placeholder="e.g., OG Kush"
+                  />
+                </div>
+              </>
+            ) : (
+              // No category selected yet
+              <div className="space-y-2">
+                <Label>Strain or Product Name</Label>
+                <Input
+                  disabled
+                  placeholder="Select a category first"
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -373,6 +413,7 @@ function CreateNeedDialog({ open, onOpenChange, onSubmit, config }: any) {
 function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
   const [formData, setFormData] = useState({
     strain: need.strain || "",
+    productName: need.productName || "",
     category: need.category || "",
     quantityMin: need.quantityMin?.toString() || "",
     quantityMax: need.quantityMax?.toString() || "",
@@ -400,15 +441,6 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-strain">Strain</Label>
-              <Input
-                id="edit-strain"
-                value={formData.strain}
-                onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="edit-category">Category</Label>
               <Select
                 value={formData.category}
@@ -421,10 +453,53 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
                   <SelectItem value="FLOWER">Flower</SelectItem>
                   <SelectItem value="CONCENTRATE">Concentrate</SelectItem>
                   <SelectItem value="VAPE">Vape</SelectItem>
+                  <SelectItem value="EDIBLE">Edible</SelectItem>
                   <SelectItem value="OTHER">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Conditional: Flower vs Non-Flower */}
+            {formData.category === "FLOWER" ? (
+              <div className="space-y-2">
+                <Label htmlFor="edit-strain">Strain *</Label>
+                <Input
+                  id="edit-strain"
+                  value={formData.strain}
+                  onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                  required
+                />
+              </div>
+            ) : formData.category ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-productName">Product Name (or Strain) *</Label>
+                  <Input
+                    id="edit-productName"
+                    value={formData.productName}
+                    onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-strain">Strain (Optional)</Label>
+                  <Input
+                    id="edit-strain"
+                    value={formData.strain}
+                    onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="edit-strain">Strain</Label>
+                <Input
+                  id="edit-strain"
+                  value={formData.strain}
+                  onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">

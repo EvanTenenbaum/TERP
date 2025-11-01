@@ -16,6 +16,7 @@ export const vendorSupplyRouter = router({
       z.object({
         vendorId: z.number(),
         strain: z.string().optional(),
+        productName: z.string().optional(),
         category: z.string().optional(),
         subcategory: z.string().optional(),
         grade: z.string().optional(),
@@ -135,6 +136,7 @@ export const vendorSupplyRouter = router({
       z.object({
         id: z.number(),
         strain: z.string().optional(),
+        productName: z.string().optional(),
         category: z.string().optional(),
         subcategory: z.string().optional(),
         grade: z.string().optional(),
