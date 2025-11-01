@@ -17,6 +17,7 @@ export const clientNeedsEnhancedRouter = router({
       z.object({
         clientId: z.number(),
         strain: z.string().optional(),
+        productName: z.string().optional(),
         strainId: z.number().optional(),
         category: z.string().optional(),
         subcategory: z.string().optional(),
@@ -63,6 +64,7 @@ export const clientNeedsEnhancedRouter = router({
       z.object({
         clientId: z.number(),
         strain: z.string().optional(),
+        productName: z.string().optional(),
         strainId: z.number().optional(),
         category: z.string().optional(),
         subcategory: z.string().optional(),
@@ -185,6 +187,7 @@ export const clientNeedsEnhancedRouter = router({
       z.object({
         id: z.number(),
         strain: z.string().optional(),
+        productName: z.string().optional(),
         category: z.string().optional(),
         subcategory: z.string().optional(),
         grade: z.string().optional(),

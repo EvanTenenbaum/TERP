@@ -20,6 +20,7 @@ import {
 import { MatchBadge } from "@/components/needs/MatchBadge";
 import { Search, Plus, Loader2, Package, Users, Target } from "lucide-react";
 import { useLocation } from "wouter";
+import { getProductDisplayName } from "@/lib/displayHelpers";
 
 /**
  * Matchmaking Service Page
@@ -80,6 +81,7 @@ export default function MatchmakingServicePage() {
     const matchesSearch =
       !searchQuery ||
       need.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      need.productName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       need.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       need.clientName?.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -94,6 +96,7 @@ export default function MatchmakingServicePage() {
     return (
       !searchQuery ||
       item.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.productName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.vendorName?.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -308,7 +311,7 @@ export default function MatchmakingServicePage() {
                       )}
                     </div>
                     <h4 className="font-medium">
-                      {need.strain || "Any Strain"}
+                      {getProductDisplayName(need)}
                     </h4>
                     <p className="text-sm text-muted-foreground">
                       {need.category && `${need.category}`}
@@ -365,7 +368,7 @@ export default function MatchmakingServicePage() {
                         </Badge>
                       )}
                     </div>
-                    <h4 className="font-medium">{item.strain}</h4>
+                    <h4 className="font-medium">{getProductDisplayName(item)}</h4>
                     <p className="text-sm text-muted-foreground">
                       {item.category && `${item.category}`}
                       {item.grade && ` • ${item.grade}`}

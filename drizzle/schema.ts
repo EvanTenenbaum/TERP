@@ -2736,6 +2736,7 @@ export const clientNeeds = mysqlTable(
 
     // Need specification
     strain: varchar("strain", { length: 255 }),
+    productName: varchar("product_name", { length: 255 }), // Product name for non-flower items
     strainId: int("strainId").references(() => strains.id, {
       onDelete: "set null",
     }),
@@ -2782,6 +2783,7 @@ export const clientNeeds = mysqlTable(
     clientIdIdx: index("idx_client_id").on(table.clientId),
     statusIdx: index("idx_status").on(table.status),
     strainIdx: index("idx_strain").on(table.strain),
+    productNameIdx: index("idx_product_name_cn").on(table.productName),
     categoryIdx: index("idx_category").on(table.category),
     priorityIdx: index("idx_priority").on(table.priority),
   })
@@ -2804,6 +2806,7 @@ export const vendorSupply = mysqlTable(
 
     // Product specification
     strain: varchar("strain", { length: 255 }),
+    productName: varchar("product_name", { length: 255 }), // Product name for non-flower items
     strainType: mysqlEnum("strain_type", ["INDICA", "SATIVA", "HYBRID", "CBD"]), // Strain type (Indica, Sativa, Hybrid, CBD)
     category: varchar("category", { length: 100 }),
     subcategory: varchar("subcategory", { length: 100 }),
@@ -2843,6 +2846,7 @@ export const vendorSupply = mysqlTable(
     vendorIdIdx: index("idx_vendor_id").on(table.vendorId),
     statusIdx: index("idx_status").on(table.status),
     strainIdx: index("idx_strain").on(table.strain),
+    productNameIdx: index("idx_product_name_vs").on(table.productName),
     categoryIdx: index("idx_category").on(table.category),
   })
 );

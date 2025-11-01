@@ -4,13 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -23,30 +16,29 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { StrainInput } from "@/components/inventory/StrainInput";
 
 /**
- * Need Form Component
- * Form for creating or editing client needs with validation
+ * Supply Form Component
+ * Form for creating or editing vendor supply items with validation
  */
 
-interface NeedFormProps {
+interface SupplyFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  clientId: number;
+  vendorId: number;
   onSubmit: (data: any) => Promise<void>;
   initialData?: any;
   mode?: "create" | "edit";
 }
 
-export function NeedForm({
+export function SupplyForm({
   open,
   onOpenChange,
-  clientId,
+  vendorId,
   onSubmit,
   initialData,
   mode = "create",
-}: NeedFormProps) {
+}: SupplyFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isDuplicate, setIsDuplicate] = useState(false);
 
   const [formData, setFormData] = useState({
     strain: initialData?.strain || "",
@@ -55,12 +47,11 @@ export function NeedForm({
     category: initialData?.category || "",
     subcategory: initialData?.subcategory || "",
     grade: initialData?.grade || "",
-    quantityMin: initialData?.quantityMin || "",
-    quantityMax: initialData?.quantityMax || "",
-    priceMax: initialData?.priceMax || "",
-    priority: initialData?.priority || "MEDIUM",
-    neededBy: initialData?.neededBy ? new Date(initialData.neededBy).toISOString().split("T")[0] : "",
-    expiresAt: initialData?.expiresAt ? new Date(initialData.expiresAt).toISOString().split("T")[0] : "",
+    quantityAvailable: initialData?.quantityAvailable || "",
+    unitPrice: initialData?.unitPrice || "",
+    availableUntil: initialData?.availableUntil
+      ? new Date(initialData.availableUntil).toISOString().split("T")[0]
+      : "",
     notes: initialData?.notes || "",
     internalNotes: initialData?.internalNotes || "",
   });
@@ -68,33 +59,20 @@ export function NeedForm({
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setError(null);
-    setIsDuplicate(false);
   };
 
   const validateForm = () => {
-    // Validate quantities
-    if (formData.quantityMin && formData.quantityMax) {
-      const min = parseFloat(formData.quantityMin);
-      const max = parseFloat(formData.quantityMax);
-      if (max < min) {
-        setError("Maximum quantity must be greater than or equal to minimum quantity");
-        return false;
-      }
-    }
-
-    // Validate dates
-    if (formData.neededBy && formData.expiresAt) {
-      const neededBy = new Date(formData.neededBy);
-      const expiresAt = new Date(formData.expiresAt);
-      if (expiresAt <= neededBy) {
-        setError("Expiration date must be after needed by date");
-        return false;
-      }
+    // Validate quantity
+    if (!formData.quantityAvailable || parseFloat(formData.quantityAvailable) <= 0) {
+      setError("Quantity available must be greater than 0");
+      return false;
     }
 
     // Validate based on category (flower vs non-flower)
-    const isFlower = formData.category?.toLowerCase() === 'flower' || formData.category?.toLowerCase() === 'flowers';
-    
+    const isFlower =
+      formData.category?.toLowerCase() === "flower" ||
+      formData.category?.toLowerCase() === "flowers";
+
     if (isFlower) {
       // Flower: strain is required
       if (!formData.strain) {
@@ -108,10 +86,16 @@ export function NeedForm({
         return false;
       }
     }
-    
+
     // At least one search criteria required
-    if (!formData.strain && !formData.productName && !formData.category && !formData.subcategory && !formData.grade) {
-      setError("Please specify at least one search criteria");
+    if (
+      !formData.strain &&
+      !formData.productName &&
+      !formData.category &&
+      !formData.subcategory &&
+      !formData.grade
+    ) {
+      setError("Please specify at least one product criteria");
       return false;
     }
 
@@ -120,61 +104,39 @@ export function NeedForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setError(null);
+
     if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
-    setError(null);
 
     try {
       await onSubmit({
-        clientId,
         ...formData,
-        // Convert empty strings to undefined
-        strain: formData.strain || undefined,
-        strainId: formData.strainId || undefined,
-        category: formData.category || undefined,
-        subcategory: formData.subcategory || undefined,
-        grade: formData.grade || undefined,
-        quantityMin: formData.quantityMin || undefined,
-        quantityMax: formData.quantityMax || undefined,
-        priceMax: formData.priceMax || undefined,
-        neededBy: formData.neededBy || undefined,
-        expiresAt: formData.expiresAt || undefined,
-        notes: formData.notes || undefined,
-        internalNotes: formData.internalNotes || undefined,
+        vendorId,
       });
-      
+
       // Reset form on success
       setFormData({
         strain: "",
+        productName: "",
         strainId: null,
         category: "",
         subcategory: "",
         grade: "",
-        quantityMin: "",
-        quantityMax: "",
-        priceMax: "",
-        priority: "MEDIUM",
-        neededBy: "",
-        expiresAt: "",
+        quantityAvailable: "",
+        unitPrice: "",
+        availableUntil: "",
         notes: "",
         internalNotes: "",
       });
-      
+
       onOpenChange(false);
     } catch (err: any) {
-      console.error("Error submitting need:", err);
-      
-      // Check if it's a duplicate
-      if (err.message && err.message.includes("similar")) {
-        setIsDuplicate(true);
-        setError(err.message);
-      } else {
-        setError(err.message || "Failed to save need. Please try again.");
-      }
+      console.error("Error submitting supply:", err);
+      setError(err.message || "Failed to save supply. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -185,16 +147,16 @@ export function NeedForm({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" ? "Create Client Need" : "Edit Client Need"}
+            {mode === "create" ? "Add Vendor Supply" : "Edit Vendor Supply"}
           </DialogTitle>
           <DialogDescription>
-            Specify what the client is looking for. The system will automatically find matches.
+            Record what this vendor has available. The system will automatically find matching client needs.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <Alert variant={isDuplicate ? "default" : "destructive"}>
+            <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -202,8 +164,8 @@ export function NeedForm({
 
           {/* Product Criteria */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Product Criteria</h4>
-            
+            <h4 className="text-sm font-medium">Product Information</h4>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
@@ -214,18 +176,22 @@ export function NeedForm({
                   placeholder="e.g., Flower, Vape, Edible"
                 />
               </div>
-              
+
               {/* Conditional: Flower vs Non-Flower */}
-              {formData.category?.toLowerCase() === 'flower' || formData.category?.toLowerCase() === 'flowers' ? (
+              {formData.category?.toLowerCase() === "flower" ||
+              formData.category?.toLowerCase() === "flowers" ? (
                 // FLOWER: Only strain input
                 <div className="space-y-2">
                   <Label htmlFor="strain">Strain *</Label>
                   <StrainInput
                     value={formData.strainId}
                     onChange={(strainId, strainName) => {
-                      setFormData(prev => ({ ...prev, strain: strainName, strainId }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        strain: strainName,
+                        strainId,
+                      }));
                       setError(null);
-                      setIsDuplicate(false);
                     }}
                     placeholder="e.g., Blue Dream"
                   />
@@ -234,7 +200,9 @@ export function NeedForm({
                 // NON-FLOWER: Product name + optional strain
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="productName">Product Name {formData.category && '(or Strain)'}*</Label>
+                    <Label htmlFor="productName">
+                      Product Name {formData.category && "(or Strain)"}*
+                    </Label>
                     <Input
                       id="productName"
                       value={formData.productName}
@@ -242,15 +210,18 @@ export function NeedForm({
                       placeholder="e.g., Ceramic 510 Cart, Mixed Fruit Gummies"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="strain">Strain (Optional)</Label>
                     <StrainInput
                       value={formData.strainId}
                       onChange={(strainId, strainName) => {
-                        setFormData(prev => ({ ...prev, strain: strainName, strainId }));
+                        setFormData((prev) => ({
+                          ...prev,
+                          strain: strainName,
+                          strainId,
+                        }));
                         setError(null);
-                        setIsDuplicate(false);
                       }}
                       placeholder="e.g., OG Kush"
                     />
@@ -283,83 +254,40 @@ export function NeedForm({
           {/* Quantity and Price */}
           <div className="space-y-4">
             <h4 className="text-sm font-medium">Quantity & Price</h4>
-            
+
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="quantityMin">Min Quantity</Label>
+                <Label htmlFor="quantityAvailable">Quantity Available *</Label>
                 <Input
-                  id="quantityMin"
+                  id="quantityAvailable"
                   type="number"
                   step="0.01"
-                  value={formData.quantityMin}
-                  onChange={(e) => handleChange("quantityMin", e.target.value)}
+                  value={formData.quantityAvailable}
+                  onChange={(e) => handleChange("quantityAvailable", e.target.value)}
                   placeholder="0"
+                  required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="quantityMax">Max Quantity</Label>
+                <Label htmlFor="unitPrice">Unit Price</Label>
                 <Input
-                  id="quantityMax"
+                  id="unitPrice"
                   type="number"
                   step="0.01"
-                  value={formData.quantityMax}
-                  onChange={(e) => handleChange("quantityMax", e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="priceMax">Max Price (per unit)</Label>
-                <Input
-                  id="priceMax"
-                  type="number"
-                  step="0.01"
-                  value={formData.priceMax}
-                  onChange={(e) => handleChange("priceMax", e.target.value)}
+                  value={formData.unitPrice}
+                  onChange={(e) => handleChange("unitPrice", e.target.value)}
                   placeholder="0.00"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Priority and Dates */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Priority & Timeline</h4>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Select value={formData.priority} onValueChange={(value) => handleChange("priority", value)}>
-                  <SelectTrigger id="priority">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LOW">Low</SelectItem>
-                    <SelectItem value="MEDIUM">Medium</SelectItem>
-                    <SelectItem value="HIGH">High</SelectItem>
-                    <SelectItem value="URGENT">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="space-y-2">
-                <Label htmlFor="neededBy">Needed By</Label>
+                <Label htmlFor="availableUntil">Available Until</Label>
                 <Input
-                  id="neededBy"
+                  id="availableUntil"
                   type="date"
-                  value={formData.neededBy}
-                  onChange={(e) => handleChange("neededBy", e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="expiresAt">Expires At</Label>
-                <Input
-                  id="expiresAt"
-                  type="date"
-                  value={formData.expiresAt}
-                  onChange={(e) => handleChange("expiresAt", e.target.value)}
+                  value={formData.availableUntil}
+                  onChange={(e) => handleChange("availableUntil", e.target.value)}
                 />
               </div>
             </div>
@@ -367,36 +295,51 @@ export function NeedForm({
 
           {/* Notes */}
           <div className="space-y-4">
+            <h4 className="text-sm font-medium">Notes</h4>
+
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (visible to client)</Label>
+              <Label htmlFor="notes">Notes (Visible to Vendor)</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Additional details about this need..."
+                placeholder="Additional information about this supply..."
                 rows={2}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="internalNotes">Internal Notes (private)</Label>
+              <Label htmlFor="internalNotes">Internal Notes (Staff Only)</Label>
               <Textarea
                 id="internalNotes"
                 value={formData.internalNotes}
                 onChange={(e) => handleChange("internalNotes", e.target.value)}
-                placeholder="Internal notes for team..."
+                placeholder="Internal notes not visible to vendor..."
                 rows={2}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === "create" ? "Create Need" : "Save Changes"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : mode === "create" ? (
+                "Create Supply"
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </DialogFooter>
         </form>
