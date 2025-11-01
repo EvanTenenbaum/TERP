@@ -45,6 +45,7 @@ export interface MatchResult {
 async function calculateMatchConfidence(
   need: {
     strain?: string | null;
+    productName?: string | null;
     strainId?: number | null;
     strainType?: string | null;
     category?: string | null;
@@ -56,6 +57,7 @@ async function calculateMatchConfidence(
   },
   candidate: {
     strain?: string | null;
+    productName?: string | null;
     strainId?: number | null;
     strainType?: string | null;
     category?: string | null;
@@ -68,11 +70,40 @@ async function calculateMatchConfidence(
   let confidence = 0;
   const reasons: string[] = [];
 
-  // Strain match (40 points) - Use strainId for family matching
+  // Product Name match for non-flower (25 points)
+  const isFlower = need.category?.toLowerCase() === 'flower' || need.category?.toLowerCase() === 'flowers';
+  
+  if (!isFlower && (need.productName || candidate.productName)) {
+    if (need.productName && candidate.productName) {
+      const needProduct = need.productName.toLowerCase().trim();
+      const candidateProduct = candidate.productName.toLowerCase().trim();
+      
+      if (needProduct === candidateProduct) {
+        confidence += 25;
+        reasons.push("Exact product name match");
+      } else if (needProduct.includes(candidateProduct) || candidateProduct.includes(needProduct)) {
+        confidence += 15;
+        reasons.push("Partial product name match");
+      } else {
+        // Check for common words
+        const needWords = needProduct.split(/\s+/);
+        const candidateWords = candidateProduct.split(/\s+/);
+        const commonWords = needWords.filter(w => candidateWords.includes(w));
+        
+        if (commonWords.length >= 2) {
+          confidence += 10;
+          reasons.push("Similar product name");
+        }
+      }
+    }
+  }
+  
+  // Strain match (40 points for flower, 20 points for non-flower) - Use strainId for family matching
+  const strainWeight = isFlower ? 40 : 20;
   if (need.strainId && candidate.strainId) {
     // Exact strain ID match
     if (need.strainId === candidate.strainId) {
-      confidence += 40;
+      confidence += strainWeight;
       reasons.push("Exact strain match");
     } else {
       // Check if they're in the same strain family
@@ -87,7 +118,7 @@ async function calculateMatchConfidence(
           candidateFamily?.parent?.id || candidate.strainId;
 
         if (needFamilyId === candidateFamilyId) {
-          confidence += 30;
+          confidence += Math.floor(strainWeight * 0.75);
           reasons.push(
             `Same strain family (${needFamily?.parent?.name || "Unknown"})`
           );
@@ -102,13 +133,13 @@ async function calculateMatchConfidence(
     const candidateStrain = candidate.strain.toLowerCase().trim();
 
     if (needStrain === candidateStrain) {
-      confidence += 40;
+      confidence += strainWeight;
       reasons.push("Exact strain match (text)");
     } else if (
       needStrain.includes(candidateStrain) ||
       candidateStrain.includes(needStrain)
     ) {
-      confidence += 20;
+      confidence += Math.floor(strainWeight * 0.5);
       reasons.push("Partial strain match (text)");
     }
   }

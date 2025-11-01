@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
   // Form state
   const [formData, setFormData] = useState({
     strain: "",
+    productName: "",
     category: "",
     quantity: "",
     unit: "lb",
@@ -70,6 +71,7 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
   const resetForm = () => {
     setFormData({
       strain: "",
+      productName: "",
       category: "",
       quantity: "",
       unit: "lb",
@@ -117,7 +119,7 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
   };
 
   const handleCancel = (id: number) => {
-    if (confirm("Are you sure you want to cancel this supply listing?")) {
+    if (window.confirm("Are you sure you want to cancel this listing?")) {
       cancelSupply.mutate({ id, clientId });
     }
   };
@@ -161,17 +163,6 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="strain">Strain Name *</Label>
-                <Input
-                  id="strain"
-                  value={formData.strain}
-                  onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
-                  placeholder="e.g., Cherry Wine, Sour Space Candy"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select
                   value={formData.category}
@@ -183,13 +174,54 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="flower">Flower</SelectItem>
-                    <SelectItem value="trim">Trim</SelectItem>
-                    <SelectItem value="biomass">Biomass</SelectItem>
-                    <SelectItem value="isolate">Isolate</SelectItem>
-                    <SelectItem value="distillate">Distillate</SelectItem>
+                    <SelectItem value="vape">Vape</SelectItem>
+                    <SelectItem value="edible">Edible</SelectItem>
+                    <SelectItem value="concentrate">Concentrate</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Conditional: Flower vs Non-Flower */}
+              {formData.category === "flower" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="strain">Strain Name *</Label>
+                  <Input
+                    id="strain"
+                    value={formData.strain}
+                    onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                    placeholder="e.g., Blue Dream"
+                    required
+                  />
+                </div>
+              ) : formData.category ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="productName">Product Name (or Strain) *</Label>
+                    <Input
+                      id="productName"
+                      value={formData.productName}
+                      onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                      placeholder="e.g., Ceramic 510 Cart"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="strain">Strain (Optional)</Label>
+                    <Input
+                      id="strain"
+                      value={formData.strain}
+                      onChange={(e) => setFormData({ ...formData, strain: e.target.value })}
+                      placeholder="e.g., OG Kush"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Product Name or Strain</Label>
+                  <Input disabled placeholder="Select a category first" />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
