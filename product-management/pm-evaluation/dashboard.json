@@ -1,13 +1,13 @@
 {
-  "last_updated": "2025-11-03T23:30:11.674257Z",
+  "last_updated": "2025-11-03T23:31:11.248099Z",
   "summary": {
-    "total": 5,
+    "total": 6,
     "by_status": {
       "in-progress": 1,
-      "pending_review": 4
+      "pending_review": 5
     },
     "by_priority": {
-      "null": 5
+      "null": 6
     },
     "total_progress": 45.0
   },
@@ -165,9 +165,44 @@
           "new_status": "pending_review"
         }
       ]
+    },
+    {
+      "id": "TERP-INIT-006",
+      "title": "To-Do Lists + Universal Comments System",
+      "status": "pending_review",
+      "priority": null,
+      "progress_percent": 0,
+      "created_at": "2025-11-03T23:31:02.134285Z",
+      "last_updated": "2025-11-03T23:31:11.247334Z",
+      "created_by": "dev-agent",
+      "tags": [
+        "collaboration",
+        "task-management",
+        "comments",
+        "mentions",
+        "inbox"
+      ],
+      "completed_tasks": 0,
+      "total_tasks": 0,
+      "recent_updates": [
+        {
+          "timestamp": "2025-11-03T23:31:11.247334Z",
+          "type": "status_change",
+          "message": "Status changed from pending_review to pending_review",
+          "old_status": "pending_review",
+          "new_status": "pending_review"
+        }
+      ]
     }
   ],
   "recent_activity": [
+    {
+      "initiative_id": "TERP-INIT-006",
+      "initiative_title": "To-Do Lists + Universal Comments System",
+      "timestamp": "2025-11-03T23:31:11.247334Z",
+      "message": "Status changed from pending_review to pending_review",
+      "type": "status_change"
+    },
     {
       "initiative_id": "TERP-INIT-005",
       "initiative_title": "Inventory System Stability & Robustness Improvements",
