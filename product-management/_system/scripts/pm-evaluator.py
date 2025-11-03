@@ -576,6 +576,10 @@ def main():
     # Analyze dependencies
     deps_parser = subparsers.add_parser('analyze-dependencies', help='Analyze dependencies')
     
+    # Get next task
+    next_task_parser = subparsers.add_parser('get-next-task', help='Get next available task from roadmap')
+    next_task_parser.add_argument('--agent-id', help='Agent ID claiming the task')
+    
     args = parser.parse_args()
     
     if args.command == 'list-inbox':
@@ -593,9 +597,79 @@ def main():
     elif args.command == 'analyze-dependencies':
         analyze_dependencies()
     
+    elif args.command == 'get-next-task':
+        task = get_next_task(args.agent_id if hasattr(args, 'agent_id') else None)
+        sys.exit(0 if task else 1)
+    
     else:
         parser.print_help()
 
 
 if __name__ == "__main__":
     main()
+
+
+def get_next_task(agent_id=None):
+    """Get the next available task from the roadmap"""
+    import fcntl
+    
+    # Load registry with file lock for atomic operation
+    registry_file = INITIATIVES_DIR / "registry.json"
+    
+    if not registry_file.exists():
+        print("ℹ️  No initiatives in registry")
+        return None
+    
+    with open(registry_file, 'r+') as f:
+        # Acquire exclusive lock
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        
+        try:
+            registry = json.load(f)
+            
+            # Filter to approved initiatives not in progress
+            candidates = []
+            for init in registry["initiatives"]:
+                if init["status"] != "approved":
+                    continue
+                
+                # Check if dependencies are satisfied
+                # (Simplified - assumes no dependencies for now)
+                candidates.append(init)
+            
+            if not candidates:
+                print("ℹ️  No tasks available")
+                return None
+            
+            # Sort by priority
+            priority_order = {"high": 3, "medium": 2, "low": 1, None: 0}
+            candidates.sort(key=lambda x: priority_order.get(x.get("priority"), 0), reverse=True)
+            
+            # Get top task
+            next_task = candidates[0]
+            
+            # Update status to in-progress atomically
+            for init in registry["initiatives"]:
+                if init["id"] == next_task["id"]:
+                    init["status"] = "in-progress"
+                    if agent_id:
+                        init["assigned_to"] = agent_id
+                    break
+            
+            # Write back
+            f.seek(0)
+            json.dump(registry, f, indent=2)
+            f.truncate()
+            
+            print(f"✅ Next task: {next_task['id']}")
+            print(f"   Title: {next_task['title']}")
+            print(f"   Priority: {next_task.get('priority', 'not set')}")
+            if agent_id:
+                print(f"   Assigned to: {agent_id}")
+            
+            return next_task
+            
+        finally:
+            # Release lock
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
