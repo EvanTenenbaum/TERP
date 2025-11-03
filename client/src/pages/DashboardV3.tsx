@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   DashboardPreferencesProvider,
@@ -23,6 +24,15 @@ function DashboardContent() {
   const { widgets } = useDashboardPreferences();
 
   const visibleWidgets = widgets.filter(w => w.isVisible);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Dashboard widgets updated:', {
+      total: widgets.length,
+      visible: visibleWidgets.length,
+      widgets: widgets.map(w => ({ id: w.id, isVisible: w.isVisible }))
+    });
+  }, [widgets, visibleWidgets]);
 
   const renderWidget = (widgetId: string) => {
     switch (widgetId) {
