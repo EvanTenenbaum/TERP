@@ -11,6 +11,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 import re
+import subprocess
 
 BASE_DIR = Path(__file__).parent.parent.parent
 INITIATIVES_DIR = BASE_DIR / "initiatives"
@@ -18,6 +19,7 @@ REGISTRY_FILE = INITIATIVES_DIR / "registry.json"
 EVALUATIONS_DIR = BASE_DIR / "pm-evaluation" / "evaluations"
 FEEDBACK_DIR = BASE_DIR / "pm-evaluation" / "feedback"
 DEPENDENCIES_FILE = BASE_DIR / "pm-evaluation" / "dependencies.json"
+SYSTEM_STATE_FILE = BASE_DIR / "_system" / "context" / "system-state.json"
 
 def load_registry():
     """Load initiative registry"""
@@ -25,6 +27,69 @@ def load_registry():
         return {"initiatives": []}
     with open(REGISTRY_FILE, 'r') as f:
         return json.load(f)
+
+def load_system_context():
+    """Load system context for codebase awareness"""
+    if not SYSTEM_STATE_FILE.exists():
+        # Run system-context scan if not exists
+        print("  📊 System context not found, scanning codebase...")
+        try:
+            subprocess.run([
+                "python3",
+                str(BASE_DIR / "_system" / "scripts" / "system-context.py"),
+                "scan"
+            ], capture_output=True, timeout=60)
+        except Exception as e:
+            print(f"  ⚠️  Could not scan codebase: {e}")
+            return None
+    
+    if SYSTEM_STATE_FILE.exists():
+        with open(SYSTEM_STATE_FILE, 'r') as f:
+            return json.load(f)
+    
+    return None
+
+
+def check_feature_duplication(initiative_data, system_context):
+    """Check if initiative duplicates existing features"""
+    if not system_context:
+        return []
+    
+    duplicates = []
+    title = initiative_data['manifest']['title'].lower()
+    overview = initiative_data['overview'].lower()
+    
+    # Extract significant words
+    significant_words = [w for w in title.split() if len(w) > 4]
+    
+    # Check against existing routes
+    for route in system_context.get('routes', []):
+        route_path = route['route'].lower()
+        # Check if any significant word appears in route
+        matches = [w for w in significant_words if w in route_path]
+        if matches:
+            duplicates.append({
+                "type": "route",
+                "name": route['route'],
+                "file": route.get('file', 'unknown'),
+                "confidence": "medium" if len(matches) > 1 else "low",
+                "matched_keywords": matches
+            })
+    
+    # Check against major components
+    for comp in system_context.get('components', {}).get('major_components', []):
+        comp_lower = comp.lower()
+        matches = [w for w in significant_words if w in comp_lower]
+        if matches:
+            duplicates.append({
+                "type": "component",
+                "name": comp,
+                "confidence": "low",
+                "matched_keywords": matches
+            })
+    
+    return duplicates[:5]  # Limit to top 5
+
 
 def load_initiative(init_id):
     """Load initiative manifest and overview"""
@@ -162,6 +227,14 @@ def generate_evaluation(init_id):
         print(f"❌ Initiative {init_id} not found")
         return False
     
+    # Load system context for codebase awareness
+    print("  🔍 Loading system context...")
+    system_context = load_system_context()
+    
+    # Check for feature duplication against existing codebase
+    print("  🔎 Checking for feature duplication...")
+    duplicates = check_feature_duplication(initiative_data, system_context)
+    
     # Detect conflicts
     conflicts = detect_conflicts(init_id, initiative_data)
     
@@ -210,6 +283,21 @@ def generate_evaluation(init_id):
             f.write("⚠️ **Manual review required due to potential conflicts.**\n\n")
         else:
             f.write("✅ **No conflicts detected. Recommended for approval.**\n\n")
+        
+        f.write("---\n\n")
+        
+        f.write("## Codebase Duplication Check\n\n")
+        if duplicates:
+            f.write(f"⚠️ Found {len(duplicates)} potential duplicate(s) in existing codebase:\n\n")
+            for i, dup in enumerate(duplicates, 1):
+                f.write(f"### Duplicate {i}: {dup['type'].title()} - {dup['name']}\n\n")
+                f.write(f"**Confidence**: {dup['confidence']}\n")
+                f.write(f"**Matched Keywords**: {', '.join(dup.get('matched_keywords', []))}\n")
+                if 'file' in dup:
+                    f.write(f"**Location**: `{dup['file']}`\n")
+                f.write("\n**Recommendation**: Review existing implementation before proceeding.\n\n")
+        else:
+            f.write("✅ No duplicates detected in existing codebase.\n\n")
         
         f.write("---\n\n")
         
@@ -263,7 +351,7 @@ def generate_evaluation(init_id):
     print(f"✅ Evaluation complete: {eval_file}")
     
     # Generate feedback for Initiative Creator
-    generate_feedback(init_id, recommendation, priority_level, priority_score, conflicts, dependencies)
+    generate_feedback(init_id, recommendation, priority_level, priority_score, conflicts, dependencies, duplicates)
     
     # Update initiative status if no conflicts
     if not conflicts:
@@ -271,7 +359,7 @@ def generate_evaluation(init_id):
     
     return True
 
-def generate_feedback(init_id, recommendation, priority_level, priority_score, conflicts, dependencies):
+def generate_feedback(init_id, recommendation, priority_level, priority_score, conflicts, dependencies, duplicates=[]):
     """Generate feedback file for Initiative Creator"""
     FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
     feedback_file = FEEDBACK_DIR / f"{init_id}-feedback.md"
@@ -290,6 +378,15 @@ def generate_feedback(init_id, recommendation, priority_level, priority_score, c
         f.write("## Priority\n\n")
         f.write(f"**Level**: {priority_level.upper()}\n")
         f.write(f"**Score**: {priority_score}/100\n\n")
+        
+        if duplicates:
+            f.write("## Codebase Duplication Alert\n\n")
+            f.write(f"⚠️ Found {len(duplicates)} potential duplicate(s) in existing codebase:\n\n")
+            for dup in duplicates:
+                f.write(f"- **{dup['type'].title()}**: `{dup['name']}` (Confidence: {dup['confidence']})\n")
+                if 'file' in dup:
+                    f.write(f"  - Location: `{dup['file']}`\n")
+            f.write("\n**Action**: Review existing implementation to avoid duplicate work.\n\n")
         
         f.write("## Roadmap Position\n\n")
         if recommendation == "APPROVED":
