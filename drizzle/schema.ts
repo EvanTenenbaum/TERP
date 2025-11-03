@@ -43,6 +43,55 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 // ============================================================================
+// DASHBOARD PREFERENCES
+// ============================================================================
+
+/**
+ * Widget Configuration Type
+ * Represents the structure of widget preferences stored in JSON
+ */
+export interface WidgetConfig {
+  id: string;
+  isVisible: boolean;
+  order?: number;
+  settings?: Record<string, any>;
+}
+
+/**
+ * User Dashboard Preferences table
+ * Stores user-specific dashboard customization preferences for cross-device sync
+ */
+export const userDashboardPreferences = mysqlTable("userDashboardPreferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  activeLayout: varchar("activeLayout", { length: 50 })
+    .notNull()
+    .default("operations"),
+  widgetConfig: json("widgetConfig").$type<WidgetConfig[]>().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserDashboardPreferences = typeof userDashboardPreferences.$inferSelect;
+export type InsertUserDashboardPreferences = typeof userDashboardPreferences.$inferInsert;
+
+/**
+ * Relations for userDashboardPreferences
+ */
+export const userDashboardPreferencesRelations = relations(
+  userDashboardPreferences,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userDashboardPreferences.userId],
+      references: [users.id],
+    }),
+  })
+);
+
+// ============================================================================
 // INVENTORY MODULE SCHEMA
 // ============================================================================
 
@@ -2343,36 +2392,8 @@ export const inventoryViews = mysqlTable(
 export type InventoryView = typeof inventoryViews.$inferSelect;
 export type InsertInventoryView = typeof inventoryViews.$inferInsert;
 
-/**
- * User Dashboard Preferences Table
- * Stores per-user dashboard widget visibility and configuration
- */
-export const userDashboardPreferences = mysqlTable(
-  "userDashboardPreferences",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    widgetId: varchar("widgetId", { length: 100 }).notNull(), // e.g., "sales_performance", "ar_aging"
-    isVisible: int("isVisible").notNull().default(1), // 0 = hidden, 1 = visible
-    sortOrder: int("sortOrder").notNull().default(0),
-    config: json("config"), // Widget-specific configuration
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  table => ({
-    userWidgetIdx: index("idx_user_dashboard_prefs_user_widget").on(
-      table.userId,
-      table.widgetId
-    ),
-  })
-);
-
-export type UserDashboardPreference =
-  typeof userDashboardPreferences.$inferSelect;
-export type InsertUserDashboardPreference =
-  typeof userDashboardPreferences.$inferInsert;
+// NOTE: userDashboardPreferences table is now defined in the DASHBOARD PREFERENCES section
+// at the top of this file (after users table) with a new structure using JSON for widget config
 
 // ============================================================================
 // SALES SHEET ENHANCEMENTS (Phase 8)

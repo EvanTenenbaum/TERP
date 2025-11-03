@@ -21,6 +21,7 @@ export interface WidgetState {
   isVisible: boolean;
   position?: { row: number; col: number };
   size?: WidgetSize;
+  order?: number;
 }
 
 export interface WidgetExplainer {
