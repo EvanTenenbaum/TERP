@@ -13,6 +13,8 @@ interface DashboardPreferencesActions {
   setActiveLayout: (layoutId: string) => void;
   toggleWidgetVisibility: (widgetId: string) => void;
   reorderWidgets: (newOrder: string[]) => void;
+  moveWidgetUp: (widgetId: string) => void;
+  moveWidgetDown: (widgetId: string) => void;
   resetToDefault: () => void;
   setIsCustomizing: (isCustomizing: boolean) => void;
 }
@@ -220,6 +222,48 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
     });
   }, []);
 
+  const moveWidgetUp = useCallback((widgetId: string) => {
+    setState((prev) => {
+      const index = prev.widgets.findIndex((w) => w.id === widgetId);
+      if (index <= 0) return prev; // Already at top or not found
+      
+      const newWidgets = [...prev.widgets];
+      [newWidgets[index - 1], newWidgets[index]] = [newWidgets[index], newWidgets[index - 1]];
+      
+      // Update order property
+      newWidgets.forEach((widget, idx) => {
+        widget.order = idx;
+      });
+      
+      return {
+        ...prev,
+        activeLayoutId: 'custom',
+        widgets: newWidgets,
+      };
+    });
+  }, []);
+
+  const moveWidgetDown = useCallback((widgetId: string) => {
+    setState((prev) => {
+      const index = prev.widgets.findIndex((w) => w.id === widgetId);
+      if (index === -1 || index >= prev.widgets.length - 1) return prev; // Already at bottom or not found
+      
+      const newWidgets = [...prev.widgets];
+      [newWidgets[index], newWidgets[index + 1]] = [newWidgets[index + 1], newWidgets[index]];
+      
+      // Update order property
+      newWidgets.forEach((widget, idx) => {
+        widget.order = idx;
+      });
+      
+      return {
+        ...prev,
+        activeLayoutId: 'custom',
+        widgets: newWidgets,
+      };
+    });
+  }, []);
+
   const resetToDefault = useCallback(() => {
     // Reset on server
     resetMutation.mutate();
@@ -241,11 +285,13 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
     setActiveLayout,
     toggleWidgetVisibility,
     reorderWidgets,
+    moveWidgetUp,
+    moveWidgetDown,
     resetToDefault,
     setIsCustomizing,
     isSyncing,
     isLoading,
-  }), [state, setActiveLayout, toggleWidgetVisibility, reorderWidgets, resetToDefault, setIsCustomizing, isSyncing, isLoading]);
+  }), [state, setActiveLayout, toggleWidgetVisibility, reorderWidgets, moveWidgetUp, moveWidgetDown, resetToDefault, setIsCustomizing, isSyncing, isLoading]);
 
   return (
     <DashboardPreferencesContext.Provider value={value}>
