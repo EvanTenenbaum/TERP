@@ -52,7 +52,7 @@
       ]
     },
     {
-      "id": "TERP-INIT-002",
+      "id": "TERP-INIT-007",
       "title": "Inventory System Stability & Robustness Improvements",
       "status": "pending_review",
       "priority": null,
@@ -225,7 +225,7 @@
       "type": "status_change"
     },
     {
-      "initiative_id": "TERP-INIT-002",
+      "initiative_id": "TERP-INIT-007",
       "initiative_title": "Inventory System Stability & Robustness Improvements",
       "timestamp": "2025-11-03T22:50:22.792985Z",
       "message": "Status changed from pending_review to pending_review",
