@@ -1,4 +1,4 @@
-# TERP-EVAL-002: Evaluation of TERP-INIT-002
+# TERP-EVAL-007: Evaluation of TERP-INIT-007
 
 **Initiative**: Inventory System Stability & Robustness Improvements
 **Evaluated**: 2025-11-03T17:50:58.119520
