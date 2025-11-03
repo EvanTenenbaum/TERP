@@ -3132,3 +3132,97 @@ export const vipPortalConfigurationsRelations = relations(
     }),
   })
 );
+
+// Order Line Items (v2.0 Sales Order Enhancements)
+export const orderLineItems = mysqlTable(
+  "order_line_items",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    orderId: int("order_id").notNull(),
+    batchId: int("batch_id").notNull(),
+    productDisplayName: varchar("product_display_name", { length: 255 }),
+    quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+    cogsPerUnit: decimal("cogs_per_unit", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    originalCogsPerUnit: decimal("original_cogs_per_unit", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    isCogsOverridden: boolean("is_cogs_overridden").notNull().default(false),
+    cogsOverrideReason: text("cogs_override_reason"),
+    marginPercent: decimal("margin_percent", {
+      precision: 5,
+      scale: 2,
+    }).notNull(),
+    marginDollar: decimal("margin_dollar", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    isMarginOverridden: boolean("is_margin_overridden")
+      .notNull()
+      .default(false),
+    marginSource: mysqlEnum("margin_source", [
+      "CUSTOMER_PROFILE",
+      "DEFAULT",
+      "MANUAL",
+    ]).notNull(),
+    unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+    lineTotal: decimal("line_total", { precision: 10, scale: 2 }).notNull(),
+    isSample: boolean("is_sample").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    orderIdIdx: index("idx_order_id").on(table.orderId),
+    batchIdIdx: index("idx_batch_id").on(table.batchId),
+  })
+);
+
+export type OrderLineItem = typeof orderLineItems.$inferSelect;
+export type InsertOrderLineItem = typeof orderLineItems.$inferInsert;
+
+// Order Audit Log (v2.0 Sales Order Enhancements)
+export const orderAuditLog = mysqlTable(
+  "order_audit_log",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    orderId: int("order_id").notNull(),
+    action: varchar("action", { length: 50 }).notNull(),
+    changes: json("changes"),
+    userId: int("user_id"),
+    reason: text("reason"),
+    timestamp: timestamp("timestamp").defaultNow().notNull(),
+  },
+  table => ({
+    orderIdIdx: index("idx_order_id").on(table.orderId),
+    timestampIdx: index("idx_timestamp").on(table.timestamp),
+  })
+);
+
+export type OrderAuditLogEntry = typeof orderAuditLog.$inferSelect;
+export type InsertOrderAuditLogEntry = typeof orderAuditLog.$inferInsert;
+
+// Pricing Defaults (v2.0 Sales Order Enhancements)
+export const pricingDefaults = mysqlTable(
+  "pricing_defaults",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    productCategory: varchar("product_category", { length: 100 })
+      .notNull()
+      .unique(),
+    defaultMarginPercent: decimal("default_margin_percent", {
+      precision: 5,
+      scale: 2,
+    }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    categoryIdx: index("idx_product_category").on(table.productCategory),
+  })
+);
+
+export type PricingDefault = typeof pricingDefaults.$inferSelect;
+export type InsertPricingDefault = typeof pricingDefaults.$inferInsert;

@@ -6,12 +6,8 @@
 
 import { z } from "zod";
 import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
-import { db } from "../db";
-import {
-  orders,
-  orderLineItems,
-  batches,
-} from "../../drizzle/schema";
+import { getDb } from "../db";
+import { orders, orderLineItems, batches } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { pricingService } from "../services/pricingService";
 import { marginCalculationService } from "../services/marginCalculationService";
@@ -64,6 +60,9 @@ export const ordersEnhancedV2Router = router({
   createDraft: protectedProcedure
     .input(createOrderInputSchema)
     .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const userId = ctx.user?.id || 1;
 
       // Calculate line item prices and totals
@@ -235,6 +234,9 @@ export const ordersEnhancedV2Router = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const userId = ctx.user?.id || 1;
 
       // Get existing order
@@ -407,6 +409,9 @@ export const ordersEnhancedV2Router = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const userId = ctx.user?.id || 1;
 
       // Get existing order
@@ -443,7 +448,9 @@ export const ordersEnhancedV2Router = router({
         adjustment: existingOrder.orderLevelAdjustmentAmount
           ? {
               amount: parseFloat(existingOrder.orderLevelAdjustmentAmount),
-              type: existingOrder.orderLevelAdjustmentType as "PERCENT" | "DOLLAR",
+              type: existingOrder.orderLevelAdjustmentType as
+                | "PERCENT"
+                | "DOLLAR",
               mode: existingOrder.orderLevelAdjustmentMode as
                 | "DISCOUNT"
                 | "MARKUP",
@@ -454,9 +461,7 @@ export const ordersEnhancedV2Router = router({
       });
 
       if (!validation.valid) {
-        throw new Error(
-          `Cannot finalize: ${validation.errors.join(", ")}`
-        );
+        throw new Error(`Cannot finalize: ${validation.errors.join(", ")}`);
       }
 
       // Update order to finalized
@@ -485,6 +490,9 @@ export const ordersEnhancedV2Router = router({
   getOrderWithLineItems: protectedProcedure
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const order = await db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
       });
@@ -515,6 +523,9 @@ export const ordersEnhancedV2Router = router({
       })
     )
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       return await pricingService.getMarginWithFallback(
         input.clientId,
         input.productCategory
@@ -563,6 +574,9 @@ export const ordersEnhancedV2Router = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const userId = ctx.user?.id || 1;
 
       // Get existing line item
@@ -622,7 +636,9 @@ export const ordersEnhancedV2Router = router({
   getAuditLog: protectedProcedure
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       return await orderAuditService.getAuditLog(input.orderId);
     }),
 });
-
