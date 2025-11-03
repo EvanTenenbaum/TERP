@@ -1,0 +1,113 @@
+{
+  "last_updated": "2025-11-03T22:31:00.371134Z",
+  "routes": [],
+  "api_endpoints": [],
+  "components": {
+    "count": 167,
+    "major_components": [
+      "DashboardLayout",
+      "DashboardLayoutSkeleton",
+      "ErrorBoundary",
+      "FloatingScratchPad",
+      "ManusDialog",
+      "UserManagement",
+      "AccountSelector",
+      "AgingBadge",
+      "AmountInput",
+      "FiscalPeriodSelector",
+      "JournalEntryForm",
+      "StatusBadge",
+      "AddClientWizard",
+      "AddCommunicationModal",
+      "CommunicationTimeline",
+      "PurchasePatternsWidget",
+      "CogsClientSettings",
+      "CogsGlobalSettings",
+      "CreditLimitWidget",
+      "DashboardCustomizer"
+    ]
+  },
+  "tech_stack": {},
+  "known_issues": [
+    {
+      "id": "ISSUE-001",
+      "title": "## Open Issues",
+      "severity": "unknown"
+    },
+    {
+      "id": "ISSUE-002",
+      "title": "Step 1",
+      "severity": "unknown"
+    },
+    {
+      "id": "ISSUE-003",
+      "title": "Step 2",
+      "severity": "unknown"
+    },
+    {
+      "id": "ISSUE-004",
+      "title": "## Resolved Issues",
+      "severity": "unknown"
+    },
+    {
+      "id": "ISSUE-005",
+      "title": "## Template for New Issues",
+      "severity": "unknown"
+    },
+    {
+      "id": "ISSUE-006",
+      "title": "[Step 1]",
+      "severity": "unknown"
+    },
+    {
+      "id": "ISSUE-007",
+      "title": "[Step 2]",
+      "severity": "unknown"
+    },
+    {
+      "id": "ISSUE-008",
+      "title": "```",
+      "severity": "unknown"
+    }
+  ],
+  "recent_changes": [
+    {
+      "title": "[Version 023542e6] - October 24, 2025",
+      "summary": ""
+    },
+    {
+      "title": "[Version 7cc24c90] - October 24, 2025",
+      "summary": ""
+    },
+    {
+      "title": "[Version 47996cf7] - October 23, 2025",
+      "summary": ""
+    },
+    {
+      "title": "[Version 1.0] - October 23, 2025",
+      "summary": ""
+    },
+    {
+      "title": "Development Principles",
+      "summary": ""
+    }
+  ],
+  "bible_protocols": [
+    "Table of Contents",
+    "System Integration & Change Management Protocol",
+    "Production-Ready Code Standard",
+    "Quality Standards Checklist",
+    "Reference Documentation",
+    "Usage Guidelines",
+    "Deployment Monitoring Protocol",
+    "Version Management Protocol",
+    "13. Future Architecture Compatibility Protocol",
+    "Version History"
+  ],
+  "statistics": {
+    "total_routes": 0,
+    "total_api_endpoints": 0,
+    "total_components": 167,
+    "total_known_issues": 8
+  }
+}
