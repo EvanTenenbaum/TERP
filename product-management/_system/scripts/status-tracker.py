@@ -64,8 +64,52 @@ def save_registry(registry):
         json.dump(registry, f, indent=2)
 
 
+def sync_manifests_with_registry():
+    """Sync manifest files with registry to ensure status consistency"""
+    registry = load_registry()
+    synced_count = 0
+    
+    for init_entry in registry.get("initiatives", []):
+        try:
+            manifest, init_dir = load_initiative(init_entry["id"])
+            
+            # Check if status or priority differs
+            registry_status = init_entry.get("status")
+            registry_priority = init_entry.get("priority")
+            manifest_status = manifest.get("status")
+            manifest_priority = manifest.get("priority")
+            
+            needs_update = False
+            
+            # Sync status
+            if registry_status and registry_status != manifest_status:
+                manifest["status"] = registry_status
+                needs_update = True
+                print(f"  Syncing {init_entry['id']}: status {manifest_status} → {registry_status}")
+            
+            # Sync priority
+            if registry_priority != manifest_priority:
+                manifest["priority"] = registry_priority
+                needs_update = True
+                if registry_priority:
+                    print(f"  Syncing {init_entry['id']}: priority {manifest_priority} → {registry_priority}")
+            
+            if needs_update:
+                save_initiative(init_dir, manifest)
+                synced_count += 1
+        
+        except Exception as e:
+            print(f"Warning: Could not sync {init_entry['id']}: {e}")
+            continue
+    
+    return synced_count
+
+
 def update_dashboard():
     """Update the PM dashboard with current status of all initiatives"""
+    # First, sync manifests with registry to ensure consistency
+    sync_manifests_with_registry()
+    
     registry = load_registry()
     
     dashboard = {
@@ -512,6 +556,9 @@ def main():
     # Refresh dashboard
     refresh_parser = subparsers.add_parser('refresh', help='Refresh dashboard data')
     
+    # Sync manifests with registry
+    sync_parser = subparsers.add_parser('sync', help='Sync manifest files with registry')
+    
     args = parser.parse_args()
     
     try:
@@ -532,6 +579,14 @@ def main():
         
         elif args.command == 'refresh':
             print("Refreshing dashboard...")
+            update_dashboard()
+            print("✅ Dashboard refreshed")
+        
+        elif args.command == 'sync':
+            print("Syncing manifest files with registry...")
+            synced_count = sync_manifests_with_registry()
+            print(f"✅ Synced {synced_count} initiative(s)")
+            print("\nRefreshing dashboard...")
             update_dashboard()
             print("✅ Dashboard refreshed")
         

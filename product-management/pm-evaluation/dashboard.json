@@ -1,15 +1,17 @@
 {
-  "last_updated": "2025-11-03T23:31:11.248099Z",
+  "last_updated": "2025-11-03T23:45:18.899864Z",
   "summary": {
     "total": 6,
     "by_status": {
       "in-progress": 1,
-      "pending_review": 5
+      "approved": 4,
+      "pending_review": 1
     },
     "by_priority": {
-      "null": 6
+      "null": 2,
+      "high": 4
     },
-    "total_progress": 45.0
+    "total_progress": 9.0
   },
   "initiatives": [
     {
@@ -54,8 +56,8 @@
     {
       "id": "TERP-INIT-007",
       "title": "Inventory System Stability & Robustness Improvements",
-      "status": "pending_review",
-      "priority": null,
+      "status": "approved",
+      "priority": "high",
       "progress_percent": 0,
       "created_at": "2025-11-03T22:49:48.166476Z",
       "last_updated": "2025-11-03T22:50:22.792985Z",
@@ -83,8 +85,8 @@
     {
       "id": "TERP-INIT-003",
       "title": "Calendar & Scheduling System",
-      "status": "pending_review",
-      "priority": null,
+      "status": "approved",
+      "priority": "high",
       "progress_percent": 0,
       "created_at": "2025-11-03T23:20:59.780743Z",
       "last_updated": "2025-11-03T23:21:17.692789Z",
@@ -112,8 +114,8 @@
     {
       "id": "TERP-INIT-004",
       "title": "Client Module: Phase 1 & 2 Workflow Improvements",
-      "status": "pending_review",
-      "priority": null,
+      "status": "approved",
+      "priority": "high",
       "progress_percent": 0,
       "created_at": "2025-11-03T23:26:04.811370Z",
       "last_updated": "2025-11-03T23:26:15.894237Z",
@@ -169,8 +171,8 @@
     {
       "id": "TERP-INIT-006",
       "title": "To-Do Lists + Universal Comments System",
-      "status": "pending_review",
-      "priority": null,
+      "status": "approved",
+      "priority": "high",
       "progress_percent": 0,
       "created_at": "2025-11-03T23:31:02.134285Z",
       "last_updated": "2025-11-03T23:31:11.247334Z",
