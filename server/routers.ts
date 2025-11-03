@@ -43,6 +43,7 @@ import { vipPortalRouter } from "./routers/vipPortal";
 import { vipPortalAdminRouter } from "./routers/vipPortalAdmin";
 import { ordersEnhancedV2Router } from "./routers/ordersEnhancedV2";
 import { pricingDefaultsRouter } from "./routers/pricingDefaults";
+import { dashboardPreferencesRouter } from "./routers/dashboardPreferences";
 
 export const appRouter = router({
   system: systemRouter,
@@ -87,6 +88,7 @@ export const appRouter = router({
   vipPortalAdmin: vipPortalAdminRouter,
   ordersEnhancedV2: ordersEnhancedV2Router,
   pricingDefaults: pricingDefaultsRouter,
+  dashboardPreferences: dashboardPreferencesRouter,
 });
 
 export type AppRouter = typeof appRouter;
