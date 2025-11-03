@@ -25,6 +25,19 @@ A complete product management system that enables you to:
 
 ## Key Features
 
+### 8. Automated Status Tracking
+Real-time visibility into development progress:
+- Dev agents update status automatically as they work
+- PM agent gets a live dashboard of all initiatives
+- No manual check-ins required
+
+### 9. Multi-Agent Development Workflow
+Coordinate multiple agents working in parallel:
+- **Dev Agents**: Create and implement initiatives
+- **PM Agent**: Evaluates, prioritizes, and orchestrates
+- Centralized inbox for new initiatives
+- Automated conflict and dependency detection
+
 ### 1. Unique ID System
 Every idea, feature, and bug gets a memorable ID:
 - `TERP-FEAT-015` - Features
@@ -88,6 +101,10 @@ Automatic dependency management:
 
 **See**: `QUICK_START.md` for 5-minute tutorial
 
+**Full guide**: `USER_GUIDE_V2.md` for complete documentation on the new multi-agent system
+
+**See**: `QUICK_START.md` for 5-minute tutorial
+
 **Full guide**: `USER_GUIDE.md` for complete documentation
 
 **TL;DR**:
@@ -98,6 +115,27 @@ Automatic dependency management:
 ---
 
 ## Architecture
+
+### Storage Structure
+
+```
+product-management/
+├── initiatives/          # NEW: Agent-created initiatives
+│   ├── TERP-INIT-001/   # Individual initiative folders
+│   └── registry.json    # Initiative registry
+├── pm-evaluation/       # NEW: PM agent workspace
+│   ├── inbox/           # Pending initiatives for review
+│   ├── evaluations/     # PM evaluation reports
+│   ├── roadmap/         # PM-generated roadmaps
+│   └── dependencies.json # Cross-initiative dependencies
+├── _system/
+│   ├── scripts/
+│   │   ├── initiative-manager.py # NEW: Manage initiatives
+│   │   ├── pm-evaluator.py       # NEW: PM evaluation tools
+│   │   └── status-tracker.py     # NEW: Automated status tracking
+│   └── ...
+└── [existing directories]
+```
 
 ### Storage Structure
 
