@@ -1,0 +1,50 @@
+{
+  "id": "TERP-INIT-001",
+  "title": "Sample Initiative - CSV Export",
+  "created_by": "system-test",
+  "created_at": "2025-11-03T20:58:51.241960Z",
+  "status": "in-progress",
+  "priority": null,
+  "estimated_effort": null,
+  "features": [],
+  "dependencies": [],
+  "conflicts": [],
+  "tags": [
+    "inventory",
+    "export",
+    "demo"
+  ],
+  "metadata": {
+    "complexity": null,
+    "risk_level": null,
+    "business_value": null
+  },
+  "progress": {
+    "percent": 45.0,
+    "completed_tasks": 1,
+    "total_tasks": 0,
+    "recent_updates": [
+      {
+        "timestamp": "2025-11-03T20:58:55.138372Z",
+        "type": "status_change",
+        "message": "Starting implementation of CSV export feature",
+        "old_status": "pending_review",
+        "new_status": "in-progress"
+      },
+      {
+        "timestamp": "2025-11-03T20:59:03.571437Z",
+        "type": "task_completed",
+        "message": "Completed: Implemented backend API endpoint",
+        "task": "Implemented backend API endpoint"
+      },
+      {
+        "timestamp": "2025-11-03T20:59:08.587308Z",
+        "type": "progress_update",
+        "message": "Backend complete, starting frontend",
+        "old_percent": 10,
+        "new_percent": 45.0
+      }
+    ],
+    "last_updated": "2025-11-03T20:59:08.587308Z"
+  }
+}
