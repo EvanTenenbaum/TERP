@@ -10,10 +10,9 @@ import { db } from "../db";
 import {
   orders,
   orderLineItems,
-  orderAuditLog,
   batches,
 } from "../../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { pricingService } from "../services/pricingService";
 import { marginCalculationService } from "../services/marginCalculationService";
 import { priceCalculationService } from "../services/priceCalculationService";

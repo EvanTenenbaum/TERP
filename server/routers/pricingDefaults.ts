@@ -57,7 +57,7 @@ export const pricingDefaultsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.user?.id || 1;
 
-      const result = await pricingService.upsertDefaultMargin(
+      const _result = await pricingService.upsertDefaultMargin(
         input.productCategory,
         input.marginPercent,
         input.description,
