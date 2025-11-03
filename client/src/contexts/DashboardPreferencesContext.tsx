@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import type { DashboardLayout, WidgetState } from '@/types/dashboard';
 import { LAYOUT_PRESETS, DEFAULT_LAYOUT_ID } from '@/lib/constants/dashboardPresets';
 
@@ -56,7 +56,7 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
     savePreferences(state);
   }, [state]);
 
-  const setActiveLayout = (layoutId: string) => {
+  const setActiveLayout = useCallback((layoutId: string) => {
     const preset = LAYOUT_PRESETS[layoutId];
     if (preset) {
       setState((prev) => ({
@@ -65,9 +65,9 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
         widgets: preset.widgets,
       }));
     }
-  };
+  }, []);
 
-  const toggleWidgetVisibility = (widgetId: string) => {
+  const toggleWidgetVisibility = useCallback((widgetId: string) => {
     setState((prev) => {
       const newWidgets = prev.widgets.map((widget) =>
         widget.id === widgetId
@@ -76,7 +76,7 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
       );
       
       // If we're modifying a preset, switch to custom
-      const newLayoutId = prev.activeLayoutId === 'custom' ? 'custom' : 'custom';
+      const newLayoutId = 'custom';
       
       return {
         ...prev,
@@ -84,9 +84,9 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
         widgets: newWidgets,
       };
     });
-  };
+  }, []);
 
-  const reorderWidgets = (newOrder: string[]) => {
+  const reorderWidgets = useCallback((newOrder: string[]) => {
     setState((prev) => {
       const widgetMap = new Map(prev.widgets.map((w) => [w.id, w]));
       const newWidgets = newOrder.map((id) => widgetMap.get(id)!).filter(Boolean);
@@ -97,28 +97,28 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
         widgets: newWidgets,
       };
     });
-  };
+  }, []);
 
-  const resetToDefault = () => {
+  const resetToDefault = useCallback(() => {
     setState({
       activeLayoutId: DEFAULT_LAYOUT_ID,
       widgets: LAYOUT_PRESETS[DEFAULT_LAYOUT_ID].widgets,
       isCustomizing: false,
     });
-  };
+  }, []);
 
-  const setIsCustomizing = (isCustomizing: boolean) => {
+  const setIsCustomizing = useCallback((isCustomizing: boolean) => {
     setState((prev) => ({ ...prev, isCustomizing }));
-  };
+  }, []);
 
-  const value: DashboardPreferencesContextType = {
+  const value: DashboardPreferencesContextType = useMemo(() => ({
     ...state,
     setActiveLayout,
     toggleWidgetVisibility,
     reorderWidgets,
     resetToDefault,
     setIsCustomizing,
-  };
+  }), [state, setActiveLayout, toggleWidgetVisibility, reorderWidgets, resetToDefault, setIsCustomizing]);
 
   return (
     <DashboardPreferencesContext.Provider value={value}>
