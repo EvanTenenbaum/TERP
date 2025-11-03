@@ -1,25 +1,26 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, router } from "../_core/trpc";
 import * as salesSheetEnhancements from "../salesSheetEnhancements";
 
 export const salesSheetEnhancementsRouter = router({
   // Version control
-  createVersion: protectedProcedure
+  createVersion: publicProcedure
     .input(
       z.object({
         templateId: z.number(),
+        userId: z.number(),
         changes: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       return await salesSheetEnhancements.createSalesSheetVersion(
         input.templateId,
-        ctx.user?.id || 1,
+        input.userId,
         input.changes
       );
     }),
 
-  getVersionHistory: protectedProcedure
+  getVersionHistory: publicProcedure
     .input(
       z.object({
         templateId: z.number(),
@@ -31,39 +32,41 @@ export const salesSheetEnhancementsRouter = router({
       );
     }),
 
-  restoreVersion: protectedProcedure
+  restoreVersion: publicProcedure
     .input(
       z.object({
         versionId: z.number(),
+        userId: z.number(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       return await salesSheetEnhancements.restoreSalesSheetVersion(
         input.versionId,
-        ctx.user?.id || 1
+        input.userId
       );
     }),
 
   // Clone template
-  cloneTemplate: protectedProcedure
+  cloneTemplate: publicProcedure
     .input(
       z.object({
         templateId: z.number(),
+        userId: z.number(),
         newName: z.string(),
         clientId: z.number().optional(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       return await salesSheetEnhancements.cloneSalesSheetTemplate(
         input.templateId,
-        ctx.user?.id || 1,
+        input.userId,
         input.newName,
         input.clientId
       );
     }),
 
   // Expiration management
-  setExpiration: protectedProcedure
+  setExpiration: publicProcedure
     .input(
       z.object({
         templateId: z.number(),
@@ -78,16 +81,17 @@ export const salesSheetEnhancementsRouter = router({
       return { success: true };
     }),
 
-  deactivateExpired: protectedProcedure.mutation(async () => {
+  deactivateExpired: publicProcedure.mutation(async () => {
     const count = await salesSheetEnhancements.deactivateExpiredSalesSheets();
     return { deactivatedCount: count };
   }),
 
   // Bulk order creation
-  createBulkOrders: protectedProcedure
+  createBulkOrders: publicProcedure
     .input(
       z.object({
         templateId: z.number(),
+        userId: z.number(),
         clientOrders: z.array(
           z.object({
             clientId: z.number(),
@@ -103,16 +107,16 @@ export const salesSheetEnhancementsRouter = router({
         ),
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       return await salesSheetEnhancements.createBulkOrdersFromSalesSheet(
         input.templateId,
         input.clientOrders,
-        ctx.user?.id || 1
+        input.userId
       );
     }),
 
   // Client-specific pricing
-  getClientPricing: protectedProcedure
+  getClientPricing: publicProcedure
     .input(
       z.object({
         templateId: z.number(),
@@ -127,7 +131,7 @@ export const salesSheetEnhancementsRouter = router({
     }),
 
   // Active sheets
-  getActiveSheets: protectedProcedure
+  getActiveSheets: publicProcedure
     .input(
       z.object({
         clientId: z.number().optional(),
@@ -138,7 +142,7 @@ export const salesSheetEnhancementsRouter = router({
     }),
 
   // Usage statistics
-  getUsageStats: protectedProcedure
+  getUsageStats: publicProcedure
     .input(
       z.object({
         templateId: z.number(),
