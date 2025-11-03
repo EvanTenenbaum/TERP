@@ -79,7 +79,40 @@ export const adminMigrationsRouter = router({
         });
       }
 
-      // Migration 3: Create database views
+      // Migration 3: Create userDashboardPreferences table
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS userDashboardPreferences (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            userId INT NOT NULL UNIQUE,
+            activeLayout VARCHAR(50) NOT NULL DEFAULT 'operations',
+            widgetConfig JSON NOT NULL,
+            createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            
+            CONSTRAINT fk_userDashboardPreferences_userId 
+              FOREIGN KEY (userId) 
+              REFERENCES users (id) 
+              ON DELETE CASCADE,
+              
+            INDEX idx_userDashboardPreferences_userId (userId)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        
+        results.push({
+          migration: "create_user_dashboard_preferences",
+          status: "success",
+          message: "Created userDashboardPreferences table for cross-device sync"
+        });
+      } catch (error: any) {
+        results.push({
+          migration: "create_user_dashboard_preferences",
+          status: "error",
+          message: error.message
+        });
+      }
+
+      // Migration 4: Create database views
       try {
         // Drop views if they exist
         await db.execute(sql`DROP VIEW IF EXISTS products_with_strain_family`);
@@ -216,6 +249,21 @@ export const adminMigrationsRouter = router({
       checks.push({
         check: "client_needs_strainId",
         status: hasStrainId ? "exists" : "missing"
+      });
+
+      // Check if userDashboardPreferences table exists
+      const dashboardPrefsTable = await db.execute(sql`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'userDashboardPreferences'
+      `);
+      
+      const hasDashboardPrefsTable = (dashboardPrefsTable as any[]).length > 0;
+
+      checks.push({
+        check: "userDashboardPreferences_table",
+        status: hasDashboardPrefsTable ? "exists" : "missing"
       });
 
       // Check if views exist
