@@ -41,6 +41,8 @@ import { adminQuickFixRouter } from "./routers/adminQuickFix";
 import { adminSchemaPushRouter } from "./routers/adminSchemaPush";
 import { vipPortalRouter } from "./routers/vipPortal";
 import { vipPortalAdminRouter } from "./routers/vipPortalAdmin";
+import { ordersEnhancedV2Router } from "./routers/ordersEnhancedV2";
+import { pricingDefaultsRouter } from "./routers/pricingDefaults";
 
 export const appRouter = router({
   system: systemRouter,
@@ -83,6 +85,8 @@ export const appRouter = router({
   adminSchemaPush: adminSchemaPushRouter,
   vipPortal: vipPortalRouter,
   vipPortalAdmin: vipPortalAdminRouter,
+  ordersEnhancedV2: ordersEnhancedV2Router,
+  pricingDefaults: pricingDefaultsRouter,
 });
 
 export type AppRouter = typeof appRouter;
