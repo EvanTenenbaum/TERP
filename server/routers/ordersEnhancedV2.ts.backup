@@ -7,7 +7,11 @@
 import { z } from "zod";
 import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { orders, orderLineItems, batches } from "../../drizzle/schema";
+import {
+  orders,
+  orderLineItems,
+  batches,
+} from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { pricingService } from "../services/pricingService";
 import { marginCalculationService } from "../services/marginCalculationService";
@@ -94,7 +98,7 @@ export const ordersEnhancedV2Router = router({
               input.clientId,
               batch.productCategory || "OTHER"
             );
-            marginPercent = marginResult.marginPercent || 0;
+            marginPercent = marginResult.margin || 0;
             marginSource = marginResult.source;
           }
 
@@ -108,7 +112,10 @@ export const ordersEnhancedV2Router = router({
             cogsPerUnit,
             unitPrice
           );
-          const lineTotal = item.quantity * unitPrice;
+          const lineTotal = priceCalculationService.calculateLineTotal(
+            item.quantity,
+            unitPrice
+          );
 
           return {
             ...item,
@@ -139,14 +146,14 @@ export const ordersEnhancedV2Router = router({
 
       // Validate order
       const validation = orderValidationService.validateOrder({
-        orderType: input.orderType,
         clientId: input.clientId,
         lineItems: lineItemsWithPrices,
-        finalTotal: totals.finalTotal,
-        overallMarginPercent: totals.overallMarginPercent,
+        adjustment: orderAdjustment,
+        subtotal: totals.subtotal,
+        total: totals.total,
       });
 
-      if (!validation.isValid) {
+      if (!validation.valid) {
         throw new Error(`Validation failed: ${validation.errors.join(", ")}`);
       }
 
@@ -160,13 +167,13 @@ export const ordersEnhancedV2Router = router({
         isDraft: true,
         clientId: input.clientId,
         items: JSON.stringify([]), // Legacy field, keep empty
-        subtotal: totals.subtotalPrice.toString(),
+        subtotal: totals.subtotal.toString(),
         tax: "0",
         discount: "0",
-        total: totals.finalTotal.toString(),
-        totalCogs: totals.subtotalCOGS.toString(),
-        totalMargin: totals.subtotalMargin.toString(),
-        avgMarginPercent: totals.overallMarginPercent.toString(),
+        total: totals.total.toString(),
+        totalCogs: totals.totalCogs.toString(),
+        totalMargin: totals.totalMargin.toString(),
+        avgMarginPercent: totals.avgMarginPercent.toString(),
         orderLevelAdjustmentAmount: orderAdjustment?.amount.toString() || "0",
         orderLevelAdjustmentType: orderAdjustment?.type || "DOLLAR",
         orderLevelAdjustmentMode: orderAdjustment?.mode || "DISCOUNT",
@@ -205,12 +212,7 @@ export const ordersEnhancedV2Router = router({
       );
 
       // Log audit entry
-      await orderAuditService.logOrderCreation(orderId, userId, {
-        orderType: input.orderType,
-        clientId: input.clientId,
-        lineItemCount: lineItemsWithPrices.length,
-        total: totals.finalTotal,
-      });
+      await orderAuditService.logOrderDraftSaved(orderId, userId);
 
       return {
         orderId,
@@ -236,9 +238,6 @@ export const ordersEnhancedV2Router = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       const userId = ctx.user?.id || 1;
 
       // Get existing order
@@ -284,7 +283,7 @@ export const ordersEnhancedV2Router = router({
               existingOrder.clientId,
               batch.productCategory || "OTHER"
             );
-            marginPercent = marginResult.marginPercent || 0;
+            marginPercent = marginResult.margin || 0;
             marginSource = marginResult.source;
           }
 
@@ -297,7 +296,10 @@ export const ordersEnhancedV2Router = router({
             cogsPerUnit,
             unitPrice
           );
-          const lineTotal = item.quantity * unitPrice;
+          const lineTotal = priceCalculationService.calculateLineTotal(
+            item.quantity,
+            unitPrice
+          );
 
           return {
             ...item,
@@ -328,14 +330,14 @@ export const ordersEnhancedV2Router = router({
 
       // Validate order
       const validation = orderValidationService.validateOrder({
-        orderType: existingOrder.orderType as "QUOTE" | "SALE",
         clientId: existingOrder.clientId,
         lineItems: lineItemsWithPrices,
-        finalTotal: totals.finalTotal,
-        overallMarginPercent: totals.overallMarginPercent,
+        adjustment: orderAdjustment,
+        subtotal: totals.subtotal,
+        total: totals.total,
       });
 
-      if (!validation.isValid) {
+      if (!validation.valid) {
         throw new Error(`Validation failed: ${validation.errors.join(", ")}`);
       }
 
@@ -343,11 +345,11 @@ export const ordersEnhancedV2Router = router({
       await db
         .update(orders)
         .set({
-          subtotal: totals.subtotalPrice.toString(),
-          total: totals.finalTotal.toString(),
-          totalCogs: totals.subtotalCOGS.toString(),
-          totalMargin: totals.subtotalMargin.toString(),
-          avgMarginPercent: totals.overallMarginPercent.toString(),
+          subtotal: totals.subtotal.toString(),
+          total: totals.total.toString(),
+          totalCogs: totals.totalCogs.toString(),
+          totalMargin: totals.totalMargin.toString(),
+          avgMarginPercent: totals.avgMarginPercent.toString(),
           orderLevelAdjustmentAmount: orderAdjustment?.amount.toString() || "0",
           orderLevelAdjustmentType: orderAdjustment?.type || "DOLLAR",
           orderLevelAdjustmentMode: orderAdjustment?.mode || "DISCOUNT",
@@ -386,10 +388,7 @@ export const ordersEnhancedV2Router = router({
       );
 
       // Log audit entry
-      await orderAuditService.logOrderUpdate(input.orderId, userId, {
-        lineItemCount: lineItemsWithPrices.length,
-        total: totals.finalTotal,
-      });
+      await orderAuditService.logOrderDraftSaved(input.orderId, userId);
 
       return {
         orderId: input.orderId,
@@ -411,9 +410,6 @@ export const ordersEnhancedV2Router = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       const userId = ctx.user?.id || 1;
 
       // Get existing order
@@ -439,22 +435,31 @@ export const ordersEnhancedV2Router = router({
 
       // Final validation
       const validation = orderValidationService.validateOrder({
-        orderType: existingOrder.orderType as "QUOTE" | "SALE",
         clientId: existingOrder.clientId,
         lineItems: lineItems.map(item => ({
-          batchId: item.batchId,
           quantity: parseFloat(item.quantity),
+          unitPrice: parseFloat(item.unitPrice),
+          lineTotal: parseFloat(item.lineTotal),
           cogsPerUnit: parseFloat(item.cogsPerUnit),
-          pricePerUnit: parseFloat(item.unitPrice),
-          marginPercent: parseFloat(item.marginPercent),
-          isSample: item.isSample,
+          marginDollar: parseFloat(item.marginDollar),
         })),
-        finalTotal: parseFloat(existingOrder.total),
-        overallMarginPercent: parseFloat(existingOrder.avgMarginPercent),
+        adjustment: existingOrder.orderLevelAdjustmentAmount
+          ? {
+              amount: parseFloat(existingOrder.orderLevelAdjustmentAmount),
+              type: existingOrder.orderLevelAdjustmentType as "PERCENT" | "DOLLAR",
+              mode: existingOrder.orderLevelAdjustmentMode as
+                | "DISCOUNT"
+                | "MARKUP",
+            }
+          : null,
+        subtotal: parseFloat(existingOrder.subtotal),
+        total: parseFloat(existingOrder.total),
       });
 
-      if (!validation.isValid) {
-        throw new Error(`Cannot finalize: ${validation.errors.join(", ")}`);
+      if (!validation.valid) {
+        throw new Error(
+          `Cannot finalize: ${validation.errors.join(", ")}`
+        );
       }
 
       // Update order to finalized
@@ -468,10 +473,7 @@ export const ordersEnhancedV2Router = router({
         .where(eq(orders.id, input.orderId));
 
       // Log audit entry
-      await orderAuditService.logOrderFinalization(input.orderId, userId, {
-        finalTotal: parseFloat(existingOrder.total),
-        finalizedAt: new Date(),
-      });
+      await orderAuditService.logOrderFinalized(input.orderId, userId);
 
       return {
         orderId: input.orderId,
@@ -486,9 +488,6 @@ export const ordersEnhancedV2Router = router({
   getOrderWithLineItems: protectedProcedure
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       const order = await db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
       });
@@ -519,9 +518,6 @@ export const ordersEnhancedV2Router = router({
       })
     )
     .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       return await pricingService.getMarginWithFallback(
         input.clientId,
         input.productCategory
@@ -570,9 +566,6 @@ export const ordersEnhancedV2Router = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       const userId = ctx.user?.id || 1;
 
       // Get existing line item
@@ -610,10 +603,10 @@ export const ordersEnhancedV2Router = router({
         .where(eq(orderLineItems.id, input.lineItemId));
 
       // Log audit entry
-      await orderAuditService.logCOGSOverride(
+      await orderAuditService.logCogsOverride(
         input.orderId,
-        userId,
         input.lineItemId,
+        userId,
         oldCOGS,
         input.newCOGS,
         input.reason
@@ -632,9 +625,7 @@ export const ordersEnhancedV2Router = router({
   getAuditLog: protectedProcedure
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
       return await orderAuditService.getAuditLog(input.orderId);
     }),
 });
+
