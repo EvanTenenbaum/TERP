@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { X, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -23,6 +23,8 @@ export function CustomizationPanel() {
     setActiveLayout,
     widgets,
     toggleWidgetVisibility,
+    moveWidgetUp,
+    moveWidgetDown,
     resetToDefault,
   } = useDashboardPreferences();
 
@@ -70,10 +72,13 @@ export function CustomizationPanel() {
             <div>
               <h3 className="text-sm font-semibold mb-3">Widget Visibility</h3>
               <div className="space-y-3">
-                {widgets.map((widget) => {
+                {widgets.map((widget, index) => {
                   const metadata = WIDGET_METADATA[widget.id as keyof typeof WIDGET_METADATA];
+                  const isFirst = index === 0;
+                  const isLast = index === widgets.length - 1;
+                  
                   return (
-                    <div key={widget.id} className="flex items-start space-x-3">
+                    <div key={widget.id} className="flex items-start space-x-3 group">
                       <Checkbox
                         id={widget.id}
                         checked={widget.isVisible}
@@ -86,6 +91,28 @@ export function CustomizationPanel() {
                             {metadata?.description || ''}
                           </div>
                         </Label>
+                      </div>
+                      <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => moveWidgetUp(widget.id)}
+                          disabled={isFirst}
+                          title="Move up"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => moveWidgetDown(widget.id)}
+                          disabled={isLast}
+                          title="Move down"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   );
