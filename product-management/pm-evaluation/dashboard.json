@@ -1,13 +1,13 @@
 {
-  "last_updated": "2025-11-03T23:26:15.894834Z",
+  "last_updated": "2025-11-03T23:30:11.674257Z",
   "summary": {
-    "total": 4,
+    "total": 5,
     "by_status": {
       "in-progress": 1,
-      "pending_review": 3
+      "pending_review": 4
     },
     "by_priority": {
-      "null": 4
+      "null": 5
     },
     "total_progress": 45.0
   },
@@ -136,9 +136,45 @@
           "new_status": "pending_review"
         }
       ]
+    },
+    {
+      "id": "TERP-INIT-005",
+      "title": "Inventory System Stability & Robustness Improvements",
+      "status": "pending_review",
+      "priority": null,
+      "progress_percent": 0,
+      "created_at": "2025-11-03T23:30:00.352512Z",
+      "last_updated": "2025-11-03T23:30:11.673750Z",
+      "created_by": "dev-agent",
+      "tags": [
+        "inventory",
+        "stability",
+        "data-integrity",
+        "performance",
+        "testing",
+        "robustness"
+      ],
+      "completed_tasks": 0,
+      "total_tasks": 0,
+      "recent_updates": [
+        {
+          "timestamp": "2025-11-03T23:30:11.673750Z",
+          "type": "status_change",
+          "message": "Status changed from pending_review to pending_review",
+          "old_status": "pending_review",
+          "new_status": "pending_review"
+        }
+      ]
     }
   ],
   "recent_activity": [
+    {
+      "initiative_id": "TERP-INIT-005",
+      "initiative_title": "Inventory System Stability & Robustness Improvements",
+      "timestamp": "2025-11-03T23:30:11.673750Z",
+      "message": "Status changed from pending_review to pending_review",
+      "type": "status_change"
+    },
     {
       "initiative_id": "TERP-INIT-004",
       "initiative_title": "Client Module: Phase 1 & 2 Workflow Improvements",
