@@ -7,18 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/v3/DashboardHeader";
 import { DashboardLayoutManager } from "@/components/dashboard/v3/DashboardLayoutManager";
 import { CustomizationPanel } from "@/components/dashboard/v3/CustomizationPanel";
 
-// Import v3 widgets
-// TODO: v3 widgets not yet created, using v2 widgets for now
-// import {
-//   TransactionSnapshotWidget,
-//   InventorySnapshotWidget,
-//   TotalDebtWidget,
-//   SalesComparisonWidget,
-//   ProfitabilityWidget,
-//   MatchmakingOpportunitiesWidget,
-// } from '@/components/dashboard/widgets-v3';
-
-// Import v2 widgets (fallback for widgets not yet migrated to v3)
+// Import v2 widgets (v3 widgets are being migrated)
 import {
   SalesByClientWidget,
   CashFlowWidget,
