@@ -67,16 +67,30 @@
         "testing",
         "robustness"
       ]
+    },
+    {
+      "id": "TERP-INIT-006",
+      "title": "To-Do Lists + Universal Comments System",
+      "status": "approved",
+      "created_at": "2025-11-03T23:31:02.134285Z",
+      "tags": [
+        "collaboration",
+        "task-management",
+        "comments",
+        "mentions",
+        "inbox"
+      ],
+      "priority": "high"
     }
   ],
-  "next_id": 6,
-  "last_updated": "2025-11-03T23:30:11.674051Z",
+  "next_id": 7,
+  "last_updated": "2025-11-03T23:31:11.247755Z",
   "metadata": {
-    "total_count": 5,
+    "total_count": 6,
     "by_status": {
       "in-progress": 1,
       "approved": 3,
-      "pending_review": 1
+      "pending_review": 2
     }
   }
 }
