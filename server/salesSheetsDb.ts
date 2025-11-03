@@ -1,10 +1,9 @@
 import { getDb } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import {
   salesSheetHistory,
   salesSheetTemplates,
   batches,
-  clients,
   type SalesSheetHistory,
   type SalesSheetTemplate,
 } from "../drizzle/schema";
@@ -34,43 +33,86 @@ export interface PricedInventoryItem {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Safely parse a number, returning default value if invalid
+ */
+function parseNumber(value: unknown, defaultValue: number = 0): number {
+  const parsed = parseFloat(value?.toString() || String(defaultValue));
+  return isNaN(parsed) ? defaultValue : parsed;
+}
+
+// ============================================================================
 // INVENTORY WITH PRICING
 // ============================================================================
 
-export async function getInventoryWithPricing(clientId: number): Promise<PricedInventoryItem[]> {
+export async function getInventoryWithPricing(
+  clientId: number,
+  options?: { limit?: number; offset?: number }
+): Promise<PricedInventoryItem[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get all batches (inventory) - only get batches with status AVAILABLE or IN_STOCK
-  const inventoryBatches = await db
-    .select()
-    .from(batches)
-    .limit(100);
+  const limit = Math.min(options?.limit || 100, 1000); // Max 1000
+  const offset = options?.offset || 0;
 
-  // Get client pricing rules
-  const clientRules = await pricingEngine.getClientPricingRules(clientId);
+  try {
+    // Get batches with status filter
+    const inventoryBatches = await db
+      .select()
+      .from(batches)
+      .where(inArray(batches.status, ["AVAILABLE", "IN_STOCK"]))
+      .limit(limit)
+      .offset(offset);
 
-  // Convert batches to inventory items format
-  const inventoryItems = inventoryBatches.map((batch: any) => ({
-    id: batch.id,
-    name: batch.sku || `Batch #${batch.id}`,
-    category: undefined, // batches don't have category field directly
-    subcategory: undefined,
-    strain: undefined,
-    basePrice: parseFloat(batch.unitCogs?.toString() || "0"),
-    quantity: parseFloat(batch.onHandQty?.toString() || "0"),
-    grade: batch.grade || undefined,
-    vendor: undefined,
-  }));
+    // Get client pricing rules
+    const clientRules = await pricingEngine.getClientPricingRules(clientId);
 
-  // Calculate retail prices using pricing engine
-  const pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
+    // Convert batches to inventory items format with safe number parsing
+    const inventoryItems = inventoryBatches.map(batch => ({
+      id: batch.id,
+      name: batch.sku || `Batch #${batch.id}`,
+      category: undefined, // batches don't have category field directly
+      subcategory: undefined,
+      strain: undefined,
+      basePrice: parseNumber(batch.unitCogs, 0),
+      quantity: parseNumber(batch.onHandQty, 0),
+      grade: batch.grade || undefined,
+      vendor: undefined,
+    }));
 
-  // Ensure all items have quantity defined
-  return pricedItems.map(item => ({
-    ...item,
-    quantity: item.quantity || 0,
-  }));
+    // Calculate retail prices using pricing engine with error handling
+    try {
+      const pricedItems = await pricingEngine.calculateRetailPrices(
+        inventoryItems,
+        clientRules
+      );
+
+      // Ensure all items have quantity defined
+      return pricedItems.map(item => ({
+        ...item,
+        quantity: item.quantity || 0,
+      }));
+    } catch (pricingError) {
+      console.error(
+        "Pricing engine error, using fallback pricing:",
+        pricingError
+      );
+
+      // Return items with base prices as fallback
+      return inventoryItems.map(item => ({
+        ...item,
+        retailPrice: item.basePrice,
+        priceMarkup: 0,
+        appliedRules: [],
+      }));
+    }
+  } catch (error) {
+    console.error("Error fetching inventory:", error);
+    throw new Error("Failed to fetch inventory");
+  }
 }
 
 // ============================================================================
@@ -79,7 +121,7 @@ export async function getInventoryWithPricing(clientId: number): Promise<PricedI
 
 export async function saveSalesSheet(data: {
   clientId: number;
-  items: any[];
+  items: unknown[];
   totalValue: number;
   createdBy?: number;
 }): Promise<number> {
@@ -112,7 +154,9 @@ export async function getSalesSheetHistory(
     .limit(limit);
 }
 
-export async function getSalesSheetById(sheetId: number): Promise<SalesSheetHistory | null> {
+export async function getSalesSheetById(
+  sheetId: number
+): Promise<SalesSheetHistory | null> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -140,8 +184,8 @@ export async function createTemplate(data: {
   name: string;
   clientId?: number;
   isUniversal: boolean;
-  items: any[];
-  columnConfig?: any;
+  items: unknown[];
+  columnConfig?: unknown;
   createdBy: number;
 }): Promise<number> {
   const db = await getDb();
@@ -162,7 +206,7 @@ export async function createTemplate(data: {
 
 export async function getTemplates(
   clientId?: number,
-  includeUniversal: boolean = true
+  _includeUniversal: boolean = true
 ): Promise<SalesSheetTemplate[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -183,7 +227,9 @@ export async function getTemplates(
     .orderBy(desc(salesSheetTemplates.createdAt));
 }
 
-export async function loadTemplate(templateId: number): Promise<SalesSheetTemplate | null> {
+export async function loadTemplate(
+  templateId: number
+): Promise<SalesSheetTemplate | null> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -200,6 +246,7 @@ export async function deleteTemplate(templateId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(salesSheetTemplates).where(eq(salesSheetTemplates.id, templateId));
+  await db
+    .delete(salesSheetTemplates)
+    .where(eq(salesSheetTemplates.id, templateId));
 }
-
