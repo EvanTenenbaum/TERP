@@ -1,12 +1,12 @@
 {
   "schema_version": "1.0",
-  "last_updated": "2025-10-29T00:00:00Z",
-  "total_count": 0,
+  "last_updated": "2025-11-03T17:25:14.828104",
+  "total_count": 1,
   "by_type": {
     "IDEA": 0,
     "FEAT": 0,
     "BUG": 0,
-    "IMPROVE": 0,
+    "IMPROVE": 1,
     "TECH": 0
   },
   "by_status": {
@@ -16,7 +16,25 @@
     "in-progress": 0,
     "completed": 0,
     "on-hold": 0,
-    "archived": 0
+    "archived": 0,
+    "pending_review": 1
   },
-  "registry": {}
+  "registry": {
+    "TERP-IMPROVE-001": {
+      "type": "IMPROVE",
+      "title": "Inventory System Stability & Robustness Improvements",
+      "status": "pending_review",
+      "created": "2025-11-03T17:25:14.828081",
+      "updated": "2025-11-03T17:30:00.000000",
+      "tags": [
+        "inventory",
+        "stability",
+        "data-integrity",
+        "performance",
+        "testing"
+      ],
+      "related": [],
+      "path": "improvements/TERP-IMPROVE-001"
+    }
+  }
 }
