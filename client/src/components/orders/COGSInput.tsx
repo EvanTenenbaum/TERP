@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from "react";
-import { Edit2, RotateCcw, AlertCircle } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

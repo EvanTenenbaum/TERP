@@ -47,7 +47,7 @@ export function ClientPreview({
   showAdjustment,
   total,
   orderType,
-  isDraft,
+  isDraft: _isDraft,
 }: ClientPreviewProps) {
   const fmt = (value: number) => `$${value.toFixed(2)}`;
 

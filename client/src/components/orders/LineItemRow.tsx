@@ -4,15 +4,15 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useState, useEffect } from "react";
-import { Trash2, AlertCircle, Edit2, Check, X } from "lucide-react";
+import React, { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { COGSInput } from "./COGSInput";
 import { MarginInput } from "./MarginInput";
-import { useMarginLookup } from "@/hooks/orders/useMarginLookup";
+// import { useMarginLookup } from "@/hooks/orders/useMarginLookup";
 import { calculateLineItem } from "@/hooks/orders/useOrderCalculations";
 
 interface LineItem {
@@ -44,7 +44,7 @@ interface LineItemRowProps {
 export function LineItemRow({
   item,
   index,
-  clientId,
+  clientId: _clientId,
   onUpdate,
   onRemove,
 }: LineItemRowProps) {
