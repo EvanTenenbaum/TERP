@@ -1,0 +1,40 @@
+{
+  "id": "TERP-INIT-003",
+  "title": "Calendar & Scheduling System",
+  "created_by": "dev-agent",
+  "created_at": "2025-11-03T23:20:59.780743Z",
+  "status": "pending_review",
+  "priority": null,
+  "estimated_effort": null,
+  "features": [],
+  "dependencies": [],
+  "conflicts": [],
+  "tags": [
+    "calendar",
+    "scheduling",
+    "automation",
+    "client-management",
+    "accounting-operations",
+    "mobile-optimization"
+  ],
+  "metadata": {
+    "complexity": null,
+    "risk_level": null,
+    "business_value": null
+  },
+  "progress": {
+    "percent": 0,
+    "completed_tasks": 0,
+    "total_tasks": 0,
+    "recent_updates": [
+      {
+        "timestamp": "2025-11-03T23:21:17.692789Z",
+        "type": "status_change",
+        "message": "Status changed from pending_review to pending_review",
+        "old_status": "pending_review",
+        "new_status": "pending_review"
+      }
+    ],
+    "last_updated": "2025-11-03T23:21:17.692789Z"
+  }
+}
