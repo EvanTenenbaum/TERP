@@ -5,10 +5,15 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,38 +23,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+
 import { toast } from "sonner";
-import {
-  ShoppingCart,
-  Save,
-  Eye,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import { ShoppingCart, Save, CheckCircle, AlertCircle } from "lucide-react";
 
 // Import new v2 components
-import { LineItemTable, type LineItem } from "@/components/orders/LineItemTable";
-import { OrderAdjustmentPanel, type OrderAdjustment } from "@/components/orders/OrderAdjustmentPanel";
+import {
+  LineItemTable,
+  type LineItem,
+} from "@/components/orders/LineItemTable";
+import {
+  OrderAdjustmentPanel,
+  type OrderAdjustment,
+} from "@/components/orders/OrderAdjustmentPanel";
 import { OrderTotalsPanel } from "@/components/orders/OrderTotalsPanel";
 import { ClientPreview } from "@/components/orders/ClientPreview";
 import { useOrderCalculations } from "@/hooks/orders/useOrderCalculations";
 
 export default function OrderCreatorPageV2() {
-  const navigate = useNavigate();
-
   // State
   const [clientId, setClientId] = useState<number | null>(null);
   const [items, setItems] = useState<LineItem[]>([]);
   const [adjustment, setAdjustment] = useState<OrderAdjustment | null>(null);
-  const [showAdjustmentOnDocument, setShowAdjustmentOnDocument] = useState(true);
+  const [showAdjustmentOnDocument, setShowAdjustmentOnDocument] =
+    useState(true);
   const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
 
   // Queries
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
   const { data: clientDetails } = trpc.clients.getById.useQuery(
-    { clientId: clientId! },
+    { clientId: clientId || 0 },
     { enabled: !!clientId }
   );
 
@@ -58,25 +61,25 @@ export default function OrderCreatorPageV2() {
 
   // Mutations
   const createDraftMutation = trpc.ordersEnhancedV2.createDraft.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(`Draft order #${data.id} saved successfully`);
       // Reset form
       setItems([]);
       setAdjustment(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to save draft: ${error.message}`);
     },
   });
 
   const finalizeMutation = trpc.ordersEnhancedV2.finalize.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(`Order #${data.orderNumber} finalized successfully!`);
       // Navigate to order details or reset
       setItems([]);
       setAdjustment(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to finalize order: ${error.message}`);
     },
   });
@@ -120,15 +123,17 @@ export default function OrderCreatorPageV2() {
     // Show confirmation dialog for finalize
     const confirmed = window.confirm(
       `Are you sure you want to finalize this ${orderType.toLowerCase()}?\n\n` +
-      `Total: $${totals.total.toFixed(2)}\n` +
-      `This will create the order and cannot be undone.`
+        `Total: $${totals.total.toFixed(2)}\n` +
+        `This will create the order and cannot be undone.`
     );
 
     if (!confirmed) return;
 
+    if (!clientId) return;
+
     finalizeMutation.mutate({
       orderType,
-      clientId: clientId!,
+      clientId,
       lineItems: items.map(item => ({
         batchId: item.batchId,
         quantity: item.quantity,
@@ -168,7 +173,7 @@ export default function OrderCreatorPageV2() {
             <div className="flex gap-2">
               <Select
                 value={orderType}
-                onValueChange={(value) => setOrderType(value as "QUOTE" | "SALE")}
+                onValueChange={value => setOrderType(value as "QUOTE" | "SALE")}
               >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue />
@@ -187,7 +192,7 @@ export default function OrderCreatorPageV2() {
             <Label htmlFor="client-select">Select Customer *</Label>
             <Select
               value={clientId?.toString() || ""}
-              onValueChange={(value) => {
+              onValueChange={value => {
                 setClientId(parseInt(value));
                 // Clear items when changing client
                 setItems([]);
@@ -197,11 +202,13 @@ export default function OrderCreatorPageV2() {
                 <SelectValue placeholder="Choose a customer..." />
               </SelectTrigger>
               <SelectContent>
-                {clients?.filter((c) => c.isBuyer).map((client) => (
-                  <SelectItem key={client.id} value={client.id.toString()}>
-                    {client.name}
-                  </SelectItem>
-                ))}
+                {clients
+                  ?.filter(c => c.isBuyer)
+                  .map(client => (
+                    <SelectItem key={client.id} value={client.id.toString()}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -299,7 +306,9 @@ export default function OrderCreatorPageV2() {
             <div className="text-center text-muted-foreground">
               <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">Select a customer to begin</p>
-              <p className="text-sm">Choose a customer from the dropdown above</p>
+              <p className="text-sm">
+                Choose a customer from the dropdown above
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -307,4 +316,3 @@ export default function OrderCreatorPageV2() {
     </div>
   );
 }
-
