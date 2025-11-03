@@ -63,7 +63,7 @@ export async function getInventoryWithPricing(
     const inventoryBatches = await db
       .select()
       .from(batches)
-      .where(inArray(batches.status, ["AVAILABLE", "IN_STOCK"]))
+      .where(inArray(batches.status, ["LIVE", "PHOTOGRAPHY_COMPLETE"]))
       .limit(limit)
       .offset(offset);
 
