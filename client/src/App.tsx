@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import DashboardV2 from "./pages/DashboardV2";
+import DashboardV3 from "./pages/DashboardV3";
 import Inventory from "@/pages/Inventory";
 import { AppShell } from "./components/layout/AppShell";
 import Settings from "@/pages/Settings";
@@ -51,7 +52,8 @@ function Router() {
           <AppShell>
             <Switch>
               <Route path="/" component={Home} />
-              <Route path="/dashboard" component={DashboardV2} />
+              <Route path="/dashboard" component={DashboardV3} />
+              <Route path="/dashboard-v2" component={DashboardV2} />
               <Route path="/inventory" component={Inventory} />
               <Route
                 path="/accounting/dashboard"
