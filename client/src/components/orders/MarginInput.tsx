@@ -29,7 +29,7 @@ export function MarginInput({
   marginPercent,
   marginDollar,
   source,
-  isOverridden,
+  isOverridden: _isOverridden,
   onChange,
 }: MarginInputProps) {
   const [isEditing, setIsEditing] = useState(false);

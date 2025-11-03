@@ -5,14 +5,14 @@
  */
 
 import React, { useState } from "react";
-import { Percent, DollarSign, TrendingDown, TrendingUp, X } from "lucide-react";
+import { Percent, DollarSign, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 
 export interface OrderAdjustment {
   amount: number;
