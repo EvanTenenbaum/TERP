@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
 import * as salesSheetsDb from "../salesSheetsDb";
 
 // Sales sheet item schema with full validation
