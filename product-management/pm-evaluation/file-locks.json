@@ -1,3 +1,29 @@
 {
-  "locks": {}
+  "locks": {
+    "client/src/pages/ClientsListPage.tsx": {
+      "initiative_id": "TERP-INIT-004",
+      "locked_at": "2025-11-04T05:22:16.206560Z",
+      "locked_by": "unknown"
+    },
+    "client/src/pages/ClientProfilePage.tsx": {
+      "initiative_id": "TERP-INIT-004",
+      "locked_at": "2025-11-04T05:22:16.206560Z",
+      "locked_by": "unknown"
+    },
+    "client/src/components/clients/AddClientWizard.tsx": {
+      "initiative_id": "TERP-INIT-004",
+      "locked_at": "2025-11-04T05:22:16.206560Z",
+      "locked_by": "unknown"
+    },
+    "server/clientsDb.ts": {
+      "initiative_id": "TERP-INIT-004",
+      "locked_at": "2025-11-04T05:22:16.206560Z",
+      "locked_by": "unknown"
+    },
+    "server/routers/clients.ts": {
+      "initiative_id": "TERP-INIT-004",
+      "locked_at": "2025-11-04T05:22:16.206560Z",
+      "locked_by": "unknown"
+    }
+  }
 }
