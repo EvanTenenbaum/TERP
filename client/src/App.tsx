@@ -40,6 +40,9 @@ import VIPDashboard from "@/pages/vip-portal/VIPDashboard";
 import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
 import { InboxPage } from "@/pages/InboxPage";
+import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useState } from "react";
 
 function Router() {
   return (
@@ -124,6 +127,19 @@ function Router() {
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
+  const [showQuickAddTask, setShowQuickAddTask] = useState(false);
+
+  // Global keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: "t",
+      ctrl: true,
+      shift: true,
+      callback: () => setShowQuickAddTask(true),
+      description: "Quick add task",
+    },
+  ]);
+
   return (
     <ErrorBoundary>
       <ThemeProvider
@@ -133,6 +149,10 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <QuickAddTaskModal
+            isOpen={showQuickAddTask}
+            onClose={() => setShowQuickAddTask(false)}
+          />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
