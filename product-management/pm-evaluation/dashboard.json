@@ -1,18 +1,19 @@
 {
-  "last_updated": "2025-11-04T06:43:59.086569Z",
+  "last_updated": "2025-11-04T06:49:33.113485Z",
   "summary": {
     "total": 7,
     "by_status": {
       "in-progress": 2,
       "approved": 4,
-      "completed": 1
+      "qa-verified": 1
     },
     "by_priority": {
       "null": 1,
       "high": 5,
       "medium": 1
     },
-    "total_progress": 17.5
+    "total_progress": 17.5,
+    "archived_count": 1
   },
   "initiatives": [
     {
@@ -152,11 +153,11 @@
     {
       "id": "TERP-INIT-005",
       "title": "Inventory System Stability & Robustness Improvements",
-      "status": "completed",
+      "status": "qa-verified",
       "priority": "high",
       "progress_percent": 100,
       "created_at": "2025-11-03T23:30:00.352512Z",
-      "last_updated": "2025-11-04T05:58:05.504547Z",
+      "last_updated": "2025-11-04T06:49:33.112366Z",
       "created_by": "dev-agent",
       "tags": [
         "inventory",
@@ -170,12 +171,6 @@
       "total_tasks": 0,
       "recent_updates": [
         {
-          "timestamp": "2025-11-04T01:14:28.253278Z",
-          "type": "task_completed",
-          "message": "Completed: Phase 1: Critical Fixes",
-          "task": "Phase 1: Critical Fixes"
-        },
-        {
           "timestamp": "2025-11-04T01:14:28.299437Z",
           "type": "progress_update",
           "message": "Progress updated: 10% \u2192 25.0%",
@@ -188,6 +183,13 @@
           "message": "All 4 phases complete. Production ready.",
           "old_status": "in-progress",
           "new_status": "completed"
+        },
+        {
+          "timestamp": "2025-11-04T06:49:33.112366Z",
+          "type": "status_change",
+          "message": "Marking as QA verified for archive test",
+          "old_status": "completed",
+          "new_status": "qa-verified"
         }
       ]
     },
@@ -256,7 +258,37 @@
       ]
     }
   ],
+  "archived_initiatives": [
+    {
+      "id": "TERP-INIT-005",
+      "title": "Inventory System Stability & Robustness Improvements",
+      "status": "archived",
+      "priority": "high",
+      "progress_percent": 100,
+      "created_at": "2025-11-03T23:30:00.352512Z",
+      "archived_at": "2025-11-04T06:49:33.144240Z",
+      "completed_at": "2025-11-04T06:49:33.112366Z",
+      "created_by": "dev-agent",
+      "tags": [
+        "inventory",
+        "stability",
+        "data-integrity",
+        "performance",
+        "testing",
+        "robustness"
+      ],
+      "completed_tasks": 0,
+      "total_tasks": 0
+    }
+  ],
   "recent_activity": [
+    {
+      "initiative_id": "TERP-INIT-005",
+      "initiative_title": "Inventory System Stability & Robustness Improvements",
+      "timestamp": "2025-11-04T06:49:33.112366Z",
+      "message": "Marking as QA verified for archive test",
+      "type": "status_change"
+    },
     {
       "initiative_id": "TERP-INIT-003",
       "initiative_title": "Calendar & Scheduling System",
@@ -345,13 +377,6 @@
       "initiative_id": "TERP-INIT-006",
       "initiative_title": "To-Do Lists + Universal Comments System",
       "timestamp": "2025-11-03T23:31:11.247334Z",
-      "message": "Status changed from pending_review to pending_review",
-      "type": "status_change"
-    },
-    {
-      "initiative_id": "TERP-INIT-005",
-      "initiative_title": "Inventory System Stability & Robustness Improvements",
-      "timestamp": "2025-11-03T23:30:11.673750Z",
       "message": "Status changed from pending_review to pending_review",
       "type": "status_change"
     },
