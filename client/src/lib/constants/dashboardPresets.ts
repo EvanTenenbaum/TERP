@@ -1,4 +1,4 @@
-import type { DashboardLayout, WidgetState } from '@/types/dashboard';
+import type { DashboardLayout } from '@/types/dashboard';
 
 export const LAYOUT_PRESETS: Record<string, DashboardLayout> = {
   executive: {
@@ -14,6 +14,7 @@ export const LAYOUT_PRESETS: Record<string, DashboardLayout> = {
       { id: 'transaction-snapshot', isVisible: false, isExpanded: false },
       { id: 'inventory-snapshot', isVisible: false, isExpanded: false },
       { id: 'matchmaking-opportunities', isVisible: false, isExpanded: false },
+      { id: 'inbox', isVisible: true, isExpanded: false, size: 'md' },
     ],
   },
   operations: {
@@ -29,6 +30,7 @@ export const LAYOUT_PRESETS: Record<string, DashboardLayout> = {
       { id: 'sales-comparison', isVisible: true, isExpanded: false, size: 'md' },
       { id: 'profitability', isVisible: true, isExpanded: false, size: 'lg' },
       { id: 'matchmaking-opportunities', isVisible: true, isExpanded: false, size: 'lg' },
+      { id: 'inbox', isVisible: true, isExpanded: false, size: 'md' },
     ],
   },
   sales: {
@@ -44,6 +46,7 @@ export const LAYOUT_PRESETS: Record<string, DashboardLayout> = {
       { id: 'inventory-snapshot', isVisible: false, isExpanded: false },
       { id: 'total-debt', isVisible: false, isExpanded: false },
       { id: 'profitability', isVisible: false, isExpanded: false },
+      { id: 'inbox', isVisible: true, isExpanded: false, size: 'md' },
     ],
   },
   custom: {
@@ -96,5 +99,10 @@ export const WIDGET_METADATA = {
     name: 'Matchmaking Opportunities',
     description: 'Client needs and inventory matches',
     category: 'sales',
+  },
+  'inbox': {
+    name: 'Inbox',
+    description: 'Recent notifications and mentions',
+    category: 'operations',
   },
 };
