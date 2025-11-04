@@ -8,6 +8,7 @@ import { DashboardHeader } from "@/components/dashboard/v3/DashboardHeader";
 import { DashboardLayoutManager } from "@/components/dashboard/v3/DashboardLayoutManager";
 import { CustomizationPanel } from "@/components/dashboard/v3/CustomizationPanel";
 import { CommentWidget } from "@/components/comments/CommentWidget";
+import { InboxWidget } from "@/components/inbox/InboxWidget";
 
 // Import v2 widgets (v3 widgets are being migrated)
 import {
@@ -53,6 +54,8 @@ function DashboardContent() {
         return <ProfitabilityWidget key={widgetId} />;
       case "matchmaking-opportunities":
         return <MatchmakingOpportunitiesWidget key={widgetId} />;
+      case "inbox":
+        return <InboxWidget key={widgetId} />;
       default:
         return null;
     }

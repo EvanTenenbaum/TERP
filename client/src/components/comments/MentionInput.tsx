@@ -7,7 +7,7 @@ interface MentionInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onKeyDown?: (e: { key: string; preventDefault: () => void }) => void;
 }
 
 export function MentionInput({
@@ -20,10 +20,11 @@ export function MentionInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [_mentionQuery, _setMentionQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const textareaRef = useRef<React.ElementRef<typeof Textarea>>(null);
+  const textareaRef = useRef<{ selectionStart?: number | null; selectionEnd?: number | null; value?: string; focus?: () => void } | null>(null);
 
   // Fetch users for mentions - using empty array for now since endpoint doesn't exist yet
-  const users: any[] = [];
+  const _users: { id: number; username: string; email?: string }[] = [];
+  const users = _users;
 
   useEffect(() => {
     // Detect @ mentions
@@ -35,11 +36,11 @@ export function MentionInput({
       const textAfterAt = textBeforeCursor.substring(lastAtSymbol + 1);
       // Check if there's a space after @
       if (!textAfterAt.includes(" ") && textAfterAt.length > 0) {
-        setMentionQuery(textAfterAt);
+        _setMentionQuery(textAfterAt);
         setShowSuggestions(true);
         setSelectedIndex(0);
       } else if (textAfterAt.length === 0) {
-        setMentionQuery("");
+        _setMentionQuery("");
         setShowSuggestions(true);
         setSelectedIndex(0);
       } else {
@@ -68,11 +69,12 @@ export function MentionInput({
     setTimeout(() => {
       textareaRef.current?.focus();
       const newCursorPos = lastAtSymbol + username.length + 2;
-      textareaRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+      const ref = textareaRef.current as { setSelectionRange?: (start: number, end: number) => void } | null;
+      ref?.setSelectionRange?.(newCursorPos, newCursorPos);
     }, 0);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: { key: string; preventDefault: () => void }) => {
     if (showSuggestions && users.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -106,7 +108,7 @@ export function MentionInput({
       {/* Mention Suggestions */}
       {showSuggestions && users.length > 0 && (
         <div className="absolute bottom-full left-0 mb-2 w-64 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto z-50">
-          {users.map((user: any, index: number) => (
+          {users.map((user: { id: number; username: string; email?: string }, index: number) => (
             <button
               key={user.id}
               className={cn(
