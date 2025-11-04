@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 import argparse
 import shutil
+import subprocess
 
 # Get the product-management root directory
 SCRIPT_DIR = Path(__file__).parent
@@ -68,6 +69,7 @@ def sync_manifests_with_registry():
     """Sync manifest files with registry to ensure status consistency"""
     registry = load_registry()
     synced_count = 0
+    status_changes = []  # Track status changes for auto-regeneration
     
     for init_entry in registry.get("initiatives", []):
         try:
@@ -85,6 +87,7 @@ def sync_manifests_with_registry():
             if registry_status and registry_status != manifest_status:
                 manifest["status"] = registry_status
                 needs_update = True
+                status_changes.append((manifest_status, registry_status))
                 print(f"  Syncing {init_entry['id']}: status {manifest_status} → {registry_status}")
             
             # Sync priority
@@ -101,6 +104,14 @@ def sync_manifests_with_registry():
         except Exception as e:
             print(f"Warning: Could not sync {init_entry['id']}: {e}")
             continue
+    
+    # Trigger auto-regeneration if any significant status changes occurred
+    for old_status, new_status in status_changes:
+        # Check if this is a significant change (especially approvals)
+        if new_status == "approved" or old_status == "pending_review":
+            print(f"\n🔄 Detected approval during sync, triggering auto-regeneration...")
+            trigger_auto_regeneration(old_status, new_status)
+            break  # Only trigger once even if multiple changes
     
     return synced_count
 
@@ -192,6 +203,56 @@ def update_dashboard():
     return dashboard
 
 
+def trigger_auto_regeneration(old_status, new_status):
+    """Trigger automatic roadmap and parallelization regeneration on status changes"""
+    # Determine if this status change warrants regeneration
+    significant_transitions = [
+        ("pending_review", "approved"),  # New initiative enters roadmap
+        ("approved", "in-progress"),     # Initiative starts (affects capacity)
+        ("in-progress", "ready-to-deploy"),  # Work complete (frees capacity)
+        ("ready-to-deploy", "deployed"),     # Deployment stage
+        ("deployed", "qa-verified"),         # QA verification complete
+    ]
+    
+    # Check if this is a significant transition
+    is_significant = (old_status, new_status) in significant_transitions
+    
+    # Also regenerate if moving to/from in-progress (affects parallelization)
+    if new_status == "in-progress" or old_status == "in-progress":
+        is_significant = True
+    
+    if not is_significant:
+        return
+    
+    print(f"\n🔄 Triggering auto-regeneration (status change: {old_status} → {new_status})...")
+    
+    # Run auto-regenerate script
+    auto_regen_script = SCRIPT_DIR / "auto-regenerate.py"
+    
+    try:
+        result = subprocess.run(
+            [sys.executable, str(auto_regen_script)],
+            cwd=str(PM_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+        
+        if result.returncode == 0:
+            print("✅ Auto-regeneration complete")
+            # Print output for visibility
+            if result.stdout:
+                for line in result.stdout.strip().split('\n'):
+                    print(f"   {line}")
+        else:
+            print(f"⚠️  Auto-regeneration failed: {result.stderr[:200]}")
+    
+    except subprocess.TimeoutExpired:
+        print("⚠️  Auto-regeneration timed out")
+    except Exception as e:
+        print(f"⚠️  Auto-regeneration error: {e}")
+
+
 def update_status(init_id, status, message=None, update_type="status_change"):
     """Update initiative status"""
     manifest, init_dir = load_initiative(init_id)
@@ -252,6 +313,10 @@ def update_status(init_id, status, message=None, update_type="status_change"):
     print(f"   Status: {old_status} → {status}")
     if message:
         print(f"   Message: {message}")
+    
+    # Trigger auto-regeneration of roadmap and parallelization analysis
+    # This runs whenever status changes to keep the roadmap current
+    trigger_auto_regeneration(old_status, status)
     
     # Update progress.md file
     update_progress_file(init_dir, manifest)

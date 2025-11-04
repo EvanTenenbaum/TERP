@@ -1,10 +1,10 @@
 {
-  "id": "TERP-INIT-007",
+  "id": "TERP-INIT-008",
   "title": "Codebase Cleanup & Technical Debt Reduction",
   "created_by": "dev-agent",
   "created_at": "2025-11-04T06:22:44.811412Z",
   "status": "approved",
-  "priority": "high",
+  "priority": "medium",
   "estimated_effort": null,
   "features": [],
   "dependencies": [],

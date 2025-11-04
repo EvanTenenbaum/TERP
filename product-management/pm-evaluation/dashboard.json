@@ -1,18 +1,18 @@
 {
-  "last_updated": "2025-11-04T06:25:02.206949Z",
+  "last_updated": "2025-11-04T06:43:59.086569Z",
   "summary": {
     "total": 7,
     "by_status": {
       "in-progress": 2,
-      "pending_review": 2,
-      "approved": 2,
+      "approved": 4,
       "completed": 1
     },
     "by_priority": {
-      "null": 3,
-      "high": 4
+      "null": 1,
+      "high": 5,
+      "medium": 1
     },
-    "total_progress": 24.0
+    "total_progress": 17.5
   },
   "initiatives": [
     {
@@ -57,8 +57,8 @@
     {
       "id": "TERP-INIT-007",
       "title": "Codebase Cleanup & Technical Debt Reduction",
-      "status": "pending_review",
-      "priority": null,
+      "status": "approved",
+      "priority": "high",
       "progress_percent": 0,
       "created_at": "2025-11-04T06:22:44.811412Z",
       "last_updated": "2025-11-04T06:25:02.205493Z",
@@ -83,9 +83,9 @@
       "title": "Calendar & Scheduling System",
       "status": "approved",
       "priority": "high",
-      "progress_percent": 0,
+      "progress_percent": 10,
       "created_at": "2025-11-03T23:20:59.780743Z",
-      "last_updated": "2025-11-03T23:21:17.692789Z",
+      "last_updated": "2025-11-04T06:43:59.085685Z",
       "created_by": "dev-agent",
       "tags": [
         "calendar",
@@ -104,6 +104,20 @@
           "message": "Status changed from pending_review to pending_review",
           "old_status": "pending_review",
           "new_status": "pending_review"
+        },
+        {
+          "timestamp": "2025-11-04T06:43:54.030437Z",
+          "type": "status_change",
+          "message": "Testing auto-regeneration trigger",
+          "old_status": "approved",
+          "new_status": "in-progress"
+        },
+        {
+          "timestamp": "2025-11-04T06:43:59.085685Z",
+          "type": "status_change",
+          "message": "Reverting test change",
+          "old_status": "in-progress",
+          "new_status": "approved"
         }
       ]
     },
@@ -164,7 +178,7 @@
         {
           "timestamp": "2025-11-04T01:14:28.299437Z",
           "type": "progress_update",
-          "message": "Progress updated: 10% → 25.0%",
+          "message": "Progress updated: 10% \u2192 25.0%",
           "old_percent": 10,
           "new_percent": 25.0
         },
@@ -218,10 +232,10 @@
       ]
     },
     {
-      "id": "TERP-INIT-007",
+      "id": "TERP-INIT-008",
       "title": "Codebase Cleanup & Technical Debt Reduction",
-      "status": "pending_review",
-      "priority": null,
+      "status": "approved",
+      "priority": "medium",
       "progress_percent": 0,
       "created_at": "2025-11-04T06:22:44.811412Z",
       "last_updated": "2025-11-04T06:25:02.205493Z",
@@ -244,7 +258,28 @@
   ],
   "recent_activity": [
     {
+      "initiative_id": "TERP-INIT-003",
+      "initiative_title": "Calendar & Scheduling System",
+      "timestamp": "2025-11-04T06:43:59.085685Z",
+      "message": "Reverting test change",
+      "type": "status_change"
+    },
+    {
+      "initiative_id": "TERP-INIT-003",
+      "initiative_title": "Calendar & Scheduling System",
+      "timestamp": "2025-11-04T06:43:54.030437Z",
+      "message": "Testing auto-regeneration trigger",
+      "type": "status_change"
+    },
+    {
       "initiative_id": "TERP-INIT-007",
+      "initiative_title": "Codebase Cleanup & Technical Debt Reduction",
+      "timestamp": "2025-11-04T06:25:02.205493Z",
+      "message": "Status changed from pending_review to pending_review",
+      "type": "status_change"
+    },
+    {
+      "initiative_id": "TERP-INIT-008",
       "initiative_title": "Codebase Cleanup & Technical Debt Reduction",
       "timestamp": "2025-11-04T06:25:02.205493Z",
       "message": "Status changed from pending_review to pending_review",
@@ -289,7 +324,7 @@
       "initiative_id": "TERP-INIT-005",
       "initiative_title": "Inventory System Stability & Robustness Improvements",
       "timestamp": "2025-11-04T01:14:28.299437Z",
-      "message": "Progress updated: 10% → 25.0%",
+      "message": "Progress updated: 10% \u2192 25.0%",
       "type": "progress_update"
     },
     {
