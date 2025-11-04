@@ -11,7 +11,7 @@
 **CRITICAL**: These credentials are required for deployment monitoring and database access.
 
 ### Digital Ocean API
-**API Key**: `dop_v1_528408bf76b243af7d996080a71ac8059484bea8a8bd9c724439da99428a585d`
+**API Key**: `dop_v1_ab90cb11747ba6c2722b0c1989b54916d68595c1358733e78681bb022a36fe45`
 
 **Use for**:
 - Monitoring deployment status

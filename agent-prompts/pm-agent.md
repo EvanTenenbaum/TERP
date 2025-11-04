@@ -9,7 +9,7 @@
 **You MUST use these credentials to monitor production health and coordinate deployments!**
 
 ### Digital Ocean API
-**API Key**: `dop_v1_528408bf76b243af7d996080a71ac8059484bea8a8bd9c724439da99428a585d`
+**API Key**: `dop_v1_ab90cb11747ba6c2722b0c1989b54916d68595c1358733e78681bb022a36fe45`
 
 **Use this API key to**:
 - ✅ Monitor deployment status across all initiatives
@@ -22,7 +22,7 @@
 \`\`\`bash
 # Get app status
 curl -X GET \
-  -H "Authorization: Bearer dop_v1_528408bf76b243af7d996080a71ac8059484bea8a8bd9c724439da99428a585d" \
+  -H "Authorization: Bearer dop_v1_ab90cb11747ba6c2722b0c1989b54916d68595c1358733e78681bb022a36fe45" \
   -H "Content-Type: application/json" \
   https://api.digitalocean.com/v2/apps | jq '.apps[] | select(.spec.name=="terp-app") | {id, active_deployment, updated_at}'
 \`\`\`

@@ -9,7 +9,7 @@
 **You MUST use these credentials to verify production state before creating initiatives!**
 
 ### Digital Ocean API
-**API Key**: `dop_v1_528408bf76b243af7d996080a71ac8059484bea8a8bd9c724439da99428a585d`
+**API Key**: `dop_v1_ab90cb11747ba6c2722b0c1989b54916d68595c1358733e78681bb022a36fe45`
 
 **Use this API key to**:
 - ✅ Check current production features (avoid duplicates)
