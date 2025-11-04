@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-11-04T06:21:15.199855Z",
+  "generated_at": "2025-11-04T06:43:59.149020Z",
   "codebase_files_count": 469,
   "initiative_keywords": {
     "TERP-INIT-001": [
@@ -8,15 +8,11 @@
       "sample"
     ],
     "TERP-INIT-007": [
-      "accounting",
-      "calendar",
-      "comment",
-      "core",
-      "ledger",
-      "module",
-      "smart",
-      "splitting",
-      "transaction"
+      "cleanup",
+      "codebase",
+      "debt",
+      "reduction",
+      "technical"
     ],
     "TERP-INIT-003": [
       "accounting",
@@ -54,6 +50,13 @@
       "system",
       "todo",
       "universal"
+    ],
+    "TERP-INIT-008": [
+      "cleanup",
+      "codebase",
+      "debt",
+      "reduction",
+      "technical"
     ]
   },
   "initiative_files": {
@@ -64,74 +67,10 @@
       "server/samplesDb.ts"
     ],
     "TERP-INIT-007": [
-      "client/src/_core/hooks/useAuth.ts",
-      "client/src/components/accounting/AccountSelector.tsx",
-      "client/src/components/accounting/AgingBadge.tsx",
-      "client/src/components/accounting/AmountInput.tsx",
-      "client/src/components/accounting/FiscalPeriodSelector.tsx",
-      "client/src/components/accounting/JournalEntryForm.tsx",
-      "client/src/components/accounting/StatusBadge.tsx",
-      "client/src/components/accounting/index.ts",
-      "client/src/components/comments/CommentItem.tsx",
-      "client/src/components/comments/CommentList.tsx",
-      "client/src/components/comments/CommentWidget.tsx",
-      "client/src/components/comments/MentionInput.tsx",
-      "client/src/components/dashboard/widgets-v2/CommentsPanel.tsx",
-      "client/src/components/dashboard/widgets-v2/SmartOpportunitiesWidget.tsx",
-      "client/src/components/dashboard/widgets-v2/TransactionSnapshotWidget.tsx",
-      "client/src/components/ui/calendar.tsx",
-      "client/src/components/vip-portal/TransactionHistory.tsx",
-      "client/src/pages/accounting/AccountingDashboard.tsx",
-      "client/src/pages/accounting/BankAccounts.tsx",
-      "client/src/pages/accounting/BankTransactions.tsx",
-      "client/src/pages/accounting/Bills.tsx",
-      "client/src/pages/accounting/ChartOfAccounts.tsx",
-      "client/src/pages/accounting/Expenses.tsx",
-      "client/src/pages/accounting/FiscalPeriods.tsx",
-      "client/src/pages/accounting/GeneralLedger.tsx",
-      "client/src/pages/accounting/Invoices.tsx",
-      "client/src/pages/accounting/Payments.tsx",
-      "drizzle/migrations/0005_add_comments_system.sql",
-      "server/_core/cache.ts",
-      "server/_core/connectionPool.ts",
-      "server/_core/context.ts",
-      "server/_core/cookies.ts",
-      "server/_core/dataApi.ts",
-      "server/_core/db.ts",
-      "server/_core/dbLocking.ts",
-      "server/_core/dbTransaction.ts",
-      "server/_core/dbUtils.ts",
-      "server/_core/env.ts",
-      "server/_core/errors.ts",
-      "server/_core/gracefulShutdown.ts",
-      "server/_core/healthCheck.ts",
-      "server/_core/imageGeneration.ts",
-      "server/_core/index.ts",
-      "server/_core/llm.ts",
-      "server/_core/logger.ts",
-      "server/_core/monitoring.ts",
-      "server/_core/notification.ts",
-      "server/_core/rateLimiter.ts",
-      "server/_core/requestLogger.ts",
-      "server/_core/sanitization.ts",
-      "server/_core/simpleAuth.ts",
-      "server/_core/systemRouter.ts",
-      "server/_core/trpc.ts",
-      "server/_core/types/cookie.d.ts",
-      "server/_core/types/manusTypes.ts",
-      "server/_core/validation.ts",
-      "server/_core/vite.ts",
-      "server/_core/voiceTranscription.ts",
-      "server/accountingDb.ts",
-      "server/accountingHooks.ts",
-      "server/commentsDb.ts",
-      "server/dbTransaction.ts",
-      "server/routers/accounting.ts",
-      "server/routers/accountingHooks.ts",
-      "server/routers/comments.ts",
-      "server/transactionHooks.ts",
-      "server/transactionsDb.ts",
-      "shared/_core/errors.ts"
+      "client/src/components/dashboard/widgets-v2/ClientDebtLeaderboard.tsx",
+      "client/src/components/dashboard/widgets-v2/TotalDebtWidget.tsx",
+      "server/badDebtDb.ts",
+      "server/routers/badDebt.ts"
     ],
     "TERP-INIT-003": [
       "client/src/components/accounting/AccountSelector.tsx",
@@ -562,6 +501,12 @@
       "server/todoActivityDb.ts",
       "server/todoListsDb.ts",
       "server/todoTasksDb.ts"
+    ],
+    "TERP-INIT-008": [
+      "client/src/components/dashboard/widgets-v2/ClientDebtLeaderboard.tsx",
+      "client/src/components/dashboard/widgets-v2/TotalDebtWidget.tsx",
+      "server/badDebtDb.ts",
+      "server/routers/badDebt.ts"
     ]
   },
   "initiative_modules": {
@@ -571,9 +516,7 @@
     ],
     "TERP-INIT-007": [
       "client",
-      "drizzle",
-      "server",
-      "shared"
+      "server"
     ],
     "TERP-INIT-003": [
       "client",
@@ -593,6 +536,10 @@
     "TERP-INIT-006": [
       "client",
       "drizzle",
+      "server"
+    ],
+    "TERP-INIT-008": [
+      "client",
       "server"
     ]
   },
@@ -659,43 +606,46 @@
       ],
       "risk_level": "low"
     },
+    "TERP-INIT-001_TERP-INIT-008": {
+      "init_a": "TERP-INIT-001",
+      "init_b": "TERP-INIT-008",
+      "overlap_pct": 0.0,
+      "shared_files": [],
+      "shared_files_count": 0,
+      "shared_modules": [
+        "client",
+        "server"
+      ],
+      "risk_level": "low"
+    },
+    "TERP-INIT-007_TERP-INIT-008": {
+      "init_a": "TERP-INIT-007",
+      "init_b": "TERP-INIT-008",
+      "overlap_pct": 1.0,
+      "shared_files": [
+        "client/src/components/dashboard/widgets-v2/ClientDebtLeaderboard.tsx",
+        "client/src/components/dashboard/widgets-v2/TotalDebtWidget.tsx",
+        "server/badDebtDb.ts",
+        "server/routers/badDebt.ts"
+      ],
+      "shared_files_count": 4,
+      "shared_modules": [
+        "client",
+        "server"
+      ],
+      "risk_level": "high"
+    },
     "TERP-INIT-003_TERP-INIT-007": {
       "init_a": "TERP-INIT-003",
       "init_b": "TERP-INIT-007",
-      "overlap_pct": 0.231,
-      "shared_files": [
-        "client/src/components/accounting/AccountSelector.tsx",
-        "client/src/components/accounting/AgingBadge.tsx",
-        "client/src/components/accounting/AmountInput.tsx",
-        "client/src/components/accounting/FiscalPeriodSelector.tsx",
-        "client/src/components/accounting/JournalEntryForm.tsx",
-        "client/src/components/accounting/StatusBadge.tsx",
-        "client/src/components/accounting/index.ts",
-        "client/src/components/ui/calendar.tsx",
-        "client/src/pages/accounting/AccountingDashboard.tsx",
-        "client/src/pages/accounting/BankAccounts.tsx",
-        "client/src/pages/accounting/BankTransactions.tsx",
-        "client/src/pages/accounting/Bills.tsx",
-        "client/src/pages/accounting/ChartOfAccounts.tsx",
-        "client/src/pages/accounting/Expenses.tsx",
-        "client/src/pages/accounting/FiscalPeriods.tsx",
-        "client/src/pages/accounting/GeneralLedger.tsx",
-        "client/src/pages/accounting/Invoices.tsx",
-        "client/src/pages/accounting/Payments.tsx",
-        "drizzle/migrations/0005_add_comments_system.sql",
-        "server/_core/systemRouter.ts",
-        "server/accountingDb.ts",
-        "server/accountingHooks.ts",
-        "server/routers/accounting.ts",
-        "server/routers/accountingHooks.ts"
-      ],
-      "shared_files_count": 24,
+      "overlap_pct": 0.0,
+      "shared_files": [],
+      "shared_files_count": 0,
       "shared_modules": [
         "client",
-        "drizzle",
         "server"
       ],
-      "risk_level": "medium"
+      "risk_level": "low"
     },
     "TERP-INIT-003_TERP-INIT-004": {
       "init_a": "TERP-INIT-003",
@@ -825,47 +775,29 @@
       ],
       "risk_level": "low"
     },
+    "TERP-INIT-003_TERP-INIT-008": {
+      "init_a": "TERP-INIT-003",
+      "init_b": "TERP-INIT-008",
+      "overlap_pct": 0.0,
+      "shared_files": [],
+      "shared_files_count": 0,
+      "shared_modules": [
+        "client",
+        "server"
+      ],
+      "risk_level": "low"
+    },
     "TERP-INIT-004_TERP-INIT-007": {
       "init_a": "TERP-INIT-004",
       "init_b": "TERP-INIT-007",
-      "overlap_pct": 0.099,
+      "overlap_pct": 0.007,
       "shared_files": [
-        "client/src/_core/hooks/useAuth.ts",
-        "client/src/components/accounting/AccountSelector.tsx",
-        "client/src/components/accounting/AgingBadge.tsx",
-        "client/src/components/accounting/AmountInput.tsx",
-        "client/src/components/accounting/FiscalPeriodSelector.tsx",
-        "client/src/components/accounting/JournalEntryForm.tsx",
-        "client/src/components/accounting/StatusBadge.tsx",
-        "client/src/components/accounting/index.ts",
-        "client/src/components/comments/CommentItem.tsx",
-        "client/src/components/comments/CommentList.tsx",
-        "client/src/components/comments/CommentWidget.tsx",
-        "client/src/components/comments/MentionInput.tsx",
-        "client/src/components/dashboard/widgets-v2/CommentsPanel.tsx",
-        "client/src/components/dashboard/widgets-v2/SmartOpportunitiesWidget.tsx",
-        "client/src/components/dashboard/widgets-v2/TransactionSnapshotWidget.tsx",
-        "client/src/components/ui/calendar.tsx",
-        "client/src/components/vip-portal/TransactionHistory.tsx",
-        "client/src/pages/accounting/AccountingDashboard.tsx",
-        "client/src/pages/accounting/BankAccounts.tsx",
-        "client/src/pages/accounting/BankTransactions.tsx",
-        "client/src/pages/accounting/Bills.tsx",
-        "client/src/pages/accounting/ChartOfAccounts.tsx",
-        "client/src/pages/accounting/Expenses.tsx",
-        "client/src/pages/accounting/FiscalPeriods.tsx",
-        "client/src/pages/accounting/GeneralLedger.tsx",
-        "client/src/pages/accounting/Invoices.tsx",
-        "client/src/pages/accounting/Payments.tsx",
-        "server/_core/dbTransaction.ts",
-        "server/dbTransaction.ts",
-        "server/transactionHooks.ts",
-        "server/transactionsDb.ts"
+        "client/src/components/dashboard/widgets-v2/ClientDebtLeaderboard.tsx",
+        "client/src/components/dashboard/widgets-v2/TotalDebtWidget.tsx"
       ],
-      "shared_files_count": 31,
+      "shared_files_count": 2,
       "shared_modules": [
         "client",
-        "drizzle",
         "server"
       ],
       "risk_level": "low"
@@ -953,25 +885,29 @@
       ],
       "risk_level": "low"
     },
+    "TERP-INIT-004_TERP-INIT-008": {
+      "init_a": "TERP-INIT-004",
+      "init_b": "TERP-INIT-008",
+      "overlap_pct": 0.007,
+      "shared_files": [
+        "client/src/components/dashboard/widgets-v2/ClientDebtLeaderboard.tsx",
+        "client/src/components/dashboard/widgets-v2/TotalDebtWidget.tsx"
+      ],
+      "shared_files_count": 2,
+      "shared_modules": [
+        "client",
+        "server"
+      ],
+      "risk_level": "low"
+    },
     "TERP-INIT-005_TERP-INIT-007": {
       "init_a": "TERP-INIT-005",
       "init_b": "TERP-INIT-007",
-      "overlap_pct": 0.081,
-      "shared_files": [
-        "client/src/components/dashboard/widgets-v2/TransactionSnapshotWidget.tsx",
-        "client/src/components/vip-portal/TransactionHistory.tsx",
-        "client/src/pages/accounting/BankTransactions.tsx",
-        "drizzle/migrations/0005_add_comments_system.sql",
-        "server/_core/dbTransaction.ts",
-        "server/_core/systemRouter.ts",
-        "server/dbTransaction.ts",
-        "server/transactionHooks.ts",
-        "server/transactionsDb.ts"
-      ],
-      "shared_files_count": 9,
+      "overlap_pct": 0.0,
+      "shared_files": [],
+      "shared_files_count": 0,
       "shared_modules": [
         "client",
-        "drizzle",
         "server"
       ],
       "risk_level": "low"
@@ -993,35 +929,48 @@
       ],
       "risk_level": "low"
     },
+    "TERP-INIT-005_TERP-INIT-008": {
+      "init_a": "TERP-INIT-005",
+      "init_b": "TERP-INIT-008",
+      "overlap_pct": 0.0,
+      "shared_files": [],
+      "shared_files_count": 0,
+      "shared_modules": [
+        "client",
+        "server"
+      ],
+      "risk_level": "low"
+    },
     "TERP-INIT-006_TERP-INIT-007": {
       "init_a": "TERP-INIT-006",
       "init_b": "TERP-INIT-007",
-      "overlap_pct": 0.098,
-      "shared_files": [
-        "client/src/components/comments/CommentItem.tsx",
-        "client/src/components/comments/CommentList.tsx",
-        "client/src/components/comments/CommentWidget.tsx",
-        "client/src/components/comments/MentionInput.tsx",
-        "client/src/components/dashboard/widgets-v2/CommentsPanel.tsx",
-        "drizzle/migrations/0005_add_comments_system.sql",
-        "server/_core/systemRouter.ts",
-        "server/commentsDb.ts",
-        "server/routers/comments.ts"
-      ],
-      "shared_files_count": 9,
+      "overlap_pct": 0.0,
+      "shared_files": [],
+      "shared_files_count": 0,
       "shared_modules": [
         "client",
-        "drizzle",
+        "server"
+      ],
+      "risk_level": "low"
+    },
+    "TERP-INIT-006_TERP-INIT-008": {
+      "init_a": "TERP-INIT-006",
+      "init_b": "TERP-INIT-008",
+      "overlap_pct": 0.0,
+      "shared_files": [],
+      "shared_files_count": 0,
+      "shared_modules": [
+        "client",
         "server"
       ],
       "risk_level": "low"
     }
   },
   "summary": {
-    "total_initiatives": 6,
-    "total_comparisons": 15,
-    "high_risk_pairs": 1,
-    "medium_risk_pairs": 1,
-    "low_risk_pairs": 13
+    "total_initiatives": 7,
+    "total_comparisons": 21,
+    "high_risk_pairs": 2,
+    "medium_risk_pairs": 0,
+    "low_risk_pairs": 19
   }
 }
