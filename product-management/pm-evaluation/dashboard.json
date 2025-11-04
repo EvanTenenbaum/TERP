@@ -1,9 +1,10 @@
 {
-  "last_updated": "2025-11-04T10:34:03.290266Z",
+  "last_updated": "2025-11-04T17:11:57.793055Z",
   "summary": {
     "total": 6,
     "by_status": {
-      "in-progress": 5,
+      "in-progress": 4,
+      "ready-to-deploy": 1,
       "approved": 1
     },
     "by_priority": {
@@ -11,7 +12,7 @@
       "high": 4,
       "medium": 1
     },
-    "total_progress": 29.2,
+    "total_progress": 33.0,
     "archived_count": 1
   },
   "initiatives": [
@@ -87,9 +88,9 @@
       "title": "Calendar & Scheduling System",
       "status": "in-progress",
       "priority": "high",
-      "progress_percent": 10,
+      "progress_percent": 70,
       "created_at": "2025-11-03T23:20:59.780743Z",
-      "last_updated": "2025-11-04T06:43:59.085685Z",
+      "last_updated": "2025-11-04T17:11:50.015129Z",
       "created_by": "dev-agent",
       "tags": [
         "calendar",
@@ -128,11 +129,11 @@
     {
       "id": "TERP-INIT-004",
       "title": "Client Module: Phase 1 & 2 Workflow Improvements",
-      "status": "in-progress",
+      "status": "ready-to-deploy",
       "priority": "high",
-      "progress_percent": 70.0,
+      "progress_percent": 100,
       "created_at": "2025-11-03T23:26:04.811370Z",
-      "last_updated": "2025-11-04T10:34:03.289491Z",
+      "last_updated": "2025-11-04T17:11:50.015455Z",
       "created_by": "dev-agent",
       "tags": [
         "client-management",

@@ -43,12 +43,13 @@
       "assigned_to": "Implementation-Agent-1",
       "started_at": "2025-11-04T10:25:59.569424Z",
       "progress": 70,
-      "updated_at": "2025-11-04T17:07:41.691888Z"
+      "updated_at": "2025-11-04T17:07:41.691888Z",
+      "progress_percent": 70
     },
     {
       "id": "TERP-INIT-004",
       "title": "Client Module: Phase 1 & 2 Workflow Improvements",
-      "status": "complete",
+      "status": "ready-to-deploy",
       "created_at": "2025-11-03T23:26:04.811370Z",
       "tags": [
         "client-management",
@@ -57,7 +58,8 @@
         "phase1",
         "phase2"
       ],
-      "priority": "high"
+      "priority": "high",
+      "progress_percent": 100
     },
     {
       "id": "TERP-INIT-006",
