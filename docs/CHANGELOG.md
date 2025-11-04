@@ -4,11 +4,11 @@ All notable changes to the TERP project are documented in this file.
 
 ---
 
-## [TERP-INIT-005] Inventory System Stability & Robustness - Phase 1 Complete
+## [TERP-INIT-005] Inventory System Stability & Robustness - Phase 1, 2, 3 Complete
 
 **Date**: November 4, 2025  
-**Status**: Phase 1 Complete (25% overall progress)  
-**Commit**: a8647f1  
+**Status**: Phase 1-3 Complete (75% overall progress)  
+**Commits**: a8647f1 (Phase 1), e463867 (CHANGELOG), b68459c (Phase 2 & 3)  
 **Initiative**: TERP-INIT-005 - Inventory System Stability & Robustness Improvements
 
 ### Phase 1: Critical Fixes
@@ -99,20 +99,84 @@ CREATE TABLE sequences (
 - `generateBatchCode()` is now async and returns `Promise<string>`
 - Intake operations may take slightly longer due to transaction overhead
 
+##### Phase 2: Stability Improvements
+
+#### ✅ Task 2.1: Standardized Error Handling
+
+**Impact**: Consistent error handling across all inventory operations
+
+- Created `ErrorCatalog` with organized error definitions by category
+- Added inventory-specific errors (BATCH_NOT_FOUND, INSUFFICIENT_QUANTITY, etc.)
+- Enhanced `logger.ts` with `inventoryLogger` utilities
+- Added structured logging for operations, transactions, validation, and quantity changes
+- Implemented performance logging utility
+
+**Technical**: All inventory operations now use standardized `AppError` instances with proper error codes, status codes, and metadata.
+
+#### ✅ Task 2.2: Comprehensive Input Validation
+
+**Impact**: Prevents invalid data from entering the system
+
+- Created `/server/_core/validation.ts` with reusable validators
+- Added regex patterns for names, decimals, site codes, location codes
+- Implemented inter-field dependencies (COGS validation)
+- Enhanced Zod schemas with range constraints and custom refinements
+- Updated inventory router to use new validation schemas
+- Integrated structured logging for all operations
+
+**Technical**: All API endpoints now use enhanced Zod schemas with strict validation, including regex checks, range constraints, and inter-field dependencies.
+
+#### ✅ Task 2.3: Database Indexes
+
+**Status**: Already completed in Phase 1 ✅
+
+### Phase 3: Robustness & Testing
+
+#### ✅ Task 3.1: Quantity Consistency Checks
+
+**Impact**: Ensures data integrity for all quantity fields
+
+- Added `validateQuantityConsistency()` function
+- Added `getQuantityBreakdown()` utility
+- Enhanced `calculateAvailableQty()` with null-safe parsing
+- Validates: non-negative values, no NaN, allocated ≤ on-hand
+
+**Technical**: Quantity validation ensures all quantities are valid numbers, non-negative, and that total allocated (reserved + quarantine + hold) never exceeds on-hand quantity.
+
+#### ✅ Task 3.2: Metadata Schema Enforcement
+
+**Impact**: Structured metadata prevents parse errors and ensures consistency
+
+- Defined `BatchMetadata` interface with structured schema
+- Added `validateMetadata()` function
+- Enhanced `parseMetadata()` and `stringifyMetadata()` with validation
+- Schema includes: testResults, packaging, sourcing, notes, tags, customFields
+
+**Technical**: Metadata is now validated against a strict schema before storage, ensuring consistency and preventing parse errors.
+
+#### ✅ Task 3.3: Comprehensive Test Suite
+
+**Impact**: Foundation for high test coverage (>70% goal)
+
+- Created `/server/tests/inventoryUtils.test.ts` (28 tests)
+- Created `/server/tests/errors.test.ts` (15 tests)
+- Created `/server/tests/sequenceDb.test.ts` (test structure)
+- Tests cover: quantity calculations, status transitions, metadata validation, error catalog
+
+**Technical**: Comprehensive test suite using Vitest with unit tests for utilities and integration test structures. Sequence tests require database mocking (marked as `.todo()`).
+
+#### ✅ Task 3.4: Automated Audit Logging
+
+**Impact**: Complete audit trail for all inventory operations
+
+- Added inventory-specific audit event types (BATCH_CREATED, LOT_CREATED, etc.)
+- Created audit logging functions for all inventory operations
+- Enhanced `auditLogger.ts` with inventory-specific functions
+- Automatic logging for: batch creation, status changes, lot creation, vendor/brand/product creation, intake completion
+
+**Technical**: All state-changing inventory operations are now automatically logged in the `auditLogs` table with before/after states and metadata.
+
 ### Remaining Phases
-
-**Phase 2: Stability Improvements** (Planned)
-
-- Standardized error handling
-- Comprehensive input validation
-- Enhanced Zod schemas
-
-**Phase 3: Robustness & Testing** (Planned)
-
-- Quantity calculation consistency
-- Metadata schema enforcement
-- Comprehensive test suite (>70% coverage)
-- Automated audit logging
 
 **Phase 4: Optimization** (Planned)
 
