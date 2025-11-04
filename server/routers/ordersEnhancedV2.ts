@@ -77,7 +77,7 @@ export const ordersEnhancedV2Router = router({
             throw new Error(`Batch ${item.batchId} not found`);
           }
 
-          const originalCogs = parseFloat(batch.cogsPerUnit || "0");
+          const originalCogs = parseFloat(batch.unitCogs || "0");
           const cogsPerUnit = item.isCogsOverridden
             ? item.cogsPerUnit
             : originalCogs;
@@ -92,7 +92,7 @@ export const ordersEnhancedV2Router = router({
           } else {
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
-              batch.productCategory || "OTHER"
+              "OTHER"
             );
             marginPercent = marginResult.marginPercent || 0;
             marginSource = marginResult.source;
@@ -250,12 +250,12 @@ export const ordersEnhancedV2Router = router({
         throw new Error("Order not found");
       }
 
-      // Check version for optimistic locking
-      if (existingOrder.version !== input.version) {
-        throw new Error(
-          "Order has been modified by another user. Please refresh and try again."
-        );
-      }
+      // Check version for optimistic locking (disabled - version field not in schema)
+      // if (existingOrder.version !== input.version) {
+      //   throw new Error(
+      //     "Order has been modified by another user. Please refresh and try again."
+      //   );
+      // }
 
       // Calculate line item prices (same logic as createDraft)
       const lineItemsWithPrices = await Promise.all(
@@ -268,7 +268,7 @@ export const ordersEnhancedV2Router = router({
             throw new Error(`Batch ${item.batchId} not found`);
           }
 
-          const originalCogs = parseFloat(batch.cogsPerUnit || "0");
+          const originalCogs = parseFloat(batch.unitCogs || "0");
           const cogsPerUnit = item.isCogsOverridden
             ? item.cogsPerUnit
             : originalCogs;
@@ -282,7 +282,7 @@ export const ordersEnhancedV2Router = router({
           } else {
             const marginResult = await pricingService.getMarginWithFallback(
               existingOrder.clientId,
-              batch.productCategory || "OTHER"
+              "OTHER"
             );
             marginPercent = marginResult.marginPercent || 0;
             marginSource = marginResult.source;
@@ -353,7 +353,7 @@ export const ordersEnhancedV2Router = router({
           orderLevelAdjustmentMode: orderAdjustment?.mode || "DISCOUNT",
           showAdjustmentOnDocument: input.showAdjustmentOnDocument,
           notes: input.notes,
-          version: existingOrder.version + 1, // Increment version
+          // version: existingOrder.version + 1, // Increment version (disabled)
         })
         .where(eq(orders.id, input.orderId));
 
@@ -395,7 +395,7 @@ export const ordersEnhancedV2Router = router({
         orderId: input.orderId,
         totals,
         validation,
-        newVersion: existingOrder.version + 1,
+        // newVersion: existingOrder.version + 1, (disabled)
       };
     }),
 
@@ -425,12 +425,12 @@ export const ordersEnhancedV2Router = router({
         throw new Error("Order not found");
       }
 
-      // Check version
-      if (existingOrder.version !== input.version) {
-        throw new Error(
-          "Order has been modified. Please refresh and try again."
-        );
-      }
+      // Check version (disabled - version field not in schema)
+      // if (existingOrder.version !== input.version) {
+      //   throw new Error(
+      //     "Order has been modified. Please refresh and try again."
+      //   );
+      // }
 
       // Get line items
       const lineItems = await db.query.orderLineItems.findMany({
@@ -463,7 +463,7 @@ export const ordersEnhancedV2Router = router({
         .set({
           isDraft: false,
           confirmedAt: new Date(),
-          version: existingOrder.version + 1,
+          // version: existingOrder.version + 1, (disabled)
         })
         .where(eq(orders.id, input.orderId));
 
