@@ -31,7 +31,7 @@ curl -X GET \
 - **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
 - **Port**: `25060`
 - **User**: `doadmin`
-- **Password**: `AVNS_yEKEhPWr5qFJwqJaQnC`
+- **Password**: `AVNS_Q_RGkS7-uB3Bk7xC2am``
 - **Database**: `defaultdb`
 - **SSL**: Required
 
