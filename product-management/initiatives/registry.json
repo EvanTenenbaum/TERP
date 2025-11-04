@@ -68,7 +68,8 @@
         "testing",
         "robustness"
       ],
-      "priority": "high"
+      "priority": "high",
+      "assigned_to": null
     },
     {
       "id": "TERP-INIT-006",
