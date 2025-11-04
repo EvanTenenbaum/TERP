@@ -61,6 +61,7 @@ function Router() {
               <Route path="/dashboard" component={DashboardV3} />
               <Route path="/dashboard-v2" component={DashboardV2} />
               <Route path="/inventory" component={Inventory} />
+              <Route path="/inventory/:id" component={Inventory} />
               <Route
                 path="/accounting/dashboard"
                 component={AccountingDashboard}
