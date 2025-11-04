@@ -1,18 +1,18 @@
-import { Inbox, Search, Settings, User, Menu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
-import { trpc } from '@/lib/trpc';
-import versionInfo from '../../../version.json';
+import { Inbox, Search, Settings, User, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
+import versionInfo from "../../../version.json";
 
 interface AppHeaderProps {
   onMenuClick?: () => void;
 }
 
 export function AppHeader({ onMenuClick }: AppHeaderProps) {
-  const navigate = useNavigate();
-  
+  const [, setLocation] = useLocation();
+
   // Fetch inbox stats for unread count
   const { data: inboxStats } = trpc.inbox.getStats.useQuery();
 
@@ -50,23 +50,23 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           />
         </div>
       </div>
-      
+
       {/* Action buttons */}
       <div className="flex items-center gap-1 md:gap-2 ml-2">
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="hidden sm:flex relative"
-          onClick={() => navigate('/inbox')}
+          onClick={() => setLocation("/inbox")}
           title="Inbox"
         >
           <Inbox className="h-5 w-5" />
           {inboxStats && inboxStats.unread > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
             >
-              {inboxStats.unread > 9 ? '9+' : inboxStats.unread}
+              {inboxStats.unread > 9 ? "9+" : inboxStats.unread}
             </Badge>
           )}
         </Button>
@@ -77,8 +77,6 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           <User className="h-5 w-5" />
         </Button>
       </div>
-
     </header>
   );
 }
-
