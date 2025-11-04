@@ -37,6 +37,9 @@ import Help from "@/pages/Help";
 import VIPPortalConfigPage from "@/pages/VIPPortalConfigPage";
 import VIPLogin from "@/pages/vip-portal/VIPLogin";
 import VIPDashboard from "@/pages/vip-portal/VIPDashboard";
+import { TodoListsPage } from "@/pages/TodoListsPage";
+import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
+import { InboxPage } from "@/pages/InboxPage";
 
 function Router() {
   return (
@@ -101,6 +104,9 @@ function Router() {
                 path="/clients/:clientId/vip-portal-config"
                 component={VIPPortalConfigPage}
               />
+              <Route path="/todos" component={TodoListsPage} />
+              <Route path="/todos/:listId" component={TodoListDetailPage} />
+              <Route path="/inbox" component={InboxPage} />
               <Route path="/404" component={NotFound} />
               {/* Final fallback route */}
               <Route component={NotFound} />
