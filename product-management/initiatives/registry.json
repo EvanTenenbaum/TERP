@@ -29,7 +29,7 @@
     {
       "id": "TERP-INIT-003",
       "title": "Calendar & Scheduling System",
-      "status": "approved",
+      "status": "in-progress",
       "created_at": "2025-11-03T23:20:59.780743Z",
       "tags": [
         "calendar",
@@ -39,7 +39,10 @@
         "accounting-operations",
         "mobile-optimization"
       ],
-      "priority": "high"
+      "priority": "high",
+      "assigned_to": "Implementation-Agent-1",
+      "started_at": "2025-11-04T10:25:59.569424Z",
+      "progress": 0
     },
     {
       "id": "TERP-INIT-004",
