@@ -6,6 +6,42 @@
 
 ---
 
+## 🔑 Production Credentials
+
+**CRITICAL**: These credentials are required for deployment monitoring and database access.
+
+### Digital Ocean API
+**API Key**: `dop_v1_528408bf76b243af7d996080a71ac8059484bea8a8bd9c724439da99428a585d`
+
+**Use for**:
+- Monitoring deployment status
+- Checking build logs
+- Verifying application health
+- Triggering deployments
+
+### Production Database
+- **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
+- **Port**: `25060`
+- **User**: `doadmin`
+- **Password**: `AVNS_Q_RGkS7-uB3Bk7xC2am`
+- **Database**: `defaultdb`
+- **SSL Mode**: `REQUIRED`
+
+**Connection String**:
+```bash
+mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
+      --port=25060 \
+      --user=doadmin \
+      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --database=defaultdb \
+      --ssl-mode=REQUIRED
+```
+
+### Production App
+**URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 ## Table of Contents
 
 1. [System Integration & Change Management Protocol](#system-integration--change-management-protocol)
