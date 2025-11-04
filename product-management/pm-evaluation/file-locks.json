@@ -1,38 +1,23 @@
 {
   "locks": {
-    "../server/_core/errors.ts": {
-      "initiative_id": "TERP-INIT-005",
-      "locked_at": "2025-11-04T00:26:02.455149Z",
-      "locked_by": "unknown"
-    },
-    "../server/_core/logger.ts": {
-      "initiative_id": "TERP-INIT-005",
-      "locked_at": "2025-11-04T00:26:02.455149Z",
-      "locked_by": "unknown"
-    },
     "../server/routers/inventory.ts": {
       "initiative_id": "TERP-INIT-005",
-      "locked_at": "2025-11-04T00:26:02.455149Z",
-      "locked_by": "unknown"
-    },
-    "../server/routers/inventoryMovements.ts": {
-      "initiative_id": "TERP-INIT-005",
-      "locked_at": "2025-11-04T00:26:02.455149Z",
+      "locked_at": "2025-11-04T00:42:20.429027Z",
       "locked_by": "unknown"
     },
     "../server/inventoryDb.ts": {
       "initiative_id": "TERP-INIT-005",
-      "locked_at": "2025-11-04T00:26:02.455149Z",
+      "locked_at": "2025-11-04T00:42:20.429027Z",
       "locked_by": "unknown"
     },
-    "../server/inventoryMovementsDb.ts": {
+    "../server/_core/cache.ts": {
       "initiative_id": "TERP-INIT-005",
-      "locked_at": "2025-11-04T00:26:02.455149Z",
+      "locked_at": "2025-11-04T00:42:20.429027Z",
       "locked_by": "unknown"
     },
-    "../server/inventoryUtils.ts": {
+    "../client/src/pages/Inventory.tsx": {
       "initiative_id": "TERP-INIT-005",
-      "locked_at": "2025-11-04T00:26:02.455149Z",
+      "locked_at": "2025-11-04T00:42:20.429027Z",
       "locked_by": "unknown"
     }
   }

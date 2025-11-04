@@ -24,8 +24,9 @@ import {
   type Lot,
   type Batch,
 } from "../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as inventoryUtils from "./inventoryUtils";
+import { findOrCreate } from "./_core/dbUtils";
 
 export interface IntakeInput {
   vendorName: string;
@@ -93,95 +94,43 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
     // Wrap entire intake operation in transaction
     const result = await db.transaction(async tx => {
       // 1. Find or create vendor
-      const [existingVendor] = await tx
-        .select()
-        .from(vendors)
-        .where(eq(vendors.name, input.vendorName))
-        .limit(1);
-
-      let vendor: Vendor;
-      if (existingVendor) {
-        vendor = existingVendor;
-      } else {
-        const [created] = await tx
-          .insert(vendors)
-          .values({ name: input.vendorName })
-          .$returningId();
-
-        const [newVendor] = await tx
-          .select()
-          .from(vendors)
-          .where(eq(vendors.id, created.id));
-
-        vendor = newVendor;
-      }
+      // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
+      const vendor = await findOrCreate<Vendor>(
+        tx,
+        vendors,
+        [eq(vendors.name, input.vendorName)],
+        { name: input.vendorName }
+      );
 
       // 2. Find or create brand
-      const [existingBrand] = await tx
-        .select()
-        .from(brands)
-        .where(
-          and(eq(brands.name, input.brandName), eq(brands.vendorId, vendor.id))
-        )
-        .limit(1);
-
-      let brand: Brand;
-      if (existingBrand) {
-        brand = existingBrand;
-      } else {
-        const [created] = await tx
-          .insert(brands)
-          .values({
-            name: input.brandName,
-            vendorId: vendor.id,
-          })
-          .$returningId();
-
-        const [newBrand] = await tx
-          .select()
-          .from(brands)
-          .where(eq(brands.id, created.id));
-
-        brand = newBrand;
-      }
+      // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
+      const brand = await findOrCreate<Brand>(
+        tx,
+        brands,
+        [eq(brands.name, input.brandName), eq(brands.vendorId, vendor.id)],
+        { name: input.brandName, vendorId: vendor.id }
+      );
 
       // 3. Find or create product
+      // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
       const normalizedProductName = inventoryUtils.normalizeProductName(
         input.productName
       );
-      const [existingProduct] = await tx
-        .select()
-        .from(products)
-        .where(
-          and(
-            eq(products.nameCanonical, normalizedProductName),
-            eq(products.brandId, brand.id)
-          )
-        )
-        .limit(1);
-
-      let product: Product;
-      if (existingProduct) {
-        product = existingProduct;
-      } else {
-        const [created] = await tx
-          .insert(products)
-          .values({
-            brandId: brand.id,
-            nameCanonical: normalizedProductName,
-            category: input.category,
-            subcategory: input.subcategory,
-            strainId: input.strainId || null,
-          })
-          .$returningId();
-
-        const [newProduct] = await tx
-          .select()
-          .from(products)
-          .where(eq(products.id, created.id));
-
-        product = newProduct;
-      }
+      const product = await findOrCreate<Product>(
+        tx,
+        products,
+        [
+          eq(products.nameCanonical, normalizedProductName),
+          eq(products.brandId, brand.id),
+        ],
+        {
+          brandId: brand.id,
+          nameCanonical: normalizedProductName,
+          category: input.category,
+          subcategory: input.subcategory,
+          strainId: input.strainId || null,
+        }
+      );
 
       // 4. Generate lot code and create lot
       // Note: Sequence generation happens outside transaction but is atomic
