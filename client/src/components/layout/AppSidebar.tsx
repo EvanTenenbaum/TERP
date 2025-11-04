@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Target,
   ListTodo,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { APP_TITLE } from "@/const";
@@ -22,6 +23,7 @@ import { APP_TITLE } from "@/const";
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Todo Lists", href: "/todos", icon: ListTodo },
+  { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
   { name: "Sales Sheets", href: "/sales-sheets", icon: Layers },
   { name: "Create Order", href: "/orders/create", icon: FileText },
