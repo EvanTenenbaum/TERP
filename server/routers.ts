@@ -49,6 +49,13 @@ import { todoTasksRouter } from "./routers/todoTasks";
 import { commentsRouter } from "./routers/comments";
 import { inboxRouter } from "./routers/inbox";
 import { todoActivityRouter } from "./routers/todoActivity";
+import { calendarRouter } from "./routers/calendar";
+import { calendarParticipantsRouter } from "./routers/calendarParticipants";
+import { calendarRemindersRouter } from "./routers/calendarReminders";
+import { calendarViewsRouter } from "./routers/calendarViews";
+import { calendarRecurrenceRouter } from "./routers/calendarRecurrence";
+import { calendarMeetingsRouter } from "./routers/calendarMeetings";
+import { calendarFinancialsRouter } from "./routers/calendarFinancials";
 
 export const appRouter = router({
   system: systemRouter,
@@ -99,6 +106,13 @@ export const appRouter = router({
   comments: commentsRouter,
   inbox: inboxRouter,
   todoActivity: todoActivityRouter,
+  calendar: calendarRouter,
+  calendarParticipants: calendarParticipantsRouter,
+  calendarReminders: calendarRemindersRouter,
+  calendarViews: calendarViewsRouter,
+  calendarRecurrence: calendarRecurrenceRouter,
+  calendarMeetings: calendarMeetingsRouter,
+  calendarFinancials: calendarFinancialsRouter,
 });
 
 export type AppRouter = typeof appRouter;
