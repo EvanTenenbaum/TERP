@@ -1,13 +1,12 @@
 import { getDb } from "./db";
-import { 
-  inventoryAlerts, 
+import {
+  inventoryAlerts,
   batches,
-  products,
   sales,
-  type InsertInventoryAlert,
-  type InventoryAlert
+  type InventoryAlert,
+  type Batch,
 } from "../drizzle/schema";
-import { eq, and, sql, lte, desc } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 
 /**
  * Generate inventory alerts
@@ -19,7 +18,8 @@ export async function generateInventoryAlerts(): Promise<void> {
 
   try {
     // Get all active batches
-    const activeBatches = await db.select()
+    const activeBatches = await db
+      .select()
       .from(batches)
       .where(sql`${batches.status} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')`);
 
@@ -36,15 +36,17 @@ export async function generateInventoryAlerts(): Promise<void> {
       // Check for slow-moving inventory
       await checkSlowMoving(batch);
     }
-  } catch (error: any) {
-    throw new Error(`Failed to generate inventory alerts: ${error.message}`);
+  } catch (error) {
+    throw new Error(
+      `Failed to generate inventory alerts: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
 /**
  * Check for low stock alert
  */
-async function checkLowStock(batch: any): Promise<void> {
+async function checkLowStock(batch: Batch): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -53,19 +55,23 @@ async function checkLowStock(batch: any): Promise<void> {
 
   if (onHandQty > 0 && onHandQty <= lowStockThreshold) {
     // Check if alert already exists
-    const existing = await db.select()
+    const existing = await db
+      .select()
       .from(inventoryAlerts)
-      .where(and(
-        eq(inventoryAlerts.batchId, batch.id),
-        eq(inventoryAlerts.alertType, "LOW_STOCK"),
-        eq(inventoryAlerts.status, "ACTIVE")
-      ))
+      .where(
+        and(
+          eq(inventoryAlerts.batchId, batch.id),
+          eq(inventoryAlerts.alertType, "LOW_STOCK"),
+          eq(inventoryAlerts.status, "ACTIVE")
+        )
+      )
       .limit(1);
 
     if (existing.length === 0) {
       // Create new alert
-      const severity = onHandQty <= 5 ? "HIGH" : onHandQty <= 8 ? "MEDIUM" : "LOW";
-      
+      const severity =
+        onHandQty <= 5 ? "HIGH" : onHandQty <= 8 ? "MEDIUM" : "LOW";
+
       await db.insert(inventoryAlerts).values({
         alertType: "LOW_STOCK",
         batchId: batch.id,
@@ -73,30 +79,33 @@ async function checkLowStock(batch: any): Promise<void> {
         currentValue: onHandQty.toString(),
         severity,
         message: `Batch ${batch.code} is low on stock (${onHandQty} units remaining)`,
-        status: "ACTIVE"
+        status: "ACTIVE",
       });
     }
   } else if (onHandQty > lowStockThreshold) {
     // Resolve existing low stock alert if stock increased
-    await db.update(inventoryAlerts)
+    await db
+      .update(inventoryAlerts)
       .set({
         status: "RESOLVED",
         resolvedAt: new Date(),
         resolution: "Stock level increased",
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
-      .where(and(
-        eq(inventoryAlerts.batchId, batch.id),
-        eq(inventoryAlerts.alertType, "LOW_STOCK"),
-        eq(inventoryAlerts.status, "ACTIVE")
-      ));
+      .where(
+        and(
+          eq(inventoryAlerts.batchId, batch.id),
+          eq(inventoryAlerts.alertType, "LOW_STOCK"),
+          eq(inventoryAlerts.status, "ACTIVE")
+        )
+      );
   }
 }
 
 /**
  * Check for expiring batch alert
  */
-async function checkExpiring(batch: any): Promise<void> {
+async function checkExpiring(batch: Batch): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -109,22 +118,32 @@ async function checkExpiring(batch: any): Promise<void> {
 
     const expirationDate = new Date(metadata.expirationDate);
     const today = new Date();
-    const daysUntilExpiration = Math.floor((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const daysUntilExpiration = Math.floor(
+      (expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     if (daysUntilExpiration <= 30 && daysUntilExpiration > 0) {
       // Check if alert already exists
-      const existing = await db.select()
+      const existing = await db
+        .select()
         .from(inventoryAlerts)
-        .where(and(
-          eq(inventoryAlerts.batchId, batch.id),
-          eq(inventoryAlerts.alertType, "EXPIRING"),
-          eq(inventoryAlerts.status, "ACTIVE")
-        ))
+        .where(
+          and(
+            eq(inventoryAlerts.batchId, batch.id),
+            eq(inventoryAlerts.alertType, "EXPIRING"),
+            eq(inventoryAlerts.status, "ACTIVE")
+          )
+        )
         .limit(1);
 
       if (existing.length === 0) {
-        const severity = daysUntilExpiration <= 7 ? "HIGH" : daysUntilExpiration <= 14 ? "MEDIUM" : "LOW";
-        
+        const severity =
+          daysUntilExpiration <= 7
+            ? "HIGH"
+            : daysUntilExpiration <= 14
+              ? "MEDIUM"
+              : "LOW";
+
         await db.insert(inventoryAlerts).values({
           alertType: "EXPIRING",
           batchId: batch.id,
@@ -132,24 +151,27 @@ async function checkExpiring(batch: any): Promise<void> {
           currentValue: daysUntilExpiration.toString(),
           severity,
           message: `Batch ${batch.code} expires in ${daysUntilExpiration} days`,
-          status: "ACTIVE"
+          status: "ACTIVE",
         });
       }
     } else if (daysUntilExpiration <= 0) {
       // Batch expired, mark as HIGH severity
-      await db.update(inventoryAlerts)
+      await db
+        .update(inventoryAlerts)
         .set({
           severity: "HIGH",
           message: `Batch ${batch.code} has expired`,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
-        .where(and(
-          eq(inventoryAlerts.batchId, batch.id),
-          eq(inventoryAlerts.alertType, "EXPIRING"),
-          eq(inventoryAlerts.status, "ACTIVE")
-        ));
+        .where(
+          and(
+            eq(inventoryAlerts.batchId, batch.id),
+            eq(inventoryAlerts.alertType, "EXPIRING"),
+            eq(inventoryAlerts.status, "ACTIVE")
+          )
+        );
     }
-  } catch (error) {
+  } catch {
     // Metadata parsing error, skip
   }
 }
@@ -157,7 +179,7 @@ async function checkExpiring(batch: any): Promise<void> {
 /**
  * Check for overstock alert
  */
-async function checkOverstock(batch: any): Promise<void> {
+async function checkOverstock(batch: Batch): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -165,18 +187,22 @@ async function checkOverstock(batch: any): Promise<void> {
   const overstockThreshold = 100; // Default threshold
 
   if (onHandQty >= overstockThreshold) {
-    const existing = await db.select()
+    const existing = await db
+      .select()
       .from(inventoryAlerts)
-      .where(and(
-        eq(inventoryAlerts.batchId, batch.id),
-        eq(inventoryAlerts.alertType, "OVERSTOCK"),
-        eq(inventoryAlerts.status, "ACTIVE")
-      ))
+      .where(
+        and(
+          eq(inventoryAlerts.batchId, batch.id),
+          eq(inventoryAlerts.alertType, "OVERSTOCK"),
+          eq(inventoryAlerts.status, "ACTIVE")
+        )
+      )
       .limit(1);
 
     if (existing.length === 0) {
-      const severity = onHandQty >= 200 ? "HIGH" : onHandQty >= 150 ? "MEDIUM" : "LOW";
-      
+      const severity =
+        onHandQty >= 200 ? "HIGH" : onHandQty >= 150 ? "MEDIUM" : "LOW";
+
       await db.insert(inventoryAlerts).values({
         alertType: "OVERSTOCK",
         batchId: batch.id,
@@ -184,29 +210,32 @@ async function checkOverstock(batch: any): Promise<void> {
         currentValue: onHandQty.toString(),
         severity,
         message: `Batch ${batch.code} has excess inventory (${onHandQty} units)`,
-        status: "ACTIVE"
+        status: "ACTIVE",
       });
     }
   } else if (onHandQty < overstockThreshold) {
-    await db.update(inventoryAlerts)
+    await db
+      .update(inventoryAlerts)
       .set({
         status: "RESOLVED",
         resolvedAt: new Date(),
         resolution: "Stock level decreased",
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
-      .where(and(
-        eq(inventoryAlerts.batchId, batch.id),
-        eq(inventoryAlerts.alertType, "OVERSTOCK"),
-        eq(inventoryAlerts.status, "ACTIVE")
-      ));
+      .where(
+        and(
+          eq(inventoryAlerts.batchId, batch.id),
+          eq(inventoryAlerts.alertType, "OVERSTOCK"),
+          eq(inventoryAlerts.status, "ACTIVE")
+        )
+      );
   }
 }
 
 /**
  * Check for slow-moving inventory alert
  */
-async function checkSlowMoving(batch: any): Promise<void> {
+async function checkSlowMoving(batch: Batch): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -214,22 +243,28 @@ async function checkSlowMoving(batch: any): Promise<void> {
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-  const recentSales = await db.select()
+  const recentSales = await db
+    .select()
     .from(sales)
-    .where(and(
-      eq(sales.batchId, batch.id),
-      sql`${sales.saleDate} >= ${ninetyDaysAgo}`
-    ))
+    .where(
+      and(
+        eq(sales.batchId, batch.id),
+        sql`${sales.saleDate} >= ${ninetyDaysAgo}`
+      )
+    )
     .limit(1);
 
   if (recentSales.length === 0 && parseFloat(batch.onHandQty) > 0) {
-    const existing = await db.select()
+    const existing = await db
+      .select()
       .from(inventoryAlerts)
-      .where(and(
-        eq(inventoryAlerts.batchId, batch.id),
-        eq(inventoryAlerts.alertType, "SLOW_MOVING"),
-        eq(inventoryAlerts.status, "ACTIVE")
-      ))
+      .where(
+        and(
+          eq(inventoryAlerts.batchId, batch.id),
+          eq(inventoryAlerts.alertType, "SLOW_MOVING"),
+          eq(inventoryAlerts.status, "ACTIVE")
+        )
+      )
       .limit(1);
 
     if (existing.length === 0) {
@@ -240,41 +275,49 @@ async function checkSlowMoving(batch: any): Promise<void> {
         currentValue: "0",
         severity: "MEDIUM",
         message: `Batch ${batch.code} has no sales in 90 days`,
-        status: "ACTIVE"
+        status: "ACTIVE",
       });
     }
   } else if (recentSales.length > 0) {
-    await db.update(inventoryAlerts)
+    await db
+      .update(inventoryAlerts)
       .set({
         status: "RESOLVED",
         resolvedAt: new Date(),
         resolution: "Batch has recent sales",
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
-      .where(and(
-        eq(inventoryAlerts.batchId, batch.id),
-        eq(inventoryAlerts.alertType, "SLOW_MOVING"),
-        eq(inventoryAlerts.status, "ACTIVE")
-      ));
+      .where(
+        and(
+          eq(inventoryAlerts.batchId, batch.id),
+          eq(inventoryAlerts.alertType, "SLOW_MOVING"),
+          eq(inventoryAlerts.status, "ACTIVE")
+        )
+      );
   }
 }
 
 /**
  * Get active inventory alerts
  */
-export async function getActiveInventoryAlerts(userId?: number): Promise<InventoryAlert[]> {
+export async function getActiveInventoryAlerts(
+  _userId?: number
+): Promise<InventoryAlert[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    const alerts = await db.select()
+    const alerts = await db
+      .select()
       .from(inventoryAlerts)
       .where(eq(inventoryAlerts.status, "ACTIVE"))
       .orderBy(desc(inventoryAlerts.severity), desc(inventoryAlerts.createdAt));
 
     return alerts;
-  } catch (error: any) {
-    throw new Error(`Failed to get active alerts: ${error.message}`);
+  } catch (error) {
+    throw new Error(
+      `Failed to get active alerts: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -283,22 +326,25 @@ export async function getActiveInventoryAlerts(userId?: number): Promise<Invento
  */
 export async function acknowledgeAlert(
   alertId: number,
-  userId: number
+  _userId: number
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    await db.update(inventoryAlerts)
+    await db
+      .update(inventoryAlerts)
       .set({
         status: "ACKNOWLEDGED",
-        acknowledgedBy: userId,
+        acknowledgedBy: _userId,
         acknowledgedAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(inventoryAlerts.id, alertId));
-  } catch (error: any) {
-    throw new Error(`Failed to acknowledge alert: ${error.message}`);
+  } catch (error) {
+    throw new Error(
+      `Failed to acknowledge alert: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -307,34 +353,53 @@ export async function acknowledgeAlert(
  */
 export async function resolveAlert(
   alertId: number,
-  resolution: string
+  resolution: string,
+  _userId: number
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    await db.update(inventoryAlerts)
+    await db
+      .update(inventoryAlerts)
       .set({
         status: "RESOLVED",
         resolvedAt: new Date(),
         resolution,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(inventoryAlerts.id, alertId));
-  } catch (error: any) {
-    throw new Error(`Failed to resolve alert: ${error.message}`);
+  } catch (error) {
+    throw new Error(
+      `Failed to resolve alert: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
 /**
  * Get alert summary for dashboard widget
  */
-export async function getAlertSummary(): Promise<any> {
+export async function getAlertSummary(): Promise<{
+  total: number;
+  byType: {
+    LOW_STOCK: number;
+    EXPIRING: number;
+    OVERSTOCK: number;
+    SLOW_MOVING: number;
+  };
+  bySeverity: {
+    HIGH: number;
+    MEDIUM: number;
+    LOW: number;
+  };
+  highPriority: InventoryAlert[];
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    const alerts = await db.select()
+    const alerts = await db
+      .select()
       .from(inventoryAlerts)
       .where(eq(inventoryAlerts.status, "ACTIVE"));
 
@@ -344,19 +409,20 @@ export async function getAlertSummary(): Promise<any> {
         LOW_STOCK: alerts.filter(a => a.alertType === "LOW_STOCK").length,
         EXPIRING: alerts.filter(a => a.alertType === "EXPIRING").length,
         OVERSTOCK: alerts.filter(a => a.alertType === "OVERSTOCK").length,
-        SLOW_MOVING: alerts.filter(a => a.alertType === "SLOW_MOVING").length
+        SLOW_MOVING: alerts.filter(a => a.alertType === "SLOW_MOVING").length,
       },
       bySeverity: {
         HIGH: alerts.filter(a => a.severity === "HIGH").length,
         MEDIUM: alerts.filter(a => a.severity === "MEDIUM").length,
-        LOW: alerts.filter(a => a.severity === "LOW").length
+        LOW: alerts.filter(a => a.severity === "LOW").length,
       },
-      highPriority: alerts.filter(a => a.severity === "HIGH")
+      highPriority: alerts.filter(a => a.severity === "HIGH"),
     };
 
     return summary;
-  } catch (error: any) {
-    throw new Error(`Failed to get alert summary: ${error.message}`);
+  } catch (error) {
+    throw new Error(
+      `Failed to get alert summary: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
-
