@@ -1,14 +1,13 @@
 {
-  "last_updated": "2025-11-04T05:28:40.420875Z",
+  "last_updated": "2025-11-04T09:54:31.078688Z",
   "routes": [],
   "api_endpoints": [],
   "components": {
-    "count": 167,
+    "count": 180,
     "major_components": [
       "DashboardLayout",
       "DashboardLayoutSkeleton",
       "ErrorBoundary",
-      "FloatingScratchPad",
       "ManusDialog",
       "UserManagement",
       "AccountSelector",
@@ -23,8 +22,9 @@
       "PurchasePatternsWidget",
       "CogsClientSettings",
       "CogsGlobalSettings",
-      "CreditLimitWidget",
-      "DashboardCustomizer"
+      "CommentItem",
+      "CommentList",
+      "CommentWidget"
     ]
   },
   "tech_stack": {},
@@ -72,7 +72,7 @@
   ],
   "recent_changes": [
     {
-      "title": "[TERP-INIT-005] Inventory System Stability & Robustness - Phase 1 Complete",
+      "title": "[TERP-INIT-005] Inventory System Stability & Robustness - Phase 1, 2, 3 Complete",
       "summary": ""
     },
     {
@@ -107,7 +107,7 @@
   "statistics": {
     "total_routes": 0,
     "total_api_endpoints": 0,
-    "total_components": 167,
+    "total_components": 180,
     "total_known_issues": 8
   }
 }

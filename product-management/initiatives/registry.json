@@ -14,7 +14,7 @@
     {
       "id": "TERP-INIT-007",
       "title": "Accounting Module: Smart Ledger Core & Transaction Splitting",
-      "status": "approved",
+      "status": "in-progress",
       "created_at": "2025-11-03T22:48:19.687810Z",
       "tags": [
         "accounting",
@@ -44,7 +44,7 @@
     {
       "id": "TERP-INIT-004",
       "title": "Client Module: Phase 1 & 2 Workflow Improvements",
-      "status": "approved",
+      "status": "in-progress",
       "created_at": "2025-11-03T23:26:04.811370Z",
       "tags": [
         "client-management",
@@ -85,13 +85,12 @@
     }
   ],
   "next_id": 9,
-  "last_updated": "2025-11-04T06:49:33.144728Z",
+  "last_updated": "2025-11-04T10:02:52.627832Z",
   "metadata": {
     "total_count": 7,
     "by_status": {
-      "in-progress": 2,
-      "approved": 4,
-      "qa-verified": 1
+      "in-progress": 4,
+      "approved": 2
     }
   }
 }

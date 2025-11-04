@@ -1,27 +1,28 @@
 {
-  "generated_at": "2025-11-04T06:43:59.176395Z",
+  "generated_at": "2025-11-04T10:02:52.721167Z",
   "current_status": {
-    "approved_count": 4,
-    "in_progress_count": 2,
+    "approved_count": 2,
+    "in_progress_count": 4,
     "in_progress_initiatives": [
       "TERP-INIT-001",
+      "TERP-INIT-007",
+      "TERP-INIT-004",
       "TERP-INIT-006"
     ]
   },
   "parallelization": {
-    "conservative_max": 3,
-    "balanced_max": 3,
-    "aggressive_max": 3,
-    "recommended_max": 3,
-    "can_add_agents": 1,
+    "conservative_max": 2,
+    "balanced_max": 2,
+    "aggressive_max": 2,
+    "recommended_max": 2,
+    "can_add_agents": 0,
     "safe_parallel_set": [
-      "TERP-INIT-007",
       "TERP-INIT-003",
-      "TERP-INIT-004"
+      "TERP-INIT-008"
     ]
   },
   "recommendations": {
-    "action": "add_agents",
-    "message": "You can safely add 1 more agent(s)"
+    "action": "reduce_agents",
+    "message": "Consider pausing 2 agent(s)"
   }
 }
