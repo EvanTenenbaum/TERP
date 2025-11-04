@@ -16,7 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "seed:realistic": "tsx scripts/seed-realistic-main.ts",
-    "prepare": "husky"
+    "prepare": "husky install || true"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
