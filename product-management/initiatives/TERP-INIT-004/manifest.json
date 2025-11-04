@@ -23,7 +23,7 @@
   },
   "progress": {
     "percent": 10,
-    "completed_tasks": 0,
+    "completed_tasks": 1,
     "total_tasks": 0,
     "recent_updates": [
       {
@@ -39,8 +39,14 @@
         "message": "Status changed from approved to in-progress",
         "old_status": "approved",
         "new_status": "in-progress"
+      },
+      {
+        "timestamp": "2025-11-04T10:22:32.881123Z",
+        "type": "task_completed",
+        "message": "Completed: Phase 0: Pre-Implementation Setup",
+        "task": "Phase 0: Pre-Implementation Setup"
       }
     ],
-    "last_updated": "2025-11-04T10:02:52.627485Z"
+    "last_updated": "2025-11-04T10:22:32.881123Z"
   }
 }
