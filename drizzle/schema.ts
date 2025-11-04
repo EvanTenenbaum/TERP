@@ -54,7 +54,7 @@ export interface WidgetConfig {
   id: string;
   isVisible: boolean;
   order?: number;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
 }
 
 /**
@@ -75,8 +75,10 @@ export const userDashboardPreferences = mysqlTable("userDashboardPreferences", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type UserDashboardPreferences = typeof userDashboardPreferences.$inferSelect;
-export type InsertUserDashboardPreferences = typeof userDashboardPreferences.$inferInsert;
+export type UserDashboardPreferences =
+  typeof userDashboardPreferences.$inferSelect;
+export type InsertUserDashboardPreferences =
+  typeof userDashboardPreferences.$inferInsert;
 
 /**
  * Relations for userDashboardPreferences
@@ -148,6 +150,23 @@ export const vendors = mysqlTable("vendors", {
 
 export type Vendor = typeof vendors.$inferSelect;
 export type InsertVendor = typeof vendors.$inferInsert;
+
+/**
+ * Sequences table
+ * Manages atomic, sequential generation of codes (lot codes, batch codes, etc.)
+ * Uses database-level atomicity to prevent collisions
+ */
+export const sequences = mysqlTable("sequences", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 50 }).notNull().unique(), // e.g., "lot_code", "batch_code"
+  prefix: varchar("prefix", { length: 20 }).notNull(), // e.g., "LOT-", "BATCH-"
+  currentValue: int("currentValue").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Sequence = typeof sequences.$inferSelect;
+export type InsertSequence = typeof sequences.$inferInsert;
 
 /**
  * Brands table
