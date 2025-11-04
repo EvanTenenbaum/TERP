@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Filter, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Filter, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Eye, Edit, FileText, DollarSign, MessageSquare, Archive, Save, Star } from "lucide-react";
 import { DataCardSection } from "@/components/data-cards";
 
 export default function ClientsListPage() {
@@ -32,6 +32,30 @@ export default function ClientsListPage() {
   const searchInputRef = useRef<React.ElementRef<'input'>>(null);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Saved filter views
+  type FilterView = {
+    id: string;
+    name: string;
+    search: string;
+    clientTypes: ("buyer" | "seller" | "brand" | "referee" | "contractor")[];
+    hasDebt?: boolean;
+  };
+  
+  const defaultViews: FilterView[] = [
+    { id: 'all', name: 'All Clients', search: '', clientTypes: [], hasDebt: undefined },
+    { id: 'debt', name: 'Clients with Debt', search: '', clientTypes: [], hasDebt: true },
+    { id: 'buyers', name: 'Buyers Only', search: '', clientTypes: ['buyer'], hasDebt: undefined },
+    { id: 'sellers', name: 'Sellers Only', search: '', clientTypes: ['seller'], hasDebt: undefined },
+  ];
+  
+  const [savedViews, setSavedViews] = useState<FilterView[]>(() => {
+    const saved = localStorage.getItem('client-filter-views');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [newViewName, setNewViewName] = useState('');
   
   // Initialize filters from URL parameters
   const getInitialHasDebt = () => {
@@ -153,6 +177,50 @@ export default function ClientsListPage() {
   useEffect(() => {
     setSelectedIndex(0);
   }, [page, search, clientTypes, hasDebt]);
+  
+  // Persist saved views to localStorage
+  useEffect(() => {
+    localStorage.setItem('client-filter-views', JSON.stringify(savedViews));
+  }, [savedViews]);
+  
+  // Apply a saved view
+  const applyView = (view: FilterView) => {
+    setSearch(view.search);
+    setClientTypes(view.clientTypes);
+    setHasDebt(view.hasDebt);
+    setPage(0);
+  };
+  
+  // Save current filters as a new view
+  const saveCurrentView = () => {
+    if (!newViewName.trim()) return;
+    
+    const newView: FilterView = {
+      id: Date.now().toString(),
+      name: newViewName.trim(),
+      search,
+      clientTypes,
+      hasDebt,
+    };
+    
+    setSavedViews(prev => [...prev, newView]);
+    setNewViewName('');
+    setShowSaveDialog(false);
+  };
+  
+  // Delete a saved view
+  const deleteView = (id: string) => {
+    setSavedViews(prev => prev.filter(v => v.id !== id));
+  };
+  
+  // Check if current filters match a view
+  const isViewActive = (view: FilterView) => {
+    return (
+      search === view.search &&
+      JSON.stringify(clientTypes.sort()) === JSON.stringify(view.clientTypes.sort()) &&
+      hasDebt === view.hasDebt
+    );
+  };
 
   // Toggle client type filter
   const toggleClientType = (type: "buyer" | "seller" | "brand" | "referee" | "contractor") => {
@@ -212,6 +280,92 @@ export default function ClientsListPage() {
 
       {/* Client Statistics */}
       <DataCardSection moduleId="clients" />
+      
+      {/* Saved Filter Views */}
+      {(defaultViews.length > 0 || savedViews.length > 0) && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Filter Views</CardTitle>
+                <CardDescription>Quick access to common filter combinations</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSaveDialog(true)}
+                disabled={!search && clientTypes.length === 0 && hasDebt === undefined}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Current View
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {/* Default Views */}
+              {defaultViews.map(view => (
+                <Button
+                  key={view.id}
+                  variant={isViewActive(view) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => applyView(view)}
+                >
+                  {view.name}
+                </Button>
+              ))}
+              
+              {/* Custom Saved Views */}
+              {savedViews.map(view => (
+                <div key={view.id} className="relative group">
+                  <Button
+                    variant={isViewActive(view) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => applyView(view)}
+                    className="pr-8"
+                  >
+                    <Star className="h-3 w-3 mr-1" />
+                    {view.name}
+                  </Button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteView(view.id);
+                    }}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            {/* Save Dialog */}
+            {showSaveDialog && (
+              <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter view name..."
+                    value={newViewName}
+                    onChange={(e) => setNewViewName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveCurrentView();
+                      if (e.key === 'Escape') setShowSaveDialog(false);
+                    }}
+                    autoFocus
+                  />
+                  <Button onClick={saveCurrentView} disabled={!newViewName.trim()}>
+                    Save
+                  </Button>
+                  <Button variant="ghost" onClick={() => setShowSaveDialog(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search and Filters */}
       <Card>
@@ -495,16 +649,79 @@ export default function ClientsListPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setLocation(`/clients/${client.id}`);
-                          }}
-                        >
-                          View
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuCheckboxItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocation(`/clients/${client.id}`);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Profile
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO: Implement inline edit
+                                console.log('Edit client:', client.id);
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Quick Edit
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocation(`/clients/${client.id}?tab=transactions&action=new`);
+                              }}
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              Add Transaction
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocation(`/clients/${client.id}?tab=transactions&action=payment`);
+                              }}
+                            >
+                              <DollarSign className="h-4 w-4 mr-2" />
+                              Record Payment
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocation(`/clients/${client.id}?tab=notes&action=new`);
+                              }}
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Add Note
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuCheckboxItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // TODO: Implement archive
+                                console.log('Archive client:', client.id);
+                              }}
+                              className="text-destructive"
+                            >
+                              <Archive className="h-4 w-4 mr-2" />
+                              Archive Client
+                            </DropdownMenuCheckboxItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
