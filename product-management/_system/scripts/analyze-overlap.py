@@ -29,6 +29,7 @@ def extract_keywords_from_initiative(init_id):
     """Extract keywords from initiative documentation"""
     init_dir = Path(f"initiatives/{init_id}")
     
+    # Skip if initiative is archived
     if not init_dir.exists():
         return set()
     
