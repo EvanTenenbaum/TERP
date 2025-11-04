@@ -3,7 +3,7 @@
  * Handles all database operations for the Client Management System
  */
 
-import { eq, and, desc, like, or, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, like, or, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   clients,
@@ -49,9 +49,17 @@ export async function getClients(options: {
   // Build WHERE conditions
   const conditions: any[] = [];
 
-  // Search by TERI code
+  // Enhanced multi-field search (TERI code, name, email, phone, address)
   if (search) {
-    conditions.push(like(clients.teriCode, `%${search}%`));
+    conditions.push(
+      or(
+        like(clients.teriCode, `%${search}%`),
+        like(clients.name, `%${search}%`),
+        like(clients.email, `%${search}%`),
+        like(clients.phone, `%${search}%`),
+        like(clients.address, `%${search}%`)
+      )
+    );
   }
 
   // Filter by client types
@@ -114,8 +122,17 @@ export async function getClientCount(options: {
   // Build WHERE conditions (same as getClients)
   const conditions: any[] = [];
 
+  // Enhanced multi-field search (same as getClients)
   if (search) {
-    conditions.push(like(clients.teriCode, `%${search}%`));
+    conditions.push(
+      or(
+        like(clients.teriCode, `%${search}%`),
+        like(clients.name, `%${search}%`),
+        like(clients.email, `%${search}%`),
+        like(clients.phone, `%${search}%`),
+        like(clients.address, `%${search}%`)
+      )
+    );
   }
 
   if (clientTypes && clientTypes.length > 0) {
