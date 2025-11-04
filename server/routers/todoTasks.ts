@@ -1,0 +1,296 @@
+/**
+ * Todo Tasks Router
+ * API endpoints for task management within lists
+ */
+
+import { z } from "zod";
+import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import * as todoTasksDb from "../todoTasksDb";
+import * as todoActivityDb from "../todoActivityDb";
+import * as inboxDb from "../inboxDb";
+import * as permissions from "../services/todoPermissions";
+
+export const todoTasksRouter = router({
+  // Get all tasks in a list
+  getListTasks: protectedProcedure
+    .input(
+      z.object({
+        listId: z.number(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanViewList(ctx.user.id, input.listId);
+
+      return await todoTasksDb.getListTasks(input.listId);
+    }),
+
+  // Get tasks assigned to current user
+  getMyTasks: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.user) throw new Error("Unauthorized");
+    return await todoTasksDb.getUserAssignedTasks(ctx.user.id);
+  }),
+
+  // Get a specific task by ID
+  getById: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.number(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanViewTask(ctx.user.id, input.taskId);
+
+      return await todoTasksDb.getTaskById(input.taskId);
+    }),
+
+  // Create a new task
+  create: protectedProcedure
+    .input(
+      z.object({
+        listId: z.number(),
+        title: z.string().min(1).max(500),
+        description: z.string().optional(),
+        status: z
+          .enum(["todo", "in_progress", "done"])
+          .optional()
+          .default("todo"),
+        priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+        dueDate: z.date().optional(),
+        assignedTo: z.number().optional(),
+        position: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanEditList(ctx.user.id, input.listId);
+
+      const task = await todoTasksDb.createTask({
+        ...input,
+        createdBy: ctx.user.id,
+      });
+
+      // Log activity
+      await todoActivityDb.logTaskCreated(task.id, ctx.user.id);
+
+      // Create inbox item if assigned to someone
+      if (input.assignedTo && input.assignedTo !== ctx.user.id) {
+        await inboxDb.createInboxItem({
+          userId: input.assignedTo,
+          sourceType: "task_assignment",
+          sourceId: task.id,
+          referenceType: "task",
+          referenceId: task.id,
+          title: `New task assigned: ${task.title}`,
+          description: task.description,
+          status: "unread",
+        });
+      }
+
+      return task;
+    }),
+
+  // Update a task
+  update: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.number(),
+        title: z.string().min(1).max(500).optional(),
+        description: z.string().optional(),
+        status: z.enum(["todo", "in_progress", "done"]).optional(),
+        priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+        dueDate: z.date().optional().nullable(),
+        position: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanEditTask(ctx.user.id, input.taskId);
+
+      const oldTask = await todoTasksDb.getTaskById(input.taskId);
+      if (!oldTask) throw new Error("Task not found");
+
+      const { taskId, ...updateData } = input;
+      const updatedTask = await todoTasksDb.updateTask(taskId, updateData);
+
+      // Log status change if status was updated
+      if (input.status && input.status !== oldTask.status) {
+        await todoActivityDb.logTaskStatusChanged(
+          taskId,
+          ctx.user.id,
+          oldTask.status,
+          input.status
+        );
+      }
+
+      // Log other changes
+      if (input.title && input.title !== oldTask.title) {
+        await todoActivityDb.logTaskUpdated(
+          taskId,
+          ctx.user.id,
+          "title",
+          oldTask.title,
+          input.title
+        );
+      }
+
+      return updatedTask;
+    }),
+
+  // Delete a task
+  delete: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.number(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanDeleteTask(ctx.user.id, input.taskId);
+
+      // Log deletion before deleting
+      await todoActivityDb.logTaskDeleted(input.taskId, ctx.user.id);
+
+      await todoTasksDb.deleteTask(input.taskId);
+      return { success: true };
+    }),
+
+  // Mark task as completed
+  complete: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.number(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanCompleteTask(ctx.user.id, input.taskId);
+
+      const task = await todoTasksDb.completeTask(input.taskId, ctx.user.id);
+
+      // Log completion
+      await todoActivityDb.logTaskCompleted(input.taskId, ctx.user.id);
+
+      return task;
+    }),
+
+  // Mark task as incomplete
+  uncomplete: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.number(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanEditTask(ctx.user.id, input.taskId);
+
+      const task = await todoTasksDb.uncompleteTask(input.taskId);
+
+      // Log status change
+      await todoActivityDb.logTaskStatusChanged(
+        input.taskId,
+        ctx.user.id,
+        "done",
+        "todo"
+      );
+
+      return task;
+    }),
+
+  // Assign task to a user
+  assign: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.number(),
+        userId: z.number().nullable(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanAssignTask(ctx.user.id, input.taskId);
+
+      const task = await todoTasksDb.assignTask(input.taskId, input.userId);
+
+      // Log assignment
+      await todoActivityDb.logTaskAssigned(
+        input.taskId,
+        ctx.user.id,
+        input.userId ? `User ${input.userId}` : null
+      );
+
+      // Create inbox item if assigned to someone other than current user
+      if (input.userId && input.userId !== ctx.user.id) {
+        await inboxDb.createInboxItem({
+          userId: input.userId,
+          sourceType: "task_assignment",
+          sourceId: task.id,
+          referenceType: "task",
+          referenceId: task.id,
+          title: `Task assigned to you: ${task.title}`,
+          description: task.description,
+          status: "unread",
+        });
+      }
+
+      return task;
+    }),
+
+  // Reorder tasks in a list
+  reorder: protectedProcedure
+    .input(
+      z.object({
+        listId: z.number(),
+        taskPositions: z.array(
+          z.object({
+            taskId: z.number(),
+            position: z.number(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanEditList(ctx.user.id, input.listId);
+
+      await todoTasksDb.reorderTasks(input.listId, input.taskPositions);
+      return { success: true };
+    }),
+
+  // Get overdue tasks
+  getOverdue: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.user) throw new Error("Unauthorized");
+    return await todoTasksDb.getOverdueTasks();
+  }),
+
+  // Get tasks due soon
+  getDueSoon: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.user) throw new Error("Unauthorized");
+    return await todoTasksDb.getTasksDueSoon();
+  }),
+
+  // Get task statistics for a list
+  getListStats: protectedProcedure
+    .input(
+      z.object({
+        listId: z.number(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+
+      await permissions.assertCanViewList(ctx.user.id, input.listId);
+
+      return await todoTasksDb.getListTaskStats(input.listId);
+    }),
+});
