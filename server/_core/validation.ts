@@ -261,12 +261,20 @@ export const quantityAdjustmentSchema = z.object({
 /**
  * List query schema
  */
+/**
+ * List query schema with cursor-based pagination
+ * ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cursor-based pagination
+ */
 export const listQuerySchema = z.object({
   query: z.string().max(255, "Query must be 255 characters or less").optional(),
   limit: validators.positiveInt
     .max(1000, "Limit must be 1000 or less")
     .default(100),
+  // Cursor-based pagination (preferred for large datasets)
+  cursor: validators.positiveInt.optional(),
+  // Offset-based pagination (legacy support)
   offset: validators.nonNegativeInt.default(0),
+  // Filters
   status: validators.batchStatus.optional(),
   category: validators.category.optional(),
 });

@@ -15,13 +15,40 @@ import type { BatchStatus } from "../inventoryUtils";
 export const inventoryRouter = router({
   // Get all batches with details
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
+  // ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cursor-based pagination
   list: protectedProcedure.input(listQuerySchema).query(async ({ input }) => {
     try {
+      inventoryLogger.operationStart("list", {
+        cursor: input.cursor,
+        limit: input.limit,
+      });
+
+      let result;
       if (input.query) {
-        return await inventoryDb.searchBatches(input.query, input.limit);
+        result = await inventoryDb.searchBatches(
+          input.query,
+          input.limit,
+          input.cursor
+        );
+      } else {
+        result = await inventoryDb.getBatchesWithDetails(
+          input.limit,
+          input.cursor,
+          { status: input.status, category: input.category }
+        );
       }
-      return await inventoryDb.getBatchesWithDetails(input.limit);
+
+      inventoryLogger.operationSuccess("list", {
+        itemCount: result.items.length,
+        hasMore: result.hasMore,
+        nextCursor: result.nextCursor,
+      });
+
+      return result;
     } catch (error) {
+      inventoryLogger.operationFailure("list", error as Error, {
+        cursor: input.cursor,
+      });
       handleError(error, "inventory.list");
       throw error;
     }
