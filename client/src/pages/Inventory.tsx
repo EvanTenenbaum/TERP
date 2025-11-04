@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -47,9 +47,41 @@ import { BulkConfirmDialog } from "@/components/inventory/BulkConfirmDialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Inventory() {
-  const [location] = useLocation();
+  const [, setLocation] = useLocation();
+  const [match, params] = useRoute("/inventory/:id");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
+  
+  // Initialize selectedBatch from URL parameter if present
+  const [selectedBatch, setSelectedBatch] = useState<number | null>(() => {
+    if (match && params?.id) {
+      const id = parseInt(params.id, 10);
+      return isNaN(id) ? null : id;
+    }
+    return null;
+  });
+  
+  // Sync URL parameter to selectedBatch state when URL changes
+  useEffect(() => {
+    if (match && params?.id) {
+      const id = parseInt(params.id, 10);
+      if (!isNaN(id) && id !== selectedBatch) {
+        setSelectedBatch(id);
+      }
+    } else if (!match && selectedBatch !== null) {
+      // URL changed to /inventory without ID, close drawer
+      setSelectedBatch(null);
+    }
+  }, [match, params?.id, selectedBatch]);
+  
+  // Update URL when selectedBatch changes programmatically
+  useEffect(() => {
+    if (selectedBatch !== null && (!match || params?.id !== selectedBatch.toString())) {
+      setLocation(`/inventory/${selectedBatch}`);
+    } else if (selectedBatch === null && match) {
+      // If drawer is closed but we're on a batch URL, go back to list
+      setLocation('/inventory');
+    }
+  }, [selectedBatch, match, params?.id, setLocation]);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<number | null>(null);
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
