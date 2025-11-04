@@ -1,19 +1,34 @@
 {
-  "last_updated": "2025-11-04T00:45:00-05:00",
-  "analysis_version": "2.0",
+  "last_updated": "2025-11-04T01:15:00-05:00",
+  "analysis_version": "3.0",
+  "methodology": "METR Task-Completion Time Horizon (Human Expert Time)",
+  "reference": "https://metr.org/blog/2025-03-19-measuring-ai-ability-to-complete-long-tasks/",
   "commit_hash": "TBD",
   "pm_agent": "Strategic Project Manager",
   "total_initiatives": 5,
-  "roadmap_sequence": "Option B - Optimized with Strategic Parallelization",
+  "ai_agent_capability": {
+    "model_class": "Claude 3.7 Sonnet / GPT-4",
+    "time_horizon_50_percent": "~1 hour (human expert time)",
+    "success_rate_under_4_min": "~100%",
+    "success_rate_1_hour": "~50%",
+    "success_rate_over_4_hours": "<10%"
+  },
+  "estimation_methodology": {
+    "step_1": "Estimate human expert time for each task",
+    "step_2": "Break tasks into <3 hour subtasks for AI reliability",
+    "step_3": "Apply 1.5-2x iteration factor for QA and edge cases",
+    "step_4": "Sum AI agent sessions to get calendar days"
+  },
   "sprints": [
     {
       "sprint": 1,
       "initiative_id": "TERP-INIT-005",
       "title": "Inventory System Stability & Robustness Improvements",
       "priority": "CRITICAL",
-      "duration_weeks": 8,
-      "duration_days": 56,
-      "rationale": "Fixes critical data integrity issues (race conditions causing negative inventory). Must be completed first as foundation for all other work.",
+      "human_expert_hours": "40-60",
+      "ai_agent_sessions": "15-20",
+      "calendar_days": "3-5",
+      "rationale": "Fixes critical data integrity issues. Must be completed first as foundation. 4 phases with clear deliverables, high testing requirements.",
       "dependencies": [],
       "blocks": ["TERP-INIT-003"],
       "key_deliverables": [
@@ -27,22 +42,26 @@
         {
           "phase": 1,
           "name": "Critical Fixes",
-          "duration_weeks": 2
+          "human_hours": "12-16",
+          "ai_sessions": "4-6"
         },
         {
           "phase": 2,
           "name": "Stability Improvements",
-          "duration_weeks": 2
+          "human_hours": "10-14",
+          "ai_sessions": "3-5"
         },
         {
           "phase": 3,
           "name": "Robustness & Testing",
-          "duration_weeks": 2
+          "human_hours": "12-18",
+          "ai_sessions": "5-7"
         },
         {
           "phase": 4,
           "name": "Optimization & Refinement",
-          "duration_weeks": 2
+          "human_hours": "6-12",
+          "ai_sessions": "3-4"
         }
       ]
     },
@@ -51,9 +70,10 @@
       "initiative_id": "TERP-INIT-006",
       "title": "To-Do Lists + Universal Comments System",
       "priority": "HIGH",
-      "duration_weeks": 4,
-      "duration_days": 28,
-      "rationale": "Enables team collaboration for all subsequent initiatives. Provides feedback mechanism during long development cycles.",
+      "human_expert_hours": "20-30",
+      "ai_agent_sessions": "10-12",
+      "calendar_days": "2-3",
+      "rationale": "Enables team collaboration for all subsequent initiatives. Straightforward implementation with clear scope.",
       "dependencies": [],
       "enables": ["TERP-INIT-007", "TERP-INIT-004", "TERP-INIT-003"],
       "key_deliverables": [
@@ -69,16 +89,16 @@
       "phase": "Phase 1",
       "title": "Accounting Module: Smart Ledger Core",
       "priority": "CRITICAL",
-      "duration_weeks": 26,
-      "duration_months": 6,
-      "duration_days": 182,
-      "rationale": "Core accounting functionality with 12-month total timeline requires early start. Phase 1 provides unified transaction entry and intelligent suggestions.",
+      "human_expert_hours": "60-90",
+      "ai_agent_sessions": "25-35",
+      "calendar_days": "5-8",
+      "rationale": "Core accounting functionality. Complex business logic and sophisticated suggestion engine require careful implementation.",
       "dependencies": [],
       "benefits_from": ["TERP-INIT-006"],
       "parallel_opportunity": {
         "dev_2_task": "TERP-INIT-004",
-        "dev_2_duration_weeks": 3.5,
-        "dev_2_then": "Support Dev 1 on Accounting Phase 1"
+        "dev_2_duration_days": "2-3",
+        "dev_2_then": "TERP-INIT-003 Phase 0, then support Dev 1"
       },
       "key_deliverables": [
         "Unified transaction entry UI",
@@ -88,7 +108,7 @@
         "Keyboard shortcuts"
       ],
       "mid_point_evaluation": {
-        "timing": "Month 6",
+        "timing": "After Phase 1 completion",
         "purpose": "Assess progress, gather feedback, decide on Phase 2"
       }
     },
@@ -97,9 +117,10 @@
       "initiative_id": "TERP-INIT-004",
       "title": "Client Module: Phase 1 & 2 Workflow Improvements",
       "priority": "HIGH",
-      "duration_weeks": 3.5,
-      "duration_days": 25,
-      "rationale": "Quick win with visible improvements. Can run parallel with Accounting Phase 1 if two developers available. Tests bulk operation patterns needed for Calendar.",
+      "human_expert_hours": "16-24",
+      "ai_agent_sessions": "8-10",
+      "calendar_days": "2-3",
+      "rationale": "Quick win with visible improvements. Well-defined scope, can run parallel with Accounting Phase 1.",
       "dependencies": [],
       "benefits_from": ["TERP-INIT-006"],
       "parallel_with": "TERP-INIT-007 Phase 1",
@@ -116,15 +137,15 @@
       "phase": "Phase 2",
       "title": "Accounting Module: Transaction Splitting",
       "priority": "CRITICAL",
-      "duration_weeks": 26,
-      "duration_months": 6,
-      "duration_days": 182,
-      "rationale": "Completes accounting module with intelligent transaction splitting and automation. Can run parallel with Calendar Phases 0-1 if two developers available.",
+      "human_expert_hours": "60-90",
+      "ai_agent_sessions": "25-35",
+      "calendar_days": "5-8",
+      "rationale": "Completes accounting module with intelligent transaction splitting. Complex rule engine requires careful implementation.",
       "dependencies": ["TERP-INIT-007 Phase 1"],
       "parallel_opportunity": {
-        "dev_2_task": "TERP-INIT-003 Phases 0-1",
-        "dev_2_duration_weeks": 16,
-        "dev_2_then": "Join Dev 1 for Calendar Phases 2-3"
+        "dev_2_task": "TERP-INIT-003 Phases 0-2",
+        "dev_2_duration_days": "6-9",
+        "dev_2_then": "Join Dev 1 for Calendar Phase 3"
       },
       "key_deliverables": [
         "Rule-based transaction splitting (90%+ accuracy)",
@@ -138,35 +159,40 @@
       "initiative_id": "TERP-INIT-003",
       "title": "Calendar & Scheduling System",
       "priority": "HIGH",
-      "duration_weeks": 28,
-      "duration_days": 196,
-      "rationale": "Most complex initiative benefits from stable foundation and all previous work. Long timeline justified by high business value. Strict phase gates prevent scope creep.",
+      "human_expert_hours": "80-120",
+      "ai_agent_sessions": "40-55",
+      "calendar_days": "8-12",
+      "rationale": "Most complex initiative with sophisticated calendar logic and multiple integrations. Benefits from stable foundation.",
       "dependencies": ["TERP-INIT-005"],
       "benefits_from": ["TERP-INIT-006", "TERP-INIT-004", "TERP-INIT-007"],
       "parallel_opportunity": {
-        "phases_0_1": "Can run parallel with Accounting Phase 2",
-        "phases_2_3": "Collaborative work with both developers"
+        "phases_0_2": "Can run parallel with Accounting Phase 2",
+        "phase_3": "Collaborative work with both agents"
       },
       "phases": [
         {
           "phase": 0,
           "name": "Foundation",
-          "duration_weeks": 4
+          "human_hours": "12-16",
+          "ai_sessions": "5-7"
         },
         {
           "phase": 1,
           "name": "MVP + Core Integrations",
-          "duration_weeks": 12
+          "human_hours": "30-40",
+          "ai_sessions": "15-20"
         },
         {
           "phase": 2,
           "name": "Enhanced Functionality",
-          "duration_weeks": 6
+          "human_hours": "20-30",
+          "ai_sessions": "10-15"
         },
         {
           "phase": 3,
           "name": "Proactive & Collaborative",
-          "duration_weeks": 6
+          "human_hours": "18-34",
+          "ai_sessions": "10-15"
         }
       ],
       "key_deliverables": [
@@ -178,25 +204,25 @@
     }
   ],
   "timeline_estimates": {
-    "single_developer": {
-      "total_days": 669,
-      "total_weeks": 95.6,
-      "total_months": 22,
+    "single_agent_sequential": {
+      "total_calendar_days": "25-40",
+      "total_weeks": "5-8",
+      "total_months": "1.25-2",
       "breakdown": {
-        "inventory": "8 weeks",
-        "comments": "4 weeks",
-        "accounting_phase_1": "26 weeks",
-        "client": "3.5 weeks",
-        "accounting_phase_2": "26 weeks",
-        "calendar": "28 weeks"
+        "inventory": "3-5 days",
+        "comments": "2-3 days",
+        "accounting_phase_1": "5-8 days",
+        "client": "2-3 days",
+        "accounting_phase_2": "5-8 days",
+        "calendar": "8-12 days"
       }
     },
-    "two_developers_optimized": {
-      "total_days": 546,
-      "total_weeks": 78,
-      "total_months": 18,
-      "efficiency_gain_percent": 18,
-      "strategy": "Strategic parallelization: Client Module parallel with Accounting Phase 1, Calendar Phases 0-1 parallel with Accounting Phase 2"
+    "two_agents_parallel": {
+      "total_calendar_days": "18-28",
+      "total_weeks": "3.5-5.5",
+      "total_months": "0.9-1.4",
+      "efficiency_gain_percent": 20,
+      "strategy": "Strategic parallelization: Client Module + Calendar Foundation parallel with Accounting phases"
     }
   },
   "critical_path": [
@@ -208,41 +234,47 @@
   ],
   "parallel_opportunities": {
     "sprint_3_4": {
-      "dev_1": "TERP-INIT-007 Phase 1 (26 weeks)",
-      "dev_2": "TERP-INIT-004 (3.5 weeks) → Support Accounting",
-      "benefit": "Client Module completed quickly, Accounting gets extra help"
+      "dev_1": "TERP-INIT-007 Phase 1 (5-8 days)",
+      "dev_2": "TERP-INIT-004 (2-3 days) → TERP-INIT-003 Phase 0 (2-3 days) → Support Dev 1",
+      "benefit": "Client Module and Calendar Foundation completed during Accounting Phase 1"
     },
     "sprint_5_6": {
-      "dev_1": "TERP-INIT-007 Phase 2 (26 weeks)",
-      "dev_2": "TERP-INIT-003 Phases 0-1 (16 weeks) → Join for Phases 2-3",
-      "benefit": "Calendar foundation ready when Accounting Phase 2 completes"
+      "dev_1": "TERP-INIT-007 Phase 2 (5-8 days)",
+      "dev_2": "TERP-INIT-003 Phases 1-2 (6-9 days) → Join Dev 1 for Phase 3",
+      "benefit": "Calendar MVP ready when Accounting Phase 2 completes"
     }
   },
   "risk_mitigation": {
-    "accounting_scope_creep": {
-      "risk_level": "high",
-      "mitigation": [
-        "Weekly demos to stakeholders",
-        "Mid-point evaluation after Phase 1",
-        "Can pause or pivot after Phase 1",
-        "Comments system enables continuous feedback"
-      ]
-    },
-    "calendar_complexity": {
-      "risk_level": "high",
-      "mitigation": [
-        "Strict phase gates (can stop after any phase)",
-        "Benefits from stable Inventory foundation",
-        "Comments system enables collaboration",
-        "Client Module tests bulk operation patterns first"
-      ]
-    },
-    "inventory_regression": {
+    "underestimated_complexity": {
       "risk_level": "medium",
       "mitigation": [
-        "Phase 3 includes comprehensive testing (>70% coverage)",
-        "Rollback plan for each phase",
-        "Production testing in staging environment"
+        "Track actual vs estimated human expert time",
+        "Adjust model based on actual agent performance",
+        "Break down tasks that need >3 iterations"
+      ]
+    },
+    "ai_agent_limitations": {
+      "risk_level": "medium",
+      "mitigation": [
+        "Keep all subtasks under 3 hours (human time)",
+        "Apply 1.5-2x iteration factor for complex logic",
+        "Use parallel agents for integration testing"
+      ]
+    },
+    "integration_complexity": {
+      "risk_level": "medium",
+      "mitigation": [
+        "Dedicated integration phases",
+        "Holistic system testing",
+        "Cross-module validation"
+      ]
+    },
+    "edge_cases": {
+      "risk_level": "high",
+      "mitigation": [
+        "Comprehensive test suites (>70% coverage)",
+        "Edge case documentation",
+        "Multiple QA iterations"
       ]
     }
   },
@@ -279,5 +311,11 @@
       "recurring_event_accuracy": "95%",
       "time_saved_per_month": "10+ hours"
     }
+  },
+  "validation_strategy": {
+    "track_actuals": "Record actual agent sessions per task",
+    "adjust_model": "Update human time estimates based on data",
+    "identify_bottlenecks": "Tasks needing >3 iterations indicate underestimation",
+    "refine_breakdown": "Improve task breakdown for future initiatives"
   }
 }
