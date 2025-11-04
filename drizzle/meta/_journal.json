@@ -141,6 +141,13 @@
       "when": 1761680739356,
       "tag": "0019_slippery_dust",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1762278349046,
+      "tag": "0020_flimsy_makkari",
+      "breakpoints": true
     }
   ]
 }
