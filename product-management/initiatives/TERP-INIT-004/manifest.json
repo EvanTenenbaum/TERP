@@ -3,7 +3,7 @@
   "title": "Client Module: Phase 1 & 2 Workflow Improvements",
   "created_by": "dev-agent",
   "created_at": "2025-11-03T23:26:04.811370Z",
-  "status": "approved",
+  "status": "in-progress",
   "priority": "high",
   "estimated_effort": null,
   "features": [],
@@ -22,7 +22,7 @@
     "business_value": null
   },
   "progress": {
-    "percent": 0,
+    "percent": 10,
     "completed_tasks": 0,
     "total_tasks": 0,
     "recent_updates": [
@@ -32,8 +32,15 @@
         "message": "Status changed from pending_review to pending_review",
         "old_status": "pending_review",
         "new_status": "pending_review"
+      },
+      {
+        "timestamp": "2025-11-04T10:02:52.627485Z",
+        "type": "status_change",
+        "message": "Status changed from approved to in-progress",
+        "old_status": "approved",
+        "new_status": "in-progress"
       }
     ],
-    "last_updated": "2025-11-03T23:26:15.894237Z"
+    "last_updated": "2025-11-04T10:02:52.627485Z"
   }
 }
