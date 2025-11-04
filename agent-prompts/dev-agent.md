@@ -38,7 +38,7 @@ curl -s -H "Authorization: Bearer dop_v1_528408bf76b243af7d996080a71ac8059484bea
 - **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
 - **Port**: `25060`
 - **User**: `doadmin`
-- **Password**: `AVNS_yEKEhPWr5qFJwqJaQnC`
+- **Password**: `AVNS_Q_RGkS7-uB3Bk7xC2am``
 - **Database**: `defaultdb`
 - **SSL**: Required
 
@@ -52,7 +52,7 @@ curl -s -H "Authorization: Bearer dop_v1_528408bf76b243af7d996080a71ac8059484bea
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
       --user=doadmin \
-      --password=AVNS_yEKEhPWr5qFJwqJaQnC \
+      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
       --database=defaultdb \
       --ssl-mode=REQUIRED \
       -e "SHOW TABLES;"
