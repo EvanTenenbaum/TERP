@@ -147,7 +147,10 @@ def update_dashboard():
         },
         "initiatives": [],
         "archived_initiatives": [],
-        "recent_activity": []
+        "recent_activity": [],
+        "roadmap_sequence": [],
+        "parallelization_analysis": {},
+        "timeline_estimates": {}
     }
     
     total_progress = 0
@@ -225,6 +228,30 @@ def update_dashboard():
             "created_by": archived.get("created_by"),
             "tags": archived.get("tags", [])
         })
+    
+    # Load roadmap data if available
+    roadmap_file = PM_ROOT / "pm-evaluation" / "roadmap_order.json"
+    if roadmap_file.exists():
+        try:
+            with open(roadmap_file, 'r') as f:
+                roadmap_data = json.load(f)
+                dashboard["roadmap_sequence"] = roadmap_data.get("sprints", [])
+                dashboard["timeline_estimates"] = {
+                    "single_agent": roadmap_data.get("total_timeline", {}),
+                    "parallel_agents": roadmap_data.get("parallel_timeline", {})
+                }
+        except Exception as e:
+            print(f"Warning: Could not load roadmap data: {e}")
+    
+    # Load parallelization data if available
+    parallel_file = PM_ROOT / "pm-evaluation" / "parallelization.json"
+    if parallel_file.exists():
+        try:
+            with open(parallel_file, 'r') as f:
+                parallel_data = json.load(f)
+                dashboard["parallelization_analysis"] = parallel_data
+        except Exception as e:
+            print(f"Warning: Could not load parallelization data: {e}")
     
     # Save dashboard
     with open(PM_DASHBOARD, 'w') as f:
