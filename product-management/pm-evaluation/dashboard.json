@@ -1,9 +1,10 @@
 {
-  "last_updated": "2025-11-04T17:11:57.793055Z",
+  "last_updated": "2025-11-04T17:35:07.874051Z",
   "summary": {
     "total": 6,
     "by_status": {
-      "in-progress": 4,
+      "in-progress": 3,
+      "completed": 1,
       "ready-to-deploy": 1,
       "approved": 1
     },
@@ -12,7 +13,7 @@
       "high": 4,
       "medium": 1
     },
-    "total_progress": 33.0,
+    "total_progress": 23.8,
     "archived_count": 1
   },
   "initiatives": [
@@ -86,7 +87,7 @@
     {
       "id": "TERP-INIT-003",
       "title": "Calendar & Scheduling System",
-      "status": "in-progress",
+      "status": "completed",
       "priority": "high",
       "progress_percent": 70,
       "created_at": "2025-11-03T23:20:59.780743Z",
@@ -380,5 +381,239 @@
       "message": "Starting implementation of CSV export feature",
       "type": "status_change"
     }
-  ]
+  ],
+  "roadmap_sequence": [
+    {
+      "sprint": 1,
+      "initiative_id": "TERP-INIT-005",
+      "title": "Inventory System Stability & Robustness Improvements",
+      "priority": "CRITICAL",
+      "human_expert_hours": "40-60",
+      "ai_agent_sessions": "15-20",
+      "calendar_days": "3-5",
+      "rationale": "Fixes critical data integrity issues. Must be completed first as foundation. 4 phases with clear deliverables, high testing requirements.",
+      "dependencies": [],
+      "blocks": [
+        "TERP-INIT-003"
+      ],
+      "key_deliverables": [
+        "Database transactions with row-level locking",
+        "Fix hardcoded sequence numbers",
+        "Comprehensive error handling",
+        "Performance optimization",
+        ">70% test coverage"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "name": "Critical Fixes",
+          "human_hours": "12-16",
+          "ai_sessions": "4-6"
+        },
+        {
+          "phase": 2,
+          "name": "Stability Improvements",
+          "human_hours": "10-14",
+          "ai_sessions": "3-5"
+        },
+        {
+          "phase": 3,
+          "name": "Robustness & Testing",
+          "human_hours": "12-18",
+          "ai_sessions": "5-7"
+        },
+        {
+          "phase": 4,
+          "name": "Optimization & Refinement",
+          "human_hours": "6-12",
+          "ai_sessions": "3-4"
+        }
+      ]
+    },
+    {
+      "sprint": 2,
+      "initiative_id": "TERP-INIT-006",
+      "title": "To-Do Lists + Universal Comments System",
+      "priority": "HIGH",
+      "human_expert_hours": "20-30",
+      "ai_agent_sessions": "10-12",
+      "calendar_days": "2-3",
+      "rationale": "Enables team collaboration for all subsequent initiatives. Straightforward implementation with clear scope.",
+      "dependencies": [],
+      "enables": [
+        "TERP-INIT-007",
+        "TERP-INIT-004",
+        "TERP-INIT-003"
+      ],
+      "key_deliverables": [
+        "To-do list system (personal + shared)",
+        "Universal commenting (polymorphic)",
+        "@mention system with inbox",
+        "Mobile-responsive design"
+      ]
+    },
+    {
+      "sprint": 3,
+      "initiative_id": "TERP-INIT-007",
+      "phase": "Phase 1",
+      "title": "Accounting Module: Smart Ledger Core",
+      "priority": "CRITICAL",
+      "human_expert_hours": "60-90",
+      "ai_agent_sessions": "25-35",
+      "calendar_days": "5-8",
+      "rationale": "Core accounting functionality. Complex business logic and sophisticated suggestion engine require careful implementation.",
+      "dependencies": [],
+      "benefits_from": [
+        "TERP-INIT-006"
+      ],
+      "parallel_opportunity": {
+        "dev_2_task": "TERP-INIT-004",
+        "dev_2_duration_days": "2-3",
+        "dev_2_then": "TERP-INIT-003 Phase 0, then support Dev 1"
+      },
+      "key_deliverables": [
+        "Unified transaction entry UI",
+        "Context-aware suggestions (90%+ acceptance)",
+        "Real-time balance validation",
+        "Transaction templates (75% adoption)",
+        "Keyboard shortcuts"
+      ],
+      "mid_point_evaluation": {
+        "timing": "After Phase 1 completion",
+        "purpose": "Assess progress, gather feedback, decide on Phase 2"
+      }
+    },
+    {
+      "sprint": 4,
+      "initiative_id": "TERP-INIT-004",
+      "title": "Client Module: Phase 1 & 2 Workflow Improvements",
+      "priority": "HIGH",
+      "human_expert_hours": "16-24",
+      "ai_agent_sessions": "8-10",
+      "calendar_days": "2-3",
+      "rationale": "Quick win with visible improvements. Well-defined scope, can run parallel with Accounting Phase 1.",
+      "dependencies": [],
+      "benefits_from": [
+        "TERP-INIT-006"
+      ],
+      "parallel_with": "TERP-INIT-007 Phase 1",
+      "key_deliverables": [
+        "Enhanced search (full-text)",
+        "Keyboard shortcuts",
+        "Payment allocation system",
+        "Bulk operations"
+      ]
+    },
+    {
+      "sprint": 5,
+      "initiative_id": "TERP-INIT-007",
+      "phase": "Phase 2",
+      "title": "Accounting Module: Transaction Splitting",
+      "priority": "CRITICAL",
+      "human_expert_hours": "60-90",
+      "ai_agent_sessions": "25-35",
+      "calendar_days": "5-8",
+      "rationale": "Completes accounting module with intelligent transaction splitting. Complex rule engine requires careful implementation.",
+      "dependencies": [
+        "TERP-INIT-007 Phase 1"
+      ],
+      "parallel_opportunity": {
+        "dev_2_task": "TERP-INIT-003 Phases 0-2",
+        "dev_2_duration_days": "6-9",
+        "dev_2_then": "Join Dev 1 for Calendar Phase 3"
+      },
+      "key_deliverables": [
+        "Rule-based transaction splitting (90%+ accuracy)",
+        "Split suggestions and templates (50% adoption)",
+        "Recurring split automation",
+        "Split analytics dashboard"
+      ]
+    },
+    {
+      "sprint": 6,
+      "initiative_id": "TERP-INIT-003",
+      "title": "Calendar & Scheduling System",
+      "priority": "HIGH",
+      "human_expert_hours": "80-120",
+      "ai_agent_sessions": "40-55",
+      "calendar_days": "8-12",
+      "rationale": "Most complex initiative with sophisticated calendar logic and multiple integrations. Benefits from stable foundation.",
+      "dependencies": [
+        "TERP-INIT-005"
+      ],
+      "benefits_from": [
+        "TERP-INIT-006",
+        "TERP-INIT-004",
+        "TERP-INIT-007"
+      ],
+      "parallel_opportunity": {
+        "phases_0_2": "Can run parallel with Accounting Phase 2",
+        "phase_3": "Collaborative work with both agents"
+      },
+      "phases": [
+        {
+          "phase": 0,
+          "name": "Foundation",
+          "human_hours": "12-16",
+          "ai_sessions": "5-7"
+        },
+        {
+          "phase": 1,
+          "name": "MVP + Core Integrations",
+          "human_hours": "30-40",
+          "ai_sessions": "15-20"
+        },
+        {
+          "phase": 2,
+          "name": "Enhanced Functionality",
+          "human_hours": "20-30",
+          "ai_sessions": "10-15"
+        },
+        {
+          "phase": 3,
+          "name": "Proactive & Collaborative",
+          "human_hours": "18-34",
+          "ai_sessions": "10-15"
+        }
+      ],
+      "key_deliverables": [
+        "Calendar views (month, week, day)",
+        "Recurring event engine",
+        "Client meeting management",
+        "AP/AR preparation automation"
+      ]
+    }
+  ],
+  "parallelization_analysis": {
+    "generated_at": "2025-11-04T10:02:52.721167Z",
+    "current_status": {
+      "approved_count": 2,
+      "in_progress_count": 4,
+      "in_progress_initiatives": [
+        "TERP-INIT-001",
+        "TERP-INIT-007",
+        "TERP-INIT-004",
+        "TERP-INIT-006"
+      ]
+    },
+    "parallelization": {
+      "conservative_max": 2,
+      "balanced_max": 2,
+      "aggressive_max": 2,
+      "recommended_max": 2,
+      "can_add_agents": 0,
+      "safe_parallel_set": [
+        "TERP-INIT-003",
+        "TERP-INIT-008"
+      ]
+    },
+    "recommendations": {
+      "action": "reduce_agents",
+      "message": "Consider pausing 2 agent(s)"
+    }
+  },
+  "timeline_estimates": {
+    "single_agent": {},
+    "parallel_agents": {}
+  }
 }
