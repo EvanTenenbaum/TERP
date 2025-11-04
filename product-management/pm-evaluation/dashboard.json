@@ -1,5 +1,5 @@
 {
-  "last_updated": "2025-11-04T05:29:35.172748Z",
+  "last_updated": "2025-11-04T05:52:49.580069Z",
   "summary": {
     "total": 6,
     "by_status": {
@@ -10,7 +10,7 @@
       "null": 1,
       "high": 5
     },
-    "total_progress": 10.8
+    "total_progress": 20.0
   },
   "initiatives": [
     {
@@ -22,11 +22,7 @@
       "created_at": "2025-11-03T20:58:51.241960Z",
       "last_updated": "2025-11-03T20:59:08.587308Z",
       "created_by": "system-test",
-      "tags": [
-        "inventory",
-        "export",
-        "demo"
-      ],
+      "tags": ["inventory", "export", "demo"],
       "completed_tasks": 1,
       "total_tasks": 0,
       "recent_updates": [
@@ -174,7 +170,7 @@
         {
           "timestamp": "2025-11-04T01:14:28.299437Z",
           "type": "progress_update",
-          "message": "Progress updated: 10% → 25.0%",
+          "message": "Progress updated: 10% \u2192 25.0%",
           "old_percent": 10,
           "new_percent": 25.0
         }
@@ -185,9 +181,9 @@
       "title": "To-Do Lists + Universal Comments System",
       "status": "in-progress",
       "priority": "high",
-      "progress_percent": 10,
+      "progress_percent": 50.0,
       "created_at": "2025-11-03T23:31:02.134285Z",
-      "last_updated": "2025-11-04T05:29:35.171840Z",
+      "last_updated": "2025-11-04T05:52:49.579422Z",
       "created_by": "dev-agent",
       "tags": [
         "collaboration",
@@ -196,27 +192,53 @@
         "mentions",
         "inbox"
       ],
-      "completed_tasks": 0,
+      "completed_tasks": 2,
       "total_tasks": 0,
       "recent_updates": [
         {
-          "timestamp": "2025-11-03T23:31:11.247334Z",
-          "type": "status_change",
-          "message": "Status changed from pending_review to pending_review",
-          "old_status": "pending_review",
-          "new_status": "pending_review"
+          "timestamp": "2025-11-04T05:52:45.676861Z",
+          "type": "progress_update",
+          "message": "Phase 1 & 2 complete: Backend + Frontend components",
+          "old_percent": 10,
+          "new_percent": 50.0
         },
         {
-          "timestamp": "2025-11-04T05:29:35.171840Z",
-          "type": "status_change",
-          "message": "Status changed from approved to in-progress",
-          "old_status": "approved",
-          "new_status": "in-progress"
+          "timestamp": "2025-11-04T05:52:49.542176Z",
+          "type": "task_completed",
+          "message": "Completed: Phase 1: Database & Backend Implementation",
+          "task": "Phase 1: Database & Backend Implementation"
+        },
+        {
+          "timestamp": "2025-11-04T05:52:49.579422Z",
+          "type": "task_completed",
+          "message": "Completed: Phase 2: Frontend Components",
+          "task": "Phase 2: Frontend Components"
         }
       ]
     }
   ],
   "recent_activity": [
+    {
+      "initiative_id": "TERP-INIT-006",
+      "initiative_title": "To-Do Lists + Universal Comments System",
+      "timestamp": "2025-11-04T05:52:49.579422Z",
+      "message": "Completed: Phase 2: Frontend Components",
+      "type": "task_completed"
+    },
+    {
+      "initiative_id": "TERP-INIT-006",
+      "initiative_title": "To-Do Lists + Universal Comments System",
+      "timestamp": "2025-11-04T05:52:49.542176Z",
+      "message": "Completed: Phase 1: Database & Backend Implementation",
+      "type": "task_completed"
+    },
+    {
+      "initiative_id": "TERP-INIT-006",
+      "initiative_title": "To-Do Lists + Universal Comments System",
+      "timestamp": "2025-11-04T05:52:45.676861Z",
+      "message": "Phase 1 & 2 complete: Backend + Frontend components",
+      "type": "progress_update"
+    },
     {
       "initiative_id": "TERP-INIT-006",
       "initiative_title": "To-Do Lists + Universal Comments System",
@@ -228,7 +250,7 @@
       "initiative_id": "TERP-INIT-005",
       "initiative_title": "Inventory System Stability & Robustness Improvements",
       "timestamp": "2025-11-04T01:14:28.299437Z",
-      "message": "Progress updated: 10% → 25.0%",
+      "message": "Progress updated: 10% \u2192 25.0%",
       "type": "progress_update"
     },
     {
