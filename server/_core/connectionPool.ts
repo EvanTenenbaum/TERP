@@ -47,6 +47,9 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
                    databaseUrl.includes('sslmode=require') || 
                    databaseUrl.includes('ssl=true');
   
+  // Remove ssl-mode parameter from URL as mysql2 doesn't recognize it
+  const cleanDatabaseUrl = databaseUrl.replace(/[?&]ssl-mode=[^&]*/gi, '').replace(/[?&]sslmode=[^&]*/gi, '');
+  
   const sslConfig = needsSSL ? {
     ssl: {
       rejectUnauthorized: false // DigitalOcean managed DB uses valid certs
@@ -59,7 +62,7 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
   });
 
   pool = mysql.createPool({
-    uri: databaseUrl,
+    uri: cleanDatabaseUrl,
     ...poolConfig,
     ...sslConfig,
   });
