@@ -1,0 +1,307 @@
+/**
+ * Inventory Intake Service
+ * Handles transactional batch intake operations
+ *
+ * TERP-INIT-005 Phase 1: Critical Fixes
+ * - Entire intake flow wrapped in database transaction
+ * - Atomic sequence generation for lot and batch codes
+ * - All entity creation (vendor, brand, product, lot, batch, location, audit) is atomic
+ * - Rollback on any failure to maintain data integrity
+ */
+
+import { getDb } from "./db";
+import {
+  vendors,
+  brands,
+  products,
+  lots,
+  batches,
+  batchLocations,
+  auditLogs,
+  type Vendor,
+  type Brand,
+  type Product,
+  type Lot,
+  type Batch,
+} from "../drizzle/schema";
+import { eq, and } from "drizzle-orm";
+import * as inventoryUtils from "./inventoryUtils";
+
+export interface IntakeInput {
+  vendorName: string;
+  brandName: string;
+  productName: string;
+  category: string;
+  subcategory?: string;
+  grade?: string;
+  strainId?: number | null;
+  quantity: number;
+  cogsMode: "FIXED" | "RANGE";
+  unitCogs?: string;
+  unitCogsMin?: string;
+  unitCogsMax?: string;
+  paymentTerms:
+    | "COD"
+    | "NET_7"
+    | "NET_15"
+    | "NET_30"
+    | "CONSIGNMENT"
+    | "PARTIAL";
+  location: {
+    site: string;
+    zone?: string;
+    rack?: string;
+    shelf?: string;
+    bin?: string;
+  };
+  metadata?: Record<string, unknown>;
+  userId: number;
+}
+
+export interface IntakeResult {
+  success: boolean;
+  batch: Batch;
+  vendor: Vendor;
+  brand: Brand;
+  product: Product;
+  lot: Lot;
+}
+
+/**
+ * Process inventory intake with full transaction support
+ * ✅ FIXED: Entire operation wrapped in transaction (TERP-INIT-005 Phase 1)
+ *
+ * @param input Intake parameters
+ * @returns Intake result with created entities
+ */
+export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Validate COGS before starting transaction
+    const cogsValidation = inventoryUtils.validateCOGS(
+      input.cogsMode,
+      input.unitCogs,
+      input.unitCogsMin,
+      input.unitCogsMax
+    );
+    if (!cogsValidation.valid) {
+      throw new Error(cogsValidation.error);
+    }
+
+    // Wrap entire intake operation in transaction
+    const result = await db.transaction(async tx => {
+      // 1. Find or create vendor
+      const [existingVendor] = await tx
+        .select()
+        .from(vendors)
+        .where(eq(vendors.name, input.vendorName))
+        .limit(1);
+
+      let vendor: Vendor;
+      if (existingVendor) {
+        vendor = existingVendor;
+      } else {
+        const [created] = await tx
+          .insert(vendors)
+          .values({ name: input.vendorName })
+          .$returningId();
+
+        const [newVendor] = await tx
+          .select()
+          .from(vendors)
+          .where(eq(vendors.id, created.id));
+
+        vendor = newVendor;
+      }
+
+      // 2. Find or create brand
+      const [existingBrand] = await tx
+        .select()
+        .from(brands)
+        .where(
+          and(eq(brands.name, input.brandName), eq(brands.vendorId, vendor.id))
+        )
+        .limit(1);
+
+      let brand: Brand;
+      if (existingBrand) {
+        brand = existingBrand;
+      } else {
+        const [created] = await tx
+          .insert(brands)
+          .values({
+            name: input.brandName,
+            vendorId: vendor.id,
+          })
+          .$returningId();
+
+        const [newBrand] = await tx
+          .select()
+          .from(brands)
+          .where(eq(brands.id, created.id));
+
+        brand = newBrand;
+      }
+
+      // 3. Find or create product
+      const normalizedProductName = inventoryUtils.normalizeProductName(
+        input.productName
+      );
+      const [existingProduct] = await tx
+        .select()
+        .from(products)
+        .where(
+          and(
+            eq(products.nameCanonical, normalizedProductName),
+            eq(products.brandId, brand.id)
+          )
+        )
+        .limit(1);
+
+      let product: Product;
+      if (existingProduct) {
+        product = existingProduct;
+      } else {
+        const [created] = await tx
+          .insert(products)
+          .values({
+            brandId: brand.id,
+            nameCanonical: normalizedProductName,
+            category: input.category,
+            subcategory: input.subcategory,
+            strainId: input.strainId || null,
+          })
+          .$returningId();
+
+        const [newProduct] = await tx
+          .select()
+          .from(products)
+          .where(eq(products.id, created.id));
+
+        product = newProduct;
+      }
+
+      // 4. Generate lot code and create lot
+      // Note: Sequence generation happens outside transaction but is atomic
+      const lotCode = await inventoryUtils.generateLotCode();
+
+      const [existingLot] = await tx
+        .select()
+        .from(lots)
+        .where(eq(lots.code, lotCode))
+        .limit(1);
+
+      let lot: Lot;
+      if (existingLot) {
+        lot = existingLot;
+      } else {
+        const [created] = await tx
+          .insert(lots)
+          .values({
+            code: lotCode,
+            vendorId: vendor.id,
+            date: new Date(),
+          })
+          .$returningId();
+
+        const [newLot] = await tx
+          .select()
+          .from(lots)
+          .where(eq(lots.id, created.id));
+
+        lot = newLot;
+      }
+
+      // 5. Generate batch code and SKU
+      const batchCode = await inventoryUtils.generateBatchCode();
+      const brandKey = inventoryUtils.normalizeToKey(brand.name);
+      const productKey = inventoryUtils.normalizeToKey(product.nameCanonical);
+      const sku = inventoryUtils.generateSKU(
+        brandKey,
+        productKey,
+        new Date(),
+        1
+      );
+
+      // 6. Create batch
+      const [batchCreated] = await tx
+        .insert(batches)
+        .values({
+          code: batchCode,
+          sku: sku,
+          productId: product.id,
+          lotId: lot.id,
+          status: "AWAITING_INTAKE",
+          grade: input.grade,
+          isSample: 0,
+          sampleOnly: 0,
+          sampleAvailable: 0,
+          cogsMode: input.cogsMode,
+          unitCogs: input.unitCogs,
+          unitCogsMin: input.unitCogsMin,
+          unitCogsMax: input.unitCogsMax,
+          paymentTerms: input.paymentTerms,
+          metadata: input.metadata
+            ? inventoryUtils.stringifyMetadata(input.metadata)
+            : null,
+          onHandQty: inventoryUtils.formatQty(input.quantity),
+          sampleQty: "0",
+          reservedQty: "0",
+          quarantineQty: "0",
+          holdQty: "0",
+          defectiveQty: "0",
+          publishEcom: 0,
+          publishB2b: 0,
+        })
+        .$returningId();
+
+      const [batch] = await tx
+        .select()
+        .from(batches)
+        .where(eq(batches.id, batchCreated.id));
+
+      if (!batch) {
+        throw new Error("Failed to create batch");
+      }
+
+      // 7. Create batch location
+      await tx.insert(batchLocations).values({
+        batchId: batch.id,
+        site: input.location.site,
+        zone: input.location.zone,
+        rack: input.location.rack,
+        shelf: input.location.shelf,
+        bin: input.location.bin,
+        qty: inventoryUtils.formatQty(input.quantity),
+      });
+
+      // 8. Create audit log
+      await tx.insert(auditLogs).values({
+        actorId: input.userId,
+        entity: "Batch",
+        entityId: batch.id,
+        action: "CREATED",
+        after: inventoryUtils.createAuditSnapshot(batch),
+        reason: "Initial intake",
+      });
+
+      return {
+        success: true,
+        batch,
+        vendor,
+        brand,
+        product,
+        lot,
+      };
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Error processing intake:", error);
+    throw new Error(
+      `Failed to process intake: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+}
