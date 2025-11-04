@@ -14,7 +14,7 @@
     {
       "id": "TERP-INIT-007",
       "title": "Accounting Module: Smart Ledger Core & Transaction Splitting",
-      "status": "approved",
+      "status": "pending_review",
       "created_at": "2025-11-03T22:48:19.687810Z",
       "tags": [
         "accounting",
@@ -84,13 +84,13 @@
     }
   ],
   "next_id": 7,
-  "last_updated": "2025-11-03T23:31:11.247755Z",
+  "last_updated": "2025-11-04T00:27:35.661678Z",
   "metadata": {
     "total_count": 6,
     "by_status": {
       "in-progress": 1,
-      "approved": 3,
-      "pending_review": 2
+      "pending_review": 2,
+      "approved": 3
     }
   }
 }
