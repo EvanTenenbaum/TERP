@@ -3,13 +3,19 @@
   "title": "Accounting Module: Smart Ledger Core & Transaction Splitting",
   "created_by": "dev-agent",
   "created_at": "2025-11-04T06:22:44.811412Z",
-  "status": "approved",
+  "status": "in-progress",
   "priority": "high",
   "estimated_effort": null,
   "features": [],
   "dependencies": [],
   "conflicts": [],
-  "tags": ["accounting", "ledger", "transactions", "bookkeeping", "financial"],
+  "tags": [
+    "accounting",
+    "ledger",
+    "transactions",
+    "bookkeeping",
+    "financial"
+  ],
   "metadata": {
     "complexity": null,
     "risk_level": null,

@@ -1,17 +1,17 @@
 {
-  "last_updated": "2025-11-04T09:59:48.320415Z",
+  "last_updated": "2025-11-04T10:02:52.628594Z",
   "summary": {
     "total": 6,
     "by_status": {
-      "in-progress": 2,
-      "approved": 4
+      "in-progress": 4,
+      "approved": 2
     },
     "by_priority": {
       "null": 1,
       "high": 4,
       "medium": 1
     },
-    "total_progress": 17.5,
+    "total_progress": 19.2,
     "archived_count": 1
   },
   "initiatives": [
@@ -24,7 +24,11 @@
       "created_at": "2025-11-03T20:58:51.241960Z",
       "last_updated": "2025-11-03T20:59:08.587308Z",
       "created_by": "system-test",
-      "tags": ["inventory", "export", "demo"],
+      "tags": [
+        "inventory",
+        "export",
+        "demo"
+      ],
       "completed_tasks": 1,
       "total_tasks": 0,
       "recent_updates": [
@@ -53,7 +57,7 @@
     {
       "id": "TERP-INIT-007",
       "title": "Accounting Module: Smart Ledger Core & Transaction Splitting",
-      "status": "approved",
+      "status": "in-progress",
       "priority": "high",
       "progress_percent": 0,
       "created_at": "2025-11-04T06:22:44.811412Z",
@@ -124,11 +128,11 @@
     {
       "id": "TERP-INIT-004",
       "title": "Client Module: Phase 1 & 2 Workflow Improvements",
-      "status": "approved",
+      "status": "in-progress",
       "priority": "high",
-      "progress_percent": 0,
+      "progress_percent": 10,
       "created_at": "2025-11-03T23:26:04.811370Z",
-      "last_updated": "2025-11-03T23:26:15.894237Z",
+      "last_updated": "2025-11-04T10:02:52.627485Z",
       "created_by": "dev-agent",
       "tags": [
         "client-management",
@@ -146,6 +150,13 @@
           "message": "Status changed from pending_review to pending_review",
           "old_status": "pending_review",
           "new_status": "pending_review"
+        },
+        {
+          "timestamp": "2025-11-04T10:02:52.627485Z",
+          "type": "status_change",
+          "message": "Status changed from approved to in-progress",
+          "old_status": "approved",
+          "new_status": "in-progress"
         }
       ]
     },
@@ -198,7 +209,9 @@
       "created_at": "2025-11-04T06:22:44.811412Z",
       "last_updated": "2025-11-04T06:25:02.205493Z",
       "created_by": "dev-agent",
-      "tags": ["cleanup tech-debt refactor vercel documentation"],
+      "tags": [
+        "cleanup tech-debt refactor vercel documentation"
+      ],
       "completed_tasks": 0,
       "total_tasks": 0,
       "recent_updates": [
@@ -234,6 +247,13 @@
     }
   ],
   "recent_activity": [
+    {
+      "initiative_id": "TERP-INIT-004",
+      "initiative_title": "Client Module: Phase 1 & 2 Workflow Improvements",
+      "timestamp": "2025-11-04T10:02:52.627485Z",
+      "message": "Status changed from approved to in-progress",
+      "type": "status_change"
+    },
     {
       "initiative_id": "TERP-INIT-003",
       "initiative_title": "Calendar & Scheduling System",
