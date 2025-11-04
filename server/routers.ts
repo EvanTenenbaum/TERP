@@ -44,6 +44,11 @@ import { vipPortalAdminRouter } from "./routers/vipPortalAdmin";
 import { ordersEnhancedV2Router } from "./routers/ordersEnhancedV2";
 import { pricingDefaultsRouter } from "./routers/pricingDefaults";
 import { dashboardPreferencesRouter } from "./routers/dashboardPreferences";
+import { todoListsRouter } from "./routers/todoLists";
+import { todoTasksRouter } from "./routers/todoTasks";
+import { commentsRouter } from "./routers/comments";
+import { inboxRouter } from "./routers/inbox";
+import { todoActivityRouter } from "./routers/todoActivity";
 
 export const appRouter = router({
   system: systemRouter,
@@ -89,7 +94,11 @@ export const appRouter = router({
   ordersEnhancedV2: ordersEnhancedV2Router,
   pricingDefaults: pricingDefaultsRouter,
   dashboardPreferences: dashboardPreferencesRouter,
+  todoLists: todoListsRouter,
+  todoTasks: todoTasksRouter,
+  comments: commentsRouter,
+  inbox: inboxRouter,
+  todoActivity: todoActivityRouter,
 });
 
 export type AppRouter = typeof appRouter;
-

@@ -3266,3 +3266,279 @@ export const pricingDefaults = mysqlTable(
 
 export type PricingDefault = typeof pricingDefaults.$inferSelect;
 export type InsertPricingDefault = typeof pricingDefaults.$inferInsert;
+
+// ============================================================================
+// TO-DO LISTS MODULE SCHEMA
+// ============================================================================
+
+/**
+ * Todo Lists table
+ * Stores task list containers (personal and shared)
+ */
+export const todoLists = mysqlTable(
+  "todo_lists",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    ownerId: int("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    isShared: boolean("is_shared").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    ownerIdIdx: index("idx_owner_id").on(table.ownerId),
+    isSharedIdx: index("idx_is_shared").on(table.isShared),
+  })
+);
+
+export type TodoList = typeof todoLists.$inferSelect;
+export type InsertTodoList = typeof todoLists.$inferInsert;
+
+/**
+ * Todo List Members table
+ * Access control for shared lists
+ */
+export const todoListMembers = mysqlTable(
+  "todo_list_members",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    listId: int("list_id")
+      .notNull()
+      .references(() => todoLists.id, { onDelete: "cascade" }),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: mysqlEnum("role", ["owner", "editor", "viewer"])
+      .notNull()
+      .default("editor"),
+    addedAt: timestamp("added_at").defaultNow().notNull(),
+    addedBy: int("added_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  },
+  table => ({
+    userIdIdx: index("idx_user_id").on(table.userId),
+    listIdIdx: index("idx_list_id").on(table.listId),
+    uniqueListMember: unique("unique_list_member").on(
+      table.listId,
+      table.userId
+    ),
+  })
+);
+
+export type TodoListMember = typeof todoListMembers.$inferSelect;
+export type InsertTodoListMember = typeof todoListMembers.$inferInsert;
+
+/**
+ * Todo Tasks table
+ * Individual tasks within lists
+ */
+export const todoTasks = mysqlTable(
+  "todo_tasks",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    listId: int("list_id")
+      .notNull()
+      .references(() => todoLists.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 500 }).notNull(),
+    description: text("description"),
+    status: mysqlEnum("status", ["todo", "in_progress", "done"])
+      .notNull()
+      .default("todo"),
+    priority: mysqlEnum("priority", [
+      "low",
+      "medium",
+      "high",
+      "urgent",
+    ]).default("medium"),
+    dueDate: timestamp("due_date"),
+    assignedTo: int("assigned_to").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdBy: int("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    position: int("position").notNull().default(0),
+    isCompleted: boolean("is_completed").notNull().default(false),
+    completedAt: timestamp("completed_at"),
+    completedBy: int("completed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    listIdIdx: index("idx_list_id").on(table.listId),
+    assignedToIdx: index("idx_assigned_to").on(table.assignedTo),
+    statusIdx: index("idx_status").on(table.status),
+    dueDateIdx: index("idx_due_date").on(table.dueDate),
+    createdByIdx: index("idx_created_by").on(table.createdBy),
+  })
+);
+
+export type TodoTask = typeof todoTasks.$inferSelect;
+export type InsertTodoTask = typeof todoTasks.$inferInsert;
+
+/**
+ * Todo Task Activity table
+ * Audit trail for task changes
+ */
+export const todoTaskActivity = mysqlTable(
+  "todo_task_activity",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    taskId: int("task_id")
+      .notNull()
+      .references(() => todoTasks.id, { onDelete: "cascade" }),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    action: mysqlEnum("action", [
+      "created",
+      "updated",
+      "status_changed",
+      "assigned",
+      "completed",
+      "deleted",
+    ]).notNull(),
+    fieldChanged: varchar("field_changed", { length: 100 }),
+    oldValue: text("old_value"),
+    newValue: text("new_value"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  table => ({
+    taskIdIdx: index("idx_task_id").on(table.taskId),
+    userIdIdx: index("idx_user_id").on(table.userId),
+    createdAtIdx: index("idx_created_at").on(table.createdAt),
+  })
+);
+
+export type TodoTaskActivity = typeof todoTaskActivity.$inferSelect;
+export type InsertTodoTaskActivity = typeof todoTaskActivity.$inferInsert;
+
+// ============================================================================
+// UNIVERSAL COMMENTS SYSTEM SCHEMA
+// ============================================================================
+
+/**
+ * Comments table (polymorphic)
+ * Universal commenting on any entity in TERP
+ */
+export const comments = mysqlTable(
+  "comments",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    commentableType: varchar("commentable_type", { length: 50 }).notNull(),
+    commentableId: int("commentable_id").notNull(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    isResolved: boolean("is_resolved").notNull().default(false),
+    resolvedAt: timestamp("resolved_at"),
+    resolvedBy: int("resolved_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    commentableIdx: index("idx_commentable").on(
+      table.commentableType,
+      table.commentableId
+    ),
+    userIdIdx: index("idx_user_id").on(table.userId),
+    isResolvedIdx: index("idx_is_resolved").on(table.isResolved),
+    createdAtIdx: index("idx_created_at").on(table.createdAt),
+  })
+);
+
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = typeof comments.$inferInsert;
+
+/**
+ * Comment Mentions table
+ * Tracks @mentions in comments
+ */
+export const commentMentions = mysqlTable(
+  "comment_mentions",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    commentId: int("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    mentionedUserId: int("mentioned_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    mentionedByUserId: int("mentioned_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  table => ({
+    mentionedUserIdIdx: index("idx_mentioned_user_id").on(
+      table.mentionedUserId
+    ),
+    commentIdIdx: index("idx_comment_id").on(table.commentId),
+    uniqueMention: unique("unique_mention").on(
+      table.commentId,
+      table.mentionedUserId
+    ),
+  })
+);
+
+export type CommentMention = typeof commentMentions.$inferSelect;
+export type InsertCommentMention = typeof commentMentions.$inferInsert;
+
+// ============================================================================
+// SMART INBOX SYSTEM SCHEMA
+// ============================================================================
+
+/**
+ * Inbox Items table
+ * Unified inbox for mentions and task assignments
+ */
+export const inboxItems = mysqlTable(
+  "inbox_items",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    sourceType: mysqlEnum("source_type", [
+      "mention",
+      "task_assignment",
+      "task_update",
+    ]).notNull(),
+    sourceId: int("source_id").notNull(),
+    referenceType: varchar("reference_type", { length: 50 }).notNull(),
+    referenceId: int("reference_id").notNull(),
+    title: varchar("title", { length: 500 }).notNull(),
+    description: text("description"),
+    status: mysqlEnum("status", ["unread", "seen", "completed"])
+      .notNull()
+      .default("unread"),
+    seenAt: timestamp("seen_at"),
+    completedAt: timestamp("completed_at"),
+    isArchived: boolean("is_archived").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    userIdIdx: index("idx_user_id").on(table.userId),
+    statusIdx: index("idx_status").on(table.status),
+    sourceIdx: index("idx_source").on(table.sourceType, table.sourceId),
+    referenceIdx: index("idx_reference").on(
+      table.referenceType,
+      table.referenceId
+    ),
+    createdAtIdx: index("idx_created_at").on(table.createdAt),
+    isArchivedIdx: index("idx_is_archived").on(table.isArchived),
+  })
+);
+
+export type InboxItem = typeof inboxItems.$inferSelect;
+export type InsertInboxItem = typeof inboxItems.$inferInsert;
