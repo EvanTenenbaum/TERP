@@ -1,17 +1,17 @@
 {
-  "last_updated": "2025-11-03T23:45:18.899864Z",
+  "last_updated": "2025-11-04T00:27:35.662301Z",
   "summary": {
     "total": 6,
     "by_status": {
       "in-progress": 1,
-      "approved": 4,
-      "pending_review": 1
+      "pending_review": 2,
+      "approved": 3
     },
     "by_priority": {
       "null": 2,
       "high": 4
     },
-    "total_progress": 9.0
+    "total_progress": 11.2
   },
   "initiatives": [
     {
@@ -56,11 +56,11 @@
     {
       "id": "TERP-INIT-007",
       "title": "Inventory System Stability & Robustness Improvements",
-      "status": "approved",
+      "status": "pending_review",
       "priority": "high",
       "progress_percent": 0,
       "created_at": "2025-11-03T22:49:48.166476Z",
-      "last_updated": "2025-11-03T22:50:22.792985Z",
+      "last_updated": "2025-11-04T00:27:35.661262Z",
       "created_by": "dev-agent",
       "tags": [
         "inventory",
@@ -78,6 +78,13 @@
           "type": "status_change",
           "message": "Status changed from pending_review to pending_review",
           "old_status": "pending_review",
+          "new_status": "pending_review"
+        },
+        {
+          "timestamp": "2025-11-04T00:27:35.661262Z",
+          "type": "status_change",
+          "message": "Status changed from approved to pending_review",
+          "old_status": "approved",
           "new_status": "pending_review"
         }
       ]
@@ -198,6 +205,13 @@
     }
   ],
   "recent_activity": [
+    {
+      "initiative_id": "TERP-INIT-007",
+      "initiative_title": "Inventory System Stability & Robustness Improvements",
+      "timestamp": "2025-11-04T00:27:35.661262Z",
+      "message": "Status changed from approved to pending_review",
+      "type": "status_change"
+    },
     {
       "initiative_id": "TERP-INIT-006",
       "initiative_title": "To-Do Lists + Universal Comments System",
