@@ -1,8 +1,9 @@
-import { Bell, Search, Settings, User, Menu, StickyNote } from 'lucide-react';
+import { Inbox, Search, Settings, User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FloatingScratchPad } from '@/components/FloatingScratchPad';
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
+import { trpc } from '@/lib/trpc';
 import versionInfo from '../../../version.json';
 
 interface AppHeaderProps {
@@ -10,7 +11,10 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ onMenuClick }: AppHeaderProps) {
-  const [scratchPadOpen, setScratchPadOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  // Fetch inbox stats for unread count
+  const { data: inboxStats } = trpc.inbox.getStats.useQuery();
 
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b border-border bg-card">
@@ -49,17 +53,22 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
       
       {/* Action buttons */}
       <div className="flex items-center gap-1 md:gap-2 ml-2">
-        <Button variant="ghost" size="icon" className="hidden sm:flex">
-          <Bell className="h-5 w-5" />
-        </Button>
         <Button 
           variant="ghost" 
           size="icon" 
-          className="hidden sm:flex"
-          onClick={() => setScratchPadOpen(true)}
-          title="Scratch Pad"
+          className="hidden sm:flex relative"
+          onClick={() => navigate('/inbox')}
+          title="Inbox"
         >
-          <StickyNote className="h-5 w-5" />
+          <Inbox className="h-5 w-5" />
+          {inboxStats && inboxStats.unread > 0 && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+            >
+              {inboxStats.unread > 9 ? '9+' : inboxStats.unread}
+            </Badge>
+          )}
         </Button>
         <Button variant="ghost" size="icon" className="hidden sm:flex">
           <Settings className="h-5 w-5" />
@@ -68,8 +77,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           <User className="h-5 w-5" />
         </Button>
       </div>
-      
-      <FloatingScratchPad isOpen={scratchPadOpen} onClose={() => setScratchPadOpen(false)} />
+
     </header>
   );
 }
