@@ -35,7 +35,7 @@ export function hasAvailableQty(batch: Batch, requestedQty: number): boolean {
 // STATUS TRANSITION VALIDATION
 // ============================================================================
 
-type BatchStatus = 
+type BatchStatus =
   | "AWAITING_INTAKE"
   | "LIVE"
   | "ON_HOLD"
@@ -69,7 +69,9 @@ export function isValidStatusTransition(
 /**
  * Get allowed next statuses for a batch
  */
-export function getAllowedNextStatuses(currentStatus: BatchStatus): BatchStatus[] {
+export function getAllowedNextStatuses(
+  currentStatus: BatchStatus
+): BatchStatus[] {
   return VALID_TRANSITIONS[currentStatus] || [];
 }
 
@@ -92,21 +94,23 @@ export function generateSKU(
 }
 
 /**
- * Generate Lot Code in format: LOT-YYYYMMDD-SSS
+ * Generate Lot Code using atomic sequence generation
+ * ✅ FIXED: Uses database sequence instead of random numbers (TERP-INIT-005 Phase 1)
+ * Format: LOT-NNNNNN
  */
-export function generateLotCode(date: Date): string {
-  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
-  // Generate a simple sequence number (in production, this should come from DB)
-  const sequence = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `LOT-${dateStr}-${sequence}`;
+export async function generateLotCode(): Promise<string> {
+  const { getNextSequence } = await import("./sequenceDb");
+  return await getNextSequence("lot_code", 6);
 }
 
 /**
- * Generate Batch Code in format: BCH-<LotCode>-<nn>
+ * Generate Batch Code using atomic sequence generation
+ * ✅ FIXED: Uses database sequence instead of manual sequence (TERP-INIT-005 Phase 1)
+ * Format: BATCH-NNNNNN
  */
-export function generateBatchCode(lotCode: string, sequence: number): string {
-  const seqStr = sequence.toString().padStart(2, "0");
-  return `BCH-${lotCode}-${seqStr}`;
+export async function generateBatchCode(): Promise<string> {
+  const { getNextSequence } = await import("./sequenceDb");
+  return await getNextSequence("batch_code", 6);
 }
 
 /**
@@ -136,7 +140,7 @@ export function normalizeProductName(input: string): string {
     .replace(/[^\w\s]/g, "") // Remove punctuation
     .replace(/\s+/g, " ") // Collapse whitespace
     .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 }
 
@@ -161,16 +165,23 @@ export function validateCOGS(
         return { valid: false, error: "FIXED mode requires unitCogs" };
       }
       break;
-    case "RANGE":
+    case "RANGE": {
       if (!unitCogsMin || !unitCogsMax) {
-        return { valid: false, error: "RANGE mode requires unitCogsMin and unitCogsMax" };
+        return {
+          valid: false,
+          error: "RANGE mode requires unitCogsMin and unitCogsMax",
+        };
       }
       const min = parseFloat(unitCogsMin);
       const max = parseFloat(unitCogsMax);
       if (min >= max) {
-        return { valid: false, error: "unitCogsMin must be less than unitCogsMax" };
+        return {
+          valid: false,
+          error: "unitCogsMin must be less than unitCogsMax",
+        };
       }
       break;
+    }
   }
   return { valid: true };
 }
@@ -178,10 +189,7 @@ export function validateCOGS(
 /**
  * Check if a sale price is within valid COGS range
  */
-export function isPriceValid(
-  batch: Batch,
-  salePrice: number
-): boolean {
+export function isPriceValid(batch: Batch, salePrice: number): boolean {
   if (batch.cogsMode === "RANGE" && batch.unitCogsMin && batch.unitCogsMax) {
     const min = parseFloat(batch.unitCogsMin);
     const max = parseFloat(batch.unitCogsMax);
@@ -216,14 +224,16 @@ export function formatQty(qty: number): string {
 /**
  * Create before/after snapshot for audit log
  */
-export function createAuditSnapshot(data: any): string {
+export function createAuditSnapshot(data: Record<string, unknown>): string {
   return JSON.stringify(data, null, 0);
 }
 
 /**
  * Parse metadata JSON safely
  */
-export function parseMetadata(metadataStr: string | null): any {
+export function parseMetadata(
+  metadataStr: string | null
+): Record<string, unknown> {
   if (!metadataStr) return {};
   try {
     return JSON.parse(metadataStr);
@@ -235,7 +245,6 @@ export function parseMetadata(metadataStr: string | null): any {
 /**
  * Stringify metadata for storage
  */
-export function stringifyMetadata(metadata: any): string {
+export function stringifyMetadata(metadata: Record<string, unknown>): string {
   return JSON.stringify(metadata);
 }
-

@@ -1,16 +1,16 @@
 {
-  "last_updated": "2025-11-04T00:34:18.119719Z",
+  "last_updated": "2025-11-04T01:00:01.314589Z",
   "summary": {
     "total": 6,
     "by_status": {
-      "in-progress": 1,
-      "approved": 5
+      "in-progress": 2,
+      "approved": 4
     },
     "by_priority": {
       "null": 1,
       "high": 5
     },
-    "total_progress": 7.5
+    "total_progress": 9.2
   },
   "initiatives": [
     {
@@ -22,11 +22,7 @@
       "created_at": "2025-11-03T20:58:51.241960Z",
       "last_updated": "2025-11-03T20:59:08.587308Z",
       "created_by": "system-test",
-      "tags": [
-        "inventory",
-        "export",
-        "demo"
-      ],
+      "tags": ["inventory", "export", "demo"],
       "completed_tasks": 1,
       "total_tasks": 0,
       "recent_updates": [
@@ -141,11 +137,11 @@
     {
       "id": "TERP-INIT-005",
       "title": "Inventory System Stability & Robustness Improvements",
-      "status": "approved",
+      "status": "in-progress",
       "priority": "high",
-      "progress_percent": 0,
+      "progress_percent": 10,
       "created_at": "2025-11-03T23:30:00.352512Z",
-      "last_updated": "2025-11-03T23:30:11.673750Z",
+      "last_updated": "2025-11-04T01:00:01.313661Z",
       "created_by": "dev-agent",
       "tags": [
         "inventory",
@@ -164,6 +160,13 @@
           "message": "Status changed from pending_review to pending_review",
           "old_status": "pending_review",
           "new_status": "pending_review"
+        },
+        {
+          "timestamp": "2025-11-04T01:00:01.313661Z",
+          "type": "status_change",
+          "message": "Status changed from approved to in-progress",
+          "old_status": "approved",
+          "new_status": "in-progress"
         }
       ]
     },
@@ -197,6 +200,13 @@
     }
   ],
   "recent_activity": [
+    {
+      "initiative_id": "TERP-INIT-005",
+      "initiative_title": "Inventory System Stability & Robustness Improvements",
+      "timestamp": "2025-11-04T01:00:01.313661Z",
+      "message": "Status changed from approved to in-progress",
+      "type": "status_change"
+    },
     {
       "initiative_id": "TERP-INIT-007",
       "initiative_title": "Accounting Module: Smart Ledger Core & Transaction Splitting",
