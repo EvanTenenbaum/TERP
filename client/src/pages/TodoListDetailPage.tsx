@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "wouter";
+import { useLocation } from "wouter";
 import { ArrowLeft, Plus, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,17 +17,18 @@ import { TodoListForm } from "@/components/todos/TodoListForm";
 
 export function TodoListDetailPage() {
   const { listId } = useParams<{ listId: string }>();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isEditListOpen, setIsEditListOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<any>(null);
+  const [editingTask, setEditingTask] = useState<unknown>(null);
 
   const utils = trpc.useContext();
 
-  const { data: list, isLoading: listLoading } = trpc.todoLists.getById.useQuery(
-    { listId: Number(listId) },
-    { enabled: !!listId }
-  );
+  const { data: list, isLoading: listLoading } =
+    trpc.todoLists.getById.useQuery(
+      { listId: Number(listId) },
+      { enabled: !!listId }
+    );
 
   const { data: tasks = [], isLoading: tasksLoading } =
     trpc.todoTasks.getListTasks.useQuery(
@@ -62,11 +64,11 @@ export function TodoListDetailPage() {
 
   const deleteList = trpc.todoLists.delete.useMutation({
     onSuccess: () => {
-      navigate("/todos");
+      setLocation("/todos");
     },
   });
 
-  const handleToggleComplete = (task: any) => {
+  const handleToggleComplete = (task: { id: number; completed: boolean }) => {
     if (task.isCompleted) {
       uncomplete.mutate({ taskId: task.id });
     } else {
@@ -81,7 +83,11 @@ export function TodoListDetailPage() {
   };
 
   const handleDeleteList = () => {
-    if (window.confirm("Are you sure you want to delete this list? All tasks will be deleted.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this list? All tasks will be deleted."
+      )
+    ) {
       deleteList.mutate({ listId: Number(listId) });
     }
   };
@@ -99,7 +105,7 @@ export function TodoListDetailPage() {
       <div className="container mx-auto py-8 px-4">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">List not found</h2>
-          <Button onClick={() => navigate("/todos")}>Back to Lists</Button>
+          <Button onClick={() => setLocation("/todos")}>Back to Lists</Button>
         </div>
       </div>
     );
@@ -111,7 +117,7 @@ export function TodoListDetailPage() {
       <div className="mb-8">
         <Button
           variant="ghost"
-          onClick={() => navigate("/todos")}
+          onClick={() => setLocation("/todos")}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -135,7 +141,9 @@ export function TodoListDetailPage() {
                   <Badge variant="destructive">{stats.overdue} overdue</Badge>
                 )}
                 {stats.inProgress > 0 && (
-                  <Badge variant="outline">{stats.inProgress} in progress</Badge>
+                  <Badge variant="outline">
+                    {stats.inProgress} in progress
+                  </Badge>
                 )}
               </div>
             )}
@@ -187,7 +195,7 @@ export function TodoListDetailPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {tasks.map((task) => (
+          {tasks.map(task => (
             <TaskCard
               key={task.id}
               task={task}
