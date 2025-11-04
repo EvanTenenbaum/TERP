@@ -7,6 +7,7 @@ import {
 import { DashboardHeader } from "@/components/dashboard/v3/DashboardHeader";
 import { DashboardLayoutManager } from "@/components/dashboard/v3/DashboardLayoutManager";
 import { CustomizationPanel } from "@/components/dashboard/v3/CustomizationPanel";
+import { CommentWidget } from "@/components/comments/CommentWidget";
 
 // Import v2 widgets (v3 widgets are being migrated)
 import {
@@ -61,6 +62,10 @@ function DashboardContent() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <DashboardHeader />
+
+        <div className="flex justify-end mb-4">
+          <CommentWidget commentableType="dashboard" commentableId={1} />
+        </div>
 
         <DashboardLayoutManager>
           {visibleWidgets.map(widget => (
