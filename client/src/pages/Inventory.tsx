@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -47,45 +47,41 @@ import { BulkConfirmDialog } from "@/components/inventory/BulkConfirmDialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Inventory() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
+  const [match, params] = useRoute("/inventory/:id");
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Parse batch ID from URL
-  const batchIdFromUrl = useMemo(() => {
-    const match = location.match(/^\/inventory\/(\d+)$/);
-    if (match) {
-      const id = parseInt(match[1], 10);
+  // Initialize selectedBatch from URL parameter if present
+  const [selectedBatch, setSelectedBatch] = useState<number | null>(() => {
+    if (match && params?.id) {
+      const id = parseInt(params.id, 10);
       return isNaN(id) ? null : id;
     }
     return null;
-  }, [location]);
-  
-  // Initialize selectedBatch from URL parameter if present
-  const [selectedBatch, setSelectedBatch] = useState<number | null>(batchIdFromUrl);
-  
-  // Track if we're updating from URL to prevent circular updates
-  const isUpdatingFromURL = useRef(false);
+  });
   
   // Sync URL parameter to selectedBatch state when URL changes
   useEffect(() => {
-    if (batchIdFromUrl !== selectedBatch) {
-      isUpdatingFromURL.current = true;
-      setSelectedBatch(batchIdFromUrl);
+    if (match && params?.id) {
+      const id = parseInt(params.id, 10);
+      if (!isNaN(id) && id !== selectedBatch) {
+        setSelectedBatch(id);
+      }
+    } else if (!match && selectedBatch !== null) {
+      // URL changed to /inventory without ID, close drawer
+      setSelectedBatch(null);
     }
-  }, [batchIdFromUrl]);
+  }, [match, params?.id, selectedBatch]);
   
-  // Update URL when selectedBatch changes programmatically (not from URL)
+  // Update URL when selectedBatch changes programmatically
   useEffect(() => {
-    if (isUpdatingFromURL.current) {
-      isUpdatingFromURL.current = false;
-      return;
+    if (selectedBatch !== null && (!match || params?.id !== selectedBatch.toString())) {
+      setLocation(`/inventory/${selectedBatch}`);
+    } else if (selectedBatch === null && match) {
+      // If drawer is closed but we're on a batch URL, go back to list
+      setLocation('/inventory');
     }
-    
-    const expectedPath = selectedBatch !== null ? `/inventory/${selectedBatch}` : '/inventory';
-    if (location !== expectedPath) {
-      setLocation(expectedPath);
-    }
-  }, [selectedBatch, location, setLocation]);
+  }, [selectedBatch, match, params?.id, setLocation]);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<number | null>(null);
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
