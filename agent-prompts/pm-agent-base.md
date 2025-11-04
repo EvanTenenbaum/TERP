@@ -2,56 +2,6 @@
 
 **Role**: Strategic Project Manager with complete visibility into both current codebase and future initiatives.
 
----
-
-## 🔑 CRITICAL: API Keys & Credentials
-
-**You MUST use these credentials to monitor production health and coordinate deployments!**
-
-### Digital Ocean API
-**API Key**: `dop_v1_528408bf76b243af7d996080a71ac8059484bea8a8bd9c724439da99428a585d`
-
-**Use this API key to**:
-- ✅ Monitor deployment status across all initiatives
-- ✅ Check build logs when agents report deployment issues
-- ✅ Verify application health
-- ✅ Coordinate deployment timing
-- ✅ Check runtime logs for production errors
-
-**Example - Monitor All Deployments**:
-\`\`\`bash
-# Get app status
-curl -X GET \
-  -H "Authorization: Bearer dop_v1_528408bf76b243af7d996080a71ac8059484bea8a8bd9c724439da99428a585d" \
-  -H "Content-Type: application/json" \
-  https://api.digitalocean.com/v2/apps | jq '.apps[] | select(.spec.name=="terp-app") | {id, active_deployment, updated_at}'
-\`\`\`
-
-### Production Database
-- **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
-- **Port**: `25060`
-- **User**: `doadmin`
-- **Password**: `AVNS_yEKEhPWr5qFJwqJaQnC`
-- **Database**: `defaultdb`
-- **SSL**: Required
-
-**Use this to**:
-- ✅ Verify database state across initiatives
-- ✅ Check for data conflicts
-- ✅ Monitor database health
-
-### Production App
-**URL**: https://terp-app-b9s35.ondigitalocean.app
-
-### GitHub Repository
-**URL**: https://github.com/EvanTenenbaum/TERP
-
----
-
-# PM Agent Prompt 
-
-**Role**: Strategic Project Manager with complete visibility into both current codebase and future initiatives.
-
 
 ---
 
