@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { TodoListCard } from "@/components/todos/TodoListCard";
 import { TodoListForm } from "@/components/todos/TodoListForm";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 
 export function TodoListsPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   const { data: lists = [], isLoading } = trpc.todoLists.getMyLists.useQuery();
 
@@ -21,7 +21,11 @@ export function TodoListsPage() {
   });
 
   const handleDeleteList = (listId: number) => {
-    if (window.confirm("Are you sure you want to delete this list? All tasks will be deleted.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this list? All tasks will be deleted."
+      )
+    ) {
       deleteList.mutate({ listId });
     }
   };
@@ -64,11 +68,11 @@ export function TodoListsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {lists.map((list) => (
+          {lists.map(list => (
             <TodoListCard
               key={list.id}
               list={list}
-              onClick={() => navigate(`/todos/${list.id}`)}
+              onClick={() => setLocation(`/todos/${list.id}`)}
               onDelete={() => handleDeleteList(list.id)}
             />
           ))}
