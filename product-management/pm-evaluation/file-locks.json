@@ -1,0 +1,54 @@
+{
+  "locks": {
+    "../drizzle/schema.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    },
+    "../server/inventoryDb.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    },
+    "../server/inventoryMovementsDb.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    },
+    "../server/inventoryUtils.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    },
+    "../server/routers/inventory.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    },
+    "../server/routers/inventoryMovements.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    },
+    "../server/_core/errors.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    },
+    "../server/_core/logger.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    },
+    "../server/_core/auditMiddleware.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    },
+    "../server/_core/cache.ts": {
+      "initiative_id": "TERP-INIT-005",
+      "locked_at": "2025-11-03T19:59:51.288811Z",
+      "locked_by": "unknown"
+    }
+  }
+}
