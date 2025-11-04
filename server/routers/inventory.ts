@@ -1,29 +1,31 @@
 import { z } from "zod";
 import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
-import { handleError, AppError } from "../_core/errors";
+import { handleError, AppError, ErrorCatalog } from "../_core/errors";
+import { inventoryLogger } from "../_core/logger";
+import {
+  intakeSchema,
+  batchUpdateSchema,
+  listQuerySchema,
+  validators,
+} from "../_core/validation";
 import * as inventoryDb from "../inventoryDb";
 import * as inventoryUtils from "../inventoryUtils";
+import type { BatchStatus } from "../inventoryUtils";
 
 export const inventoryRouter = router({
   // Get all batches with details
-  list: protectedProcedure
-    .input(
-      z.object({
-        query: z.string().optional(),
-        limit: z.number().optional().default(100),
-      })
-    )
-    .query(async ({ input }) => {
-      try {
-        if (input.query) {
-          return await inventoryDb.searchBatches(input.query, input.limit);
-        }
-        return await inventoryDb.getBatchesWithDetails(input.limit);
-      } catch (error) {
-        handleError(error, "inventory.list");
-        throw error;
+  // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
+  list: protectedProcedure.input(listQuerySchema).query(async ({ input }) => {
+    try {
+      if (input.query) {
+        return await inventoryDb.searchBatches(input.query, input.limit);
       }
-    }),
+      return await inventoryDb.getBatchesWithDetails(input.limit);
+    } catch (error) {
+      handleError(error, "inventory.list");
+      throw error;
+    }
+  }),
 
   // Get dashboard statistics
   dashboardStats: protectedProcedure.query(async () => {
@@ -42,63 +44,46 @@ export const inventoryRouter = router({
   }),
 
   // Get single batch by ID
-  getById: protectedProcedure.input(z.number()).query(async ({ input }) => {
-    try {
-      const batch = await inventoryDb.getBatchById(input);
-      if (!batch) throw new AppError("Batch not found", "NOT_FOUND", 404);
+  // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
+  getById: protectedProcedure
+    .input(validators.positiveInt)
+    .query(async ({ input }) => {
+      try {
+        const batch = await inventoryDb.getBatchById(input);
+        if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input);
 
-      const locations = await inventoryDb.getBatchLocations(input);
-      const auditLogs = await inventoryDb.getAuditLogsForEntity("Batch", input);
+        const locations = await inventoryDb.getBatchLocations(input);
+        const auditLogs = await inventoryDb.getAuditLogsForEntity(
+          "Batch",
+          input
+        );
 
-      return {
-        batch,
-        locations,
-        auditLogs,
-        availableQty: inventoryUtils.calculateAvailableQty(batch),
-      };
-    } catch (error) {
-      handleError(error, "inventory.getById");
-      throw error;
-    }
-  }),
+        return {
+          batch,
+          locations,
+          auditLogs,
+          availableQty: inventoryUtils.calculateAvailableQty(batch),
+        };
+      } catch (error) {
+        handleError(error, "inventory.getById");
+        throw error;
+      }
+    }),
 
   // Create new batch (intake)
   // ✅ FIXED: Uses transactional service (TERP-INIT-005 Phase 1)
+  // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
   intake: protectedProcedure
-    .input(
-      z.object({
-        vendorName: z.string(),
-        brandName: z.string(),
-        productName: z.string(),
-        category: z.string(),
-        subcategory: z.string().optional(),
-        grade: z.string().optional(),
-        strainId: z.number().nullable().optional(),
-        quantity: z.number(),
-        cogsMode: z.enum(["FIXED", "RANGE"]),
-        unitCogs: z.string().optional(),
-        unitCogsMin: z.string().optional(),
-        unitCogsMax: z.string().optional(),
-        paymentTerms: z.enum([
-          "COD",
-          "NET_7",
-          "NET_15",
-          "NET_30",
-          "CONSIGNMENT",
-          "PARTIAL",
-        ]),
-        location: z.object({
-          site: z.string(),
-          zone: z.string().optional(),
-          rack: z.string().optional(),
-          shelf: z.string().optional(),
-          bin: z.string().optional(),
-        }),
-        metadata: z.any().optional(),
-      })
-    )
+    .input(intakeSchema)
     .mutation(async ({ input, ctx }) => {
       try {
+        inventoryLogger.operationStart("intake", {
+          vendorName: input.vendorName,
+          brandName: input.brandName,
+          productName: input.productName,
+          quantity: input.quantity,
+        });
+
         const { processIntake } = await import("../inventoryIntakeService");
 
         const result = await processIntake({
@@ -106,46 +91,43 @@ export const inventoryRouter = router({
           userId: ctx.user?.id || 0,
         });
 
+        inventoryLogger.operationSuccess("intake", {
+          batchId: result.batch.id,
+          batchCode: result.batch.code,
+        });
+
         return { success: true, batch: result.batch };
       } catch (error) {
+        inventoryLogger.operationFailure("intake", error as Error, { input });
         handleError(error, "inventory.intake");
         throw error;
       }
     }),
 
   // Update batch status
+  // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
   updateStatus: protectedProcedure
-    .input(
-      z.object({
-        id: z.number(),
-        status: z.enum([
-          "AWAITING_INTAKE",
-          "LIVE",
-          "ON_HOLD",
-          "QUARANTINED",
-          "SOLD_OUT",
-          "CLOSED",
-        ]),
-        reason: z.string().optional(),
-      })
-    )
+    .input(batchUpdateSchema)
     .mutation(async ({ input, ctx }) => {
       const batch = await inventoryDb.getBatchById(input.id);
-      if (!batch) throw new Error("Batch not found");
+      if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.id);
 
       // Validate transition
       if (
         !inventoryUtils.isValidStatusTransition(
-          batch.status as string,
-          input.status
+          batch.status as BatchStatus,
+          input.status as BatchStatus
         )
       ) {
-        throw new Error(
-          `Invalid status transition from ${batch.status} to ${input.status}`
+        throw ErrorCatalog.INVENTORY.INVALID_STATUS_TRANSITION(
+          batch.status as string,
+          input.status
         );
       }
 
-      const before = inventoryUtils.createAuditSnapshot(batch);
+      const before = inventoryUtils.createAuditSnapshot(
+        batch as unknown as Record<string, unknown>
+      );
       await inventoryDb.updateBatchStatus(input.id, input.status);
       const after = await inventoryDb.getBatchById(input.id);
 
@@ -156,7 +138,9 @@ export const inventoryRouter = router({
         entityId: input.id,
         action: "STATUS_CHANGE",
         before,
-        after: inventoryUtils.createAuditSnapshot(after),
+        after: inventoryUtils.createAuditSnapshot(
+          after as unknown as Record<string, unknown>
+        ),
         reason: input.reason,
       });
 
@@ -181,7 +165,7 @@ export const inventoryRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const batch = await inventoryDb.getBatchById(input.id);
-      if (!batch) throw new Error("Batch not found");
+      if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.id);
 
       const currentQty = inventoryUtils.parseQty(batch[input.field]);
       const newQty = currentQty + input.adjustment;
@@ -205,7 +189,9 @@ export const inventoryRouter = router({
         entityId: input.id,
         action: "QTY_ADJUST",
         before,
-        after: inventoryUtils.createAuditSnapshot(after),
+        after: inventoryUtils.createAuditSnapshot(
+          after as unknown as Record<string, unknown>
+        ),
         reason: input.reason,
       });
 

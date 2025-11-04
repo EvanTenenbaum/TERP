@@ -11,17 +11,99 @@ import type { Batch } from "../drizzle/schema";
 
 /**
  * Calculate available quantity for a batch
+ * ✅ ENHANCED: TERP-INIT-005 Phase 3 - Centralized quantity calculation
  * Formula: available = on_hand - reserved - quarantine - hold
  * Never returns negative values
  */
 export function calculateAvailableQty(batch: Batch): number {
-  const onHand = parseFloat(batch.onHandQty);
-  const reserved = parseFloat(batch.reservedQty);
-  const quarantine = parseFloat(batch.quarantineQty);
-  const hold = parseFloat(batch.holdQty);
+  const onHand = parseFloat(batch.onHandQty || "0");
+  const reserved = parseFloat(batch.reservedQty || "0");
+  const quarantine = parseFloat(batch.quarantineQty || "0");
+  const hold = parseFloat(batch.holdQty || "0");
 
   const available = onHand - reserved - quarantine - hold;
   return Math.max(0, available); // Never negative
+}
+
+/**
+ * Validate quantity consistency for a batch
+ * ✅ ADDED: TERP-INIT-005 Phase 3 - Quantity consistency checks
+ *
+ * Ensures:
+ * 1. All quantities are non-negative
+ * 2. Reserved + Quarantine + Hold ≤ On Hand
+ * 3. No NaN values
+ */
+export function validateQuantityConsistency(batch: Batch): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  const onHand = parseFloat(batch.onHandQty || "0");
+  const reserved = parseFloat(batch.reservedQty || "0");
+  const quarantine = parseFloat(batch.quarantineQty || "0");
+  const hold = parseFloat(batch.holdQty || "0");
+  const defective = parseFloat(batch.defectiveQty || "0");
+
+  // Check for NaN
+  if (isNaN(onHand)) errors.push("onHandQty is not a valid number");
+  if (isNaN(reserved)) errors.push("reservedQty is not a valid number");
+  if (isNaN(quarantine)) errors.push("quarantineQty is not a valid number");
+  if (isNaN(hold)) errors.push("holdQty is not a valid number");
+  if (isNaN(defective)) errors.push("defectiveQty is not a valid number");
+
+  // Check for negative values
+  if (onHand < 0) errors.push("onHandQty cannot be negative");
+  if (reserved < 0) errors.push("reservedQty cannot be negative");
+  if (quarantine < 0) errors.push("quarantineQty cannot be negative");
+  if (hold < 0) errors.push("holdQty cannot be negative");
+  if (defective < 0) errors.push("defectiveQty cannot be negative");
+
+  // Check allocation consistency
+  const totalAllocated = reserved + quarantine + hold;
+  if (totalAllocated > onHand) {
+    errors.push(
+      `Total allocated (${totalAllocated}) exceeds on-hand quantity (${onHand})`
+    );
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Get quantity breakdown for a batch
+ * ✅ ADDED: TERP-INIT-005 Phase 3 - Quantity breakdown utility
+ */
+export function getQuantityBreakdown(batch: Batch): {
+  onHand: number;
+  reserved: number;
+  quarantine: number;
+  hold: number;
+  defective: number;
+  available: number;
+  totalAllocated: number;
+} {
+  const onHand = parseFloat(batch.onHandQty || "0");
+  const reserved = parseFloat(batch.reservedQty || "0");
+  const quarantine = parseFloat(batch.quarantineQty || "0");
+  const hold = parseFloat(batch.holdQty || "0");
+  const defective = parseFloat(batch.defectiveQty || "0");
+  const available = calculateAvailableQty(batch);
+  const totalAllocated = reserved + quarantine + hold;
+
+  return {
+    onHand,
+    reserved,
+    quarantine,
+    hold,
+    defective,
+    available,
+    totalAllocated,
+  };
 }
 
 /**
@@ -35,9 +117,10 @@ export function hasAvailableQty(batch: Batch, requestedQty: number): boolean {
 // STATUS TRANSITION VALIDATION
 // ============================================================================
 
-type BatchStatus =
+export type BatchStatus =
   | "AWAITING_INTAKE"
   | "LIVE"
+  | "PHOTOGRAPHY_COMPLETE"
   | "ON_HOLD"
   | "QUARANTINED"
   | "SOLD_OUT"
@@ -48,7 +131,8 @@ type BatchStatus =
  */
 const VALID_TRANSITIONS: Record<BatchStatus, BatchStatus[]> = {
   AWAITING_INTAKE: ["LIVE", "QUARANTINED"],
-  LIVE: ["ON_HOLD", "QUARANTINED", "SOLD_OUT"],
+  LIVE: ["PHOTOGRAPHY_COMPLETE", "ON_HOLD", "QUARANTINED", "SOLD_OUT"],
+  PHOTOGRAPHY_COMPLETE: ["LIVE", "ON_HOLD", "QUARANTINED", "SOLD_OUT"],
   ON_HOLD: ["LIVE", "QUARANTINED"],
   QUARANTINED: ["LIVE", "ON_HOLD", "CLOSED"],
   SOLD_OUT: ["CLOSED"],
@@ -229,14 +313,125 @@ export function createAuditSnapshot(data: Record<string, unknown>): string {
 }
 
 /**
- * Parse metadata JSON safely
+ * Batch Metadata Schema
+ * ✅ ADDED: TERP-INIT-005 Phase 3 - Enforced metadata structure
  */
-export function parseMetadata(
-  metadataStr: string | null
-): Record<string, unknown> {
+export interface BatchMetadata {
+  // Compliance & Testing
+  testResults?: {
+    thc?: number;
+    cbd?: number;
+    terpenes?: string[];
+    contaminants?: string[];
+    testDate?: string;
+    labName?: string;
+  };
+
+  // Packaging
+  packaging?: {
+    type?: string; // "jar", "bag", "box", etc.
+    size?: string; // "1g", "3.5g", "1oz", etc.
+    material?: string;
+  };
+
+  // Sourcing
+  sourcing?: {
+    growMethod?: string; // "indoor", "outdoor", "greenhouse"
+    organic?: boolean;
+    region?: string;
+  };
+
+  // Custom fields
+  notes?: string;
+  tags?: string[];
+  customFields?: Record<string, unknown>;
+}
+
+/**
+ * Validate metadata against schema
+ * ✅ ADDED: TERP-INIT-005 Phase 3 - Metadata validation
+ */
+export function validateMetadata(metadata: unknown): {
+  valid: boolean;
+  errors: string[];
+  data?: BatchMetadata;
+} {
+  const errors: string[] = [];
+
+  if (metadata === null || metadata === undefined) {
+    return { valid: true, errors: [], data: {} };
+  }
+
+  if (typeof metadata !== "object" || Array.isArray(metadata)) {
+    return {
+      valid: false,
+      errors: ["Metadata must be an object"],
+    };
+  }
+
+  const data = metadata as Record<string, unknown>;
+
+  // Validate testResults if present
+  if (data.testResults !== undefined) {
+    if (
+      typeof data.testResults !== "object" ||
+      Array.isArray(data.testResults)
+    ) {
+      errors.push("testResults must be an object");
+    } else {
+      const tr = data.testResults as Record<string, unknown>;
+      if (tr.thc !== undefined && typeof tr.thc !== "number") {
+        errors.push("testResults.thc must be a number");
+      }
+      if (tr.cbd !== undefined && typeof tr.cbd !== "number") {
+        errors.push("testResults.cbd must be a number");
+      }
+      if (tr.terpenes !== undefined && !Array.isArray(tr.terpenes)) {
+        errors.push("testResults.terpenes must be an array");
+      }
+    }
+  }
+
+  // Validate packaging if present
+  if (data.packaging !== undefined) {
+    if (typeof data.packaging !== "object" || Array.isArray(data.packaging)) {
+      errors.push("packaging must be an object");
+    }
+  }
+
+  // Validate sourcing if present
+  if (data.sourcing !== undefined) {
+    if (typeof data.sourcing !== "object" || Array.isArray(data.sourcing)) {
+      errors.push("sourcing must be an object");
+    } else {
+      const s = data.sourcing as Record<string, unknown>;
+      if (s.organic !== undefined && typeof s.organic !== "boolean") {
+        errors.push("sourcing.organic must be a boolean");
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    data: data as BatchMetadata,
+  };
+}
+
+/**
+ * Parse metadata JSON safely with validation
+ * ✅ ENHANCED: TERP-INIT-005 Phase 3 - Added schema validation
+ */
+export function parseMetadata(metadataStr: string | null): BatchMetadata {
   if (!metadataStr) return {};
   try {
-    return JSON.parse(metadataStr);
+    const parsed = JSON.parse(metadataStr);
+    const validation = validateMetadata(parsed);
+    if (!validation.valid) {
+      console.warn("Invalid metadata structure:", validation.errors);
+      return {};
+    }
+    return validation.data || {};
   } catch {
     return {};
   }
@@ -244,7 +439,12 @@ export function parseMetadata(
 
 /**
  * Stringify metadata for storage
+ * ✅ ENHANCED: TERP-INIT-005 Phase 3 - Validates before stringifying
  */
 export function stringifyMetadata(metadata: Record<string, unknown>): string {
+  const validation = validateMetadata(metadata);
+  if (!validation.valid) {
+    throw new Error(`Invalid metadata: ${validation.errors.join(", ")}`);
+  }
   return JSON.stringify(metadata);
 }
