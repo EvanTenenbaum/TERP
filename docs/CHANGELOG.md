@@ -4,11 +4,131 @@ All notable changes to the TERP project are documented in this file.
 
 ---
 
+## [TERP-INIT-005] Inventory System Stability & Robustness - Phase 1 Complete
+
+**Date**: November 4, 2025  
+**Status**: Phase 1 Complete (25% overall progress)  
+**Commit**: a8647f1  
+**Initiative**: TERP-INIT-005 - Inventory System Stability & Robustness Improvements
+
+### Phase 1: Critical Fixes
+
+#### ✅ Task 1.1: Row-Level Locking
+
+**Impact**: Prevents race conditions in concurrent inventory operations
+
+- Implemented `SELECT ... FOR UPDATE` in all inventory movement functions
+- Updated `decreaseInventory()`, `increaseInventory()`, `adjustInventory()` with row-level locking
+- Added `reverseInventoryMovement()` with transaction support for rollback scenarios
+- Added `getBatchMovementSummary()` for movement aggregation
+
+**Technical**: All inventory operations now lock batch rows during updates, preventing concurrent modifications that could lead to negative inventory or data corruption.
+
+#### ✅ Task 1.2: Database Transactions
+
+**Impact**: Ensures atomic operations across the entire intake flow
+
+- Created `inventoryIntakeService.ts` with full transaction support
+- Entire intake flow (vendor → brand → product → lot → batch → location → audit) is now atomic
+- Automatic rollback on any failure at any step
+- Updated `inventory.ts` router to use the new transactional service
+
+**Technical**: The intake process now uses database transactions to ensure all-or-nothing semantics. If any step fails, all previous steps are automatically rolled back.
+
+#### ✅ Task 1.3: Atomic Sequence Generation
+
+**Impact**: Eliminates code collisions and ensures unique lot/batch codes
+
+- Added `sequences` table to database schema
+- Created `sequenceDb.ts` module with atomic `getNextSequence()` function
+- Replaced random lot/batch code generation with database sequences
+- Updated `inventoryUtils.ts` to use async sequence generation
+- Migration includes initialization of `lot_code` and `batch_code` sequences
+
+**Technical**: Lot and batch codes are now generated using database-backed sequences with row-level locking, ensuring uniqueness even under high concurrency.
+
+### Files Modified
+
+**New Files:**
+
+- `drizzle/migrations/0003_inventory_stability_improvements.sql` - Database migration
+- `server/sequenceDb.ts` - Atomic sequence generation module
+- `server/inventoryIntakeService.ts` - Transactional intake service
+
+**Modified Files:**
+
+- `drizzle/schema.ts` - Added sequences table
+- `server/inventoryMovementsDb.ts` - Added transactions and locking
+- `server/inventoryUtils.ts` - Async sequence generation
+- `server/routers/inventory.ts` - Uses transactional service
+
+### Code Quality Improvements
+
+- Fixed all ESLint warnings (removed unused imports, fixed case blocks, replaced non-null assertions)
+- Replaced all `any` types with specific types (`Record<string, unknown>`)
+- Improved error handling with proper try-catch blocks
+- Added comprehensive JSDoc comments
+
+### Database Changes
+
+**New Table:**
+
+```sql
+CREATE TABLE sequences (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL UNIQUE,
+  prefix VARCHAR(20) NOT NULL,
+  currentValue INT NOT NULL DEFAULT 0,
+  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+**New Indexes:**
+
+- `idx_batches_status`, `idx_batches_created_at`, `idx_batches_product_id`, `idx_batches_lot_id`
+- `idx_products_category`, `idx_products_brand_id`, `idx_products_strain_id`
+- `idx_lots_vendor_id`, `idx_lots_date`
+- `idx_vendors_name`, `idx_brands_vendor_id`
+
+### Breaking Changes
+
+⚠️ **API Changes:**
+
+- `generateLotCode()` is now async and returns `Promise<string>`
+- `generateBatchCode()` is now async and returns `Promise<string>`
+- Intake operations may take slightly longer due to transaction overhead
+
+### Remaining Phases
+
+**Phase 2: Stability Improvements** (Planned)
+
+- Standardized error handling
+- Comprehensive input validation
+- Enhanced Zod schemas
+
+**Phase 3: Robustness & Testing** (Planned)
+
+- Quantity calculation consistency
+- Metadata schema enforcement
+- Comprehensive test suite (>70% coverage)
+- Automated audit logging
+
+**Phase 4: Optimization** (Planned)
+
+- Pagination implementation
+- Code deduplication
+- Strict type safety enforcement
+- Caching layer
+
+---
+
 ## [Version 023542e6] - October 24, 2025
 
 ### Added - Complete Mobile Optimization
 
 **Mobile-First Responsive Design:**
+
 - Optimized all 10 accounting pages for mobile devices
 - Implemented consistent responsive patterns across entire application
 - Added mobile-first grid layouts (`grid-cols-1 md:grid-cols-2 lg:grid-cols-4`)
@@ -17,11 +137,13 @@ All notable changes to the TERP project are documented in this file.
 - Responsive button groups with proper stacking
 
 **Accounting Navigation:**
+
 - Added "Accounting" menu item to sidebar with DollarSign icon
 - Configured all 10 accounting routes in App.tsx
 - Positioned between Inventory and Customers in navigation
 
 **Pages Optimized:**
+
 1. AccountingDashboard
 2. ChartOfAccounts
 3. GeneralLedger
@@ -34,11 +156,13 @@ All notable changes to the TERP project are documented in this file.
 10. Expenses
 
 **Responsive Breakpoints:**
+
 - Mobile (< 640px): Single column, stacked buttons, compact headers
 - Tablet (640px - 1024px): 2-3 columns, horizontal buttons
 - Desktop (> 1024px): 3-4 columns, full features
 
 ### Technical
+
 - Zero TypeScript errors
 - Zero LSP errors
 - Clean build
@@ -53,6 +177,7 @@ All notable changes to the TERP project are documented in this file.
 **Comprehensive Double-Entry Accounting System:**
 
 #### Database Layer (10 Tables)
+
 1. `accounts` - Chart of accounts with hierarchical structure
 2. `ledgerEntries` - General ledger with double-entry validation
 3. `fiscalPeriods` - Quarterly/annual period management
@@ -67,6 +192,7 @@ All notable changes to the TERP project are documented in this file.
 12. `expenseCategories` - Expense categorization
 
 #### Data Access Layer (3 Files, ~2,000 lines)
+
 - `accountingDb.ts` - Core accounting (accounts, ledger, fiscal periods)
   - 30+ helper functions
   - Double-entry validation
@@ -86,23 +212,28 @@ All notable changes to the TERP project are documented in this file.
   - Reimbursement management
 
 #### API Layer (60+ Endpoints)
+
 **Core Accounting:**
+
 - `accounting.accounts.*` - 7 endpoints for chart of accounts
 - `accounting.ledger.*` - 5 endpoints for general ledger
 - `accounting.fiscalPeriods.*` - 7 endpoints for period management
 
 **AR/AP:**
+
 - `accounting.invoices.*` - 9 endpoints for invoice management
 - `accounting.bills.*` - 9 endpoints for bill management
 - `accounting.payments.*` - 6 endpoints for payment tracking
 
 **Cash & Expenses:**
+
 - `accounting.bankAccounts.*` - 6 endpoints for bank accounts
 - `accounting.bankTransactions.*` - 6 endpoints for transactions
 - `accounting.expenseCategories.*` - 4 endpoints for categories
 - `accounting.expenses.*` - 9 endpoints for expense management
 
 #### UI Components (6 Reusable Components)
+
 1. **AmountInput** - Currency input with automatic formatting
 2. **StatusBadge** - Color-coded status indicators
 3. **AgingBadge** - AR/AP aging bucket indicators
@@ -111,6 +242,7 @@ All notable changes to the TERP project are documented in this file.
 6. **JournalEntryForm** - Form for posting journal entries
 
 #### Pages (10 Complete Pages)
+
 1. **AccountingDashboard** - Financial overview with KPIs, AR/AP aging, expense breakdown
 2. **ChartOfAccounts** - Hierarchical account management
 3. **GeneralLedger** - Journal entries and trial balance
@@ -123,6 +255,7 @@ All notable changes to the TERP project are documented in this file.
 10. **Expenses** - Expense tracking and reimbursement
 
 #### Features
+
 - **Double-Entry Accounting:** Automatic debit/credit validation
 - **AR/AP Aging:** Automatic aging bucket calculations
 - **Fiscal Period Management:** Open, close, lock, reopen periods
@@ -131,6 +264,7 @@ All notable changes to the TERP project are documented in this file.
 - **Financial Reporting:** Trial balance, AR aging, AP aging, expense breakdown
 
 ### Technical
+
 - Zero TypeScript errors
 - Production-ready code (no placeholders or stubs)
 - Comprehensive error handling
@@ -147,6 +281,7 @@ All notable changes to the TERP project are documented in this file.
 **Complete Batch Tracking System:**
 
 #### Database Schema
+
 - `batches` - Core inventory batches with status tracking
 - `products` - Product catalog
 - `brands` - Brand information
@@ -154,6 +289,7 @@ All notable changes to the TERP project are documented in this file.
 - `strains` - Cannabis strain data
 
 #### Features
+
 - Batch lifecycle management (Awaiting Intake → In Stock → Reserved → Sold → Disposed)
 - Advanced filtering and sorting
 - Dashboard statistics and charts
@@ -163,6 +299,7 @@ All notable changes to the TERP project are documented in this file.
 - Batch details modal with full information
 
 #### API Endpoints
+
 - `inventory.list` - Get all batches with filters
 - `inventory.getById` - Get single batch details
 - `inventory.create` - Create new batch
@@ -171,12 +308,14 @@ All notable changes to the TERP project are documented in this file.
 - `inventory.getDashboardStats` - Get statistics
 
 #### UI Components
+
 - `InventoryCard` - Mobile card view component
 - `DashboardStats` - Statistics cards with filters
 - `StockLevelChart` - Visual stock level representation
 - `PurchaseModal` - New purchase form with validation
 
 ### Technical
+
 - Full TypeScript type safety
 - Responsive design (mobile-first)
 - Production-ready code
@@ -189,6 +328,7 @@ All notable changes to the TERP project are documented in this file.
 ### Added - Initial Project Setup
 
 **Foundation:**
+
 - React 19 + TypeScript + Vite
 - Tailwind CSS 4 + shadcn/ui
 - tRPC for type-safe API
@@ -196,11 +336,13 @@ All notable changes to the TERP project are documented in this file.
 - pnpm package manager
 
 **Core Components:**
+
 - `AppShell` - Main layout wrapper
 - `AppHeader` - Top navigation with search
 - `AppSidebar` - Left sidebar navigation with mobile drawer
 
 **Dashboard (Homepage):**
+
 - 4 KPI summary cards (Revenue, Orders, Inventory, Low Stock)
 - Dashboard grid with 4 widgets:
   - Recent Quotes
@@ -210,6 +352,7 @@ All notable changes to the TERP project are documented in this file.
 - Fully responsive design
 
 **Design System:**
+
 - Card-based layouts
 - Color-coded status indicators
 - Persistent sidebar navigation
@@ -217,11 +360,13 @@ All notable changes to the TERP project are documented in this file.
 - TERP design principles applied
 
 **Documentation:**
+
 - DEVELOPMENT_PROTOCOLS.md (The Bible)
 - TERP_DESIGN_SYSTEM.md
 - TERP_IMPLEMENTATION_STRATEGY.md
 
 ### Technical
+
 - Zero TypeScript errors
 - Clean build process
 - Production-ready foundation
@@ -265,12 +410,14 @@ Versions are tracked by Git commit hashes from the webdev checkpoint system.
 ### Planned Enhancements
 
 **Accounting:**
+
 - Financial reports (P&L, Balance Sheet, Cash Flow)
 - Invoice/Bill PDF generation
 - Receipt upload for expenses
 - Seed data for demo purposes
 
 **System-Wide:**
+
 - Full authentication flow
 - Role-based access control
 - Real-time notifications
@@ -283,4 +430,3 @@ Versions are tracked by Git commit hashes from the webdev checkpoint system.
 **Maintained By:** Manus AI  
 **Last Updated:** October 24, 2025  
 **Current Version:** 023542e6
-
