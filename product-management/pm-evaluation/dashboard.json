@@ -1,5 +1,5 @@
 {
-  "last_updated": "2025-11-04T10:02:52.628594Z",
+  "last_updated": "2025-11-04T10:22:32.881796Z",
   "summary": {
     "total": 6,
     "by_status": {
@@ -24,11 +24,7 @@
       "created_at": "2025-11-03T20:58:51.241960Z",
       "last_updated": "2025-11-03T20:59:08.587308Z",
       "created_by": "system-test",
-      "tags": [
-        "inventory",
-        "export",
-        "demo"
-      ],
+      "tags": ["inventory", "export", "demo"],
       "completed_tasks": 1,
       "total_tasks": 0,
       "recent_updates": [
@@ -132,7 +128,7 @@
       "priority": "high",
       "progress_percent": 10,
       "created_at": "2025-11-03T23:26:04.811370Z",
-      "last_updated": "2025-11-04T10:02:52.627485Z",
+      "last_updated": "2025-11-04T10:22:32.881123Z",
       "created_by": "dev-agent",
       "tags": [
         "client-management",
@@ -141,7 +137,7 @@
         "phase1",
         "phase2"
       ],
-      "completed_tasks": 0,
+      "completed_tasks": 1,
       "total_tasks": 0,
       "recent_updates": [
         {
@@ -157,6 +153,12 @@
           "message": "Status changed from approved to in-progress",
           "old_status": "approved",
           "new_status": "in-progress"
+        },
+        {
+          "timestamp": "2025-11-04T10:22:32.881123Z",
+          "type": "task_completed",
+          "message": "Completed: Phase 0: Pre-Implementation Setup",
+          "task": "Phase 0: Pre-Implementation Setup"
         }
       ]
     },
@@ -209,9 +211,7 @@
       "created_at": "2025-11-04T06:22:44.811412Z",
       "last_updated": "2025-11-04T06:25:02.205493Z",
       "created_by": "dev-agent",
-      "tags": [
-        "cleanup tech-debt refactor vercel documentation"
-      ],
+      "tags": ["cleanup tech-debt refactor vercel documentation"],
       "completed_tasks": 0,
       "total_tasks": 0,
       "recent_updates": [
@@ -247,6 +247,13 @@
     }
   ],
   "recent_activity": [
+    {
+      "initiative_id": "TERP-INIT-004",
+      "initiative_title": "Client Module: Phase 1 & 2 Workflow Improvements",
+      "timestamp": "2025-11-04T10:22:32.881123Z",
+      "message": "Completed: Phase 0: Pre-Implementation Setup",
+      "type": "task_completed"
+    },
     {
       "initiative_id": "TERP-INIT-004",
       "initiative_title": "Client Module: Phase 1 & 2 Workflow Improvements",
