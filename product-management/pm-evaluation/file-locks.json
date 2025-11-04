@@ -24,6 +24,71 @@
       "initiative_id": "TERP-INIT-004",
       "locked_at": "2025-11-04T05:22:16.206560Z",
       "locked_by": "unknown"
+    },
+    "drizzle/schema.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/calendarDb.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/_core/timezoneService.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/_core/permissionService.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/_core/instanceGenerationService.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/_core/dataIntegrityService.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/routes/calendar.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/routes/recurrence.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/routes/participants.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/routes/reminders.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/routes/views.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/routes/meetings.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
+    },
+    "server/routes/financials.ts": {
+      "initiative_id": "TERP-INIT-003",
+      "locked_at": "2025-11-04T05:24:57.248546Z",
+      "locked_by": "unknown"
     }
   }
 }
