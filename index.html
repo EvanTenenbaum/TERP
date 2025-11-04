@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TERP PM Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: white;
+            border-bottom: 1px solid #e1e8ed;
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 1.75rem;
+            color: #1a202c;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        
+        .sync-info {
+            text-align: right;
+        }
+        
+        .last-updated {
+            font-size: 0.85rem;
+            color: #718096;
+            margin-bottom: 0.5rem;
+        }
+        
+        .sync-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+        
+        .sync-btn:hover {
+            background: #059669;
+        }
+        
+        .sync-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #718096;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a202c;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .section-subtitle {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        
+        .timeline-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .timeline-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        .timeline-item h4 {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .timeline-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1e40af;
+        }
+        
+        .timeline-value.parallel {
+            color: #059669;
+        }
+        
+        .timeline-detail {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+        
+        .initiative-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: box-shadow 0.2s;
+        }
+        
+        .initiative-card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .initiative-header {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .sprint-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .priority-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-critical {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .priority-high {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-approved {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-in-progress {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-archived {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .initiative-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+        
+        .initiative-id {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .initiative-desc {
+            color: #4b5563;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        
+        .initiative-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 1rem;
+        }
+        
+        .deliverables {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .deliverable {
+            font-size: 0.85rem;
+            color: #4b5563;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .deliverable:before {
+            content: "•";
+            position: absolute;
+            left: 0.5rem;
+            color: #10b981;
+        }
+        
+        .phases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .phase {
+            background: #f9fafb;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        
+        .phase-name {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+        
+        .phase-duration {
+            color: #6b7280;
+        }
+        
+        .dependency-box {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #fef2f2;
+            border-left: 3px solid #ef4444;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .dependency-box.enables {
+            background: #f0fdf4;
+            border-left-color: #10b981;
+        }
+        
+        .dependency-box.benefits {
+            background: #eff6ff;
+            border-left-color: #3b82f6;
+        }
+        
+        .parallelization-section {
+            background: #fefce8;
+            border: 1px solid #fde047;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        
+        .parallel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .parallel-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+        }
+        
+        .parallel-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .parallel-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a202c;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #64748b;
+        }
+        
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .sync-info {
+                text-align: left;
+            }
+            
+            .timeline-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>TERP Project Roadmap</h1>
+                <div class="subtitle">Strategic initiatives and development progress</div>
+            </div>
+            <div class="sync-info">
+                <div class="last-updated" id="lastUpdated">Loading...</div>
+                <button class="sync-btn" id="syncBtn" onclick="loadDashboard()">
+                    <span>🔄</span>
+                    <span>Sync</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div id="loading" class="loading">
+            <h2>Loading dashboard...</h2>
+            <p>Fetching latest data from GitHub</p>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="dashboard" style="display: none;">
+            <!-- Stats Grid -->
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <!-- Roadmap Section -->
+            <div class="section">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title">Recommended Roadmap Sequence</h2>
+                        <div class="section-subtitle">Strategic ordering based on dependencies, business value, and risk analysis</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.85rem; color: #718096;">Analysis date</div>
+                        <div style="font-weight: 600;" id="analysisDate">11/4/2025</div>
+                    </div>
+                </div>
+                
+                <div class="timeline-box">
+                    <div class="timeline-title">
+                        <span>⏱️</span>
+                        <span>Timeline Estimates</span>
+                    </div>
+                    <div class="timeline-grid">
+                        <div class="timeline-item">
+                            <h4>Single Agent (Sequential)</h4>
+                            <div class="timeline-value" id="singleAgentTime">5-8</div>
+                            <div class="timeline-detail" id="singleAgentDays">(25-40 calendar days)</div>
+                        </div>
+                        <div class="timeline-item">
+                            <h4>Two Agents (Parallel)</h4>
+                            <div class="timeline-value parallel" id="parallelTime">3.5-5.5</div>
+                            <div class="timeline-detail" id="parallelDays">(18-28 days) • 20% faster</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="roadmapItems"></div>
+            </div>
+            
+            <!-- Parallelization Analysis -->
+            <div class="parallelization-section">
+                <h3 style="margin-bottom: 0.5rem;">Parallelization Analysis</h3>
+                <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 1rem;">
+                    Safe agent count based on file overlap analysis
+                </div>
+                <div id="parallelizationContent"></div>
+            </div>
+            
+            <!-- Archived Initiatives -->
+            <div class="section">
+                <h2 class="section-title">Archived Initiatives</h2>
+                <div class="section-subtitle">Completed and archived initiatives (<span id="archivedCount">0</span>)</div>
+                <div id="archivedItems" style="margin-top: 1.5rem;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const DASHBOARD_URL = 'https://raw.githubusercontent.com/EvanTenenbaum/TERP/main/product-management/pm-evaluation/dashboard.json';
+        
+        async function loadDashboard() {
+            const syncBtn = document.getElementById('syncBtn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const dashboard = document.getElementById('dashboard');
+            
+            syncBtn.disabled = true;
+            syncBtn.innerHTML = '<span>⏳</span><span>Syncing...</span>';
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            dashboard.style.display = 'none';
+            
+            try {
+                const response = await fetch(DASHBOARD_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to fetch dashboard data');
+                
+                const data = await response.json();
+                renderDashboard(data);
+                
+                loading.style.display = 'none';
+                dashboard.style.display = 'block';
+                syncBtn.innerHTML = '<span>✅</span><span>Synced!</span>';
+                setTimeout(() => {
+                    syncBtn.innerHTML = '<span>🔄</span><span>Sync</span>';
+                    syncBtn.disabled = false;
+                }, 2000);
+            } catch (err) {
+                console.error('Error loading dashboard:', err);
+                error.textContent = 'Failed to load dashboard: ' + err.message;
+                error.style.display = 'block';
+                loading.style.display = 'none';
+                syncBtn.innerHTML = '<span>❌</span><span>Retry</span>';
+                syncBtn.disabled = false;
+            }
+        }
+        
+        function renderDashboard(data) {
+            // Update last updated
+            const lastUpdated = new Date(data.last_updated);
+            document.getElementById('lastUpdated').textContent = 
+                'Last updated\\n' + lastUpdated.toLocaleString('en-US', {
+                    month: 'numeric',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            
+            // Render stats
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Total Initiatives</div>
+                    <div class="stat-value">${data.summary.total}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Approved</div>
+                    <div class="stat-value" style="color: #3b82f6;">${data.summary.by_status.approved || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">In Progress</div>
+                    <div class="stat-value" style="color: #f59e0b;">${data.summary.by_status['in-progress'] || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Progress</div>
+                    <div class="stat-value" style="color: #10b981;">${(data.summary.total_progress / data.summary.total).toFixed(1)}%</div>
+                </div>
+            `;
+            
+            // Render roadmap items
+            const roadmapItems = document.getElementById('roadmapItems');
+            const roadmap = data.roadmap_sequence || [];
+            roadmapItems.innerHTML = roadmap.map((item, index) => {
+                const initiative = data.initiatives.find(i => i.id === item.initiative_id);
+                if (!initiative) return '';
+                
+                return `
+                    <div class="initiative-card">
+                        <div class="initiative-header">
+                            <span class="sprint-badge">Sprint ${index + 1}</span>
+                            <span class="priority-badge priority-${item.priority}">${item.priority.toUpperCase()}</span>
+                            ${initiative.status ? `<span class="status-badge status-${initiative.status}">${initiative.status}</span>` : ''}
+                            <span style="margin-left: auto; color: #64748b; font-size: 0.9rem;">${item.estimated_duration}</span>
+                            ${initiative.progress_percent > 0 ? `<span style="color: #10b981; font-weight: 600;">${initiative.progress_percent}% complete</span>` : ''}
+                        </div>
+                        <div>
+                            <div class="initiative-id">${item.initiative_id}</div>
+                            <h3 class="initiative-title">${initiative.title}</h3>
+                        </div>
+                        <p class="initiative-desc">${item.rationale}</p>
+                        ${item.blocks && item.blocks.length > 0 ? `
+                            <div class="dependency-box">
+                                <strong>⚠️ Blocks:</strong> ${item.blocks.join(', ')}
+                            </div>
+                        ` : ''}
+                        ${item.enables && item.enables.length > 0 ? `
+                            <div class="dependency-box enables">
+                                <strong>✅ Enables:</strong> ${item.enables.join(', ')}
+                            </div>
+                        ` : ''}
+                        ${item.benefits_from && item.benefits_from.length > 0 ? `
+                            <div class="dependency-box benefits">
+                                <strong>💡 Benefits from:</strong> ${item.benefits_from.join(', ')}
+                            </div>
+                        ` : ''}
+                        ${item.phases && item.phases.length > 0 ? `
+                            <div style="margin-top: 1rem;">
+                                <strong style="font-size: 0.9rem;">Phases:</strong>
+                                <div class="phases-grid">
+                                    ${item.phases.map(phase => `
+                                        <div class="phase">
+                                            <div class="phase-name">${phase.name}</div>
+                                            <div class="phase-duration">${phase.duration}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${item.key_deliverables && item.key_deliverables.length > 0 ? `
+                            <div style="margin-top: 1rem;">
+                                <strong style="font-size: 0.9rem;">Key Deliverables:</strong>
+                                <div class="deliverables">
+                                    ${item.key_deliverables.map(d => `<div class="deliverable">${d}</div>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            // Render parallelization
+            const parallelContent = document.getElementById('parallelizationContent');
+            if (data.parallelization_analysis) {
+                const pa = data.parallelization_analysis;
+                parallelContent.innerHTML = `
+                    <div class="parallel-grid">
+                        <div class="parallel-card">
+                            <div class="parallel-label">Agents Running</div>
+                            <div class="parallel-value" style="color: #10b981;">${pa.current_agents || 0}</div>
+                        </div>
+                        <div class="parallel-card">
+                            <div class="parallel-label">Waiting in Queue</div>
+                            <div class="parallel-value" style="color: #f59e0b;">${pa.queue_size || 0}</div>
+                        </div>
+                        <div class="parallel-card">
+                            <div class="parallel-label">Safe Agent Limit</div>
+                            <div class="parallel-value">${pa.safe_agent_count || 3}</div>
+                            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+                                (${pa.overlap_threshold || 30}% overlap threshold)
+                            </div>
+                        </div>
+                        <div class="parallel-card">
+                            <div class="parallel-label">Can Add More</div>
+                            <div class="parallel-value" style="color: #3b82f6;">
+                                ${Math.max(0, (pa.safe_agent_count || 3) - (pa.current_agents || 0))} agent(s)
+                            </div>
+                        </div>
+                    </div>
+                    ${pa.next_initiatives && pa.next_initiatives.length > 0 ? `
+                        <div style="margin-top: 1rem; font-size: 0.9rem;">
+                            <strong>Next initiatives:</strong> → ${pa.next_initiatives.join(', ')}
+                        </div>
+                    ` : ''}
+                    <div style="margin-top: 1rem; font-size: 0.85rem; color: #64748b;">
+                        <strong>How it works:</strong> The system analyzes file overlap between initiatives. 
+                        Higher overlap means more merge conflicts if run in parallel. The "Balanced" threshold 
+                        (30% overlap max) provides a good balance between speed and safety.
+                    </div>
+                `;
+            }
+            
+            // Render archived
+            const archivedItems = document.getElementById('archivedItems');
+            const archived = data.archived_initiatives || [];
+            document.getElementById('archivedCount').textContent = archived.length;
+            archivedItems.innerHTML = archived.map(item => `
+                <div class="initiative-card">
+                    <div class="initiative-header">
+                        <span class="status-badge status-archived">archived</span>
+                        ${item.priority ? `<span class="priority-badge priority-${item.priority}">${item.priority}</span>` : ''}
+                        <span style="margin-left: auto; color: #10b981; font-weight: 600;">Progress ${item.progress_percent || 100}%</span>
+                    </div>
+                    <div>
+                        <div class="initiative-id">${item.initiative_id}</div>
+                        <h3 class="initiative-title">${item.title}</h3>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;">
+                        Completed: ${new Date(item.completed_at || item.archived_at).toLocaleDateString()}
+                    </div>
+                    ${item.tags && item.tags.length > 0 ? `
+                        <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            ${item.tags.map(tag => `
+                                <span style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                                    ${tag}
+                                </span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('') || '<p style="color: #9ca3af;">No archived initiatives yet.</p>';
+        }
+        
+        // Load dashboard on page load
+        window.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+</html>
