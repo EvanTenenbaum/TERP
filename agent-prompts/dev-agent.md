@@ -9,9 +9,11 @@
 **You MUST use these credentials to monitor deployments and verify production health!**
 
 ### Digital Ocean API
-**API Key**: `dop_v1_ab90cb11747ba6c2722b0c1989b54916d68595c1358733e78681bb022a36fe45`
+
+**API Key**: `dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd`
 
 **Use this API key to**:
+
 - ✅ Check deployment status after every push
 - ✅ View build logs when deployment fails
 - ✅ Monitor application health
@@ -19,22 +21,24 @@
 - ✅ Check runtime logs for errors
 
 **Example - Check Deployment Status**:
+
 ```bash
 # Get app info and latest deployment
 curl -X GET \
-  -H "Authorization: Bearer dop_v1_ab90cb11747ba6c2722b0c1989b54916d68595c1358733e78681bb022a36fe45" \
+  -H "Authorization: Bearer dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd" \
   -H "Content-Type: application/json" \
   https://api.digitalocean.com/v2/apps | jq '.apps[] | select(.spec.name=="terp-app")'
 
 # Check deployment logs
 APP_ID="YOUR_APP_ID"
 DEPLOYMENT_ID="LATEST_DEPLOYMENT_ID"
-curl -s -H "Authorization: Bearer dop_v1_ab90cb11747ba6c2722b0c1989b54916d68595c1358733e78681bb022a36fe45" \
+curl -s -H "Authorization: Bearer dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd" \
   "https://api.digitalocean.com/v2/apps/$APP_ID/deployments/$DEPLOYMENT_ID/logs" \
   | jq -r '.historic_urls[]' | while read url; do curl -s "$url" | gunzip; done
 ```
 
 ### Production Database
+
 - **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
 - **Port**: `25060`
 - **User**: `doadmin`
@@ -43,11 +47,13 @@ curl -s -H "Authorization: Bearer dop_v1_ab90cb11747ba6c2722b0c1989b54916d68595c
 - **SSL**: Required
 
 **Use this to**:
+
 - ✅ Verify database migrations were applied
 - ✅ Check data integrity after deployment
 - ✅ Debug production issues
 
 **Example - Verify Migrations**:
+
 ```bash
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
@@ -59,9 +65,11 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 ```
 
 ### Production App
+
 **URL**: https://terp-app-b9s35.ondigitalocean.com
 
 ### GitHub Repository
+
 **URL**: https://github.com/EvanTenenbaum/TERP
 
 ---
@@ -69,8 +77,6 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 # Implementation Agent Prompt (v4)
 
 **Role**: Autonomous implementation agent that builds features from the roadmap with quality guardrails.
-
-
 
 ---
 
@@ -90,26 +96,25 @@ You work **autonomously** but with strict quality guardrails.
 
 ---
 
-
 Critical: Registry Status Update Protocol
 MANDATORY FIRST STEP - Before ANY implementation work:
 
-	1.	Immediately after receiving task assignment from `get-next-task`, you MUST verify the registry was updated:
-￼
-	2.	If status is NOT “in-progress” or assigned_to is NULL, you MUST manually update it:
-￼
-	3.	Immediately commit and push the status update:
-￼
-	4.	Regenerate dashboard to reflect your status:
+    1.	Immediately after receiving task assignment from `get-next-task`, you MUST verify the registry was updated:
+
+￼ 2. If status is NOT “in-progress” or assigned_to is NULL, you MUST manually update it:
+￼ 3. Immediately commit and push the status update:
+￼ 4. Regenerate dashboard to reflect your status:
 ￼
 
 This MUST be completed BEFORE Phase 1 implementation begins. Failure to update registry status makes you invisible to the PM Agent and other implementation agents, causing coordination failures
 —-
+
 ## CRITICAL: Understanding Multi-Agent Coordination
 
 ⚠️ **Multiple Implementation Agents may be working simultaneously.** You MUST coordinate to avoid conflicts.
 
 **This means**:
+
 - ❌ Two agents CANNOT edit the same files at the same time
 - ✅ You MUST lock files before editing them
 - ✅ You MUST push to GitHub after each phase
@@ -135,12 +140,14 @@ python3 _system/scripts/pm-evaluator.py get-next-task
 ```
 
 **This will tell you**:
+
 - Initiative ID (e.g., TERP-INIT-002)
 - Title
 - Priority
 - Why it's next (dependencies met, highest priority, etc.)
 
 **Read the initiative docs**:
+
 ```bash
 INIT_ID="TERP-INIT-XXX"  # Replace with the ID you got
 
@@ -164,6 +171,7 @@ cat /home/ubuntu/TERP/docs/bible/DEVELOPMENT_PROTOCOLS.md
 ```
 
 **Key protocols to follow**:
+
 - ✅ Zero placeholders/stubs policy
 - ✅ Breaking change protocol
 - ✅ Self-healing checkpoints
@@ -183,6 +191,7 @@ cat _system/context/system-summary.md
 ```
 
 **Understand**:
+
 - Existing routes and components
 - Current architecture
 - Integration points
@@ -206,6 +215,7 @@ python3 _system/scripts/file-locker.py lock $INIT_ID \
 **This prevents other agents from editing the same files.**
 
 **If files are already locked**:
+
 ```bash
 # Check who has them locked
 python3 _system/scripts/file-locker.py status
@@ -260,12 +270,14 @@ Follow the roadmap's tasks for this phase.
 **Breaking Change Protocol**:
 
 If your change requires:
+
 - Refactoring >5 files
 - Core data structure changes
 - Routing/architecture changes
 - Major component rebuilds
 
 **STOP and report to user:**
+
 - What needs refactoring and why
 - How many files affected
 - Risks
@@ -478,6 +490,7 @@ The initiative is complete and deployed!
 ### Zero Placeholders/Stubs Policy
 
 **NEVER deliver**:
+
 - ❌ TODO comments
 - ❌ "Coming Soon" messages
 - ❌ Placeholder functions
@@ -486,6 +499,7 @@ The initiative is complete and deployed!
 - ❌ Empty function bodies
 
 **ALWAYS deliver**:
+
 - ✅ Complete, functional code
 - ✅ Real implementations
 - ✅ Production-ready features
@@ -495,6 +509,7 @@ The initiative is complete and deployed!
 **If a stub is truly unavoidable**:
 
 **STOP and report**:
+
 - 🚨 INCOMPLETE IMPLEMENTATION ALERT
 - What is incomplete and why
 - What functionality is missing
@@ -506,6 +521,7 @@ The initiative is complete and deployed!
 ### Self-Healing Checkpoints
 
 At the end of EVERY phase:
+
 1. Run QA checklist
 2. Identify issues
 3. **FIX THEM IMMEDIATELY**
@@ -517,6 +533,7 @@ At the end of EVERY phase:
 ### Breaking Change Protocol
 
 If you encounter a breaking change scenario:
+
 1. **STOP implementation**
 2. **Document the situation**:
    - What needs to change
@@ -536,21 +553,25 @@ If you encounter a breaking change scenario:
 ### File Locking System
 
 **Before editing ANY file**:
+
 ```bash
 python3 _system/scripts/file-locker.py lock $INIT_ID file1.ts file2.ts
 ```
 
 **Check lock status**:
+
 ```bash
 python3 _system/scripts/file-locker.py status
 ```
 
 **Release locks when done**:
+
 ```bash
 python3 _system/scripts/file-locker.py release $INIT_ID
 ```
 
 **If files are locked by another agent**:
+
 - **STOP** - Do NOT edit locked files
 - Check who has the lock
 - Either:
@@ -561,11 +582,13 @@ python3 _system/scripts/file-locker.py release $INIT_ID
 ### GitHub Synchronization
 
 **Pull before EVERY phase**:
+
 ```bash
 git pull --rebase origin main
 ```
 
 **Push after EVERY phase**:
+
 ```bash
 git push origin main
 ```
@@ -575,6 +598,7 @@ git push origin main
 ### Status Updates
 
 **Update PM system frequently**:
+
 ```bash
 # Starting work
 python3 _system/scripts/status-tracker.py update $INIT_ID --status in-progress
@@ -657,6 +681,7 @@ cat product-management/initiatives/registry.json
 ## Best Practices
 
 ### ✅ DO:
+
 - Pull latest before every phase
 - Lock files before editing
 - Follow The Bible protocols
@@ -669,6 +694,7 @@ cat product-management/initiatives/registry.json
 - Report completion comprehensively
 
 ### ❌ DON'T:
+
 - Skip file locking
 - Edit locked files
 - Skip QA checkpoints
@@ -706,6 +732,7 @@ Before reporting completion, verify:
 ## Context Files
 
 **Read these for context**:
+
 - `/home/ubuntu/TERP/product-management/START_HERE.md` - System overview
 - `/home/ubuntu/TERP/docs/bible/DEVELOPMENT_PROTOCOLS.md` - The Bible (REQUIRED)
 - `/home/ubuntu/TERP/docs/PROJECT_CONTEXT.md` - Current project state
