@@ -1,7 +1,7 @@
 /**
  * Enhanced Audit Logger
  * Comprehensive audit trail for compliance and troubleshooting
- * 
+ *
  * Features:
  * - Before/after state capture
  * - User context tracking
@@ -10,7 +10,7 @@
  */
 
 import { getDb } from "./db";
-import { auditLogs, type InsertAuditLog } from "../drizzle/schema";
+import { auditLogs } from "../drizzle/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 
 /**
@@ -22,35 +22,43 @@ export enum AuditEventType {
   TRANSACTION_UPDATED = "TRANSACTION_UPDATED",
   TRANSACTION_DELETED = "TRANSACTION_DELETED",
   TRANSACTION_LINKED = "TRANSACTION_LINKED",
-  
+
   // Credit events
   CREDIT_ISSUED = "CREDIT_ISSUED",
   CREDIT_APPLIED = "CREDIT_APPLIED",
   CREDIT_VOIDED = "CREDIT_VOIDED",
-  
+
   // Inventory events
+  // ✅ ENHANCED: TERP-INIT-005 Phase 3 - Comprehensive inventory audit events
   INVENTORY_DECREASED = "INVENTORY_DECREASED",
   INVENTORY_INCREASED = "INVENTORY_INCREASED",
   INVENTORY_ADJUSTED = "INVENTORY_ADJUSTED",
-  
+  BATCH_CREATED = "BATCH_CREATED",
+  BATCH_STATUS_CHANGED = "BATCH_STATUS_CHANGED",
+  LOT_CREATED = "LOT_CREATED",
+  VENDOR_CREATED = "VENDOR_CREATED",
+  BRAND_CREATED = "BRAND_CREATED",
+  PRODUCT_CREATED = "PRODUCT_CREATED",
+  INTAKE_COMPLETED = "INTAKE_COMPLETED",
+
   // Bad debt events
   BAD_DEBT_WRITTEN_OFF = "BAD_DEBT_WRITTEN_OFF",
   BAD_DEBT_REVERSAL = "BAD_DEBT_REVERSAL",
-  
+
   // Accounting events
   GL_ENTRY_CREATED = "GL_ENTRY_CREATED",
   GL_ENTRY_REVERSED = "GL_ENTRY_REVERSED",
   GL_ENTRY_POSTED = "GL_ENTRY_POSTED",
-  
+
   // Configuration events
   CONFIG_CHANGED = "CONFIG_CHANGED",
   PAYMENT_METHOD_ADDED = "PAYMENT_METHOD_ADDED",
   PAYMENT_METHOD_UPDATED = "PAYMENT_METHOD_UPDATED",
-  
+
   // User events
   USER_LOGIN = "USER_LOGIN",
   USER_LOGOUT = "USER_LOGOUT",
-  PERMISSION_CHANGED = "PERMISSION_CHANGED"
+  PERMISSION_CHANGED = "PERMISSION_CHANGED",
 }
 
 /**
@@ -61,10 +69,10 @@ export interface AuditEntry {
   entityType: string;
   entityId: number;
   userId: number;
-  beforeState?: any;
-  afterState?: any;
-  changes?: Record<string, { old: any; new: any }>;
-  metadata?: Record<string, any>;
+  beforeState?: Record<string, unknown>;
+  afterState?: Record<string, unknown>;
+  changes?: Record<string, { old: unknown; new: unknown }>;
+  metadata?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -77,18 +85,21 @@ export interface AuditEntry {
 export async function logAuditEvent(entry: AuditEntry): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   try {
-    const [result] = await db.insert(auditLogs).values({
-      actorId: entry.userId,
-      entity: entry.entityType,
-      entityId: entry.entityId,
-      action: entry.eventType,
-      before: entry.beforeState ? JSON.stringify(entry.beforeState) : null,
-      after: entry.afterState ? JSON.stringify(entry.afterState) : null,
-      reason: entry.metadata ? JSON.stringify(entry.metadata) : null
-    }).$returningId();
-    
+    const [result] = await db
+      .insert(auditLogs)
+      .values({
+        actorId: entry.userId,
+        entity: entry.entityType,
+        entityId: entry.entityId,
+        action: entry.eventType,
+        before: entry.beforeState ? JSON.stringify(entry.beforeState) : null,
+        after: entry.afterState ? JSON.stringify(entry.afterState) : null,
+        reason: entry.metadata ? JSON.stringify(entry.metadata) : null,
+      })
+      .$returningId();
+
     return result?.id || 0;
   } catch (error) {
     console.error("Error logging audit event:", error);
@@ -104,31 +115,31 @@ export async function logAuditEvent(entry: AuditEntry): Promise<number> {
  * @returns Changes object
  */
 export function calculateChanges(
-  before: Record<string, any>,
-  after: Record<string, any>
-): Record<string, { old: any; new: any }> {
-  const changes: Record<string, { old: any; new: any }> = {};
-  
+  before: Record<string, unknown>,
+  after: Record<string, unknown>
+): Record<string, { old: unknown; new: unknown }> {
+  const changes: Record<string, { old: unknown; new: unknown }> = {};
+
   // Check all fields in after state
   for (const key in after) {
     if (before[key] !== after[key]) {
       changes[key] = {
         old: before[key],
-        new: after[key]
+        new: after[key],
       };
     }
   }
-  
+
   // Check for removed fields
   for (const key in before) {
     if (!(key in after)) {
       changes[key] = {
         old: before[key],
-        new: undefined
+        new: undefined,
       };
     }
   }
-  
+
   return changes;
 }
 
@@ -138,7 +149,12 @@ export function calculateChanges(
  * @param userId User ID
  */
 export async function logTransactionCreated(
-  transaction: { id: number; transactionNumber: string; amount: string; clientId: number },
+  transaction: {
+    id: number;
+    transactionNumber: string;
+    amount: string;
+    clientId: number;
+  },
   userId: number
 ): Promise<void> {
   await logAuditEvent({
@@ -150,8 +166,8 @@ export async function logTransactionCreated(
     metadata: {
       transactionNumber: transaction.transactionNumber,
       amount: transaction.amount,
-      clientId: transaction.clientId
-    }
+      clientId: transaction.clientId,
+    },
   });
 }
 
@@ -164,12 +180,12 @@ export async function logTransactionCreated(
  */
 export async function logTransactionUpdated(
   transactionId: number,
-  before: Record<string, any>,
-  after: Record<string, any>,
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
   userId: number
 ): Promise<void> {
   const changes = calculateChanges(before, after);
-  
+
   await logAuditEvent({
     eventType: AuditEventType.TRANSACTION_UPDATED,
     entityType: "transaction",
@@ -177,7 +193,7 @@ export async function logTransactionUpdated(
     userId,
     beforeState: before,
     afterState: after,
-    changes
+    changes,
   });
 }
 
@@ -187,7 +203,12 @@ export async function logTransactionUpdated(
  * @param userId User ID
  */
 export async function logCreditIssued(
-  credit: { id: number; creditNumber: string; creditAmount: string; clientId: number },
+  credit: {
+    id: number;
+    creditNumber: string;
+    creditAmount: string;
+    clientId: number;
+  },
   userId: number
 ): Promise<void> {
   await logAuditEvent({
@@ -199,8 +220,8 @@ export async function logCreditIssued(
     metadata: {
       creditNumber: credit.creditNumber,
       amount: credit.creditAmount,
-      clientId: credit.clientId
-    }
+      clientId: credit.clientId,
+    },
   });
 }
 
@@ -224,8 +245,8 @@ export async function logCreditApplied(
     userId,
     metadata: {
       invoiceId,
-      amountApplied: amount
-    }
+      amountApplied: amount,
+    },
   });
 }
 
@@ -245,12 +266,13 @@ export async function logInventoryMovement(
   },
   userId: number
 ): Promise<void> {
-  const eventType = movement.movementType === "SALE" 
-    ? AuditEventType.INVENTORY_DECREASED
-    : movement.movementType === "REFUND_RETURN"
-    ? AuditEventType.INVENTORY_INCREASED
-    : AuditEventType.INVENTORY_ADJUSTED;
-  
+  const eventType =
+    movement.movementType === "SALE"
+      ? AuditEventType.INVENTORY_DECREASED
+      : movement.movementType === "REFUND_RETURN"
+        ? AuditEventType.INVENTORY_INCREASED
+        : AuditEventType.INVENTORY_ADJUSTED;
+
   await logAuditEvent({
     eventType,
     entityType: "inventory_movement",
@@ -261,8 +283,8 @@ export async function logInventoryMovement(
       movementType: movement.movementType,
       quantityChange: movement.quantityChange,
       quantityBefore: movement.quantityBefore,
-      quantityAfter: movement.quantityAfter
-    }
+      quantityAfter: movement.quantityAfter,
+    },
   });
 }
 
@@ -286,8 +308,8 @@ export async function logBadDebtWriteOff(
     userId,
     metadata: {
       writeOffAmount: amount,
-      reason
-    }
+      reason,
+    },
   });
 }
 
@@ -315,8 +337,8 @@ export async function logGLEntryCreated(
       entryNumber,
       accountId,
       amount,
-      type
-    }
+      type,
+    },
   });
 }
 
@@ -333,39 +355,39 @@ export async function queryAuditLogs(filters: {
   startDate?: Date;
   endDate?: Date;
   limit?: number;
-}): Promise<any[]> {
+}): Promise<unknown[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   try {
-    let query = db.select().from(auditLogs);
-    
+    db.select().from(auditLogs);
+
     const conditions = [];
-    
+
     if (filters.entityType) {
       conditions.push(eq(auditLogs.entity, filters.entityType));
     }
-    
+
     if (filters.entityId) {
       conditions.push(eq(auditLogs.entityId, filters.entityId));
     }
-    
+
     if (filters.userId) {
       conditions.push(eq(auditLogs.actorId, filters.userId));
     }
-    
+
     if (filters.eventType) {
       conditions.push(eq(auditLogs.action, filters.eventType));
     }
-    
+
     if (filters.startDate) {
       conditions.push(gte(auditLogs.createdAt, filters.startDate));
     }
-    
+
     if (filters.endDate) {
       conditions.push(lte(auditLogs.createdAt, filters.endDate));
     }
-    
+
     if (conditions.length > 0) {
       const results = await db
         .select()
@@ -373,20 +395,22 @@ export async function queryAuditLogs(filters: {
         .where(and(...conditions))
         .orderBy(desc(auditLogs.createdAt))
         .limit(filters.limit || 100);
-      
+
       return results;
     }
-    
+
     const results = await db
       .select()
       .from(auditLogs)
       .orderBy(desc(auditLogs.createdAt))
       .limit(filters.limit || 100);
-    
+
     return results;
   } catch (error) {
     console.error("Error querying audit logs:", error);
-    throw new Error(`Failed to query audit logs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to query audit logs: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -399,11 +423,11 @@ export async function queryAuditLogs(filters: {
 export async function getEntityAuditTrail(
   entityType: string,
   entityId: number
-): Promise<any[]> {
+): Promise<unknown[]> {
   return await queryAuditLogs({
     entityType,
     entityId,
-    limit: 1000
+    limit: 1000,
   });
 }
 
@@ -423,3 +447,160 @@ export async function exportAuditLogs(filters: {
   return JSON.stringify(logs, null, 2);
 }
 
+/**
+ * Enhanced Inventory Audit Logging
+ * ✅ ADDED: TERP-INIT-005 Phase 3 - Automated audit logging for inventory operations
+ */
+
+/**
+ * Log batch creation
+ */
+export async function logBatchCreated(
+  batch: { id: number; code: string; productId: number; lotId: number },
+  userId: number
+): Promise<void> {
+  await logAuditEvent({
+    eventType: AuditEventType.BATCH_CREATED,
+    entityType: "Batch",
+    entityId: batch.id,
+    userId,
+    afterState: batch,
+    metadata: {
+      batchCode: batch.code,
+      productId: batch.productId,
+      lotId: batch.lotId,
+    },
+  });
+}
+
+/**
+ * Log batch status change
+ */
+export async function logBatchStatusChanged(
+  batchId: number,
+  before: { status: string },
+  after: { status: string },
+  reason: string | undefined,
+  userId: number
+): Promise<void> {
+  await logAuditEvent({
+    eventType: AuditEventType.BATCH_STATUS_CHANGED,
+    entityType: "Batch",
+    entityId: batchId,
+    userId,
+    beforeState: before,
+    afterState: after,
+    metadata: {
+      reason,
+    },
+  });
+}
+
+/**
+ * Log lot creation
+ */
+export async function logLotCreated(
+  lot: { id: number; code: string; vendorId: number },
+  userId: number
+): Promise<void> {
+  await logAuditEvent({
+    eventType: AuditEventType.LOT_CREATED,
+    entityType: "Lot",
+    entityId: lot.id,
+    userId,
+    afterState: lot,
+    metadata: {
+      lotCode: lot.code,
+      vendorId: lot.vendorId,
+    },
+  });
+}
+
+/**
+ * Log vendor creation
+ */
+export async function logVendorCreated(
+  vendor: { id: number; name: string },
+  userId: number
+): Promise<void> {
+  await logAuditEvent({
+    eventType: AuditEventType.VENDOR_CREATED,
+    entityType: "Vendor",
+    entityId: vendor.id,
+    userId,
+    afterState: vendor,
+    metadata: {
+      vendorName: vendor.name,
+    },
+  });
+}
+
+/**
+ * Log brand creation
+ */
+export async function logBrandCreated(
+  brand: { id: number; name: string; vendorId: number },
+  userId: number
+): Promise<void> {
+  await logAuditEvent({
+    eventType: AuditEventType.BRAND_CREATED,
+    entityType: "Brand",
+    entityId: brand.id,
+    userId,
+    afterState: brand,
+    metadata: {
+      brandName: brand.name,
+      vendorId: brand.vendorId,
+    },
+  });
+}
+
+/**
+ * Log product creation
+ */
+export async function logProductCreated(
+  product: { id: number; name: string; brandId: number; category: string },
+  userId: number
+): Promise<void> {
+  await logAuditEvent({
+    eventType: AuditEventType.PRODUCT_CREATED,
+    entityType: "Product",
+    entityId: product.id,
+    userId,
+    afterState: product,
+    metadata: {
+      productName: product.name,
+      brandId: product.brandId,
+      category: product.category,
+    },
+  });
+}
+
+/**
+ * Log intake completion (entire process)
+ */
+export async function logIntakeCompleted(
+  result: {
+    vendor: { id: number; name: string };
+    brand: { id: number; name: string };
+    product: { id: number; name: string };
+    lot: { id: number; code: string };
+    batch: { id: number; code: string };
+  },
+  userId: number
+): Promise<void> {
+  await logAuditEvent({
+    eventType: AuditEventType.INTAKE_COMPLETED,
+    entityType: "Batch",
+    entityId: result.batch.id,
+    userId,
+    afterState: result,
+    metadata: {
+      vendorName: result.vendor.name,
+      brandName: result.brand.name,
+      productName: result.product.name,
+      lotCode: result.lot.code,
+      batchCode: result.batch.code,
+    },
+  });
+}
