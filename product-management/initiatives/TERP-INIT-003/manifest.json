@@ -23,7 +23,7 @@
     "business_value": null
   },
   "progress": {
-    "percent": 10,
+    "percent": 70,
     "completed_tasks": 0,
     "total_tasks": 0,
     "recent_updates": [
@@ -49,6 +49,7 @@
         "new_status": "approved"
       }
     ],
-    "last_updated": "2025-11-04T06:43:59.085685Z"
-  }
+    "last_updated": "2025-11-04T17:11:50.015129Z"
+  },
+  "progress_percent": 70
 }
