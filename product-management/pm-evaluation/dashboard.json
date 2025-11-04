@@ -1,15 +1,14 @@
 {
-  "last_updated": "2025-11-04T06:49:33.113485Z",
+  "last_updated": "2025-11-04T09:59:48.320415Z",
   "summary": {
-    "total": 7,
+    "total": 6,
     "by_status": {
       "in-progress": 2,
-      "approved": 4,
-      "qa-verified": 1
+      "approved": 4
     },
     "by_priority": {
       "null": 1,
-      "high": 5,
+      "high": 4,
       "medium": 1
     },
     "total_progress": 17.5,
@@ -25,11 +24,7 @@
       "created_at": "2025-11-03T20:58:51.241960Z",
       "last_updated": "2025-11-03T20:59:08.587308Z",
       "created_by": "system-test",
-      "tags": [
-        "inventory",
-        "export",
-        "demo"
-      ],
+      "tags": ["inventory", "export", "demo"],
       "completed_tasks": 1,
       "total_tasks": 0,
       "recent_updates": [
@@ -57,7 +52,7 @@
     },
     {
       "id": "TERP-INIT-007",
-      "title": "Codebase Cleanup & Technical Debt Reduction",
+      "title": "Accounting Module: Smart Ledger Core & Transaction Splitting",
       "status": "approved",
       "priority": "high",
       "progress_percent": 0,
@@ -65,7 +60,11 @@
       "last_updated": "2025-11-04T06:25:02.205493Z",
       "created_by": "dev-agent",
       "tags": [
-        "cleanup tech-debt refactor vercel documentation"
+        "accounting",
+        "ledger",
+        "transactions",
+        "bookkeeping",
+        "financial"
       ],
       "completed_tasks": 0,
       "total_tasks": 0,
@@ -151,49 +150,6 @@
       ]
     },
     {
-      "id": "TERP-INIT-005",
-      "title": "Inventory System Stability & Robustness Improvements",
-      "status": "qa-verified",
-      "priority": "high",
-      "progress_percent": 100,
-      "created_at": "2025-11-03T23:30:00.352512Z",
-      "last_updated": "2025-11-04T06:49:33.112366Z",
-      "created_by": "dev-agent",
-      "tags": [
-        "inventory",
-        "stability",
-        "data-integrity",
-        "performance",
-        "testing",
-        "robustness"
-      ],
-      "completed_tasks": 1,
-      "total_tasks": 0,
-      "recent_updates": [
-        {
-          "timestamp": "2025-11-04T01:14:28.299437Z",
-          "type": "progress_update",
-          "message": "Progress updated: 10% \u2192 25.0%",
-          "old_percent": 10,
-          "new_percent": 25.0
-        },
-        {
-          "timestamp": "2025-11-04T05:58:05.504547Z",
-          "type": "status_change",
-          "message": "All 4 phases complete. Production ready.",
-          "old_status": "in-progress",
-          "new_status": "completed"
-        },
-        {
-          "timestamp": "2025-11-04T06:49:33.112366Z",
-          "type": "status_change",
-          "message": "Marking as QA verified for archive test",
-          "old_status": "completed",
-          "new_status": "qa-verified"
-        }
-      ]
-    },
-    {
       "id": "TERP-INIT-006",
       "title": "To-Do Lists + Universal Comments System",
       "status": "in-progress",
@@ -242,9 +198,7 @@
       "created_at": "2025-11-04T06:22:44.811412Z",
       "last_updated": "2025-11-04T06:25:02.205493Z",
       "created_by": "dev-agent",
-      "tags": [
-        "cleanup tech-debt refactor vercel documentation"
-      ],
+      "tags": ["cleanup tech-debt refactor vercel documentation"],
       "completed_tasks": 0,
       "total_tasks": 0,
       "recent_updates": [
@@ -276,19 +230,10 @@
         "performance",
         "testing",
         "robustness"
-      ],
-      "completed_tasks": 0,
-      "total_tasks": 0
+      ]
     }
   ],
   "recent_activity": [
-    {
-      "initiative_id": "TERP-INIT-005",
-      "initiative_title": "Inventory System Stability & Robustness Improvements",
-      "timestamp": "2025-11-04T06:49:33.112366Z",
-      "message": "Marking as QA verified for archive test",
-      "type": "status_change"
-    },
     {
       "initiative_id": "TERP-INIT-003",
       "initiative_title": "Calendar & Scheduling System",
@@ -305,7 +250,7 @@
     },
     {
       "initiative_id": "TERP-INIT-007",
-      "initiative_title": "Codebase Cleanup & Technical Debt Reduction",
+      "initiative_title": "Accounting Module: Smart Ledger Core & Transaction Splitting",
       "timestamp": "2025-11-04T06:25:02.205493Z",
       "message": "Status changed from pending_review to pending_review",
       "type": "status_change"
@@ -315,13 +260,6 @@
       "initiative_title": "Codebase Cleanup & Technical Debt Reduction",
       "timestamp": "2025-11-04T06:25:02.205493Z",
       "message": "Status changed from pending_review to pending_review",
-      "type": "status_change"
-    },
-    {
-      "initiative_id": "TERP-INIT-005",
-      "initiative_title": "Inventory System Stability & Robustness Improvements",
-      "timestamp": "2025-11-04T05:58:05.504547Z",
-      "message": "All 4 phases complete. Production ready.",
       "type": "status_change"
     },
     {
@@ -349,27 +287,6 @@
       "initiative_id": "TERP-INIT-006",
       "initiative_title": "To-Do Lists + Universal Comments System",
       "timestamp": "2025-11-04T05:29:35.171840Z",
-      "message": "Status changed from approved to in-progress",
-      "type": "status_change"
-    },
-    {
-      "initiative_id": "TERP-INIT-005",
-      "initiative_title": "Inventory System Stability & Robustness Improvements",
-      "timestamp": "2025-11-04T01:14:28.299437Z",
-      "message": "Progress updated: 10% \u2192 25.0%",
-      "type": "progress_update"
-    },
-    {
-      "initiative_id": "TERP-INIT-005",
-      "initiative_title": "Inventory System Stability & Robustness Improvements",
-      "timestamp": "2025-11-04T01:14:28.253278Z",
-      "message": "Completed: Phase 1: Critical Fixes",
-      "type": "task_completed"
-    },
-    {
-      "initiative_id": "TERP-INIT-005",
-      "initiative_title": "Inventory System Stability & Robustness Improvements",
-      "timestamp": "2025-11-04T01:00:01.313661Z",
       "message": "Status changed from approved to in-progress",
       "type": "status_change"
     },

@@ -1,119 +1,91 @@
-# Implementation Roadmap: Codebase Cleanup & Technical Debt Reduction
+# TERP Inventory System Improvement Roadmap
 
-## Phase 0: Pre-Implementation
-**Duration**: 1-2 days  
-**Goal**: Set up the necessary infrastructure and baseline for the cleanup initiative.
+**Date:** November 3, 2025
 
-**Tasks**:
-- [ ] Create a dedicated backup branch: `backup/pre-cleanup-YYYYMMDD`
-- [ ] Run the full test suite (`pnpm test`) and document the baseline (53/53 passing).
-- [ ] Run TypeScript validation (`pnpm run check`) and ensure zero errors.
-- [ ] Document the current build time and bundle size.
-- [ ] Set up monitoring for the staging environment.
+## 1. Introduction
 
-## Phase 1: Documentation Consolidation
-**Duration**: 2-3 days  
-**Goal**: Declutter the root directory and create a single source of truth for documentation.
+This document outlines a strategic roadmap for enhancing the **efficacy, stability, and robustness** of the TERP inventory management system. The plan is divided into four distinct phases, prioritizing critical data integrity fixes first, followed by stability enhancements, comprehensive testing, and finally, performance optimization. This approach ensures that the most significant risks are mitigated early while progressively strengthening the entire module.
 
-**Tasks**:
-- [ ] Move 26 identified markdown files from the root directory to `docs/archive/`.
-- [ ] Create a new consolidated deployment guide at `docs/DEPLOYMENT_GUIDE.md`.
-- [ ] Update the main `README.md` to reference the new documentation structure.
-- [ ] Manually verify all internal documentation links.
+Each phase is designed to be completed sequentially, with clear deliverables and acceptance criteria to ensure measurable progress and quality control. The total estimated timeline for all four phases is **8 weeks**.
 
-**Deliverables**:
-- A clean root directory with only 4 essential markdown files.
-- A single, comprehensive deployment guide.
+## 2. Roadmap Overview
 
-**Checkpoint**: Verify that the documentation site is fully navigable and all links are functional.
+| Phase | Title                     | Focus                        | Timeline | Key Outcomes                                                        |
+| :---- | :------------------------ | :--------------------------- | :------- | :------------------------------------------------------------------ |
+| **1** | Critical Fixes            | Data Integrity & Atomicity   | 2 Weeks  | Transactional safety, no race conditions, reliable code generation. |
+| **2** | Stability Improvements    | Error Handling & Performance | 2 Weeks  | Standardized errors, comprehensive validation, faster queries.      |
+| **3** | Robustness & Testing      | Reliability & Auditability   | 2 Weeks  | High test coverage, consistent data, complete audit trails.         |
+| **4** | Optimization & Refinement | Code Quality & Efficiency    | 2 Weeks  | Scalable architecture, reduced duplication, strict type safety.     |
 
-## Phase 2: Backup File Removal
-**Duration**: 1 day  
-**Goal**: Remove all backup and old files from the production codebase.
+---
 
-**Tasks**:
-- [ ] Delete the 5 identified backup and old files.
-- [ ] Perform a global search to ensure no remaining references to the deleted files.
-- [ ] Run the test suite and build process to confirm no regressions.
+## 3. Phase 1: Critical Fixes (Data Integrity)
 
-**Deliverables**:
-- A codebase free of `.backup`, `.old`, or `_OLD` files.
+**Timeline:** 2 Weeks
 
-**Checkpoint**: Confirm that the application builds and runs without errors after file deletion.
+**Goal:** Eliminate critical data integrity risks by implementing atomic operations and reliable data generation methods. This phase is foundational for all subsequent improvements.
 
-## Phase 3: Console Logging Cleanup
-**Duration**: 3-4 days  
-**Goal**: Replace all `console.log` statements with a structured logging framework.
+| Task ID | Task Description              | Priority     | Files to Modify                                                                | Acceptance Criteria                                                                                                                                                                                                                      |
+| :------ | :---------------------------- | :----------- | :----------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1.1** | **Implement DB Transactions** | **Critical** | `server/inventoryMovementsDb.ts`, `server/routers/inventory.ts`                | All inventory quantity modifications (`decrease`, `increase`, `adjust`) are wrapped in database transactions with row-level locking (`SELECT ... FOR UPDATE`). Concurrent requests do not lead to data corruption or negative inventory. |
+| **1.2** | **Transactional Intake**      | **Critical** | `server/routers/inventory.ts`                                                  | The entire multi-step `intake` process (vendor, brand, product, lot, batch creation) is wrapped in a single, atomic transaction. A failure at any step results in a complete rollback.                                                   |
+| **1.3** | **Fix Sequence Generation**   | **Critical** | `drizzle/schema.ts`, `server/inventoryUtils.ts`, `server/routers/inventory.ts` | Create a `sequences` table to manage atomic, sequential generation of lot and batch codes. Remove all hardcoded and random sequence logic.                                                                                               |
 
-**Tasks**:
-- [ ] Choose and install a structured logging library (e.g., `winston` or `pino`).
-- [ ] Create a centralized logger configuration.
-- [ ] Systematically refactor all 77 files containing `console.log` to use the new logger.
-- [ ] Differentiate between debug, info, warn, and error log levels.
+**Dependencies:** None.
 
-**Deliverables**:
-- A structured logging system implemented across the application.
-- Removal of all `console.log` statements from the codebase.
+---
 
-**Checkpoint**: Deploy to staging and verify that logs are being captured in a structured format.
+## 4. Phase 2: Stability Improvements
 
-## Phase 4: Vercel Reference Removal
-**Duration**: 2-3 days  
-**Goal**: Eliminate all references to the deprecated Vercel deployment platform.
+**Timeline:** 2 Weeks
 
-**Tasks**:
-- [ ] Delete the `vercel.json` file.
-- [ ] Remove all Vercel-related sections from documentation files.
-- [ ] Remove any code comments or variables related to Vercel.
-- [ ] Thoroughly test the DigitalOcean deployment process to ensure it is unaffected.
+**Goal:** Enhance system stability through standardized error handling, comprehensive input validation, and foundational performance improvements.
 
-**Deliverables**:
-- A codebase that is completely free of Vercel-related artifacts.
+| Task ID | Task Description               | Priority | Files to Modify                                                                        | Acceptance Criteria                                                                                                                                                                        |
+| :------ | :----------------------------- | :------- | :------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **2.1** | **Standardize Error Handling** | **High** | `server/_core/errors.ts`, `server/_core/logger.ts`, all inventory-related server files | A centralized error catalog is created. All inventory operations throw standardized `AppError` instances. A structured JSON logger is implemented for all server-side errors and warnings. |
+| **2.2** | **Comprehensive Validation**   | **High** | `server/routers/inventory.ts`, `server/routers/inventoryMovements.ts`                  | All inventory API endpoints use enhanced Zod schemas for strict input validation, including regex checks, range constraints, and inter-field dependencies.                                 |
+| **2.3** | **Add Database Indexes**       | **High** | `drizzle/schema.ts`, create new migration file                                         | Add indexes to `batches` (status, createdAt), `products` (category, brandId), and other frequently queried columns to improve filter and sort performance.                                 |
 
-**Checkpoint**: A successful deployment to the DigitalOcean staging environment.
+**Dependencies:** Phase 1 Completion.
 
-## Phase 5: Dependency Audit
-**Duration**: 2-3 days  
-**Goal**: Analyze and remove unused npm packages to reduce bundle size and attack surface.
+---
 
-**Tasks**:
-- [ ] Run `depcheck` or a similar tool to identify potentially unused dependencies.
-- [ ] Manually verify the findings to ensure no false positives.
-- [ ] Remove unused packages one by one, running tests after each removal.
-- [ ] Document the purpose of all remaining dependencies.
+## 5. Phase 3: Robustness & Testing
 
-**Deliverables**:
-- A `package.json` file with only necessary dependencies.
-- A 5-10% reduction in the final bundle size.
+**Timeline:** 2 Weeks
 
-**Checkpoint**: A successful build and a full passing test suite after dependency removal.
+**Goal:** Increase system reliability and auditability by ensuring data consistency, implementing a comprehensive automated test suite, and guaranteeing complete audit trails.
 
-## Phase 6: Final Validation & QA
-**Duration**: 2-3 days
+| Task ID | Task Description                | Priority   | Files to Modify                                                                   | Acceptance Criteria                                                                                                                                                                            |
+| :------ | :------------------------------ | :--------- | :-------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **3.1** | **Ensure Quantity Consistency** | **Medium** | `server/inventoryUtils.ts`, `drizzle/schema.ts`, `client/src/pages/Inventory.tsx` | Available quantity calculation is centralized to a single server-side utility. Client-side calculations are removed. Consider using a database-generated column for `availableQty`.            |
+| **3.2** | **Enforce Metadata Schema**     | **Medium** | `server/inventoryUtils.ts`, `server/routers/inventory.ts`                         | A strict Zod schema is defined and enforced for the `metadata` JSON field on the `batches` table to ensure data consistency and prevent parse errors.                                          |
+| **3.3** | **Implement Test Suite**        | **High**   | Create new `server/tests/` directory and files                                    | A comprehensive test suite using Vitest is created, achieving >70% code coverage for the inventory module. Includes unit tests for utilities and integration tests for critical API endpoints. |
+| **3.4** | **Automated Audit Logging**     | **Medium** | `server/_core/auditMiddleware.ts`, `server/routers/*`                             | Middleware or database triggers are implemented to ensure every state-changing operation on inventory is automatically logged in the `auditLogs` table.                                        |
 
-**Goal**: Perform a full regression test and quality assurance check before production deployment.
+**Dependencies:** Phase 2 Completion.
 
-**Tasks**:
-- [ ] Execute the full test suite one final time.
-- [ ] Conduct a comprehensive manual QA of all key user flows.
-- [ ] Perform a final performance benchmark to measure improvements.
-- [ ] Update the `CHANGELOG.md` and `PROJECT_CONTEXT.md` files.
+---
 
-**Deliverables**:
-- A fully validated and production-ready codebase.
-- A comprehensive QA report.
+## 6. Phase 4: Optimization & Refinement
 
-## Deployment
-**Strategy**: Gradual rollout after extensive staging validation.
+**Timeline:** 2 Weeks
 
-**Steps**:
-1. Deploy to the staging environment.
-2. Conduct 24 hours of monitoring and QA in staging.
-3. Deploy to production during a low-traffic window.
-4. Monitor production logs in real-time.
-5. Have the rollback plan readily available.
+**Goal:** Refine the codebase for scalability, maintainability, and efficiency by optimizing data retrieval, reducing duplication, and enforcing strict type safety.
 
-## Rollback Plan
-- **Immediate:** Revert the last Git commit and force-push to the main branch.
-- **Full:** Use the `backup/pre-cleanup-YYYYMMDD` branch to restore the codebase to its original state.
-- **Platform:** Use the DigitalOcean dashboard to roll back to a previous successful deployment.
+| Task ID | Task Description                  | Priority   | Files to Modify                                                 | Acceptance Criteria                                                                                                                                                           |
+| :------ | :-------------------------------- | :--------- | :-------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **4.1** | **Implement Pagination**          | **Medium** | `server/routers/inventory.ts`, `client/src/pages/Inventory.tsx` | All list endpoints are converted to use cursor-based pagination to handle large datasets efficiently and prevent performance degradation.                                     |
+| **4.2** | **Refactor & Reduce Duplication** | **Low**    | `server/routers/inventory.ts`, `server/inventoryDb.ts`          | Common logic, such as the `findOrCreate` pattern for vendors and brands, is extracted into reusable utility functions to adhere to the DRY (Don't Repeat Yourself) principle. |
+| **4.3** | **Enforce Strict Type Safety**    | **Low**    | All inventory-related `.ts` files                               | All instances of the `any` type within the inventory module are eliminated and replaced with specific, strict TypeScript types.                                               |
+| **4.4** | **Implement Caching**             | **Low**    | `server/_core/cache.ts`, `server/inventoryDb.ts`                | A caching layer is introduced for frequently accessed, non-volatile data (e.g., vendor lists, product categories) to reduce database load.                                    |
+
+**Dependencies:** Phase 3 Completion.
+
+## 7. Success Metrics
+
+- **Data Integrity:** Zero race-condition-related inventory errors post-deployment.
+- **Stability:** 50% reduction in inventory-related error logs.
+- **Performance:** 30% improvement in API response times for inventory list views.
+- **Code Quality:** Achieve and maintain >70% test coverage for the inventory module.
