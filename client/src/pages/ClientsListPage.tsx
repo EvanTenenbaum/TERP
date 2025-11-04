@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Filter, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Eye, Edit, FileText, DollarSign, MessageSquare, Archive, Save, Star } from "lucide-react";
+import { Search, Filter, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Eye, Edit, FileText, DollarSign, MessageSquare, Archive, Save, Star, Check, X, AlertTriangle } from "lucide-react";
 import { DataCardSection } from "@/components/data-cards";
 
 export default function ClientsListPage() {
@@ -56,6 +56,24 @@ export default function ClientsListPage() {
   
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [newViewName, setNewViewName] = useState('');
+  
+  // Inline editing state
+  const [editingClientId, setEditingClientId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+  }>({ name: '', email: '', phone: '' });
+  
+  // Update client mutation
+  const utils = trpc.useContext();
+  const updateClient = trpc.clients.update.useMutation({
+    onSuccess: () => {
+      utils.clients.list.invalidate();
+      utils.clients.count.invalidate();
+      setEditingClientId(null);
+    },
+  });
   
   // Initialize filters from URL parameters
   const getInitialHasDebt = () => {
@@ -220,6 +238,34 @@ export default function ClientsListPage() {
       JSON.stringify(clientTypes.sort()) === JSON.stringify(view.clientTypes.sort()) &&
       hasDebt === view.hasDebt
     );
+  };
+  
+  // Start editing a client
+  const startEdit = (client: any) => {
+    setEditingClientId(client.id);
+    setEditForm({
+      name: client.name || '',
+      email: client.email || '',
+      phone: client.phone || '',
+    });
+  };
+  
+  // Cancel editing
+  const cancelEdit = () => {
+    setEditingClientId(null);
+    setEditForm({ name: '', email: '', phone: '' });
+  };
+  
+  // Save edited client
+  const saveEdit = () => {
+    if (!editingClientId) return;
+    
+    updateClient.mutate({
+      clientId: editingClientId,
+      name: editForm.name,
+      email: editForm.email || undefined,
+      phone: editForm.phone || undefined,
+    });
   };
 
   // Toggle client type filter
@@ -528,6 +574,8 @@ export default function ClientsListPage() {
                         )}
                       </button>
                     </TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Contact</TableHead>
                     <TableHead>Client Types</TableHead>
                     <TableHead className="text-right">
                       <button
@@ -602,12 +650,51 @@ export default function ClientsListPage() {
                   {displayClients.map((client: any, index: number) => (
                     <TableRow
                       key={client.id}
-                      className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                      className={`${editingClientId === client.id ? '' : 'cursor-pointer hover:bg-muted/50'} transition-colors ${
                         index === selectedIndex ? 'bg-accent' : ''
                       }`}
-                      onClick={() => setLocation(`/clients/${client.id}`)}
+                      onClick={() => {
+                        if (editingClientId !== client.id) {
+                          setLocation(`/clients/${client.id}`);
+                        }
+                      }}
                     >
                       <TableCell className="font-medium">{client.teriCode}</TableCell>
+                      <TableCell>
+                        {editingClientId === client.id ? (
+                          <Input
+                            value={editForm.name}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="h-8"
+                            autoFocus
+                          />
+                        ) : (
+                          <span>{client.name || '-'}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingClientId === client.id ? (
+                          <div className="space-y-1">
+                            <Input
+                              value={editForm.email}
+                              onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                              placeholder="Email"
+                              className="h-7 text-xs"
+                            />
+                            <Input
+                              value={editForm.phone}
+                              onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                              placeholder="Phone"
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-sm">
+                            <div className="text-muted-foreground">{client.email || '-'}</div>
+                            <div className="text-muted-foreground">{client.phone || '-'}</div>
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {getClientTypeBadges(client).map((badge, idx) => (
@@ -621,9 +708,22 @@ export default function ClientsListPage() {
                       <TableCell className="text-right">{formatCurrency(client.totalProfit || 0)}</TableCell>
                       <TableCell className="text-right">{formatPercentage(client.avgProfitMargin || 0)}</TableCell>
                       <TableCell className="text-right">
-                        <span className={client.totalOwed && parseFloat(client.totalOwed as string) > 0 ? "text-destructive font-medium" : ""}>
-                          {formatCurrency(client.totalOwed || 0)}
-                        </span>
+                        {client.totalOwed && parseFloat(client.totalOwed as string) > 0 ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <AlertTriangle className="h-4 w-4 text-destructive" />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocation(`/clients/${client.id}?tab=transactions&action=payment`);
+                              }}
+                              className="text-destructive font-medium hover:underline"
+                            >
+                              {formatCurrency(client.totalOwed || 0)}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">{formatCurrency(0)}</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         {client.oldestDebtDays && client.oldestDebtDays > 0 ? (
@@ -649,38 +749,62 @@ export default function ClientsListPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                        {editingClientId === client.id ? (
+                          <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveEdit();
+                              }}
+                              disabled={updateClient.isPending || !editForm.name.trim()}
                             >
-                              <MoreHorizontal className="h-4 w-4" />
+                              <Check className="h-4 w-4 text-green-600" />
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuCheckboxItem
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setLocation(`/clients/${client.id}`);
+                                cancelEdit();
                               }}
                             >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Profile
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // TODO: Implement inline edit
-                                console.log('Edit client:', client.id);
-                              }}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Quick Edit
-                            </DropdownMenuCheckboxItem>
+                              <X className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuCheckboxItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLocation(`/clients/${client.id}`);
+                                }}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Profile
+                              </DropdownMenuCheckboxItem>
+                              <DropdownMenuCheckboxItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEdit(client);
+                                }}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Quick Edit
+                              </DropdownMenuCheckboxItem>
                             <DropdownMenuCheckboxItem
                               onClick={(e) => {
                                 e.stopPropagation();
