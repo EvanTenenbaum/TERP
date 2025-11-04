@@ -805,7 +805,7 @@ export default function ClientsListPage() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Quick Edit
                               </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem
+                              <DropdownMenuCheckboxItem
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setLocation(`/clients/${client.id}?tab=transactions&action=new`);
@@ -846,6 +846,7 @@ export default function ClientsListPage() {
                             </DropdownMenuCheckboxItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
