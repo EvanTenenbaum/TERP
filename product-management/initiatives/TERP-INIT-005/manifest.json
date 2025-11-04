@@ -23,8 +23,8 @@
     "business_value": null
   },
   "progress": {
-    "percent": 10,
-    "completed_tasks": 0,
+    "percent": 25.0,
+    "completed_tasks": 1,
     "total_tasks": 0,
     "recent_updates": [
       {
@@ -40,8 +40,21 @@
         "message": "Status changed from approved to in-progress",
         "old_status": "approved",
         "new_status": "in-progress"
+      },
+      {
+        "timestamp": "2025-11-04T01:14:28.253278Z",
+        "type": "task_completed",
+        "message": "Completed: Phase 1: Critical Fixes",
+        "task": "Phase 1: Critical Fixes"
+      },
+      {
+        "timestamp": "2025-11-04T01:14:28.299437Z",
+        "type": "progress_update",
+        "message": "Progress updated: 10% \u2192 25.0%",
+        "old_percent": 10,
+        "new_percent": 25.0
       }
     ],
-    "last_updated": "2025-11-04T01:00:01.313661Z"
+    "last_updated": "2025-11-04T01:14:28.299437Z"
   }
 }
