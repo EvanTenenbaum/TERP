@@ -5,12 +5,16 @@
       "title": "Sample Initiative - CSV Export",
       "status": "in-progress",
       "created_at": "2025-11-03T20:58:51.241960Z",
-      "tags": ["inventory", "export", "demo"]
+      "tags": [
+        "inventory",
+        "export",
+        "demo"
+      ]
     },
     {
       "id": "TERP-INIT-007",
       "title": "Accounting Module: Smart Ledger Core & Transaction Splitting",
-      "status": "pending_review",
+      "status": "approved",
       "created_at": "2025-11-03T22:48:19.687810Z",
       "tags": [
         "accounting",
@@ -82,23 +86,27 @@
       "priority": "high"
     },
     {
-      "id": "TERP-INIT-007",
+      "id": "TERP-INIT-008",
       "title": "Codebase Cleanup & Technical Debt Reduction",
-      "status": "pending_review",
-      "created_at": "2025-11-04T06:22:44.811412Z",
+      "created_by": "dev-agent",
+      "created_at": "2025-11-04T06:38:45.436624Z",
+      "status": "approved",
+      "priority": "medium",
       "tags": [
-        "cleanup tech-debt refactor vercel documentation"
+        "cleanup",
+        "tech-debt",
+        "refactor",
+        "documentation"
       ]
     }
   ],
-  "next_id": 8,
-  "last_updated": "2025-11-04T06:25:02.205796Z",
+  "next_id": 9,
+  "last_updated": "2025-11-04T06:43:59.085982Z",
   "metadata": {
     "total_count": 7,
     "by_status": {
       "in-progress": 2,
-      "pending_review": 2,
-      "approved": 2,
+      "approved": 4,
       "completed": 1
     }
   }

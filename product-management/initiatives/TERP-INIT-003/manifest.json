@@ -23,7 +23,7 @@
     "business_value": null
   },
   "progress": {
-    "percent": 0,
+    "percent": 10,
     "completed_tasks": 0,
     "total_tasks": 0,
     "recent_updates": [
@@ -33,8 +33,22 @@
         "message": "Status changed from pending_review to pending_review",
         "old_status": "pending_review",
         "new_status": "pending_review"
+      },
+      {
+        "timestamp": "2025-11-04T06:43:54.030437Z",
+        "type": "status_change",
+        "message": "Testing auto-regeneration trigger",
+        "old_status": "approved",
+        "new_status": "in-progress"
+      },
+      {
+        "timestamp": "2025-11-04T06:43:59.085685Z",
+        "type": "status_change",
+        "message": "Reverting test change",
+        "old_status": "in-progress",
+        "new_status": "approved"
       }
     ],
-    "last_updated": "2025-11-03T23:21:17.692789Z"
+    "last_updated": "2025-11-04T06:43:59.085685Z"
   }
 }
