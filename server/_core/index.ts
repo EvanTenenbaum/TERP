@@ -72,6 +72,10 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // Cookie parser for session management
   app.use(cookieParser());
+  
+  // Trust proxy headers from DigitalOcean App Platform load balancer
+  app.set('trust proxy', true);
+  
   // Simple auth routes under /api/auth
   registerSimpleAuthRoutes(app);
   
