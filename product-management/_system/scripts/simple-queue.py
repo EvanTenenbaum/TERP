@@ -86,8 +86,9 @@ def refresh_queue():
                     "started": datetime.utcnow().isoformat() + 'Z'
                 }
     
-    # Update completed from registry
-    completed_ids = [init['id'] for init in registry['initiatives'] if init['status'] == 'completed']
+    # Update completed from registry (includes ready-to-deploy, deployed, qa-verified)
+    completed_statuses = ['ready-to-deploy', 'deployed', 'qa-verified']
+    completed_ids = [init['id'] for init in registry['initiatives'] if init['status'] in completed_statuses]
     queue_data['completed'] = list(set(queue_data['completed'] + completed_ids))
     
     save_queue(queue_data)
@@ -159,21 +160,67 @@ def complete_task(agent_id, init_id):
     
     save_queue(queue_data)
     
-    # Update registry
+    # Update registry to ready-to-deploy
     for init in registry['initiatives']:
         if init['id'] == init_id:
-            init['status'] = 'completed'
+            init['status'] = 'ready-to-deploy'
+            init['completed_at'] = datetime.utcnow().isoformat() + 'Z'
             break
     
     save_registry(registry)
     
     print(f"✅ Task completed by {agent_id}")
     print(f"   Initiative: {init_id}")
+    print(f"   Status: ready-to-deploy")
     print()
     print(f"📋 Next steps:")
     print(f"   1. Merge branch to main")
     print(f"   2. Push to GitHub")
-    print(f"   3. Get next task: python3 simple-queue.py get-next {agent_id}")
+    print(f"   3. Deploy to production")
+    print(f"   4. Mark as deployed: python3 simple-queue.py set-status {init_id} deployed")
+    print(f"   5. Get next task: python3 simple-queue.py get-next {agent_id}")
+
+def set_status(init_id, new_status):
+    """Set initiative status"""
+    valid_statuses = ['approved', 'in-progress', 'ready-to-deploy', 'deployed', 'qa-verified']
+    
+    if new_status not in valid_statuses:
+        print(f"❌ Invalid status: {new_status}")
+        print(f"   Valid statuses: {', '.join(valid_statuses)}")
+        return
+    
+    registry = load_registry()
+    if not registry:
+        return
+    
+    found = False
+    for init in registry['initiatives']:
+        if init['id'] == init_id:
+            old_status = init['status']
+            init['status'] = new_status
+            
+            # Set timestamp fields
+            if new_status == 'in-progress' and 'started_at' not in init:
+                init['started_at'] = datetime.utcnow().isoformat() + 'Z'
+            elif new_status == 'ready-to-deploy' and 'completed_at' not in init:
+                init['completed_at'] = datetime.utcnow().isoformat() + 'Z'
+            elif new_status == 'deployed' and 'deployed_at' not in init:
+                init['deployed_at'] = datetime.utcnow().isoformat() + 'Z'
+            elif new_status == 'qa-verified' and 'qa_verified_at' not in init:
+                init['qa_verified_at'] = datetime.utcnow().isoformat() + 'Z'
+            
+            found = True
+            break
+    
+    if not found:
+        print(f"❌ Initiative not found: {init_id}")
+        return
+    
+    save_registry(registry)
+    
+    print(f"✅ Status updated")
+    print(f"   Initiative: {init_id}")
+    print(f"   {old_status} → {new_status}")
 
 def show_status():
     """Show current queue status"""
@@ -214,10 +261,11 @@ def show_status():
 def main():
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python3 simple-queue.py refresh              # Refresh queue from registry")
-        print("  python3 simple-queue.py status               # Show queue status")
-        print("  python3 simple-queue.py get-next <agent_id>  # Get next task")
-        print("  python3 simple-queue.py complete <agent_id> <init_id>  # Mark complete")
+        print("  python3 simple-queue.py refresh                      # Refresh queue from registry")
+        print("  python3 simple-queue.py status                       # Show queue status")
+        print("  python3 simple-queue.py get-next <agent_id>          # Get next task")
+        print("  python3 simple-queue.py complete <agent_id> <init_id> # Mark complete (→ ready-to-deploy)")
+        print("  python3 simple-queue.py set-status <init_id> <status> # Set status manually")
         sys.exit(1)
     
     command = sys.argv[1]
@@ -236,6 +284,11 @@ def main():
             print("❌ Error: agent_id and init_id required")
             sys.exit(1)
         complete_task(sys.argv[2], sys.argv[3])
+    elif command == "set-status":
+        if len(sys.argv) < 4:
+            print("❌ Error: init_id and status required")
+            sys.exit(1)
+        set_status(sys.argv[2], sys.argv[3])
     else:
         print(f"❌ Unknown command: {command}")
         sys.exit(1)
