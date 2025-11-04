@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Client Module Workflow Improvements (2025-11-04)
+
+- **Enhanced Search**: Multi-field fuzzy search across TERI code, name, email, phone, and address.
+- **Keyboard Shortcuts**: `⌘/Ctrl+K` for search, `⌘/Ctrl+N` for new client, `↑/↓` for table navigation, and `Enter` to open profile.
+- **Smart Column Sorting**: All numeric columns in the client table are now sortable with visual indicators.
+- **Quick Actions Menu**: Context menu with 6 actions (View, Edit, Add Transaction, Record Payment, Add Note, Archive).
+- **Advanced Filtering & Saved Views**: Default and custom filter views with `localStorage` persistence.
+- **Inline Quick Edit**: Inline editing for a client's name, email, and phone directly in the table.
+- **Payment Recording Enhancement**: Visual alert icon (⚠️) and one-click payment recording for clients with debt.
+
+### Changed
+
+- Replaced the `View` button in the client table with the new Quick Actions Menu.
+- The `Amount Owed` column now provides a one-click path to record payments.
+
+### Fixed
+
+- Resolved multiple ESLint errors and warnings in `ClientsListPage.tsx` and `clientsDb.ts`.
+
 ### Added - P2 Performance & Operational Excellence (2025-10-27)
 
 #### Connection Pooling
