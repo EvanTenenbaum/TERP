@@ -45,6 +45,7 @@ import { ClientNeedsTab } from "@/components/needs/ClientNeedsTab";
 import { CommunicationTimeline } from "@/components/clients/CommunicationTimeline";
 import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
 import { PurchasePatternsWidget } from "@/components/clients/PurchasePatternsWidget";
+import { CommentWidget } from "@/components/comments/CommentWidget";
 import {
   ArrowLeft,
   Edit,
@@ -471,6 +472,22 @@ export default function ClientProfilePage() {
                   No activity yet
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Comments */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Comments</CardTitle>
+              <CardDescription>
+                Team notes and discussions about this client
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CommentWidget
+                commentableType="client"
+                commentableId={clientId}
+              />
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,0 +1,139 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { trpc } from "@/lib/trpc";
+import { Inbox, ArrowRight, CheckCheck } from "lucide-react";
+import { useLocation } from "wouter";
+import { formatDistanceToNow } from "date-fns";
+
+export function InboxWidget() {
+  const [, setLocation] = useLocation();
+
+  // Fetch inbox items
+  const { data: items = [], refetch } = trpc.inbox.getMyItems.useQuery({
+    limit: 5,
+    onlyUnseen: true,
+  });
+
+  // Mark as seen mutation
+  const markAsSeen = trpc.inbox.markAsSeen.useMutation({
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  const unreadCount = items.filter((item) => !item.seenAt).length;
+
+  const handleItemClick = (item: typeof items[0]) => {
+    // Mark as seen
+    if (!item.seenAt) {
+      markAsSeen.mutate({ id: item.id });
+    }
+
+    // Navigate to the entity
+    if (item.entityType === "task") {
+      setLocation(`/todos/${item.metadata?.listId || ""}`);
+    } else if (item.entityType === "comment") {
+      // Navigate based on commentable type
+      const commentableType = item.metadata?.commentableType;
+      const commentableId = item.metadata?.commentableId;
+
+      if (commentableType === "client" && commentableId) {
+        setLocation(`/clients/${commentableId}`);
+      } else if (commentableType === "inventory_batch" && commentableId) {
+        setLocation(`/inventory`);
+      } else if (commentableType === "dashboard" && commentableId) {
+        setLocation(`/dashboard`);
+      }
+    }
+  };
+
+  const getItemIcon = (type: string) => {
+    switch (type) {
+      case "task_assigned":
+        return "📋";
+      case "task_completed":
+        return "✅";
+      case "comment_mention":
+        return "💬";
+      case "comment_reply":
+        return "↩️";
+      default:
+        return "📬";
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <div className="flex items-center gap-2">
+          <Inbox className="h-5 w-5 text-muted-foreground" />
+          <CardTitle className="text-lg font-semibold">Inbox</CardTitle>
+          {unreadCount > 0 && (
+            <Badge variant="destructive" className="h-5 px-1.5">
+              {unreadCount}
+            </Badge>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation("/inbox")}
+          className="h-8"
+        >
+          View All
+          <ArrowRight className="ml-1 h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <CheckCheck className="h-12 w-12 text-muted-foreground/50 mb-3" />
+            <p className="text-sm text-muted-foreground font-medium">
+              All caught up!
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              No new notifications
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleItemClick(item)}
+                className={`w-full text-left p-3 rounded-lg border transition-colors hover:bg-accent ${
+                  !item.seenAt ? "bg-primary/5 border-primary/20" : "bg-card"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-xl flex-shrink-0 mt-0.5">
+                    {getItemIcon(item.type)}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium line-clamp-2">
+                      {item.title}
+                    </p>
+                    {item.message && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                        {item.message}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDistanceToNow(new Date(item.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  </div>
+                  {!item.seenAt && (
+                    <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

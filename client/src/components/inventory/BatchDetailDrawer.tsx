@@ -36,6 +36,7 @@ import { format } from "date-fns";
 import { CogsEditModal } from "./CogsEditModal";
 import { PotentialBuyersWidget } from "./PotentialBuyersWidget";
 import { PriceSimulationModal } from "./PriceSimulationModal";
+import { CommentWidget } from "@/components/comments/CommentWidget";
 import { useState } from "react";
 
 // Profitability Section Component
@@ -555,6 +556,17 @@ export function BatchDetailDrawer({
                   </Table>
                 </div>
               )}
+            </div>
+
+            <Separator />
+
+            {/* Comments */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Comments</h3>
+              <CommentWidget
+                commentableType="inventory_batch"
+                commentableId={batch.id}
+              />
             </div>
 
             {/* Actions */}
