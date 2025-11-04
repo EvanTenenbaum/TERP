@@ -1,23 +1,49 @@
 {
-  "last_updated": "2025-11-03T19:10:49-05:00",
-  "analysis_version": "2025-11-03",
-  "commit_hash": "6bdcf14546f4ac5bd5cf16b6e01cd316929bff7b",
+  "last_updated": "2025-11-04T00:45:00-05:00",
+  "analysis_version": "2.0",
+  "commit_hash": "TBD",
   "pm_agent": "Strategic Project Manager",
-  "roadmap_sequence": [
+  "total_initiatives": 5,
+  "roadmap_sequence": "Option B - Optimized with Strategic Parallelization",
+  "sprints": [
     {
       "sprint": 1,
       "initiative_id": "TERP-INIT-005",
       "title": "Inventory System Stability & Robustness Improvements",
       "priority": "CRITICAL",
-      "duration_days": 15,
-      "rationale": "Fixes critical data integrity issues (race conditions causing negative inventory). Must be completed before calendar integration.",
+      "duration_weeks": 8,
+      "duration_days": 56,
+      "rationale": "Fixes critical data integrity issues (race conditions causing negative inventory). Must be completed first as foundation for all other work.",
       "dependencies": [],
       "blocks": ["TERP-INIT-003"],
       "key_deliverables": [
         "Database transactions with row-level locking",
         "Fix hardcoded sequence numbers",
         "Comprehensive error handling",
-        "Performance optimization"
+        "Performance optimization",
+        ">70% test coverage"
+      ],
+      "phases": [
+        {
+          "phase": 1,
+          "name": "Critical Fixes",
+          "duration_weeks": 2
+        },
+        {
+          "phase": 2,
+          "name": "Stability Improvements",
+          "duration_weeks": 2
+        },
+        {
+          "phase": 3,
+          "name": "Robustness & Testing",
+          "duration_weeks": 2
+        },
+        {
+          "phase": 4,
+          "name": "Optimization & Refinement",
+          "duration_weeks": 2
+        }
       ]
     },
     {
@@ -25,10 +51,11 @@
       "initiative_id": "TERP-INIT-006",
       "title": "To-Do Lists + Universal Comments System",
       "priority": "HIGH",
-      "duration_days": 20,
-      "rationale": "Enables team collaboration for subsequent initiatives. Provides feedback mechanism during development.",
+      "duration_weeks": 4,
+      "duration_days": 28,
+      "rationale": "Enables team collaboration for all subsequent initiatives. Provides feedback mechanism during long development cycles.",
       "dependencies": [],
-      "enables": ["TERP-INIT-004", "TERP-INIT-003"],
+      "enables": ["TERP-INIT-007", "TERP-INIT-004", "TERP-INIT-003"],
       "key_deliverables": [
         "To-do list system (personal + shared)",
         "Universal commenting (polymorphic)",
@@ -38,13 +65,44 @@
     },
     {
       "sprint": 3,
+      "initiative_id": "TERP-INIT-007",
+      "phase": "Phase 1",
+      "title": "Accounting Module: Smart Ledger Core",
+      "priority": "CRITICAL",
+      "duration_weeks": 26,
+      "duration_months": 6,
+      "duration_days": 182,
+      "rationale": "Core accounting functionality with 12-month total timeline requires early start. Phase 1 provides unified transaction entry and intelligent suggestions.",
+      "dependencies": [],
+      "benefits_from": ["TERP-INIT-006"],
+      "parallel_opportunity": {
+        "dev_2_task": "TERP-INIT-004",
+        "dev_2_duration_weeks": 3.5,
+        "dev_2_then": "Support Dev 1 on Accounting Phase 1"
+      },
+      "key_deliverables": [
+        "Unified transaction entry UI",
+        "Context-aware suggestions (90%+ acceptance)",
+        "Real-time balance validation",
+        "Transaction templates (75% adoption)",
+        "Keyboard shortcuts"
+      ],
+      "mid_point_evaluation": {
+        "timing": "Month 6",
+        "purpose": "Assess progress, gather feedback, decide on Phase 2"
+      }
+    },
+    {
+      "sprint": 4,
       "initiative_id": "TERP-INIT-004",
       "title": "Client Module: Phase 1 & 2 Workflow Improvements",
       "priority": "HIGH",
-      "duration_days": 18,
-      "rationale": "Delivers immediate value to daily workflows. Builds momentum with visible improvements before long Calendar project.",
+      "duration_weeks": 3.5,
+      "duration_days": 25,
+      "rationale": "Quick win with visible improvements. Can run parallel with Accounting Phase 1 if two developers available. Tests bulk operation patterns needed for Calendar.",
       "dependencies": [],
       "benefits_from": ["TERP-INIT-006"],
+      "parallel_with": "TERP-INIT-007 Phase 1",
       "key_deliverables": [
         "Enhanced search (full-text)",
         "Keyboard shortcuts",
@@ -53,14 +111,42 @@
       ]
     },
     {
-      "sprint": 4,
+      "sprint": 5,
+      "initiative_id": "TERP-INIT-007",
+      "phase": "Phase 2",
+      "title": "Accounting Module: Transaction Splitting",
+      "priority": "CRITICAL",
+      "duration_weeks": 26,
+      "duration_months": 6,
+      "duration_days": 182,
+      "rationale": "Completes accounting module with intelligent transaction splitting and automation. Can run parallel with Calendar Phases 0-1 if two developers available.",
+      "dependencies": ["TERP-INIT-007 Phase 1"],
+      "parallel_opportunity": {
+        "dev_2_task": "TERP-INIT-003 Phases 0-1",
+        "dev_2_duration_weeks": 16,
+        "dev_2_then": "Join Dev 1 for Calendar Phases 2-3"
+      },
+      "key_deliverables": [
+        "Rule-based transaction splitting (90%+ accuracy)",
+        "Split suggestions and templates (50% adoption)",
+        "Recurring split automation",
+        "Split analytics dashboard"
+      ]
+    },
+    {
+      "sprint": 6,
       "initiative_id": "TERP-INIT-003",
       "title": "Calendar & Scheduling System",
       "priority": "HIGH",
-      "duration_days": 140,
-      "rationale": "Most complex initiative benefits from stable foundation. Long timeline justified by high business value.",
+      "duration_weeks": 28,
+      "duration_days": 196,
+      "rationale": "Most complex initiative benefits from stable foundation and all previous work. Long timeline justified by high business value. Strict phase gates prevent scope creep.",
       "dependencies": ["TERP-INIT-005"],
-      "benefits_from": ["TERP-INIT-006", "TERP-INIT-004"],
+      "benefits_from": ["TERP-INIT-006", "TERP-INIT-004", "TERP-INIT-007"],
+      "parallel_opportunity": {
+        "phases_0_1": "Can run parallel with Accounting Phase 2",
+        "phases_2_3": "Collaborative work with both developers"
+      },
       "phases": [
         {
           "phase": 0,
@@ -92,20 +178,106 @@
     }
   ],
   "timeline_estimates": {
-    "single_developer_days": 193,
-    "single_developer_months": 8,
-    "two_developers_days": 145,
-    "two_developers_months": 6,
-    "efficiency_gain_percent": 25
+    "single_developer": {
+      "total_days": 669,
+      "total_weeks": 95.6,
+      "total_months": 22,
+      "breakdown": {
+        "inventory": "8 weeks",
+        "comments": "4 weeks",
+        "accounting_phase_1": "26 weeks",
+        "client": "3.5 weeks",
+        "accounting_phase_2": "26 weeks",
+        "calendar": "28 weeks"
+      }
+    },
+    "two_developers_optimized": {
+      "total_days": 546,
+      "total_weeks": 78,
+      "total_months": 18,
+      "efficiency_gain_percent": 18,
+      "strategy": "Strategic parallelization: Client Module parallel with Accounting Phase 1, Calendar Phases 0-1 parallel with Accounting Phase 2"
+    }
   },
   "critical_path": [
     "TERP-INIT-005",
+    "TERP-INIT-006",
+    "TERP-INIT-007 Phase 1",
+    "TERP-INIT-007 Phase 2",
     "TERP-INIT-003"
   ],
   "parallel_opportunities": {
-    "sprint_2": {
-      "dev_1": "TERP-INIT-006",
-      "dev_2": "TERP-INIT-004 Phase 1"
+    "sprint_3_4": {
+      "dev_1": "TERP-INIT-007 Phase 1 (26 weeks)",
+      "dev_2": "TERP-INIT-004 (3.5 weeks) → Support Accounting",
+      "benefit": "Client Module completed quickly, Accounting gets extra help"
+    },
+    "sprint_5_6": {
+      "dev_1": "TERP-INIT-007 Phase 2 (26 weeks)",
+      "dev_2": "TERP-INIT-003 Phases 0-1 (16 weeks) → Join for Phases 2-3",
+      "benefit": "Calendar foundation ready when Accounting Phase 2 completes"
+    }
+  },
+  "risk_mitigation": {
+    "accounting_scope_creep": {
+      "risk_level": "high",
+      "mitigation": [
+        "Weekly demos to stakeholders",
+        "Mid-point evaluation after Phase 1",
+        "Can pause or pivot after Phase 1",
+        "Comments system enables continuous feedback"
+      ]
+    },
+    "calendar_complexity": {
+      "risk_level": "high",
+      "mitigation": [
+        "Strict phase gates (can stop after any phase)",
+        "Benefits from stable Inventory foundation",
+        "Comments system enables collaboration",
+        "Client Module tests bulk operation patterns first"
+      ]
+    },
+    "inventory_regression": {
+      "risk_level": "medium",
+      "mitigation": [
+        "Phase 3 includes comprehensive testing (>70% coverage)",
+        "Rollback plan for each phase",
+        "Production testing in staging environment"
+      ]
+    }
+  },
+  "success_metrics": {
+    "inventory": {
+      "data_integrity_errors": "Zero",
+      "error_log_reduction": "50%",
+      "api_response_improvement": "30%",
+      "test_coverage": ">70%"
+    },
+    "comments": {
+      "adoption_rate": "80%",
+      "comments_per_entity": ">5",
+      "todo_completion_rate": "75%"
+    },
+    "accounting_phase_1": {
+      "suggestion_acceptance": "90%",
+      "entry_time_reduction": "50%",
+      "template_adoption": "75%",
+      "unbalanced_entries_prevented": "100%"
+    },
+    "accounting_phase_2": {
+      "split_accuracy": "90%",
+      "split_template_adoption": "50%",
+      "recurring_automation_reliability": "95%"
+    },
+    "client_module": {
+      "search_usage": "80%",
+      "keyboard_shortcut_adoption": "60%",
+      "bulk_operation_usage": "40%"
+    },
+    "calendar": {
+      "adoption_rate": "80%",
+      "recurring_event_accuracy": "95%",
+      "time_saved_per_month": "10+ hours"
     }
   }
 }

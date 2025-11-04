@@ -14,14 +14,15 @@
     {
       "id": "TERP-INIT-007",
       "title": "Accounting Module: Smart Ledger Core & Transaction Splitting",
-      "status": "pending_review",
+      "status": "approved",
       "created_at": "2025-11-03T22:48:19.687810Z",
       "tags": [
         "accounting",
         "ledger",
         "transactions",
+        "financial-management",
         "automation",
-        "bookkeeping"
+        "smart-entry"
       ],
       "priority": "high"
     },
@@ -57,7 +58,7 @@
     {
       "id": "TERP-INIT-005",
       "title": "Inventory System Stability & Robustness Improvements",
-      "status": "pending_review",
+      "status": "approved",
       "created_at": "2025-11-03T23:30:00.352512Z",
       "tags": [
         "inventory",
@@ -66,7 +67,8 @@
         "performance",
         "testing",
         "robustness"
-      ]
+      ],
+      "priority": "high"
     },
     {
       "id": "TERP-INIT-006",
