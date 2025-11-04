@@ -1,0 +1,21 @@
+{
+  "queue": [],
+  "in_progress": {
+    "TERP-INIT-001": {
+      "agent": "Unknown",
+      "branch": "agent/terp-init-001",
+      "started": "2025-11-04T06:22:52.758989Z"
+    },
+    "TERP-INIT-005": {
+      "agent": null,
+      "branch": "None/terp-init-005",
+      "started": "2025-11-04T06:22:52.759017Z"
+    },
+    "TERP-INIT-006": {
+      "agent": "Unknown",
+      "branch": "agent/terp-init-006",
+      "started": "2025-11-04T06:22:52.759020Z"
+    }
+  },
+  "completed": []
+}
