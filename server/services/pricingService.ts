@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 
 export interface MarginResult {
   marginPercent: number | null;
-  source: "customer" | "default" | "none";
+  source: "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
   customerId?: number;
   productCategory?: string;
 }
@@ -39,7 +39,7 @@ export const pricingService = {
     if (customer.length > 0 && customer[0].defaultMarginPercent !== null) {
       return {
         marginPercent: customer[0].defaultMarginPercent,
-        source: "customer",
+        source: "CUSTOMER_PROFILE",
         customerId,
       };
     }
@@ -54,7 +54,7 @@ export const pricingService = {
     if (defaultMargin.length > 0) {
       return {
         marginPercent: defaultMargin[0].defaultMarginPercent,
-        source: "default",
+        source: "DEFAULT",
         productCategory,
       };
     }
@@ -62,7 +62,7 @@ export const pricingService = {
     // Step 3: No margin found - manual input required
     return {
       marginPercent: null,
-      source: "none",
+      source: "MANUAL",
     };
   },
 
