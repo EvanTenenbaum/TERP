@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -60,28 +60,36 @@ export default function Inventory() {
     return null;
   });
   
+  // Track if we're updating from URL to prevent circular updates
+  const isUpdatingFromURL = useRef(false);
+  
   // Sync URL parameter to selectedBatch state when URL changes
   useEffect(() => {
     if (match && params?.id) {
       const id = parseInt(params.id, 10);
       if (!isNaN(id) && id !== selectedBatch) {
+        isUpdatingFromURL.current = true;
         setSelectedBatch(id);
       }
     } else if (!match && selectedBatch !== null) {
-      // URL changed to /inventory without ID, close drawer
+      isUpdatingFromURL.current = true;
       setSelectedBatch(null);
     }
-  }, [match, params?.id, selectedBatch]);
+  }, [match, params?.id]);
   
-  // Update URL when selectedBatch changes programmatically
+  // Update URL when selectedBatch changes programmatically (not from URL)
   useEffect(() => {
-    if (selectedBatch !== null && (!match || params?.id !== selectedBatch.toString())) {
+    if (isUpdatingFromURL.current) {
+      isUpdatingFromURL.current = false;
+      return;
+    }
+    
+    if (selectedBatch !== null) {
       setLocation(`/inventory/${selectedBatch}`);
     } else if (selectedBatch === null && match) {
-      // If drawer is closed but we're on a batch URL, go back to list
       setLocation('/inventory');
     }
-  }, [selectedBatch, match, params?.id, setLocation]);
+  }, [selectedBatch]);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<number | null>(null);
   const [showSaveViewModal, setShowSaveViewModal] = useState(false);
