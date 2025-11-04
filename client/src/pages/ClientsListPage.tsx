@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { AddClientWizard } from "@/components/clients/AddClientWizard";
@@ -22,12 +22,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Filter, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { DataCardSection } from "@/components/data-cards";
 
 export default function ClientsListPage() {
   const [, setLocation] = useLocation();
   const [addClientOpen, setAddClientOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const searchInputRef = useRef<React.ElementRef<'input'>>(null);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
   // Initialize filters from URL parameters
   const getInitialHasDebt = () => {
@@ -71,6 +75,84 @@ export default function ClientsListPage() {
   });
 
   const totalPages = Math.ceil((totalCount || 0) / limit);
+
+  // Handle column sorting
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  };
+
+  // Sort clients locally (since backend doesn't support all sort columns yet)
+  const displayClients = useMemo(() => {
+    if (!clients) return [];
+    if (!sortColumn) return clients;
+    
+    return [...clients].sort((a: any, b: any) => {
+      let aVal = a[sortColumn];
+      let bVal = b[sortColumn];
+      
+      // Handle null/undefined
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      
+      // Convert string numbers to actual numbers for proper sorting
+      if (typeof aVal === 'string' && !isNaN(parseFloat(aVal))) {
+        aVal = parseFloat(aVal);
+      }
+      if (typeof bVal === 'string' && !isNaN(parseFloat(bVal))) {
+        bVal = parseFloat(bVal);
+      }
+      
+      // Compare
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [clients, sortColumn, sortDirection]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      // Cmd/Ctrl+K: Focus search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      
+      // Cmd/Ctrl+N: New client
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        setAddClientOpen(true);
+      }
+      
+      // Arrow navigation (only when not in input)
+      if (displayClients && displayClients.length > 0 && document.activeElement?.tagName !== 'INPUT') {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedIndex(prev => Math.min(displayClients.length - 1, prev + 1));
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedIndex(prev => Math.max(0, prev - 1));
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+          e.preventDefault();
+          const client = displayClients[selectedIndex];
+          if (client) setLocation(`/clients/${client.id}`);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [displayClients, selectedIndex, setLocation]);
+  
+  // Reset selected index when data changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [page, search, clientTypes, hasDebt]);
 
   // Toggle client type filter
   const toggleClientType = (type: "buyer" | "seller" | "brand" | "referee" | "contractor") => {
@@ -135,7 +217,7 @@ export default function ClientsListPage() {
       <Card>
         <CardHeader>
           <CardTitle>Search & Filters</CardTitle>
-          <CardDescription>Find clients by TERI code, type, or debt status</CardDescription>
+          <CardDescription>Search across all client fields or filter by type and debt status</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Search Input */}
@@ -143,7 +225,8 @@ export default function ClientsListPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by TERI code..."
+                ref={searchInputRef}
+                placeholder="Search by TERI code, name, email, phone, or address..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -278,22 +361,96 @@ export default function ClientsListPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>TERI Code</TableHead>
+                    <TableHead>
+                      <button
+                        onClick={() => handleSort('teriCode')}
+                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      >
+                        TERI Code
+                        {sortColumn === 'teriCode' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
+                        )}
+                      </button>
+                    </TableHead>
                     <TableHead>Client Types</TableHead>
-                    <TableHead className="text-right">Total Spent</TableHead>
-                    <TableHead className="text-right">Total Profit</TableHead>
-                    <TableHead className="text-right">Avg Margin</TableHead>
-                    <TableHead className="text-right">Amount Owed</TableHead>
-                    <TableHead className="text-right">Oldest Debt</TableHead>
+                    <TableHead className="text-right">
+                      <button
+                        onClick={() => handleSort('totalSpent')}
+                        className="flex items-center gap-1 ml-auto hover:text-foreground transition-colors"
+                      >
+                        Total Spent
+                        {sortColumn === 'totalSpent' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
+                        )}
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button
+                        onClick={() => handleSort('totalProfit')}
+                        className="flex items-center gap-1 ml-auto hover:text-foreground transition-colors"
+                      >
+                        Total Profit
+                        {sortColumn === 'totalProfit' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
+                        )}
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button
+                        onClick={() => handleSort('avgProfitMargin')}
+                        className="flex items-center gap-1 ml-auto hover:text-foreground transition-colors"
+                      >
+                        Avg Margin
+                        {sortColumn === 'avgProfitMargin' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
+                        )}
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button
+                        onClick={() => handleSort('totalOwed')}
+                        className="flex items-center gap-1 ml-auto hover:text-foreground transition-colors"
+                      >
+                        Amount Owed
+                        {sortColumn === 'totalOwed' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
+                        )}
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button
+                        onClick={() => handleSort('oldestDebtDays')}
+                        className="flex items-center gap-1 ml-auto hover:text-foreground transition-colors"
+                      >
+                        Oldest Debt
+                        {sortColumn === 'oldestDebtDays' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 opacity-50" />
+                        )}
+                      </button>
+                    </TableHead>
                     <TableHead>Tags</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {clients.map((client: any) => (
+                  {displayClients.map((client: any, index: number) => (
                     <TableRow
                       key={client.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                        index === selectedIndex ? 'bg-accent' : ''
+                      }`}
                       onClick={() => setLocation(`/clients/${client.id}`)}
                     >
                       <TableCell className="font-medium">{client.teriCode}</TableCell>
