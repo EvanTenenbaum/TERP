@@ -26,7 +26,10 @@ import subprocess
 SCRIPT_DIR = Path(__file__).parent
 PM_ROOT = SCRIPT_DIR.parent.parent
 INITIATIVES_DIR = PM_ROOT / "initiatives"
+ARCHIVE_DIR = PM_ROOT / "archive"
+ARCHIVE_INITIATIVES_DIR = ARCHIVE_DIR / "initiatives"
 REGISTRY_FILE = INITIATIVES_DIR / "registry.json"
+ARCHIVE_REGISTRY_FILE = ARCHIVE_DIR / "archive-registry.json"
 PM_DASHBOARD = PM_ROOT / "pm-evaluation" / "dashboard.json"
 
 
@@ -116,12 +119,22 @@ def sync_manifests_with_registry():
     return synced_count
 
 
+def load_archive_registry():
+    """Load archive registry"""
+    if not ARCHIVE_REGISTRY_FILE.exists():
+        return {"archived_initiatives": [], "last_updated": datetime.utcnow().isoformat() + "Z"}
+    
+    with open(ARCHIVE_REGISTRY_FILE, 'r') as f:
+        return json.load(f)
+
+
 def update_dashboard():
     """Update the PM dashboard with current status of all initiatives"""
     # First, sync manifests with registry to ensure consistency
     sync_manifests_with_registry()
     
     registry = load_registry()
+    archive_registry = load_archive_registry()
     
     dashboard = {
         "last_updated": datetime.utcnow().isoformat() + "Z",
@@ -129,9 +142,11 @@ def update_dashboard():
             "total": 0,
             "by_status": {},
             "by_priority": {},
-            "total_progress": 0
+            "total_progress": 0,
+            "archived_count": len(archive_registry.get("archived_initiatives", []))
         },
         "initiatives": [],
+        "archived_initiatives": [],
         "recent_activity": []
     }
     
@@ -196,11 +211,60 @@ def update_dashboard():
     dashboard["recent_activity"].sort(key=lambda x: x.get("timestamp", ""), reverse=True)
     dashboard["recent_activity"] = dashboard["recent_activity"][:20]  # Keep last 20
     
+    # Add archived initiatives
+    for archived in archive_registry.get("archived_initiatives", []):
+        dashboard["archived_initiatives"].append({
+            "id": archived["initiative_id"],
+            "title": archived["title"],
+            "status": "archived",
+            "priority": archived.get("priority", "not-set"),
+            "progress_percent": 100,
+            "created_at": archived.get("created_at"),
+            "archived_at": archived.get("archived_at"),
+            "completed_at": archived.get("completed_at"),
+            "created_by": archived.get("created_by"),
+            "tags": archived.get("tags", [])
+        })
+    
     # Save dashboard
     with open(PM_DASHBOARD, 'w') as f:
         json.dump(dashboard, f, indent=2)
     
     return dashboard
+
+
+def trigger_archiving(init_id, new_status):
+    """Trigger automatic archiving when initiative reaches qa-verified status"""
+    if new_status != "qa-verified":
+        return
+    
+    print(f"\n📦 Initiative {init_id} is qa-verified, triggering archiving...")
+    
+    # Run archive script
+    archive_script = SCRIPT_DIR / "archive.py"
+    
+    try:
+        result = subprocess.run(
+            [sys.executable, str(archive_script), "archive", init_id],
+            cwd=str(PM_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            print("✅ Archiving complete")
+            # Print output for visibility
+            if result.stdout:
+                for line in result.stdout.strip().split('\n'):
+                    print(f"   {line}")
+        else:
+            print(f"⚠️  Archiving failed: {result.stderr[:200]}")
+    
+    except subprocess.TimeoutExpired:
+        print("⚠️  Archiving timed out")
+    except Exception as e:
+        print(f"⚠️  Archiving error: {e}")
 
 
 def trigger_auto_regeneration(old_status, new_status):
@@ -313,6 +377,9 @@ def update_status(init_id, status, message=None, update_type="status_change"):
     print(f"   Status: {old_status} → {status}")
     if message:
         print(f"   Message: {message}")
+    
+    # Trigger archiving if initiative is qa-verified
+    trigger_archiving(init_id, status)
     
     # Trigger auto-regeneration of roadmap and parallelization analysis
     # This runs whenever status changes to keep the roadmap current
