@@ -222,7 +222,7 @@ def update_status(init_id, status, message=None, update_type="status_change"):
     manifest["progress"]["last_updated"] = update_entry["timestamp"]
     
     # Auto-calculate progress based on status
-    if status == "completed":
+    if status in ["ready-to-deploy", "deployed", "qa-verified"]:
         manifest["progress"]["percent"] = 100
     elif status == "in-progress" and manifest["progress"]["percent"] == 0:
         manifest["progress"]["percent"] = 10  # Started
