@@ -11,15 +11,55 @@
 **CRITICAL**: These credentials are required for deployment monitoring and database access.
 
 ### Digital Ocean API
-**API Key**: `dop_v1_ab90cb11747ba6c2722b0c1989b54916d68595c1358733e78681bb022a36fe45`
+
+**API Key**: `dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd`
 
 **Use for**:
+
 - Monitoring deployment status
 - Checking build logs
 - Verifying application health
 - Triggering deployments
 
+### Using Digital Ocean CLI (doctl)
+
+**Installation**:
+
+```bash
+cd /tmp && wget https://github.com/digitalocean/doctl/releases/download/v1.115.0/doctl-1.115.0-linux-amd64.tar.gz
+tar xf doctl-1.115.0-linux-amd64.tar.gz
+sudo mv doctl /usr/local/bin/
+```
+
+**Authentication**:
+
+```bash
+doctl auth init -t dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd
+```
+
+**Common Commands**:
+
+```bash
+# List apps
+doctl apps list
+
+# Get build logs (ALWAYS try this before asking for logs)
+doctl apps logs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --deployment <DEPLOYMENT_ID> --type build
+
+# Get runtime logs
+doctl apps logs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --type run
+
+# Trigger deployment
+doctl apps create-deployment 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --force-rebuild
+
+# Get deployment status
+doctl apps get 1fd40be5-b9af-4e71-ab1d-3af0864a7da4
+```
+
+**CRITICAL**: Always use API or CLI to get build/deployment logs. Never ask user for logs unless both API and CLI have been tried.
+
 ### Production Database
+
 - **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
 - **Port**: `25060`
 - **User**: `doadmin`
@@ -28,6 +68,7 @@
 - **SSL Mode**: `REQUIRED`
 
 **Connection String**:
+
 ```bash
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       --port=25060 \
@@ -38,6 +79,7 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 ```
 
 ### Production App
+
 **URL**: https://terp-app-b9s35.ondigitalocean.app
 
 ---
@@ -65,7 +107,7 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 Before implementing any change, perform a comprehensive impact analysis:
 
 - **Identify affected files:** List all components, pages, utilities, and configuration files that will be modified
-- **Map dependencies:** 
+- **Map dependencies:**
   - What components import this file?
   - What does this file import?
   - What data structures flow through this component?
@@ -98,7 +140,7 @@ When implementing changes, maintain system-wide coherence:
 After implementing changes, validate the entire system:
 
 - **Run `webdev_check_status`:** Verify TypeScript errors are resolved and no build errors exist
-- **Test navigation flows:** 
+- **Test navigation flows:**
   - Click through all navigation links
   - Verify no broken routes or 404 errors
   - Test back/forward browser navigation
@@ -117,6 +159,7 @@ After implementing changes, validate the entire system:
 If a requested change requires any of the following, **STOP and report to the user FIRST:**
 
 **Triggers for Breaking Change Protocol:**
+
 - Refactoring more than 5 files
 - Changing core data structures, schemas, or type definitions
 - Restructuring routing or navigation architecture
@@ -177,6 +220,7 @@ Maintain proper version control and recovery points:
 **NO PLACEHOLDERS OR STUBS**
 
 ❌ **NEVER use:**
+
 - "TODO", "FIXME", "Coming Soon", "Placeholder"
 - "To be implemented", "Not yet working"
 - Pseudo-code or commented-out logic
@@ -185,6 +229,7 @@ Maintain proper version control and recovery points:
 - Disabled features with "enable later" comments
 
 ✅ **ALWAYS implement:**
+
 - Complete, functional, production-ready code
 - Real interactions for every UI element
 - Proper error handling and loading states
@@ -263,18 +308,22 @@ COMPLETION PLAN:
 When reporting task completion, MUST include:
 
 ✅ **Production Ready Confirmation:**
+
 - "All features are production-ready and fully functional"
 - "No placeholders, stubs, or incomplete implementations"
 
 ✅ **Known Limitations:**
+
 - List any intentional simplifications (e.g., "Using mock data instead of API")
 - Explain any features intentionally scoped out
 
 ✅ **Incomplete Work Alerts:**
+
 - Flag ANY incomplete work with 🚨 alerts
 - Provide clear reasoning and completion plan
 
 ✅ **Status Declaration:**
+
 - "STATUS: PRODUCTION READY" or
 - "STATUS: INCOMPLETE - [specific reason]"
 
@@ -579,6 +628,7 @@ Stored in: `/docs/DEPLOYMENT_CREDENTIALS.md` (DO NOT COMMIT TO PUBLIC REPOS)
 #### Autonomous Monitoring Commands
 
 **Render:**
+
 ```bash
 # Check service status
 curl -H "Authorization: Bearer $RENDER_API_KEY" \
@@ -590,6 +640,7 @@ curl -H "Authorization: Bearer $RENDER_API_KEY" \
 ```
 
 **Railway:**
+
 ```bash
 export RAILWAY_TOKEN=your_token
 railway status
@@ -629,10 +680,12 @@ To ensure version traceability and deployment verification, **every single GitHu
 #### Required Actions Before Every `git push`:
 
 1. **Update Commit Hash**
+
    ```bash
    # Get current commit hash (short form)
    git rev-parse --short HEAD
    ```
+
    - Update `commit` field in `version.json` with the current commit hash
 
 2. **Update Date**
@@ -682,6 +735,7 @@ The version is displayed persistently in the application header:
 ### Context
 
 TERP is evolving toward a **secure home office architecture** with:
+
 - Air-gapped core server
 - VPN-only access (WireGuard)
 - Multi-factor authentication (VPN + device certificate + biometric)
@@ -711,19 +765,21 @@ All development work MUST be **forward-compatible** with the future architecture
 
 ```typescript
 // ✅ GOOD - Uses abstraction
-import { authProvider } from '../_core/authProvider';
+import { authProvider } from "../_core/authProvider";
 const user = await authProvider.requireAuth(req);
 
 // ❌ BAD - Direct Clerk call (will need refactoring)
-import { getAuth } from '@clerk/express';
+import { getAuth } from "@clerk/express";
 const { userId } = getAuth(req);
 ```
 
 **Files:**
+
 - `server/_core/authProvider.ts` - Authentication abstraction interface
 - All routers MUST use this interface
 
 **Verification:**
+
 - [ ] No direct Clerk imports in new code
 - [ ] All authentication uses `authProvider` interface
 
@@ -739,22 +795,24 @@ const { userId } = getAuth(req);
 
 ```typescript
 // ✅ GOOD - Uses abstraction
-import { dataProvider } from '../_core/dataProvider';
-const orders = await dataProvider.query(db => 
+import { dataProvider } from "../_core/dataProvider";
+const orders = await dataProvider.query(db =>
   db.select().from(orders).where(eq(orders.orgId, orgId))
 );
 
 // ❌ BAD - Direct database call (will need refactoring)
-import { getDb } from '../db';
+import { getDb } from "../db";
 const db = await getDb();
 const orders = await db.select().from(orders);
 ```
 
 **Files:**
+
 - `server/_core/dataProvider.ts` - Data access abstraction interface
 - All `*Db.ts` files MUST use this interface
 
 **Verification:**
+
 - [ ] No direct `getDb()` calls in new code
 - [ ] All data access uses `dataProvider` interface
 
@@ -776,12 +834,13 @@ export const ordersRouter = router({
     .mutation(async ({ input, ctx }) => {
       const order = await ordersDb.createOrder(input, ctx.user.organizationId);
       return {
-        order,  // Full object for optimistic update
-        affectedRecords: {  // For cache invalidation
+        order, // Full object for optimistic update
+        affectedRecords: {
+          // For cache invalidation
           orders: [order.id],
           inventory: order.items.map(i => i.inventoryId),
         },
-        timestamp: new Date(),  // For conflict resolution
+        timestamp: new Date(), // For conflict resolution
       };
     }),
 });
@@ -792,17 +851,19 @@ export const ordersRouter = router({
     .input(createOrderSchema)
     .mutation(async ({ input, ctx }) => {
       const orderId = await ordersDb.createOrder(input);
-      return { orderId };  // Client needs to fetch full object!
+      return { orderId }; // Client needs to fetch full object!
     }),
 });
 ```
 
 **Required Response Fields:**
+
 - `[resource]`: Full object that was created/updated
 - `affectedRecords`: Object mapping resource types to affected IDs
 - `timestamp`: ISO timestamp for conflict resolution
 
 **Verification:**
+
 - [ ] Mutation returns full object (not just ID)
 - [ ] Response includes `affectedRecords`
 - [ ] Response includes `timestamp`
@@ -819,30 +880,34 @@ export const ordersRouter = router({
 
 ```typescript
 // ✅ GOOD - Additive change (backward compatible)
-export const users = mysqlTable('users', {
-  id: serial('id').primaryKey(),
-  email: varchar('email', { length: 255 }).notNull(),
+export const users = mysqlTable("users", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
   // ... existing fields ...
-  
+
   // NEW: Nullable for backward compatibility
-  mfaEnabled: boolean('mfa_enabled').default(false),
-  deviceCertificateRequired: boolean('device_certificate_required').default(false),
+  mfaEnabled: boolean("mfa_enabled").default(false),
+  deviceCertificateRequired: boolean("device_certificate_required").default(
+    false
+  ),
 });
 
 // ❌ BAD - Breaking change (renames field)
-export const users = mysqlTable('users', {
-  id: serial('id').primaryKey(),
-  emailAddress: varchar('email_address', { length: 255 }),  // RENAMED - BREAKS CODE!
+export const users = mysqlTable("users", {
+  id: serial("id").primaryKey(),
+  emailAddress: varchar("email_address", { length: 255 }), // RENAMED - BREAKS CODE!
 });
 ```
 
 **Rules:**
+
 - **NEVER** rename existing columns (add new ones instead)
 - **NEVER** delete existing tables (mark as deprecated instead)
 - **ALWAYS** make new fields nullable or provide defaults
 - **ALWAYS** use migrations for schema changes
 
 **Verification:**
+
 - [ ] No renamed columns
 - [ ] No deleted tables
 - [ ] New fields are nullable or have defaults
@@ -898,7 +963,7 @@ export const ordersRouter = router({
     .mutation(async ({ input, ctx }) => {
       // 100+ lines of business logic here - BAD!
       const db = await getDb();
-      const order = await db.transaction(async (tx) => {
+      const order = await db.transaction(async tx => {
         // Complex business logic...
       });
       return order;
@@ -911,7 +976,7 @@ export const ordersRouter = router({
 ```typescript
 // ✅ GOOD - Business logic in ordersDb.ts
 export async function createOrder(input: CreateOrderInput, orgId: number) {
-  return await dataProvider.transaction(async (tx) => {
+  return await dataProvider.transaction(async tx => {
     // All business logic here
     // Validation, calculations, database operations
     // Can be 100+ lines - that's fine!
@@ -920,6 +985,7 @@ export async function createOrder(input: CreateOrderInput, orgId: number) {
 ```
 
 **Verification:**
+
 - [ ] Router procedures < 50 lines
 - [ ] Business logic in `*Db.ts` files
 - [ ] No database queries in routers
@@ -931,25 +997,30 @@ export async function createOrder(input: CreateOrderInput, orgId: number) {
 **MANDATORY:** Before every `git push`, verify:
 
 **Authentication:**
+
 - [ ] Uses `authProvider` interface (not Clerk directly)
 - [ ] No direct authentication provider imports in new code
 
 **Data Access:**
+
 - [ ] Uses `dataProvider` interface (not `getDb()` directly)
 - [ ] No direct database access in new code
 
 **API Design:**
+
 - [ ] Mutations return full objects (not just IDs)
 - [ ] Responses include `affectedRecords`
 - [ ] Responses include `timestamp`
 
 **Schema:**
+
 - [ ] Schema changes are additive only
 - [ ] No renamed columns or deleted tables
 - [ ] New fields are nullable or have defaults
 - [ ] Migration file created
 
 **Code Organization:**
+
 - [ ] Router procedures < 50 lines
 - [ ] Business logic in `*Db.ts` files
 - [ ] No business logic in routers
@@ -961,11 +1032,13 @@ export async function createOrder(input: CreateOrderInput, orgId: number) {
 ### 13.7 Reference Documents
 
 **For Detailed Guidance:**
+
 - `docs/PRODUCT_DEVELOPMENT_STRATEGY.md` - Full 8-week implementation strategy
 - `docs/MANUS_AGENT_CONTEXT.md` - Quick reference for AI agents
 - `docs/TERP_Codebase_Implementation_Specification.md` - Complete future architecture spec
 
 **For Quick Reference:**
+
 - See `docs/MANUS_AGENT_CONTEXT.md` for code examples and patterns
 
 ---
@@ -973,6 +1046,7 @@ export async function createOrder(input: CreateOrderInput, orgId: number) {
 ## Version History
 
 **v3.0 - October 27, 2025**
+
 - Added Future Architecture Compatibility Protocol (Section 13)
 - Documented authentication abstraction requirements
 - Documented data access abstraction requirements
@@ -983,12 +1057,14 @@ export async function createOrder(input: CreateOrderInput, orgId: number) {
 - Created reference to MANUS_AGENT_CONTEXT.md
 
 **v2.1 - October 27, 2025**
+
 - Added Version Management Protocol (MANDATORY)
 - Implemented persistent version display in header
 - Added version.json for version tracking
 - Updated tsconfig.json to support JSON imports
 
 **v2.0 - October 24, 2025**
+
 - Added complete accounting module documentation
 - Updated with mobile optimization patterns
 - Added 60+ accounting API endpoints
@@ -996,6 +1072,7 @@ export async function createOrder(input: CreateOrderInput, orgId: number) {
 - Comprehensive database schema (17 tables total)
 
 **v1.0 - October 23, 2025**
+
 - Initial protocol documentation
 - Integrated comprehensive UX/UI research
 - Established change management procedures
@@ -1010,8 +1087,6 @@ For questions, clarifications, or protocol updates, consult the project maintain
 
 **Remember:** These protocols exist to maintain quality, consistency, and system integrity. They are not bureaucratic overhead—they are essential guardrails for sustainable development.
 
-
-
 ---
 
 ## 8. Automated Enforcement Protocol
@@ -1021,6 +1096,7 @@ For questions, clarifications, or protocol updates, consult the project maintain
 All developers MUST set up pre-commit hooks to enforce standards automatically.
 
 **Setup:**
+
 ```bash
 # Install husky
 pnpm add -D husky lint-staged
@@ -1033,19 +1109,16 @@ echo "npx lint-staged" > .husky/pre-commit
 ```
 
 **Configuration (.lintstagedrc.json):**
+
 ```json
 {
-  "*.{ts,tsx}": [
-    "eslint --fix --max-warnings=0",
-    "prettier --write"
-  ],
-  "*.{ts,tsx,md,json}": [
-    "prettier --write"
-  ]
+  "*.{ts,tsx}": ["eslint --fix --max-warnings=0", "prettier --write"],
+  "*.{ts,tsx,md,json}": ["prettier --write"]
 }
 ```
 
 **Enforced Checks:**
+
 1. ✅ TypeScript compilation (zero errors)
 2. ✅ ESLint rules
 3. ✅ Prettier formatting
@@ -1053,6 +1126,7 @@ echo "npx lint-staged" > .husky/pre-commit
 5. ✅ No hardcoded credentials
 
 **Bypass Protocol:**
+
 - Bypassing hooks requires PR comment explanation
 - Only bypass for emergency hotfixes
 - Must fix in follow-up PR within 24 hours
@@ -1062,9 +1136,11 @@ echo "npx lint-staged" > .husky/pre-commit
 ## 9. TypeScript Strictness Protocol
 
 ### Current State: Level 1 (Basic)
+
 ### Target State: Level 4 (Strict)
 
 **Level 1: Basic (Current)**
+
 ```json
 {
   "compilerOptions": {
@@ -1075,6 +1151,7 @@ echo "npx lint-staged" > .husky/pre-commit
 ```
 
 **Level 2: No Implicit Any (Target: 2 weeks)**
+
 ```json
 {
   "compilerOptions": {
@@ -1083,9 +1160,11 @@ echo "npx lint-staged" > .husky/pre-commit
   }
 }
 ```
+
 Action: Fix all implicit any errors
 
 **Level 3: Null Safety (Target: 4 weeks)**
+
 ```json
 {
   "compilerOptions": {
@@ -1095,9 +1174,11 @@ Action: Fix all implicit any errors
   }
 }
 ```
+
 Action: Add null checks throughout
 
 **Level 4: Full Strict (Target: 8 weeks)**
+
 ```json
 {
   "compilerOptions": {
@@ -1105,9 +1186,11 @@ Action: Add null checks throughout
   }
 }
 ```
+
 Action: Enable all strict flags
 
 **Enforcement:**
+
 - Cannot merge PR that reduces strictness level
 - Each level requires 100% compliance before advancing
 - Track progress in `/docs/typescript-strictness-progress.md`
@@ -1131,46 +1214,56 @@ Action: Enable all strict flags
 ### ESLint Rule
 
 **Add to .eslintrc.json:**
+
 ```json
 {
   "rules": {
-    "no-console": ["warn", {
-      "allow": []
-    }]
+    "no-console": [
+      "warn",
+      {
+        "allow": []
+      }
+    ]
   }
 }
 ```
 
 ### Allowed Exceptions
-- Test files (*.test.ts, *.spec.ts)
-- Build scripts (scripts/*.ts)
+
+- Test files (_.test.ts, _.spec.ts)
+- Build scripts (scripts/\*.ts)
 - Development utilities
 
 ### Log Level Guidelines
 
 **DEBUG:** Development-only information
+
 ```typescript
-logger.debug({ userId, action }, 'User action traced');
+logger.debug({ userId, action }, "User action traced");
 ```
 
 **INFO:** Normal operations, important milestones
+
 ```typescript
-logger.info({ orderId, total }, 'Order created');
+logger.info({ orderId, total }, "Order created");
 ```
 
 **WARN:** Recoverable errors, deprecated usage
+
 ```typescript
-logger.warn({ feature: 'oldApi' }, 'Using deprecated API');
+logger.warn({ feature: "oldApi" }, "Using deprecated API");
 ```
 
 **ERROR:** Errors requiring attention
+
 ```typescript
-logger.error({ err, orderId }, 'Order creation failed');
+logger.error({ err, orderId }, "Order creation failed");
 ```
 
 ### Context Requirements
 
 Always include:
+
 - Relevant IDs (userId, orderId, etc.)
 - Operation context
 - Error objects (as `err` property)
@@ -1183,6 +1276,7 @@ Always include:
 Work is NOT complete until ALL criteria are met.
 
 ### Code Quality
+
 - [ ] Zero TypeScript errors (`pnpm run check`)
 - [ ] Zero ESLint errors
 - [ ] Code formatted with Prettier
@@ -1192,6 +1286,7 @@ Work is NOT complete until ALL criteria are met.
 - [ ] No TODO comments without GitHub issue
 
 ### Testing
+
 - [ ] Unit tests written for new functions
 - [ ] Unit tests pass (`pnpm test`)
 - [ ] Integration tests for new features
@@ -1199,12 +1294,14 @@ Work is NOT complete until ALL criteria are met.
 - [ ] Edge cases considered and tested
 
 ### Documentation
+
 - [ ] Code comments for complex logic
 - [ ] README updated (if public API changed)
 - [ ] Changelog entry added
 - [ ] Type definitions exported (if library code)
 
 ### Security
+
 - [ ] No credentials in code
 - [ ] Input validation added
 - [ ] SQL injection protection verified
@@ -1212,12 +1309,14 @@ Work is NOT complete until ALL criteria are met.
 - [ ] Authentication/authorization checked
 
 ### Performance
+
 - [ ] No N+1 queries
 - [ ] Large datasets handled efficiently
 - [ ] Memory leaks checked
 - [ ] Bundle size impact considered
 
 ### Review
+
 - [ ] Self-review completed
 - [ ] PR description explains changes
 - [ ] Screenshots/video for UI changes
@@ -1225,10 +1324,10 @@ Work is NOT complete until ALL criteria are met.
 - [ ] Migration guide (if needed)
 
 ### Deployment
+
 - [ ] Builds successfully
 - [ ] Database migrations tested
 - [ ] Environment variables documented
 - [ ] Rollback plan documented (if risky)
 
 ---
-
