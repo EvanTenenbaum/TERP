@@ -1,5 +1,6 @@
 import { eq, and, gte, lte, desc, asc, sql, or, like, inArray } from "drizzle-orm";
 import { getDb } from "./db";
+import { ErrorCatalog } from "./_core/errors";
 import {
   invoices,
   invoiceLineItems,
@@ -97,7 +98,7 @@ export async function getInvoices(filters?: {
  */
 export async function getInvoiceById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const invoice = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
 
@@ -122,7 +123,7 @@ export async function createInvoice(
   lineItems: Omit<InsertInvoiceLineItem, "invoiceId">[]
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Insert invoice
   const result = await db.insert(invoices).values(invoiceData);
@@ -145,7 +146,7 @@ export async function createInvoice(
  */
 export async function updateInvoice(id: number, data: Partial<InsertInvoice>) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.update(invoices).set(data).where(eq(invoices.id, id));
 }
@@ -158,7 +159,7 @@ export async function updateInvoiceStatus(
   status: "DRAFT" | "SENT" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.update(invoices).set({ status }).where(eq(invoices.id, id));
 }
@@ -168,7 +169,7 @@ export async function updateInvoiceStatus(
  */
 export async function recordInvoicePayment(invoiceId: number, amount: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const invoice = await db.select().from(invoices).where(eq(invoices.id, invoiceId)).limit(1);
 
@@ -276,7 +277,7 @@ export async function calculateARAging() {
  */
 export async function generateInvoiceNumber(): Promise<string> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
@@ -366,7 +367,7 @@ export async function getBills(filters?: {
  */
 export async function getBillById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const bill = await db.select().from(bills).where(eq(bills.id, id)).limit(1);
 
@@ -391,7 +392,7 @@ export async function createBill(
   lineItems: Omit<InsertBillLineItem, "billId">[]
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Insert bill
   const result = await db.insert(bills).values(billData);
@@ -414,7 +415,7 @@ export async function createBill(
  */
 export async function updateBill(id: number, data: Partial<InsertBill>) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.update(bills).set(data).where(eq(bills.id, id));
 }
@@ -427,7 +428,7 @@ export async function updateBillStatus(
   status: "DRAFT" | "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.update(bills).set({ status }).where(eq(bills.id, id));
 }
@@ -437,7 +438,7 @@ export async function updateBillStatus(
  */
 export async function recordBillPayment(billId: number, amount: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const bill = await db.select().from(bills).where(eq(bills.id, billId)).limit(1);
 
@@ -544,7 +545,7 @@ export async function calculateAPAging() {
  */
 export async function generateBillNumber(): Promise<string> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
@@ -637,7 +638,7 @@ export async function getPayments(filters?: {
  */
 export async function getPaymentById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.select().from(payments).where(eq(payments.id, id)).limit(1);
   return result[0] || null;
@@ -648,7 +649,7 @@ export async function getPaymentById(id: number) {
  */
 export async function createPayment(data: InsertPayment) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(payments).values(data);
   return Number(result[0].insertId);
@@ -659,7 +660,7 @@ export async function createPayment(data: InsertPayment) {
  */
 export async function generatePaymentNumber(type: "RECEIVED" | "SENT"): Promise<string> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
@@ -676,7 +677,7 @@ export async function generatePaymentNumber(type: "RECEIVED" | "SENT"): Promise<
  */
 export async function getPaymentsForInvoice(invoiceId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return db
     .select()
@@ -690,7 +691,7 @@ export async function getPaymentsForInvoice(invoiceId: number) {
  */
 export async function getPaymentsForBill(billId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return db
     .select()

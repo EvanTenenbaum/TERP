@@ -5,6 +5,7 @@
 
 import { eq, and, desc, like, or, sql } from "drizzle-orm";
 import { getDb } from "./db";
+import { ErrorCatalog } from "./_core/errors";
 import {
   clients,
   clientTransactions,
@@ -33,7 +34,7 @@ export async function getClients(options: {
   hasDebt?: boolean;
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const {
     limit = 50,
@@ -113,7 +114,7 @@ export async function getClientCount(options: {
   hasDebt?: boolean;
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const { search, clientTypes, tags, hasDebt } = options;
 
@@ -174,7 +175,7 @@ export async function getClientCount(options: {
  */
 export async function getClientById(clientId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -190,7 +191,7 @@ export async function getClientById(clientId: number) {
  */
 export async function getClientByTeriCode(teriCode: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -218,7 +219,7 @@ export async function createClient(userId: number, data: {
   tags?: string[];
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Check if TERI code already exists
   const existing = await getClientByTeriCode(data.teriCode);
@@ -269,7 +270,7 @@ export async function updateClient(
   }
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const updateData: any = {};
 
@@ -300,7 +301,7 @@ export async function updateClient(
  */
 export async function deleteClient(clientId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.delete(clients).where(eq(clients.id, clientId));
 
@@ -312,7 +313,7 @@ export async function deleteClient(clientId: number) {
  */
 export async function updateClientStats(clientId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Calculate stats from transactions
   const transactions = await db
@@ -381,7 +382,7 @@ export async function getClientTransactions(
   } = {}
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const {
     limit = 50,
@@ -433,7 +434,7 @@ export async function getClientTransactions(
  */
 export async function getTransactionById(transactionId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -463,7 +464,7 @@ export async function createTransaction(
   }
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const txnData: InsertClientTransaction = {
     clientId: data.clientId,
@@ -506,7 +507,7 @@ export async function updateTransaction(
   }
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const updateData: any = {};
 
@@ -547,7 +548,7 @@ export async function recordPayment(
   paymentAmount: number
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const txn = await getTransactionById(transactionId);
   if (!txn) throw new Error("Transaction not found");
@@ -585,7 +586,7 @@ export async function recordPayment(
  */
 export async function deleteTransaction(transactionId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const txn = await getTransactionById(transactionId);
   if (!txn) throw new Error("Transaction not found");
@@ -612,7 +613,7 @@ export async function logActivity(
   metadata: any
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const activityData: InsertClientActivity = {
     clientId,
@@ -631,7 +632,7 @@ export async function logActivity(
  */
 export async function getClientActivity(clientId: number, limit: number = 50) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const activities = await db
     .select({
@@ -661,7 +662,7 @@ export async function getClientActivity(clientId: number, limit: number = 50) {
  */
 export async function getAllTags() {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const allClients = await db.select({ tags: clients.tags }).from(clients);
 
@@ -682,7 +683,7 @@ export async function getAllTags() {
  */
 export async function addTag(clientId: number, userId: number, tag: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const client = await getClientById(clientId);
   if (!client) throw new Error("Client not found");
@@ -710,7 +711,7 @@ export async function addTag(clientId: number, userId: number, tag: string) {
  */
 export async function removeTag(clientId: number, userId: number, tag: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const client = await getClientById(clientId);
   if (!client) throw new Error("Client not found");
@@ -738,7 +739,7 @@ export async function removeTag(clientId: number, userId: number, tag: string) {
  */
 export async function linkNoteToClient(clientId: number, noteId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const linkData: InsertClientNote = {
     clientId,
@@ -755,7 +756,7 @@ export async function linkNoteToClient(clientId: number, noteId: number) {
  */
 export async function getClientNoteId(clientId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -779,7 +780,7 @@ export async function getClientCommunications(
   type?: 'CALL' | 'EMAIL' | 'MEETING' | 'NOTE'
 ) {
   const db = await getDb();
-  if (!db) throw new Error('Database not available');
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   
   const { clientCommunications, users } = await import('../drizzle/schema');
   
@@ -821,7 +822,7 @@ export async function addCommunication(input: {
   loggedBy: number;
 }) {
   const db = await getDb();
-  if (!db) throw new Error('Database not available');
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   
   // Sanitize inputs
   const sanitizedSubject = input.subject.trim().substring(0, 255);

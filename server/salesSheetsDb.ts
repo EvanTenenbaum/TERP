@@ -8,6 +8,7 @@ import {
   type SalesSheetTemplate,
 } from "../drizzle/schema";
 import * as pricingEngine from "./pricingEngine";
+import { ErrorCatalog } from "./_core/errors";
 
 // ============================================================================
 // TYPES
@@ -53,7 +54,7 @@ export async function getInventoryWithPricing(
   options?: { limit?: number; offset?: number }
 ): Promise<PricedInventoryItem[]> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const limit = Math.min(options?.limit || 100, 1000); // Max 1000
   const offset = options?.offset || 0;
@@ -126,7 +127,7 @@ export async function saveSalesSheet(data: {
   createdBy?: number;
 }): Promise<number> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(salesSheetHistory).values({
     clientId: data.clientId,
@@ -144,7 +145,7 @@ export async function getSalesSheetHistory(
   limit: number = 50
 ): Promise<SalesSheetHistory[]> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return await db
     .select()
@@ -158,7 +159,7 @@ export async function getSalesSheetById(
   sheetId: number
 ): Promise<SalesSheetHistory | null> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -171,7 +172,7 @@ export async function getSalesSheetById(
 
 export async function deleteSalesSheet(sheetId: number): Promise<void> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.delete(salesSheetHistory).where(eq(salesSheetHistory.id, sheetId));
 }
@@ -189,7 +190,7 @@ export async function createTemplate(data: {
   createdBy: number;
 }): Promise<number> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(salesSheetTemplates).values({
     name: data.name,
@@ -209,7 +210,7 @@ export async function getTemplates(
   _includeUniversal: boolean = true
 ): Promise<SalesSheetTemplate[]> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   if (!clientId) {
     // Get all templates where clientId is null (universal templates)
@@ -231,7 +232,7 @@ export async function loadTemplate(
   templateId: number
 ): Promise<SalesSheetTemplate | null> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -244,7 +245,7 @@ export async function loadTemplate(
 
 export async function deleteTemplate(templateId: number): Promise<void> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db
     .delete(salesSheetTemplates)

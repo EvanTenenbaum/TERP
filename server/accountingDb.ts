@@ -1,5 +1,6 @@
 import { eq, and, gte, lte, desc, asc, sql, or, like } from "drizzle-orm";
 import { getDb } from "./db";
+import { ErrorCatalog } from "./_core/errors";
 import {
   accounts,
   ledgerEntries,
@@ -25,7 +26,7 @@ export async function getAccounts(filters?: {
   parentAccountId?: number | null;
 }) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   let query = db.select().from(accounts);
 
@@ -56,7 +57,7 @@ export async function getAccounts(filters?: {
  */
 export async function getAccountById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.select().from(accounts).where(eq(accounts.id, id)).limit(1);
   return result[0] || null;
@@ -67,7 +68,7 @@ export async function getAccountById(id: number) {
  */
 export async function getAccountByNumber(accountNumber: string) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -82,7 +83,7 @@ export async function getAccountByNumber(accountNumber: string) {
  */
 export async function createAccount(data: InsertAccount) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(accounts).values(data);
   return result;
@@ -93,7 +94,7 @@ export async function createAccount(data: InsertAccount) {
  */
 export async function updateAccount(id: number, data: Partial<InsertAccount>) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.update(accounts).set(data).where(eq(accounts.id, id));
 }
@@ -139,7 +140,7 @@ export async function getAccountBalance(accountId: number, asOfDate: Date) {
  */
 export async function getChartOfAccounts() {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const allAccounts = await db
     .select()
@@ -254,7 +255,7 @@ export async function getLedgerEntries(filters?: {
  */
 export async function getLedgerEntryById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.select().from(ledgerEntries).where(eq(ledgerEntries.id, id)).limit(1);
   return result[0] || null;
@@ -265,7 +266,7 @@ export async function getLedgerEntryById(id: number) {
  */
 export async function createLedgerEntry(data: InsertLedgerEntry) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(ledgerEntries).values(data);
   return result;
@@ -287,7 +288,7 @@ export async function postJournalEntry(params: {
   createdBy: number;
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Use transaction to ensure debit and credit are created atomically
   return await db.transaction(async (tx) => {
@@ -342,7 +343,7 @@ export async function postJournalEntry(params: {
  */
 async function generateEntryNumber(): Promise<string> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
@@ -379,7 +380,7 @@ export async function validateJournalBalance(entryNumber: string): Promise<boole
  */
 export async function getTrialBalance(fiscalPeriodId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select({
@@ -423,7 +424,7 @@ export async function getFiscalPeriods(filters?: {
   status?: "OPEN" | "CLOSED" | "LOCKED";
 }) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   let query = db.select().from(fiscalPeriods);
 
@@ -447,7 +448,7 @@ export async function getFiscalPeriods(filters?: {
  */
 export async function getFiscalPeriodById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -462,7 +463,7 @@ export async function getFiscalPeriodById(id: number) {
  */
 export async function getCurrentFiscalPeriod() {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -486,7 +487,7 @@ export async function getCurrentFiscalPeriod() {
  */
 export async function createFiscalPeriod(data: InsertFiscalPeriod) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(fiscalPeriods).values(data);
   return result;
@@ -497,7 +498,7 @@ export async function createFiscalPeriod(data: InsertFiscalPeriod) {
  */
 export async function closeFiscalPeriod(id: number, closedBy: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db
     .update(fiscalPeriods)
@@ -514,7 +515,7 @@ export async function closeFiscalPeriod(id: number, closedBy: number) {
  */
 export async function lockFiscalPeriod(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db
     .update(fiscalPeriods)
@@ -529,7 +530,7 @@ export async function lockFiscalPeriod(id: number) {
  */
 export async function reopenFiscalPeriod(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db
     .update(fiscalPeriods)
