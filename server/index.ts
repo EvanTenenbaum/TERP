@@ -4,16 +4,24 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { runAutoMigrations } from "./autoMigrate.js";
 import { logger } from "./_core/logger";
+import { initMonitoring } from "./_core/monitoring";
+import { requestLogger } from "./_core/requestLogger";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function startServer() {
+  // Initialize monitoring (Sentry)
+  initMonitoring();
+
   // Run auto-migrations on startup
   await runAutoMigrations();
 
   const app = express();
   const server = createServer(app);
+
+  // Request logging middleware (must be early in the chain)
+  app.use(requestLogger);
 
   // Serve static files from dist/public in production
   const staticPath =
