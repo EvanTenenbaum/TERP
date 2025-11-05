@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Plus, Loader2, Package, TrendingUp } from "lucide-react";
+import { Search, Plus, Loader2, Package } from "lucide-react";
 import { DataCardSection } from "@/components/data-cards";
 
 /**
@@ -32,8 +32,8 @@ export default function VendorSupplyPage() {
   };
   
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | null>(getInitialStatusFilter);
-  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [statusFilter, _setStatusFilter] = useState<string | null>(getInitialStatusFilter);
+  const [editingItem, setEditingItem] = useState<Record<string, unknown> | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
@@ -43,7 +43,7 @@ export default function VendorSupplyPage() {
   const supplyItems = supplyData?.data || [];
 
   // Filter supply items based on search and status
-  const filteredItems = supplyItems.filter((item: any) => {
+  const filteredItems = supplyItems.filter((item: Record<string, unknown>) => {
     const matchesSearch =
       !searchQuery ||
       item.strain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,7 +56,7 @@ export default function VendorSupplyPage() {
   });
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, string> = {
       AVAILABLE: "default",
       RESERVED: "secondary",
       SOLD: "outline",
@@ -65,19 +65,20 @@ export default function VendorSupplyPage() {
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
-  const handleEditItem = (item: any) => {
+  const handleEditItem = (item: Record<string, unknown>) => {
     setEditingItem(item);
     setEditDialogOpen(true);
   };
 
-  const handleFindMatchingClients = (item: any) => {
+  const handleFindMatchingClients = (item: Record<string, unknown>) => {
     // TODO: Implement matching logic
     // This would typically:
     // 1. Analyze the supply item (strain, category, grade, price)
     // 2. Find clients with matching needs
     // 3. Show a dialog or navigate to a matching page
     console.log("Finding matching clients for:", item);
-    alert(`Finding clients interested in ${item.strain || item.category}...\n\nThis feature will show clients with matching needs and preferences.`);
+     
+    window.alert(`Finding clients interested in ${(item.strain as string) || (item.category as string)}...\n\nThis feature will show clients with matching needs and preferences.`);
   };
 
   return (
@@ -148,7 +149,7 @@ export default function VendorSupplyPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filteredItems.map((item: any) => (
+          {filteredItems.map((item: Record<string, unknown>) => (
             <Card key={item.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">

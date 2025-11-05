@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Info, Save } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export function CogsGlobalSettings() {
-  const { toast } = useToast();
   
   // Toggle states
   const [autoCalculate, setAutoCalculate] = useState(true);
@@ -53,16 +52,13 @@ export function CogsGlobalSettings() {
       
       console.log("Saving COGS settings:", settings);
       
-      toast({
-        title: "Settings saved",
+      toast.success("Settings saved", {
         description: "Your COGS settings have been updated successfully.",
       });
     } catch (error) {
       console.error("Error saving COGS settings:", error);
-      toast({
-        title: "Error saving settings",
+      toast.error("Error saving settings", {
         description: "Failed to save COGS settings. Please try again.",
-        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
