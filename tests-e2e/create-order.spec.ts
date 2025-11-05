@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { argosScreenshot } from '@argos-ci/playwright';
 import { checkAccessibility } from './utils/accessibility';
 
 test.describe('Order Creation Flow', () => {
@@ -37,7 +38,7 @@ test.describe('Order Creation Flow', () => {
     expect(total).toMatch(/\$[\d,]+\.\d{2}/);
 
     // Take screenshot before submission
-    await expect(page).toHaveScreenshot('order-form-filled.png');
+    await argosScreenshot(page, 'order-form-filled');
 
     // Submit order
     await page.getByRole('button', { name: 'Create Order' }).click();
