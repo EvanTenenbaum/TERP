@@ -14,6 +14,9 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:env:up": "docker-compose -f testing/docker-compose.yml up -d",
+    "test:env:down": "docker-compose -f testing/docker-compose.yml down",
+    "db:reset:test": "tsx testing/db-util.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "seed:realistic": "tsx scripts/seed-realistic-main.ts",
     "prepare": "husky install || true"
@@ -110,6 +113,7 @@
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
     "@eslint/js": "^9.38.0",
+    "@faker-js/faker": "^10.1.0",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.1.3",

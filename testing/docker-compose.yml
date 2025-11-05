@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  terp-test-db:
+    image: mysql:8.0
+    container_name: terp-test-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: terp-test
+    ports:
+      - '3307:3306' # Expose test DB on a different port to avoid conflicts
+    volumes:
+      - terp-test-db-data:/var/lib/mysql
+
+volumes:
+  terp-test-db-data:

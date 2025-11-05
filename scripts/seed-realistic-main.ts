@@ -157,6 +157,11 @@ async function seedRealisticData() {
     // Note: Returns and refunds tables need to be added to schema
     // await db.insert(returns).values(returnsData);
     // await db.insert(refunds).values(refundsData);
+
+    // Step 9: Calculate and update computed fields
+    console.log("📊 Calculating computed fields...");
+    await db.execute("node --loader ts-node/esm ./scripts/post-seed-calculations.ts");
+    console.log("   ✓ Computed fields updated\n");
     
     // Summary
     console.log('✅ Realistic data generation complete!\n');

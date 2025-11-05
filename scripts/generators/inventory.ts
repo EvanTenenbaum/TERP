@@ -2,6 +2,7 @@
  * Inventory generation (lots and batches with consignment tracking)
  */
 
+import { faker } from '@faker-js/faker';
 import { CONFIG } from './config.js';
 import { randomInRange, addVariance } from './utils.js';
 
@@ -63,7 +64,8 @@ export function generateLots(vendorIds: number[]): LotData[] {
       code: `LOT-${String(i + 1).padStart(5, '0')}`,
       vendorId,
       date: lotDate,
-      notes: null,
+      notes: faker.lorem.sentence(),
+      expirationDate: new Date(lotDate.getTime() + 365 * 24 * 60 * 60 * 1000), // 1 year expiration
       createdAt: lotDate,
     });
   }
