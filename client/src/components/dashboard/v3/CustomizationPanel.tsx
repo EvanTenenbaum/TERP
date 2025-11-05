@@ -134,6 +134,19 @@ export function CustomizationPanel() {
             </div>
           </div>
         </ScrollArea>
+
+        {/* Footer with Save Button */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background">
+          <Button
+            className="w-full"
+            onClick={() => {
+              // Changes are auto-saved via context, just close the panel
+              setIsCustomizing(false);
+            }}
+          >
+            Save Preferences
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );
