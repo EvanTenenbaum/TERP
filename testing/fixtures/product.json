@@ -1,0 +1,13 @@
+{
+  "id": 1,
+  "strainId": 1,
+  "brandId": 1,
+  "name": "Blue Dream - Indoor - 1lb",
+  "category": "Flower",
+  "subcategory": "Indoor",
+  "description": "Premium indoor Blue Dream, known for its balanced effects and sweet berry aroma",
+  "unitSize": "1lb",
+  "unitPrice": 1800.00,
+  "sku": "BD-IND-1LB",
+  "createdAt": "2023-11-01T00:00:00.000Z"
+}

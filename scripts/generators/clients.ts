@@ -2,15 +2,21 @@
  * Client generation (buyers and vendors)
  */
 
+import { faker } from '@faker-js/faker';
 import { CONFIG } from './config.js';
-import { generateCompanyName, generatePersonName, randomInRange } from './utils.js';
+import { generateCompanyName, randomInRange, randomChoice } from './utils.js';
 
 export interface ClientData {
   id?: number;
   teriCode: string;
   name: string;
+  email: string;
+  phone: string;
+  address: string;
   isBuyer: number;
   isSeller: number;
+  isBrand: number;
+  tags: string;
   paymentTerms: string;
   creditLimit: string;
   notes: string | null;
@@ -24,15 +30,21 @@ export function generateWhaleClients(): ClientData[] {
   const whales: ClientData[] = [];
   
   for (let i = 0; i < CONFIG.whaleClients; i++) {
+    const companyName = generateCompanyName(i);
     whales.push({
-      teriCode: `WHL${String(i + 1).padStart(4, '0')}`, // WHL0001, WHL0002, etc.
-      name: generateCompanyName(i),
+      teriCode: `WHL${String(i + 1).padStart(4, '0')}`,
+      name: companyName,
+      email: faker.internet.email({ firstName: 'contact', lastName: companyName.split(' ')[0].toLowerCase(), provider: 'example.com' }),
+      phone: faker.phone.number(),
+      address: faker.location.streetAddress({ useFullAddress: true }),
       isBuyer: 1,
       isSeller: 0,
-      paymentTerms: i < 5 ? 'NET_30' : 'NET_15', // Top whales get NET_30
-      creditLimit: String(randomInRange(500000, 1000000)), // $500K-$1M credit
+      isBrand: randomInRange(0, 1) < 0.1 ? 1 : 0, // 10% of whales are also brands
+      tags: JSON.stringify(['wholesale', 'high-volume', 'cannabis']),
+      paymentTerms: i < 5 ? 'NET_30' : 'NET_15',
+      creditLimit: String(randomInRange(500000, 1000000)),
       notes: `Whale client - ${Math.floor((CONFIG.whaleRevenuePercent / CONFIG.whaleClients) * 100)}% of revenue`,
-      createdAt: new Date(2023, 11, 1 + i), // Created in Dec 2023
+      createdAt: new Date(2023, 11, 1 + i),
     });
   }
   
@@ -46,15 +58,21 @@ export function generateRegularClients(): ClientData[] {
   const regular: ClientData[] = [];
   
   for (let i = 0; i < CONFIG.regularClients; i++) {
+    const companyName = generateCompanyName(CONFIG.whaleClients + i);
     regular.push({
-      teriCode: `REG${String(i + 1).padStart(4, '0')}`, // REG0001, REG0002, etc.
-      name: generateCompanyName(CONFIG.whaleClients + i),
+      teriCode: `REG${String(i + 1).padStart(4, '0')}`,
+      name: companyName,
+      email: faker.internet.email({ firstName: 'contact', lastName: companyName.split(' ')[0].toLowerCase(), provider: 'example.com' }),
+      phone: faker.phone.number(),
+      address: faker.location.streetAddress({ useFullAddress: true }),
       isBuyer: 1,
       isSeller: 0,
+      isBrand: 0,
+      tags: JSON.stringify(['retail', 'cannabis']),
       paymentTerms: i % 3 === 0 ? 'NET_30' : i % 3 === 1 ? 'NET_15' : 'NET_7',
-      creditLimit: String(randomInRange(50000, 200000)), // $50K-$200K credit
+      creditLimit: String(randomInRange(50000, 200000)),
       notes: null,
-      createdAt: new Date(2023, 11, 1 + Math.floor(i / 5)), // Staggered creation
+      createdAt: new Date(2023, 11, 1 + Math.floor(i / 5)),
     });
   }
   
@@ -79,15 +97,21 @@ export function generateVendorClients(): ClientData[] {
   ];
   
   for (let i = 0; i < CONFIG.totalVendors; i++) {
+    const companyName = vendorNames[i];
     vendors.push({
-      teriCode: `VND${String(i + 1).padStart(4, '0')}`, // VND0001, VND0002, etc.
-      name: vendorNames[i],
+      teriCode: `VND${String(i + 1).padStart(4, '0')}`,
+      name: companyName,
+      email: faker.internet.email({ firstName: 'sales', lastName: companyName.split(' ')[0].toLowerCase(), provider: 'example.com' }),
+      phone: faker.phone.number(),
+      address: faker.location.streetAddress({ useFullAddress: true }),
       isBuyer: 0,
       isSeller: 1,
-      paymentTerms: 'CONSIGNMENT', // Most vendors are consignment
-      creditLimit: '0', // Vendors don't need credit
+      isBrand: 0,
+      tags: JSON.stringify(['vendor', 'supplier', 'cultivator']),
+      paymentTerms: 'CONSIGNMENT',
+      creditLimit: '0',
       notes: `Vendor - supplies ${Math.floor(100 / CONFIG.totalVendors)}% of inventory`,
-      createdAt: new Date(2023, 10, 15 + i), // Created in Nov 2023
+      createdAt: new Date(2023, 10, 15 + i),
     });
   }
   
@@ -104,4 +128,3 @@ export function generateAllClients(): ClientData[] {
   
   return [...whales, ...regular, ...vendors];
 }
-

@@ -1,0 +1,26 @@
+{
+  "id": 1,
+  "clientId": 1,
+  "orderNumber": "ORD-2024-0001",
+  "orderDate": "2024-01-05T00:00:00.000Z",
+  "status": "completed",
+  "totalAmount": 5400.00,
+  "items": [
+    {
+      "productId": 1,
+      "productName": "Blue Dream - Indoor - 1lb",
+      "quantity": 2,
+      "unitPrice": 1800.00,
+      "totalPrice": 3600.00
+    },
+    {
+      "productId": 2,
+      "productName": "OG Kush - Greenhouse - 1lb",
+      "quantity": 1.5,
+      "unitPrice": 1200.00,
+      "totalPrice": 1800.00
+    }
+  ],
+  "createdAt": "2024-01-05T00:00:00.000Z",
+  "notes": "Standard order for whale client"
+}
