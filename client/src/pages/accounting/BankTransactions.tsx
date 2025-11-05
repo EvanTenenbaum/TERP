@@ -98,7 +98,10 @@ export default function BankTransactions() {
             View and reconcile bank transactions
           </p>
         </div>
-        <Button>
+        <Button onClick={() => {
+          // TODO: Open new transaction dialog
+          console.log('Opening new transaction dialog');
+        }}>
           <Plus className="mr-2 h-4 w-4" />
           New Transaction
         </Button>
