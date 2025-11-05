@@ -55,7 +55,10 @@ export default function BankAccounts() {
             Manage bank accounts and cash balances
           </p>
         </div>
-        <Button>
+        <Button onClick={() => {
+          // TODO: Open new account dialog
+          console.log('Opening new account dialog');
+        }}>
           <Plus className="mr-2 h-4 w-4" />
           New Account
         </Button>
