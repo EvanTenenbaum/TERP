@@ -18,7 +18,12 @@
     "test:env:down": "docker-compose -f testing/docker-compose.yml down",
     "db:reset:test": "tsx testing/db-util.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "seed:realistic": "tsx scripts/seed-realistic-main.ts",
+    "seed": "tsx scripts/seed-realistic-main.ts",
+    "seed:light": "tsx scripts/seed-realistic-main.ts light",
+    "seed:full": "tsx scripts/seed-realistic-main.ts full",
+    "seed:edge": "tsx scripts/seed-realistic-main.ts edgeCases",
+    "seed:chaos": "tsx scripts/seed-realistic-main.ts chaos",
+    "seed:realistic": "tsx scripts/seed-realistic-main.ts full",
     "prepare": "husky install || true"
   },
   "dependencies": {
