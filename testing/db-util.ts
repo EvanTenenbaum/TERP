@@ -1,46 +1,165 @@
+/**
+ * Database Utility for Testing
+ * 
+ * Provides functions to manage the test database lifecycle:
+ * - Start/stop Docker test database
+ * - Reset database (drop, recreate, migrate, seed)
+ * - Run migrations
+ * - Seed with different scenarios
+ */
+
 import { execSync } from 'child_process';
 import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
-import { seedRealisticData } from '../scripts/seed-realistic-main';
 
-const connection = await mysql.createConnection({
+const TEST_DB_CONFIG = {
   host: '127.0.0.1',
   port: 3307,
   user: 'root',
   password: 'rootpassword',
   database: 'terp-test',
-});
+};
 
-const db = drizzle(connection);
-
-async function resetDatabase(scenario: string = 'light') {
-  console.log('🚀 Resetting test database...');
-
-  // 1. Drop and recreate the database
-  console.log('   - Dropping and recreating database...');
-  await connection.execute('DROP DATABASE IF EXISTS `terp-test`;');
-  await connection.execute('CREATE DATABASE `terp-test`;');
-  await connection.changeUser({ database: 'terp-test' });
-
-  // 2. Run migrations
-  console.log('   - Running migrations...');
-  execSync('pnpm drizzle-kit push:mysql', { stdio: 'inherit' });
-
-  // 3. Seed data
-  console.log(`   - Seeding data with scenario: ${scenario}...`);
-  // @ts-ignore
-  await seedRealisticData({ scenario });
-
-  console.log('✅ Test database reset complete!');
+/**
+ * Start the test database using Docker Compose
+ */
+export function startTestDatabase() {
+  console.log('🚀 Starting test database...');
+  try {
+    execSync('docker-compose -f testing/docker-compose.yml up -d', { stdio: 'inherit' });
+    console.log('✅ Test database started successfully');
+    
+    // Wait for database to be ready
+    console.log('⏳ Waiting for database to be ready...');
+    execSync('sleep 5'); // Give MySQL time to initialize
+    console.log('✅ Database is ready');
+  } catch (error) {
+    console.error('❌ Failed to start test database:', error);
+    throw error;
+  }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const scenario = process.argv[2] || 'light';
-  resetDatabase(scenario)
-    .then(() => process.exit(0))
-    .catch((err) => {
-      console.error('❌ Database reset failed:', err);
-      process.exit(1);
+/**
+ * Stop the test database using Docker Compose
+ */
+export function stopTestDatabase() {
+  console.log('🛑 Stopping test database...');
+  try {
+    execSync('docker-compose -f testing/docker-compose.yml down', { stdio: 'inherit' });
+    console.log('✅ Test database stopped successfully');
+  } catch (error) {
+    console.error('❌ Failed to stop test database:', error);
+    throw error;
+  }
+}
+
+/**
+ * Run database migrations using Drizzle
+ */
+export function runMigrations() {
+  console.log('📦 Running database migrations...');
+  try {
+    execSync('pnpm drizzle-kit push:mysql', { stdio: 'inherit' });
+    console.log('✅ Migrations completed successfully');
+  } catch (error) {
+    console.error('❌ Failed to run migrations:', error);
+    throw error;
+  }
+}
+
+/**
+ * Seed the database with a specific scenario
+ */
+export function seedDatabase(scenario: string = 'light') {
+  console.log(`🌱 Seeding database with scenario: ${scenario}...`);
+  try {
+    execSync(`pnpm seed:${scenario}`, { stdio: 'inherit' });
+    console.log('✅ Database seeded successfully');
+  } catch (error) {
+    console.error('❌ Failed to seed database:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reset the test database (drop, recreate, migrate, seed)
+ */
+export async function resetTestDatabase(scenario: string = 'light') {
+  console.log('\n🔄 Resetting test database...');
+  console.log('='.repeat(50));
+  
+  try {
+    // Connect to MySQL server (not specific database)
+    const connection = await mysql.createConnection({
+      host: TEST_DB_CONFIG.host,
+      port: TEST_DB_CONFIG.port,
+      user: TEST_DB_CONFIG.user,
+      password: TEST_DB_CONFIG.password,
     });
+
+    // 1. Drop and recreate the database
+    console.log('📊 Step 1: Dropping and recreating database...');
+    await connection.execute('DROP DATABASE IF EXISTS `terp-test`;');
+    await connection.execute('CREATE DATABASE `terp-test`;');
+    console.log('   ✓ Database recreated');
+
+    await connection.end();
+
+    // 2. Run migrations
+    console.log('\n📦 Step 2: Running migrations...');
+    runMigrations();
+
+    // 3. Seed data
+    console.log(`\n🌱 Step 3: Seeding data with scenario: ${scenario}...`);
+    seedDatabase(scenario);
+
+    console.log('\n' + '='.repeat(50));
+    console.log('✅ Test database reset complete!');
+    console.log('='.repeat(50) + '\n');
+  } catch (error) {
+    console.error('\n❌ Database reset failed:', error);
+    throw error;
+  }
+}
+
+// CLI interface - run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const command = process.argv[2];
+  const scenario = process.argv[3] || 'light';
+
+  (async () => {
+    try {
+      switch (command) {
+        case 'start':
+          startTestDatabase();
+          break;
+        case 'stop':
+          stopTestDatabase();
+          break;
+        case 'reset':
+          await resetTestDatabase(scenario);
+          break;
+        case 'migrate':
+          runMigrations();
+          break;
+        case 'seed':
+          seedDatabase(scenario);
+          break;
+        default:
+          console.log('Usage: tsx testing/db-util.ts <command> [scenario]');
+          console.log('Commands:');
+          console.log('  start         - Start test database');
+          console.log('  stop          - Stop test database');
+          console.log('  reset [scenario] - Reset database (default: light)');
+          console.log('  migrate       - Run migrations');
+          console.log('  seed [scenario]  - Seed database (default: light)');
+          console.log('\nScenarios: light, full, edge, chaos');
+          process.exit(1);
+      }
+      process.exit(0);
+    } catch (error) {
+      console.error('❌ Command failed:', error);
+      process.exit(1);
+    }
+  })();
 }
