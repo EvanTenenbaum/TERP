@@ -208,7 +208,15 @@ export function AccountsReceivable({ clientId, config }: AccountsReceivableProps
                 {/* Actions */}
                 {config.featuresConfig?.ar?.allowPdfDownload && (
                   <div className="pt-2">
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => {
+                        // TODO: Implement PDF download
+                        window.open(`/api/vip-portal/invoices/${invoice.id}/download`, '_blank');
+                      }}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Download Invoice
                     </Button>
