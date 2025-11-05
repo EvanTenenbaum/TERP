@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - UI Broken Elements (2025-11-05)
+
+- **Fixed 3 broken toggle switches** in COGS Global Settings that prevented users from configuring COGS behavior
+- **Added edit dialog and handlers** in COGS Client Settings for managing client-specific COGS adjustments
+- **Fixed delete subcategory button** in Settings page that was non-functional
+- **Added edit and find matching clients handlers** in Vendor Supply page
+- **Improved accessibility** with proper aria-labels and htmlFor attributes on all fixed elements
+- **Added comprehensive error handling** with user-friendly toast notifications for all actions
+- **Fixed TypeScript types** to eliminate any types and improve type safety
+- **Resolved ESLint warnings** in all modified files
+
 ### Added - Client Module Workflow Improvements (2025-11-04)
 
 - **Enhanced Search**: Multi-field fuzzy search across TERI code, name, email, phone, and address.
