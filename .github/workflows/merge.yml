@@ -48,7 +48,7 @@ jobs:
           cache: 'pnpm'
       
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
       
       - name: Run database migrations
         run: pnpm db:push
@@ -104,7 +104,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.name,
                 commit_sha: context.sha,
-                body: `✅ Tests completed!\n\n📸 [View visual changes in Argos](${argosUrl} )`
+                body: `✅ Tests completed!\n\n📸 [View visual changes in Argos](${argosUrl})`
               });
             } catch (error) {
               console.log('Could not post comment:', error.message);
