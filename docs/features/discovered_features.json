@@ -1,0 +1,329 @@
+[
+  {
+    "id": "DF-001",
+    "name": "Calendar & Event Management System",
+    "category": "Collaboration & Scheduling",
+    "status": "Fully Implemented",
+    "tables": [
+      "calendar_events",
+      "calendar_recurrence_rules",
+      "calendar_recurrence_instances",
+      "calendar_event_participants",
+      "calendar_reminders",
+      "calendar_event_history",
+      "calendar_event_attachments",
+      "calendar_views",
+      "calendar_event_permissions"
+    ],
+    "routers": [
+      "calendar",
+      "calendarFinancials",
+      "calendarMeetings",
+      "calendarParticipants",
+      "calendarRecurrence",
+      "calendarReminders",
+      "calendarViews"
+    ],
+    "pages": [
+      "CalendarPage"
+    ],
+    "description": "Complete calendar system with events, recurrence rules, participants, reminders, attachments, permissions, and meeting history tracking.",
+    "business_value": "High - Enables scheduling, meeting management, and client interaction tracking",
+    "complexity": "Very High",
+    "estimated_original_effort": "200+ hours"
+  },
+  {
+    "id": "DF-002",
+    "name": "Task Management & Todo Lists",
+    "category": "Project Management",
+    "status": "Fully Implemented",
+    "tables": [
+      "Inferred from routers"
+    ],
+    "routers": [
+      "todoActivity",
+      "todoLists",
+      "todoTasks"
+    ],
+    "pages": [
+      "TodoListDetailPage",
+      "TodoListsPage"
+    ],
+    "description": "Complete task management system with todo lists, tasks, and activity tracking.",
+    "business_value": "High - Enables team coordination and task tracking",
+    "complexity": "High",
+    "estimated_original_effort": "80-120 hours"
+  },
+  {
+    "id": "DF-003",
+    "name": "Advanced Accounting Module",
+    "category": "Financial Management",
+    "status": "Fully Implemented",
+    "tables": [
+      "invoices",
+      "invoiceLineItems",
+      "bills",
+      "billLineItems",
+      "payments",
+      "bankAccounts",
+      "bankTransactions",
+      "expenseCategories",
+      "expenses"
+    ],
+    "routers": [
+      "accounting",
+      "accountingHooks"
+    ],
+    "pages": [
+      "Inferred from routers"
+    ],
+    "description": "Comprehensive accounting system with invoices, bills, payments, bank account reconciliation, and expense tracking. Goes far beyond basic GL.",
+    "business_value": "Critical - Core financial operations",
+    "complexity": "Very High",
+    "estimated_original_effort": "160-200 hours"
+  },
+  {
+    "id": "DF-004",
+    "name": "Freeform Notes & Commenting System",
+    "category": "Collaboration",
+    "status": "Fully Implemented",
+    "tables": [
+      "scratch_pad_notes",
+      "freeform_notes",
+      "note_comments",
+      "note_activity"
+    ],
+    "routers": [
+      "comments",
+      "freeformNotes"
+    ],
+    "pages": [
+      "Inferred from routers"
+    ],
+    "description": "Complete note-taking system with freeform notes, comments, and activity tracking.",
+    "business_value": "Medium - Enhances collaboration and documentation",
+    "complexity": "Medium",
+    "estimated_original_effort": "40-60 hours"
+  },
+  {
+    "id": "DF-005",
+    "name": "VIP Customer Portal",
+    "category": "Customer Experience",
+    "status": "Fully Implemented",
+    "tables": [
+      "Inferred from routers"
+    ],
+    "routers": [
+      "vipPortal",
+      "vipPortalAdmin"
+    ],
+    "pages": [
+      "VIPPortalConfigPage"
+    ],
+    "description": "Customer-facing portal system for VIP clients with admin configuration.",
+    "business_value": "High - Enables self-service for premium customers",
+    "complexity": "High",
+    "estimated_original_effort": "80-120 hours"
+  },
+  {
+    "id": "DF-006",
+    "name": "Client Needs Management (CRM)",
+    "category": "Customer Relationship Management",
+    "status": "Fully Implemented",
+    "tables": [
+      "Inferred from routers"
+    ],
+    "routers": [
+      "clientNeeds",
+      "clientNeedsEnhanced"
+    ],
+    "pages": [
+      "NeedsManagementPage"
+    ],
+    "description": "CRM-like system for tracking and managing client needs and requirements.",
+    "business_value": "High - Improves customer service and sales",
+    "complexity": "High",
+    "estimated_original_effort": "80-100 hours"
+  },
+  {
+    "id": "DF-007",
+    "name": "Intelligent Product-Client Matchmaking",
+    "category": "Sales Intelligence",
+    "status": "Fully Implemented",
+    "tables": [
+      "Inferred from routers"
+    ],
+    "routers": [
+      "matching",
+      "matchingEnhanced"
+    ],
+    "pages": [
+      "MatchmakingServicePage"
+    ],
+    "description": "Intelligent matching system to connect products with client needs.",
+    "business_value": "Very High - Drives sales through intelligent recommendations",
+    "complexity": "Very High",
+    "estimated_original_effort": "120-160 hours"
+  },
+  {
+    "id": "DF-008",
+    "name": "Advanced Pricing Profiles & Rules",
+    "category": "Pricing Management",
+    "status": "Fully Implemented",
+    "tables": [
+      "pricing_profiles"
+    ],
+    "routers": [
+      "pricing",
+      "pricingDefaults"
+    ],
+    "pages": [
+      "PricingProfilesPage",
+      "PricingRulesPage"
+    ],
+    "description": "Sophisticated pricing system with profiles and configurable rules.",
+    "business_value": "High - Enables dynamic pricing strategies",
+    "complexity": "High",
+    "estimated_original_effort": "80-120 hours"
+  },
+  {
+    "id": "DF-009",
+    "name": "Inbox & Notification Center",
+    "category": "Communication",
+    "status": "Fully Implemented",
+    "tables": [
+      "Inferred from routers"
+    ],
+    "routers": [
+      "inbox"
+    ],
+    "pages": [
+      "InboxPage"
+    ],
+    "description": "Centralized inbox for system notifications and messages.",
+    "business_value": "Medium - Improves user awareness and engagement",
+    "complexity": "Medium",
+    "estimated_original_effort": "40-60 hours"
+  },
+  {
+    "id": "DF-010",
+    "name": "Product Intake Management",
+    "category": "Inventory Operations",
+    "status": "Fully Implemented",
+    "tables": [
+      "Inferred from routers"
+    ],
+    "routers": [
+      "productIntake"
+    ],
+    "pages": [
+      "Inferred from routers"
+    ],
+    "description": "System for managing product intake sessions and batch processing.",
+    "business_value": "High - Streamlines receiving operations",
+    "complexity": "High",
+    "estimated_original_effort": "80-100 hours"
+  },
+  {
+    "id": "DF-011",
+    "name": "Scratch Pad / Quick Notes",
+    "category": "Productivity",
+    "status": "Fully Implemented",
+    "tables": [
+      "scratch_pad_notes"
+    ],
+    "routers": [
+      "scratchPad"
+    ],
+    "pages": [
+      "Inferred from routers"
+    ],
+    "description": "Quick note-taking scratch pad for temporary notes and ideas.",
+    "business_value": "Low - Convenience feature",
+    "complexity": "Low",
+    "estimated_original_effort": "16-24 hours"
+  },
+  {
+    "id": "DF-012",
+    "name": "Advanced Dashboard System",
+    "category": "Analytics & Reporting",
+    "status": "Fully Implemented",
+    "tables": [
+      "userDashboardPreferences",
+      "dashboard_widget_layouts",
+      "dashboard_kpi_configs"
+    ],
+    "routers": [
+      "dashboard",
+      "dashboardEnhanced",
+      "dashboardPreferences"
+    ],
+    "pages": [
+      "DashboardV3"
+    ],
+    "description": "Advanced dashboard with customizable widgets, layouts, KPI configs, and enhanced analytics.",
+    "business_value": "High - Provides business intelligence",
+    "complexity": "Very High",
+    "estimated_original_effort": "120-160 hours"
+  },
+  {
+    "id": "DF-013",
+    "name": "Multi-Location & Bin Tracking",
+    "category": "Inventory Management",
+    "status": "Partially Implemented",
+    "tables": [
+      "batchLocations",
+      "locations"
+    ],
+    "routers": [
+      "inventory",
+      "inventoryMovements"
+    ],
+    "pages": [
+      "Inventory"
+    ],
+    "description": "Foundation for multi-location warehouse management and bin-level tracking. User notes this needs enhancement for formal intake labeling system.",
+    "business_value": "High - Critical for warehouse operations",
+    "complexity": "High",
+    "estimated_original_effort": "60-80 hours (for foundation)"
+  },
+  {
+    "id": "DF-014",
+    "name": "Customer Credit Management",
+    "category": "Financial Management",
+    "status": "Fully Implemented",
+    "tables": [
+      "credit_system_settings"
+    ],
+    "routers": [
+      "credit",
+      "credits"
+    ],
+    "pages": [
+      "CreditSettingsPage"
+    ],
+    "description": "Complete credit management system with settings and configurations.",
+    "business_value": "High - Enables credit-based sales",
+    "complexity": "High",
+    "estimated_original_effort": "80-100 hours"
+  },
+  {
+    "id": "DF-015",
+    "name": "Sample Management System",
+    "category": "Sales Operations",
+    "status": "Fully Implemented",
+    "tables": [
+      "Inferred from routers"
+    ],
+    "routers": [
+      "samples"
+    ],
+    "pages": [
+      "Inferred from routers"
+    ],
+    "description": "System for managing product samples, requests, and distribution.",
+    "business_value": "Medium - Supports sales process",
+    "complexity": "Medium",
+    "estimated_original_effort": "60-80 hours"
+  }
+]
