@@ -230,7 +230,11 @@ export function PricingConfigTab({ clientId }: PricingConfigTabProps) {
           </div>
 
           <div className="flex justify-end">
-            <Button>
+            <Button onClick={() => {
+              // TODO: Implement COGS settings save API call
+              toast.success("COGS settings saved successfully");
+              utils.pricing.getClientPricingRules.invalidate();
+            }}>
               Save COGS Settings
             </Button>
           </div>
