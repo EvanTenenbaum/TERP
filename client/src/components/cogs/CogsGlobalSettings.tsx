@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -6,8 +7,68 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Info, Save } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 export function CogsGlobalSettings() {
+  const { toast } = useToast();
+  
+  // Toggle states
+  const [autoCalculate, setAutoCalculate] = useState(true);
+  const [allowManualAdjustment, setAllowManualAdjustment] = useState(true);
+  const [showToAllUsers, setShowToAllUsers] = useState(true);
+  
+  // Numeric settings states
+  const [consignmentPercentage, setConsignmentPercentage] = useState(60);
+  const [excellentThreshold, setExcellentThreshold] = useState(70);
+  const [goodThreshold, setGoodThreshold] = useState(50);
+  const [fairThreshold, setFairThreshold] = useState(30);
+  const [lowThreshold, setLowThreshold] = useState(15);
+  
+  // Save state
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const handleSave = async () => {
+    setIsSaving(true);
+    
+    try {
+      // TODO: Implement actual API call to save settings
+      // For now, simulate API call with timeout
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const settings = {
+        autoCalculate,
+        allowManualAdjustment,
+        showToAllUsers,
+        consignmentPercentage,
+        marginThresholds: {
+          excellent: excellentThreshold,
+          good: goodThreshold,
+          fair: fairThreshold,
+          low: lowThreshold,
+        },
+      };
+      
+      // In production, this would be:
+      // await api.cogs.updateGlobalSettings(settings);
+      
+      console.log("Saving COGS settings:", settings);
+      
+      toast({
+        title: "Settings saved",
+        description: "Your COGS settings have been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving COGS settings:", error);
+      toast({
+        title: "Error saving settings",
+        description: "Failed to save COGS settings. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
   return (
     <div className="space-y-6">
       {/* Default COGS Behavior */}
@@ -31,32 +92,44 @@ export function CogsGlobalSettings() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Auto-calculate COGS</Label>
+                <Label htmlFor="auto-calculate">Auto-calculate COGS</Label>
                 <p className="text-sm text-muted-foreground">
                   Automatically calculate COGS based on batch mode
                 </p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                id="auto-calculate"
+                checked={autoCalculate}
+                onCheckedChange={setAutoCalculate}
+              />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Allow manual COGS adjustment</Label>
+                <Label htmlFor="allow-manual">Allow manual COGS adjustment</Label>
                 <p className="text-sm text-muted-foreground">
                   Let users override COGS on individual items
                 </p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                id="allow-manual"
+                checked={allowManualAdjustment}
+                onCheckedChange={setAllowManualAdjustment}
+              />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Show COGS to all users</Label>
+                <Label htmlFor="show-all">Show COGS to all users</Label>
                 <p className="text-sm text-muted-foreground">
                   Display COGS and margin information to all users
                 </p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                id="show-all"
+                checked={showToAllUsers}
+                onCheckedChange={setShowToAllUsers}
+              />
             </div>
           </div>
         </CardContent>
@@ -72,14 +145,16 @@ export function CogsGlobalSettings() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Default consignment COGS percentage</Label>
+            <Label htmlFor="consignment-percentage">Default consignment COGS percentage</Label>
             <div className="flex items-center gap-2">
               <Input
+                id="consignment-percentage"
                 type="number"
                 min="0"
                 max="100"
                 step="1"
-                defaultValue="60"
+                value={consignmentPercentage}
+                onChange={(e) => setConsignmentPercentage(Number(e.target.value))}
                 className="max-w-[120px]"
               />
               <span className="text-sm text-muted-foreground">% of sale price</span>
@@ -102,73 +177,81 @@ export function CogsGlobalSettings() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Excellent (Green)</Label>
+              <Label htmlFor="excellent-threshold">Excellent (Green)</Label>
               <div className="flex items-center gap-2">
                 <Input
+                  id="excellent-threshold"
                   type="number"
                   min="0"
                   max="100"
                   step="1"
-                  defaultValue="70"
+                  value={excellentThreshold}
+                  onChange={(e) => setExcellentThreshold(Number(e.target.value))}
                   className="max-w-[100px]"
                 />
                 <span className="text-sm text-muted-foreground">%+</span>
                 <Badge className="bg-green-100 text-green-700 border-green-300">
-                  70%+
+                  {excellentThreshold}%+
                 </Badge>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Good (Light Green)</Label>
+              <Label htmlFor="good-threshold">Good (Light Green)</Label>
               <div className="flex items-center gap-2">
                 <Input
+                  id="good-threshold"
                   type="number"
                   min="0"
                   max="100"
                   step="1"
-                  defaultValue="50"
+                  value={goodThreshold}
+                  onChange={(e) => setGoodThreshold(Number(e.target.value))}
                   className="max-w-[100px]"
                 />
                 <span className="text-sm text-muted-foreground">%+</span>
                 <Badge className="bg-green-50 text-green-600 border-green-200">
-                  50%+
+                  {goodThreshold}%+
                 </Badge>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Fair (Yellow)</Label>
+              <Label htmlFor="fair-threshold">Fair (Yellow)</Label>
               <div className="flex items-center gap-2">
                 <Input
+                  id="fair-threshold"
                   type="number"
                   min="0"
                   max="100"
                   step="1"
-                  defaultValue="30"
+                  value={fairThreshold}
+                  onChange={(e) => setFairThreshold(Number(e.target.value))}
                   className="max-w-[100px]"
                 />
                 <span className="text-sm text-muted-foreground">%+</span>
                 <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                  30%+
+                  {fairThreshold}%+
                 </Badge>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Low (Orange)</Label>
+              <Label htmlFor="low-threshold">Low (Orange)</Label>
               <div className="flex items-center gap-2">
                 <Input
+                  id="low-threshold"
                   type="number"
                   min="0"
                   max="100"
                   step="1"
-                  defaultValue="15"
+                  value={lowThreshold}
+                  onChange={(e) => setLowThreshold(Number(e.target.value))}
                   className="max-w-[100px]"
                 />
                 <span className="text-sm text-muted-foreground">%+</span>
                 <Badge className="bg-orange-50 text-orange-700 border-orange-200">
-                  15%+
+                  {lowThreshold}%+
                 </Badge>
               </div>
             </div>
@@ -182,12 +265,15 @@ export function CogsGlobalSettings() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button size="lg">
+        <Button 
+          size="lg" 
+          onClick={handleSave}
+          disabled={isSaving}
+        >
           <Save className="h-4 w-4 mr-2" />
-          Save Settings
+          {isSaving ? "Saving..." : "Save Settings"}
         </Button>
       </div>
     </div>
   );
 }
-
