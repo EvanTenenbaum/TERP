@@ -45,16 +45,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-        run: pnpm drizzle-kit push
+          cache: 'pnpm'
       
       - name: Install dependencies
-        pnpm seed:light
+        run: pnpm install
       
-      - name: Run database migrations
-        run: pnpm db:push
+      - name: Push database schema
+        run: pnpm drizzle-kit push
       
       - name: Seed test database
-        run: pnpm seed:full
+        run: pnpm seed:light
       
       - name: Run integration tests
         run: pnpm test -- --config vitest.config.integration.ts --run --coverage || echo "Integration tests skipped"
