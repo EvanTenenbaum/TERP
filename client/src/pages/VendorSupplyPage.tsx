@@ -33,6 +33,8 @@ export default function VendorSupplyPage() {
   
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(getInitialStatusFilter);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Fetch all vendor supply items
@@ -61,6 +63,21 @@ export default function VendorSupplyPage() {
       EXPIRED: "destructive",
     };
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+  };
+
+  const handleEditItem = (item: any) => {
+    setEditingItem(item);
+    setEditDialogOpen(true);
+  };
+
+  const handleFindMatchingClients = (item: any) => {
+    // TODO: Implement matching logic
+    // This would typically:
+    // 1. Analyze the supply item (strain, category, grade, price)
+    // 2. Find clients with matching needs
+    // 3. Show a dialog or navigate to a matching page
+    console.log("Finding matching clients for:", item);
+    alert(`Finding clients interested in ${item.strain || item.category}...\n\nThis feature will show clients with matching needs and preferences.`);
   };
 
   return (
@@ -183,10 +200,18 @@ export default function VendorSupplyPage() {
                   )}
                 </div>
                 <div className="mt-4 flex items-center gap-2">
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleFindMatchingClients(item)}
+                  >
                     Find Matching Clients
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleEditItem(item)}
+                  >
                     Edit
                   </Button>
                 </div>
@@ -195,6 +220,26 @@ export default function VendorSupplyPage() {
           ))}
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Supply Item</DialogTitle>
+            <DialogDescription>
+              Update details for {editingItem?.strain || editingItem?.category || "this supply item"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground py-4">
+            Edit form implementation coming soon...
+            <div className="mt-4 space-y-2 text-xs">
+              <p><strong>Item ID:</strong> {editingItem?.id}</p>
+              <p><strong>Vendor:</strong> {editingItem?.vendorName}</p>
+              <p><strong>Status:</strong> {editingItem?.status}</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

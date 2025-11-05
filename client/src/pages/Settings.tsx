@@ -307,6 +307,13 @@ function CategoriesManager() {
     },
   });
 
+  const deleteSubcategoryMutation = trpc.settings.subcategories.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Subcategory deleted successfully");
+      refetch();
+    },
+  });
+
   const handleUpdateCategory = (id: number) => {
     if (window.confirm("Do you want to update this category for all existing products?")) {
       updateCategoryMutation.mutate({ id, name: editName, updateProducts: true });
@@ -414,7 +421,12 @@ function CategoriesManager() {
                 {category.subcategories?.map((sub: any) => (
                   <div key={sub.id} className="p-2 pl-6 flex items-center justify-between">
                     <span>{sub.name}</span>
-                    <Button size="sm" variant="ghost">
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => deleteSubcategoryMutation.mutate({ id: sub.id })}
+                      aria-label={`Delete ${sub.name}`}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
