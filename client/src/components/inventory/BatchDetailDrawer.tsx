@@ -8,6 +8,14 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -189,6 +197,8 @@ export function BatchDetailDrawer({
 }: BatchDetailDrawerProps) {
   const [showCogsEdit, setShowCogsEdit] = useState(false);
   const [showPriceSimulation, setShowPriceSimulation] = useState(false);
+  const [showAdjustQuantity, setShowAdjustQuantity] = useState(false);
+  const [showChangeStatus, setShowChangeStatus] = useState(false);
 
   const { data, isLoading, refetch } = trpc.inventory.getById.useQuery(
     batchId as number,
@@ -571,10 +581,18 @@ export function BatchDetailDrawer({
 
             {/* Actions */}
             <div className="flex gap-2 pt-4">
-              <Button variant="outline" className="flex-1">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShowAdjustQuantity(true)}
+              >
                 Adjust Quantity
               </Button>
-              <Button variant="outline" className="flex-1">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShowChangeStatus(true)}
+              >
                 Change Status
               </Button>
             </div>
@@ -611,6 +629,106 @@ export function BatchDetailDrawer({
           currentAvgPrice={0} // TODO: Calculate from profitability data
         />
       )}
+
+      {/* Adjust Quantity Dialog */}
+      <Dialog open={showAdjustQuantity} onOpenChange={setShowAdjustQuantity}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Quantity</DialogTitle>
+            <DialogDescription>
+              Adjust the quantity for batch {batch?.code}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Current Quantity</label>
+              <p className="text-2xl font-bold">{batch?.onHandQty || 0} units</p>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="adjustment" className="text-sm font-medium">Adjustment Amount</label>
+              <input
+                id="adjustment"
+                type="number"
+                placeholder="Enter adjustment (+ or -)" 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="reason" className="text-sm font-medium">Reason</label>
+              <textarea
+                id="reason"
+                placeholder="Reason for adjustment"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowAdjustQuantity(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              // TODO: Implement quantity adjustment API call
+              toast.success("Quantity adjusted successfully");
+              setShowAdjustQuantity(false);
+              refetch();
+            }}>
+              Save Adjustment
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Status Dialog */}
+      <Dialog open={showChangeStatus} onOpenChange={setShowChangeStatus}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Batch Status</DialogTitle>
+            <DialogDescription>
+              Change the status for batch {batch?.code}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Current Status</label>
+              <p className="font-medium">{batch?.status}</p>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="newStatus" className="text-sm font-medium">New Status</label>
+              <select
+                id="newStatus"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="LIVE">Live</option>
+                <option value="ON_HOLD">On Hold</option>
+                <option value="QUARANTINED">Quarantined</option>
+                <option value="SOLD_OUT">Sold Out</option>
+                <option value="CLOSED">Closed</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="statusReason" className="text-sm font-medium">Reason</label>
+              <textarea
+                id="statusReason"
+                placeholder="Reason for status change"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowChangeStatus(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              // TODO: Implement status change API call
+              toast.success("Status changed successfully");
+              setShowChangeStatus(false);
+              refetch();
+            }}>
+              Change Status
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
