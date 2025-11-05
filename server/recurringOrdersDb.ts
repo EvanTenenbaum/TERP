@@ -1,6 +1,7 @@
 import { eq, and, lte, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { recurringOrders, clients, users } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 /**
  * Create a recurring order
@@ -46,7 +47,7 @@ export async function createRecurringOrder(data: {
 
     return { success: true, recurringOrderId: result.insertId };
   } catch (error: any) {
-    console.error("Error creating recurring order:", error);
+    logger.error("Error creating recurring order:", error);
     return { success: false, error: error.message };
   }
 }
@@ -108,7 +109,7 @@ export async function updateRecurringOrder(
 
     return { success: true };
   } catch (error: any) {
-    console.error("Error updating recurring order:", error);
+    logger.error("Error updating recurring order:", error);
     return { success: false, error: error.message };
   }
 }
@@ -128,7 +129,7 @@ export async function pauseRecurringOrder(recurringOrderId: number) {
 
     return { success: true };
   } catch (error: any) {
-    console.error("Error pausing recurring order:", error);
+    logger.error("Error pausing recurring order:", error);
     return { success: false, error: error.message };
   }
 }
@@ -168,7 +169,7 @@ export async function resumeRecurringOrder(recurringOrderId: number) {
 
     return { success: true };
   } catch (error: any) {
-    console.error("Error resuming recurring order:", error);
+    logger.error("Error resuming recurring order:", error);
     return { success: false, error: error.message };
   }
 }
@@ -188,7 +189,7 @@ export async function cancelRecurringOrder(recurringOrderId: number) {
 
     return { success: true };
   } catch (error: any) {
-    console.error("Error cancelling recurring order:", error);
+    logger.error("Error cancelling recurring order:", error);
     return { success: false, error: error.message };
   }
 }
@@ -219,7 +220,7 @@ export async function getDueRecurringOrders() {
 
     return { success: true, dueOrders };
   } catch (error: any) {
-    console.error("Error getting due recurring orders:", error);
+    logger.error("Error getting due recurring orders:", error);
     return { success: false, error: error.message };
   }
 }
@@ -259,7 +260,7 @@ export async function markRecurringOrderGenerated(recurringOrderId: number) {
 
     return { success: true, nextGenerationDate };
   } catch (error: any) {
-    console.error("Error marking recurring order as generated:", error);
+    logger.error("Error marking recurring order as generated:", error);
     return { success: false, error: error.message };
   }
 }
@@ -280,7 +281,7 @@ export async function listRecurringOrdersForClient(clientId: number) {
 
     return { success: true, orders };
   } catch (error: any) {
-    console.error("Error listing recurring orders for client:", error);
+    logger.error("Error listing recurring orders for client:", error);
     return { success: false, error: error.message };
   }
 }
@@ -308,7 +309,7 @@ export async function listAllRecurringOrders(status?: string) {
 
     return { success: true, orders };
   } catch (error: any) {
-    console.error("Error listing all recurring orders:", error);
+    logger.error("Error listing all recurring orders:", error);
     return { success: false, error: error.message };
   }
 }

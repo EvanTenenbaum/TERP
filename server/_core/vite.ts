@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
+import { logger } from "./logger";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -57,17 +58,17 @@ export function serveStatic(app: Express) {
       ? path.resolve(__dirname, "../..", "dist", "public")
       : path.resolve(__dirname, "public");
   
-  console.log('[serveStatic] __dirname:', __dirname);
-  console.log('[serveStatic] distPath:', distPath);
-  console.log('[serveStatic] distPath exists:', fs.existsSync(distPath));
+  logger.info('[serveStatic] __dirname:', __dirname);
+  logger.info('[serveStatic] distPath:', distPath);
+  logger.info('[serveStatic] distPath exists:', fs.existsSync(distPath));
   
   if (fs.existsSync(distPath)) {
     const files = fs.readdirSync(distPath);
-    console.log('[serveStatic] Files in distPath:', files);
+    logger.info('[serveStatic] Files in distPath:', files);
   }
   
   if (!fs.existsSync(distPath)) {
-    console.error(
+    logger.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }

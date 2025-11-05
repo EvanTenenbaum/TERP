@@ -1,4 +1,5 @@
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   locations,
   categories,
@@ -13,18 +14,18 @@ import {
  * Creates a main warehouse with zones, racks, shelves, and bins
  */
 export async function seedDefaultLocations() {
-  console.log("🌱 Seeding default locations...");
+  logger.info("🌱 Seeding default locations...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping location seeding");
+    logger.warn("Database not available, skipping location seeding");
     return;
   }
 
   // Check if locations already exist
   const existing = await db.select().from(locations).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Locations already seeded, skipping...");
+    logger.info("✅ Locations already seeded, skipping...");
     return;
   }
 
@@ -51,25 +52,25 @@ export async function seedDefaultLocations() {
     await db.insert(locations).values(location);
   }
 
-  console.log("✅ Default locations seeded");
+  logger.info("✅ Default locations seeded");
 }
 
 /**
  * Seed default product categories and subcategories
  */
 export async function seedDefaultCategories() {
-  console.log("🌱 Seeding default categories...");
+  logger.info("🌱 Seeding default categories...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping category seeding");
+    logger.warn("Database not available, skipping category seeding");
     return;
   }
 
   // Check if categories already exist
   const existing = await db.select().from(categories).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Categories already seeded, skipping...");
+    logger.info("✅ Categories already seeded, skipping...");
     return;
   }
 
@@ -121,25 +122,25 @@ export async function seedDefaultCategories() {
     }
   }
 
-  console.log("✅ Default categories seeded");
+  logger.info("✅ Default categories seeded");
 }
 
 /**
  * Seed default product grades
  */
 export async function seedDefaultGrades() {
-  console.log("🌱 Seeding default grades...");
+  logger.info("🌱 Seeding default grades...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping grade seeding");
+    logger.warn("Database not available, skipping grade seeding");
     return;
   }
 
   // Check if grades already exist
   const existing = await db.select().from(grades).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Grades already seeded, skipping...");
+    logger.info("✅ Grades already seeded, skipping...");
     return;
   }
 
@@ -154,25 +155,25 @@ export async function seedDefaultGrades() {
     await db.insert(grades).values(grade);
   }
 
-  console.log("✅ Default grades seeded");
+  logger.info("✅ Default grades seeded");
 }
 
 /**
  * Seed default expense categories with parent-child relationships
  */
 export async function seedDefaultExpenseCategories() {
-  console.log("🌱 Seeding default expense categories...");
+  logger.info("🌱 Seeding default expense categories...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping expense category seeding");
+    logger.warn("Database not available, skipping expense category seeding");
     return;
   }
 
   // Check if expense categories already exist
   const existing = await db.select().from(expenseCategories).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Expense categories already seeded, skipping...");
+    logger.info("✅ Expense categories already seeded, skipping...");
     return;
   }
 
@@ -222,25 +223,25 @@ export async function seedDefaultExpenseCategories() {
     }
   }
 
-  console.log("✅ Default expense categories seeded");
+  logger.info("✅ Default expense categories seeded");
 }
 
 /**
  * Seed default chart of accounts
  */
 export async function seedDefaultChartOfAccounts() {
-  console.log("🌱 Seeding default chart of accounts...");
+  logger.info("🌱 Seeding default chart of accounts...");
 
   const db = await getDb();
   if (!db) {
-    console.warn("Database not available, skipping chart of accounts seeding");
+    logger.warn("Database not available, skipping chart of accounts seeding");
     return;
   }
 
   // Check if accounts already exist
   const existing = await db.select().from(accounts).limit(1);
   if (existing.length > 0) {
-    console.log("✅ Chart of accounts already seeded, skipping...");
+    logger.info("✅ Chart of accounts already seeded, skipping...");
     return;
   }
 
@@ -269,7 +270,7 @@ export async function seedDefaultChartOfAccounts() {
     await db.insert(accounts).values(account);
   }
 
-  console.log("✅ Default chart of accounts seeded");
+  logger.info("✅ Default chart of accounts seeded");
 }
 
 /**
@@ -277,7 +278,7 @@ export async function seedDefaultChartOfAccounts() {
  * This is idempotent and safe to call multiple times
  */
 export async function seedAllDefaults() {
-  console.log("🌱 Starting default data seeding...");
+  logger.info("🌱 Starting default data seeding...");
 
   try {
     await seedDefaultLocations();
@@ -286,9 +287,9 @@ export async function seedAllDefaults() {
     await seedDefaultExpenseCategories();
     await seedDefaultChartOfAccounts();
 
-    console.log("✅ All defaults seeded successfully!");
+    logger.info("✅ All defaults seeded successfully!");
   } catch (error) {
-    console.error("❌ Error seeding defaults:", error);
+    logger.error("❌ Error seeding defaults:", error);
     throw error;
   }
 }

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as vendorSupplyDb from "../vendorSupplyDb";
 import * as matchingEngine from "../matchingEngine";
+import { logger } from "../_core/logger";
 
 /**
  * Vendor Supply Router
@@ -40,7 +41,7 @@ export const vendorSupplyRouter = router({
           data: supply,
         };
       } catch (error) {
-        console.error("Error creating vendor supply:", error);
+        logger.error("Error creating vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to create vendor supply",
@@ -69,7 +70,7 @@ export const vendorSupplyRouter = router({
           data: supply,
         };
       } catch (error) {
-        console.error("Error fetching vendor supply:", error);
+        logger.error("Error fetching vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to fetch vendor supply",
@@ -98,7 +99,7 @@ export const vendorSupplyRouter = router({
           data: supplies,
         };
       } catch (error) {
-        console.error("Error fetching vendor supply:", error);
+        logger.error("Error fetching vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to fetch vendor supply",
@@ -120,7 +121,7 @@ export const vendorSupplyRouter = router({
           data: supplies,
         };
       } catch (error) {
-        console.error("Error fetching available vendor supply:", error);
+        logger.error("Error fetching available vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to fetch available vendor supply",
@@ -164,7 +165,7 @@ export const vendorSupplyRouter = router({
           data: supply,
         };
       } catch (error) {
-        console.error("Error updating vendor supply:", error);
+        logger.error("Error updating vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to update vendor supply",
@@ -186,7 +187,7 @@ export const vendorSupplyRouter = router({
           data: supply,
         };
       } catch (error) {
-        console.error("Error reserving vendor supply:", error);
+        logger.error("Error reserving vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to reserve vendor supply",
@@ -208,7 +209,7 @@ export const vendorSupplyRouter = router({
           data: supply,
         };
       } catch (error) {
-        console.error("Error purchasing vendor supply:", error);
+        logger.error("Error purchasing vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to purchase vendor supply",
@@ -229,7 +230,7 @@ export const vendorSupplyRouter = router({
           success: true,
         };
       } catch (error) {
-        console.error("Error deleting vendor supply:", error);
+        logger.error("Error deleting vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to delete vendor supply",
@@ -256,7 +257,7 @@ export const vendorSupplyRouter = router({
           data: supplies,
         };
       } catch (error) {
-        console.error("Error fetching vendor supply with matches:", error);
+        logger.error("Error fetching vendor supply with matches:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to fetch vendor supply with matches",
@@ -278,7 +279,7 @@ export const vendorSupplyRouter = router({
           data: buyers,
         };
       } catch (error) {
-        console.error("Error finding buyers:", error);
+        logger.error("Error finding buyers:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to find buyers",
@@ -299,7 +300,7 @@ export const vendorSupplyRouter = router({
           data: { expiredCount: count },
         };
       } catch (error) {
-        console.error("Error expiring old vendor supply:", error);
+        logger.error("Error expiring old vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to expire old vendor supply",

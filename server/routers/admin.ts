@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { strains, products } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { importOpenTHCStrainsFromJSON } from "../import_openthc_strains";
+import { logger } from "../_core/logger";
 
 /**
  * Admin Router
@@ -39,7 +40,7 @@ export const adminRouter = router({
       
       try {
         // ===== STEP 1: Push Schema Changes =====
-        console.log('📋 Step 1/3: Pushing schema changes...');
+        logger.info('📋 Step 1/3: Pushing schema changes...');
         const schemaStart = Date.now();
         results.schemaPush.status = 'running';
         
@@ -50,30 +51,30 @@ export const adminRouter = router({
             await db.execute(sql`ALTER TABLE strains ADD COLUMN openthcId VARCHAR(255)`);
           } catch (e) {
             // Column might already exist, that's fine
-            console.log('openthcId column may already exist');
+            logger.info('openthcId column may already exist');
           }
           
           try {
             await db.execute(sql`ALTER TABLE strains ADD COLUMN openthcStub VARCHAR(255)`);
           } catch (e) {
             // Column might already exist, that's fine
-            console.log('openthcStub column may already exist');
+            logger.info('openthcStub column may already exist');
           }
           
           results.schemaPush.status = 'success';
           results.schemaPush.message = 'Added openthcId and openthcStub columns';
           results.schemaPush.duration = Date.now() - schemaStart;
-          console.log(`✅ Schema updated in ${results.schemaPush.duration}ms`);
+          logger.info(`✅ Schema updated in ${results.schemaPush.duration}ms`);
         } catch (error) {
           results.schemaPush.status = 'error';
           results.schemaPush.message = `Schema update failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
           results.schemaPush.duration = Date.now() - schemaStart;
-          console.error('❌ Schema update failed:', error);
+          logger.error('❌ Schema update failed:', error);
           throw error;
         }
         
         // ===== STEP 2: Create Indexes =====
-        console.log('📋 Step 2/3: Creating performance indexes...');
+        logger.info('📋 Step 2/3: Creating performance indexes...');
         const indexStart = Date.now();
         results.indexCreation.status = 'running';
         
@@ -92,26 +93,26 @@ export const adminRouter = router({
             try {
               await db.execute(sql.raw(index.sql));
               createdIndexes.push(index.name);
-              console.log(`  ✓ Created ${index.name}`);
+              logger.info(`  ✓ Created ${index.name}`);
             } catch (error) {
-              console.warn(`  ⚠ ${index.name} may already exist or failed:`, error);
+              logger.warn(`  ⚠ ${index.name} may already exist or failed:`, error);
             }
           }
           
           results.indexCreation.status = 'success';
           results.indexCreation.message = `Created/verified ${createdIndexes.length} indexes: ${createdIndexes.join(', ')}`;
           results.indexCreation.duration = Date.now() - indexStart;
-          console.log(`✅ Indexes created in ${results.indexCreation.duration}ms`);
+          logger.info(`✅ Indexes created in ${results.indexCreation.duration}ms`);
         } catch (error) {
           results.indexCreation.status = 'error';
           results.indexCreation.message = `Index creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
           results.indexCreation.duration = Date.now() - indexStart;
-          console.error('❌ Index creation failed:', error);
+          logger.error('❌ Index creation failed:', error);
           // Don't throw - continue to import even if indexes fail
         }
         
         // ===== STEP 3: Import OpenTHC Strains =====
-        console.log('📋 Step 3/3: Importing OpenTHC strains...');
+        logger.info('📋 Step 3/3: Importing OpenTHC strains...');
         const importStart = Date.now();
         results.strainImport.status = 'running';
         
@@ -121,18 +122,18 @@ export const adminRouter = router({
           results.strainImport.status = 'success';
           results.strainImport.message = `Imported ${importResult.imported} strains, skipped ${importResult.skipped} duplicates`;
           results.strainImport.duration = Date.now() - importStart;
-          console.log(`✅ Import completed in ${results.strainImport.duration}ms`);
+          logger.info(`✅ Import completed in ${results.strainImport.duration}ms`);
         } catch (error) {
           results.strainImport.status = 'error';
           results.strainImport.message = `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
           results.strainImport.duration = Date.now() - importStart;
-          console.error('❌ Import failed:', error);
+          logger.error('❌ Import failed:', error);
           throw error;
         }
         
         // ===== SUCCESS =====
         const totalDuration = Date.now() - startTime;
-        console.log(`\n🎉 Strain system setup completed in ${totalDuration}ms`);
+        logger.info(`\n🎉 Strain system setup completed in ${totalDuration}ms`);
         
         return {
           success: true,
@@ -143,7 +144,7 @@ export const adminRouter = router({
         
       } catch (error) {
         const totalDuration = Date.now() - startTime;
-        console.error('\n❌ Strain system setup failed:', error);
+        logger.error('\n❌ Strain system setup failed:', error);
         
         return {
           success: false,

@@ -1,6 +1,7 @@
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { alertConfigurations, users } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 /**
  * Create alert configuration
@@ -33,7 +34,7 @@ export async function createAlertConfiguration(data: {
 
     return { success: true, alertConfigId: result.insertId };
   } catch (error: any) {
-    console.error("Error creating alert configuration:", error);
+    logger.error("Error creating alert configuration:", error);
     return { success: false, error: error.message };
   }
 }
@@ -70,7 +71,7 @@ export async function updateAlertConfiguration(
 
     return { success: true };
   } catch (error: any) {
-    console.error("Error updating alert configuration:", error);
+    logger.error("Error updating alert configuration:", error);
     return { success: false, error: error.message };
   }
 }
@@ -89,7 +90,7 @@ export async function deleteAlertConfiguration(alertConfigId: number) {
 
     return { success: true };
   } catch (error: any) {
-    console.error("Error deleting alert configuration:", error);
+    logger.error("Error deleting alert configuration:", error);
     return { success: false, error: error.message };
   }
 }
@@ -110,7 +111,7 @@ export async function getUserAlertConfigurations(userId: number) {
 
     return { success: true, configurations: configs };
   } catch (error: any) {
-    console.error("Error getting user alert configurations:", error);
+    logger.error("Error getting user alert configurations:", error);
     return { success: false, error: error.message };
   }
 }
@@ -134,7 +135,7 @@ export async function getAllActiveAlertConfigurations() {
 
     return { success: true, configurations: configs };
   } catch (error: any) {
-    console.error("Error getting all active alert configurations:", error);
+    logger.error("Error getting all active alert configurations:", error);
     return { success: false, error: error.message };
   }
 }
@@ -163,7 +164,7 @@ export async function getAlertConfigurationsByType(alertType: string) {
 
     return { success: true, configurations: configs };
   } catch (error: any) {
-    console.error("Error getting alert configurations by type:", error);
+    logger.error("Error getting alert configurations by type:", error);
     return { success: false, error: error.message };
   }
 }
@@ -192,7 +193,7 @@ export async function toggleAlertConfiguration(alertConfigId: number) {
 
     return { success: true, isActive: !existing.isActive };
   } catch (error: any) {
-    console.error("Error toggling alert configuration:", error);
+    logger.error("Error toggling alert configuration:", error);
     return { success: false, error: error.message };
   }
 }

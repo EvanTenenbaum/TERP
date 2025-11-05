@@ -6,6 +6,7 @@
  */
 
 import { eq, and, type SQL } from "drizzle-orm";
+import { logger } from "./logger";
 
 /**
  * Generic findOrCreate pattern for database entities
@@ -110,7 +111,7 @@ export async function withTransaction<T>(
       return await operation(tx);
     });
   } catch (error) {
-    console.error(`Transaction failed for ${operationName}:`, error);
+    logger.error(`Transaction failed for ${operationName}:`, error);
     throw error;
   }
 }

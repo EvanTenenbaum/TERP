@@ -8,6 +8,7 @@
 
 import { eq, and, isNull, lt, inArray, sql } from "drizzle-orm";
 import { getDb } from "./db";
+import { logger } from "./logger";
 import {
   calendarEvents,
   calendarRecurrenceRules,
@@ -373,7 +374,7 @@ export class DataIntegrityService {
       oldHistoryDeleted: await this.cleanupOldHistory(),
     };
 
-    console.log("Data integrity cleanup completed:", results);
+    logger.info("Data integrity cleanup completed:", results);
 
     return results;
   }

@@ -2,6 +2,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { orders, clients } from "../drizzle/schema";
 import type { Match } from "./matchingEngine";
+import { logger } from "./_core/logger";
 
 /**
  * Purchase pattern analysis result
@@ -112,7 +113,7 @@ export async function analyzeClientPurchaseHistory(
 
     return patterns;
   } catch (error) {
-    console.error("Error analyzing client purchase history:", error);
+    logger.error("Error analyzing client purchase history:", error);
     throw new Error(
       `Failed to analyze purchase history: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -220,7 +221,7 @@ export async function findHistoricalBuyers(
 
     return matches;
   } catch (error) {
-    console.error("Error finding historical buyers:", error);
+    logger.error("Error finding historical buyers:", error);
     throw new Error(
       `Failed to find historical buyers: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -285,7 +286,7 @@ export async function getLapsedBuyers(daysThreshold: number = 90): Promise<
 
     return lapsedBuyers;
   } catch (error) {
-    console.error("Error getting lapsed buyers:", error);
+    logger.error("Error getting lapsed buyers:", error);
     throw new Error(
       `Failed to get lapsed buyers: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -344,7 +345,7 @@ export async function getProactiveOpportunities(
 
     return opportunities;
   } catch (error) {
-    console.error("Error getting proactive opportunities:", error);
+    logger.error("Error getting proactive opportunities:", error);
     throw new Error(
       `Failed to get proactive opportunities: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -537,7 +538,7 @@ export async function predictReorder(
       reasons,
     };
   } catch (error) {
-    console.error("Error predicting reorder:", error);
+    logger.error("Error predicting reorder:", error);
     return null;
   }
 }
@@ -590,7 +591,7 @@ export async function getPredictiveReorderOpportunities(
 
     return predictions;
   } catch (error) {
-    console.error("Error getting predictive reorder opportunities:", error);
+    logger.error("Error getting predictive reorder opportunities:", error);
     throw new Error(
       `Failed to get predictive reorder opportunities: ${error instanceof Error ? error.message : "Unknown error"}`
     );

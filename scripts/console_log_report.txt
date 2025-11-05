@@ -1,0 +1,651 @@
+server/autoMigrate.ts
+  Line 16: console.log
+  Line 20: console.log
+  Line 26: console.error
+  Line 34: console.log
+  Line 37: console.log
+  Line 39: console.log
+  Line 46: console.log
+  Line 49: console.log
+  Line 51: console.log
+  Line 58: console.log
+  Line 61: console.log
+  Line 63: console.log
+  Line 70: console.log
+  Line 73: console.log
+  Line 75: console.log
+  Line 82: console.log
+  Line 85: console.log
+  Line 87: console.log
+  Line 94: console.log
+  Line 97: console.log
+  Line 99: console.log
+  Line 105: console.log
+  Line 108: console.log
+  Line 110: console.log
+  Line 116: console.log
+  Line 119: console.log
+  Line 121: console.log
+  Line 127: console.log
+  Line 130: console.log
+  Line 132: console.log
+  Line 143: console.log
+  Line 146: console.log
+  Line 148: console.log
+  Line 158: console.log
+  Line 161: console.log
+  Line 163: console.log
+  Line 168: console.log
+  Line 171: console.error
+
+server/_core/calendarJobs.ts
+  Line 18: console.log
+  Line 22: console.log
+  Line 24: console.error
+  Line 35: console.log
+  Line 41: console.log
+  Line 52: console.log
+  Line 54: console.error
+  Line 63: console.log
+  Line 65: console.error
+  Line 76: console.log
+  Line 81: console.log
+  Line 93: console.error
+  Line 104: console.log
+  Line 108: console.log
+  Line 110: console.error
+  Line 121: console.log
+  Line 129: console.log
+  Line 131: console.error
+  Line 142: console.log
+  Line 157: console.warn
+  Line 160: console.log
+  Line 163: console.error
+  Line 172: console.log
+  Line 183: console.log
+  Line 190: console.log
+  Line 199: console.log
+
+server/services/seedDefaults.ts
+  Line 16: console.log
+  Line 20: console.warn
+  Line 27: console.log
+  Line 54: console.log
+  Line 61: console.log
+  Line 65: console.warn
+  Line 72: console.log
+  Line 124: console.log
+  Line 131: console.log
+  Line 135: console.warn
+  Line 142: console.log
+  Line 157: console.log
+  Line 164: console.log
+  Line 168: console.warn
+  Line 175: console.log
+  Line 225: console.log
+  Line 232: console.log
+  Line 236: console.warn
+  Line 243: console.log
+  Line 272: console.log
+  Line 280: console.log
+  Line 289: console.log
+  Line 291: console.error
+
+server/accountingHooks.ts
+  Line 47: console.error
+  Line 136: console.error
+  Line 162: console.warn
+  Line 180: console.error
+  Line 182: console.warn
+  Line 208: console.warn
+  Line 226: console.error
+  Line 227: console.warn
+  Line 253: console.warn
+  Line 271: console.error
+  Line 272: console.warn
+  Line 297: console.warn
+  Line 315: console.error
+  Line 316: console.warn
+  Line 353: console.warn
+  Line 379: console.error
+  Line 421: console.log
+  Line 423: console.error
+
+server/routers/admin.ts
+  Line 42: console.log
+  Line 53: console.log
+  Line 60: console.log
+  Line 66: console.log
+  Line 71: console.error
+  Line 76: console.log
+  Line 95: console.log
+  Line 97: console.warn
+  Line 104: console.log
+  Line 109: console.error
+  Line 114: console.log
+  Line 124: console.log
+  Line 129: console.error
+  Line 135: console.log
+  Line 146: console.error
+
+server/routers/clientNeedsEnhanced.ts
+  Line 51: console.error
+  Line 93: console.error
+  Line 122: console.error
+  Line 152: console.error
+  Line 174: console.error
+  Line 224: console.error
+  Line 246: console.error
+  Line 268: console.error
+  Line 289: console.error
+  Line 316: console.error
+  Line 338: console.error
+  Line 365: console.error
+  Line 386: console.error
+  Line 408: console.error
+
+server/creditsDb.ts
+  Line 58: console.error
+  Line 80: console.error
+  Line 102: console.error
+  Line 144: console.error
+  Line 173: console.error
+  Line 278: console.error
+  Line 301: console.error
+  Line 324: console.error
+  Line 375: console.error
+  Line 423: console.error
+  Line 455: console.error
+  Line 495: console.error
+
+server/clientNeedsDbEnhanced.ts
+  Line 50: console.error
+  Line 118: console.error
+  Line 140: console.error
+  Line 187: console.error
+  Line 215: console.error
+  Line 260: console.error
+  Line 280: console.error
+  Line 299: console.error
+  Line 317: console.error
+  Line 344: console.error
+  Line 370: console.error
+
+server/paymentMethodsDb.ts
+  Line 45: console.error
+  Line 67: console.error
+  Line 89: console.error
+  Line 122: console.error
+  Line 151: console.error
+  Line 165: console.error
+  Line 179: console.error
+  Line 204: console.error
+  Line 229: console.error
+  Line 266: console.log
+  Line 268: console.error
+
+server/transactionsDb.ts
+  Line 48: console.error
+  Line 70: console.error
+  Line 92: console.error
+  Line 117: console.error
+  Line 146: console.error
+  Line 246: console.error
+  Line 276: console.error
+  Line 332: console.error
+  Line 367: console.error
+  Line 388: console.error
+  Line 428: console.error
+
+server/routers/clientNeeds.ts
+  Line 46: console.error
+  Line 75: console.error
+  Line 105: console.error
+  Line 127: console.error
+  Line 176: console.error
+  Line 198: console.error
+  Line 220: console.error
+  Line 241: console.error
+  Line 268: console.error
+  Line 290: console.error
+  Line 311: console.error
+
+server/routers/vendorSupply.ts
+  Line 43: console.error
+  Line 72: console.error
+  Line 101: console.error
+  Line 123: console.error
+  Line 167: console.error
+  Line 189: console.error
+  Line 211: console.error
+  Line 232: console.error
+  Line 259: console.error
+  Line 281: console.error
+  Line 302: console.error
+
+server/clientNeedsDb.ts
+  Line 24: console.error
+  Line 46: console.error
+  Line 93: console.error
+  Line 121: console.error
+  Line 156: console.error
+  Line 176: console.error
+  Line 195: console.error
+  Line 213: console.error
+  Line 240: console.error
+  Line 266: console.error
+
+server/import_openthc_strains.ts
+  Line 72: console.error
+  Line 76: console.log
+  Line 80: console.log
+  Line 124: console.log
+  Line 128: console.error
+  Line 140: console.log
+  Line 141: console.log
+  Line 142: console.log
+  Line 143: console.log
+  Line 144: console.log
+
+server/vendorSupplyDb.ts
+  Line 24: console.error
+  Line 46: console.error
+  Line 89: console.error
+  Line 118: console.error
+  Line 153: console.error
+  Line 173: console.error
+  Line 193: console.error
+  Line 211: console.error
+  Line 238: console.error
+  Line 264: console.error
+
+server/routers/matching.ts
+  Line 25: console.error
+  Line 50: console.error
+  Line 75: console.error
+  Line 96: console.error
+  Line 129: console.error
+  Line 166: console.error
+  Line 197: console.error
+  Line 229: console.error
+  Line 264: console.error
+  Line 298: console.error
+
+server/badDebtDb.ts
+  Line 127: console.error
+  Line 185: console.error
+  Line 187: console.warn
+  Line 266: console.error
+  Line 324: console.error
+  Line 325: console.warn
+  Line 369: console.error
+  Line 394: console.error
+  Line 473: console.error
+
+server/inventoryMovementsDb.ts
+  Line 59: console.error
+  Line 160: console.error
+  Line 254: console.error
+  Line 345: console.error
+  Line 375: console.error
+  Line 409: console.error
+  Line 461: console.error
+  Line 569: console.error
+  Line 642: console.error
+
+server/productIntakeDb.ts
+  Line 38: console.error
+  Line 90: console.error
+  Line 155: console.error
+  Line 201: console.error
+  Line 270: console.error
+  Line 351: console.error
+  Line 398: console.error
+  Line 431: console.error
+  Line 464: console.error
+
+server/recurringOrdersDb.ts
+  Line 49: console.error
+  Line 111: console.error
+  Line 131: console.error
+  Line 171: console.error
+  Line 191: console.error
+  Line 222: console.error
+  Line 262: console.error
+  Line 283: console.error
+  Line 311: console.error
+
+server/seedInventory.ts
+  Line 4: console.log
+  Line 17: console.log
+  Line 31: console.log
+  Line 47: console.log
+  Line 61: console.log
+  Line 158: console.log
+  Line 172: console.log
+  Line 206: console.log
+  Line 207: console.log
+
+server/matchRecordsDb.ts
+  Line 24: console.error
+  Line 46: console.error
+  Line 89: console.error
+  Line 130: console.error
+  Line 168: console.error
+  Line 237: console.error
+  Line 260: console.error
+  Line 315: console.error
+
+client/src/contexts/DashboardPreferencesContext.tsx
+  Line 39: console.error
+  Line 54: console.error
+  Line 98: console.log
+  Line 101: console.error
+  Line 111: console.log
+  Line 120: console.error
+  Line 142: console.log
+  Line 145: console.log
+
+server/alertConfigurationDb.ts
+  Line 36: console.error
+  Line 73: console.error
+  Line 92: console.error
+  Line 113: console.error
+  Line 137: console.error
+  Line 166: console.error
+  Line 195: console.error
+
+server/seedStrains.ts
+  Line 22: console.error
+  Line 26: console.log
+  Line 33: console.log
+  Line 100: console.log
+  Line 115: console.log
+  Line 116: console.log
+  Line 117: console.log
+
+client/src/hooks/useStrainHooks.ts
+  Line 38: console.log
+  Line 84: console.log
+  Line 102: console.log
+  Line 119: console.log
+  Line 139: console.log
+  Line 160: console.log
+  Line 180: console.log
+
+server/historicalAnalysis.ts
+  Line 115: console.error
+  Line 223: console.error
+  Line 288: console.error
+  Line 347: console.error
+  Line 540: console.error
+  Line 593: console.error
+
+server/matchingEngineEnhanced.ts
+  Line 127: console.error
+  Line 342: console.error
+  Line 518: console.error
+  Line 647: console.error
+  Line 731: console.error
+  Line 770: console.error
+
+server/needsMatchingService.ts
+  Line 129: console.error
+  Line 188: console.error
+  Line 212: console.error
+  Line 254: console.error
+  Line 284: console.error
+  Line 322: console.error
+
+server/transactionHooks.ts
+  Line 62: console.error
+  Line 72: console.error
+  Line 107: console.error
+  Line 147: console.error
+  Line 157: console.error
+  Line 252: console.error
+
+server/_core/simpleAuth.ts
+  Line 59: console.log
+  Line 60: console.log
+  Line 63: console.log
+  Line 84: console.error
+  Line 174: console.error
+  Line 237: console.error
+
+client/src/components/data-cards/DataCardConfigModal.tsx
+  Line 63: console.warn
+  Line 70: console.error
+  Line 102: console.warn
+  Line 120: console.warn
+  Line 132: console.warn
+  Line 186: console.warn
+
+server/matchingEngine.ts
+  Line 306: console.error
+  Line 319: console.error
+  Line 389: console.error
+  Line 459: console.error
+  Line 499: console.error
+
+server/sequenceDb.ts
+  Line 61: console.error
+  Line 89: console.error
+  Line 148: console.error
+  Line 175: console.error
+  Line 194: console.error
+
+server/strainMatcher.ts
+  Line 184: console.error
+  Line 248: console.error
+  Line 293: console.error
+  Line 345: console.error
+  Line 485: console.error
+
+server/_core/vite.ts
+  Line 60: console.log
+  Line 61: console.log
+  Line 62: console.log
+  Line 66: console.log
+  Line 70: console.error
+
+server/routers/matchingEnhanced.ts
+  Line 25: console.error
+  Line 47: console.error
+  Line 69: console.error
+  Line 100: console.error
+  Line 129: console.error
+
+server/services/pushSchema.ts
+  Line 11: console.log
+  Line 17: console.error
+  Line 20: console.log
+  Line 21: console.log
+  Line 25: console.error
+
+server/cogsCalculation.ts
+  Line 99: console.error
+  Line 191: console.error
+  Line 225: console.error
+  Line 278: console.error
+
+server/db.ts
+  Line 34: console.warn
+  Line 81: console.error
+  Line 89: console.warn
+  Line 101: console.warn
+
+server/orderEnhancements.ts
+  Line 90: console.error
+  Line 115: console.error
+  Line 158: console.error
+  Line 229: console.error
+
+server/routers/strains.ts
+  Line 117: console.error
+  Line 137: console.error
+  Line 176: console.error
+  Line 195: console.error
+
+client/src/components/cogs/CogsClientSettings.tsx
+  Line 84: console.log
+  Line 93: console.error
+  Line 112: console.log
+  Line 127: console.error
+
+server/productRecommendations.ts
+  Line 119: console.error
+  Line 186: console.error
+  Line 264: console.error
+
+server/_core/voiceTranscription.ts
+  Line 14: console.log
+  Line 15: console.log
+  Line 16: console.log
+
+server/routers/dashboardPreferences.ts
+  Line 94: console.error
+  Line 154: console.error
+  Line 184: console.error
+
+server/services/migrate.ts
+  Line 9: console.log
+  Line 18: console.log
+  Line 20: console.error
+
+client/src/lib/data-cards/preferences.ts
+  Line 29: console.error
+  Line 41: console.error
+  Line 86: console.error
+
+server/auditLogger.ts
+  Line 105: console.error
+  Line 410: console.error
+
+server/dbTransaction.ts
+  Line 37: console.error
+  Line 103: console.log
+
+server/inventoryDb.ts
+  Line 487: console.log
+  Line 587: console.log
+
+server/matchingEngineReverseSimplified.ts
+  Line 18: console.warn
+  Line 120: console.error
+
+server/salesSheetsDb.ts
+  Line 100: console.error
+  Line 114: console.error
+
+server/_core/monitoring.ts
+  Line 19: console.log
+  Line 21: console.warn
+
+server/_core/notification.ts
+  Line 101: console.warn
+  Line 111: console.warn
+
+server/routers/adminImport.ts
+  Line 134: console.error
+  Line 146: console.log
+
+client/src/lib/data-cards/analytics.ts
+  Line 34: console.log
+  Line 55: console.warn
+
+client/src/components/cogs/CogsGlobalSettings.tsx
+  Line 53: console.log
+  Line 59: console.error
+
+client/src/components/dashboard/widgets-v2/CommentsPanel.tsx
+  Line 50: console.error
+  Line 58: console.error
+
+server/configurationManager.ts
+  Line 221: console.log
+
+server/index.ts
+  Line 57: console.log
+
+server/inventoryIntakeService.ts
+  Line 251: console.error
+
+server/inventoryUtils.ts
+  Line 431: console.warn
+
+server/_core/dataIntegrityService.ts
+  Line 376: console.log
+
+server/_core/dbUtils.ts
+  Line 113: console.error
+
+server/_core/index.ts
+  Line 122: console.log
+
+server/_core/instanceGenerationService.ts
+  Line 248: console.error
+
+server/_core/timezoneService.ts
+  Line 217: console.warn
+
+server/routers/calendarParticipants.ts
+  Line 87: console.log
+
+client/src/main.tsx
+  Line 29: console.error
+
+client/src/components/calendar/EventFormDialog.tsx
+  Line 136: console.error
+
+client/src/components/clients/AddCommunicationModal.tsx
+  Line 75: console.error
+
+client/src/components/inventory/ClientInterestWidget.tsx
+  Line 45: console.error
+
+client/src/components/inventory/SaveViewModal.tsx
+  Line 59: console.error
+
+client/src/components/inventory/SavedViewsDropdown.tsx
+  Line 40: console.error
+
+client/src/components/needs/NeedForm.tsx
+  Line 169: console.error
+
+client/src/components/orders/ProcessReturnModal.tsx
+  Line 80: console.error
+
+client/src/components/orders/ShipOrderModal.tsx
+  Line 45: console.error
+
+client/src/components/supply/SupplyForm.tsx
+  Line 138: console.error
+
+client/src/pages/ClientsListPage.tsx
+  Line 840: console.log
+
+client/src/pages/ComponentShowcase.tsx
+  Line 190: console.log
+
+client/src/pages/DashboardV3.tsx
+  Line 32: console.log
+
+client/src/pages/MatchmakingServicePage.tsx
+  Line 491: console.log
+
+client/src/pages/Quotes.tsx
+  Line 103: console.error
+
+client/src/pages/SalesSheetCreatorPage.tsx
+  Line 55: console.log
+
+client/src/pages/VendorSupplyPage.tsx
+  Line 79: console.log
+
+client/src/pages/accounting/BankAccounts.tsx
+  Line 60: console.log
+
+client/src/pages/accounting/BankTransactions.tsx
+  Line 103: console.log
+

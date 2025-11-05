@@ -9,6 +9,7 @@ import {
 } from "../drizzle/schema";
 import * as pricingEngine from "./pricingEngine";
 import { ErrorCatalog } from "./_core/errors";
+import { logger } from "./_core/logger";
 
 // ============================================================================
 // TYPES
@@ -97,7 +98,7 @@ export async function getInventoryWithPricing(
         quantity: item.quantity || 0,
       }));
     } catch (pricingError) {
-      console.error(
+      logger.error(
         "Pricing engine error, using fallback pricing:",
         pricingError
       );
@@ -111,7 +112,7 @@ export async function getInventoryWithPricing(
       }));
     }
   } catch (error) {
-    console.error("Error fetching inventory:", error);
+    logger.error("Error fetching inventory:", error);
     throw new Error("Failed to fetch inventory");
   }
 }

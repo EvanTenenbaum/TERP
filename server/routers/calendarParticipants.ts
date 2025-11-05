@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
+import { logger } from "../_core/logger";
 
 /**
  * Calendar Participants Router
@@ -84,7 +85,7 @@ export const calendarParticipantsRouter = router({
       if (input.notifyOnCreation) {
         // TODO: Integrate with notification system
         // For now, this is a hook point for future notification integration
-        console.log(`[Calendar] Notification: User ${input.userId} added to event ${input.eventId}`);
+        logger.info(`[Calendar] Notification: User ${input.userId} added to event ${input.eventId}`);
       }
 
       return participant;

@@ -5,6 +5,7 @@ import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
 import { seedStrainsFromCSV } from "../seedStrains";
 import { importOpenTHCStrainsFromJSON } from "../import_openthc_strains";
+import { logger } from "../_core/logger";
 import {
   findExactStrainMatch,
   findFuzzyStrainMatches,
@@ -114,7 +115,7 @@ export const strainsRouter = router({
         try {
           return await findExactStrainMatch(input.name);
         } catch (error) {
-          console.error('Error finding exact strain match:', error);
+          logger.error('Error finding exact strain match:', error);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Failed to search for strain',
@@ -134,7 +135,7 @@ export const strainsRouter = router({
         try {
           return await findFuzzyStrainMatches(input.name, input.threshold, input.limit);
         } catch (error) {
-          console.error('Error finding fuzzy strain matches:', error);
+          logger.error('Error finding fuzzy strain matches:', error);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Failed to search for similar strains',
@@ -173,7 +174,7 @@ export const strainsRouter = router({
             input.autoAssignThreshold
           );
         } catch (error) {
-          console.error('Error getting or creating strain:', error);
+          logger.error('Error getting or creating strain:', error);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: error instanceof Error ? error.message : 'Failed to process strain',
@@ -192,7 +193,7 @@ export const strainsRouter = router({
         try {
           return await fuzzySearchStrains(input.query, input.limit);
         } catch (error) {
-          console.error('Error searching strains:', error);
+          logger.error('Error searching strains:', error);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Failed to search strains',

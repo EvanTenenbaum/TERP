@@ -12,6 +12,7 @@
 import { getDb } from "./db";
 import { ledgerEntries, accounts, type InsertLedgerEntry } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
+import { logger } from "./_core/logger";
 
 /**
  * Standard account codes (should be configurable in production)
@@ -44,7 +45,7 @@ async function getAccountIdByNumber(accountNumber: string): Promise<number | nul
     
     return account?.id || null;
   } catch (error) {
-    console.error(`Error fetching account ${accountNumber}:`, error);
+    logger.error(`Error fetching account ${accountNumber}:`, error);
     return null;
   }
 }
@@ -133,7 +134,7 @@ export async function createJournalEntry(entryData: {
       { account: entryData.creditAccountId, debit: 0, credit: amountNum }
     ];
   } catch (error) {
-    console.error("Error creating journal entry:", error);
+    logger.error("Error creating journal entry:", error);
     throw new Error(`Failed to create journal entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -159,7 +160,7 @@ export async function postSaleGLEntries(saleData: {
     const revenueAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.REVENUE);
     
     if (!arAccountId || !revenueAccountId) {
-      console.warn("Standard accounts not found - skipping GL posting");
+      logger.warn("Standard accounts not found - skipping GL posting");
       return [];
     }
     
@@ -177,9 +178,9 @@ export async function postSaleGLEntries(saleData: {
       createdBy: saleData.userId
     });
   } catch (error) {
-    console.error("Error posting sale GL entries:", error);
+    logger.error("Error posting sale GL entries:", error);
     // Don't throw - allow sale to complete even if GL posting fails
-    console.warn("Sale completed but GL entries failed");
+    logger.warn("Sale completed but GL entries failed");
     return [];
   }
 }
@@ -205,7 +206,7 @@ export async function postPaymentGLEntries(paymentData: {
     const arAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE);
     
     if (!cashAccountId || !arAccountId) {
-      console.warn("Standard accounts not found - skipping GL posting");
+      logger.warn("Standard accounts not found - skipping GL posting");
       return [];
     }
     
@@ -223,8 +224,8 @@ export async function postPaymentGLEntries(paymentData: {
       createdBy: paymentData.userId
     });
   } catch (error) {
-    console.error("Error posting payment GL entries:", error);
-    console.warn("Payment completed but GL entries failed");
+    logger.error("Error posting payment GL entries:", error);
+    logger.warn("Payment completed but GL entries failed");
     return [];
   }
 }
@@ -250,7 +251,7 @@ export async function postRefundGLEntries(refundData: {
     const arAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.ACCOUNTS_RECEIVABLE);
     
     if (!salesReturnsAccountId || !arAccountId) {
-      console.warn("Standard accounts not found - skipping GL posting");
+      logger.warn("Standard accounts not found - skipping GL posting");
       return [];
     }
     
@@ -268,8 +269,8 @@ export async function postRefundGLEntries(refundData: {
       createdBy: refundData.userId
     });
   } catch (error) {
-    console.error("Error posting refund GL entries:", error);
-    console.warn("Refund completed but GL entries failed");
+    logger.error("Error posting refund GL entries:", error);
+    logger.warn("Refund completed but GL entries failed");
     return [];
   }
 }
@@ -294,7 +295,7 @@ export async function postCOGSGLEntries(cogsData: {
     const inventoryAccountId = await getAccountIdByNumber(STANDARD_ACCOUNTS.INVENTORY);
     
     if (!cogsAccountId || !inventoryAccountId) {
-      console.warn("Standard accounts not found - skipping COGS GL posting");
+      logger.warn("Standard accounts not found - skipping COGS GL posting");
       return [];
     }
     
@@ -312,8 +313,8 @@ export async function postCOGSGLEntries(cogsData: {
       createdBy: cogsData.userId
     });
   } catch (error) {
-    console.error("Error posting COGS GL entries:", error);
-    console.warn("COGS calculation completed but GL entries failed");
+    logger.error("Error posting COGS GL entries:", error);
+    logger.warn("COGS calculation completed but GL entries failed");
     return [];
   }
 }
@@ -350,7 +351,7 @@ export async function reverseGLEntries(
       );
     
     if (originalEntries.length === 0) {
-      console.warn(`No GL entries found for ${originalReferenceType} #${originalReferenceId}`);
+      logger.warn(`No GL entries found for ${originalReferenceType} #${originalReferenceId}`);
       return [];
     }
     
@@ -376,7 +377,7 @@ export async function reverseGLEntries(
     
     return originalEntries;
   } catch (error) {
-    console.error("Error reversing GL entries:", error);
+    logger.error("Error reversing GL entries:", error);
     throw new Error(`Failed to reverse GL entries: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -418,9 +419,9 @@ export async function seedStandardAccounts(): Promise<void> {
       }
     }
     
-    console.log("Standard accounts seeded successfully");
+    logger.info("Standard accounts seeded successfully");
   } catch (error) {
-    console.error("Error seeding standard accounts:", error);
+    logger.error("Error seeding standard accounts:", error);
     throw new Error(`Failed to seed standard accounts: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

@@ -27,6 +27,7 @@ import {
 import { eq } from "drizzle-orm";
 import * as inventoryUtils from "./inventoryUtils";
 import { findOrCreate } from "./_core/dbUtils";
+import { logger } from "./_core/logger";
 
 export interface IntakeInput {
   vendorName: string;
@@ -248,7 +249,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
 
     return result;
   } catch (error) {
-    console.error("Error processing intake:", error);
+    logger.error("Error processing intake:", error);
     throw new Error(
       `Failed to process intake: ${error instanceof Error ? error.message : "Unknown error"}`
     );

@@ -13,6 +13,7 @@
  * System configuration schema
  * All configurable parameters with their types and defaults
  */
+import { logger } from "./_core/logger";
 export interface SystemConfiguration {
   // Accounting
   accounting: {
@@ -218,7 +219,7 @@ export function setConfigValue(
     reason
   });
   
-  console.log(`Configuration changed: ${path} = ${value} (by user ${userId})`);
+  logger.info(`Configuration changed: ${path} = ${value} (by user ${userId})`);
 }
 
 /**

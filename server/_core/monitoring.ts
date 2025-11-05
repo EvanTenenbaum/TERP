@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+import { logger } from "./logger";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -16,9 +17,9 @@ export function initMonitoring() {
       ],
     });
     
-    console.log("✓ Sentry monitoring initialized");
+    logger.info("✓ Sentry monitoring initialized");
   } else if (isProduction) {
-    console.warn("⚠ Sentry DSN not configured - error tracking disabled");
+    logger.warn("⚠ Sentry DSN not configured - error tracking disabled");
   }
 }
 

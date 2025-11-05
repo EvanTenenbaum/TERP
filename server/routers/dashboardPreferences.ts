@@ -3,6 +3,7 @@ import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { userDashboardPreferences, type WidgetConfig } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 /**
  * Dashboard Preferences Router
@@ -91,7 +92,7 @@ export const dashboardPreferencesRouter = router({
         };
       }
     } catch (error) {
-      console.error("Error fetching dashboard preferences:", error);
+      logger.error("Error fetching dashboard preferences:", error);
       throw new Error("Failed to fetch dashboard preferences");
     }
   }),
@@ -151,7 +152,7 @@ export const dashboardPreferencesRouter = router({
           };
         }
       } catch (error) {
-        console.error("Error updating dashboard preferences:", error);
+        logger.error("Error updating dashboard preferences:", error);
         throw new Error("Failed to update dashboard preferences");
       }
     }),
@@ -181,7 +182,7 @@ export const dashboardPreferencesRouter = router({
         message: "Dashboard preferences reset to defaults",
       };
     } catch (error) {
-      console.error("Error resetting dashboard preferences:", error);
+      logger.error("Error resetting dashboard preferences:", error);
       throw new Error("Failed to reset dashboard preferences");
     }
   }),

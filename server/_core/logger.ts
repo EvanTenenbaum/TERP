@@ -1,4 +1,5 @@
 import pino from "pino";
+import { logger } from "./logger";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -27,10 +28,10 @@ export const logger = pino({
  * Call this in server startup
  */
 export function replaceConsole() {
-  console.log = (...args: unknown[]) => logger.info(args);
-  console.error = (...args: unknown[]) => logger.error(args);
-  console.warn = (...args: unknown[]) => logger.warn(args);
-  console.debug = (...args: unknown[]) => logger.debug(args);
+  logger.info = (...args: unknown[]) => logger.info(args);
+  logger.error = (...args: unknown[]) => logger.error(args);
+  logger.warn = (...args: unknown[]) => logger.warn(args);
+  logger.debug = (...args: unknown[]) => logger.debug(args);
 }
 
 /**

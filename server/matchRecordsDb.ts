@@ -2,6 +2,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { matchRecords } from "../drizzle/schema";
 import type { MatchRecord, InsertMatchRecord } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 /**
  * Record a match for tracking and learning
@@ -21,7 +22,7 @@ export async function recordMatch(match: InsertMatchRecord): Promise<MatchRecord
     
     return created;
   } catch (error) {
-    console.error("Error recording match:", error);
+    logger.error("Error recording match:", error);
     throw new Error(`Failed to record match: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -43,7 +44,7 @@ export async function getMatchRecordById(id: number): Promise<MatchRecord | null
     
     return record || null;
   } catch (error) {
-    console.error("Error fetching match record:", error);
+    logger.error("Error fetching match record:", error);
     throw new Error(`Failed to fetch match record: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -86,7 +87,7 @@ export async function getMatchRecords(filters?: {
     const records = await query.orderBy(desc(matchRecords.createdAt));
     return records;
   } catch (error) {
-    console.error("Error fetching match records:", error);
+    logger.error("Error fetching match records:", error);
     throw new Error(`Failed to fetch match records: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -127,7 +128,7 @@ export async function updateMatchAction(
     
     return updated;
   } catch (error) {
-    console.error("Error updating match action:", error);
+    logger.error("Error updating match action:", error);
     throw new Error(`Failed to update match action: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -165,7 +166,7 @@ export async function markMatchAsConverted(
     
     return updated;
   } catch (error) {
-    console.error("Error marking match as converted:", error);
+    logger.error("Error marking match as converted:", error);
     throw new Error(`Failed to mark match as converted: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -234,7 +235,7 @@ export async function getMatchAnalytics(): Promise<{
       avgConfidenceScore,
     };
   } catch (error) {
-    console.error("Error getting match analytics:", error);
+    logger.error("Error getting match analytics:", error);
     throw new Error(`Failed to get match analytics: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -257,7 +258,7 @@ export async function getMatchesForNeed(clientNeedId: number): Promise<MatchReco
     
     return matches;
   } catch (error) {
-    console.error("Error fetching matches for need:", error);
+    logger.error("Error fetching matches for need:", error);
     throw new Error(`Failed to fetch matches for need: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -312,7 +313,7 @@ export async function getTopPerformingMatches(limit: number = 10): Promise<Array
 
     return results.slice(0, limit);
   } catch (error) {
-    console.error("Error getting top performing matches:", error);
+    logger.error("Error getting top performing matches:", error);
     throw new Error(`Failed to get top performing matches: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

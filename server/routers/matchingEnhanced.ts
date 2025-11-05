@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as historicalAnalysis from "../historicalAnalysis";
+import { logger } from "../_core/logger";
 
 /**
  * Matching Router (Enhanced Version)
@@ -22,7 +23,7 @@ export const matchingEnhancedRouter = router({
           data: matches,
         };
       } catch (error) {
-        console.error("Error finding matches for need:", error);
+        logger.error("Error finding matches for need:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to find matches",
@@ -44,7 +45,7 @@ export const matchingEnhancedRouter = router({
           data: matches,
         };
       } catch (error) {
-        console.error("Error finding matches for batch:", error);
+        logger.error("Error finding matches for batch:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to find matches",
@@ -66,7 +67,7 @@ export const matchingEnhancedRouter = router({
           data: matches,
         };
       } catch (error) {
-        console.error("Error finding matches for vendor supply:", error);
+        logger.error("Error finding matches for vendor supply:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to find matches",
@@ -97,7 +98,7 @@ export const matchingEnhancedRouter = router({
           data: patterns,
         };
       } catch (error) {
-        console.error("Error analyzing purchase history:", error);
+        logger.error("Error analyzing purchase history:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to analyze purchase history",
@@ -126,7 +127,7 @@ export const matchingEnhancedRouter = router({
           data: lapsedBuyers,
         };
       } catch (error) {
-        console.error("Error identifying lapsed buyers:", error);
+        logger.error("Error identifying lapsed buyers:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to identify lapsed buyers",

@@ -7,6 +7,7 @@
  */
 
 import { getDb } from "./db";
+import { logger } from "./_core/logger";
 
 /**
  * Execute a function within a database transaction
@@ -34,7 +35,7 @@ export async function withTransaction<T>(
     const result = await callback(db);
     return result;
   } catch (error) {
-    console.error("Transaction error:", error);
+    logger.error("Transaction error:", error);
     throw error;
   }
 }
@@ -100,7 +101,7 @@ export async function withRetry<T>(
       const delay = initialDelay * Math.pow(2, attempt);
       await new Promise(resolve => setTimeout(resolve, delay));
       
-      console.log(`Retrying after ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+      logger.info(`Retrying after ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
     }
   }
   
