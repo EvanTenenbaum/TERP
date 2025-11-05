@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { argosScreenshot } from '@argos-ci/playwright';
 import { checkAccessibility } from './utils/accessibility';
 
 test.describe('Authentication Flow', () => {
@@ -18,7 +19,7 @@ test.describe('Authentication Flow', () => {
     await checkAccessibility(page);
 
     // Take a screenshot for visual regression testing
-    await expect(page).toHaveScreenshot('dashboard-page.png');
+    await argosScreenshot(page, 'dashboard-authenticated');
 
     // Sign out
     await page.getByRole('button', { name: 'User Menu' }).click();
