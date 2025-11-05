@@ -111,6 +111,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@argos-ci/playwright": "^6.3.1",
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
     "@eslint/js": "^9.38.0",
     "@faker-js/faker": "^10.1.0",
