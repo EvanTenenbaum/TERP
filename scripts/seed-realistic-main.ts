@@ -1,20 +1,23 @@
 /**
  * Realistic Mock Data Generator - Main Orchestrator
  * 
- * Generates 22 months of realistic data for TERP:
- * - $44M total revenue ($2M/month average)
- * - 60 clients (10 whales = 70%, 50 regular = 30%)
- * - 8 vendors (90% consignment intake)
- * - 50 strains, 500+ products
- * - ~176 lots, ~158 batches
- * - ~4,400 orders
- * - Invoices with AR aging (15% overdue, 50% of overdue 120+ days)
- * - Returns (0.5%) and refunds (5% of orders get 5% refund)
+ * Supports multiple scenarios for different testing needs:
+ * - light: Fast seed for integration tests (~30s)
+ * - full: Complete dataset for E2E tests (~2min)
+ * - edgeCases: Extreme scenarios for stress testing (~45s)
+ * - chaos: Random anomalies for chaos testing (~60s)
+ * 
+ * Usage:
+ *   pnpm seed                    # Uses "full" scenario (default)
+ *   pnpm seed light              # Uses "light" scenario
+ *   pnpm seed edgeCases          # Uses "edgeCases" scenario
+ *   pnpm seed chaos              # Uses "chaos" scenario
  */
 
 import { db } from './db-sync.js';
 import { clients, strains, products, lots, batches, orders, invoices, brands, users } from '../drizzle/schema.js';
-import { CONFIG } from './generators/config.js';
+import { CONFIG, applyScenario } from './generators/config.js';
+import { getScenario } from './generators/scenarios.js';
 import { generateAllClients } from './generators/clients.js';
 import { generateStrains } from './generators/strains.js';
 import { generateProducts } from './generators/products.js';
@@ -23,15 +26,42 @@ import { generateOrders } from './generators/orders.js';
 import { generateInvoices, calculateARAgingSummary } from './generators/invoices.js';
 import { generateReturns, generateRefunds } from './generators/returns-refunds.js';
 import { formatCurrency } from './generators/utils.js';
+import { faker } from '@faker-js/faker';
 
 async function seedRealisticData() {
+  // Get scenario from command line args (default to "full")
+  const scenarioName = process.argv[2] || 'full';
+  
   console.log('\n🚀 TERP Realistic Data Generator');
   console.log('='.repeat(50));
-  console.log(`📅 Period: ${CONFIG.startDate.toLocaleDateString()} - ${CONFIG.endDate.toLocaleDateString()}`);
-  console.log(`💰 Target Revenue: ${formatCurrency(CONFIG.totalRevenue)}`);
-  console.log(`👥 Clients: ${CONFIG.totalClients} (${CONFIG.whaleClients} whales, ${CONFIG.regularClients} regular)`);
-  console.log(`🏭 Vendors: ${CONFIG.totalVendors}`);
-  console.log('='.repeat(50) + '\n');
+  
+  try {
+    const scenario = getScenario(scenarioName);
+    console.log(`📋 Scenario: ${scenario.name}`);
+    console.log(`📝 Description: ${scenario.description}`);
+    
+    // Apply scenario to CONFIG
+    applyScenario(scenario);
+    
+    // Set deterministic seed for Faker if provided
+    if (CONFIG.seed) {
+      faker.seed(CONFIG.seed);
+      console.log(`🎲 Random seed: ${CONFIG.seed} (deterministic)`);
+    } else {
+      console.log(`🎲 Random seed: ${Date.now()} (non-deterministic)`);
+    }
+    
+    console.log('='.repeat(50));
+    console.log(`📅 Period: ${CONFIG.startDate.toLocaleDateString()} - ${CONFIG.endDate.toLocaleDateString()}`);
+    console.log(`💰 Target Revenue: ${formatCurrency(CONFIG.totalRevenue)}`);
+    console.log(`👥 Clients: ${CONFIG.totalClients} (${CONFIG.whaleClients} whales, ${CONFIG.regularClients} regular)`);
+    console.log(`🏭 Vendors: ${CONFIG.totalVendors}`);
+    console.log(`📦 Orders: ~${CONFIG.ordersPerMonth * CONFIG.totalMonths}`);
+    console.log('='.repeat(50) + '\n');
+  } catch (error) {
+    console.error(`❌ Error: ${(error as Error).message}`);
+    process.exit(1);
+  }
 
   try {
     // Step 0: Create Default User
@@ -100,121 +130,97 @@ async function seedRealisticData() {
     await db.insert(lots).values(lotsData);
     
     // Step 6: Generate Batches
-    console.log('📦 Generating inventory batches...');
-    const productIds = productsData.map((_, index) => index + 1);
-    const lotIds = lotsData.map((_, index) => index + 1);
-    
-    const batchesData = generateBatches(productIds, lotIds, vendorIds);
-    const consignmentBatches = batchesData.filter(b => b.paymentTerms === 'CONSIGNMENT').length;
-    const codBatches = batchesData.filter(b => b.paymentTerms === 'COD').length;
-    console.log(`   ✓ ${batchesData.length} batches created`);
-    console.log(`   ✓ ${consignmentBatches} consignment batches (${(consignmentBatches / batchesData.length * 100).toFixed(1)}%)`);
-    console.log(`   ✓ ${codBatches} COD batches (${(codBatches / batchesData.length * 100).toFixed(1)}%)\n`);
+    console.log('📦 Generating batches...');
+    const batchesData = generateBatches(lotsData.length);
+    console.log(`   ✓ ${batchesData.length} batches created\n`);
     
     await db.insert(batches).values(batchesData);
     
-    // Step 6: Generate Orders
-    console.log('📝 Generating orders...');
-    console.log('   (This may take a minute...)\n');
-    const whaleClientIds = whaleClients.map((_, index) => index + 1);
-    const regularClientIds = regularClients.map((_, index) => CONFIG.whaleClients + index + 1);
+    // Step 7: Generate Orders
+    console.log('🛒 Generating orders...');
+    const clientIds = [...whaleClients, ...regularClients].map((_, index) => index + 1);
+    const ordersData = generateOrders(clientIds, whaleClients.length);
+    console.log(`   ✓ ${ordersData.length} orders created\n`);
     
-    const ordersData = generateOrders(whaleClientIds, regularClientIds, batchesData);
-    const totalRevenue = ordersData.reduce((sum, o) => sum + parseFloat(o.total), 0);
-    const whaleRevenue = ordersData
-      .filter(o => whaleClientIds.includes(o.clientId))
-      .reduce((sum, o) => sum + parseFloat(o.total), 0);
-    const regularRevenue = totalRevenue - whaleRevenue;
+    for (let i = 0; i < ordersData.length; i += batchSize) {
+      const batch = ordersData.slice(i, i + batchSize);
+      await db.insert(orders).values(batch);
+    }
     
-    console.log(`   ✓ ${ordersData.length} orders created`);
-    console.log(`   ✓ Total revenue: ${formatCurrency(totalRevenue)}`);
-    console.log(`   ✓ Whale revenue: ${formatCurrency(whaleRevenue)} (${(whaleRevenue / totalRevenue * 100).toFixed(1)}%)`);
-    console.log(`   ✓ Regular revenue: ${formatCurrency(regularRevenue)} (${(regularRevenue / totalRevenue * 100).toFixed(1)}%)\n`);
-    
-    await db.insert(orders).values(ordersData);
-    
-    // Step 7: Generate Invoices
-    console.log('💰 Generating invoices and AR aging...');
+    // Step 8: Generate Invoices
+    console.log('💵 Generating invoices...');
     const invoicesData = generateInvoices(ordersData);
-    const arSummary = calculateARAgingSummary(invoicesData);
-    const overdueInvoices = invoicesData.filter(i => i.status === 'OVERDUE').length;
+    console.log(`   ✓ ${invoicesData.length} invoices created\n`);
     
-    console.log(`   ✓ ${invoicesData.length} invoices created`);
-    console.log(`   ✓ ${overdueInvoices} overdue invoices (${(overdueInvoices / invoicesData.length * 100).toFixed(1)}%)`);
-    console.log(`   ✓ Total AR: ${formatCurrency(arSummary.totalAR)}`);
-    console.log(`   ✓ 120+ days overdue: ${formatCurrency(arSummary.overdue120Plus)} (${(arSummary.overdue120Plus / arSummary.totalAR * 100).toFixed(1)}%)\n`);
+    for (let i = 0; i < invoicesData.length; i += batchSize) {
+      const batch = invoicesData.slice(i, i + batchSize);
+      await db.insert(invoices).values(batch);
+    }
     
-    await db.insert(invoices).values(invoicesData);
-    
-    // Step 8: Generate Returns and Refunds
-    console.log('↩️  Generating returns and refunds...');
+    // Step 9: Generate Returns
+    console.log('↩️  Generating returns...');
     const returnsData = generateReturns(ordersData);
+    console.log(`   ✓ ${returnsData.length} returns created\n`);
+    
+    if (returnsData.length > 0) {
+      for (let i = 0; i < returnsData.length; i += batchSize) {
+        const batch = returnsData.slice(i, i + batchSize);
+        await db.insert(orders).values(batch);
+      }
+    }
+    
+    // Step 10: Generate Refunds
+    console.log('💸 Generating refunds...');
     const refundsData = generateRefunds(ordersData);
+    console.log(`   ✓ ${refundsData.length} refunds created\n`);
     
-    console.log(`   ✓ ${returnsData.length} returns (${(returnsData.length / ordersData.length * 100).toFixed(2)}%)`);
-    console.log(`   ✓ ${refundsData.length} refunds (${(refundsData.length / ordersData.length * 100).toFixed(1)}%)\n`);
+    if (refundsData.length > 0) {
+      for (let i = 0; i < refundsData.length; i += batchSize) {
+        const batch = refundsData.slice(i, i + batchSize);
+        await db.insert(orders).values(batch);
+      }
+    }
     
-    // Note: Returns and refunds tables need to be added to schema
-    // await db.insert(returns).values(returnsData);
-    // await db.insert(refunds).values(refundsData);
-
-    // Step 9: Calculate and update computed fields
-    console.log("📊 Calculating computed fields...");
-    await db.execute("node --loader ts-node/esm ./scripts/post-seed-calculations.ts");
-    console.log("   ✓ Computed fields updated\n");
+    // Step 11: Calculate Summary Statistics
+    console.log('📊 Calculating summary statistics...');
+    const arSummary = calculateARAgingSummary(invoicesData);
     
-    // Summary
-    console.log('✅ Realistic data generation complete!\n');
-    console.log('📊 Summary:');
+    console.log('\n' + '='.repeat(50));
+    console.log('✅ DATA GENERATION COMPLETE');
     console.log('='.repeat(50));
-    console.log(`   Clients:        ${allClients.length} (${whaleClients.length} whales, ${regularClients.length} regular, ${vendorClients.length} vendors)`);
-    console.log(`   Strains:        ${strainsData.length}`);
-    console.log(`   Products:       ${productsData.length} (${flowerProducts.length} flower, ${nonFlowerProducts.length} other)`);
-    console.log(`   Lots:           ${lotsData.length}`);
-    console.log(`   Batches:        ${batchesData.length} (${consignmentBatches} consignment)`);
-    console.log(`   Orders:         ${ordersData.length}`);
-    console.log(`   Invoices:       ${invoicesData.length} (${overdueInvoices} overdue)`);
-    console.log(`   Returns:        ${returnsData.length}`);
-    console.log(`   Refunds:        ${refundsData.length}`);
-    console.log(`   Total Revenue:  ${formatCurrency(totalRevenue)}`);
-    console.log(`   Total AR:       ${formatCurrency(arSummary.totalAR)}`);
+    console.log(`📋 Scenario: ${getScenario(process.argv[2] || 'full').name}`);
+    console.log(`👥 Clients: ${allClients.length}`);
+    console.log(`🌿 Strains: ${strainsData.length}`);
+    console.log(`📦 Products: ${productsData.length}`);
+    console.log(`📊 Lots: ${lotsData.length}`);
+    console.log(`📦 Batches: ${batchesData.length}`);
+    console.log(`🛒 Orders: ${ordersData.length}`);
+    console.log(`💵 Invoices: ${invoicesData.length}`);
+    console.log(`↩️  Returns: ${returnsData.length}`);
+    console.log(`💸 Refunds: ${refundsData.length}`);
+    console.log('\n💰 AR Aging Summary:');
+    console.log(`   Current: ${formatCurrency(arSummary.current)}`);
+    console.log(`   1-30 days: ${formatCurrency(arSummary.days30)}`);
+    console.log(`   31-60 days: ${formatCurrency(arSummary.days60)}`);
+    console.log(`   61-90 days: ${formatCurrency(arSummary.days90)}`);
+    console.log(`   91-120 days: ${formatCurrency(arSummary.days120)}`);
+    console.log(`   120+ days: ${formatCurrency(arSummary.days120Plus)}`);
+    console.log(`   Total: ${formatCurrency(arSummary.total)}`);
     console.log('='.repeat(50) + '\n');
     
-    return {
-      success: true,
-      stats: {
-        clients: allClients.length,
-        strains: strainsData.length,
-        products: productsData.length,
-        lots: lotsData.length,
-        batches: batchesData.length,
-        orders: ordersData.length,
-        invoices: invoicesData.length,
-        returns: returnsData.length,
-        refunds: refundsData.length,
-        totalRevenue,
-        totalAR: arSummary.totalAR,
-      },
-    };
   } catch (error) {
-    console.error('\n❌ Error generating realistic data:');
-    console.error(error);
+    console.error('❌ Error during seeding:', error);
     throw error;
   }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  seedRealisticData()
-    .then(() => {
-      console.log('✅ Done!');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('❌ Failed:', error);
-      process.exit(1);
-    });
-}
-
-export { seedRealisticData };
-
+// Run the seed function
+seedRealisticData()
+  .then(() => {
+    console.log('✅ Seeding completed successfully');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('❌ Seeding failed:', error);
+    process.exit(1);
+  });

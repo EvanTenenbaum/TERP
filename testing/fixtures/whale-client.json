@@ -1,0 +1,20 @@
+{
+  "id": 1,
+  "name": "Green Valley Dispensary",
+  "type": "buyer",
+  "email": "orders@greenvalley.com",
+  "phone": "+1-555-0101",
+  "address": "123 Main St, Los Angeles, CA 90001",
+  "tags": ["whale", "premium", "high-volume"],
+  "isWhale": true,
+  "category": "Dispensary",
+  "totalSpent": 3080000,
+  "totalProfit": 770000,
+  "arCurrent": 0,
+  "arDays30": 0,
+  "arDays60": 0,
+  "arDays90": 0,
+  "arDays120": 0,
+  "arDays120Plus": 0,
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}
