@@ -5,6 +5,7 @@ import * as db from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "./env";
+import { logger } from "./logger";
 
 const JWT_SECRET = env.JWT_SECRET || "your-secret-key-change-in-production";
 const COOKIE_NAME = "terp_session";
@@ -56,11 +57,11 @@ class SimpleAuthService {
    */
   async authenticateRequest(req: Request): Promise<User> {
     try {
-      console.log('[Simple Auth] Cookies:', req.cookies);
-      console.log('[Simple Auth] Cookie name:', COOKIE_NAME);
+      logger.info('[Simple Auth] Cookies:', req.cookies);
+      logger.info('[Simple Auth] Cookie name:', COOKIE_NAME);
       // Get session token from cookie
       const token = req.cookies[COOKIE_NAME];
-      console.log('[Simple Auth] Token:', token ? 'found' : 'not found');
+      logger.info('[Simple Auth] Token:', token ? 'found' : 'not found');
       
       if (!token) {
         throw ForbiddenError("Not authenticated - no session token");
@@ -81,7 +82,7 @@ class SimpleAuthService {
 
       return user;
     } catch (error) {
-      console.error("[Simple Auth] Authentication failed:", error);
+      logger.error("[Simple Auth] Authentication failed:", error);
       throw ForbiddenError("Authentication failed");
     }
   }
@@ -171,7 +172,7 @@ export function registerSimpleAuthRoutes(app: Express) {
 
       res.json({ success: true, user: { name: user.name, email: user.email } });
     } catch (error) {
-      console.error("[Auth] Login failed", error);
+      logger.error("[Auth] Login failed", error);
       res.status(401).json({ error: "Invalid username or password" });
     }
   });
@@ -234,7 +235,7 @@ export function registerSimpleAuthRoutes(app: Express) {
       const user = await simpleAuth.createUser(username, password, name);
       res.json({ success: true, user: { name: user.name, email: user.email } });
     } catch (error) {
-      console.error("[Auth] Create first user failed", error);
+      logger.error("[Auth] Create first user failed", error);
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to create user" });
     }
   });

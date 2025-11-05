@@ -17,6 +17,7 @@ import { setupGracefulShutdown } from "./gracefulShutdown";
 import { seedAllDefaults } from "../services/seedDefaults";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
+import { logger } from "./logger";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -119,7 +120,7 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    logger.info(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
   // Sentry error handler (must be last)
@@ -134,4 +135,4 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+startServer().catch(logger.error);

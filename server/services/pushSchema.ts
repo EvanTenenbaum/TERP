@@ -1,5 +1,6 @@
 import { exec } from "child_process";
 import { promisify } from "util";
+import { logger } from "../_core/logger";
 
 const execAsync = promisify(exec);
 
@@ -8,21 +9,21 @@ const execAsync = promisify(exec);
  * This syncs the database schema with the code without using migrations
  */
 export async function pushSchema() {
-  console.log("🔄 Pushing schema changes to database...");
+  logger.info("🔄 Pushing schema changes to database...");
 
   try {
     const { stdout, stderr } = await execAsync("npx drizzle-kit push");
     
     if (stderr && !stderr.includes("warning")) {
-      console.error("Schema push stderr:", stderr);
+      logger.error("Schema push stderr:", stderr);
     }
     
-    console.log("Schema push output:", stdout);
-    console.log("✅ Schema pushed successfully");
+    logger.info("Schema push output:", stdout);
+    logger.info("✅ Schema pushed successfully");
     
     return { success: true, output: stdout };
   } catch (error: any) {
-    console.error("❌ Schema push failed:", error);
+    logger.error("❌ Schema push failed:", error);
     throw new Error(`Schema push failed: ${error.message}`);
   }
 }

@@ -1,6 +1,7 @@
 import { getDb } from "./db";
 import { clientNeeds, batches, products, clients } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "./_core/logger";
 
 /**
  * Simplified Reverse Matching Engine
@@ -15,7 +16,7 @@ export async function findClientNeedsForBatch(batchId: number) {
   try {
     const db = await getDb();
     if (!db) {
-      console.warn("Database not available");
+      logger.warn("Database not available");
       return [];
     }
 
@@ -117,7 +118,7 @@ export async function findClientNeedsForBatch(batchId: number) {
 
     return matches;
   } catch (error) {
-    console.error("Error finding client needs for batch:", error);
+    logger.error("Error finding client needs for batch:", error);
     return []; // Return empty array instead of throwing
   }
 }

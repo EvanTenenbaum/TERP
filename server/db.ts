@@ -5,6 +5,7 @@ import * as schema from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { getConnectionPool } from './_core/connectionPool';
 import { logger } from './_core/logger';
+import { logger } from "./_core/logger";
 
 let _db: MySql2Database<typeof schema> | null = null;
 
@@ -31,7 +32,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
+    logger.warn("[Database] Cannot upsert user: database not available");
     return;
   }
 
@@ -78,7 +79,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       set: updateSet,
     });
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
+    logger.error("[Database] Failed to upsert user:", error);
     throw error;
   }
 }
@@ -86,7 +87,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 export async function getUser(openId: string) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    logger.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
 
@@ -98,7 +99,7 @@ export async function getUser(openId: string) {
 export async function getUserByEmail(email: string) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    logger.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
 

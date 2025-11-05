@@ -7,6 +7,7 @@
 import InstanceGenerationService from "./instanceGenerationService";
 import DataIntegrityService from "./dataIntegrityService";
 import * as calendarDb from "../calendarDb";
+import { logger } from "./logger";
 
 /**
  * Instance Generation Job
@@ -15,13 +16,13 @@ import * as calendarDb from "../calendarDb";
  * Schedule: Daily at 2:00 AM
  */
 export async function instanceGenerationJob(): Promise<void> {
-  console.log("[CalendarJobs] Starting instance generation job...");
+  logger.info("[CalendarJobs] Starting instance generation job...");
 
   try {
     const count = await InstanceGenerationService.regenerateAllInstances(90);
-    console.log(`[CalendarJobs] Generated ${count} instances`);
+    logger.info(`[CalendarJobs] Generated ${count} instances`);
   } catch (error) {
-    console.error("[CalendarJobs] Instance generation job failed:", error);
+    logger.error("[CalendarJobs] Instance generation job failed:", error);
   }
 }
 
@@ -32,13 +33,13 @@ export async function instanceGenerationJob(): Promise<void> {
  * Schedule: Every 5 minutes
  */
 export async function reminderNotificationJob(): Promise<void> {
-  console.log("[CalendarJobs] Starting reminder notification job...");
+  logger.info("[CalendarJobs] Starting reminder notification job...");
 
   try {
     const now = new Date();
     const pendingReminders = await calendarDb.getPendingReminders(now);
 
-    console.log(`[CalendarJobs] Found ${pendingReminders.length} pending reminders`);
+    logger.info(`[CalendarJobs] Found ${pendingReminders.length} pending reminders`);
 
     for (const reminder of pendingReminders) {
       try {
@@ -49,9 +50,9 @@ export async function reminderNotificationJob(): Promise<void> {
 
         // For now, just mark as sent
         await calendarDb.updateReminderStatus(reminder.id, "SENT");
-        console.log(`[CalendarJobs] Sent reminder ${reminder.id}`);
+        logger.info(`[CalendarJobs] Sent reminder ${reminder.id}`);
       } catch (error) {
-        console.error(`[CalendarJobs] Failed to send reminder ${reminder.id}:`, error);
+        logger.error(`[CalendarJobs] Failed to send reminder ${reminder.id}:`, error);
         await calendarDb.updateReminderStatus(
           reminder.id,
           "FAILED",
@@ -60,9 +61,9 @@ export async function reminderNotificationJob(): Promise<void> {
       }
     }
 
-    console.log(`[CalendarJobs] Reminder notification job complete`);
+    logger.info(`[CalendarJobs] Reminder notification job complete`);
   } catch (error) {
-    console.error("[CalendarJobs] Reminder notification job failed:", error);
+    logger.error("[CalendarJobs] Reminder notification job failed:", error);
   }
 }
 
@@ -73,12 +74,12 @@ export async function reminderNotificationJob(): Promise<void> {
  * Schedule: Weekly on Sunday at 3:00 AM
  */
 export async function dataCleanupJob(): Promise<void> {
-  console.log("[CalendarJobs] Starting data cleanup job...");
+  logger.info("[CalendarJobs] Starting data cleanup job...");
 
   try {
     const results = await DataIntegrityService.runAllCleanup();
 
-    console.log("[CalendarJobs] Data cleanup complete:", {
+    logger.info("[CalendarJobs] Data cleanup complete:", {
       orphanedRulesDeleted: results.orphanedRulesDeleted,
       orphanedInstancesDeleted: results.orphanedInstancesDeleted,
       orphanedParticipantsDeleted: results.orphanedParticipantsDeleted,
@@ -90,7 +91,7 @@ export async function dataCleanupJob(): Promise<void> {
       oldHistoryDeleted: results.oldHistoryDeleted,
     });
   } catch (error) {
-    console.error("[CalendarJobs] Data cleanup job failed:", error);
+    logger.error("[CalendarJobs] Data cleanup job failed:", error);
   }
 }
 
@@ -101,13 +102,13 @@ export async function dataCleanupJob(): Promise<void> {
  * Schedule: Daily at 3:00 AM
  */
 export async function oldInstanceCleanupJob(): Promise<void> {
-  console.log("[CalendarJobs] Starting old instance cleanup job...");
+  logger.info("[CalendarJobs] Starting old instance cleanup job...");
 
   try {
     const count = await InstanceGenerationService.cleanupOldInstances(30);
-    console.log(`[CalendarJobs] Deleted ${count} old instances`);
+    logger.info(`[CalendarJobs] Deleted ${count} old instances`);
   } catch (error) {
-    console.error("[CalendarJobs] Old instance cleanup job failed:", error);
+    logger.error("[CalendarJobs] Old instance cleanup job failed:", error);
   }
 }
 
@@ -118,7 +119,7 @@ export async function oldInstanceCleanupJob(): Promise<void> {
  * Schedule: Daily at 8:00 AM
  */
 export async function collectionsAlertJob(): Promise<void> {
-  console.log("[CalendarJobs] Starting collections alert job...");
+  logger.info("[CalendarJobs] Starting collections alert job...");
 
   try {
     // TODO: Query for overdue invoices
@@ -126,9 +127,9 @@ export async function collectionsAlertJob(): Promise<void> {
     // TODO: Create calendar events for collections calls
     // TODO: Send notifications to collections team
 
-    console.log("[CalendarJobs] Collections alert job complete");
+    logger.info("[CalendarJobs] Collections alert job complete");
   } catch (error) {
-    console.error("[CalendarJobs] Collections alert job failed:", error);
+    logger.error("[CalendarJobs] Collections alert job failed:", error);
   }
 }
 
@@ -139,7 +140,7 @@ export async function collectionsAlertJob(): Promise<void> {
  * Schedule: Daily at 4:00 AM
  */
 export async function dataIntegrityVerificationJob(): Promise<void> {
-  console.log("[CalendarJobs] Starting data integrity verification job...");
+  logger.info("[CalendarJobs] Starting data integrity verification job...");
 
   try {
     const report = await DataIntegrityService.verifyIntegrity();
@@ -154,13 +155,13 @@ export async function dataIntegrityVerificationJob(): Promise<void> {
       report.invalidEntityLinks > 0;
 
     if (hasIssues) {
-      console.warn("[CalendarJobs] Data integrity issues found:", report);
+      logger.warn("[CalendarJobs] Data integrity issues found:", report);
       // TODO: Send alert to admin
     } else {
-      console.log("[CalendarJobs] No data integrity issues found");
+      logger.info("[CalendarJobs] No data integrity issues found");
     }
   } catch (error) {
-    console.error("[CalendarJobs] Data integrity verification job failed:", error);
+    logger.error("[CalendarJobs] Data integrity verification job failed:", error);
   }
 }
 
@@ -169,7 +170,7 @@ export async function dataIntegrityVerificationJob(): Promise<void> {
  * Call this from the main server initialization
  */
 export function initializeCalendarJobs(): void {
-  console.log("[CalendarJobs] Initializing calendar background jobs...");
+  logger.info("[CalendarJobs] Initializing calendar background jobs...");
 
   // TODO: Set up cron schedules
   // Example using node-cron:
@@ -180,14 +181,14 @@ export function initializeCalendarJobs(): void {
   // cron.schedule('0 8 * * *', collectionsAlertJob);
   // cron.schedule('0 4 * * *', dataIntegrityVerificationJob);
 
-  console.log("[CalendarJobs] Calendar background jobs initialized");
+  logger.info("[CalendarJobs] Calendar background jobs initialized");
 }
 
 /**
  * Run all jobs once (for testing)
  */
 export async function runAllJobsOnce(): Promise<void> {
-  console.log("[CalendarJobs] Running all jobs once for testing...");
+  logger.info("[CalendarJobs] Running all jobs once for testing...");
 
   await instanceGenerationJob();
   await reminderNotificationJob();
@@ -196,7 +197,7 @@ export async function runAllJobsOnce(): Promise<void> {
   await collectionsAlertJob();
   await dataIntegrityVerificationJob();
 
-  console.log("[CalendarJobs] All jobs complete");
+  logger.info("[CalendarJobs] All jobs complete");
 }
 
 /**

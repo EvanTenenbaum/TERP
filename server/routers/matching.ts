@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as matchingEngine from "../matchingEngine";
 import * as historicalAnalysis from "../historicalAnalysis";
+import { logger } from "../_core/logger";
 
 /**
  * Matching Engine Router
@@ -22,7 +23,7 @@ export const matchingRouter = router({
           data: matches,
         };
       } catch (error) {
-        console.error("Error finding matches for need:", error);
+        logger.error("Error finding matches for need:", error);
         return {
           success: false,
           error:
@@ -47,7 +48,7 @@ export const matchingRouter = router({
           data: buyers,
         };
       } catch (error) {
-        console.error("Error finding buyers for inventory:", error);
+        logger.error("Error finding buyers for inventory:", error);
         return {
           success: false,
           error:
@@ -72,7 +73,7 @@ export const matchingRouter = router({
           data: buyers,
         };
       } catch (error) {
-        console.error("Error finding buyers for vendor supply:", error);
+        logger.error("Error finding buyers for vendor supply:", error);
         return {
           success: false,
           error:
@@ -93,7 +94,7 @@ export const matchingRouter = router({
         data: results,
       };
     } catch (error) {
-      console.error("Error getting active needs with matches:", error);
+      logger.error("Error getting active needs with matches:", error);
       return {
         success: false,
         error:
@@ -126,7 +127,7 @@ export const matchingRouter = router({
           data: patterns,
         };
       } catch (error) {
-        console.error("Error analyzing client purchase history:", error);
+        logger.error("Error analyzing client purchase history:", error);
         return {
           success: false,
           error:
@@ -163,7 +164,7 @@ export const matchingRouter = router({
           data: matches,
         };
       } catch (error) {
-        console.error("Error finding historical buyers:", error);
+        logger.error("Error finding historical buyers:", error);
         return {
           success: false,
           error:
@@ -194,7 +195,7 @@ export const matchingRouter = router({
           data: lapsedBuyers,
         };
       } catch (error) {
-        console.error("Error getting lapsed buyers:", error);
+        logger.error("Error getting lapsed buyers:", error);
         return {
           success: false,
           error:
@@ -226,7 +227,7 @@ export const matchingRouter = router({
           data: opportunities,
         };
       } catch (error) {
-        console.error("Error getting proactive opportunities:", error);
+        logger.error("Error getting proactive opportunities:", error);
         return {
           success: false,
           error:
@@ -261,7 +262,7 @@ export const matchingRouter = router({
           data: prediction,
         };
       } catch (error) {
-        console.error("Error predicting reorder:", error);
+        logger.error("Error predicting reorder:", error);
         return {
           success: false,
           error:
@@ -295,7 +296,7 @@ export const matchingRouter = router({
           data: predictions,
         };
       } catch (error) {
-        console.error("Error getting predictive reorder opportunities:", error);
+        logger.error("Error getting predictive reorder opportunities:", error);
         return {
           success: false,
           error:

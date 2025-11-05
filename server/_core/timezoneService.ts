@@ -7,6 +7,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
+import { logger } from "./logger";
 
 /**
  * List of valid IANA timezone identifiers
@@ -214,7 +215,7 @@ export class TimezoneService {
 
     // Warn about ambiguous time (but don't throw)
     if (this.isAmbiguousTime(date, time, timezone)) {
-      console.warn(
+      logger.warn(
         `Ambiguous time ${time} on ${date} in timezone ${timezone}. This time occurs twice due to DST transition (fall-back).`
       );
     }

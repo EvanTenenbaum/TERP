@@ -8,6 +8,7 @@ import { getDb } from "./db";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
 import { generateStrainULID } from "./ulid";
 import { ErrorCatalog } from "./_core/errors";
+import { logger } from "./_core/logger";
 import {
   vendors,
   brands,
@@ -484,7 +485,7 @@ export async function seedInventoryData() {
   // Check if data already exists
   const existingVendors = await getAllVendors();
   if (existingVendors.length > 0) {
-    console.log("Inventory data already seeded");
+    logger.info("Inventory data already seeded");
     return;
   }
 
@@ -584,7 +585,7 @@ export async function seedInventoryData() {
     });
   }
 
-  console.log("Inventory seed data created successfully");
+  logger.info("Inventory seed data created successfully");
 }
 
 // ============================================================================

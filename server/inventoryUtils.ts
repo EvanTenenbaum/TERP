@@ -4,6 +4,7 @@
  */
 
 import type { Batch } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 // ============================================================================
 // AVAILABILITY CALCULATIONS
@@ -428,7 +429,7 @@ export function parseMetadata(metadataStr: string | null): BatchMetadata {
     const parsed = JSON.parse(metadataStr);
     const validation = validateMetadata(parsed);
     if (!validation.valid) {
-      console.warn("Invalid metadata structure:", validation.errors);
+      logger.warn("Invalid metadata structure:", validation.errors);
       return {};
     }
     return validation.data || {};

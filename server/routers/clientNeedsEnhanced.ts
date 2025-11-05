@@ -3,6 +3,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import * as clientNeedsDb from "../clientNeedsDbEnhanced";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as needsMatchingService from "../needsMatchingService";
+import { logger } from "../_core/logger";
 
 /**
  * Client Needs Router (Enhanced Version)
@@ -48,7 +49,7 @@ export const clientNeedsEnhancedRouter = router({
           message: result.message,
         };
       } catch (error) {
-        console.error("Error creating client need:", error);
+        logger.error("Error creating client need:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to create client need",
@@ -90,7 +91,7 @@ export const clientNeedsEnhancedRouter = router({
 
         return result;
       } catch (error) {
-        console.error("Error creating need and finding matches:", error);
+        logger.error("Error creating need and finding matches:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to create need and find matches",
@@ -119,7 +120,7 @@ export const clientNeedsEnhancedRouter = router({
           data: need,
         };
       } catch (error) {
-        console.error("Error fetching client need:", error);
+        logger.error("Error fetching client need:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to fetch client need",
@@ -149,7 +150,7 @@ export const clientNeedsEnhancedRouter = router({
           data: needs,
         };
       } catch (error) {
-        console.error("Error fetching client needs:", error);
+        logger.error("Error fetching client needs:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to fetch client needs",
@@ -171,7 +172,7 @@ export const clientNeedsEnhancedRouter = router({
           data: needs,
         };
       } catch (error) {
-        console.error("Error fetching active client needs:", error);
+        logger.error("Error fetching active client needs:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to fetch active client needs",
@@ -221,7 +222,7 @@ export const clientNeedsEnhancedRouter = router({
           data: need,
         };
       } catch (error) {
-        console.error("Error updating client need:", error);
+        logger.error("Error updating client need:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to update client need",
@@ -243,7 +244,7 @@ export const clientNeedsEnhancedRouter = router({
           data: need,
         };
       } catch (error) {
-        console.error("Error fulfilling client need:", error);
+        logger.error("Error fulfilling client need:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to fulfill client need",
@@ -265,7 +266,7 @@ export const clientNeedsEnhancedRouter = router({
           data: need,
         };
       } catch (error) {
-        console.error("Error cancelling client need:", error);
+        logger.error("Error cancelling client need:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to cancel client need",
@@ -286,7 +287,7 @@ export const clientNeedsEnhancedRouter = router({
           success: true,
         };
       } catch (error) {
-        console.error("Error deleting client need:", error);
+        logger.error("Error deleting client need:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to delete client need",
@@ -313,7 +314,7 @@ export const clientNeedsEnhancedRouter = router({
           data: needs,
         };
       } catch (error) {
-        console.error("Error fetching client needs with matches:", error);
+        logger.error("Error fetching client needs with matches:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to fetch client needs with matches",
@@ -335,7 +336,7 @@ export const clientNeedsEnhancedRouter = router({
           data: matches,
         };
       } catch (error) {
-        console.error("Error finding matches:", error);
+        logger.error("Error finding matches:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to find matches",
@@ -362,7 +363,7 @@ export const clientNeedsEnhancedRouter = router({
 
         return result;
       } catch (error) {
-        console.error("Error creating quote from match:", error);
+        logger.error("Error creating quote from match:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to create quote from match",
@@ -383,7 +384,7 @@ export const clientNeedsEnhancedRouter = router({
           data: { expiredCount: count },
         };
       } catch (error) {
-        console.error("Error expiring old client needs:", error);
+        logger.error("Error expiring old client needs:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to expire old client needs",
@@ -405,7 +406,7 @@ export const clientNeedsEnhancedRouter = router({
           data: opportunities,
         };
       } catch (error) {
-        console.error("Error getting smart opportunities:", error);
+        logger.error("Error getting smart opportunities:", error);
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to get smart opportunities",

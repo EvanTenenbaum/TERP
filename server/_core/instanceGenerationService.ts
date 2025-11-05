@@ -15,6 +15,7 @@ import {
   type CalendarRecurrenceRule,
 } from "../../drizzle/schema";
 import TimezoneService from "./timezoneService";
+import { logger } from "./logger";
 
 /**
  * Instance Generation Service
@@ -245,7 +246,7 @@ export class InstanceGenerationService {
         const count = await this.generateInstances(event.id, daysAhead);
         totalGenerated += count;
       } catch (error) {
-        console.error(`Failed to generate instances for event ${event.id}:`, error);
+        logger.error(`Failed to generate instances for event ${event.id}:`, error);
       }
     }
 

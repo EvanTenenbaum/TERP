@@ -21,6 +21,7 @@ import {
 } from "../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import * as transactionsDb from "./transactionsDb";
+import { logger } from "./_core/logger";
 
 /**
  * Write off bad debt for a client transaction
@@ -124,7 +125,7 @@ export async function writeOffBadDebt(
     
     return writeOffTransaction;
   } catch (error) {
-    console.error("Error writing off bad debt:", error);
+    logger.error("Error writing off bad debt:", error);
     throw new Error(`Failed to write off bad debt: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -182,9 +183,9 @@ async function createBadDebtGLEntries(
       createdBy: userId
     });
   } catch (error) {
-    console.error("Error creating bad debt GL entries:", error);
+    logger.error("Error creating bad debt GL entries:", error);
     // Don't throw - write-off should succeed even if GL entries fail
-    console.warn("Bad debt write-off completed but GL entries failed");
+    logger.warn("Bad debt write-off completed but GL entries failed");
   }
 }
 
@@ -263,7 +264,7 @@ export async function reverseBadDebtWriteOff(
     
     return updatedOriginal;
   } catch (error) {
-    console.error("Error reversing bad debt write-off:", error);
+    logger.error("Error reversing bad debt write-off:", error);
     throw new Error(`Failed to reverse bad debt write-off: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -321,8 +322,8 @@ async function createBadDebtReversalGLEntries(
       createdBy: userId
     });
   } catch (error) {
-    console.error("Error creating bad debt reversal GL entries:", error);
-    console.warn("Bad debt reversal completed but GL entries failed");
+    logger.error("Error creating bad debt reversal GL entries:", error);
+    logger.warn("Bad debt reversal completed but GL entries failed");
   }
 }
 
@@ -366,7 +367,7 @@ export async function getClientWriteOffs(
     
     return writeOffs;
   } catch (error) {
-    console.error("Error fetching client write-offs:", error);
+    logger.error("Error fetching client write-offs:", error);
     throw new Error(`Failed to fetch client write-offs: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -391,7 +392,7 @@ export async function getClientTotalWriteOffs(
     
     return total;
   } catch (error) {
-    console.error("Error calculating total write-offs:", error);
+    logger.error("Error calculating total write-offs:", error);
     throw new Error(`Failed to calculate total write-offs: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -470,7 +471,7 @@ export async function getBadDebtAgingReport(daysThreshold: number = 90): Promise
     
     return Array.from(clientMap.values()).sort((a, b) => b.totalOverdue - a.totalOverdue);
   } catch (error) {
-    console.error("Error generating bad debt aging report:", error);
+    logger.error("Error generating bad debt aging report:", error);
     throw new Error(`Failed to generate bad debt aging report: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

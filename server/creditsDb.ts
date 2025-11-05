@@ -19,6 +19,7 @@ import {
   type InsertCreditApplication
 } from "../drizzle/schema";
 import { eq, and, desc, sql, or, lt } from "drizzle-orm";
+import { logger } from "./_core/logger";
 
 /**
  * Create a new credit
@@ -55,7 +56,7 @@ export async function createCredit(data: InsertCredit): Promise<Credit> {
     
     return created;
   } catch (error) {
-    console.error("Error creating credit:", error);
+    logger.error("Error creating credit:", error);
     throw new Error(`Failed to create credit: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -77,7 +78,7 @@ export async function getCreditById(id: number): Promise<Credit | undefined> {
     
     return credit;
   } catch (error) {
-    console.error("Error fetching credit:", error);
+    logger.error("Error fetching credit:", error);
     throw new Error(`Failed to fetch credit: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -99,7 +100,7 @@ export async function getCreditByNumber(creditNumber: string): Promise<Credit | 
     
     return credit;
   } catch (error) {
-    console.error("Error fetching credit by number:", error);
+    logger.error("Error fetching credit by number:", error);
     throw new Error(`Failed to fetch credit: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -141,7 +142,7 @@ export async function getCreditsByClient(clientId: number, activeOnly: boolean =
     
     return results;
   } catch (error) {
-    console.error("Error fetching client credits:", error);
+    logger.error("Error fetching client credits:", error);
     throw new Error(`Failed to fetch client credits: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -170,7 +171,7 @@ export async function getClientCreditBalance(clientId: number): Promise<number> 
     
     return totalBalance;
   } catch (error) {
-    console.error("Error calculating client credit balance:", error);
+    logger.error("Error calculating client credit balance:", error);
     throw new Error(`Failed to calculate credit balance: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -275,7 +276,7 @@ export async function applyCredit(
     
     return created;
   } catch (error) {
-    console.error("Error applying credit:", error);
+    logger.error("Error applying credit:", error);
     throw new Error(`Failed to apply credit: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -298,7 +299,7 @@ export async function getCreditApplications(creditId: number): Promise<CreditApp
     
     return applications;
   } catch (error) {
-    console.error("Error fetching credit applications:", error);
+    logger.error("Error fetching credit applications:", error);
     throw new Error(`Failed to fetch credit applications: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -321,7 +322,7 @@ export async function getInvoiceCreditApplications(invoiceId: number): Promise<C
     
     return applications;
   } catch (error) {
-    console.error("Error fetching invoice credit applications:", error);
+    logger.error("Error fetching invoice credit applications:", error);
     throw new Error(`Failed to fetch invoice credit applications: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -372,7 +373,7 @@ export async function getClientCreditHistory(clientId: number): Promise<{
       applications
     };
   } catch (error) {
-    console.error("Error fetching client credit history:", error);
+    logger.error("Error fetching client credit history:", error);
     throw new Error(`Failed to fetch client credit history: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -420,7 +421,7 @@ export async function voidCredit(creditId: number): Promise<Credit> {
     
     return updated;
   } catch (error) {
-    console.error("Error voiding credit:", error);
+    logger.error("Error voiding credit:", error);
     throw new Error(`Failed to void credit: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -452,7 +453,7 @@ export async function markExpiredCredits(): Promise<number> {
     
     return (result as any).rowsAffected || 0;
   } catch (error) {
-    console.error("Error marking expired credits:", error);
+    logger.error("Error marking expired credits:", error);
     throw new Error(`Failed to mark expired credits: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -492,7 +493,7 @@ export async function generateCreditNumber(prefix: string = "CR"): Promise<strin
     
     return `${prefix}-${paddedNumber}`;
   } catch (error) {
-    console.error("Error generating credit number:", error);
+    logger.error("Error generating credit number:", error);
     throw new Error(`Failed to generate credit number: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

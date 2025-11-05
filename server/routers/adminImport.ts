@@ -7,6 +7,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { logger } from "../_core/logger";
 
 // ES module compatibility
 const __filename = fileURLToPath(import.meta.url);
@@ -131,7 +132,7 @@ export const adminImportRouter = router({
             openthcStub: strain.stub,
           });
         } catch (error) {
-          console.error(`Error processing strain: ${strain.name}`, error);
+          logger.error(`Error processing strain: ${strain.name}`, error);
           skipped++;
         }
       }
@@ -143,7 +144,7 @@ export const adminImportRouter = router({
           imported = strainsToInsert.length;
         } catch (error) {
           // If bulk insert fails due to duplicates, insert one by one
-          console.log('Bulk insert failed, trying individual inserts...');
+          logger.info('Bulk insert failed, trying individual inserts...');
           for (const strain of strainsToInsert) {
             try {
               await db.insert(strains).values([strain]);
