@@ -14,8 +14,20 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:env:up": "tsx testing/db-util.ts start",
+    "test:env:down": "tsx testing/db-util.ts stop",
+    "test:db:reset": "tsx testing/db-util.ts reset light",
+    "test:db:reset:full": "tsx testing/db-util.ts reset full",
+    "test:db:migrate": "tsx testing/db-util.ts migrate",
+    "test:db:seed": "tsx testing/db-util.ts seed light",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "seed:realistic": "tsx scripts/seed-realistic-main.ts",
+    "seed": "tsx scripts/seed-realistic-main.ts",
+    "seed:light": "tsx scripts/seed-realistic-main.ts light",
+    "seed:full": "tsx scripts/seed-realistic-main.ts full",
+    "seed:edge": "tsx scripts/seed-realistic-main.ts edgeCases",
+    "seed:chaos": "tsx scripts/seed-realistic-main.ts chaos",
+    "seed:live": "tsx scripts/seed-live-database.ts",
+    "seed:realistic": "tsx scripts/seed-realistic-main.ts full",
     "prepare": "husky install || true"
   },
   "dependencies": {
@@ -108,8 +120,10 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@argos-ci/playwright": "^6.3.1",
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
     "@eslint/js": "^9.38.0",
+    "@faker-js/faker": "^10.1.0",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.1.3",

@@ -2,12 +2,15 @@
  * Strain generation with normalization
  */
 
+import { faker } from '@faker-js/faker';
 import { CONFIG } from './config.js';
+import { toTitleCase, randomChoice } from './utils.js';
 
 export interface StrainData {
   id?: number;
   name: string;
   standardizedName: string;
+  aliases: string; // JSON array
   category: string;
   description: string;
   createdAt: Date;
@@ -17,7 +20,7 @@ export interface StrainData {
  * Generate 50 popular strains with normalization
  */
 export function generateStrains(): StrainData[] {
-  const strainData = [
+  const strainDetails = [
     { name: 'Blue Dream', category: 'hybrid', description: 'Popular sativa-dominant hybrid' },
     { name: 'OG Kush', category: 'hybrid', description: 'Classic hybrid with earthy notes' },
     { name: 'Sour Diesel', category: 'sativa', description: 'Energizing sativa with diesel aroma' },
@@ -69,13 +72,16 @@ export function generateStrains(): StrainData[] {
     { name: 'Gushers', category: 'indica', description: 'Fruity indica' },
     { name: 'Papaya', category: 'indica', description: 'Tropical indica' },
   ];
-  
-  return strainData.map((strain, index) => ({
-    name: strain.name,
-    standardizedName: strain.name.toLowerCase().trim(), // Normalization
-    category: strain.category,
-    description: strain.description,
-    createdAt: new Date(2023, 11, 1 + index),
-  }));
-}
 
+  return strainDetails.map((strain, index) => {
+    const standardizedName = toTitleCase(strain.name);
+    return {
+      name: strain.name,
+      standardizedName: standardizedName,
+      aliases: JSON.stringify([strain.name.toLowerCase().replace(/ /g, ''), strain.name.replace(/ /g, '-')]),
+      category: toTitleCase(strain.category),
+      description: strain.description,
+      createdAt: new Date(2023, 11, 1 + index),
+    };
+  });
+}

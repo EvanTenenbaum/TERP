@@ -6,9 +6,18 @@
 
 ---
 
-## 🔑 Production Credentials
+## 🔑 Production & Testing Credentials
 
 **CRITICAL**: These credentials are required for deployment monitoring and database access.
+
+### Argos Visual Testing
+
+**Token**: `argos_34b2c3e186f4849c6c401d8964014a201a`
+
+**Use for**:
+- Automated visual regression testing
+- Uploading screenshots from E2E tests
+- Approving or rejecting visual changes
 
 ### Digital Ocean API
 
@@ -1683,3 +1692,36 @@ Work is NOT complete until ALL criteria are met.
 - [ ] Rollback plan documented (if risky)
 
 ---
+
+
+---
+
+## Comprehensive Testing Suite Protocol
+
+**Objective**: Ensure all new code is rigorously tested before reaching production.
+
+### 1. Test Data
+- All tests must use the scenario-based seed scripts (`light`, `full`, `edge-cases`).
+- For unit tests requiring specific data, create a test fixture in the `testing/fixtures` directory.
+
+### 2. Integration Tests
+- All new tRPC routers must have a corresponding integration test file.
+- All public procedures must be tested.
+- Backend test coverage must remain above 80%.
+
+### 3. End-to-End (E2E) Tests
+- All new critical user flows must have a corresponding E2E test.
+- E2E tests must include accessibility checks (`checkAccessibility()`).
+- All E2E tests must include visual regression checks with `argosScreenshot()`.
+
+### 4. CI/CD
+- All tests are run automatically in GitHub Actions.
+- No PR will be merged if any tests are failing.
+
+### 5. Product-Led Workflow
+- **Engineers**: Implement tests based on user flows defined by the product owner.
+- **Product Owner**: Defines user flows and validates visual changes in Argos.
+
+### 6. Testing Suite Hub
+- All testing documentation, prompts, and configurations are located in the `.manus` directory.
+- The main entry point for the testing suite is `TESTING_README.md`.

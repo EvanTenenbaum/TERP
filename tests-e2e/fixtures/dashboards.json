@@ -1,0 +1,28 @@
+[
+  {
+    "name": "Main Dashboard",
+    "url": "/dashboard",
+    "expectedMetrics": [
+      "Total Revenue",
+      "Active Orders",
+      "Clients",
+      "Inventory Value"
+    ],
+    "filterSelectors": {
+      "period": "select[name='period']"
+    }
+  },
+  {
+    "name": "Accounting Dashboard",
+    "url": "/accounting/dashboard",
+    "expectedMetrics": [
+      "Revenue",
+      "Expenses",
+      "Profit",
+      "Accounts Receivable"
+    ],
+    "filterSelectors": {
+      "fiscalPeriod": "select[name='fiscalPeriod']"
+    }
+  }
+]

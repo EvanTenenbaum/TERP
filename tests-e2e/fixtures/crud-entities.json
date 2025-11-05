@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Client",
+    "listUrl": "/clients",
+    "createButtonSelector": "button:has-text('New Client')",
+    "tableSelector": "table",
+    "formSelectors": {
+      "name": "input[name='name']",
+      "email": "input[name='email']",
+      "phone": "input[name='phone']"
+    },
+    "createData": {
+      "name": "E2E Test Client",
+      "email": "e2e@test.com",
+      "phone": "555-1234"
+    },
+    "editData": {
+      "name": "E2E Test Client (Updated)"
+    }
+  },
+  {
+    "name": "Order",
+    "listUrl": "/orders",
+    "createButtonSelector": "button:has-text('Create Order')",
+    "tableSelector": "table",
+    "formSelectors": {
+      "client": "select[name='clientId']",
+      "type": "select[name='type']"
+    },
+    "createData": {
+      "client": "1",
+      "type": "sale"
+    },
+    "editData": {
+      "type": "quote"
+    }
+  }
+]

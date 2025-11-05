@@ -2,6 +2,7 @@
  * Product generation (strains × grow types × grades)
  */
 
+import { faker } from '@faker-js/faker';
 import { CONFIG } from './config.js';
 import { generateStrains } from './strains.js';
 
@@ -42,7 +43,7 @@ export function generateProducts(): ProductData[] {
           category: 'Flower',
           subcategory: growType.name,
           uomSellable: 'LB',
-          description: `${grade} grade ${strain.name} grown ${growType.name.toLowerCase()}`,
+          description: faker.lorem.sentence(),
           createdAt: new Date(2023, 11, 1),
         });
       }
@@ -68,7 +69,7 @@ export function generateProducts(): ProductData[] {
           category: cat.category,
           subcategory: subcat,
           uomSellable: 'EA',
-          description: `${strain.name} ${cat.category.toLowerCase()}`,
+          description: faker.lorem.sentence(),
           createdAt: new Date(2023, 11, 1),
         });
       }
