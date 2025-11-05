@@ -334,7 +334,15 @@ export default function NeedsManagementPage() {
                           </div>
                         )}
                       </div>
-                      <Button size="sm">View Matches</Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          // Navigate to matchmaking page filtered by this need
+                          setLocation(`/matchmaking?needId=${opp.id}`);
+                        }}
+                      >
+                        View Matches
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

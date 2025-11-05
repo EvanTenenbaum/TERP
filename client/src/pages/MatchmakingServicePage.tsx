@@ -384,10 +384,25 @@ export default function MatchmakingServicePage() {
                       </p>
                     )}
                     <div className="flex gap-2 mt-2">
-                      <Button size="sm" variant="outline" className="text-xs">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs"
+                        onClick={() => {
+                          // TODO: Show potential buyers dialog
+                          setLocation(`/vendor-supply/${item.id}/buyers`);
+                        }}
+                      >
                         View Buyers
                       </Button>
-                      <Button size="sm" className="text-xs">
+                      <Button 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => {
+                          // TODO: Implement reserve functionality
+                          setLocation(`/vendor-supply/${item.id}/reserve`);
+                        }}
+                      >
                         Reserve
                       </Button>
                     </div>
@@ -457,10 +472,25 @@ export default function MatchmakingServicePage() {
                         </ul>
                       </div>
                       <div className="flex gap-2 mt-3">
-                        <Button size="sm" className="flex-1 text-xs">
+                        <Button 
+                          size="sm" 
+                          className="flex-1 text-xs"
+                          onClick={() => {
+                            // TODO: Navigate to quote creation
+                            setLocation(`/quotes/new?matchId=${match.id}`);
+                          }}
+                        >
                           Create Quote
                         </Button>
-                        <Button size="sm" variant="outline" className="text-xs">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs"
+                          onClick={() => {
+                            // TODO: Implement dismiss match
+                            console.log('Dismissing match:', match.id);
+                          }}
+                        >
                           Dismiss
                         </Button>
                       </div>
