@@ -7,6 +7,7 @@ import { eq, and, or, like, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
 import { generateStrainULID } from "./ulid";
+import { ErrorCatalog } from "./_core/errors";
 import {
   vendors,
   brands,
@@ -42,7 +43,7 @@ import {
  */
 export async function createVendor(vendor: InsertVendor) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(vendors).values(vendor);
 
@@ -54,7 +55,7 @@ export async function createVendor(vendor: InsertVendor) {
 
 export async function getVendorById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -73,7 +74,7 @@ export async function getAllVendors() {
     CacheKeys.vendors(),
     async () => {
       const db = await getDb();
-      if (!db) return [];
+      if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
       return await db.select().from(vendors).orderBy(vendors.name);
     },
     CacheTTL.LONG // 15 minutes
@@ -82,7 +83,7 @@ export async function getAllVendors() {
 
 export async function searchVendors(query: string) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return await db
     .select()
@@ -101,7 +102,7 @@ export async function searchVendors(query: string) {
  */
 export async function createBrand(brand: InsertBrand) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(brands).values(brand);
 
@@ -116,7 +117,7 @@ export async function createBrand(brand: InsertBrand) {
 
 export async function getBrandById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -135,7 +136,7 @@ export async function getAllBrands() {
     CacheKeys.brands(),
     async () => {
       const db = await getDb();
-      if (!db) return [];
+      if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
       return await db.select().from(brands).orderBy(brands.name);
     },
     CacheTTL.LONG // 15 minutes
@@ -144,7 +145,7 @@ export async function getAllBrands() {
 
 export async function searchBrands(query: string) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return await db
     .select()
@@ -159,7 +160,7 @@ export async function searchBrands(query: string) {
 
 export async function createProduct(product: InsertProduct) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(products).values(product);
   return result;
@@ -167,7 +168,7 @@ export async function createProduct(product: InsertProduct) {
 
 export async function getProductById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -182,7 +183,7 @@ export async function findProductByNameAndBrand(
   brandId: number
 ) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -200,7 +201,7 @@ export async function findProductByNameAndBrand(
 
 export async function addProductSynonym(synonym: InsertProductSynonym) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.insert(productSynonyms).values(synonym);
 }
@@ -211,7 +212,7 @@ export async function addProductSynonym(synonym: InsertProductSynonym) {
 
 export async function createLot(lot: InsertLot) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(lots).values(lot);
   return result;
@@ -219,7 +220,7 @@ export async function createLot(lot: InsertLot) {
 
 export async function getLotById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.select().from(lots).where(eq(lots.id, id)).limit(1);
   return result[0] || null;
@@ -227,7 +228,7 @@ export async function getLotById(id: number) {
 
 export async function getLotByCode(code: string) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -243,7 +244,7 @@ export async function getLotByCode(code: string) {
 
 export async function createBatch(batch: InsertBatch) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(batches).values(batch);
   return result;
@@ -251,7 +252,7 @@ export async function createBatch(batch: InsertBatch) {
 
 export async function getBatchById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -263,7 +264,7 @@ export async function getBatchById(id: number) {
 
 export async function getBatchByCode(code: string) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -275,7 +276,7 @@ export async function getBatchByCode(code: string) {
 
 export async function updateBatchStatus(id: number, status: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db
     .update(batches)
@@ -294,7 +295,7 @@ export async function updateBatchQty(
   value: string
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db
     .update(batches)
@@ -304,7 +305,7 @@ export async function updateBatchQty(
 
 export async function getAllBatches(limit: number = 100) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return await db
     .select()
@@ -430,14 +431,14 @@ export async function searchBatches(
 
 export async function createBatchLocation(location: InsertBatchLocation) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.insert(batchLocations).values(location);
 }
 
 export async function getBatchLocations(batchId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return await db
     .select()
@@ -451,7 +452,7 @@ export async function getBatchLocations(batchId: number) {
 
 export async function createAuditLog(log: InsertAuditLog) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.insert(auditLogs).values(log);
 }
@@ -462,7 +463,7 @@ export async function getAuditLogsForEntity(
   limit: number = 50
 ) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return await db
     .select()
@@ -478,7 +479,7 @@ export async function getAuditLogsForEntity(
 
 export async function seedInventoryData() {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Check if data already exists
   const existingVendors = await getAllVendors();
@@ -593,7 +594,7 @@ export async function seedInventoryData() {
 // Locations
 export async function getAllLocations() {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   return await db.select().from(locations).orderBy(locations.site);
 }
 
@@ -605,7 +606,7 @@ export async function createLocation(data: {
   bin?: string;
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   await db.insert(locations).values(data);
   return { success: true };
 }
@@ -619,7 +620,7 @@ export async function updateLocation(data: {
   bin?: string;
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   const { id, ...updateData } = data;
   await db.update(locations).set(updateData).where(eq(locations.id, id));
   return { success: true };
@@ -627,7 +628,7 @@ export async function updateLocation(data: {
 
 export async function deleteLocation(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   await db.delete(locations).where(eq(locations.id, id));
   return { success: true };
 }
@@ -635,7 +636,7 @@ export async function deleteLocation(id: number) {
 // Categories
 export async function getAllCategoriesWithSubcategories() {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   const categoriesData = await db
     .select()
     .from(categories)
@@ -652,7 +653,7 @@ export async function getAllCategoriesWithSubcategories() {
 
 export async function createCategory(name: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   await db.insert(categories).values({ name });
   return { success: true };
 }
@@ -663,7 +664,7 @@ export async function updateCategory(
   updateProducts: boolean
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   await db.update(categories).set({ name }).where(eq(categories.id, id));
 
   if (updateProducts) {
@@ -679,7 +680,7 @@ export async function updateCategory(
 
 export async function deleteCategory(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   // Delete associated subcategories first
   await db.delete(subcategories).where(eq(subcategories.categoryId, id));
   await db.delete(categories).where(eq(categories.id, id));
@@ -689,7 +690,7 @@ export async function deleteCategory(id: number) {
 // Subcategories
 export async function createSubcategory(categoryId: number, name: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   await db.insert(subcategories).values({ categoryId, name });
   return { success: true };
 }
@@ -700,7 +701,7 @@ export async function updateSubcategory(
   updateProducts: boolean
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   const oldSubcategory = await db
     .select()
     .from(subcategories)
@@ -722,7 +723,7 @@ export async function updateSubcategory(
 
 export async function deleteSubcategory(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   await db.delete(subcategories).where(eq(subcategories.id, id));
   return { success: true };
 }
@@ -730,13 +731,13 @@ export async function deleteSubcategory(id: number) {
 // Grades
 export async function getAllGrades() {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   return await db.select().from(grades).orderBy(grades.name);
 }
 
 export async function createGrade(name: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   await db.insert(grades).values({ name });
   return { success: true };
 }
@@ -747,7 +748,7 @@ export async function updateGrade(
   updateProducts: boolean
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   const oldGrade = await db
     .select()
     .from(grades)
@@ -769,7 +770,7 @@ export async function updateGrade(
 
 export async function deleteGrade(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   await db.delete(grades).where(eq(grades.id, id));
   return { success: true };
 }
@@ -784,7 +785,7 @@ export async function getAllStrains(
   limit: number = 100
 ) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const conditions = [];
 
@@ -810,7 +811,7 @@ export async function getAllStrains(
 
 export async function getStrainById(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   const result = await db
     .select()
     .from(strains)
@@ -821,7 +822,7 @@ export async function getStrainById(id: number) {
 
 export async function searchStrains(query: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   return await db
     .select()
     .from(strains)
@@ -837,7 +838,7 @@ export async function createStrain(data: {
   aliases?: string;
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Standardize the name (lowercase, trim, remove special chars)
   const standardizedName = data.name
@@ -885,7 +886,7 @@ export async function getDashboardStats() {
     CacheKeys.dashboardStats(),
     async () => {
       const db = await getDb();
-      if (!db) return null;
+      if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
       // Get all batches with product details for calculations
       const allBatches = await db
@@ -997,7 +998,7 @@ export async function getDashboardStats() {
  */
 export async function getUserInventoryViews(userId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const { inventoryViews, users } = await import("../drizzle/schema");
 
@@ -1031,7 +1032,7 @@ export async function saveInventoryView(input: {
   isShared?: boolean;
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const { inventoryViews } = await import("../drizzle/schema");
 
@@ -1053,7 +1054,7 @@ export async function saveInventoryView(input: {
  */
 export async function deleteInventoryView(viewId: number, _userId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const { inventoryViews } = await import("../drizzle/schema");
 
@@ -1081,7 +1082,7 @@ export async function bulkUpdateBatchStatus(
   _userId: number
 ): Promise<{ success: boolean; updated: number }> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return await db.transaction(async tx => {
     let updated = 0;
@@ -1124,7 +1125,7 @@ export async function bulkDeleteBatches(
   _userId: number
 ): Promise<{ success: boolean; deleted: number }> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return await db.transaction(async tx => {
     let deleted = 0;
@@ -1171,7 +1172,7 @@ export async function bulkDeleteBatches(
  */
 export async function calculateBatchProfitability(batchId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Get batch details
   const [batch] = await db
@@ -1250,7 +1251,7 @@ export async function calculateBatchProfitability(batchId: number) {
  */
 export async function getTopProfitableBatches(limit: number = 10) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Get all batches
   const allBatches = await db.select().from(batches);
@@ -1279,7 +1280,7 @@ export async function getTopProfitableBatches(limit: number = 10) {
  */
 export async function getProfitabilitySummary() {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   // Get all sale orders
   const allOrders = await db

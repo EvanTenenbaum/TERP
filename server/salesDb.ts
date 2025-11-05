@@ -1,6 +1,7 @@
 import { getDb } from "./db";
 import { sales, batches } from "../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
+import { ErrorCatalog } from "./_core/errors";
 
 /**
  * Create a new sale record
@@ -19,7 +20,7 @@ export async function createSale(data: {
   createdBy: number;
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   
   const saleRecord = await db.insert(sales).values({
     batchId: data.batchId,
@@ -43,7 +44,7 @@ export async function createSale(data: {
  */
 export async function getSalesByBatch(batchId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   
   const salesRecords = await db
     .select()
@@ -101,7 +102,7 @@ export async function getBatchSalesStats(batchId: number) {
  */
 export async function updatePastSalesCogs(batchId: number, newCogs: string) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
   
   const result = await db
     .update(sales)

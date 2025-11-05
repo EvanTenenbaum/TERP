@@ -1,0 +1,97 @@
+server/inventoryDb.ts
+  Line 57: Missing DB connection
+  Line 76: Missing DB connection
+  Line 85: Missing DB connection
+  Line 119: Missing DB connection
+  Line 138: Missing DB connection
+  Line 147: Missing DB connection
+  Line 170: Missing DB connection
+  Line 185: Missing DB connection
+  Line 222: Missing DB connection
+  Line 230: Missing DB connection
+  Line 254: Missing DB connection
+  Line 266: Missing DB connection
+  Line 307: Missing DB connection
+  Line 440: Missing DB connection
+  Line 465: Missing DB connection
+  Line 888: Missing DB connection
+  Line 64: Silent not found
+  Line 126: Silent not found
+  Line 177: Silent not found
+  Line 198: Silent not found
+  Line 225: Silent not found
+  Line 237: Silent not found
+  Line 261: Silent not found
+  Line 273: Silent not found
+  Line 819: Silent not found
+  Line 76: Empty array on DB failure
+  Line 85: Empty array on DB failure
+  Line 138: Empty array on DB failure
+  Line 147: Empty array on DB failure
+  Line 307: Empty array on DB failure
+  Line 440: Empty array on DB failure
+  Line 465: Empty array on DB failure
+
+server/accountingDb.ts
+  Line 28: Missing DB connection
+  Line 59: Missing DB connection
+  Line 70: Missing DB connection
+  Line 142: Missing DB connection
+  Line 257: Missing DB connection
+  Line 382: Missing DB connection
+  Line 426: Missing DB connection
+  Line 450: Missing DB connection
+  Line 465: Missing DB connection
+  Line 62: Silent not found
+  Line 77: Silent not found
+  Line 260: Silent not found
+  Line 457: Silent not found
+  Line 481: Silent not found
+  Line 28: Empty array on DB failure
+  Line 142: Empty array on DB failure
+  Line 382: Empty array on DB failure
+  Line 426: Empty array on DB failure
+
+server/cashExpensesDb.ts
+  Line 30: Missing DB connection
+  Line 54: Missing DB connection
+  Line 196: Missing DB connection
+  Line 238: Missing DB connection
+  Line 291: Missing DB connection
+  Line 307: Missing DB connection
+  Line 417: Missing DB connection
+  Line 465: Missing DB connection
+  Line 484: Missing DB connection
+  Line 57: Silent not found
+  Line 203: Silent not found
+  Line 314: Silent not found
+  Line 420: Silent not found
+  Line 30: Empty array on DB failure
+  Line 238: Empty array on DB failure
+  Line 291: Empty array on DB failure
+  Line 465: Empty array on DB failure
+  Line 484: Empty array on DB failure
+
+server/arApDb.ts
+  Line 100: Missing DB connection
+  Line 369: Missing DB connection
+  Line 640: Missing DB connection
+  Line 679: Missing DB connection
+  Line 693: Missing DB connection
+  Line 643: Silent not found
+  Line 679: Empty array on DB failure
+  Line 693: Empty array on DB failure
+
+server/clientsDb.ts
+  Line 185: Silent not found
+  Line 201: Silent not found
+  Line 444: Silent not found
+
+server/salesDb.ts
+  Line 46: Missing DB connection
+  Line 46: Empty array on DB failure
+
+server/salesSheetsDb.ts
+  Line 169: Silent not found
+  Line 242: Silent not found
+

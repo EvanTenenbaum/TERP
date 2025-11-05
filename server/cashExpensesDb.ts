@@ -1,5 +1,6 @@
 import { eq, and, gte, lte, desc, asc, sql, or, like, inArray } from "drizzle-orm";
 import { getDb } from "./db";
+import { ErrorCatalog } from "./_core/errors";
 import {
   bankAccounts,
   bankTransactions,
@@ -27,7 +28,7 @@ export async function getBankAccounts(filters?: {
   isActive?: boolean;
 }) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   let query = db.select().from(bankAccounts);
 
@@ -51,7 +52,7 @@ export async function getBankAccounts(filters?: {
  */
 export async function getBankAccountById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.select().from(bankAccounts).where(eq(bankAccounts.id, id)).limit(1);
   return result[0] || null;
@@ -62,7 +63,7 @@ export async function getBankAccountById(id: number) {
  */
 export async function createBankAccount(data: InsertBankAccount) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(bankAccounts).values(data);
   return Number(result[0].insertId);
@@ -73,7 +74,7 @@ export async function createBankAccount(data: InsertBankAccount) {
  */
 export async function updateBankAccount(id: number, data: Partial<InsertBankAccount>) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.update(bankAccounts).set(data).where(eq(bankAccounts.id, id));
 }
@@ -83,7 +84,7 @@ export async function updateBankAccount(id: number, data: Partial<InsertBankAcco
  */
 export async function updateBankAccountBalance(id: number, newBalance: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db
     .update(bankAccounts)
@@ -193,7 +194,7 @@ export async function getBankTransactions(filters?: {
  */
 export async function getBankTransactionById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -208,7 +209,7 @@ export async function getBankTransactionById(id: number) {
  */
 export async function createBankTransaction(data: InsertBankTransaction) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(bankTransactions).values(data);
   return Number(result[0].insertId);
@@ -219,7 +220,7 @@ export async function createBankTransaction(data: InsertBankTransaction) {
  */
 export async function reconcileBankTransaction(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db
     .update(bankTransactions)
@@ -235,7 +236,7 @@ export async function reconcileBankTransaction(id: number) {
  */
 export async function getUnreconciledTransactions(bankAccountId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return db
     .select()
@@ -288,7 +289,7 @@ export async function getBankAccountBalanceAtDate(bankAccountId: number, asOfDat
  */
 export async function getExpenseCategories(filters?: { isActive?: boolean }) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   let query = db.select().from(expenseCategories);
 
@@ -304,7 +305,7 @@ export async function getExpenseCategories(filters?: { isActive?: boolean }) {
  */
 export async function getExpenseCategoryById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select()
@@ -319,7 +320,7 @@ export async function getExpenseCategoryById(id: number) {
  */
 export async function createExpenseCategory(data: InsertExpenseCategory) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(expenseCategories).values(data);
   return Number(result[0].insertId);
@@ -330,7 +331,7 @@ export async function createExpenseCategory(data: InsertExpenseCategory) {
  */
 export async function updateExpenseCategory(id: number, data: Partial<InsertExpenseCategory>) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.update(expenseCategories).set(data).where(eq(expenseCategories.id, id));
 }
@@ -414,7 +415,7 @@ export async function getExpenses(filters?: {
  */
 export async function getExpenseById(id: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.select().from(expenses).where(eq(expenses.id, id)).limit(1);
   return result[0] || null;
@@ -425,7 +426,7 @@ export async function getExpenseById(id: number) {
  */
 export async function createExpense(data: InsertExpense) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db.insert(expenses).values(data);
   return Number(result[0].insertId);
@@ -436,7 +437,7 @@ export async function createExpense(data: InsertExpense) {
  */
 export async function updateExpense(id: number, data: Partial<InsertExpense>) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db.update(expenses).set(data).where(eq(expenses.id, id));
 }
@@ -446,7 +447,7 @@ export async function updateExpense(id: number, data: Partial<InsertExpense>) {
  */
 export async function markExpenseReimbursed(id: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   await db
     .update(expenses)
@@ -462,7 +463,7 @@ export async function markExpenseReimbursed(id: number) {
  */
 export async function getPendingReimbursements() {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   return db
     .select()
@@ -481,7 +482,7 @@ export async function getPendingReimbursements() {
  */
 export async function getExpenseBreakdownByCategory(startDate?: Date, endDate?: Date) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const conditions = [];
 
@@ -547,7 +548,7 @@ export async function getTotalExpenses(startDate?: Date, endDate?: Date) {
  */
 export async function generateExpenseNumber(): Promise<string> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw ErrorCatalog.DATABASE.CONNECTION_ERROR();
 
   const result = await db
     .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
