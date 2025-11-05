@@ -1,9 +1,82 @@
 /**
  * Business parameters for realistic data generation
  * Based on user requirements
+ * 
+ * This config can be dynamically updated based on the selected scenario
  */
 
-export const CONFIG = {
+import type { ScenarioConfig } from './scenarios.js';
+
+export interface Config {
+  // Time period
+  startDate: Date;
+  endDate: Date;
+  totalMonths: number;
+  
+  // Revenue targets
+  monthlyRevenue: number;
+  totalRevenue: number;
+  
+  // Client distribution
+  totalClients: number;
+  whaleClients: number;
+  regularClients: number;
+  whaleRevenuePercent: number;
+  regularRevenuePercent: number;
+  
+  // Vendor distribution
+  totalVendors: number;
+  
+  // Product mix
+  flowerPercent: number;
+  nonFlowerPercent: number;
+  
+  // Pricing (per pound for flower)
+  indoorPrice: number;
+  indoorPercentage: number;
+  greenhousePrice: number;
+  greenhousePercentage: number;
+  outdoorPrice: number;
+  outdoorPercentage: number;
+  
+  // Consignment rates
+  salesConsignmentRate: number;
+  intakeConsignmentRate: number;
+  
+  // Returns and refunds
+  returnRate: number;
+  refundRate: number;
+  refundAmount: number;
+  
+  // AR aging
+  overduePercent: number;
+  overdue120PlusPercent: number;
+  
+  // Margins
+  averageMargin: number;
+  marginVariance: number;
+  
+  // Order patterns
+  ordersPerMonth: number;
+  avgItemsPerOrder: number;
+  
+  // Strain data
+  totalStrains: number;
+  
+  // Lots and batches
+  lotsPerMonth: number;
+  batchesPerLot: number;
+  
+  // Random seed for deterministic generation
+  seed?: number;
+  
+  // Chaos testing
+  randomAnomalies?: boolean;
+  anomalyRate?: number;
+}
+
+// Default configuration (matches "full" scenario)
+export let CONFIG: Config = {
   // Time period
   startDate: new Date(2024, 0, 1), // Jan 1, 2024
   endDate: new Date(2025, 9, 27),  // Oct 27, 2025
@@ -62,5 +135,53 @@ export const CONFIG = {
   // Lots and batches
   lotsPerMonth: 8,
   batchesPerLot: 1,
+  
+  // Deterministic seed (default)
+  seed: 12345,
 };
 
+/**
+ * Update CONFIG based on a scenario
+ */
+export function applyScenario(scenario: ScenarioConfig): void {
+  const monthlyRevenue = scenario.totalRevenue / scenario.monthsOfData;
+  const ordersPerMonth = Math.ceil(scenario.orders / scenario.monthsOfData);
+  
+  CONFIG = {
+    ...CONFIG,
+    // Time period
+    totalMonths: scenario.monthsOfData,
+    endDate: new Date(2024, scenario.monthsOfData - 1, 27),
+    
+    // Revenue
+    monthlyRevenue,
+    totalRevenue: scenario.totalRevenue,
+    
+    // Clients
+    totalClients: scenario.clients,
+    whaleClients: scenario.whaleClients,
+    regularClients: scenario.regularClients,
+    
+    // Vendors
+    totalVendors: scenario.vendors,
+    
+    // Strains
+    totalStrains: scenario.strains,
+    
+    // Orders
+    ordersPerMonth,
+    
+    // Overrides (if provided)
+    overduePercent: scenario.overduePercent ?? CONFIG.overduePercent,
+    overdue120PlusPercent: scenario.overdue120PlusPercent ?? CONFIG.overdue120PlusPercent,
+    returnRate: scenario.returnRate ?? CONFIG.returnRate,
+    refundRate: scenario.refundRate ?? CONFIG.refundRate,
+    
+    // Deterministic seed
+    seed: scenario.seed,
+    
+    // Chaos testing
+    randomAnomalies: scenario.randomAnomalies,
+    anomalyRate: scenario.anomalyRate,
+  };
+}

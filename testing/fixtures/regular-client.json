@@ -1,0 +1,20 @@
+{
+  "id": 11,
+  "name": "Sunset Cannabis Co",
+  "type": "buyer",
+  "email": "purchasing@sunsetcannabis.com",
+  "phone": "+1-555-0111",
+  "address": "456 Elm St, San Francisco, CA 94102",
+  "tags": ["regular", "retail"],
+  "isWhale": false,
+  "category": "Dispensary",
+  "totalSpent": 12000,
+  "totalProfit": 3000,
+  "arCurrent": 0,
+  "arDays30": 0,
+  "arDays60": 0,
+  "arDays90": 0,
+  "arDays120": 0,
+  "arDays120Plus": 0,
+  "createdAt": "2024-01-15T00:00:00.000Z"
+}
