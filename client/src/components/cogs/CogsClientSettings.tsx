@@ -29,18 +29,17 @@ import {
 } from "@/components/ui/dialog";
 import { Search, Edit, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 type Client = {
   id: number;
   name: string;
   teriCode: string;
-  cogsAdjustmentType?: string;
-  cogsAdjustmentValue?: string;
-};
+  cogsAdjustmentType?: string | null;
+  cogsAdjustmentValue?: string | null;
+} & Record<string, unknown>; // Allow additional properties from tRPC
 
 export function CogsClientSettings() {
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -84,8 +83,7 @@ export function CogsClientSettings() {
       
       console.log("Updating COGS adjustment for client:", editingClient);
       
-      toast({
-        title: "Adjustment updated",
+      toast.success("Adjustment updated", {
         description: `COGS adjustment for ${editingClient.name} has been updated.`,
       });
       
@@ -93,20 +91,16 @@ export function CogsClientSettings() {
       setEditingClient(null);
     } catch (error) {
       console.error("Error updating COGS adjustment:", error);
-      toast({
-        title: "Error updating adjustment",
+      toast.error("Error updating adjustment", {
         description: "Failed to update COGS adjustment. Please try again.",
-        variant: "destructive",
       });
     }
   };
 
   const handleQuickAdd = async () => {
     if (!selectedClientId || !adjustmentValue) {
-      toast({
-        title: "Missing information",
+      toast.error("Missing information", {
         description: "Please select a client and enter an adjustment value.",
-        variant: "destructive",
       });
       return;
     }
@@ -121,8 +115,7 @@ export function CogsClientSettings() {
         value: adjustmentValue,
       });
       
-      toast({
-        title: "Adjustment added",
+      toast.success("Adjustment added", {
         description: "COGS adjustment has been added successfully.",
       });
       
@@ -132,10 +125,8 @@ export function CogsClientSettings() {
       setAdjustmentValue("");
     } catch (error) {
       console.error("Error adding COGS adjustment:", error);
-      toast({
-        title: "Error adding adjustment",
+      toast.error("Error adding adjustment", {
         description: "Failed to add COGS adjustment. Please try again.",
-        variant: "destructive",
       });
     }
   };
