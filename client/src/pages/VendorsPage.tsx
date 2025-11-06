@@ -21,8 +21,9 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, FileText } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
+import { VendorNotesDialog } from "../components/VendorNotesDialog";
 
 interface Vendor {
   id: number;
@@ -64,6 +65,9 @@ export default function VendorsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [selectedVendorForNotes, setSelectedVendorForNotes] =
+    useState<Vendor | null>(null);
 
   const [formData, setFormData] = useState<VendorFormData>({
     name: "",
@@ -280,6 +284,17 @@ export default function VendorsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedVendorForNotes(vendor);
+                          setNotesDialogOpen(true);
+                        }}
+                        title="View Notes & History"
+                      >
+                        <FileText className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -509,6 +524,16 @@ export default function VendorsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Vendor Notes & History Dialog */}
+      {selectedVendorForNotes && (
+        <VendorNotesDialog
+          vendorId={selectedVendorForNotes.id}
+          vendorName={selectedVendorForNotes.name}
+          open={notesDialogOpen}
+          onOpenChange={setNotesDialogOpen}
+        />
+      )}
     </div>
   );
 }
