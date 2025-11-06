@@ -1,4 +1,4 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -19,17 +19,51 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
+import { APP_LOGO, APP_TITLE } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import {
+  LayoutDashboard,
+  LogOut,
+  PanelLeft,
+  Users,
+  ShoppingCart,
+  FileText,
+  Package,
+  TrendingUp,
+  DollarSign,
+  BarChart3,
+  Settings,
+  HelpCircle,
+  CalendarDays,
+  ClipboardList,
+  Truck,
+  RefreshCw,
+  Warehouse,
+} from "lucide-react";
 import { useLocation } from "wouter";
-import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
-import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: ClipboardList, label: "Todo Lists", path: "/todo" },
+  { icon: CalendarDays, label: "Calendar", path: "/calendar" },
+  { icon: ShoppingCart, label: "Orders", path: "/orders" },
+  { icon: FileText, label: "Sales Sheets", path: "/sales-sheets" },
+  { icon: Package, label: "Create Order", path: "/create-order" },
+  { icon: Package, label: "Inventory", path: "/inventory" },
+  { icon: TrendingUp, label: "Matchmaking", path: "/matchmaking" },
+  { icon: DollarSign, label: "Accounting", path: "/accounting" },
+  { icon: Users, label: "Clients", path: "/clients" },
+  { icon: Truck, label: "Vendors", path: "/vendors" },
+  { icon: FileText, label: "Purchase Orders", path: "/purchase-orders" },
+  { icon: RefreshCw, label: "Returns", path: "/returns" },
+  { icon: Warehouse, label: "Locations", path: "/locations" },
+  { icon: BarChart3, label: "Pricing Rules", path: "/pricing-rules" },
+  { icon: BarChart3, label: "Pricing Profiles", path: "/pricing-profiles" },
+  { icon: DollarSign, label: "Credit Settings", path: "/credit-settings" },
+  { icon: DollarSign, label: "COGS Settings", path: "/cogs-settings" },
+  { icon: BarChart3, label: "Analytics", path: "/analytics" },
+  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: HelpCircle, label: "Help", path: "/help" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -47,8 +81,6 @@ export default function DashboardLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   // Authentication temporarily disabled - will be re-enabled later
-  const user = { name: 'Guest', email: 'guest@example.com' }; // Mock user
-  const loading = false;
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -79,8 +111,10 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   // Authentication temporarily disabled
-  const user = { name: 'Guest', email: 'guest@example.com' };
-  const logout = () => { window.location.href = '/login'; };
+  const user = { name: "Guest", email: "guest@example.com" };
+  const logout = () => {
+    window.location.href = "/login";
+  };
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
