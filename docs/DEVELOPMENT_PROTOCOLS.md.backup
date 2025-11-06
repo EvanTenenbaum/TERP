@@ -1,7 +1,7 @@
 # TERP Development Protocols
 
-**Version:** 2.4  
-**Last Updated:** November 6, 2025  
+**Version:** 2.3  
+**Last Updated:** November 5, 2025  
 **Purpose:** Ensure systematic integration, production-ready code, and maintainable architecture throughout TERP development
 
 ---
@@ -15,7 +15,6 @@
 **Token**: `argos_34b2c3e186f4849c6c401d8964014a201a`
 
 **Use for**:
-
 - Automated visual regression testing
 - Uploading screenshots from E2E tests
 - Approving or rejecting visual changes
@@ -108,8 +107,6 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 10. [Structured Logging Protocol](#10-structured-logging-protocol-mandatory)
 11. [Definition of Done](#11-definition-of-done-dod)
 12. [Feature Documentation Protocol](#12-feature-documentation-protocol)
-
-13. [Testing Protocol](#13-testing-protocol-mandatory)
 
 ---
 
@@ -526,10 +523,10 @@ This documentation is **living** and MUST be updated by any agent performing eng
 1.  **Before Starting Work:** The agent must first consult the relevant feature module document in `/docs/features/modules/` to understand the current state, user flows, and known gaps.
 2.  **During Development:** As code is written, the agent must update the corresponding documentation in real-time to reflect changes to the database schema, API endpoints, or UI components.
 3.  **After Completing Work:** Upon completion of a feature or enhancement, the agent must:
-    - Update the feature's status in `DISCOVERED_FEATURES.md` and the relevant module document.
-    - Map any new or modified user flows in `USER_FLOWS.md`.
-    - Update the `GAP_ANALYSIS.md` if the work addressed a known gap or revealed a new one.
-    - Ensure the `FEATURE_ROADMAP.md` reflects the new status of the feature.
+    *   Update the feature's status in `DISCOVERED_FEATURES.md` and the relevant module document.
+    *   Map any new or modified user flows in `USER_FLOWS.md`.
+    *   Update the `GAP_ANALYSIS.md` if the work addressed a known gap or revealed a new one.
+    *   Ensure the `FEATURE_ROADMAP.md` reflects the new status of the feature.
 
 ### C. Content Standards for Module Documents
 
@@ -545,136 +542,3 @@ Each file in `/docs/features/modules/` must contain:
 8.  **Exclusions Based on User Feedback**: A clear list of functionalities that should **NOT** be built for this module, based on direct user feedback (e.g., "No shipping carrier integration," "No self-service password reset").
 
 Adherence to this protocol is mandatory for all engineering tasks to ensure the long-term maintainability and clarity of the TERP project.
-
-## 13. Testing Protocol (MANDATORY)
-
-**Status:** ✅ Production Ready  
-**Last Updated:** November 6, 2025
-
-### Overview
-
-All code changes MUST include tests. This is non-negotiable and enforced through automated pre-commit hooks and CI/CD pipelines.
-
-### Testing Philosophy: The Testing Trophy
-
-We follow the **Testing Trophy** model, which prioritizes integration tests for the best return on investment:
-
-```
-        /\
-       /  \      E2E Tests (20%)
-      /    \     - Slow, expensive, but catches critical issues
-     /------\
-    /        \   Integration Tests (50%)
-   /          \  - Fast, realistic, high confidence
-  /------------\
- /              \ Unit Tests (20%)
-/________________\ Static Analysis (10%)
-```
-
-### Test-Driven Development (TDD) - MANDATORY
-
-All new features and bug fixes MUST follow the TDD workflow:
-
-1. **RED**: Write a failing test that describes the desired behavior
-2. **GREEN**: Write the minimum code to make the test pass
-3. **REFACTOR**: Clean up the code while keeping tests green
-
-**Never write implementation code before writing tests.**
-
-### Pre-Commit Requirements
-
-Before every commit, the following checks are automatically enforced:
-
-- ✅ All tests pass (`pnpm test`)
-- ✅ Code is formatted (`pnpm format` via Prettier)
-- ✅ Linting passes (`pnpm lint` via ESLint)
-- ✅ Type checks pass (`pnpm typecheck` via TypeScript)
-- ✅ Commit message follows Conventional Commits standard
-
-These checks are enforced via **Husky pre-commit hooks** and will **block commits** that don't meet standards.
-
-### Test Location Standards
-
-| Code Type         | Test Location                 | Example                          |
-| ----------------- | ----------------------------- | -------------------------------- |
-| Utility functions | `server/lib/**/*.test.ts`     | `utils.ts` → `utils.test.ts`     |
-| tRPC routers      | `server/routers/**/*.test.ts` | `clients.ts` → `clients.test.ts` |
-| E2E user flows    | `e2e/**/*.spec.ts`            | `e2e/create-order.spec.ts`       |
-
-### Running Tests
-
-```bash
-# Run all tests
-pnpm test
-
-# Run tests in watch mode (for TDD)
-pnpm test:watch
-
-# Run only integration tests
-pnpm test:integration
-
-# Run E2E tests
-pnpm playwright test
-
-# Run all quality checks
-pnpm check
-```
-
-### CI/CD Automation
-
-#### On Pull Requests (`pr.yml`)
-
-Fast feedback loop (< 5 minutes):
-
-- ✅ Linting & Type Checking
-- ✅ Unit Tests
-
-#### On Merges to `main` (`merge.yml`)
-
-Full test suite (< 15 minutes):
-
-- ✅ Database Seeding (with `light` scenario)
-- ✅ Integration Tests
-- ✅ E2E Tests (with Playwright & Argos)
-- ✅ Test Coverage Checks
-- ✅ Visual Regression Testing
-
-### Test Coverage Requirements
-
-- **Backend Code**: 80%+ coverage target
-- **Critical Business Logic**: 100% coverage required
-- **UI Components**: Integration tests preferred over unit tests
-
-### Bypassing Tests (PROHIBITED)
-
-**Never use `git commit --no-verify` to bypass pre-commit hooks.**
-
-If tests are failing:
-
-1. Read the error message carefully
-2. Run the failing test locally to debug
-3. Fix the issue before committing
-4. If stuck, ask for help - don't bypass
-
-### Complete Testing Documentation
-
-For comprehensive testing guidelines, see:
-
-- **[docs/testing/TERP_TESTING_README.md](testing/TERP_TESTING_README.md)** - Master testing documentation index
-- **[docs/testing/TERP_TESTING_USAGE_GUIDE.md](testing/TERP_TESTING_USAGE_GUIDE.md)** - How to run and write tests
-- **[docs/testing/AI_AGENT_QUICK_REFERENCE.md](testing/AI_AGENT_QUICK_REFERENCE.md)** - Quick checklist for AI agents
-
-### Definition of Done (Updated)
-
-A task is only considered "done" when:
-
-1. ✅ All acceptance criteria met
-2. ✅ **Tests written and passing** (NEW)
-3. ✅ Code reviewed and approved
-4. ✅ Documentation updated
-5. ✅ Zero TypeScript errors
-6. ✅ Deployed to staging
-7. ✅ User acceptance testing passed
-8. ✅ **CI/CD pipeline passing** (NEW)
-
----
