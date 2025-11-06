@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Vendor Payment Terms (2025-11-05)
+
+#### MF-015: Vendor Payment Terms
+
+- **Feature**: Full vendor management with payment terms support
+- **Backend**:
+  - Added `paymentTerms` varchar(100) field to vendors table
+  - Created migration `0027_add_vendor_payment_terms.sql`
+  - Implemented `server/routers/vendors.ts` with full CRUD operations
+  - Integrated vendors router into main app router
+- **Frontend**:
+  - Created `VendorsPage.tsx` with complete vendor management UI
+  - Payment terms dropdown with common options (Net 15/30/45/60/90, Due on Receipt, COD, 2/10 Net 30, Custom)
+  - Search functionality for vendors
+  - Create, edit, delete vendor operations
+  - Added `/vendors` route to App.tsx
+- **Status**: ✅ Production-ready, fully functional
+- **Estimated Effort**: 8 hours
+- **Actual Effort**: Completed in single autonomous session
+- **Commit**: cd4606e
+
 ### Added - Client Module Workflow Improvements (2025-11-04)
 
 - **Enhanced Search**: Multi-field fuzzy search across TERI code, name, email, phone, and address.
@@ -29,12 +50,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added - P2 Performance & Operational Excellence (2025-10-27)
 
 #### Connection Pooling
+
 - Created `server/_core/connectionPool.ts` for MySQL connection pooling
 - Configured pool with 10 connections, unlimited queue, keep-alive enabled
 - Automatic pool statistics logging every 5 minutes
 - Integrated into `server/db.ts` for all database operations
 
 #### Health Check Endpoints
+
 - Created `server/_core/healthCheck.ts` with comprehensive health monitoring
 - `/health` - Full health check (database, memory, connection pool)
 - `/health/live` - Liveness probe (always returns OK if server is running)
@@ -42,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Health status: healthy, degraded, or unhealthy based on checks
 
 #### Graceful Shutdown
+
 - Created `server/_core/gracefulShutdown.ts` for zero-downtime deploys
 - Handles SIGTERM, SIGINT signals gracefully
 - Handles uncaughtException and unhandledRejection
@@ -49,11 +73,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extensible shutdown handler registration system
 
 ### Changed
+
 - Database connections now use connection pooling instead of single connection
 - Server startup now includes graceful shutdown handlers
 - Health check endpoints available on server startup
 
 ### Performance
+
 - **Connection Pooling**: Reuses database connections for better performance
 - **Scalability**: Supports up to 10 concurrent database connections
 - **Zero-Downtime**: Graceful shutdown enables rolling deployments
@@ -61,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added - P1 Pragmatic Improvements (2025-10-27)
 
 #### Input Sanitization Middleware
+
 - Created `server/_core/sanitizationMiddleware.ts` for automatic XSS prevention
 - Applied to all `protectedProcedure` and `adminProcedure` (379 endpoints)
 - Recursive sanitization of all string inputs using DOMPurify
@@ -68,16 +95,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zero code changes required in individual routers
 
 #### Critical Transaction Fixes
+
 - **CRITICAL FIX**: Wrapped `postJournalEntry()` in transaction (prevents unbalanced books)
 - **CRITICAL FIX**: Wrapped `recordPayment()` in transaction (prevents inconsistent payment data)
 - Both operations now atomic with automatic rollback on errors
 
 ### Changed
+
 - Enhanced tRPC middleware chain with sanitization before authentication
 - `protectedProcedure` now includes `.use(sanitizationMiddleware)`
 - `adminProcedure` now includes `.use(sanitizationMiddleware)`
 
 ### Security
+
 - **XSS Prevention**: 100% coverage across all protected and admin endpoints
 - **Attack Surface Reduction**: 379 endpoints now automatically sanitize inputs
 - **Security Monitoring**: Logs all sanitization events for audit trail
@@ -85,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added - P0 Critical Fixes (2025-10-27)
 
 #### P0.1: Error Handling Infrastructure
+
 - Created `AppError` class for structured application errors
 - Implemented `handleError` utility for centralized error processing
 - Added error handling imports to all 31 routers
@@ -92,12 +123,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All errors now logged with context and converted to user-friendly messages
 
 #### P0.2: Database Transactions
+
 - Implemented `withTransaction` utility for atomic database operations
 - Created `withRetryableTransaction` with exponential backoff for deadlock handling
 - Added row-level locking utilities (`forUpdate`, `forUpdateSkipLocked`, `forUpdateNoWait`)
 - Transaction infrastructure ready for critical operations (orders, payments, accounting)
 
 #### P0.3: Security Hardening
+
 - Implemented input sanitization with DOMPurify (`sanitizeHtml`, `sanitizeText`, `sanitizeUserInput`)
 - Added rate limiting with express-rate-limit:
   - General API: 100 requests per 15 minutes
@@ -107,6 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SQL injection prevention infrastructure in place
 
 #### P0.4: Monitoring & Logging
+
 - Upgraded logger to Pino with structured logging
 - Integrated Sentry for error tracking and monitoring
 - Added request logging middleware with timing information
@@ -115,6 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Production-ready observability infrastructure
 
 #### P0.5: Backup & Recovery
+
 - Created automated database backup script (`scripts/backup-database.sh`):
   - Compressed backups with gzip
   - 30-day retention policy
@@ -128,11 +163,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ready for cron job automation
 
 ### Changed
+
 - Server startup now initializes monitoring and structured logging
 - All API routes protected with rate limiting
 - Error handling patterns standardized across all routers
 
 ### Technical Details
+
 - All changes TypeScript-validated (zero compilation errors)
 - Bible-compliant implementation (Impact Analysis, Integration Verification, System-Wide Validation)
 - Production-ready code with no placeholders or stubs
@@ -140,6 +177,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-10-27
 
 ### Added
+
 - Initial TERP ERP system
 - Version display in header (desktop and mobile)
 - Version Management Protocol in DEVELOPMENT_PROTOCOLS.md
@@ -147,6 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CTO Audit Report identifying software quality gaps
 
 ### Documentation
+
 - DEVELOPMENT_PROTOCOLS.md (The Bible) - v2.1
 - PROJECT_CONTEXT.md - Project background and handoff context
 - QUALITY_REMEDIATION_ROADMAP.md - Comprehensive improvement plan
@@ -165,4 +204,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All changes must be documented in this file
 - Breaking changes must be clearly marked
 - Each entry should reference relevant issue/PR numbers when available
-
