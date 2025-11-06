@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { db } from "../db";
+import { getDb } from "../db";
 import { purchaseOrders, purchaseOrderItems, batches, inventoryMovements, intakeSessions } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -35,6 +35,9 @@ export const poReceivingRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database not available');
+      
       // Wrap in transaction for atomicity
       const result = await db.transaction(async (tx) => {
         // Verify PO exists
