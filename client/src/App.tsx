@@ -30,6 +30,7 @@ import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
 import VendorsPage from "@/pages/VendorsPage";
+import VendorProfilePage from "@/pages/VendorProfilePage";
 import MatchmakingServicePage from "@/pages/MatchmakingServicePage";
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
@@ -101,6 +102,7 @@ function Router() {
               <Route path="/credit-settings" component={CreditSettingsPage} />
               <Route path="/needs" component={NeedsManagementPage} />
               <Route path="/vendor-supply" component={VendorSupplyPage} />
+              <Route path="/vendors/:id" component={VendorProfilePage} />
               <Route path="/vendors" component={VendorsPage} />
               <Route path="/matchmaking" component={MatchmakingServicePage} />
               <Route path="/help" component={Help} />
