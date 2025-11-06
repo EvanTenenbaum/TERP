@@ -2321,6 +2321,21 @@ export const inventoryMovementTypeEnum = mysqlEnum("inventoryMovementType", [
 ]);
 
 /**
+ * Inventory Adjustment Reason Enum
+ * Reasons for manual inventory adjustments
+ */
+export const adjustmentReasonEnum = mysqlEnum("adjustmentReason", [
+  "DAMAGED",
+  "EXPIRED",
+  "LOST",
+  "THEFT",
+  "COUNT_DISCREPANCY",
+  "QUALITY_ISSUE",
+  "REWEIGH",
+  "OTHER",
+]);
+
+/**
  * Inventory Movements Table
  * Comprehensive audit trail of all inventory quantity changes
  * Links inventory changes to business transactions
@@ -2338,7 +2353,8 @@ export const inventoryMovements = mysqlTable(
     quantityAfter: varchar("quantityAfter", { length: 20 }).notNull(),
     referenceType: varchar("referenceType", { length: 50 }), // "ORDER", "REFUND", "ADJUSTMENT", etc.
     referenceId: int("referenceId"),
-    reason: text("reason"),
+    adjustmentReason: adjustmentReasonEnum, // For ADJUSTMENT movement type
+    notes: text("notes"), // Additional context for any movement type
     performedBy: int("performedBy")
       .notNull()
       .references(() => users.id),
