@@ -18,7 +18,18 @@ This roadmap represents the most up-to-date, comprehensive plan for reaching fea
 ---
 
 
-## Phase 1: Critical Foundation
+## Phase 0: CRITICAL FOUNDATION - Purchase Order Module
+
+**The absolute top priority is to build the core Purchase Order (PO) module, which is the primary missing piece in the current system.**
+
+| ID | Feature Name | Priority | Est. Effort | Source |
+|----|--------------|----------|-------------|--------|
+| MF-018 | Purchase Order Creation | CRITICAL | 40.0 | Original Spreadsheet |
+| MF-021 | PO Receiving | CRITICAL | 32.0 | Original Spreadsheet |
+| MF-022 | PO-to-Bill Matching | CRITICAL | 48.0 | Original Spreadsheet |
+
+
+## Phase 1: Other Foundational Features
 
 | ID | Feature Name | Priority | Est. Effort | Source |
 
