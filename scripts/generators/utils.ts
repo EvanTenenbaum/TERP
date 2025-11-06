@@ -191,7 +191,10 @@ export function generatePersonName(index: number): string {
 /**
  * Format currency
  */
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | undefined): string {
+  if (amount === undefined || amount === null) {
+    return "$0.00";
+  }
   return `$${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
 }
 
