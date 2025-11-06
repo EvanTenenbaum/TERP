@@ -4243,3 +4243,24 @@ export type ClientMeetingHistoryEntry =
   typeof clientMeetingHistory.$inferSelect;
 export type InsertClientMeetingHistoryEntry =
   typeof clientMeetingHistory.$inferInsert;
+
+// ============================================================================
+// VIP PORTAL LIVE CATALOG TABLES (Re-exported from schema-vip-portal.ts)
+// ============================================================================
+export {
+  clientCatalogViews,
+  clientInterestLists,
+  clientInterestListItems,
+  clientDraftInterests,
+  clientPriceAlerts,
+  type ClientCatalogView,
+  type InsertClientCatalogView,
+  type ClientInterestList,
+  type InsertClientInterestList,
+  type ClientInterestListItem,
+  type InsertClientInterestListItem,
+  type ClientDraftInterest,
+  type InsertClientDraftInterest,
+  type ClientPriceAlert,
+  type InsertClientPriceAlert,
+} from "./schema-vip-portal";
