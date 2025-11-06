@@ -35,6 +35,7 @@ import { purchaseOrdersRouter } from "./routers/purchaseOrders";
 import { locationsRouter } from "./routers/locations";
 import { returnsRouter } from "./routers/returns";
 import { refundsRouter } from "./routers/refunds";
+import { warehouseTransfersRouter } from "./routers/warehouseTransfers";
 import { matchingEnhancedRouter } from "./routers/matchingEnhanced";
 import { userManagementRouter } from "./routers/userManagement";
 import { dataCardMetricsRouter } from "./routers/dataCardMetrics";
@@ -97,6 +98,7 @@ export const appRouter = router({
   locations: locationsRouter,
   returns: returnsRouter,
   refunds: refundsRouter,
+  warehouseTransfers: warehouseTransfersRouter,
   matching: matchingEnhancedRouter,
   userManagement: userManagementRouter,
   dataCardMetrics: dataCardMetricsRouter,
