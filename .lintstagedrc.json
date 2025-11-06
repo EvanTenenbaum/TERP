@@ -4,5 +4,10 @@
     "eslint --fix --max-warnings=0",
     "prettier --write"
   ],
-  "*.{ts,tsx,md,json}": ["prettier --write"]
+  "*.{ts,tsx,md,json}": [
+    "prettier --write"
+  ],
+  "server/**/*.test.ts": [
+    "vitest related --run"
+  ]
 }

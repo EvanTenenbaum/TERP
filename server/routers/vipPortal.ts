@@ -10,8 +10,17 @@ import {
   invoices,
   bills,
   clientTransactions,
+  clientDraftInterests,
+  clientInterestLists,
+  clientInterestListItems,
+  clientCatalogViews,
+  batches,
+  products,
 } from "../../drizzle/schema";
-import { eq, and, desc, gte, lte, sql, like, or } from "drizzle-orm";
+import * as liveCatalogService from "../services/liveCatalogService";
+import * as pricingEngine from "../pricingEngine";
+import * as priceAlertsService from "../services/priceAlertsService";
+import { eq, and, desc, gte, lte, sql, like, or, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 
@@ -859,5 +868,627 @@ export const vipPortalRouter = router({
           lastUpdated: new Date().toISOString(),
         };
       }),
+  }),
+
+  // ============================================================================
+  // LIVE CATALOG (CLIENT-FACING)
+  // ============================================================================
+  
+  liveCatalog: router({
+    // Get catalog with filters
+    get: publicProcedure
+      .input(z.object({
+        category: z.string().optional(),
+        brand: z.array(z.string()).optional(),
+        grade: z.array(z.string()).optional(),
+        stockLevel: z.enum(['all', 'in_stock', 'low_stock']).optional(),
+        priceMin: z.number().optional(),
+        priceMax: z.number().optional(),
+        search: z.string().optional(),
+        sortBy: z.enum(['name', 'price', 'category', 'date']).optional(),
+        sortOrder: z.enum(['asc', 'desc']).optional(),
+        limit: z.number().optional().default(50),
+        offset: z.number().optional().default(0),
+      }))
+      .query(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        const clientId = ctx.vipPortalClientId;
+        if (!clientId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          });
+        }
+        
+        // Get client configuration
+        const config = await db.query.vipPortalConfigurations.findFirst({
+          where: eq(vipPortalConfigurations.clientId, clientId),
+        });
+        
+        // If Live Catalog is disabled, return empty
+        if (!config || !config.moduleLiveCatalogEnabled) {
+          return {
+            items: [],
+            total: 0,
+            appliedFilters: input,
+          };
+        }
+        
+        // Get catalog using service
+        const result = await liveCatalogService.getCatalog(clientId, input);
+        
+        return {
+          items: result.items,
+          total: result.total,
+          appliedFilters: input,
+        };
+      }),
+    
+    // Get filter options
+    getFilterOptions: publicProcedure
+      .query(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        const clientId = ctx.vipPortalClientId;
+        if (!clientId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          });
+        }
+        
+        // Get filter options using service
+        return await liveCatalogService.getFilterOptions(clientId);
+      }),
+    
+    // Get draft interests
+    getDraftInterests: publicProcedure
+      .query(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        const clientId = ctx.vipPortalClientId;
+        if (!clientId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          });
+        }
+        
+        const drafts = await db.query.clientDraftInterests.findMany({
+          where: eq(clientDraftInterests.clientId, clientId),
+        });
+        
+        if (drafts.length === 0) {
+          return {
+            items: [],
+            totalItems: 0,
+            totalValue: '0.00',
+            hasChanges: false,
+          };
+        }
+        
+        // Get batch details
+        const batchIds = drafts.map(d => d.batchId);
+        const batchesData = await db
+          .select({
+            batch: batches,
+            product: products,
+          })
+          .from(batches)
+          .leftJoin(products, eq(batches.productId, products.id))
+          .where(inArray(batches.id, batchIds));
+        
+        // Get client pricing
+        const clientRules = await pricingEngine.getClientPricingRules(clientId);
+        
+        // Calculate current prices
+        const inventoryItems = batchesData.map(({ batch, product }) => ({
+          id: batch.id,
+          name: batch.sku || `Batch #${batch.id}`,
+          category: product?.category,
+          subcategory: product?.subcategory,
+          strain: undefined,
+          basePrice: parseFloat(batch.unitCogs || '0'),
+          quantity: parseFloat(batch.onHandQty || '0'),
+          grade: batch.grade || undefined,
+          vendor: undefined,
+        }));
+        
+        let pricedItems;
+        try {
+          pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
+        } catch (error) {
+          pricedItems = inventoryItems.map(item => ({
+            ...item,
+            retailPrice: item.basePrice,
+            priceMarkup: 0,
+            appliedRules: [],
+          }));
+        }
+        
+        // Build items with change detection
+        const items = drafts.map(draft => {
+          const pricedItem = pricedItems.find(p => p.id === draft.batchId);
+          const batchData = batchesData.find(b => b.batch.id === draft.batchId);
+          
+          if (!pricedItem || !batchData) {
+            return null;
+          }
+          
+          const currentPrice = pricedItem.retailPrice;
+          const currentQuantity = pricedItem.quantity;
+          const stillAvailable = currentQuantity > 0;
+          
+          // For simplicity, assume no price/quantity at add time (no historical tracking yet)
+          // In production, you'd store these values when adding to draft
+          const priceChanged = false;
+          const quantityChanged = false;
+          
+          return {
+            id: draft.id,
+            batchId: draft.batchId,
+            itemName: pricedItem.name,
+            category: pricedItem.category,
+            subcategory: pricedItem.subcategory,
+            retailPrice: currentPrice.toFixed(2),
+            quantity: currentQuantity.toFixed(2),
+            addedAt: draft.addedAt,
+            priceChanged,
+            priceAtAdd: undefined,
+            quantityChanged,
+            quantityAtAdd: undefined,
+            stillAvailable,
+          };
+        }).filter(item => item !== null);
+        
+        const totalValue = items.reduce((sum, item) => sum + parseFloat(item.retailPrice), 0);
+        const hasChanges = items.some(item => item.priceChanged || item.quantityChanged || !item.stillAvailable);
+        
+        return {
+          items,
+          totalItems: items.length,
+          totalValue: totalValue.toFixed(2),
+          hasChanges,
+        };
+      }),
+    
+    // Add to draft
+    addToDraft: publicProcedure
+      .input(z.object({
+        batchId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        const clientId = ctx.vipPortalClientId;
+        if (!clientId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          });
+        }
+        
+        // Check if batch exists
+        const batch = await db.query.batches.findFirst({
+          where: eq(batches.id, input.batchId),
+        });
+        
+        if (!batch) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Batch not found",
+          });
+        }
+        
+        // Check if already in draft
+        const existing = await db.query.clientDraftInterests.findFirst({
+          where: and(
+            eq(clientDraftInterests.clientId, clientId),
+            eq(clientDraftInterests.batchId, input.batchId)
+          ),
+        });
+        
+        if (existing) {
+          return {
+            success: true,
+            draftId: existing.id,
+          };
+        }
+        
+        // Add to draft
+        const result = await db.insert(clientDraftInterests).values({
+          clientId,
+          batchId: input.batchId,
+        });
+        
+        return {
+          success: true,
+          draftId: Number(result.insertId),
+        };
+      }),
+    
+    // Remove from draft
+    removeFromDraft: publicProcedure
+      .input(z.object({
+        draftId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        const clientId = ctx.vipPortalClientId;
+        if (!clientId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          });
+        }
+        
+        // Check if draft exists and belongs to client
+        const draft = await db.query.clientDraftInterests.findFirst({
+          where: eq(clientDraftInterests.id, input.draftId),
+        });
+        
+        if (!draft) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Draft item not found",
+          });
+        }
+        
+        if (draft.clientId !== clientId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Draft item belongs to a different client",
+          });
+        }
+        
+        await db.delete(clientDraftInterests).where(eq(clientDraftInterests.id, input.draftId));
+        
+        return { success: true };
+      }),
+    
+    // Clear draft
+    clearDraft: publicProcedure
+      .mutation(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        const clientId = ctx.vipPortalClientId;
+        if (!clientId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          });
+        }
+        
+        const result = await db.delete(clientDraftInterests).where(eq(clientDraftInterests.clientId, clientId));
+        
+        return {
+          success: true,
+          itemsCleared: result.rowsAffected || 0,
+        };
+      }),
+    
+    // Submit interest list
+    submitInterestList: publicProcedure
+      .mutation(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        const clientId = ctx.vipPortalClientId;
+        if (!clientId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          });
+        }
+        
+        // Get draft items
+        const drafts = await db.query.clientDraftInterests.findMany({
+          where: eq(clientDraftInterests.clientId, clientId),
+        });
+        
+        if (drafts.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Draft is empty",
+          });
+        }
+        
+        // Get batch details and calculate prices
+        const batchIds = drafts.map(d => d.batchId);
+        const batchesData = await db
+          .select({
+            batch: batches,
+            product: products,
+          })
+          .from(batches)
+          .leftJoin(products, eq(batches.productId, products.id))
+          .where(inArray(batches.id, batchIds));
+        
+        // Get client pricing
+        const clientRules = await pricingEngine.getClientPricingRules(clientId);
+        
+        // Calculate current prices
+        const inventoryItems = batchesData.map(({ batch, product }) => ({
+          id: batch.id,
+          name: batch.sku || `Batch #${batch.id}`,
+          category: product?.category,
+          subcategory: product?.subcategory,
+          strain: undefined,
+          basePrice: parseFloat(batch.unitCogs || '0'),
+          quantity: parseFloat(batch.onHandQty || '0'),
+          grade: batch.grade || undefined,
+          vendor: undefined,
+        }));
+        
+        let pricedItems;
+        try {
+          pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
+        } catch (error) {
+          pricedItems = inventoryItems.map(item => ({
+            ...item,
+            retailPrice: item.basePrice,
+            priceMarkup: 0,
+            appliedRules: [],
+          }));
+        }
+        
+        // Calculate totals
+        const totalValue = pricedItems.reduce((sum, item) => sum + item.retailPrice, 0);
+        
+        // Use transaction to create interest list and items
+        const result = await db.transaction(async (tx) => {
+          // Create interest list
+          const listResult = await tx.insert(clientInterestLists).values({
+            clientId,
+            status: 'NEW',
+            totalItems: drafts.length,
+            totalValue: totalValue.toFixed(2),
+          });
+          
+          const interestListId = Number(listResult.insertId);
+          
+          // Create interest list items
+          const itemsToInsert = drafts.map(draft => {
+            const pricedItem = pricedItems.find(p => p.id === draft.batchId);
+            const batchData = batchesData.find(b => b.batch.id === draft.batchId);
+            
+            if (!pricedItem || !batchData) {
+              throw new Error(`Batch ${draft.batchId} not found`);
+            }
+            
+            return {
+              interestListId,
+              batchId: draft.batchId,
+              itemName: pricedItem.name,
+              category: pricedItem.category || null,
+              subcategory: pricedItem.subcategory || null,
+              priceAtInterest: pricedItem.retailPrice.toFixed(2),
+              quantityAtInterest: pricedItem.quantity.toFixed(2),
+            };
+          });
+          
+          await tx.insert(clientInterestListItems).values(itemsToInsert);
+          
+          // Clear draft
+          await tx.delete(clientDraftInterests).where(eq(clientDraftInterests.clientId, clientId));
+          
+          return {
+            interestListId,
+            totalItems: drafts.length,
+            totalValue: totalValue.toFixed(2),
+          };
+        });
+        
+        return {
+          success: true,
+          ...result,
+        };
+      }),
+    
+    // Saved views
+    views: router({
+      // List saved views
+      list: publicProcedure
+        .query(async ({ ctx }) => {
+          const db = await getDb();
+          if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+          
+          const clientId = ctx.vipPortalClientId;
+          if (!clientId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Not authenticated",
+            });
+          }
+          
+          const views = await db.query.clientCatalogViews.findMany({
+            where: eq(clientCatalogViews.clientId, clientId),
+            orderBy: (clientCatalogViews, { desc }) => [desc(clientCatalogViews.createdAt)],
+          });
+          
+          return { views };
+        }),
+      
+      // Save a view
+      save: publicProcedure
+        .input(z.object({
+          name: z.string().min(1).max(100),
+          filters: z.object({
+            category: z.string().optional().nullable(),
+            brand: z.array(z.string()).optional(),
+            grade: z.array(z.string()).optional(),
+            stockLevel: z.enum(['all', 'in_stock', 'low_stock']).optional(),
+            priceMin: z.number().optional(),
+            priceMax: z.number().optional(),
+            search: z.string().optional(),
+          }),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const db = await getDb();
+          if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+          
+          const clientId = ctx.vipPortalClientId;
+          if (!clientId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Not authenticated",
+            });
+          }
+          
+          // Check if name already exists
+          const existing = await db.query.clientCatalogViews.findFirst({
+            where: and(
+              eq(clientCatalogViews.clientId, clientId),
+              eq(clientCatalogViews.name, input.name)
+            ),
+          });
+          
+          if (existing) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "A view with this name already exists",
+            });
+          }
+          
+          const result = await db.insert(clientCatalogViews).values({
+            clientId,
+            name: input.name,
+            filters: input.filters,
+          });
+          
+          return {
+            success: true,
+            viewId: Number(result.insertId),
+          };
+        }),
+      
+      // Delete a view
+      delete: publicProcedure
+        .input(z.object({
+          viewId: z.number(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const db = await getDb();
+          if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+          
+          const clientId = ctx.vipPortalClientId;
+          if (!clientId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Not authenticated",
+            });
+          }
+          
+          // Check if view exists and belongs to client
+          const view = await db.query.clientCatalogViews.findFirst({
+            where: eq(clientCatalogViews.id, input.viewId),
+          });
+          
+          if (!view) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "View not found",
+            });
+          }
+          
+          if (view.clientId !== clientId) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "View belongs to a different client",
+            });
+          }
+          
+          await db.delete(clientCatalogViews).where(eq(clientCatalogViews.id, input.viewId));
+          
+          return { success: true };
+        }),
+    }),
+
+    // ============================================================================
+    // PRICE ALERTS
+    // ============================================================================
+    priceAlerts: router({
+      // Get all active price alerts for the client
+      list: publicProcedure.query(async ({ ctx }) => {
+        const clientId = ctx.vipPortalClientId;
+        if (!clientId) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          });
+        }
+
+        const alerts = await priceAlertsService.getClientPriceAlerts(clientId);
+        return alerts;
+      }),
+
+      // Create a new price alert
+      create: publicProcedure
+        .input(
+          z.object({
+            batchId: z.number(),
+            targetPrice: z.number().positive(),
+          })
+        )
+        .mutation(async ({ ctx, input }) => {
+          const clientId = ctx.vipPortalClientId;
+          if (!clientId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Not authenticated",
+            });
+          }
+
+          const result = await priceAlertsService.createPriceAlert(
+            clientId,
+            input.batchId,
+            input.targetPrice
+          );
+
+          if (!result.success) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: result.message || "Failed to create price alert",
+            });
+          }
+
+          return result;
+        }),
+
+      // Deactivate a price alert
+      deactivate: publicProcedure
+        .input(z.object({ alertId: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const clientId = ctx.vipPortalClientId;
+          if (!clientId) {
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Not authenticated",
+            });
+          }
+
+          const result = await priceAlertsService.deactivatePriceAlert(
+            input.alertId,
+            clientId
+          );
+
+          if (!result.success) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: result.message || "Failed to deactivate price alert",
+            });
+          }
+
+          return result;
+        }),
+    }),
   }),
 });
