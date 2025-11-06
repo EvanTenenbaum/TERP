@@ -5,9 +5,9 @@
 
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { db } from "../db";
-import { locations, batchLocations, batches } from "../../drizzle/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { getDb } from "../db";
+import { locations, batchLocations } from "../../drizzle/schema";
+import { eq, sql } from "drizzle-orm";
 
 export const locationsRouter = router({
   // Get all locations
@@ -23,6 +23,9 @@ export const locationsRouter = router({
         .optional()
     )
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
 
@@ -46,6 +49,9 @@ export const locationsRouter = router({
 
   // Get location by ID
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     const [location] = await db
       .select()
       .from(locations)
@@ -71,6 +77,9 @@ export const locationsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const [result] = await db.insert(locations).values({
         site: input.site,
         zone: input.zone,
@@ -97,6 +106,9 @@ export const locationsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const { id, ...updates } = input;
 
       const updateData: Record<string, unknown> = {};
@@ -114,6 +126,9 @@ export const locationsRouter = router({
 
   // Delete location (soft delete by setting isActive = 0)
   delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     await db.update(locations).set({ isActive: 0 }).where(eq(locations.id, input.id));
 
     return { success: true };
@@ -123,6 +138,9 @@ export const locationsRouter = router({
   getBatchLocations: publicProcedure
     .input(z.object({ batchId: z.number().optional() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       let query = db
         .select({
           id: batchLocations.id,
@@ -159,6 +177,9 @@ export const locationsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const [result] = await db.insert(batchLocations).values({
         batchId: input.batchId,
         site: input.site,
@@ -176,6 +197,9 @@ export const locationsRouter = router({
   getLocationInventory: publicProcedure
     .input(z.object({ site: z.string().optional() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       let query = db
         .select({
           site: batchLocations.site,

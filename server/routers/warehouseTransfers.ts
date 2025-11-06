@@ -5,8 +5,8 @@
 
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { db } from "../db";
-import { batchLocations, batches, inventoryMovements } from "../../drizzle/schema";
+import { getDb } from "../db";
+import { batchLocations, inventoryMovements } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 export const warehouseTransfersRouter = router({
@@ -27,6 +27,9 @@ export const warehouseTransfersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       // Wrap in transaction for atomicity
       const result = await db.transaction(async (tx) => {
         // If fromLocationId provided, reduce quantity from that location
@@ -124,6 +127,9 @@ export const warehouseTransfersRouter = router({
   getTransferHistory: publicProcedure
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const transfers = await db
         .select()
         .from(inventoryMovements)
@@ -142,6 +148,9 @@ export const warehouseTransfersRouter = router({
   getBatchLocations: publicProcedure
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const locations = await db
         .select()
         .from(batchLocations)
@@ -153,6 +162,9 @@ export const warehouseTransfersRouter = router({
 
   // Get transfer statistics
   getStats: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     const stats = await db
       .select({
         totalTransfers: sql<number>`COUNT(*)`,

@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { db } from "../db";
+import { getDb } from "../db";
 import { transactions, transactionLinks, returns } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -21,6 +21,9 @@ export const refundsRouter = router({
         .optional()
     )
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
 
@@ -51,6 +54,9 @@ export const refundsRouter = router({
 
   // Get refund by ID
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     const [transaction] = await db
       .select()
       .from(transactions)
@@ -90,6 +96,9 @@ export const refundsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       // Wrap in transaction for atomicity
       const result = await db.transaction(async (tx) => {
         // Verify return exists
@@ -140,6 +149,9 @@ export const refundsRouter = router({
 
   // Get refunds for a specific return
   getByReturn: publicProcedure.input(z.object({ returnId: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     // Find transactions with notes mentioning this return ID
     const refunds = await db
       .select({
@@ -167,6 +179,9 @@ export const refundsRouter = router({
   getByOriginalTransaction: publicProcedure
     .input(z.object({ transactionId: z.number() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const refunds = await db
         .select({
           id: transactions.id,
@@ -196,6 +211,9 @@ export const refundsRouter = router({
 
   // Get refund statistics
   getStats: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     const stats = await db
       .select({
         totalRefunds: sql<number>`COUNT(*)`,
