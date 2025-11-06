@@ -30,8 +30,16 @@ export function exportToCSV<T extends Record<string, unknown>>(
         const value = row[col.key];
         // Handle null/undefined
         if (value === null || value === undefined) return "";
+
+        let stringValue = String(value);
+
+        // CSV Injection Protection: Sanitize formula characters
+        // If value starts with =, +, -, @, or tab, prefix with single quote
+        if (/^[=+\-@\t]/.test(stringValue)) {
+          stringValue = "'" + stringValue;
+        }
+
         // Escape quotes and wrap in quotes if contains comma or quote
-        const stringValue = String(value);
         if (stringValue.includes(",") || stringValue.includes('"')) {
           return `"${stringValue.replace(/"/g, '""')}"`;
         }
