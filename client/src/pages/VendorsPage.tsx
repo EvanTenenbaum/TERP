@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import { VendorNotesDialog } from "../components/VendorNotesDialog";
+import { useNavigate } from "react-router-dom";
 
 interface Vendor {
   id: number;
@@ -70,6 +71,7 @@ const PAYMENT_TERMS_OPTIONS = [
 export default function VendorsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
@@ -430,7 +432,14 @@ export default function VendorsPage() {
             ) : (
               filteredAndSortedVendors.map(vendor => (
                 <TableRow key={vendor.id}>
-                  <TableCell className="font-medium">{vendor.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <button
+                      onClick={() => navigate(`/vendors/${vendor.id}`)}
+                      className="text-primary hover:underline text-left"
+                    >
+                      {vendor.name}
+                    </button>
+                  </TableCell>
                   <TableCell>{vendor.contactName || "—"}</TableCell>
                   <TableCell>{vendor.contactEmail || "—"}</TableCell>
                   <TableCell>{vendor.contactPhone || "—"}</TableCell>
