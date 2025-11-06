@@ -36,10 +36,8 @@
     "id": "DF-002",
     "name": "Task Management & Todo Lists",
     "category": "Project Management",
-    "status": "Fully Implemented",
-    "tables": [
-      "Inferred from routers"
-    ],
+    "status": "Partial - API Layer Only",
+    "tables": [],
     "routers": [
       "todoActivity",
       "todoLists",
@@ -49,7 +47,7 @@
       "TodoListDetailPage",
       "TodoListsPage"
     ],
-    "description": "Complete task management system with todo lists, tasks, and activity tracking.",
+    "description": "Complete task management system with todo lists, tasks, and activity tracking. Implementation includes API routers but no dedicated database tables, suggesting a UI or API-only feature.",
     "business_value": "High - Enables team coordination and task tracking",
     "complexity": "High",
     "estimated_original_effort": "80-120 hours"
@@ -109,10 +107,8 @@
     "id": "DF-005",
     "name": "VIP Customer Portal",
     "category": "Customer Experience",
-    "status": "Fully Implemented",
-    "tables": [
-      "Inferred from routers"
-    ],
+    "status": "Partial - API Layer Only",
+    "tables": [],
     "routers": [
       "vipPortal",
       "vipPortalAdmin"
@@ -120,7 +116,7 @@
     "pages": [
       "VIPPortalConfigPage"
     ],
-    "description": "Customer-facing portal system for VIP clients with admin configuration.",
+    "description": "Customer-facing portal system for VIP clients with admin configuration. Implementation includes API routers but no dedicated database tables, suggesting a UI or API-only feature.",
     "business_value": "High - Enables self-service for premium customers",
     "complexity": "High",
     "estimated_original_effort": "80-120 hours"
@@ -129,10 +125,8 @@
     "id": "DF-006",
     "name": "Client Needs Management (CRM)",
     "category": "Customer Relationship Management",
-    "status": "Fully Implemented",
-    "tables": [
-      "Inferred from routers"
-    ],
+    "status": "Partial - API Layer Only",
+    "tables": [],
     "routers": [
       "clientNeeds",
       "clientNeedsEnhanced"
@@ -140,7 +134,7 @@
     "pages": [
       "NeedsManagementPage"
     ],
-    "description": "CRM-like system for tracking and managing client needs and requirements.",
+    "description": "CRM-like system for tracking and managing client needs and requirements. Implementation includes API routers but no dedicated database tables, suggesting a UI or API-only feature.",
     "business_value": "High - Improves customer service and sales",
     "complexity": "High",
     "estimated_original_effort": "80-100 hours"
@@ -149,10 +143,8 @@
     "id": "DF-007",
     "name": "Intelligent Product-Client Matchmaking",
     "category": "Sales Intelligence",
-    "status": "Fully Implemented",
-    "tables": [
-      "Inferred from routers"
-    ],
+    "status": "Partial - API Layer Only",
+    "tables": [],
     "routers": [
       "matching",
       "matchingEnhanced"
@@ -160,7 +152,7 @@
     "pages": [
       "MatchmakingServicePage"
     ],
-    "description": "Intelligent matching system to connect products with client needs.",
+    "description": "Intelligent matching system to connect products with client needs. Implementation includes API routers but no dedicated database tables, suggesting a UI or API-only feature.",
     "business_value": "Very High - Drives sales through intelligent recommendations",
     "complexity": "Very High",
     "estimated_original_effort": "120-160 hours"
@@ -190,17 +182,15 @@
     "id": "DF-009",
     "name": "Inbox & Notification Center",
     "category": "Communication",
-    "status": "Fully Implemented",
-    "tables": [
-      "Inferred from routers"
-    ],
+    "status": "Partial - API Layer Only",
+    "tables": [],
     "routers": [
       "inbox"
     ],
     "pages": [
       "InboxPage"
     ],
-    "description": "Centralized inbox for system notifications and messages.",
+    "description": "Centralized inbox for system notifications and messages. Implementation includes API routers but no dedicated database tables, suggesting a UI or API-only feature.",
     "business_value": "Medium - Improves user awareness and engagement",
     "complexity": "Medium",
     "estimated_original_effort": "40-60 hours"
@@ -209,17 +199,15 @@
     "id": "DF-010",
     "name": "Product Intake Management",
     "category": "Inventory Operations",
-    "status": "Fully Implemented",
-    "tables": [
-      "Inferred from routers"
-    ],
+    "status": "Partial - API Layer Only",
+    "tables": [],
     "routers": [
       "productIntake"
     ],
     "pages": [
       "Inferred from routers"
     ],
-    "description": "System for managing product intake sessions and batch processing.",
+    "description": "System for managing product intake sessions and batch processing. Implementation includes API routers but no dedicated database tables, suggesting a UI or API-only feature.",
     "business_value": "High - Streamlines receiving operations",
     "complexity": "High",
     "estimated_original_effort": "80-100 hours"
@@ -311,17 +299,15 @@
     "id": "DF-015",
     "name": "Sample Management System",
     "category": "Sales Operations",
-    "status": "Fully Implemented",
-    "tables": [
-      "Inferred from routers"
-    ],
+    "status": "Partial - API Layer Only",
+    "tables": [],
     "routers": [
       "samples"
     ],
     "pages": [
       "Inferred from routers"
     ],
-    "description": "System for managing product samples, requests, and distribution.",
+    "description": "System for managing product samples, requests, and distribution. Implementation includes API routers but no dedicated database tables, suggesting a UI or API-only feature.",
     "business_value": "Medium - Supports sales process",
     "complexity": "Medium",
     "estimated_original_effort": "60-80 hours"
