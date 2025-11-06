@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { trpc } from "../lib/trpc";
 import { Button } from "../components/ui/button";
@@ -71,7 +71,7 @@ const PAYMENT_TERMS_OPTIONS = [
 
 export default function VendorProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -159,7 +159,7 @@ export default function VendorProfilePage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-muted-foreground mb-4">Vendor not found</p>
-            <Button onClick={() => navigate("/vendors")}>
+            <Button onClick={() => setLocation("/vendors")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Vendors
             </Button>
@@ -177,7 +177,7 @@ export default function VendorProfilePage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/vendors")}
+            onClick={() => setLocation("/vendors")}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

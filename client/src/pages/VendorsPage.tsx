@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import { VendorNotesDialog } from "../components/VendorNotesDialog";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { useMemo } from "react";
 
 interface Vendor {
@@ -72,7 +72,7 @@ const PAYMENT_TERMS_OPTIONS = [
 export default function VendorsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
@@ -450,7 +450,7 @@ export default function VendorsPage() {
                 <TableRow key={vendor.id}>
                   <TableCell className="font-medium">
                     <button
-                      onClick={() => navigate(`/vendors/${vendor.id}`)}
+                      onClick={() => setLocation(`/vendors/${vendor.id}`)}
                       className="text-primary hover:underline text-left"
                     >
                       {vendor.name}
