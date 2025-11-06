@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
+import { eq, desc, and } from "drizzle-orm";
+import { getDb } from "../db";
+import { vendorNotes } from "../../drizzle/schema";
 
 /**
  * Vendors Router
@@ -203,6 +206,237 @@ export const vendorsRouter = router({
           success: false,
           error:
             error instanceof Error ? error.message : "Failed to delete vendor",
+        };
+      }
+    }),
+
+  /**
+   * Get all notes for a vendor
+   * Feature: MF-016 Vendor Notes & History
+   */
+  getNotes: publicProcedure
+    .input(z.object({ vendorId: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const { users } = await import("../../drizzle/schema");
+
+        const notes = await db
+          .select({
+            id: vendorNotes.id,
+            vendorId: vendorNotes.vendorId,
+            userId: vendorNotes.userId,
+            note: vendorNotes.note,
+            createdAt: vendorNotes.createdAt,
+            updatedAt: vendorNotes.updatedAt,
+            userName: users.name,
+          })
+          .from(vendorNotes)
+          .leftJoin(users, eq(vendorNotes.userId, users.id))
+          .where(eq(vendorNotes.vendorId, input.vendorId))
+          .orderBy(desc(vendorNotes.createdAt));
+
+        return {
+          success: true,
+          data: notes,
+        };
+      } catch (error) {
+        console.error("Error fetching vendor notes:", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch vendor notes",
+        };
+      }
+    }),
+
+  /**
+   * Create a new note for a vendor
+   * Feature: MF-016 Vendor Notes & History
+   */
+  createNote: publicProcedure
+    .input(
+      z.object({
+        vendorId: z.number(),
+        userId: z.number(),
+        note: z.string().min(1, "Note cannot be empty"),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const result = await db.insert(vendorNotes).values(input);
+
+        // Fetch the created note with user info
+        const { users } = await import("../../drizzle/schema");
+        const [note] = await db
+          .select({
+            id: vendorNotes.id,
+            vendorId: vendorNotes.vendorId,
+            userId: vendorNotes.userId,
+            note: vendorNotes.note,
+            createdAt: vendorNotes.createdAt,
+            updatedAt: vendorNotes.updatedAt,
+            userName: users.name,
+          })
+          .from(vendorNotes)
+          .leftJoin(users, eq(vendorNotes.userId, users.id))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .where(eq(vendorNotes.id, Number((result as any).insertId)))
+          .limit(1);
+
+        return {
+          success: true,
+          data: note,
+        };
+      } catch (error) {
+        console.error("Error creating vendor note:", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to create vendor note",
+        };
+      }
+    }),
+
+  /**
+   * Update a vendor note
+   * Feature: MF-016 Vendor Notes & History
+   */
+  updateNote: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        note: z.string().min(1, "Note cannot be empty"),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        await db
+          .update(vendorNotes)
+          .set({ note: input.note })
+          .where(eq(vendorNotes.id, input.id));
+
+        // Fetch updated note with user info
+        const { users } = await import("../../drizzle/schema");
+        const [note] = await db
+          .select({
+            id: vendorNotes.id,
+            vendorId: vendorNotes.vendorId,
+            userId: vendorNotes.userId,
+            note: vendorNotes.note,
+            createdAt: vendorNotes.createdAt,
+            updatedAt: vendorNotes.updatedAt,
+            userName: users.name,
+          })
+          .from(vendorNotes)
+          .leftJoin(users, eq(vendorNotes.userId, users.id))
+          .where(eq(vendorNotes.id, input.id))
+          .limit(1);
+
+        return {
+          success: true,
+          data: note,
+        };
+      } catch (error) {
+        console.error("Error updating vendor note:", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to update vendor note",
+        };
+      }
+    }),
+
+  /**
+   * Delete a vendor note
+   * Feature: MF-016 Vendor Notes & History
+   */
+  deleteNote: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        await db.delete(vendorNotes).where(eq(vendorNotes.id, input.id));
+
+        return {
+          success: true,
+        };
+      } catch (error) {
+        console.error("Error deleting vendor note:", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to delete vendor note",
+        };
+      }
+    }),
+
+  /**
+   * Get vendor history from audit logs
+   * Feature: MF-016 Vendor Notes & History
+   */
+  getHistory: publicProcedure
+    .input(z.object({ vendorId: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const { auditLogs, users } = await import("../../drizzle/schema");
+
+        const history = await db
+          .select({
+            id: auditLogs.id,
+            actorId: auditLogs.actorId,
+            entity: auditLogs.entity,
+            entityId: auditLogs.entityId,
+            action: auditLogs.action,
+            before: auditLogs.before,
+            after: auditLogs.after,
+            reason: auditLogs.reason,
+            createdAt: auditLogs.createdAt,
+            actorName: users.name,
+          })
+          .from(auditLogs)
+          .leftJoin(users, eq(auditLogs.actorId, users.id))
+          .where(
+            and(
+              eq(auditLogs.entity, "vendor"),
+              eq(auditLogs.entityId, input.vendorId)
+            )
+          )
+          .orderBy(desc(auditLogs.createdAt));
+
+        return {
+          success: true,
+          data: history,
+        };
+      } catch (error) {
+        console.error("Error fetching vendor history:", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch vendor history",
         };
       }
     }),
