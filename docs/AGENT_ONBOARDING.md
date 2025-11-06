@@ -25,6 +25,13 @@ You're about to work on **TERP**, a modern ERP system redesign focused on simpli
    - **This is "The Bible"** - all development rules and standards
    - MUST follow these protocols for all work
    - Zero TypeScript errors, production-ready code only
+   - **NEW: Section 13 - Testing Protocol (MANDATORY)**
+
+2b. **[testing/AI_AGENT_QUICK_REFERENCE.md](./testing/AI_AGENT_QUICK_REFERENCE.md)** (3 min)
+
+- **Quick testing checklist** - keep this open while coding
+- TDD workflow (Red → Green → Refactor)
+- Pre-commit requirements
 
 3. **[roadmaps/ACTIVE.md](./roadmaps/ACTIVE.md)** (2 min)
    - See what you're working on right now
@@ -56,10 +63,11 @@ You're about to work on **TERP**, a modern ERP system redesign focused on simpli
 
 ```
 1. ✅ Follow DEVELOPMENT_PROTOCOLS.md strictly
-2. ✅ Update roadmap file as you complete tasks
-3. ✅ Commit changes regularly with clear messages
-4. ✅ Run `pnpm run check` before committing (zero TS errors)
-5. ✅ Test your changes thoroughly
+2. ✅ Write tests FIRST (TDD: Red → Green → Refactor)
+3. ✅ Update roadmap file as you complete tasks
+4. ✅ Commit changes regularly with clear messages
+5. ✅ Run `pnpm test` to ensure all tests pass
+6. ✅ Run `pnpm run check` before committing (zero TS errors)
 ```
 
 ### Before Ending Session
@@ -87,6 +95,12 @@ You're about to work on **TERP**, a modern ERP system redesign focused on simpli
 ├── HANDOFF_CONTEXT.md            ← Latest session handoff
 ├── CHANGELOG.md                  ← Completed work history
 │
+├── testing/                      ← Testing infrastructure docs
+│   ├── TERP_TESTING_README.md    ← Master testing index
+│   ├── AI_AGENT_QUICK_REFERENCE.md ← Quick checklist (keep open!)
+│   ├── TERP_AI_AGENT_INTEGRATION_GUIDE.md ← Full testing workflow
+│   └── [other testing docs].md
+│
 ├── roadmaps/                     ← All implementation roadmaps
 │   ├── README.md                 ← Master index
 │   ├── ACTIVE.md                 ← Current roadmap (start here!)
@@ -107,15 +121,22 @@ You're about to work on **TERP**, a modern ERP system redesign focused on simpli
 ## ⚠️ Critical Rules
 
 ### Must Do
+
 - ✅ **Always check `notes/user-feedback.md` first** - this is how the owner communicates with you
 - ✅ **Follow DEVELOPMENT_PROTOCOLS.md** - no exceptions
+- ✅ **Write tests FIRST (TDD)** - see Section 13 of DEVELOPMENT_PROTOCOLS.md
 - ✅ **Zero TypeScript errors** - run `pnpm run check` before committing
+- ✅ **All tests must pass** - run `pnpm test` before committing
 - ✅ **Update roadmap as you work** - keep it current
 - ✅ **Update HANDOFF_CONTEXT.md before finishing** - next agent needs to know what you did
 
 ### Never Do
+
 - ❌ **Never skip reading user-feedback.md** - you might miss critical instructions
+- ❌ **Never write code without tests** - TDD is mandatory
 - ❌ **Never commit TypeScript errors** - must be zero errors
+- ❌ **Never commit failing tests** - all tests must pass
+- ❌ **Never bypass pre-commit hooks** - no `--no-verify`
 - ❌ **Never use placeholders or stubs** - production-ready code only
 - ❌ **Never forget to update HANDOFF_CONTEXT.md** - next agent will be lost
 - ❌ **Never expose pricing/COGS data to clients** - security critical
@@ -129,6 +150,7 @@ You're about to work on **TERP**, a modern ERP system redesign focused on simpli
 **Current Phase:** Phase 1 - Master Data & Foundation
 
 **Your Job:**
+
 1. Read the full roadmap: [roadmaps/defaults-implementation.md](./roadmaps/defaults-implementation.md)
 2. Read the specifications: [roadmaps/defaults-specifications.md](./roadmaps/defaults-specifications.md)
 3. Start with Phase 1 tasks
@@ -142,14 +164,17 @@ You're about to work on **TERP**, a modern ERP system redesign focused on simpli
 ## 🛠️ Tech Stack Quick Reference
 
 **Frontend:**
+
 - React 19, TypeScript, Tailwind CSS 4, shadcn/ui
 - Vite (build tool), pnpm (package manager)
 
 **Backend:**
+
 - Node.js, tRPC, Drizzle ORM
 - MySQL 8.0 database
 
 **Development:**
+
 ```bash
 pnpm install          # Install dependencies
 pnpm dev              # Start dev server
@@ -163,21 +188,28 @@ pnpm db:push          # Push schema changes to database
 ## 📚 Key Documents by Purpose
 
 **Understanding the Project:**
+
 - [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md) - What TERP is and what's built
 - [TERP_DESIGN_SYSTEM.md](./TERP_DESIGN_SYSTEM.md) - UI/UX design principles
 
 **Development Standards:**
+
 - [DEVELOPMENT_PROTOCOLS.md](./DEVELOPMENT_PROTOCOLS.md) - **THE BIBLE** - all rules
+- [testing/AI_AGENT_QUICK_REFERENCE.md](./testing/AI_AGENT_QUICK_REFERENCE.md) - **Testing checklist** - keep open while coding
+- [testing/TERP_TESTING_README.md](./testing/TERP_TESTING_README.md) - Complete testing documentation
 
 **Current Work:**
+
 - [roadmaps/ACTIVE.md](./roadmaps/ACTIVE.md) - What you're working on
 - [notes/user-feedback.md](./notes/user-feedback.md) - Owner's latest thoughts
 
 **Handoffs:**
+
 - [HANDOFF_CONTEXT.md](./HANDOFF_CONTEXT.md) - What last agent did
 - [CHANGELOG.md](./CHANGELOG.md) - History of completed work
 
 **Specifications:**
+
 - [specs/](./specs/) - Detailed specs for various modules
 
 ---
@@ -185,11 +217,13 @@ pnpm db:push          # Push schema changes to database
 ## 🤝 Communication with Owner
 
 **Owner → You:**
+
 - Owner adds feedback to `notes/user-feedback.md`
 - You check it at start of every session
 - Follow any instructions or incorporate feedback
 
 **You → Owner:**
+
 - Update roadmap with progress
 - Update HANDOFF_CONTEXT.md with status
 - Add issues to `notes/known-issues.md`
@@ -228,6 +262,7 @@ Before you start coding, make sure you've:
 
 - [ ] Read PROJECT_CONTEXT.md
 - [ ] Read DEVELOPMENT_PROTOCOLS.md (The Bible)
+- [ ] Read testing/AI_AGENT_QUICK_REFERENCE.md (Testing checklist)
 - [ ] Read roadmaps/ACTIVE.md
 - [ ] Read notes/user-feedback.md
 - [ ] Read HANDOFF_CONTEXT.md
@@ -261,4 +296,3 @@ If you've checked all boxes, you're ready to start! 🚀
 ---
 
 **You're all set! Start with `roadmaps/ACTIVE.md` and happy coding! 🚀**
-
