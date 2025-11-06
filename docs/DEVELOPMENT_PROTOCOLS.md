@@ -110,6 +110,7 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 12. [Feature Documentation Protocol](#12-feature-documentation-protocol)
 
 13. [Testing Protocol](#13-testing-protocol-mandatory)
+14. [Git Workflow Protocol](#14-git-workflow-protocol)
 
 ---
 
@@ -676,5 +677,77 @@ A task is only considered "done" when:
 6. ✅ Deployed to staging
 7. ✅ User acceptance testing passed
 8. ✅ **CI/CD pipeline passing** (NEW)
+
+---
+
+## 14. Git Workflow Protocol
+
+**Status:** ✅ Active  
+**Last Updated:** November 6, 2025
+
+### Branch Naming Convention
+
+All branches must follow this format:
+
+```
+<type>/<short-description>
+```
+
+- **`<type>`**: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
+- **`<short-description>`**: 2-5 words describing the change (e.g., `feat/add-client-search`)
+
+**Examples:**
+
+- `feat/add-client-search`
+- `fix/invoice-calculation-error`
+- `docs/update-testing-protocol`
+- `test/add-order-integration-tests`
+
+### Commit Message Convention
+
+All commit messages must follow the **Conventional Commits** standard:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+- **`<type>`**: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
+- **`<scope>`** (optional): The part of the codebase affected (e.g., `auth`, `orders`, `db`)
+- **`<subject>`**: Short, imperative-mood description of the change (e.g., `add client search input`)
+- **`<body>`** (optional): More detailed explanation
+- **`<footer>`** (optional): Reference issue numbers (e.g., `Fixes #123`)
+
+**Example:**
+
+```
+feat(orders): add search functionality to orders page
+
+- Adds a search input to the orders list page
+- Filters orders by order number, client name, and status
+- Debounces search input to reduce API calls
+
+Fixes #123
+```
+
+### Pull Request (PR) Process
+
+1. **Create a feature branch** from `main`
+2. **Make your changes** with accompanying tests
+3. **Push to your fork**
+4. **Open a Pull Request** to merge into `main`
+5. **Use a clear PR title** that follows Conventional Commits format
+6. **Write a detailed PR description**:
+   - What does this PR do?
+   - Why is this change needed?
+   - How was this tested?
+   - Any relevant screenshots or videos
+7. **Wait for CI checks** to pass (automated tests, linting, etc.)
+8. **Address review feedback** if requested
+
+**Never merge a PR with failing checks.**
 
 ---
