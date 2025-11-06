@@ -680,139 +680,6 @@ Each file in `/docs/features/modules/` must contain:
 
 Adherence to this protocol is mandatory for all engineering tasks to ensure the long-term maintainability and clarity of the TERP project.
 
-## 13. Testing Protocol (MANDATORY)
-
-**Status:** ✅ Production Ready  
-**Last Updated:** November 6, 2025
-
-### Overview
-
-All code changes MUST include tests. This is non-negotiable and enforced through automated pre-commit hooks and CI/CD pipelines.
-
-### Testing Philosophy: The Testing Trophy
-
-We follow the **Testing Trophy** model, which prioritizes integration tests for the best return on investment:
-
-```
-        /\
-       /  \      E2E Tests (20%)
-      /    \     - Slow, expensive, but catches critical issues
-     /------\
-    /        \   Integration Tests (50%)
-   /          \  - Fast, realistic, high confidence
-  /------------\
- /              \ Unit Tests (20%)
-/________________\ Static Analysis (10%)
-```
-
-### Test-Driven Development (TDD) - MANDATORY
-
-All new features and bug fixes MUST follow the TDD workflow:
-
-1. **RED**: Write a failing test that describes the desired behavior
-2. **GREEN**: Write the minimum code to make the test pass
-3. **REFACTOR**: Clean up the code while keeping tests green
-
-**Never write implementation code before writing tests.**
-
-### Pre-Commit Requirements
-
-Before every commit, the following checks are automatically enforced:
-
-- ✅ All tests pass (`pnpm test`)
-- ✅ Code is formatted (`pnpm format` via Prettier)
-- ✅ Linting passes (`pnpm lint` via ESLint)
-- ✅ Type checks pass (`pnpm typecheck` via TypeScript)
-- ✅ Commit message follows Conventional Commits standard
-
-These checks are enforced via **Husky pre-commit hooks** and will **block commits** that don't meet standards.
-
-### Test Location Standards
-
-| Code Type         | Test Location                 | Example                          |
-| ----------------- | ----------------------------- | -------------------------------- |
-| Utility functions | `server/lib/**/*.test.ts`     | `utils.ts` → `utils.test.ts`     |
-| tRPC routers      | `server/routers/**/*.test.ts` | `clients.ts` → `clients.test.ts` |
-| E2E user flows    | `e2e/**/*.spec.ts`            | `e2e/create-order.spec.ts`       |
-
-### Running Tests
-
-```bash
-# Run all tests
-pnpm test
-
-# Run tests in watch mode (for TDD)
-pnpm test:watch
-
-# Run only integration tests
-pnpm test:integration
-
-# Run E2E tests
-pnpm playwright test
-
-# Run all quality checks
-pnpm check
-```
-
-### CI/CD Automation
-
-#### On Pull Requests (`pr.yml`)
-
-Fast feedback loop (< 5 minutes):
-
-- ✅ Linting & Type Checking
-- ✅ Unit Tests
-
-#### On Merges to `main` (`merge.yml`)
-
-Full test suite (< 15 minutes):
-
-- ✅ Database Seeding (with `light` scenario)
-- ✅ Integration Tests
-- ✅ E2E Tests (with Playwright & Argos)
-- ✅ Test Coverage Checks
-- ✅ Visual Regression Testing
-
-### Test Coverage Requirements
-
-- **Backend Code**: 80%+ coverage target
-- **Critical Business Logic**: 100% coverage required
-- **UI Components**: Integration tests preferred over unit tests
-
-### Bypassing Tests (PROHIBITED)
-
-**Never use `git commit --no-verify` to bypass pre-commit hooks.**
-
-If tests are failing:
-
-1. Read the error message carefully
-2. Run the failing test locally to debug
-3. Fix the issue before committing
-4. If stuck, ask for help - don't bypass
-
-### Complete Testing Documentation
-
-For comprehensive testing guidelines, see:
-
-- **[docs/testing/TERP_TESTING_README.md](testing/TERP_TESTING_README.md)** - Master testing documentation index
-- **[docs/testing/TERP_TESTING_USAGE_GUIDE.md](testing/TERP_TESTING_USAGE_GUIDE.md)** - How to run and write tests
-- **[docs/testing/AI_AGENT_QUICK_REFERENCE.md](testing/AI_AGENT_QUICK_REFERENCE.md)** - Quick checklist for AI agents
-
-### Definition of Done (Updated)
-
-A task is only considered "done" when:
-
-1. ✅ All acceptance criteria met
-2. ✅ **Tests written and passing** (NEW)
-3. ✅ Code reviewed and approved
-4. ✅ Documentation updated
-5. ✅ Zero TypeScript errors
-6. ✅ Deployed to staging
-7. ✅ User acceptance testing passed
-8. ✅ **CI/CD pipeline passing** (NEW)
-
----
-
 ## 14. Git Workflow Protocol
 
 **Status:** ✅ Active  
@@ -884,3 +751,163 @@ Fixes #123
 **Never merge a PR with failing checks.**
 
 ---
+
+## 13. Testing Protocol (MANDATORY)
+
+**Status:** ✅ Active & Enforced  
+**Last Updated:** November 6, 2025
+
+**FAILURE TO FOLLOW THIS PROTOCOL WILL RESULT IN IMMEDIATE REJECTION OF WORK.**
+
+---
+
+### 🚨 **Core Mandate: No Code Without Tests**
+
+1.  **Every line of code you write must be tested.** This is not optional.
+2.  **Test-Driven Development (TDD) is the required workflow.** Write tests _before_ you write the implementation code.
+3.  **All tests must pass** before you can commit your code. The pre-commit hook will block you if they don't.
+4.  **Bypassing tests is strictly prohibited.** Using `git commit --no-verify` will result in your work being rejected.
+
+---
+
+### 📋 **Step-by-Step TDD Workflow (MANDATORY)**
+
+Follow this exact workflow for every feature, fix, or refactor.
+
+#### **Step 1: Create the Test File**
+
+Before writing any implementation code, create the test file.
+
+- **Copy the template**: Use `server/routers/pricing.test.ts` as your template.
+- **Naming**: `feature.ts` → `feature.test.ts`
+- **Location**: Place the test file next to the file it's testing.
+
+#### **Step 2: Write a Failing Test (Red)**
+
+- Write a test for the functionality you are about to build.
+- **Run the test and watch it fail.** This is expected. It proves your test is working correctly.
+
+```bash
+# Run the test for your specific file
+pnpm test server/routers/your-feature.test.ts
+```
+
+#### **Step 3: Write the Implementation Code (Green)**
+
+- Write the minimum amount of code required to make the failing test pass.
+- **Run the test again and watch it pass.**
+
+#### **Step 4: Refactor**
+
+- Clean up your implementation code and your test code.
+- Ensure it's readable, efficient, and follows best practices.
+- Run the tests again to ensure they still pass.
+
+#### **Step 5: Repeat for All Functionality**
+
+- Continue this Red-Green-Refactor cycle for every piece of functionality in the feature.
+
+---
+
+### 🏆 **Testing Trophy Model (Required)**
+
+Your tests must follow this distribution:
+
+| Test Type       | Percentage | Purpose                                | Tools                 |
+| --------------- | ---------- | -------------------------------------- | --------------------- |
+| **Integration** | 70%        | Test how modules work together         | `vitest`, `vi.mock()` |
+| **Unit**        | 20%        | Test individual functions in isolation | `vitest`              |
+| **E2E**         | 10%        | Test full user flows in the browser    | `playwright`          |
+| **Static**      | 0%         | Handled by ESLint & TypeScript         | `eslint`, `tsc`       |
+
+**Focus on integration tests.** Most of your tests should be for tRPC routers, mocking the database layer.
+
+---
+
+### mocking Pattern (MANDATORY)
+
+**You MUST mock all external dependencies.** Never connect to a real database in your tests.
+
+```typescript
+// 1. Mock the entire database module at the top of your test file
+vi.mock("../db/queries/your-db-module");
+
+// 2. Use vi.mocked() in your tests to provide mock return values
+it("should do something", async () => {
+  // Arrange
+  const mockData = { id: 1, name: "Test" };
+  vi.mocked(yourDbModule.getSomething).mockResolvedValue(mockData);
+
+  // Act
+  const result = await caller.yourRouter.getSomething({ id: 1 });
+
+  // Assert
+  expect(result).toEqual(mockData);
+});
+```
+
+---
+
+### ❌ **Prohibited Actions**
+
+- **DO NOT** commit code without a corresponding test file.
+- **DO NOT** commit failing or skipped tests (unless explicitly approved).
+- **DO NOT** use `git commit --no-verify`.
+- **DO NOT** write tests that depend on other tests.
+- **DO NOT** connect to a real database in any test.
+
+---
+
+### 📖 **Reference Documents**
+
+- **Template**: `server/routers/pricing.test.ts`
+- **Quick Guide**: `docs/testing/AI_AGENT_QUICK_REFERENCE.md`
+- **Full Guide**: `docs/testing/TERP_TESTING_USAGE_GUIDE.md`
+
+## 11. Definition of Done (DoD)
+
+**Status:** ✅ Active & Enforced  
+**Last Updated:** November 6, 2025
+
+A feature or task is considered **Done** only when it meets all of the following criteria. No work will be accepted or merged unless it satisfies every point.
+
+---
+
+### 📋 **Mandatory Checklist for "Done"**
+
+| Category          | Requirement                                | Verification                  |
+| ----------------- | ------------------------------------------ | ----------------------------- |
+| **Code Quality**  | Production-ready, no placeholders or stubs | Manual code review            |
+|                   | Follows all Bible protocols                | Manual code review            |
+|                   | No linting or type errors                  | `pnpm check` must pass        |
+| **Testing**       | **100% of new code is tested**             | `pnpm test:coverage`          |
+|                   | **All tests pass (100%)**                  | `pnpm test` must pass         |
+|                   | Follows TDD workflow                       | Review commit history         |
+|                   | Mocks all external dependencies            | Manual code review            |
+| **Functionality** | Meets all user requirements                | User acceptance testing (UAT) |
+|                   | Works end-to-end without errors            | Manual testing                |
+|                   | Handles edge cases gracefully              | Manual testing                |
+| **Documentation** | All related documents updated              | Manual review                 |
+|                   | Code is well-commented                     | Manual code review            |
+| **Git**           | Follows branch and commit conventions      | Review PR and commit history  |
+|                   | All commits are atomic and logical         | Review commit history         |
+| **CI/CD**         | All pipeline checks pass                   | GitHub Actions must be green  |
+
+---
+
+### 🚨 **Explicit Confirmation Required**
+
+When you deliver your work, you **MUST** explicitly confirm that you have met the Definition of Done by including this checklist in your summary:
+
+```
+### ✅ Definition of Done Checklist
+
+- [x] **Code Quality**: Production-ready, follows all protocols
+- [x] **Testing**: 100% of new code tested, all tests pass
+- [x] **Functionality**: Meets all requirements, works end-to-end
+- [x] **Documentation**: All related documents updated
+- [x] **Git**: Follows all conventions
+- [x] **CI/CD**: All checks passing
+```
+
+**Work delivered without this confirmation will be rejected.**
