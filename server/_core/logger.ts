@@ -1,6 +1,14 @@
 import pino from "pino";
+import { SolarWindsTransport } from "./solarwinds-transport.js";
 
 const isDevelopment = process.env.NODE_ENV === "development";
+const isProduction = process.env.NODE_ENV === "production";
+
+// SolarWinds configuration
+const solarwindsEndpoint = process.env.SOLARWINDS_ENDPOINT;
+const solarwindsToken = process.env.SOLARWINDS_TOKEN;
+const hasSolarWindsConfig =
+  isProduction && solarwindsEndpoint && solarwindsToken;
 
 export const logger = pino({
   level: isDevelopment ? "debug" : "info",
@@ -21,6 +29,20 @@ export const logger = pino({
   },
   timestamp: pino.stdTimeFunctions.isoTime,
 });
+
+// Add SolarWinds transport in production
+if (hasSolarWindsConfig && solarwindsEndpoint && solarwindsToken) {
+  const solarwindsTransport = new SolarWindsTransport({
+    endpoint: solarwindsEndpoint,
+    token: solarwindsToken,
+    serviceName: "terp-app",
+  });
+
+  // Pipe logger output to SolarWinds
+  logger.stream().pipe(solarwindsTransport);
+
+  console.log("SolarWinds log forwarding enabled");
+}
 
 /**
  * Replace console methods with logger
