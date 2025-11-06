@@ -34,6 +34,7 @@ import {
 import { useToast } from "../hooks/use-toast";
 import { VendorNotesDialog } from "../components/VendorNotesDialog";
 import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 
 interface Vendor {
   id: number;
@@ -76,6 +77,15 @@ export default function VendorsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  // Debounce search query
+  useMemo(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [selectedVendorForNotes, setSelectedVendorForNotes] =
     useState<Vendor | null>(null);
@@ -111,9 +121,15 @@ export default function VendorsPage() {
     .filter(vendor => {
       // Search filter
       const matchesSearch =
-        vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vendor.contactName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vendor.contactEmail?.toLowerCase().includes(searchQuery.toLowerCase());
+        vendor.name
+          .toLowerCase()
+          .includes(debouncedSearchQuery.toLowerCase()) ||
+        vendor.contactName
+          ?.toLowerCase()
+          .includes(debouncedSearchQuery.toLowerCase()) ||
+        vendor.contactEmail
+          ?.toLowerCase()
+          .includes(debouncedSearchQuery.toLowerCase());
 
       // Payment terms filter
       const matchesPaymentTerms =

@@ -205,7 +205,11 @@ export function VendorNotesDialog({
                 value={newNote}
                 onChange={e => setNewNote(e.target.value)}
                 rows={3}
+                maxLength={5000}
               />
+              <div className="text-xs text-muted-foreground text-right">
+                {newNote.length} / 5000 characters
+              </div>
               <Button
                 onClick={handleCreateNote}
                 disabled={!newNote.trim() || createNoteMutation.isPending}
