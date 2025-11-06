@@ -85,7 +85,8 @@ export const inventoryMovementsRouter = router({
     .input(z.object({
       batchId: z.number(),
       newQuantity: z.string(),
-      reason: z.string().min(1),
+      adjustmentReason: z.enum(["DAMAGED", "EXPIRED", "LOST", "THEFT", "COUNT_DISCREPANCY", "QUALITY_ISSUE", "REWEIGH", "OTHER"]),
+      notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
@@ -93,8 +94,9 @@ export const inventoryMovementsRouter = router({
       return await inventoryMovementsDb.adjustInventory(
         input.batchId,
         input.newQuantity,
-        input.reason,
-        ctx.user.id
+        input.adjustmentReason,
+        ctx.user.id,
+        input.notes
       );
     }),
 
