@@ -27,17 +27,17 @@ import {
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { useToast } from "../hooks/use-toast";
-import { Plus, Search, FileText, Trash2, Edit } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Plus, Search, FileText, Trash2 } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function PurchaseOrdersPage() {
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [, _setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedPO, setSelectedPO] = useState<any>(null);
+  const [selectedPO, setSelectedPO] = useState<unknown>(null);
 
   // Fetch data
   const { data: pos = [], refetch } = trpc.purchaseOrders.getAll.useQuery();
@@ -52,8 +52,12 @@ export default function PurchaseOrdersPage() {
       setIsCreateDialogOpen(false);
       resetForm();
     },
-    onError: (error) => {
-      toast({ title: "Error creating purchase order", description: error.message, variant: "destructive" });
+    onError: error => {
+      toast({
+        title: "Error creating purchase order",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -64,18 +68,26 @@ export default function PurchaseOrdersPage() {
       setIsDeleteDialogOpen(false);
       setSelectedPO(null);
     },
-    onError: (error) => {
-      toast({ title: "Error deleting purchase order", description: error.message, variant: "destructive" });
+    onError: error => {
+      toast({
+        title: "Error deleting purchase order",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
-  const updateStatus = trpc.purchaseOrders.updateStatus.useMutation({
+  const _updateStatus = trpc.purchaseOrders.updateStatus.useMutation({
     onSuccess: () => {
       toast({ title: "Status updated successfully" });
       refetch();
     },
-    onError: (error) => {
-      toast({ title: "Error updating status", description: error.message, variant: "destructive" });
+    onError: error => {
+      toast({
+        title: "Error updating status",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -104,12 +116,16 @@ export default function PurchaseOrdersPage() {
 
   // Filter and search
   const filteredPOs = useMemo(() => {
-    return pos.filter((po) => {
+    return pos.filter(po => {
       const matchesSearch =
         po.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vendors.find((v) => v.id === po.vendorId)?.name.toLowerCase().includes(searchQuery.toLowerCase());
+        vendors
+          .find(v => v.id === po.vendorId)
+          ?.name.toLowerCase()
+          .includes(searchQuery.toLowerCase());
 
-      const matchesStatus = statusFilter === "all" || po.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || po.status === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -117,15 +133,18 @@ export default function PurchaseOrdersPage() {
 
   const handleCreatePO = () => {
     const items = formData.items
-      .filter((item) => item.productId && item.quantityOrdered && item.unitCost)
-      .map((item) => ({
+      .filter(item => item.productId && item.quantityOrdered && item.unitCost)
+      .map(item => ({
         productId: parseInt(item.productId),
         quantityOrdered: parseFloat(item.quantityOrdered),
         unitCost: parseFloat(item.unitCost),
       }));
 
     if (!formData.vendorId || items.length === 0) {
-      toast({ title: "Please fill in all required fields", variant: "destructive" });
+      toast({
+        title: "Please fill in all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -144,7 +163,10 @@ export default function PurchaseOrdersPage() {
   const handleAddItem = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { productId: "", quantityOrdered: "", unitCost: "" }],
+      items: [
+        ...formData.items,
+        { productId: "", quantityOrdered: "", unitCost: "" },
+      ],
     });
   };
 
@@ -162,7 +184,7 @@ export default function PurchaseOrdersPage() {
   };
 
   const getVendorName = (vendorId: number) => {
-    return vendors.find((v) => v.id === vendorId)?.name || "Unknown";
+    return vendors.find(v => v.id === vendorId)?.name || "Unknown";
   };
 
   const getStatusBadge = (status: string) => {
@@ -176,7 +198,9 @@ export default function PurchaseOrdersPage() {
     };
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status] || colors.DRAFT}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status] || colors.DRAFT}`}
+      >
         {status}
       </span>
     );
@@ -186,7 +210,9 @@ export default function PurchaseOrdersPage() {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Purchase Orders</h1>
-        <p className="text-gray-600">Manage purchase orders for vendor inventory</p>
+        <p className="text-gray-600">
+          Manage purchase orders for vendor inventory
+        </p>
       </div>
 
       {/* Filters and Actions */}
@@ -196,7 +222,7 @@ export default function PurchaseOrdersPage() {
           <Input
             placeholder="Search by PO number or vendor..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -239,18 +265,25 @@ export default function PurchaseOrdersPage() {
           <TableBody>
             {filteredPOs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                <TableCell
+                  colSpan={7}
+                  className="text-center text-gray-500 py-8"
+                >
                   No purchase orders found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPOs.map((po) => (
+              filteredPOs.map(po => (
                 <TableRow key={po.id}>
                   <TableCell className="font-medium">{po.poNumber}</TableCell>
                   <TableCell>{getVendorName(po.vendorId)}</TableCell>
-                  <TableCell>{new Date(po.orderDate).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    {po.expectedDeliveryDate ? new Date(po.expectedDeliveryDate).toLocaleDateString() : "-"}
+                    {new Date(po.orderDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {po.expectedDeliveryDate
+                      ? new Date(po.expectedDeliveryDate).toLocaleDateString()
+                      : "-"}
                   </TableCell>
                   <TableCell>{getStatusBadge(po.status)}</TableCell>
                   <TableCell>${parseFloat(po.total).toFixed(2)}</TableCell>
@@ -259,7 +292,9 @@ export default function PurchaseOrdersPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/purchase-orders/${po.id}`)}
+                        onClick={() =>
+                          _setLocation(`/purchase-orders/${po.id}`)
+                        }
                       >
                         <FileText className="h-4 w-4" />
                       </Button>
@@ -292,12 +327,17 @@ export default function PurchaseOrdersPage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="vendor">Vendor *</Label>
-              <Select value={formData.vendorId} onValueChange={(value) => setFormData({ ...formData, vendorId: value })}>
+              <Select
+                value={formData.vendorId}
+                onValueChange={value =>
+                  setFormData({ ...formData, vendorId: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select vendor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vendors.map((vendor) => (
+                  {vendors.map(vendor => (
                     <SelectItem key={vendor.id} value={vendor.id.toString()}>
                       {vendor.name}
                     </SelectItem>
@@ -313,7 +353,9 @@ export default function PurchaseOrdersPage() {
                   id="orderDate"
                   type="date"
                   value={formData.orderDate}
-                  onChange={(e) => setFormData({ ...formData, orderDate: e.target.value })}
+                  onChange={e =>
+                    setFormData({ ...formData, orderDate: e.target.value })
+                  }
                 />
               </div>
 
@@ -323,14 +365,24 @@ export default function PurchaseOrdersPage() {
                   id="expectedDeliveryDate"
                   type="date"
                   value={formData.expectedDeliveryDate}
-                  onChange={(e) => setFormData({ ...formData, expectedDeliveryDate: e.target.value })}
+                  onChange={e =>
+                    setFormData({
+                      ...formData,
+                      expectedDeliveryDate: e.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
 
             <div>
               <Label htmlFor="paymentTerms">Payment Terms</Label>
-              <Select value={formData.paymentTerms} onValueChange={(value) => setFormData({ ...formData, paymentTerms: value })}>
+              <Select
+                value={formData.paymentTerms}
+                onValueChange={value =>
+                  setFormData({ ...formData, paymentTerms: value })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select payment terms" />
                 </SelectTrigger>
@@ -352,14 +404,19 @@ export default function PurchaseOrdersPage() {
                   <div className="col-span-5">
                     <Select
                       value={item.productId}
-                      onValueChange={(value) => handleItemChange(index, "productId", value)}
+                      onValueChange={value =>
+                        handleItemChange(index, "productId", value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id.toString()}>
+                        {products.map(product => (
+                          <SelectItem
+                            key={product.id}
+                            value={product.id.toString()}
+                          >
                             {product.nameCanonical}
                           </SelectItem>
                         ))}
@@ -371,7 +428,13 @@ export default function PurchaseOrdersPage() {
                       type="number"
                       placeholder="Quantity"
                       value={item.quantityOrdered}
-                      onChange={(e) => handleItemChange(index, "quantityOrdered", e.target.value)}
+                      onChange={e =>
+                        handleItemChange(
+                          index,
+                          "quantityOrdered",
+                          e.target.value
+                        )
+                      }
                     />
                   </div>
                   <div className="col-span-3">
@@ -379,12 +442,18 @@ export default function PurchaseOrdersPage() {
                       type="number"
                       placeholder="Unit Cost"
                       value={item.unitCost}
-                      onChange={(e) => handleItemChange(index, "unitCost", e.target.value)}
+                      onChange={e =>
+                        handleItemChange(index, "unitCost", e.target.value)
+                      }
                     />
                   </div>
                   <div className="col-span-1">
                     {formData.items.length > 1 && (
-                      <Button variant="ghost" size="sm" onClick={() => handleRemoveItem(index)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveItem(index)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
@@ -402,7 +471,9 @@ export default function PurchaseOrdersPage() {
               <Textarea
                 id="notes"
                 value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
                 rows={3}
               />
             </div>
@@ -412,14 +483,19 @@ export default function PurchaseOrdersPage() {
               <Textarea
                 id="vendorNotes"
                 value={formData.vendorNotes}
-                onChange={(e) => setFormData({ ...formData, vendorNotes: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, vendorNotes: e.target.value })
+                }
                 rows={3}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleCreatePO} disabled={createPO.isLoading}>
@@ -435,14 +511,22 @@ export default function PurchaseOrdersPage() {
           <DialogHeader>
             <DialogTitle>Delete Purchase Order</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to delete PO {selectedPO?.poNumber}? This action cannot be undone.</p>
+          <p>
+            Are you sure you want to delete PO {selectedPO?.poNumber}? This
+            action cannot be undone.
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={() => selectedPO && deletePO.mutate({ id: selectedPO.id })}
+              onClick={() =>
+                selectedPO && deletePO.mutate({ id: selectedPO.id })
+              }
               disabled={deletePO.isLoading}
             >
               {deletePO.isLoading ? "Deleting..." : "Delete"}
