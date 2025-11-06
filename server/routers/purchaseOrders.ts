@@ -67,11 +67,16 @@ export const purchaseOrdersRouter = router({
         .object({
           vendorId: z.number().optional(),
           status: z.string().optional(),
+          limit: z.number().min(1).max(1000).default(100),
+          offset: z.number().min(0).default(0),
         })
         .optional()
     )
     .query(async ({ input }) => {
-      let query = db.select().from(purchaseOrders).orderBy(desc(purchaseOrders.createdAt));
+      const limit = input?.limit ?? 100;
+      const offset = input?.offset ?? 0;
+      
+      let query = db.select().from(purchaseOrders).orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
 
       if (input?.vendorId) {
         query = query.where(eq(purchaseOrders.vendorId, input.vendorId)) as typeof query;
