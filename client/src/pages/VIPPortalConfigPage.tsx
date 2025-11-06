@@ -224,6 +224,21 @@ export default function VIPPortalConfigPage() {
       ],
     },
     {
+      id: "liveCatalog",
+      title: "Live Catalog",
+      field: "moduleLiveCatalogEnabled",
+      enabled: config.moduleLiveCatalogEnabled || false,
+      features: [
+        { id: "showQuantity", label: "Show Quantity Available" },
+        { id: "showBrand", label: "Show Brand Information" },
+        { id: "showGrade", label: "Show Grade" },
+        { id: "showDate", label: "Show Package Date" },
+        { id: "showBasePrice", label: "Show Base Price" },
+        { id: "showMarkup", label: "Show Markup Percentage" },
+        { id: "enablePriceAlerts", label: "Enable Price Alerts" },
+      ],
+    },
+    {
       id: "leaderboard",
       title: "Leaderboard",
       field: "moduleLeaderboardEnabled",
