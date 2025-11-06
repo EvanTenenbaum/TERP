@@ -5,9 +5,9 @@
 
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { db } from "../db";
-import { returns, orders, batches, inventoryMovements } from "../../drizzle/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { getDb } from "../db";
+import { returns, batches, inventoryMovements } from "../../drizzle/schema";
+import { eq, desc, sql } from "drizzle-orm";
 
 export const returnsRouter = router({
   // Get all returns
@@ -22,6 +22,9 @@ export const returnsRouter = router({
         .optional()
     )
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
 
@@ -41,6 +44,9 @@ export const returnsRouter = router({
 
   // Get return by ID
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     const [returnRecord] = await db
       .select()
       .from(returns)
@@ -72,6 +78,9 @@ export const returnsRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       // Wrap in transaction to ensure atomicity
       const result = await db.transaction(async (tx) => {
         // Create return record
@@ -130,6 +139,9 @@ export const returnsRouter = router({
 
   // Get returns by order
   getByOrder: publicProcedure.input(z.object({ orderId: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     return await db
       .select()
       .from(returns)
@@ -139,6 +151,9 @@ export const returnsRouter = router({
 
   // Get return statistics
   getStats: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     const stats = await db
       .select({
         totalReturns: sql<number>`COUNT(*)`,

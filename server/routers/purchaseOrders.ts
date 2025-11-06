@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { db } from "../db";
-import { purchaseOrders, purchaseOrderItems, vendors, products, users } from "../../drizzle/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { getDb } from "../db";
+import { purchaseOrders, purchaseOrderItems } from "../../drizzle/schema";
+import { eq, desc, sql } from "drizzle-orm";
 
 export const purchaseOrdersRouter = router({
   // Create new purchase order
@@ -27,10 +27,13 @@ export const purchaseOrdersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const { items, ...poData } = input;
 
       // Generate PO number
-      const poNumber = await generatePONumber();
+      const poNumber = await generatePONumber(db);
 
       // Calculate totals
       const subtotal = items.reduce((sum, item) => sum + item.quantityOrdered * item.unitCost, 0);
@@ -73,6 +76,9 @@ export const purchaseOrdersRouter = router({
         .optional()
     )
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
       
@@ -83,7 +89,7 @@ export const purchaseOrdersRouter = router({
       }
 
       if (input?.status) {
-        query = query.where(eq(purchaseOrders.status, input.status as any)) as typeof query;
+        query = query.where(eq(purchaseOrders.status, input.status)) as typeof query;
       }
 
       return await query;
@@ -91,6 +97,9 @@ export const purchaseOrdersRouter = router({
 
   // Get purchase order by ID with items
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     const [po] = await db
       .select()
       .from(purchaseOrders)
@@ -121,6 +130,9 @@ export const purchaseOrdersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const { id, ...data } = input;
 
       await db
@@ -133,6 +145,9 @@ export const purchaseOrdersRouter = router({
 
   // Delete purchase order
   delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     await db.delete(purchaseOrders).where(eq(purchaseOrders.id, input.id));
     return { success: true };
   }),
@@ -146,7 +161,10 @@ export const purchaseOrdersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const updateData: any = { status: input.status };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const updateData: Record<string, unknown> = { status: input.status };
 
       if (input.status === "SENT") {
         updateData.sentAt = new Date();
@@ -173,6 +191,9 @@ export const purchaseOrdersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const totalCost = input.quantityOrdered * input.unitCost;
 
       await db.insert(purchaseOrderItems).values({
@@ -185,7 +206,7 @@ export const purchaseOrdersRouter = router({
       });
 
       // Recalculate PO totals
-      await recalculatePOTotals(input.purchaseOrderId);
+      await recalculatePOTotals(db, input.purchaseOrderId);
 
       return { success: true };
     }),
@@ -201,6 +222,9 @@ export const purchaseOrdersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const { id, ...data } = input;
 
       // Get current item
@@ -224,17 +248,20 @@ export const purchaseOrdersRouter = router({
           quantityOrdered: quantityOrdered.toString(),
           unitCost: unitCost.toString(),
           totalCost: totalCost.toString(),
-        } as any)
+        })
         .where(eq(purchaseOrderItems.id, id));
 
       // Recalculate PO totals
-      await recalculatePOTotals(item.purchaseOrderId);
+      await recalculatePOTotals(db, item.purchaseOrderId);
 
       return { success: true };
     }),
 
   // Delete PO item
   deleteItem: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     const [item] = await db
       .select()
       .from(purchaseOrderItems)
@@ -247,13 +274,16 @@ export const purchaseOrdersRouter = router({
     await db.delete(purchaseOrderItems).where(eq(purchaseOrderItems.id, input.id));
 
     // Recalculate PO totals
-    await recalculatePOTotals(item.purchaseOrderId);
+    await recalculatePOTotals(db, item.purchaseOrderId);
 
     return { success: true };
   }),
 
   // Get PO history for a vendor
   getByVendor: publicProcedure.input(z.object({ vendorId: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     return await db
       .select()
       .from(purchaseOrders)
@@ -263,6 +293,9 @@ export const purchaseOrdersRouter = router({
 
   // Get PO history for a product
   getByProduct: publicProcedure.input(z.object({ productId: z.number() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
     const items = await db
       .select({
         poId: purchaseOrders.id,
@@ -284,7 +317,7 @@ export const purchaseOrdersRouter = router({
 });
 
 // Helper function to generate PO number
-async function generatePONumber(): Promise<string> {
+async function generatePONumber(db: Awaited<ReturnType<typeof getDb>>): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `PO-${year}-`;
 
@@ -301,7 +334,7 @@ async function generatePONumber(): Promise<string> {
 }
 
 // Helper function to recalculate PO totals
-async function recalculatePOTotals(purchaseOrderId: number): Promise<void> {
+async function recalculatePOTotals(db: Awaited<ReturnType<typeof getDb>>, purchaseOrderId: number): Promise<void> {
   const items = await db
     .select()
     .from(purchaseOrderItems)
