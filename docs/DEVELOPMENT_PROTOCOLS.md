@@ -1,6 +1,6 @@
 # TERP Development Protocols
 
-**Version:** 2.4  
+**Version:** 2.5  
 **Last Updated:** November 6, 2025  
 **Purpose:** Ensure systematic integration, production-ready code, and maintainable architecture throughout TERP development
 
@@ -111,6 +111,7 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 
 13. [Testing Protocol](#13-testing-protocol-mandatory)
 14. [Git Workflow Protocol](#14-git-workflow-protocol)
+15. [Test Failure Monitoring Protocol](#15-test-failure-monitoring-protocol-mandatory)
 
 ---
 
@@ -911,3 +912,162 @@ When you deliver your work, you **MUST** explicitly confirm that you have met th
 ```
 
 **Work delivered without this confirmation will be rejected.**
+
+---
+
+## 15. Test Failure Monitoring Protocol (MANDATORY)
+
+**FAILURE TO MONITOR TEST STATUS WILL RESULT IN BROKEN BUILDS AND REJECTED WORK.**
+
+### 🚨 **Core Requirement: Check Test Status Before and After Every Push**
+
+Test failures are **automatically posted as comments** on PRs and commits. You **MUST** check these comments using GitHub CLI—you do not need DigitalOcean access.
+
+---
+
+### 📋 **When to Check Test Status**
+
+| Timing                    | Command                                                                  | What to Check                 |
+| ------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
+| **Before starting work**  | `gh run list --limit 5`                                                  | Is the main branch healthy?   |
+| **After creating a PR**   | `gh pr view <PR#> --comments`                                            | Did my PR pass all checks?    |
+| **After pushing to main** | `gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments` | Did my commit pass all tests? |
+| **If build fails**        | `gh run view <RUN_ID>`                                                   | What exactly failed?          |
+
+---
+
+### ✅ **How to Check Test Status (Step-by-Step)**
+
+#### **1. Check if Main Branch is Healthy (Before Starting Work)**
+
+```bash
+# View recent workflow runs
+gh run list --limit 5
+
+# Check the latest run status
+gh run view $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
+```
+
+**What to look for:**
+
+- ✅ Green checkmark = main branch is healthy, safe to start work
+- ❌ Red X = main branch is broken, **DO NOT push more changes**
+
+#### **2. Check Your PR Status (After Creating a PR)**
+
+```bash
+# View your PR and its comments
+gh pr view <PR_NUMBER> --comments
+
+# Example:
+gh pr view 42 --comments
+```
+
+**What to look for:**
+
+- A comment with "✅ All Checks Passed" = your PR is ready
+- A comment with "❌ Checks Failed" = read the error details in the comment
+
+**The comment will include:**
+
+- Which checks failed (Lint, Type Check, or Tests)
+- Expandable sections with the actual error messages
+- Commands to run locally to reproduce the issue
+
+#### **3. Check Your Commit Status (After Pushing to Main)**
+
+```bash
+# Get comments on your latest commit
+gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments | jq -r '.[].body'
+
+# Or check a specific commit
+gh api repos/EvanTenenbaum/TERP/commits/<COMMIT_SHA>/comments | jq -r '.[].body'
+```
+
+**What to look for:**
+
+- "✅ All Tests Passed" = your commit is good
+- "❌ Tests Failed" = read the error details and fix immediately
+
+---
+
+### 🚨 **What to Do When Tests Fail**
+
+#### **If Your PR Fails:**
+
+1. **Read the comment on your PR:**
+
+   ```bash
+   gh pr view <PR_NUMBER> --comments
+   ```
+
+2. **The comment will show you exactly what failed.** Expand the error sections to see the details.
+
+3. **Run the failing checks locally:**
+
+   ```bash
+   pnpm lint        # If lint failed
+   pnpm check       # If type check failed
+   pnpm test        # If tests failed
+   ```
+
+4. **Fix the errors, commit, and push.** The PR will automatically re-run checks.
+
+#### **If Main Branch Fails:**
+
+1. **Check the commit comment:**
+
+   ```bash
+   gh api repos/EvanTenenbaum/TERP/commits/<COMMIT_SHA>/comments | jq -r '.[].body'
+   ```
+
+2. **The comment will show:**
+   - Which tests failed (Integration, E2E, Schema, Seed)
+   - The actual error messages
+   - What to do next
+
+3. **Create a fix PR immediately:**
+
+   ```bash
+   git checkout -b fix/broken-tests
+   # Fix the issues
+   git add .
+   git commit -m "fix: resolve failing tests"
+   git push origin fix/broken-tests
+   gh pr create --title "Fix: Resolve failing tests" --body "Fixes tests broken by commit <SHA>"
+   ```
+
+4. **Do not push more changes to main until the fix is merged.**
+
+---
+
+### ❌ **Prohibited Actions**
+
+- **DO NOT** push to main without checking if tests passed.
+- **DO NOT** ignore test failure comments on your PRs.
+- **DO NOT** merge a PR with failing checks.
+- **DO NOT** ask the user for build logs—use GitHub CLI instead.
+
+---
+
+### 📊 **Where Test Failures Are Posted**
+
+| Location            | How to Access                                            | What You'll See                                       |
+| ------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
+| **PR Comments**     | `gh pr view <PR#> --comments`                            | Lint, Type Check, and Unit Test results               |
+| **Commit Comments** | `gh api repos/EvanTenenbaum/TERP/commits/<SHA>/comments` | Integration, E2E, Schema, and Seed results            |
+| **Workflow Runs**   | `gh run view <RUN_ID>`                                   | Full logs (only if comments don't have enough detail) |
+
+---
+
+### ✅ **Summary: Your Monitoring Checklist**
+
+- [ ] Before starting work: Check if main branch is healthy (`gh run list`)
+- [ ] After creating a PR: Check PR comments (`gh pr view <PR#> --comments`)
+- [ ] After pushing to main: Check commit comments (`gh api repos/.../commits/<SHA>/comments`)
+- [ ] If tests fail: Read the error details in the comments
+- [ ] If tests fail: Fix immediately and re-push
+
+**Failure to follow this protocol means you are working blind and will break the build.**
+
+---

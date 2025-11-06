@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  checks: write
 
 jobs:
   fast-checks:
@@ -29,30 +30,110 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       
-      - name: Lint
-        run: pnpm lint || echo "Linting skipped (no lint script configured)"
+      - name: Lint Code
+        id: lint
+        run: |
+          echo "Running linter..."
+          pnpm lint 2>&1 | tee lint-output.txt || {
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          echo "status=passed" >> $GITHUB_OUTPUT
         continue-on-error: true
       
-      - name: Type check
-        run: pnpm check || echo "Type check skipped (no check script configured)"
+      - name: Type Check
+        id: typecheck
+        run: |
+          echo "Running TypeScript type checker..."
+          pnpm check 2>&1 | tee typecheck-output.txt || {
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          echo "status=passed" >> $GITHUB_OUTPUT
         continue-on-error: true
       
-      - name: Run unit tests
-        run: pnpm test -- --run || echo "Unit tests skipped (no tests found)"
+      - name: Run Unit Tests
+        id: tests
+        run: |
+          echo "Running unit tests..."
+          pnpm test -- --run --reporter=verbose 2>&1 | tee test-output.txt || {
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          echo "status=passed" >> $GITHUB_OUTPUT
         continue-on-error: true
       
-      - name: Comment PR
-        uses: actions/github-script@v7
+      - name: Post Results Comment
         if: always()
+        uses: actions/github-script@v7
         with:
           script: |
-            try {
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.name,
-                body: '✅ Fast checks completed! Review the workflow logs for details.'
-              });
-            } catch (error) {
-              console.log('Could not post comment:', error.message);
+            const fs = require('fs');
+            const steps = {
+              lint: '${{ steps.lint.outputs.status }}',
+              typecheck: '${{ steps.typecheck.outputs.status }}',
+              tests: '${{ steps.tests.outputs.status }}'
+            };
+            
+            let allPassed = steps.lint === 'passed' && steps.typecheck === 'passed' && steps.tests === 'passed';
+            
+            let body = allPassed ? '## ✅ All Checks Passed\n\n' : '## ❌ Checks Failed\n\n';
+            
+            // Lint results
+            body += steps.lint === 'passed' ? '**Lint:** ✅ Passed\n' : '**Lint:** ❌ Failed\n';
+            if (steps.lint === 'failed' && fs.existsSync('lint-output.txt')) {
+              const lintOutput = fs.readFileSync('lint-output.txt', 'utf8');
+              const lastLines = lintOutput.split('\n').slice(-50).join('\n');
+              body += '<details><summary>View lint errors</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
             }
+            
+            // Type check results
+            body += steps.typecheck === 'passed' ? '**Type Check:** ✅ Passed\n' : '**Type Check:** ❌ Failed\n';
+            if (steps.typecheck === 'failed' && fs.existsSync('typecheck-output.txt')) {
+              const typecheckOutput = fs.readFileSync('typecheck-output.txt', 'utf8');
+              const lastLines = typecheckOutput.split('\n').slice(-50).join('\n');
+              body += '<details><summary>View type errors</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
+            }
+            
+            // Test results
+            body += steps.tests === 'passed' ? '**Unit Tests:** ✅ Passed\n\n' : '**Unit Tests:** ❌ Failed\n\n';
+            if (steps.tests === 'failed' && fs.existsSync('test-output.txt')) {
+              const testOutput = fs.readFileSync('test-output.txt', 'utf8');
+              const lastLines = testOutput.split('\n').slice(-100).join('\n');
+              body += '<details><summary>View test failures</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
+            }
+            
+            if (!allPassed) {
+              body += `---\n\n**Action Required:**
+1. Pull the latest changes: \`git pull origin main\`
+2. Run the failing checks locally:
+   - Lint: \`pnpm lint\`
+   - Type Check: \`pnpm check\`
+   - Tests: \`pnpm test\`
+3. Fix the errors shown above
+4. Commit and push your fixes
+
+**Check via GitHub CLI:**
+\`\`\`bash
+# View this comment
+gh pr view ${{ github.event.pull_request.number }} --comments
+
+# View workflow status
+gh run view ${{ github.run_id }}
+\`\`\``;
+            } else {
+              body += `---\n\nYour PR is ready for review! 🎉`;
+            }
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: body
+            });
+      
+      - name: Fail if any check failed
+        if: steps.lint.outputs.status == 'failed' || steps.typecheck.outputs.status == 'failed' || steps.tests.outputs.status == 'failed'
+        run: |
+          echo "❌ One or more checks failed. See the comment above for details."
+          exit 1
