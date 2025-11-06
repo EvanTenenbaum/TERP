@@ -16,12 +16,15 @@ You're about to work on **TERP**, a modern ERP system redesign focused on simpli
 
 ### Step 1: Read These Files (In Order)
 
-1. **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** (5 min)
+2. **[SETUP.md](./SETUP.md)** (5 min)
+   - How to set up your local development environment
+
+3. **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** (5 min)
    - Understand the overall system architecture
    - See what's already built
    - Learn the tech stack
 
-2. **[DEVELOPMENT_PROTOCOLS.md](./DEVELOPMENT_PROTOCOLS.md)** (10 min)
+4. **[DEVELOPMENT_PROTOCOLS.md](./DEVELOPMENT_PROTOCOLS.md)** (10 min)
    - **This is "The Bible"** - all development rules and standards
    - MUST follow these protocols for all work
    - Zero TypeScript errors, production-ready code only
