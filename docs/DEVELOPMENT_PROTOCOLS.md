@@ -167,8 +167,141 @@ After implementing changes, validate the entire system:
   - Check responsive behavior at different screen sizes
   - Ensure no layout breaks or styling regressions
 - **Browser testing:** Test in the actual browser, not just TypeScript compilation
+- **Run smoke test:** Execute the smoke test checklist (see Smoke Test Protocol below)
 
-### 4. BREAKING CHANGE PROTOCOL
+### 4. SMOKE TEST PROTOCOL
+
+**When to Run Smoke Tests:**
+
+- After completing any feature implementation
+- Before saving a checkpoint
+- After merging significant changes
+- Before deploying to production
+- After database migrations
+- When resuming work on the project
+
+**Smoke Test Checklist:**
+
+#### 1. Build & Compilation
+
+```bash
+# Verify no TypeScript errors
+pnpm run check
+
+# Verify no ESLint errors
+pnpm run lint
+
+# Verify build succeeds
+pnpm run build
+```
+
+#### 2. Core Navigation Flow
+
+- [ ] Homepage loads without errors
+- [ ] All sidebar navigation links work
+- [ ] No 404 errors on main routes
+- [ ] Back/forward browser navigation works
+- [ ] No console errors on page load
+
+#### 3. Critical User Flows
+
+- [ ] **Dashboard:** Loads and displays widgets
+- [ ] **Inventory:** List loads, search works, can view product detail
+- [ ] **Clients:** List loads, can view client profile
+- [ ] **Orders:** List loads, can view order detail
+- [ ] **Calendar:** Loads and displays events
+- [ ] **VIP Portal:** Login page loads
+
+#### 4. Data Operations
+
+- [ ] Create operation works (test with any entity)
+- [ ] Read/list operation works
+- [ ] Update operation works
+- [ ] Delete operation works (if applicable)
+- [ ] Search/filter works
+
+#### 5. Database Connectivity
+
+```bash
+# Verify database connection
+mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
+      --port=25060 \
+      --user=doadmin \
+      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --database=defaultdb \
+      --ssl-mode=REQUIRED \
+      -e "SELECT COUNT(*) FROM clients;"
+```
+
+- [ ] Database connection succeeds
+- [ ] Can query main tables
+- [ ] Migrations are applied
+
+#### 6. Production Deployment Check
+
+```bash
+# Check production site
+curl -I https://terp-app-b9s35.ondigitalocean.app
+```
+
+- [ ] Production site returns 200 OK
+- [ ] No 500 errors on homepage
+- [ ] Latest changes are deployed
+
+#### 7. Error Handling
+
+- [ ] Invalid routes show 404 page
+- [ ] API errors show user-friendly messages
+- [ ] Loading states appear during async operations
+- [ ] Form validation shows clear error messages
+
+**Smoke Test Pass Criteria:**
+
+✅ **PASS:** All checklist items pass, no critical errors
+
+⚠️ **PASS WITH WARNINGS:** Minor issues that don't block core functionality (document warnings)
+
+❌ **FAIL:** Any critical error, broken navigation, or data operation failure
+
+**If Smoke Test Fails:**
+
+1. **DO NOT save checkpoint**
+2. **DO NOT deploy to production**
+3. **Fix critical issues immediately**
+4. **Re-run smoke test**
+5. **Document what was broken and how it was fixed**
+
+**Smoke Test Report Template:**
+
+```markdown
+## Smoke Test Report
+
+**Date:** [Date]
+**Tester:** [AI Agent/User]
+**Commit:** [Git commit hash]
+**Result:** ✅ PASS / ⚠️ PASS WITH WARNINGS / ❌ FAIL
+
+### Test Results
+
+- Build & Compilation: ✅/❌
+- Core Navigation: ✅/❌
+- Critical User Flows: ✅/❌
+- Data Operations: ✅/❌
+- Database Connectivity: ✅/❌
+- Production Deployment: ✅/❌
+- Error Handling: ✅/❌
+
+### Issues Found
+
+1. [Issue description] - ✅ Fixed / ⚠️ Documented / ❌ Blocking
+2. [Issue description] - ✅ Fixed / ⚠️ Documented / ❌ Blocking
+
+### Notes
+
+[Any additional observations or concerns]
+```
+
+### 5. BREAKING CHANGE PROTOCOL
 
 If a requested change requires any of the following, **STOP and report to the user FIRST:**
 
