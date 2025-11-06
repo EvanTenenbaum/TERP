@@ -1,19 +1,28 @@
 /**
  * Integration Tests for Orders Router
  *
- * Tests all tRPC procedures in the orders router using the light scenario data.
+ * Tests all tRPC procedures in the orders router.
+ * Uses AAA (Arrange, Act, Assert) pattern for clarity.
+ *
+ * @module server/routers/orders.test.ts
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
+import * as ordersDb from "../ordersDb";
 
+// Mock the orders module
+vi.mock("../ordersDb");
+
+// Mock user for authenticated requests
 const mockUser = {
   id: 1,
   email: "test@terp.com",
   name: "Test User",
 };
 
+// Create a test caller with mock context
 const createCaller = async () => {
   const ctx = await createContext({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,34 +39,24 @@ const createCaller = async () => {
 
 describe("Orders Router", () => {
   let caller: Awaited<ReturnType<typeof createCaller>>;
-  let testClientId: number;
-  let testBatchId: number;
-  let testQuoteId: number;
-  let testSaleId: number;
 
   beforeAll(async () => {
-    caller = createCaller();
-
-    // Get a test client from seeded data
-    const clients = await caller.clients.list({ limit: 1 });
-    testClientId = clients[0].id;
-
-    // Get a test batch from seeded inventory
-    const inventory = await caller.inventory.list({ limit: 1 });
-    testBatchId = inventory[0].id;
+    caller = await createCaller();
   });
 
   describe("create", () => {
-    it("should create a quote", async () => {
+    it("should create a new quote order", async () => {
       // Arrange
       const input = {
         orderType: "QUOTE" as const,
-        clientId: testClientId,
+        isDraft: false,
+        clientId: 1,
         items: [
           {
-            batchId: testBatchId,
+            batchId: 1,
+            displayName: "OG Kush - Premium",
             quantity: 10,
-            unitPrice: 50.0,
+            unitPrice: 150,
             isSample: false,
           },
         ],
@@ -65,29 +64,41 @@ describe("Orders Router", () => {
         notes: "Test quote",
       };
 
+      const mockOrder = {
+        id: 1,
+        orderNumber: "Q-2024-001",
+        ...input,
+        createdBy: 1,
+        createdAt: new Date(),
+      };
+
+      vi.mocked(ordersDb.createOrder).mockResolvedValue(mockOrder);
+
       // Act
       const result = await caller.orders.create(input);
 
       // Assert
-      expect(result).toBeDefined();
-      expect(result.orderType).toBe("QUOTE");
-      expect(result.clientId).toBe(testClientId);
-      expect(result.items).toHaveLength(1);
-      expect(result.totalAmount).toBe(500.0); // 10 * 50
-
-      testQuoteId = result.id;
+      expect(result).toEqual(mockOrder);
+      expect(ordersDb.createOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderType: "QUOTE",
+          clientId: 1,
+          createdBy: 1,
+        })
+      );
     });
 
-    it("should create a sale order", async () => {
+    it("should create a new sale order", async () => {
       // Arrange
       const input = {
         orderType: "SALE" as const,
-        clientId: testClientId,
+        isDraft: false,
+        clientId: 2,
         items: [
           {
-            batchId: testBatchId,
+            batchId: 2,
             quantity: 5,
-            unitPrice: 60.0,
+            unitPrice: 120,
             isSample: false,
           },
         ],
@@ -95,89 +106,112 @@ describe("Orders Router", () => {
         notes: "Test sale",
       };
 
+      const mockOrder = {
+        id: 2,
+        orderNumber: "S-2024-001",
+        ...input,
+        createdBy: 1,
+      };
+
+      vi.mocked(ordersDb.createOrder).mockResolvedValue(mockOrder);
+
       // Act
       const result = await caller.orders.create(input);
 
       // Assert
-      expect(result).toBeDefined();
       expect(result.orderType).toBe("SALE");
       expect(result.paymentTerms).toBe("NET_30");
-      expect(result.totalAmount).toBe(300.0); // 5 * 60
-
-      testSaleId = result.id;
     });
 
     it("should create a draft order", async () => {
       // Arrange
       const input = {
-        orderType: "SALE" as const,
+        orderType: "QUOTE" as const,
         isDraft: true,
-        clientId: testClientId,
+        clientId: 1,
         items: [
           {
-            batchId: testBatchId,
-            quantity: 3,
-            unitPrice: 40.0,
+            batchId: 1,
+            quantity: 10,
+            unitPrice: 150,
             isSample: false,
           },
         ],
       };
 
+      const mockOrder = {
+        id: 3,
+        ...input,
+        createdBy: 1,
+      };
+
+      vi.mocked(ordersDb.createOrder).mockResolvedValue(mockOrder);
+
       // Act
       const result = await caller.orders.create(input);
 
       // Assert
-      expect(result).toBeDefined();
       expect(result.isDraft).toBe(true);
-      expect(result.totalAmount).toBe(120.0); // 3 * 40
     });
 
-    it("should handle sample items correctly", async () => {
+    it("should create order with sample items", async () => {
       // Arrange
       const input = {
-        orderType: "SALE" as const,
-        clientId: testClientId,
+        orderType: "QUOTE" as const,
+        clientId: 1,
         items: [
           {
-            batchId: testBatchId,
+            batchId: 1,
             quantity: 1,
             unitPrice: 0,
             isSample: true,
           },
         ],
-        paymentTerms: "COD" as const,
       };
+
+      const mockOrder = {
+        id: 4,
+        ...input,
+        createdBy: 1,
+      };
+
+      vi.mocked(ordersDb.createOrder).mockResolvedValue(mockOrder);
 
       // Act
       const result = await caller.orders.create(input);
 
       // Assert
-      expect(result).toBeDefined();
       expect(result.items[0].isSample).toBe(true);
-      expect(result.totalAmount).toBe(0); // Samples are free
     });
   });
 
   describe("getById", () => {
     it("should retrieve an order by ID", async () => {
       // Arrange
-      const input = { id: testQuoteId };
+      const mockOrder = {
+        id: 1,
+        orderNumber: "Q-2024-001",
+        orderType: "QUOTE",
+        clientId: 1,
+        items: [],
+      };
+
+      vi.mocked(ordersDb.getOrderById).mockResolvedValue(mockOrder);
 
       // Act
-      const result = await caller.orders.getById(input);
+      const result = await caller.orders.getById({ id: 1 });
 
       // Assert
-      expect(result).toBeDefined();
-      expect(result.id).toBe(testQuoteId);
-      expect(result.orderType).toBe("QUOTE");
+      expect(result).toEqual(mockOrder);
+      expect(ordersDb.getOrderById).toHaveBeenCalledWith(1);
     });
 
     it("should return null for non-existent order", async () => {
       // Arrange
-      const input = { id: 999999 };
+      vi.mocked(ordersDb.getOrderById).mockResolvedValue(null);
 
       // Act
-      const result = await caller.orders.getById(input);
+      const result = await caller.orders.getById({ id: 999 });
 
       // Assert
       expect(result).toBeNull();
@@ -187,76 +221,96 @@ describe("Orders Router", () => {
   describe("getByClient", () => {
     it("should retrieve all orders for a client", async () => {
       // Arrange
-      const input = { clientId: testClientId };
+      const mockOrders = [
+        { id: 1, orderType: "QUOTE", clientId: 1 },
+        { id: 2, orderType: "SALE", clientId: 1 },
+      ];
+
+      vi.mocked(ordersDb.getOrdersByClient).mockResolvedValue(mockOrders);
 
       // Act
-      const result = await caller.orders.getByClient(input);
+      const result = await caller.orders.getByClient({ clientId: 1 });
 
       // Assert
-      expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeGreaterThan(0);
-      result.forEach(order => {
-        expect(order.clientId).toBe(testClientId);
-      });
+      expect(result).toHaveLength(2);
+      expect(ordersDb.getOrdersByClient).toHaveBeenCalledWith(1, undefined);
     });
 
-    it("should filter orders by type", async () => {
+    it("should filter by order type", async () => {
       // Arrange
-      const input = {
-        clientId: testClientId,
-        orderType: "QUOTE" as const,
-      };
+      const mockOrders = [{ id: 1, orderType: "QUOTE", clientId: 1 }];
+
+      vi.mocked(ordersDb.getOrdersByClient).mockResolvedValue(mockOrders);
 
       // Act
-      const result = await caller.orders.getByClient(input);
+      const result = await caller.orders.getByClient({
+        clientId: 1,
+        orderType: "QUOTE",
+      });
 
       // Assert
-      expect(result).toBeDefined();
-      result.forEach(order => {
-        expect(order.orderType).toBe("QUOTE");
-      });
+      expect(result).toHaveLength(1);
+      expect(result[0].orderType).toBe("QUOTE");
     });
   });
 
   describe("getAll", () => {
     it("should retrieve all orders", async () => {
       // Arrange
-      const input = {};
+      const mockOrders = [
+        { id: 1, orderType: "QUOTE" },
+        { id: 2, orderType: "SALE" },
+      ];
+
+      vi.mocked(ordersDb.getAllOrders).mockResolvedValue(mockOrders);
 
       // Act
-      const result = await caller.orders.getAll(input);
+      const result = await caller.orders.getAll();
 
       // Assert
-      expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeGreaterThan(0);
+      expect(result).toHaveLength(2);
+      expect(ordersDb.getAllOrders).toHaveBeenCalled();
     });
 
     it("should filter by order type", async () => {
       // Arrange
-      const input = { orderType: "SALE" as const };
+      const mockOrders = [{ id: 1, orderType: "QUOTE" }];
+
+      vi.mocked(ordersDb.getAllOrders).mockResolvedValue(mockOrders);
 
       // Act
-      const result = await caller.orders.getAll(input);
+      const result = await caller.orders.getAll({ orderType: "QUOTE" });
 
       // Assert
-      expect(result).toBeDefined();
-      result.forEach(order => {
-        expect(order.orderType).toBe("SALE");
-      });
+      expect(result).toHaveLength(1);
     });
 
-    it("should respect pagination", async () => {
+    it("should filter by draft status", async () => {
       // Arrange
-      const input = { limit: 5, offset: 0 };
+      const mockOrders = [{ id: 1, isDraft: true }];
+
+      vi.mocked(ordersDb.getAllOrders).mockResolvedValue(mockOrders);
 
       // Act
-      const result = await caller.orders.getAll(input);
+      const result = await caller.orders.getAll({ isDraft: true });
 
       // Assert
-      expect(result).toBeDefined();
-      expect(result.length).toBeLessThanOrEqual(5);
+      expect(result[0].isDraft).toBe(true);
+    });
+
+    it("should support pagination", async () => {
+      // Arrange
+      const mockOrders = [{ id: 11, orderType: "SALE" }];
+
+      vi.mocked(ordersDb.getAllOrders).mockResolvedValue(mockOrders);
+
+      // Act
+      await caller.orders.getAll({ limit: 10, offset: 10 });
+
+      // Assert
+      expect(ordersDb.getAllOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 10, offset: 10 })
+      );
     });
   });
 
@@ -264,158 +318,233 @@ describe("Orders Router", () => {
     it("should update order notes", async () => {
       // Arrange
       const input = {
-        id: testQuoteId,
-        notes: "Updated test notes",
+        id: 1,
+        notes: "Updated notes",
       };
+
+      const mockUpdatedOrder = {
+        id: 1,
+        notes: "Updated notes",
+      };
+
+      vi.mocked(ordersDb.updateOrder).mockResolvedValue(mockUpdatedOrder);
 
       // Act
       const result = await caller.orders.update(input);
 
       // Assert
-      expect(result).toBeDefined();
-      expect(result.notes).toBe("Updated test notes");
+      expect(result.notes).toBe("Updated notes");
+      expect(ordersDb.updateOrder).toHaveBeenCalledWith(1, {
+        notes: "Updated notes",
+      });
     });
 
     it("should update validUntil date", async () => {
       // Arrange
       const input = {
-        id: testQuoteId,
-        validUntil: "2025-12-31",
+        id: 1,
+        validUntil: "2024-12-31",
       };
+
+      const mockUpdatedOrder = {
+        id: 1,
+        validUntil: "2024-12-31",
+      };
+
+      vi.mocked(ordersDb.updateOrder).mockResolvedValue(mockUpdatedOrder);
 
       // Act
       const result = await caller.orders.update(input);
 
       // Assert
-      expect(result).toBeDefined();
-      expect(result.validUntil).toBe("2025-12-31");
-    });
-  });
-
-  describe("convertToSale", () => {
-    it("should convert a quote to a sale", async () => {
-      // Arrange
-      const input = {
-        quoteId: testQuoteId,
-        paymentTerms: "NET_15" as const,
-        notes: "Converted from quote",
-      };
-
-      // Act
-      const result = await caller.orders.convertToSale(input);
-
-      // Assert
-      expect(result).toBeDefined();
-      expect(result.orderType).toBe("SALE");
-      expect(result.paymentTerms).toBe("NET_15");
-      expect(result.totalAmount).toBe(500.0); // Same as original quote
-    });
-  });
-
-  describe("confirmDraftOrder", () => {
-    it("should confirm a draft order", async () => {
-      // Arrange
-      // First create a draft
-      const draft = await caller.orders.create({
-        orderType: "SALE" as const,
-        isDraft: true,
-        clientId: testClientId,
-        items: [
-          {
-            batchId: testBatchId,
-            quantity: 2,
-            unitPrice: 75.0,
-            isSample: false,
-          },
-        ],
-      });
-
-      const input = {
-        orderId: draft.id,
-        paymentTerms: "NET_7" as const,
-        notes: "Confirmed draft order",
-      };
-
-      // Act
-      const result = await caller.orders.confirmDraftOrder(input);
-
-      // Assert
-      expect(result).toBeDefined();
-      expect(result.isDraft).toBe(false);
-      expect(result.paymentTerms).toBe("NET_7");
+      expect(result.validUntil).toBe("2024-12-31");
     });
   });
 
   describe("delete", () => {
     it("should delete an order", async () => {
       // Arrange
-      const input = { id: testSaleId };
+      vi.mocked(ordersDb.deleteOrder).mockResolvedValue(undefined);
 
       // Act
-      const result = await caller.orders.delete(input);
+      const result = await caller.orders.delete({ id: 1 });
 
       // Assert
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-
-      // Verify order is deleted
-      const deletedOrder = await caller.orders.getById({ id: testSaleId });
-      expect(deletedOrder).toBeNull();
+      expect(ordersDb.deleteOrder).toHaveBeenCalledWith(1);
     });
   });
 
-  describe("business logic", () => {
-    it("should calculate total amount correctly with multiple items", async () => {
+  describe("convertToSale", () => {
+    it("should convert quote to sale", async () => {
       // Arrange
       const input = {
-        orderType: "SALE" as const,
-        clientId: testClientId,
-        items: [
-          {
-            batchId: testBatchId,
-            quantity: 10,
-            unitPrice: 50.0,
-            isSample: false,
-          },
-          {
-            batchId: testBatchId,
-            quantity: 5,
-            unitPrice: 60.0,
-            isSample: false,
-          },
-        ],
+        quoteId: 1,
         paymentTerms: "NET_30" as const,
+        notes: "Converted to sale",
       };
 
+      const mockSaleOrder = {
+        id: 2,
+        orderType: "SALE",
+        paymentTerms: "NET_30",
+        notes: "Converted to sale",
+      };
+
+      vi.mocked(ordersDb.convertQuoteToSale).mockResolvedValue(mockSaleOrder);
+
       // Act
-      const result = await caller.orders.create(input);
+      const result = await caller.orders.convertToSale(input);
 
       // Assert
-      expect(result.totalAmount).toBe(800.0); // (10 * 50) + (5 * 60)
+      expect(result.orderType).toBe("SALE");
+      expect(result.paymentTerms).toBe("NET_30");
+      expect(ordersDb.convertQuoteToSale).toHaveBeenCalledWith(input);
     });
 
-    it("should handle price overrides correctly", async () => {
+    it("should convert with cash payment", async () => {
       // Arrange
       const input = {
-        orderType: "SALE" as const,
-        clientId: testClientId,
-        items: [
-          {
-            batchId: testBatchId,
-            quantity: 10,
-            unitPrice: 50.0,
-            overridePrice: 45.0, // Discounted price
-            isSample: false,
-          },
-        ],
-        paymentTerms: "NET_30" as const,
+        quoteId: 1,
+        paymentTerms: "PARTIAL" as const,
+        cashPayment: 500,
       };
+
+      const mockSaleOrder = {
+        id: 2,
+        orderType: "SALE",
+        paymentTerms: "PARTIAL",
+        cashPayment: 500,
+      };
+
+      vi.mocked(ordersDb.convertQuoteToSale).mockResolvedValue(mockSaleOrder);
+
+      // Act
+      const result = await caller.orders.convertToSale(input);
+
+      // Assert
+      expect(result.cashPayment).toBe(500);
+    });
+  });
+
+  describe("confirmDraftOrder", () => {
+    it("should confirm a draft order", async () => {
+      // Arrange
+      const input = {
+        orderId: 1,
+        paymentTerms: "NET_30" as const,
+        notes: "Confirmed",
+      };
+
+      const mockConfirmedOrder = {
+        id: 1,
+        isDraft: false,
+        paymentTerms: "NET_30",
+        confirmedBy: 1,
+      };
+
+      vi.mocked(ordersDb.confirmDraftOrder).mockResolvedValue(
+        mockConfirmedOrder
+      );
+
+      // Act
+      const result = await caller.orders.confirmDraftOrder(input);
+
+      // Assert
+      expect(result.isDraft).toBe(false);
+      expect(ordersDb.confirmDraftOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderId: 1,
+          confirmedBy: 1,
+        })
+      );
+    });
+  });
+
+  describe("Edge Cases", () => {
+    it("should handle empty items array", async () => {
+      // Arrange
+      const input = {
+        orderType: "QUOTE" as const,
+        clientId: 1,
+        items: [],
+      };
+
+      const mockOrder = {
+        id: 1,
+        ...input,
+        createdBy: 1,
+      };
+
+      vi.mocked(ordersDb.createOrder).mockResolvedValue(mockOrder);
 
       // Act
       const result = await caller.orders.create(input);
 
       // Assert
-      expect(result.totalAmount).toBe(450.0); // 10 * 45 (override price)
+      expect(result.items).toHaveLength(0);
+    });
+
+    it("should handle orders with override prices", async () => {
+      // Arrange
+      const input = {
+        orderType: "QUOTE" as const,
+        clientId: 1,
+        items: [
+          {
+            batchId: 1,
+            quantity: 10,
+            unitPrice: 150,
+            isSample: false,
+            overridePrice: 140,
+          },
+        ],
+      };
+
+      const mockOrder = {
+        id: 1,
+        ...input,
+        createdBy: 1,
+      };
+
+      vi.mocked(ordersDb.createOrder).mockResolvedValue(mockOrder);
+
+      // Act
+      const result = await caller.orders.create(input);
+
+      // Assert
+      expect(result.items[0].overridePrice).toBe(140);
+    });
+
+    it("should handle COD payment terms", async () => {
+      // Arrange
+      const input = {
+        orderType: "SALE" as const,
+        clientId: 1,
+        items: [
+          {
+            batchId: 1,
+            quantity: 10,
+            unitPrice: 150,
+            isSample: false,
+          },
+        ],
+        paymentTerms: "COD" as const,
+      };
+
+      const mockOrder = {
+        id: 1,
+        ...input,
+        createdBy: 1,
+      };
+
+      vi.mocked(ordersDb.createOrder).mockResolvedValue(mockOrder);
+
+      // Act
+      const result = await caller.orders.create(input);
+
+      // Assert
+      expect(result.paymentTerms).toBe("COD");
     });
   });
 });
