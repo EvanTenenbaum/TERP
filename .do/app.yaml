@@ -1,0 +1,87 @@
+name: terp
+region: nyc
+
+# Log forwarding configuration
+# To enable: Get your Papertrail endpoint from https://papertrailapp.com/systems/setup
+# Then add it to Digital Ocean App Platform environment variables as PAPERTRAIL_ENDPOINT
+# Format: logs.papertrailapp.com:XXXXX
+log_destinations:
+  - name: papertrail
+    papertrail:
+      endpoint: ${PAPERTRAIL_ENDPOINT}
+
+services:
+  - name: web
+    github:
+      repo: EvanTenenbaum/TERP
+      branch: main
+      deploy_on_push: true
+    
+    # Build configuration
+    build_command: pnpm install && pnpm run build:production
+    run_command: pnpm start
+    
+    # Environment
+    environment_slug: node-js
+    
+    # Instance configuration
+    instance_count: 1
+    instance_size_slug: basic-xs
+    
+    # Health check
+    health_check:
+      http_path: /
+      initial_delay_seconds: 60
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    
+    # HTTP configuration
+    http_port: 3000
+    
+    # Routes
+    routes:
+      - path: /
+    
+    # Environment variables (sensitive values should be set in DO control panel)
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: RATE_LIMIT_GET
+        value: "1000"
+      - key: ENABLE_RBAC
+        value: "true"
+      - key: ENABLE_QA_CRONS
+        value: "true"
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+      
+      # Database connection (set actual value in DO control panel)
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      
+      # Auth secrets (set actual values in DO control panel)
+      - key: NEXTAUTH_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      
+      - key: NEXTAUTH_URL
+        scope: RUN_TIME
+        type: SECRET
+      
+      # Sentry (optional - set in DO control panel if using)
+      - key: SENTRY_DSN
+        scope: RUN_TIME
+        type: SECRET
+      
+      # Cron secret (set in DO control panel)
+      - key: CRON_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      
+      # Papertrail endpoint (set in DO control panel after creating Papertrail account)
+      - key: PAPERTRAIL_ENDPOINT
+        scope: RUN_TIME
+        type: SECRET
