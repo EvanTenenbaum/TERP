@@ -2,8 +2,12 @@ name: terp
 region: nyc
 
 # Log forwarding configuration
-# SolarWinds Observability log forwarding is handled via custom HTTP transport
-# No native Digital Ocean log_destinations needed - logs are sent via application code
+# Papertrail log forwarding using Digital Ocean's native integration
+# Add PAPERTRAIL_ENDPOINT environment variable in Digital Ocean console
+log_destinations:
+  - name: papertrail
+    papertrail:
+      endpoint: ${PAPERTRAIL_ENDPOINT}
 
 services:
   - name: web
@@ -76,11 +80,8 @@ services:
         scope: RUN_TIME
         type: SECRET
       
-      # SolarWinds Observability configuration
-      - key: SOLARWINDS_ENDPOINT
-        value: https://logs.collector.na-01.cloud.solarwinds.com/v1/logs
-        scope: RUN_TIME
-      
-      - key: SOLARWINDS_TOKEN
+      # Papertrail endpoint (set in DO control panel)
+      # Format: logs.papertrailapp.com:XXXXX
+      - key: PAPERTRAIL_ENDPOINT
         scope: RUN_TIME
         type: SECRET
