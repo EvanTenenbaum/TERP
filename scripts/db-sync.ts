@@ -3,9 +3,10 @@
  * This bypasses the async getDb() pattern for simpler seed scripts
  */
 
-import { config } from 'dotenv';
+import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/mysql2";
-import mysql from 'mysql2/promise';
+import mysql from "mysql2/promise";
+import * as schema from "../drizzle/schema.js";
 
 // Load environment variables
 config();
@@ -18,6 +19,5 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// Create drizzle instance
-export const db = drizzle(pool as any);
-
+// Create drizzle instance with schema
+export const db = drizzle(pool, { schema });
