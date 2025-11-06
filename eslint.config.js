@@ -45,6 +45,10 @@ export default [
         Request: 'readonly',
         Response: 'readonly',
         fetch: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLElement: 'readonly',
+        MouseEvent: 'readonly',
+        Event: 'readonly',
         
         // Storage APIs
         localStorage: 'readonly',
