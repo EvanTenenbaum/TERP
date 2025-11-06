@@ -25,6 +25,7 @@ import {
   invoices,
   brands,
   users,
+  returns,
 } from "../drizzle/schema.js";
 import { CONFIG, applyScenario } from "./generators/config.js";
 import { getScenario } from "./generators/scenarios.js";
@@ -208,21 +209,25 @@ async function seedRealisticData() {
     if (returnsData.length > 0) {
       for (let i = 0; i < returnsData.length; i += batchSize) {
         const batch = returnsData.slice(i, i + batchSize);
-        await db.insert(orders).values(batch);
+        await db.insert(returns).values(batch);
       }
     }
 
     // Step 10: Generate Refunds
+    // TODO: Refunds should be inserted into transactions table, not orders
+    // Commenting out for now until proper refunds implementation
     console.log("💸 Generating refunds...");
     const refundsData = generateRefunds(ordersData);
-    console.log(`   ✓ ${refundsData.length} refunds created\n`);
+    console.log(
+      `   ✓ ${refundsData.length} refunds created (not inserted - needs transactions table)\n`
+    );
 
-    if (refundsData.length > 0) {
-      for (let i = 0; i < refundsData.length; i += batchSize) {
-        const batch = refundsData.slice(i, i + batchSize);
-        await db.insert(orders).values(batch);
-      }
-    }
+    // if (refundsData.length > 0) {
+    //   for (let i = 0; i < refundsData.length; i += batchSize) {
+    //     const batch = refundsData.slice(i, i + batchSize);
+    //     await db.insert(transactions).values(batch);  // TODO: Map RefundData to transaction format
+    //   }
+    // }
 
     // Step 11: Calculate Summary Statistics
     console.log("📊 Calculating summary statistics...");
