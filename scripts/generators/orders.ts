@@ -8,7 +8,14 @@
  */
 
 import { CONFIG } from "./config.js";
-import { randomInRange, addVariance, weightedRandom } from "./utils.js";
+import {
+  addVariance,
+  weightedRandom,
+  generateParetoWeights,
+  selectWeightedIndex,
+  longTailRandom,
+  generateWeightedQuantity,
+} from "./utils.js";
 import type { BatchData } from "./inventory.js";
 
 export interface OrderItem {
@@ -67,6 +74,9 @@ export function generateOrders(
   const orders: OrderData[] = [];
   const totalOrders = CONFIG.totalMonths * CONFIG.ordersPerMonth;
 
+  // Generate Pareto distribution weights for product popularity
+  const productWeights = generateParetoWeights(batches.length);
+
   // Calculate revenue per client type
   const whaleRevenue = CONFIG.totalRevenue * CONFIG.whaleRevenuePercent;
   const regularRevenue = CONFIG.totalRevenue * CONFIG.regularRevenuePercent;
@@ -110,24 +120,25 @@ export function generateOrders(
           (CONFIG.endDate.getTime() - CONFIG.startDate.getTime())
     );
 
-    // Generate order items
-    const itemCount = randomInRange(1, CONFIG.avgItemsPerOrder * 2);
+    // Generate order items with long-tail distribution
+    const itemCount = longTailRandom(1, 15, 2.5); // Most orders have 2-5 items
     const items: OrderItem[] = [];
     let orderSubtotal = 0;
     let orderCogs = 0;
 
     for (let j = 0; j < itemCount; j++) {
-      // Select random batch
-      const batch = batches[randomInRange(0, batches.length - 1)];
+      // Select batch using Pareto distribution (popular products selected more often)
+      const batchIndex = selectWeightedIndex(productWeights);
+      const batch = batches[batchIndex];
       const unitCogs = parseFloat(batch.unitCogs);
 
       // Calculate unit price with margin
       const margin = addVariance(CONFIG.averageMargin, CONFIG.marginVariance);
       const unitPrice = unitCogs / (1 - margin);
 
-      // Quantity (1-3 lbs for flower, 1-20 units for non-flower)
-      // Target: ~$10K average order ($44M / 4,400 orders)
-      const quantity = batch.grade ? randomInRange(1, 3) : randomInRange(1, 20);
+      // Quantity with weighted distribution (realistic B2B quantities)
+      const isFlower = batch.grade !== null && batch.grade !== undefined;
+      const quantity = generateWeightedQuantity(isFlower);
 
       const lineTotal = unitPrice * quantity;
       const lineCogs = unitCogs * quantity;
