@@ -272,8 +272,9 @@ export async function increaseInventory(
 export async function adjustInventory(
   batchId: number,
   newQuantity: string,
-  reason: string,
-  userId: number
+  adjustmentReason: string,
+  userId: number,
+  notes?: string
 ): Promise<InventoryMovement> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -319,7 +320,8 @@ export async function adjustInventory(
           quantityAfter: newQty.toString(),
           referenceType: "MANUAL_ADJUSTMENT",
           referenceId: null,
-          reason,
+          adjustmentReason: adjustmentReason as any, // Enum value
+          notes,
           performedBy: userId,
         })
         .$returningId();
