@@ -6,7 +6,7 @@
 import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import * as schema from "../drizzle/schema.js";
+import * as schema from "../drizzle/schema";
 
 // Load environment variables
 config();
@@ -19,5 +19,6 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// Create drizzle instance with schema
-export const db = drizzle({ client: pool, schema, mode: "default" });
+// Create drizzle instance with schema (same syntax as server/db.ts)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const db = drizzle(pool as any, { schema, mode: "default" });
