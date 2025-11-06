@@ -29,6 +29,7 @@ import { AccountsPayable } from "@/components/vip-portal/AccountsPayable";
 import { TransactionHistory } from "@/components/vip-portal/TransactionHistory";
 import { MarketplaceSupply } from "@/components/vip-portal/MarketplaceSupply";
 import { Leaderboard } from "@/components/vip-portal/Leaderboard";
+import { LiveCatalog } from "@/components/vip-portal/LiveCatalog";
 
 export default function VIPDashboard() {
   const { clientId, clientName, logout } = useVIPPortalAuth();
@@ -51,6 +52,7 @@ export default function VIPDashboard() {
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", enabled: 'moduleDashboardEnabled' in config ? config.moduleDashboardEnabled : false },
+    { id: "catalog", label: "Catalog", enabled: 'moduleLiveCatalogEnabled' in config ? config.moduleLiveCatalogEnabled : false },
     { id: "ar", label: "Receivables", enabled: 'moduleArEnabled' in config ? config.moduleArEnabled : false },
     { id: "ap", label: "Payables", enabled: 'moduleApEnabled' in config ? config.moduleApEnabled : false },
     { id: "needs", label: "My Needs", enabled: 'moduleMarketplaceNeedsEnabled' in config ? config.moduleMarketplaceNeedsEnabled : false },
@@ -285,6 +287,11 @@ export default function VIPDashboard() {
           {/* Supply Tab */}
           {activeTab === "supply" && config.moduleMarketplaceSupplyEnabled && (
             <MarketplaceSupply clientId={clientId} config={config} />
+          )}
+
+          {/* Live Catalog Tab */}
+          {activeTab === "catalog" && 'moduleLiveCatalogEnabled' in config && config.moduleLiveCatalogEnabled && (
+            <LiveCatalog clientId={clientId} />
           )}
 
           {/* Leaderboard Tab */}

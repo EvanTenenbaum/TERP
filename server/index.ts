@@ -3,6 +3,7 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import { runAutoMigrations } from "./autoMigrate.js";
+import { startPriceAlertsCron } from "./cron/priceAlertsCron.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,6 +56,9 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    
+    // Start cron jobs
+    startPriceAlertsCron();
   });
 }
 

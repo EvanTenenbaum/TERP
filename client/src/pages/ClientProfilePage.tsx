@@ -46,6 +46,7 @@ import { CommunicationTimeline } from "@/components/clients/CommunicationTimelin
 import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
 import { PurchasePatternsWidget } from "@/components/clients/PurchasePatternsWidget";
 import { CommentWidget } from "@/components/comments/CommentWidget";
+import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
 import {
   ArrowLeft,
   Edit,
@@ -362,7 +363,7 @@ export default function ClientProfilePage() {
 
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
@@ -370,6 +371,7 @@ export default function ClientProfilePage() {
           <TabsTrigger value="needs">Needs & History</TabsTrigger>
           <TabsTrigger value="communications">Communications</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
+          <TabsTrigger value="live-catalog">Live Catalog</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -718,6 +720,11 @@ export default function ClientProfilePage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Live Catalog Tab */}
+        <TabsContent value="live-catalog" className="space-y-4">
+          <LiveCatalogConfig clientId={clientId} />
         </TabsContent>
       </Tabs>
 
