@@ -153,6 +153,27 @@ export type Vendor = typeof vendors.$inferSelect;
 export type InsertVendor = typeof vendors.$inferInsert;
 
 /**
+ * Vendor Notes table
+ * Timestamped notes for vendors with user attribution
+ * Feature: MF-016 Vendor Notes & History
+ */
+export const vendorNotes = mysqlTable("vendorNotes", {
+  id: int("id").autoincrement().primaryKey(),
+  vendorId: int("vendorId")
+    .notNull()
+    .references(() => vendors.id, { onDelete: "cascade" }),
+  userId: int("userId")
+    .notNull()
+    .references(() => users.id),
+  note: text("note").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VendorNote = typeof vendorNotes.$inferSelect;
+export type InsertVendorNote = typeof vendorNotes.$inferInsert;
+
+/**
  * Sequences table
  * Manages atomic, sequential generation of codes (lot codes, batch codes, etc.)
  * Uses database-level atomicity to prevent collisions
