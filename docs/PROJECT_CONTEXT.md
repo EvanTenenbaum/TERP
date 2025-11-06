@@ -66,16 +66,19 @@
 ### Agent Workflow
 
 **At Start of Session:**
+
 1. Read `notes/user-feedback.md` - check for new feedback
 2. Read `HANDOFF_CONTEXT.md` - see what last agent did
 3. Read `roadmaps/ACTIVE.md` - understand current work
 
 **During Work:**
+
 1. Follow `DEVELOPMENT_PROTOCOLS.md` strictly
 2. Update roadmap as you complete tasks
 3. Commit changes regularly
 
 **Before Ending:**
+
 1. Update roadmap with progress
 2. Update `HANDOFF_CONTEXT.md` with status
 3. Update `CHANGELOG.md` with completed work
@@ -92,7 +95,7 @@
 - **Technology Stack:**
   - Frontend: React 19, TypeScript, Tailwind CSS 4, shadcn/ui
   - Backend: Node.js, tRPC, Drizzle ORM
-  - Database: PostgreSQL
+  - Database: MySQL 8.0
   - Build Tool: Vite
   - Package Manager: pnpm
 
@@ -151,6 +154,7 @@
 ### Navigation Structure
 
 **Sidebar Menu:**
+
 1. Dashboard (/)
 2. Sales & Quotes (/quotes) - Placeholder
 3. Orders (/orders) - Placeholder
@@ -172,6 +176,7 @@
 **Location:** `/client/src/pages/Home.tsx`
 
 **Features:**
+
 - 4 KPI summary cards (Revenue, Orders, Inventory Value, Low Stock)
 - Dashboard grid with 4 widgets:
   - Recent Quotes
@@ -181,6 +186,7 @@
 - Fully responsive (mobile-first)
 
 **Components:**
+
 - `KpiSummaryRow` - KPI cards with trend indicators
 - `DashboardGrid` - Responsive grid layout (1/2/3/4 columns)
 - Various widgets in `/client/src/components/dashboard/widgets/`
@@ -192,6 +198,7 @@
 **Location:** `/client/src/pages/Inventory.tsx`
 
 **Features:**
+
 - Complete batch tracking system
 - Status management (Awaiting Intake → In Stock → Reserved → Sold → Disposed)
 - Advanced filtering and sorting
@@ -202,6 +209,7 @@
 - Batch details modal
 
 **Database Tables:**
+
 - `batches` - Core inventory batches
 - `products` - Product catalog
 - `brands` - Brand information
@@ -209,6 +217,7 @@
 - `strains` - Cannabis strain data (if applicable)
 
 **API Endpoints (tRPC):**
+
 - `inventory.list` - Get all batches with filters
 - `inventory.getById` - Get single batch details
 - `inventory.create` - Create new batch
@@ -217,6 +226,7 @@
 - `inventory.getDashboardStats` - Get statistics
 
 **Components:**
+
 - `InventoryCard` - Mobile card view
 - `DashboardStats` - Statistics cards
 - `StockLevelChart` - Visual stock levels
@@ -234,6 +244,7 @@ Complete double-entry accounting system with AR/AP management, cash tracking, ex
 #### 3.1 Core Accounting
 
 **Pages:**
+
 1. **Accounting Dashboard** (`/accounting/dashboard`)
    - Financial overview (Cash, AR, AP, Net Position)
    - AR/AP aging reports
@@ -264,25 +275,25 @@ Complete double-entry accounting system with AR/AP management, cash tracking, ex
 
 #### 3.2 Accounts Receivable (AR)
 
-**Pages:**
-5. **Invoices** (`/accounting/invoices`)
-   - Customer invoices list
-   - Invoice status: Draft, Sent, Viewed, Partial, Paid, Overdue, Void
-   - AR aging report (current, 30, 60, 90, 90+ days)
-   - Create/Edit invoices with line items
-   - Record payments
-   - Outstanding receivables view
+**Pages:** 5. **Invoices** (`/accounting/invoices`)
+
+- Customer invoices list
+- Invoice status: Draft, Sent, Viewed, Partial, Paid, Overdue, Void
+- AR aging report (current, 30, 60, 90, 90+ days)
+- Create/Edit invoices with line items
+- Record payments
+- Outstanding receivables view
 
 #### 3.3 Accounts Payable (AP)
 
-**Pages:**
-6. **Bills** (`/accounting/bills`)
-   - Vendor bills list
-   - Bill status: Draft, Pending, Partial, Paid, Overdue, Void
-   - AP aging report (current, 30, 60, 90, 90+ days)
-   - Create/Edit bills with line items
-   - Record payments
-   - Outstanding payables view
+**Pages:** 6. **Bills** (`/accounting/bills`)
+
+- Vendor bills list
+- Bill status: Draft, Pending, Partial, Paid, Overdue, Void
+- AP aging report (current, 30, 60, 90, 90+ days)
+- Create/Edit bills with line items
+- Record payments
+- Outstanding payables view
 
 7. **Payments** (`/accounting/payments`)
    - All payment transactions (received & sent)
@@ -293,12 +304,12 @@ Complete double-entry accounting system with AR/AP management, cash tracking, ex
 
 #### 3.4 Cash & Expenses
 
-**Pages:**
-8. **Bank Accounts** (`/accounting/bank-accounts`)
-   - Bank account list
-   - Account types: Checking, Savings, Credit Card, Money Market
-   - Total cash balance
-   - Active/Inactive status
+**Pages:** 8. **Bank Accounts** (`/accounting/bank-accounts`)
+
+- Bank account list
+- Account types: Checking, Savings, Credit Card, Money Market
+- Total cash balance
+- Active/Inactive status
 
 9. **Bank Transactions** (`/accounting/bank-transactions`)
    - Transaction list
@@ -367,16 +378,19 @@ Complete double-entry accounting system with AR/AP management, cash tracking, ex
 **60+ Accounting Endpoints:**
 
 **Core Accounting (`accounting.*`):**
+
 - `accounts.list/getById/getByNumber/create/update/getBalance/getChartOfAccounts`
 - `ledger.list/getById/create/postJournalEntry/getTrialBalance`
 - `fiscalPeriods.list/getById/getCurrent/create/close/lock/reopen`
 
 **AR/AP (`accounting.*`):**
+
 - `invoices.list/getById/create/update/updateStatus/recordPayment/getOutstandingReceivables/getARAging/generateNumber`
 - `bills.list/getById/create/update/updateStatus/recordPayment/getOutstandingPayables/getAPAging/generateNumber`
 - `payments.list/getById/create/generateNumber/getForInvoice/getForBill`
 
 **Cash & Expenses (`accounting.*`):**
+
 - `bankAccounts.list/getById/create/update/updateBalance/getTotalCashBalance`
 - `bankTransactions.list/getById/create/reconcile/getUnreconciled/getBalanceAtDate`
 - `expenseCategories.list/getById/create/update`
@@ -431,6 +445,7 @@ Complete dynamic pricing and sales sheet generation system with rule-based prici
 **Backend:** `server/pricingEngine.ts`, `server/salesSheetsDb.ts`
 
 **Features:**
+
 - Rule-based pricing calculations
 - 4 adjustment types: % markup, % markdown, $ markup, $ markdown
 - Condition matching with AND/OR logic
@@ -439,6 +454,7 @@ Complete dynamic pricing and sales sheet generation system with rule-based prici
 - Retail price calculation from base prices
 
 **Database Tables:**
+
 1. **pricing_rules** - Pricing adjustment rules
    - Fields: id, name, description, adjustmentType, adjustmentValue, conditions (JSON), logicType, priority, isActive
    - Adjustment Types: PERCENT_MARKUP, PERCENT_MARKDOWN, DOLLAR_MARKUP, DOLLAR_MARKDOWN
@@ -489,6 +505,7 @@ Complete dynamic pricing and sales sheet generation system with rule-based prici
 **Page:** `/sales-sheets`
 
 **Features:**
+
 - Client selection dropdown (loads pricing automatically)
 - Two-panel layout:
   - Left: Inventory browser (60% width)
@@ -530,6 +547,7 @@ Complete dynamic pricing and sales sheet generation system with rule-based prici
 **19 Sales Sheet Endpoints:**
 
 **Pricing (`pricing.*`):**
+
 - `listRules` - Get all pricing rules
 - `createRule` - Create new pricing rule
 - `updateRule` - Update existing rule
@@ -542,6 +560,7 @@ Complete dynamic pricing and sales sheet generation system with rule-based prici
 - `getClientPricingRules` - Get client's active rules
 
 **Sales Sheets (`salesSheets.*`):**
+
 - `getInventory` - Get inventory with client-specific pricing
 - `save` - Save sales sheet to history
 - `getHistory` - Get client's sales sheet history
@@ -555,6 +574,7 @@ Complete dynamic pricing and sales sheet generation system with rule-based prici
 #### Dependencies Added
 
 **NPM Packages:**
+
 - `@dnd-kit/core@6.3.1` - Drag-and-drop core
 - `@dnd-kit/sortable@10.0.0` - Sortable drag-and-drop
 - `@dnd-kit/utilities@3.2.2` - Drag-and-drop utilities
@@ -582,6 +602,7 @@ Comprehensive quote and sales order management system with unified orders struct
 **Backend:** `server/cogsCalculator.ts`, `server/ordersDb.ts`
 
 **Features:**
+
 - **FIXED Mode:** Uses exact COGS value from batch
 - **RANGE Mode:** Calculates midpoint between min/max COGS
 - **Client Adjustments:** Percentage or fixed amount discounts per client
@@ -589,6 +610,7 @@ Comprehensive quote and sales order management system with unified orders struct
 - **Real-time Margin Calculation:** Automatic margin and margin percentage updates
 
 **Database Tables:**
+
 1. **orders** - Unified quotes and sales structure
    - Fields: id, orderNumber, orderType (QUOTE/SALE), clientId, subtotal, totalCogs, totalMargin, avgMarginPercent, validUntil, quoteStatus, paymentTerms, cashPayment, dueDate, notes, createdBy, createdAt, updatedAt
    - Order Types: QUOTE, SALE
@@ -607,6 +629,7 @@ Comprehensive quote and sales order management system with unified orders struct
    - Fields: id, name, description, ruleType, conditions, adjustmentType, adjustmentValue, priority, isActive, createdAt, updatedAt
 
 **Schema Updates:**
+
 - Added `cogsAdjustmentType` and `cogsAdjustmentValue` to `clients` table
 - Added `sampleQty` to `batches` table
 
@@ -708,6 +731,7 @@ Comprehensive quote and sales order management system with unified orders struct
 #### 5.4 Features
 
 **Quote Creation:**
+
 - Create quotes with customizable items from inventory
 - Edit display names (preserves original system names)
 - Mark items as samples (tracked separately)
@@ -717,6 +741,7 @@ Comprehensive quote and sales order management system with unified orders struct
 - Real-time margin visibility
 
 **Sale Creation:**
+
 - Convert quotes to sales (one-click)
 - Create sales directly
 - Payment terms selection (6 options)
@@ -727,6 +752,7 @@ Comprehensive quote and sales order management system with unified orders struct
 - Sample inventory tracking
 
 **COGS Management:**
+
 - Brilliant progressive disclosure UX (3 levels)
 - Auto-calculation based on batch mode (FIXED/RANGE)
 - Client-specific COGS adjustments (percentage or fixed)
@@ -737,6 +763,7 @@ Comprehensive quote and sales order management system with unified orders struct
 - Color-coded margin categories (5 tiers)
 
 **Credit Limit Integration:**
+
 - Real-time credit utilization display
 - 5-tier alert system (excellent → exceeded)
 - Current exposure tracking
@@ -748,6 +775,7 @@ Comprehensive quote and sales order management system with unified orders struct
 #### 5.5 tRPC Endpoints
 
 **Orders Router:**
+
 - `orders.create` - Create quote or sale
 - `orders.getById` - Get order by ID
 - `orders.listByClient` - List orders for a client
@@ -757,11 +785,13 @@ Comprehensive quote and sales order management system with unified orders struct
 #### 5.6 UX/UI Design Principles
 
 **Progressive Disclosure:**
+
 - **Level 1 (Novice):** Simple margin percentage badge
 - **Level 2 (Intermediate):** COGS breakdown on hover/click
 - **Level 3 (Power User):** Full adjustment modal with controls
 
 **Smart Defaults:**
+
 - System auto-calculates COGS using rules
 - FIXED mode → instant lock
 - RANGE mode → midpoint
@@ -769,6 +799,7 @@ Comprehensive quote and sales order management system with unified orders struct
 - User rarely needs to intervene
 
 **Empowerment Without Confusion:**
+
 - Novice users never see "COGS", just profit
 - Power users: 2 clicks to adjust anything
 - All users: Visual feedback, clear state
@@ -805,6 +836,7 @@ Comprehensive quote and sales order management system with unified orders struct
 All pages follow consistent mobile-first responsive patterns:
 
 **Breakpoints:**
+
 - Mobile: < 640px (`grid-cols-1`)
 - Tablet: 640px - 1024px (`sm:` and `md:` prefixes)
 - Desktop: > 1024px (`lg:` prefix)
@@ -812,21 +844,25 @@ All pages follow consistent mobile-first responsive patterns:
 **Common Patterns:**
 
 1. **Headers:**
+
    ```tsx
    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
    ```
 
 2. **Summary Card Grids:**
+
    ```tsx
    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
    ```
 
 3. **Header Layouts:**
+
    ```tsx
    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
    ```
 
 4. **Button Groups:**
+
    ```tsx
    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
    ```
@@ -838,11 +874,13 @@ All pages follow consistent mobile-first responsive patterns:
 ### Mobile-Optimized Pages
 
 **All pages are fully mobile-optimized:**
+
 - ✅ Dashboard (Home)
 - ✅ Inventory
 - ✅ All 10 Accounting pages
 
 **Key Features:**
+
 - Single-column layouts on mobile
 - Stacked buttons and filters
 - Responsive typography
@@ -861,6 +899,7 @@ All pages follow consistent mobile-first responsive patterns:
 **`docs/MASTER_DEVELOPMENT_PROMPT.md`** ← START HERE ALWAYS
 
 This comprehensive master prompt ensures you follow ALL protocols, standards, and best practices. It includes:
+
 - Required reading list
 - Mandatory protocols (non-negotiable)
 - System integration & change management
@@ -875,14 +914,17 @@ This comprehensive master prompt ensures you follow ALL protocols, standards, an
 ### Starting a New Session
 
 1. **Navigate to project:**
+
    ```bash
    cd /home/ubuntu/terp-redesign
    ```
 
 2. **Start dev server:**
+
    ```bash
    pnpm dev
    ```
+
    Or use `webdev_restart_server` tool
 
 3. **Check status:**
@@ -919,6 +961,7 @@ kill -9 <process_id>
 ### TypeScript Validation
 
 Always ensure zero TypeScript errors:
+
 ```bash
 pnpm tsc --noEmit
 ```
@@ -930,6 +973,7 @@ pnpm tsc --noEmit
 ### Complete Table List
 
 **Inventory Module (5 tables):**
+
 - batches
 - products
 - brands
@@ -937,6 +981,7 @@ pnpm tsc --noEmit
 - strains
 
 **Accounting Module (12 tables):**
+
 - accounts
 - ledgerEntries
 - fiscalPeriods
@@ -972,6 +1017,7 @@ pnpm db:push
 ### Database Access
 
 Use `webdev_execute_sql` tool for direct SQL queries:
+
 ```sql
 SELECT COUNT(*) FROM accounts;
 SELECT * FROM invoices WHERE status = 'OVERDUE';
@@ -986,6 +1032,7 @@ SELECT * FROM invoices WHERE status = 'OVERDUE';
 **Location:** `/home/ubuntu/terp-redesign/server/routers.ts`
 
 **Namespaces:**
+
 - `inventory.*` - Inventory management endpoints
 - `accounting.accounts.*` - Chart of accounts
 - `accounting.ledger.*` - General ledger
@@ -1007,6 +1054,7 @@ SELECT * FROM invoices WHERE status = 'OVERDUE';
 5. **Test with `webdev_check_status`**
 
 Example:
+
 ```typescript
 myNewEndpoint: protectedProcedure
   .input(z.object({ id: z.number() }))
@@ -1022,16 +1070,19 @@ myNewEndpoint: protectedProcedure
 ### Component Organization
 
 **Base UI Components** (`/client/src/components/ui/`)
+
 - shadcn/ui components (button, card, table, input, etc.)
 - DO NOT modify these directly
 - Use composition to extend functionality
 
 **Layout Components** (`/client/src/components/layout/`)
+
 - `AppShell` - Main layout wrapper
 - `AppHeader` - Top navigation bar
 - `AppSidebar` - Left sidebar navigation
 
 **Module-Specific Components**
+
 - `/client/src/components/dashboard/` - Dashboard widgets
 - `/client/src/components/inventory/` - Inventory components
 - `/client/src/components/accounting/` - Accounting components
@@ -1052,12 +1103,14 @@ myNewEndpoint: protectedProcedure
 ### Styling Guidelines
 
 **Always use Tailwind CSS classes:**
+
 - Spacing: `gap-4`, `p-6`, `mt-2`
 - Layout: `flex`, `grid`, `grid-cols-1 md:grid-cols-2`
 - Typography: `text-2xl`, `font-bold`, `text-muted-foreground`
 - Colors: Use semantic colors from design system
 
 **Responsive patterns:**
+
 - Mobile-first: Start with mobile classes, add breakpoints
 - Use `sm:`, `md:`, `lg:` prefixes consistently
 - Test at 320px, 768px, 1024px, 1440px widths
@@ -1150,6 +1203,7 @@ myNewEndpoint: protectedProcedure
 ## Quick Reference Commands
 
 ### Development
+
 ```bash
 cd /home/ubuntu/terp-redesign
 pnpm dev                    # Start dev server
@@ -1158,6 +1212,7 @@ pnpm db:push               # Push schema changes
 ```
 
 ### System Maintenance
+
 ```bash
 # Increase file watchers
 sudo sysctl fs.inotify.max_user_watches=524288
@@ -1170,6 +1225,7 @@ kill -9 <process_id>
 ```
 
 ### Tools
+
 ```bash
 webdev_check_status         # Check project health
 webdev_restart_server       # Restart dev server
@@ -1186,21 +1242,23 @@ webdev_execute_sql          # Run SQL queries
 ### Quick Rules (Full details in MANUS_AGENT_CONTEXT.md)
 
 **1. Use Abstractions:**
+
 ```typescript
 // ✅ GOOD
-import { authProvider } from '../_core/authProvider';
-import { dataProvider } from '../_core/dataProvider';
+import { authProvider } from "../_core/authProvider";
+import { dataProvider } from "../_core/dataProvider";
 
 // ❌ BAD - Direct calls (will need refactoring)
-import { getAuth } from '@clerk/express';
-import { getDb } from '../db';
+import { getAuth } from "@clerk/express";
+import { getDb } from "../db";
 ```
 
 **2. Design for Offline:**
+
 ```typescript
 // ✅ Return full objects + metadata
 return {
-  order,  // Full object
+  order, // Full object
   affectedRecords: { orders: [order.id] },
   timestamp: new Date(),
 };
@@ -1210,15 +1268,18 @@ return { orderId };
 ```
 
 **3. Keep Code Organized:**
+
 - Routers: THIN (< 50 lines per procedure)
 - Business logic: In `*Db.ts` files
 - Use abstractions: `authProvider`, `dataProvider`
 
 **4. Schema Evolution:**
+
 - Only additive changes (no renames/deletions)
 - New fields must be nullable or have defaults
 
 ### Pre-Push Checklist
+
 - [ ] Uses `authProvider`/`dataProvider` interfaces
 - [ ] Returns full objects (not IDs)
 - [ ] Schema changes are additive
@@ -1253,4 +1314,3 @@ When handing off to a new Manus session, ensure:
 **Current Version:** 023542e6  
 **Status:** Production-ready with 3 complete modules (Dashboard, Inventory, Accounting)  
 **Next Session:** Ready to implement any module or enhancement with full context
-
