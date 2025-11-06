@@ -20,4 +20,4 @@ const pool = mysql.createPool({
 });
 
 // Create drizzle instance with schema
-export const db = drizzle(pool, { schema, mode: "default" });
+export const db = drizzle({ client: pool, schema, mode: "default" });
