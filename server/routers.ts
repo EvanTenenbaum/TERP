@@ -36,6 +36,7 @@ import { locationsRouter } from "./routers/locations";
 import { returnsRouter } from "./routers/returns";
 import { refundsRouter } from "./routers/refunds";
 import { warehouseTransfersRouter } from "./routers/warehouseTransfers";
+import { poReceivingRouter } from "./routers/poReceiving";
 import { matchingEnhancedRouter } from "./routers/matchingEnhanced";
 import { userManagementRouter } from "./routers/userManagement";
 import { dataCardMetricsRouter } from "./routers/dataCardMetrics";
@@ -99,6 +100,7 @@ export const appRouter = router({
   returns: returnsRouter,
   refunds: refundsRouter,
   warehouseTransfers: warehouseTransfersRouter,
+  poReceiving: poReceivingRouter,
   matching: matchingEnhancedRouter,
   userManagement: userManagementRouter,
   dataCardMetrics: dataCardMetricsRouter,
