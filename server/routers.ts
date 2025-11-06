@@ -32,6 +32,7 @@ import { clientNeedsEnhancedRouter } from "./routers/clientNeedsEnhanced";
 import { vendorSupplyRouter } from "./routers/vendorSupply";
 import { vendorsRouter } from "./routers/vendors";
 import { purchaseOrdersRouter } from "./routers/purchaseOrders";
+import { locationsRouter } from "./routers/locations";
 import { matchingEnhancedRouter } from "./routers/matchingEnhanced";
 import { userManagementRouter } from "./routers/userManagement";
 import { dataCardMetricsRouter } from "./routers/dataCardMetrics";
@@ -91,6 +92,7 @@ export const appRouter = router({
   vendorSupply: vendorSupplyRouter,
   vendors: vendorsRouter,
   purchaseOrders: purchaseOrdersRouter,
+  locations: locationsRouter,
   matching: matchingEnhancedRouter,
   userManagement: userManagementRouter,
   dataCardMetrics: dataCardMetricsRouter,
