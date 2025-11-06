@@ -169,11 +169,20 @@ async function seedRealisticData() {
     await db.insert(batches).values(batchesData);
 
     // Step 7: Generate Orders
-    console.log("🛒 Generating orders...");
-    const clientIds = [...whaleClients, ...regularClients].map(
-      (_, index) => index + 1
+    console.log("🛍️ Generating orders...");
+    const whaleClientIds = Array.from(
+      { length: whaleClients.length },
+      (_, i) => i + 1
     );
-    const ordersData = generateOrders(clientIds, whaleClients.length);
+    const regularClientIds = Array.from(
+      { length: regularClients.length },
+      (_, i) => whaleClients.length + i + 1
+    );
+    const ordersData = generateOrders(
+      whaleClientIds,
+      regularClientIds,
+      batchesData
+    );
     console.log(`   ✓ ${ordersData.length} orders created\n`);
 
     for (let i = 0; i < ordersData.length; i += batchSize) {
