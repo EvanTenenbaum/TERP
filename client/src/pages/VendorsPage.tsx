@@ -21,7 +21,16 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { Plus, Pencil, Trash2, Search, FileText } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  FileText,
+  Download,
+  ArrowUpDown,
+  Filter,
+} from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import { VendorNotesDialog } from "../components/VendorNotesDialog";
 
@@ -68,6 +77,11 @@ export default function VendorsPage() {
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [selectedVendorForNotes, setSelectedVendorForNotes] =
     useState<Vendor | null>(null);
+  const [filterPaymentTerms, setFilterPaymentTerms] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"name" | "paymentTerms" | "createdAt">(
+    "name"
+  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const [formData, setFormData] = useState<VendorFormData>({
     name: "",
@@ -90,10 +104,57 @@ export default function VendorsPage() {
 
   const vendors = vendorsResponse || [];
 
-  // Filter vendors based on search
-  const filteredVendors = vendors.filter(vendor =>
-    vendor.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter and sort vendors
+  const filteredAndSortedVendors = vendors
+    .filter(vendor => {
+      // Search filter
+      const matchesSearch =
+        vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vendor.contactName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vendor.contactEmail?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Payment terms filter
+      const matchesPaymentTerms =
+        !filterPaymentTerms || vendor.paymentTerms === filterPaymentTerms;
+
+      return matchesSearch && matchesPaymentTerms;
+    })
+    .sort((a, b) => {
+      let compareValue = 0;
+
+      if (sortBy === "name") {
+        compareValue = a.name.localeCompare(b.name);
+      } else if (sortBy === "paymentTerms") {
+        compareValue = (a.paymentTerms || "").localeCompare(
+          b.paymentTerms || ""
+        );
+      } else if (sortBy === "createdAt") {
+        compareValue =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+
+      return sortOrder === "asc" ? compareValue : -compareValue;
+    });
+
+  // Calculate statistics
+  const stats = {
+    total: vendors.length,
+    withPaymentTerms: vendors.filter(v => v.paymentTerms).length,
+    withContacts: vendors.filter(v => v.contactEmail || v.contactPhone).length,
+    paymentTermsBreakdown: vendors.reduce(
+      (acc, v) => {
+        const term = v.paymentTerms || "Not Set";
+        acc[term] = (acc[term] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    ),
+  };
+
+  // Get unique payment terms for filter dropdown
+  const uniquePaymentTerms = Array.from(
+    new Set(vendors.map(v => v.paymentTerms).filter(Boolean))
+  ).sort();
 
   // Create vendor mutation
   const createMutation = useMutation({
@@ -207,6 +268,35 @@ export default function VendorsPage() {
     }
   };
 
+  const handleExport = () => {
+    const { exportToCSV } = require("../lib/exportUtils");
+    exportToCSV(
+      filteredAndSortedVendors,
+      `vendors-${new Date().toISOString().split("T")[0]}.csv`,
+      [
+        { key: "name", label: "Vendor Name" },
+        { key: "contactName", label: "Contact Name" },
+        { key: "contactEmail", label: "Contact Email" },
+        { key: "contactPhone", label: "Contact Phone" },
+        { key: "paymentTerms", label: "Payment Terms" },
+        { key: "createdAt", label: "Created Date" },
+      ]
+    );
+    toast({
+      title: "Export successful",
+      description: `Exported ${filteredAndSortedVendors.length} vendors to CSV`,
+    });
+  };
+
+  const toggleSort = (column: "name" | "paymentTerms" | "createdAt") => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
@@ -222,16 +312,61 @@ export default function VendorsPage() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <div className="relative max-w-sm">
+      {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-card border rounded-lg p-4">
+          <div className="text-sm text-muted-foreground">Total Vendors</div>
+          <div className="text-2xl font-bold">{stats.total}</div>
+        </div>
+        <div className="bg-card border rounded-lg p-4">
+          <div className="text-sm text-muted-foreground">
+            With Payment Terms
+          </div>
+          <div className="text-2xl font-bold">{stats.withPaymentTerms}</div>
+        </div>
+        <div className="bg-card border rounded-lg p-4">
+          <div className="text-sm text-muted-foreground">With Contacts</div>
+          <div className="text-2xl font-bold">{stats.withContacts}</div>
+        </div>
+        <div className="bg-card border rounded-lg p-4">
+          <div className="text-sm text-muted-foreground">Filtered Results</div>
+          <div className="text-2xl font-bold">
+            {filteredAndSortedVendors.length}
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="mb-6 flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search vendors..."
+            placeholder="Search vendors by name, contact..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="pl-10"
           />
+        </div>
+        <div className="flex gap-2">
+          <div className="relative min-w-[200px]">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <select
+              value={filterPaymentTerms}
+              onChange={e => setFilterPaymentTerms(e.target.value)}
+              className="w-full h-10 pl-10 pr-4 border border-input bg-background rounded-md text-sm"
+            >
+              <option value="">All Payment Terms</option>
+              {uniquePaymentTerms.map(term => (
+                <option key={term} value={term}>
+                  {term}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button onClick={handleExport} variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
         </div>
       </div>
 
@@ -240,11 +375,37 @@ export default function VendorsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Vendor Name</TableHead>
+              <TableHead>
+                <button
+                  onClick={() => toggleSort("name")}
+                  className="flex items-center gap-1 hover:text-foreground"
+                >
+                  Vendor Name
+                  <ArrowUpDown className="h-3 w-3" />
+                  {sortBy === "name" && (
+                    <span className="text-xs">
+                      {sortOrder === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </button>
+              </TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
-              <TableHead>Payment Terms</TableHead>
+              <TableHead>
+                <button
+                  onClick={() => toggleSort("paymentTerms")}
+                  className="flex items-center gap-1 hover:text-foreground"
+                >
+                  Payment Terms
+                  <ArrowUpDown className="h-3 w-3" />
+                  {sortBy === "paymentTerms" && (
+                    <span className="text-xs">
+                      {sortOrder === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </button>
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -255,7 +416,7 @@ export default function VendorsPage() {
                   Loading vendors...
                 </TableCell>
               </TableRow>
-            ) : filteredVendors.length === 0 ? (
+            ) : filteredAndSortedVendors.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={6}
@@ -267,7 +428,7 @@ export default function VendorsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredVendors.map(vendor => (
+              filteredAndSortedVendors.map(vendor => (
                 <TableRow key={vendor.id}>
                   <TableCell className="font-medium">{vendor.name}</TableCell>
                   <TableCell>{vendor.contactName || "—"}</TableCell>
