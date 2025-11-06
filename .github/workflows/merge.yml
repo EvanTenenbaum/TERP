@@ -51,20 +51,50 @@ jobs:
         run: pnpm install
       
       - name: Push database schema
-        run: pnpm drizzle-kit push
+        id: schema
+        run: |
+          echo "Pushing database schema..."
+          pnpm drizzle-kit push 2>&1 | tee schema-output.txt || {
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          echo "status=passed" >> $GITHUB_OUTPUT
+        continue-on-error: true
       
       - name: Seed test database
-        run: pnpm seed:light
+        id: seed
+        run: |
+          echo "Seeding test database..."
+          pnpm seed:light 2>&1 | tee seed-output.txt || {
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          echo "status=passed" >> $GITHUB_OUTPUT
+        continue-on-error: true
       
       - name: Run integration tests
-        run: pnpm test -- --config vitest.config.integration.ts --run --coverage || echo "Integration tests skipped"
+        id: integration
+        run: |
+          echo "Running integration tests..."
+          pnpm test -- --config vitest.config.integration.ts --run --coverage --reporter=verbose 2>&1 | tee integration-output.txt || {
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          echo "status=passed" >> $GITHUB_OUTPUT
         continue-on-error: true
       
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps
       
       - name: Run E2E tests with Argos
-        run: CI=true pnpm playwright test
+        id: e2e
+        run: |
+          echo "Running E2E tests..."
+          CI=true pnpm playwright test 2>&1 | tee e2e-output.txt || {
+            echo "status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          echo "status=passed" >> $GITHUB_OUTPUT
         env:
           CI: true
         continue-on-error: true
@@ -79,37 +109,141 @@ jobs:
         continue-on-error: true
       
       - name: Check test coverage
+        id: coverage
         run: |
           if [ -f coverage/coverage-summary.json ]; then
             COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
             echo "Test coverage: $COVERAGE%"
+            echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
             if (( $(echo "$COVERAGE < 80" | bc -l) )); then
               echo "❌ Test coverage is below 80%"
+              echo "status=warning" >> $GITHUB_OUTPUT
             else
               echo "✅ Test coverage is above 80%"
+              echo "status=passed" >> $GITHUB_OUTPUT
             fi
           else
             echo "No coverage report found"
+            echo "status=skipped" >> $GITHUB_OUTPUT
           fi
         continue-on-error: true
       
-      - name: Comment with Argos link
+      - name: Post Results Comment
         uses: actions/github-script@v7
         if: always()
         with:
           script: |
-            const argosUrl = `https://app.argos-ci.com/EvanTenenbaum/TERP`;
+            const fs = require('fs');
+            const steps = {
+              schema: '${{ steps.schema.outputs.status }}',
+              seed: '${{ steps.seed.outputs.status }}',
+              integration: '${{ steps.integration.outputs.status }}',
+              e2e: '${{ steps.e2e.outputs.status }}',
+              coverage: '${{ steps.coverage.outputs.status }}'
+            };
+            
+            const coveragePct = '${{ steps.coverage.outputs.coverage }}';
+            
+            let allPassed = steps.schema === 'passed' && 
+                           steps.seed === 'passed' && 
+                           steps.integration === 'passed' && 
+                           steps.e2e === 'passed';
+            
+            let body = allPassed ? '## ✅ All Tests Passed\n\n' : '## ❌ Tests Failed\n\n';
+            body += `**Commit:** \`${context.sha.substring(0, 7)}\`\n`;
+            body += `**Branch:** \`main\`\n\n`;
+            body += '---\n\n';
+            
+            // Schema push results
+            body += steps.schema === 'passed' ? '**Database Schema:** ✅ Pushed\n' : '**Database Schema:** ❌ Failed\n';
+            if (steps.schema === 'failed' && fs.existsSync('schema-output.txt')) {
+              const output = fs.readFileSync('schema-output.txt', 'utf8');
+              const lastLines = output.split('\n').slice(-30).join('\n');
+              body += '<details><summary>View schema errors</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
+            }
+            
+            // Seed results
+            body += steps.seed === 'passed' ? '**Database Seed:** ✅ Completed\n' : '**Database Seed:** ❌ Failed\n';
+            if (steps.seed === 'failed' && fs.existsSync('seed-output.txt')) {
+              const output = fs.readFileSync('seed-output.txt', 'utf8');
+              const lastLines = output.split('\n').slice(-30).join('\n');
+              body += '<details><summary>View seed errors</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
+            }
+            
+            // Integration test results
+            body += steps.integration === 'passed' ? '**Integration Tests:** ✅ Passed\n' : '**Integration Tests:** ❌ Failed\n';
+            if (steps.integration === 'failed' && fs.existsSync('integration-output.txt')) {
+              const output = fs.readFileSync('integration-output.txt', 'utf8');
+              const lastLines = output.split('\n').slice(-100).join('\n');
+              body += '<details><summary>View integration test failures</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
+            }
+            
+            // E2E test results
+            body += steps.e2e === 'passed' ? '**E2E Tests:** ✅ Passed\n' : '**E2E Tests:** ❌ Failed\n';
+            if (steps.e2e === 'failed' && fs.existsSync('e2e-output.txt')) {
+              const output = fs.readFileSync('e2e-output.txt', 'utf8');
+              const lastLines = output.split('\n').slice(-100).join('\n');
+              body += '<details><summary>View E2E test failures</summary>\n\n```\n' + lastLines + '\n```\n</details>\n\n';
+            }
+            
+            // Coverage
+            if (coveragePct) {
+              body += `**Test Coverage:** ${coveragePct}%\n\n`;
+            }
+            
+            body += '---\n\n';
+            
+            if (!allPassed) {
+              body += `## 🚨 Action Required
+
+The main branch build has failed. **All agents must stop work immediately** and check this status.
+
+**How to check this via GitHub CLI:**
+\`\`\`bash
+# View this commit's status
+gh api repos/EvanTenenbaum/TERP/commits/${context.sha}/comments
+
+# View the workflow run
+gh run view ${{ github.run_id }}
+
+# View recent workflow runs
+gh run list --limit 5
+\`\`\`
+
+**What to do:**
+1. Read the error details in the dropdowns above
+2. Pull the latest changes: \`git pull origin main\`
+3. Run the failing tests locally
+4. Fix the issues
+5. Create a PR with the fix
+
+**Do not push more changes to main until this is fixed.**`;
+            } else {
+              body += `## 🎉 Build Successful
+
+All tests passed! The main branch is healthy.
+
+📸 [View visual changes in Argos](https://app.argos-ci.com/EvanTenenbaum/TERP)`;
+            }
+            
             try {
               await github.rest.repos.createCommitComment({
                 owner: context.repo.owner,
                 repo: context.repo.name,
                 commit_sha: context.sha,
-                body: `✅ Tests completed!\n\n📸 [View visual changes in Argos](${argosUrl})`
+                body: body
               });
             } catch (error) {
               console.log('Could not post comment:', error.message);
             }
       
+      - name: Fail if any test failed
+        if: steps.schema.outputs.status == 'failed' || steps.seed.outputs.status == 'failed' || steps.integration.outputs.status == 'failed' || steps.e2e.outputs.status == 'failed'
+        run: |
+          echo "❌ One or more tests failed. See the commit comment for details."
+          exit 1
+      
       - name: Deploy to staging (placeholder)
+        if: success()
         run: echo "Deployment step would go here"
         # Add your deployment logic here (e.g., Railway, DigitalOcean, etc.)
