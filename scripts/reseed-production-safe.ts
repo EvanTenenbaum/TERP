@@ -71,7 +71,8 @@ async function reseedProduction() {
     const strainCount = await db.execute(
       sql`SELECT COUNT(*) as count FROM strains`
     );
-    const count = (strainCount.rows[0] as { count: number }).count;
+    const countResult = strainCount[0] as unknown as Array<{ count: number }>;
+    const count = countResult[0].count;
     console.log(`🌿 Verified: ${count} strains preserved\n`);
 
     // Step 3: Generate improved client data
