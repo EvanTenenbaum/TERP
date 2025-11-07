@@ -28,7 +28,8 @@
     "seed:chaos": "tsx scripts/seed-realistic-main.ts chaos",
     "seed:live": "tsx scripts/seed-live-database.ts",
     "seed:realistic": "tsx scripts/seed-realistic-main.ts full",
-    "prepare": "husky install || true"
+    "prepare": "husky install || true",
+    "reseed:prod": "tsx scripts/reseed-production-safe.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
