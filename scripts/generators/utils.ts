@@ -62,40 +62,29 @@ export function shuffle<T>(array: T[]): T[] {
 export function generateCompanyName(index: number): string {
   const prefixes = [
     "Green",
-    "Pure",
-    "Natural",
+    "Emerald",
+    "Golden",
+    "Pacific",
+    "Coastal",
     "Premium",
     "Elite",
-    "Prime",
-    "Royal",
-    "Golden",
-    "Silver",
-    "Diamond",
+    "Natural",
+    "Pure",
+    "Organic",
   ];
   const middles = [
+    "Valley Collective",
+    "Coast Dispensary",
+    "Wellness",
+    "Gardens",
+    "Farms",
     "Leaf",
     "Herb",
-    "Garden",
-    "Farm",
-    "Valley",
-    "Mountain",
-    "Coast",
-    "River",
-    "Forest",
-    "Field",
+    "Grove",
+    "Harvest",
+    "Cultivation",
   ];
-  const suffixes = [
-    "Distributors",
-    "Wholesale",
-    "Supply",
-    "Trading",
-    "Group",
-    "Partners",
-    "Co",
-    "LLC",
-    "Inc",
-    "Corp",
-  ];
+  const suffixes = ["LLC", "Inc", "Co", "Corp", "", "", "", "", "", ""];
 
   const prefix = prefixes[index % prefixes.length];
   const middle = middles[Math.floor(index / prefixes.length) % middles.length];
@@ -104,7 +93,43 @@ export function generateCompanyName(index: number): string {
       Math.floor(index / (prefixes.length * middles.length)) % suffixes.length
     ];
 
-  return `${prefix} ${middle} ${suffix}`;
+  return suffix ? `${prefix} ${middle} ${suffix}` : `${prefix} ${middle}`;
+}
+
+/**
+ * California cities for realistic cannabis business addresses
+ */
+export const CA_CITIES = [
+  "Los Angeles",
+  "San Francisco",
+  "San Diego",
+  "Oakland",
+  "Sacramento",
+  "San Jose",
+];
+
+/**
+ * Generate California-based address
+ */
+export function generateCaliforniaAddress(): string {
+  const streetNumber = randomInRange(100, 9999);
+  const streets = [
+    "Main St",
+    "Market St",
+    "Broadway",
+    "Mission St",
+    "Valencia St",
+    "Sunset Blvd",
+    "Ocean Ave",
+    "Park Ave",
+    "First St",
+    "Second St",
+  ];
+  const street = streets[Math.floor(Math.random() * streets.length)];
+  const city = CA_CITIES[Math.floor(Math.random() * CA_CITIES.length)];
+  const zipCode = randomInRange(90001, 95999);
+
+  return `${streetNumber} ${street}, ${city}, CA ${zipCode}`;
 }
 
 /**
@@ -221,4 +246,90 @@ export function toTitleCase(str: string): string {
  */
 export function randomChoice<T>(array: T[]): T {
   return array[Math.floor(Math.random() * array.length)];
+}
+
+/**
+ * Generate Pareto distribution weights (80/20 rule)
+ * Top 20% of items get 80% of the weight
+ */
+export function generateParetoWeights(count: number): number[] {
+  const weights: number[] = [];
+  const top20Count = Math.ceil(count * 0.2);
+
+  // Top 20% get weight of 12 (very popular)
+  for (let i = 0; i < top20Count; i++) {
+    weights.push(12);
+  }
+
+  // Next 30% get weight of 3 (moderately popular)
+  const mid30Count = Math.ceil(count * 0.3);
+  for (let i = 0; i < mid30Count; i++) {
+    weights.push(3);
+  }
+
+  // Bottom 50% get weight of 1 (rarely ordered)
+  const bottom50Count = count - top20Count - mid30Count;
+  for (let i = 0; i < bottom50Count; i++) {
+    weights.push(1);
+  }
+
+  // Shuffle to randomize which items are popular
+  return shuffle(weights);
+}
+
+/**
+ * Select weighted random index based on Pareto weights
+ */
+export function selectWeightedIndex(weights: number[]): number {
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  const normalizedWeights = weights.map(w => w / totalWeight);
+  const indices = weights.map((_, i) => i);
+  return weightedRandom(indices, normalizedWeights);
+}
+
+/**
+ * Generate long-tail distributed random number
+ * Most values will be small, few will be large
+ * Uses exponential distribution
+ */
+export function longTailRandom(min: number, max: number, skew = 2): number {
+  // Generate exponentially distributed random number
+  const random = Math.random();
+  const exponential = Math.pow(random, skew);
+  const value = min + exponential * (max - min);
+  return Math.round(value);
+}
+
+/**
+ * Generate weighted random quantity for B2B orders
+ * Most orders have small quantities, few have large quantities
+ */
+export function generateWeightedQuantity(isFlower: boolean): number {
+  if (isFlower) {
+    // Flower: 0.5 to 20 lbs, weighted toward 2-5 lbs
+    const weights = [0.1, 0.7, 0.15, 0.05]; // [0.5-2, 2-5, 5-10, 10-20]
+    const ranges = [
+      [0.5, 2],
+      [2, 5],
+      [5, 10],
+      [10, 20],
+    ];
+    const rangeIndex = weightedRandom([0, 1, 2, 3], weights);
+    const [rangeMin, rangeMax] = ranges[rangeIndex];
+    return parseFloat(
+      (rangeMin + Math.random() * (rangeMax - rangeMin)).toFixed(1)
+    );
+  } else {
+    // Non-flower: 5 to 100 units, weighted toward 10-30 units
+    const weights = [0.1, 0.6, 0.2, 0.1]; // [1-10, 10-30, 30-60, 60-100]
+    const ranges = [
+      [1, 10],
+      [10, 30],
+      [30, 60],
+      [60, 100],
+    ];
+    const rangeIndex = weightedRandom([0, 1, 2, 3], weights);
+    const [rangeMin, rangeMax] = ranges[rangeIndex];
+    return Math.round(rangeMin + Math.random() * (rangeMax - rangeMin));
+  }
 }
