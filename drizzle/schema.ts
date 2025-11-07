@@ -4264,3 +4264,20 @@ export {
   type ClientPriceAlert,
   type InsertClientPriceAlert,
 } from "./schema-vip-portal";
+
+
+// ============================================================================
+// RBAC TABLES (Role-Based Access Control)
+// ============================================================================
+export {
+  roles,
+  permissions,
+  rolePermissions,
+  userRoles,
+  userPermissionOverrides,
+  rolesRelations,
+  permissionsRelations,
+  rolePermissionsRelations,
+  userRolesRelations,
+  userPermissionOverridesRelations,
+} from "./schema-rbac";
