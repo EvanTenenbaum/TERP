@@ -121,7 +121,31 @@ export function generateOrders(
     );
 
     // Generate order items with long-tail distribution
-    const itemCount = longTailRandom(1, 15, 2.5); // Most orders have 2-5 items
+    // Inject order-level anomalies: special orders
+    const orderAnomalyRoll = Math.random();
+    let itemCount: number;
+    let forceMargin: number | null = null;
+    let forceSmallQuantity = false;
+
+    if (orderAnomalyRoll < 0.1) {
+      // 10% are very small orders (1-2 items with small quantities)
+      itemCount = Math.random() < 0.5 ? 1 : 2;
+      forceSmallQuantity = true;
+    } else {
+      // 90% normal distribution
+      itemCount = longTailRandom(1, 15, 2.5); // Most orders have 2-5 items
+    }
+
+    // 3% of orders get forced low margins across all items
+    if (orderAnomalyRoll >= 0.1 && orderAnomalyRoll < 0.13) {
+      forceMargin = 0.05 + Math.random() * 0.05; // 5-10% margin
+    }
+
+    // 3% of orders get forced high margins across all items
+    if (orderAnomalyRoll >= 0.13 && orderAnomalyRoll < 0.16) {
+      forceMargin = 0.5 + Math.random() * 0.2; // 50-70% margin
+    }
+
     const items: OrderItem[] = [];
     let orderSubtotal = 0;
     let orderCogs = 0;
@@ -133,12 +157,40 @@ export function generateOrders(
       const unitCogs = parseFloat(batch.unitCogs);
 
       // Calculate unit price with margin
-      const margin = addVariance(CONFIG.averageMargin, CONFIG.marginVariance);
+      let margin: number;
+
+      if (forceMargin !== null) {
+        // Order has forced margin (low-margin order)
+        margin = forceMargin;
+      } else {
+        // Inject item-level anomalies: 10% of items get extreme margins
+        const anomalyRoll = Math.random();
+        if (anomalyRoll < 0.05) {
+          // 5% get very high margins (50-70%)
+          margin = 0.5 + Math.random() * 0.2;
+        } else if (anomalyRoll < 0.1) {
+          // 5% get very low margins (5-10%)
+          margin = 0.05 + Math.random() * 0.05;
+        } else {
+          // 90% get normal margins with variance
+          margin = addVariance(CONFIG.averageMargin, CONFIG.marginVariance);
+        }
+      }
+
       const unitPrice = unitCogs / (1 - margin);
 
       // Quantity with weighted distribution (realistic B2B quantities)
       const isFlower = batch.grade !== null && batch.grade !== undefined;
-      const quantity = generateWeightedQuantity(isFlower);
+      let quantity: number;
+
+      if (forceSmallQuantity) {
+        // Small orders get minimal quantities
+        quantity = isFlower
+          ? 0.5 + Math.random() * 0.5
+          : 1 + Math.floor(Math.random() * 3);
+      } else {
+        quantity = generateWeightedQuantity(isFlower);
+      }
 
       const lineTotal = unitPrice * quantity;
       const lineCogs = unitCogs * quantity;
