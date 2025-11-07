@@ -259,23 +259,26 @@ async function generateDerivedData() {
         typeof order.items === "string" ? JSON.parse(order.items) : order.items;
 
       if (items && items.length > 0) {
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
+        for (const item of items) {
           await db.execute(sql`
             INSERT INTO order_line_items (
-              orderId, lineNumber, batchId, productId,
-              quantity, unitPrice, unitCogs, lineTotal,
-              createdAt
+              order_id, batch_id, product_display_name,
+              quantity, cogs_per_unit, original_cogs_per_unit,
+              margin_percent, margin_dollar, margin_source,
+              unit_price, line_total, is_sample
             ) VALUES (
               ${order.id},
-              ${i + 1},
               ${item.batchId},
-              ${item.productId},
+              ${item.displayName || item.originalName || "Unknown Product"},
               ${item.quantity},
-              ${item.unitPrice},
               ${item.unitCogs || "0.00"},
+              ${item.unitCogs || "0.00"},
+              ${item.marginPercent || "0.00"},
+              ${item.lineMargin || "0.00"},
+              'DEFAULT',
+              ${item.unitPrice},
               ${item.lineTotal},
-              ${new Date(order.created_at)}
+              ${item.isSample ? 1 : 0}
             )
           `);
           lineItemCount++;
