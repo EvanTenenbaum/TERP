@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Verified - Task 1.1: Inventory System Stability (2025-11-07)
+
+#### Roadmap Task 1.1: Inventory System Stability
+
+- **Status**: ✅ **VERIFIED COMPLETE** (Already Implemented)
+- **Priority**: 🔴 CRITICAL (BLOCKER)
+- **Verification Method**: Comprehensive code review and concurrency test creation
+- **Implementation Details**:
+  - All inventory operations use database transactions (`db.transaction()`)
+  - Row-level locking implemented with `SELECT ... FOR UPDATE` (`.for("update")`)
+  - Prevents race conditions in concurrent sales, returns, and adjustments
+  - Validates inventory before decrement to prevent negative quantities
+  - Comprehensive audit trail via `inventoryMovements` table
+- **Files Verified**:
+  - `server/inventoryMovementsDb.ts` - All functions use pessimistic locking
+  - Functions: `decreaseInventory()`, `increaseInventory()`, `adjustInventory()`
+- **Tests Created**:
+  - `server/tests/inventoryMovements.concurrency.test.ts` - 7 concurrency test cases
+  - Tests cover: concurrent sales, overselling prevention, mixed operations, high-volume stress
+- **Documentation**:
+  - Created `docs/verification/TASK_1.1_VERIFICATION_REPORT.md`
+  - Created `PROGRESS.md` to track roadmap completion
+- **References**: TERP-INIT-005 Phase 1
+- **Next Task**: 1.2 - User Roles & Permissions (RBAC)
+
 ### Added - Vendor Payment Terms (2025-11-05)
 
 #### MF-015: Vendor Payment Terms
