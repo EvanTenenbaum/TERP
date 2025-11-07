@@ -62,40 +62,29 @@ export function shuffle<T>(array: T[]): T[] {
 export function generateCompanyName(index: number): string {
   const prefixes = [
     "Green",
-    "Pure",
-    "Natural",
+    "Emerald",
+    "Golden",
+    "Pacific",
+    "Coastal",
     "Premium",
     "Elite",
-    "Prime",
-    "Royal",
-    "Golden",
-    "Silver",
-    "Diamond",
+    "Natural",
+    "Pure",
+    "Organic",
   ];
   const middles = [
+    "Valley Collective",
+    "Coast Dispensary",
+    "Wellness",
+    "Gardens",
+    "Farms",
     "Leaf",
     "Herb",
-    "Garden",
-    "Farm",
-    "Valley",
-    "Mountain",
-    "Coast",
-    "River",
-    "Forest",
-    "Field",
+    "Grove",
+    "Harvest",
+    "Cultivation",
   ];
-  const suffixes = [
-    "Distributors",
-    "Wholesale",
-    "Supply",
-    "Trading",
-    "Group",
-    "Partners",
-    "Co",
-    "LLC",
-    "Inc",
-    "Corp",
-  ];
+  const suffixes = ["LLC", "Inc", "Co", "Corp", "", "", "", "", "", ""];
 
   const prefix = prefixes[index % prefixes.length];
   const middle = middles[Math.floor(index / prefixes.length) % middles.length];
@@ -104,7 +93,43 @@ export function generateCompanyName(index: number): string {
       Math.floor(index / (prefixes.length * middles.length)) % suffixes.length
     ];
 
-  return `${prefix} ${middle} ${suffix}`;
+  return suffix ? `${prefix} ${middle} ${suffix}` : `${prefix} ${middle}`;
+}
+
+/**
+ * California cities for realistic cannabis business addresses
+ */
+export const CA_CITIES = [
+  "Los Angeles",
+  "San Francisco",
+  "San Diego",
+  "Oakland",
+  "Sacramento",
+  "San Jose",
+];
+
+/**
+ * Generate California-based address
+ */
+export function generateCaliforniaAddress(): string {
+  const streetNumber = randomInRange(100, 9999);
+  const streets = [
+    "Main St",
+    "Market St",
+    "Broadway",
+    "Mission St",
+    "Valencia St",
+    "Sunset Blvd",
+    "Ocean Ave",
+    "Park Ave",
+    "First St",
+    "Second St",
+  ];
+  const street = streets[Math.floor(Math.random() * streets.length)];
+  const city = CA_CITIES[Math.floor(Math.random() * CA_CITIES.length)];
+  const zipCode = randomInRange(90001, 95999);
+
+  return `${streetNumber} ${street}, ${city}, CA ${zipCode}`;
 }
 
 /**

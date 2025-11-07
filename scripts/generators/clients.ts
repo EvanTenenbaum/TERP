@@ -4,7 +4,7 @@
 
 import { faker } from "@faker-js/faker";
 import { CONFIG } from "./config.js";
-import { generateCompanyName } from "./utils.js";
+import { generateCompanyName, generateCaliforniaAddress } from "./utils.js";
 
 export interface ClientData {
   id?: number;
@@ -39,7 +39,7 @@ export function generateWhaleClients(): ClientData[] {
         provider: "example.com",
       }),
       phone: faker.phone.number(),
-      address: faker.location.streetAddress({ useFullAddress: true }),
+      address: generateCaliforniaAddress(),
       isBuyer: true,
       isSeller: false,
       isBrand: Math.random() < 0.1, // 10% of whales are also brands
@@ -68,7 +68,7 @@ export function generateRegularClients(): ClientData[] {
         provider: "example.com",
       }),
       phone: faker.phone.number(),
-      address: faker.location.streetAddress({ useFullAddress: true }),
+      address: generateCaliforniaAddress(),
       isBuyer: true,
       isSeller: false,
       isBrand: false,
@@ -108,7 +108,7 @@ export function generateVendorClients(): ClientData[] {
         provider: "example.com",
       }),
       phone: faker.phone.number(),
-      address: faker.location.streetAddress({ useFullAddress: true }),
+      address: generateCaliforniaAddress(),
       isBuyer: false,
       isSeller: true,
       isBrand: false,
