@@ -240,6 +240,8 @@ export const vipPortalAdminRouter = router({
         moduleCreditCenterEnabled: z.boolean().optional(),
         moduleMarketplaceNeedsEnabled: z.boolean().optional(),
         moduleMarketplaceSupplyEnabled: z.boolean().optional(),
+        moduleLiveCatalogEnabled: z.boolean().optional(),
+        moduleLeaderboardEnabled: z.boolean().optional(),
         featuresConfig: z.any().optional(),
         advancedOptions: z.any().optional(),
       }))
