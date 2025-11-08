@@ -1,4 +1,4 @@
-import { db } from "../server/db";
+import { getDb } from "../server/db";
 import { roles, permissions, rolePermissions } from "../drizzle/schema";
 
 /**
@@ -987,6 +987,8 @@ async function seedRBAC() {
   console.log("🌱 Starting RBAC seed...");
 
   try {
+    const db = await getDb();
+    
     // 1. Insert permissions
     console.log("📝 Inserting 255 permissions...");
     const insertedPermissions = await db.insert(permissions).values(PERMISSIONS).$returningId();
