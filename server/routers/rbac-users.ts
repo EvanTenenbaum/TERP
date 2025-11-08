@@ -6,7 +6,8 @@ import {
   userRoles, 
   roles, 
   userPermissionOverrides, 
-  permissions 
+  permissions,
+  rolePermissions
 } from "../../drizzle/schema";
 import { eq, inArray, and } from "drizzle-orm";
 import { logger } from "../_core/logger";
@@ -540,6 +541,93 @@ export const rbacUsersRouter = router({
         };
       } catch (error) {
         logger.error({ msg: "Error replacing user roles", userId: input.userId, error });
+        throw error;
+      }
+    }),
+
+  /**
+   * Get current user's permissions
+   * This endpoint is public (only requires authentication) so any user can check their own permissions
+   */
+  getMyPermissions: protectedProcedure
+    .query(async ({ ctx }) => {
+      try {
+        if (!ctx.user) {
+          throw new Error("Not authenticated");
+        }
+
+        const userId = ctx.user.id;
+
+        // Check if user is Super Admin
+        const userRoleRecords = await db
+          .select({
+            roleId: userRoles.roleId,
+            roleName: roles.name,
+            isSuperAdmin: roles.isSuperAdmin,
+          })
+          .from(userRoles)
+          .innerJoin(roles, eq(userRoles.roleId, roles.id))
+          .where(eq(userRoles.userId, userId));
+
+        const isSuperAdmin = userRoleRecords.some(r => r.isSuperAdmin);
+
+        // If Super Admin, return all permissions
+        if (isSuperAdmin) {
+          const allPermissions = await db
+            .select({ name: permissions.name })
+            .from(permissions);
+          
+          return {
+            userId,
+            isSuperAdmin: true,
+            permissions: allPermissions.map(p => p.name),
+            roles: userRoleRecords.map(r => r.roleName),
+          };
+        }
+
+        // Get permissions from roles
+        const roleIds = userRoleRecords.map(r => r.roleId);
+        const rolePerms = roleIds.length > 0
+          ? await db
+              .select({ permissionName: permissions.name })
+              .from(rolePermissions)
+              .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+              .where(inArray(rolePermissions.roleId, roleIds))
+          : [];
+
+        // Get permission overrides
+        const overrides = await db
+          .select({
+            permissionName: permissions.name,
+            granted: userPermissionOverrides.granted,
+          })
+          .from(userPermissionOverrides)
+          .innerJoin(permissions, eq(userPermissionOverrides.permissionId, permissions.id))
+          .where(eq(userPermissionOverrides.userId, userId));
+
+        // Combine permissions
+        const permissionSet = new Set<string>();
+        
+        // Add role permissions
+        rolePerms.forEach(p => permissionSet.add(p.permissionName));
+        
+        // Apply overrides
+        overrides.forEach(override => {
+          if (override.granted) {
+            permissionSet.add(override.permissionName);
+          } else {
+            permissionSet.delete(override.permissionName);
+          }
+        });
+
+        return {
+          userId,
+          isSuperAdmin: false,
+          permissions: Array.from(permissionSet),
+          roles: userRoleRecords.map(r => r.roleName),
+        };
+      } catch (error) {
+        logger.error({ msg: "Error getting user permissions", userId: ctx.user?.id, error });
         throw error;
       }
     }),
