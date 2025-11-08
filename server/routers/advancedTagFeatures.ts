@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as advancedTagFeatures from "../advancedTagFeatures";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const advancedTagFeaturesRouter = router({
   // Boolean tag search

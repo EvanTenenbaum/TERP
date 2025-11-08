@@ -7,6 +7,7 @@ import InstanceGenerationService from "../_core/instanceGenerationService";
 import { getDb } from "../db";
 import { calendarEvents, calendarRecurrenceInstances } from "../../drizzle/schema";
 import { and, eq, gte, lte, inArray, isNull, or } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Calendar Router

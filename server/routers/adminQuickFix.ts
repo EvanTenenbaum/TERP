@@ -1,6 +1,7 @@
 import { router, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Quick fix router for handling missing columns gracefully

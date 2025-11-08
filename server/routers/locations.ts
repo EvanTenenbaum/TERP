@@ -8,6 +8,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { locations, batchLocations } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const locationsRouter = router({
   // Get all locations

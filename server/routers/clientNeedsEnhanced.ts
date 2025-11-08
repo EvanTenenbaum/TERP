@@ -3,6 +3,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import * as clientNeedsDb from "../clientNeedsDbEnhanced";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as needsMatchingService from "../needsMatchingService";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Client Needs Router (Enhanced Version)

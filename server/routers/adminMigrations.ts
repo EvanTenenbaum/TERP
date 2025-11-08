@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Admin Migrations Router

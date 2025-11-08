@@ -63,6 +63,9 @@ import { calendarViewsRouter } from "./routers/calendarViews";
 import { calendarRecurrenceRouter } from "./routers/calendarRecurrence";
 import { calendarMeetingsRouter } from "./routers/calendarMeetings";
 import { calendarFinancialsRouter } from "./routers/calendarFinancials";
+import { rbacUsersRouter } from "./routers/rbac-users";
+import { rbacRolesRouter } from "./routers/rbac-roles";
+import { rbacPermissionsRouter } from "./routers/rbac-permissions";
 
 export const appRouter = router({
   system: systemRouter,
@@ -127,6 +130,9 @@ export const appRouter = router({
   calendarRecurrence: calendarRecurrenceRouter,
   calendarMeetings: calendarMeetingsRouter,
   calendarFinancials: calendarFinancialsRouter,
+  rbacUsers: rbacUsersRouter,
+  rbacRoles: rbacRolesRouter,
+  rbacPermissions: rbacPermissionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

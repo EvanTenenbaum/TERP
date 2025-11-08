@@ -4,6 +4,7 @@ import { simpleAuth } from "../_core/simpleAuth";
 import * as db from "../db";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const userManagementRouter = router({
   // List all users
