@@ -3,6 +3,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { purchaseOrders, purchaseOrderItems } from "../../drizzle/schema";
 import { eq, desc, sql } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const purchaseOrdersRouter = router({
   // Create new purchase order

@@ -4,6 +4,7 @@ import * as inventoryDb from "../inventoryDb";
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
 import { vendorNotes } from "../../drizzle/schema";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Vendors Router
