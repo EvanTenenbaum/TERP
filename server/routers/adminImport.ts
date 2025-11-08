@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { strains } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -56,7 +56,7 @@ export const adminImportRouter = router({
    * Import strains in batches
    * Returns immediately with status, continues in background
    */
-  importStrainsBatch: requirePermission("system:manage")
+  importStrainsBatch: protectedProcedure.use(requirePermission("system:manage"))
     .input(z.object({
       batchSize: z.number().default(500),
       offset: z.number().default(0),
@@ -175,7 +175,7 @@ export const adminImportRouter = router({
   /**
    * Get import progress
    */
-  getImportProgress: requirePermission("system:manage")
+  getImportProgress: protectedProcedure.use(requirePermission("system:manage"))
     .query(async () => {
       const db = await getDb();
       if (!db) {

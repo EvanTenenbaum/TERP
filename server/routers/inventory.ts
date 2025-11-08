@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { handleError, AppError, ErrorCatalog } from "../_core/errors";
 import { inventoryLogger } from "../_core/logger";
 import {
@@ -17,7 +17,7 @@ export const inventoryRouter = router({
   // Get all batches with details
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
   // ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cursor-based pagination
-  list: requirePermission("inventory:read").input(listQuerySchema).query(async ({ input }) => {
+  list: protectedProcedure.use(requirePermission("inventory:read")).input(listQuerySchema).query(async ({ input }) => {
     try {
       inventoryLogger.operationStart("list", {
         cursor: input.cursor,
@@ -56,7 +56,7 @@ export const inventoryRouter = router({
   }),
 
   // Get dashboard statistics
-  dashboardStats: requirePermission("inventory:read").query(async () => {
+  dashboardStats: protectedProcedure.use(requirePermission("inventory:read")).query(async () => {
     try {
       const stats = await inventoryDb.getDashboardStats();
       if (!stats)
@@ -73,7 +73,7 @@ export const inventoryRouter = router({
 
   // Get single batch by ID
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
-  getById: requirePermission("inventory:read")
+  getById: protectedProcedure.use(requirePermission("inventory:read"))
     .input(validators.positiveInt)
     .query(async ({ input }) => {
       try {
@@ -101,7 +101,7 @@ export const inventoryRouter = router({
   // Create new batch (intake)
   // ✅ FIXED: Uses transactional service (TERP-INIT-005 Phase 1)
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
-  intake: requirePermission("inventory:read")
+  intake: protectedProcedure.use(requirePermission("inventory:read"))
     .input(intakeSchema)
     .mutation(async ({ input, ctx }) => {
       try {
@@ -134,7 +134,7 @@ export const inventoryRouter = router({
 
   // Update batch status
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
-  updateStatus: requirePermission("inventory:update")
+  updateStatus: protectedProcedure.use(requirePermission("inventory:update"))
     .input(batchUpdateSchema)
     .mutation(async ({ input, ctx }) => {
       const batch = await inventoryDb.getBatchById(input.id);
@@ -176,7 +176,7 @@ export const inventoryRouter = router({
     }),
 
   // Adjust batch quantity
-  adjustQty: requirePermission("inventory:read")
+  adjustQty: protectedProcedure.use(requirePermission("inventory:read"))
     .input(
       z.object({
         id: z.number(),
@@ -227,7 +227,7 @@ export const inventoryRouter = router({
     }),
 
   // Get vendors (for autocomplete)
-  vendors: requirePermission("inventory:read")
+  vendors: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({ query: z.string().optional() }))
     .query(async ({ input }) => {
       if (input.query) {
@@ -237,7 +237,7 @@ export const inventoryRouter = router({
     }),
 
   // Get brands (for autocomplete)
-  brands: requirePermission("inventory:read")
+  brands: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({ query: z.string().optional() }))
     .query(async ({ input }) => {
       if (input.query) {
@@ -247,7 +247,7 @@ export const inventoryRouter = router({
     }),
 
   // Seed inventory data
-  seed: requirePermission("inventory:read").mutation(async () => {
+  seed: protectedProcedure.use(requirePermission("inventory:read")).mutation(async () => {
     await inventoryDb.seedInventoryData();
     return { success: true };
   }),
@@ -255,7 +255,7 @@ export const inventoryRouter = router({
   // Saved Views Management
   views: router({
     // Get all views for current user
-    list: requirePermission("inventory:read").query(async ({ ctx }) => {
+    list: protectedProcedure.use(requirePermission("inventory:read")).query(async ({ ctx }) => {
       try {
         const userId = ctx.user?.id;
         if (!userId) throw new Error("User not authenticated");
@@ -267,7 +267,7 @@ export const inventoryRouter = router({
     }),
 
     // Save a new view
-    save: requirePermission("inventory:read")
+    save: protectedProcedure.use(requirePermission("inventory:read"))
       .input(
         z.object({
           name: z.string().min(1).max(100),
@@ -290,7 +290,7 @@ export const inventoryRouter = router({
       }),
 
     // Delete a view
-    delete: requirePermission("inventory:delete")
+    delete: protectedProcedure.use(requirePermission("inventory:delete"))
       .input(z.number())
       .mutation(async ({ input, ctx }) => {
         try {
@@ -307,7 +307,7 @@ export const inventoryRouter = router({
   // Bulk operations
   bulk: router({
     // Bulk update status
-    updateStatus: requirePermission("inventory:update")
+    updateStatus: protectedProcedure.use(requirePermission("inventory:update"))
       .input(
         z.object({
           batchIds: z.array(z.number()),
@@ -338,7 +338,7 @@ export const inventoryRouter = router({
       }),
 
     // Bulk delete
-    delete: requirePermission("inventory:delete")
+    delete: protectedProcedure.use(requirePermission("inventory:delete"))
       .input(z.array(z.number()))
       .mutation(async ({ input, ctx }) => {
         try {
@@ -355,7 +355,7 @@ export const inventoryRouter = router({
   // Profitability analysis
   profitability: router({
     // Get batch profitability
-    batch: requirePermission("inventory:read").input(z.number()).query(async ({ input }) => {
+    batch: protectedProcedure.use(requirePermission("inventory:read")).input(z.number()).query(async ({ input }) => {
       try {
         return await inventoryDb.calculateBatchProfitability(input);
       } catch (error) {
@@ -365,7 +365,7 @@ export const inventoryRouter = router({
     }),
 
     // Get top profitable batches
-    top: requirePermission("inventory:read")
+    top: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.number().optional().default(10))
       .query(async ({ input }) => {
         try {
@@ -377,7 +377,7 @@ export const inventoryRouter = router({
       }),
 
     // Get overall summary
-    summary: requirePermission("inventory:read").query(async () => {
+    summary: protectedProcedure.use(requirePermission("inventory:read")).query(async () => {
       try {
         return await inventoryDb.getProfitabilitySummary();
       } catch (error) {

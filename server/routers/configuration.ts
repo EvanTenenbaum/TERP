@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as configManager from "../configurationManager";
 import { requirePermission } from "../_core/permissionMiddleware";
 
@@ -12,14 +12,14 @@ export const configurationRouter = router({
   /**
    * Get current configuration
    */
-  get: requirePermission("settings:manage").query(() => {
+  get: protectedProcedure.use(requirePermission("settings:manage")).query(() => {
     return configManager.getConfiguration();
   }),
 
   /**
    * Get a specific configuration value
    */
-  getValue: requirePermission("settings:manage")
+  getValue: protectedProcedure.use(requirePermission("settings:manage"))
     .input(z.object({ path: z.string() }))
     .query(({ input }) => {
       return configManager.getConfigValue(input.path);
@@ -28,7 +28,7 @@ export const configurationRouter = router({
   /**
    * Set a configuration value
    */
-  setValue: requirePermission("settings:manage")
+  setValue: protectedProcedure.use(requirePermission("settings:manage"))
     .input(
       z.object({
         path: z.string(),
@@ -49,7 +49,7 @@ export const configurationRouter = router({
   /**
    * Reset configuration to defaults
    */
-  reset: requirePermission("settings:manage").mutation(({ ctx }) => {
+  reset: protectedProcedure.use(requirePermission("settings:manage")).mutation(({ ctx }) => {
     configManager.resetConfiguration(ctx.user.id);
     return { success: true };
   }),
@@ -57,7 +57,7 @@ export const configurationRouter = router({
   /**
    * Get configuration change history
    */
-  getHistory: requirePermission("settings:manage")
+  getHistory: protectedProcedure.use(requirePermission("settings:manage"))
     .input(z.object({ limit: z.number().optional() }))
     .query(({ input }) => {
       return configManager.getConfigHistory(input.limit);
@@ -66,7 +66,7 @@ export const configurationRouter = router({
   /**
    * Validate configuration
    */
-  validate: requirePermission("settings:manage")
+  validate: protectedProcedure.use(requirePermission("settings:manage"))
     .input(z.any())
     .query(({ input }) => {
       const errors = configManager.validateConfiguration(input);
@@ -76,7 +76,7 @@ export const configurationRouter = router({
   /**
    * Apply a configuration preset
    */
-  applyPreset: requirePermission("settings:manage")
+  applyPreset: protectedProcedure.use(requirePermission("settings:manage"))
     .input(
       z.object({
         preset: z.enum(["retail", "wholesale", "manufacturing"])
@@ -90,7 +90,7 @@ export const configurationRouter = router({
   /**
    * Get feature flags
    */
-  getFeatureFlags: requirePermission("settings:manage").query(() => {
+  getFeatureFlags: protectedProcedure.use(requirePermission("settings:manage")).query(() => {
     return {
       creditManagement: configManager.FeatureFlags.isCreditManagementEnabled(),
       badDebtWriteOff: configManager.FeatureFlags.isBadDebtWriteOffEnabled(),

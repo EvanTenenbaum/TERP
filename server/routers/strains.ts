@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { strainService } from "../services/strainService";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
 import { seedStrainsFromCSV } from "../seedStrains";
 import { importOpenTHCStrainsFromJSON } from "../import_openthc_strains";
@@ -16,11 +16,11 @@ import {
 
 export const strainsRouter = router({
     // Seed strains from CSV
-    seed: requirePermission("inventory:read").mutation(async () => {
+    seed: protectedProcedure.use(requirePermission("inventory:read")).mutation(async () => {
       return await seedStrainsFromCSV();
     }),
     // List all strains
-    list: requirePermission("inventory:read")
+    list: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({
         query: z.string().optional(),
         category: z.enum(["indica", "sativa", "hybrid"]).optional(),
@@ -30,14 +30,14 @@ export const strainsRouter = router({
         return await inventoryDb.getAllStrains(input.query, input.category, input.limit);
       }),
     // Get strain by ID
-    getById: requirePermission("inventory:read")
+    getById: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await inventoryDb.getStrainById(input.id);
       }),
     
     // Get strain family (parent and all variants)
-    getFamily: requirePermission("inventory:read")
+    getFamily: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({ strainId: z.number() }))
       .query(async ({ input }) => {
         try {
@@ -52,7 +52,7 @@ export const strainsRouter = router({
       }),
     
     // Get strain family statistics
-    getFamilyStats: requirePermission("inventory:read")
+    getFamilyStats: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({ familyId: z.number() }))
       .query(async ({ input }) => {
         try {
@@ -67,7 +67,7 @@ export const strainsRouter = router({
       }),
     
     // Get products in strain family
-    getProductsByFamily: requirePermission("inventory:read")
+    getProductsByFamily: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({ 
         familyId: z.number(),
         includeOutOfStock: z.boolean().optional().default(false)
@@ -84,13 +84,13 @@ export const strainsRouter = router({
         }
       }),
     // Search strains (for autocomplete)
-    search: requirePermission("inventory:read")
+    search: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({ query: z.string() }))
       .query(async ({ input }) => {
         return await inventoryDb.searchStrains(input.query);
       }),
     // Create custom strain
-    create: requirePermission("inventory:create")
+    create: protectedProcedure.use(requirePermission("inventory:create"))
       .input(z.object({
         name: z.string(),
         category: z.enum(["indica", "sativa", "hybrid"]),
@@ -102,12 +102,12 @@ export const strainsRouter = router({
       }),
     
     // Import OpenTHC strains
-    importOpenTHC: requirePermission("inventory:read").mutation(async () => {
+    importOpenTHC: protectedProcedure.use(requirePermission("inventory:read")).mutation(async () => {
       return await importOpenTHCStrainsFromJSON();
     }),
     
     // Find exact strain match
-    findExact: requirePermission("inventory:read")
+    findExact: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({ 
         name: z.string().min(1, 'Strain name required').max(255, 'Strain name too long') 
       }))
@@ -125,7 +125,7 @@ export const strainsRouter = router({
       }),
     
     // Find fuzzy strain matches
-    findFuzzy: requirePermission("inventory:read")
+    findFuzzy: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({
         name: z.string().min(1).max(255),
         threshold: z.number().min(0).max(100).optional().default(80),
@@ -145,7 +145,7 @@ export const strainsRouter = router({
       }),
     
     // Match strain for assignment (with auto/suggest/create logic)
-    matchForAssignment: requirePermission("inventory:read")
+    matchForAssignment: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({
         name: z.string(),
         autoAssignThreshold: z.number().optional().default(95),
@@ -160,7 +160,7 @@ export const strainsRouter = router({
       }),
     
     // Get or create strain with fuzzy matching
-    getOrCreate: requirePermission("inventory:create")
+    getOrCreate: protectedProcedure.use(requirePermission("inventory:create"))
       .input(z.object({
         name: z.string().min(1).max(255),
         category: z.enum(["indica", "sativa", "hybrid"]).optional(),
@@ -184,7 +184,7 @@ export const strainsRouter = router({
       }),
     
     // Fuzzy search strains (for autocomplete with similarity scoring)
-    fuzzySearch: requirePermission("inventory:read")
+    fuzzySearch: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({
         query: z.string().min(1).max(255),
         limit: z.number().min(1).max(50).optional().default(10),

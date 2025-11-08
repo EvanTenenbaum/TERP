@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as salesSheetsDb from "../salesSheetsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 
@@ -42,14 +42,14 @@ const columnConfigSchema = z
 
 export const salesSheetsRouter = router({
   // Inventory with Pricing
-  getInventory: requirePermission("orders:read")
+  getInventory: protectedProcedure.use(requirePermission("orders:read"))
     .input(z.object({ clientId: z.number().positive() }))
     .query(async ({ input }) => {
       return await salesSheetsDb.getInventoryWithPricing(input.clientId);
     }),
 
   // History
-  save: requirePermission("orders:read")
+  save: protectedProcedure.use(requirePermission("orders:read"))
     .input(
       z.object({
         clientId: z.number().positive(),
@@ -74,7 +74,7 @@ export const salesSheetsRouter = router({
       });
     }),
 
-  getHistory: requirePermission("orders:read")
+  getHistory: protectedProcedure.use(requirePermission("orders:read"))
     .input(
       z.object({
         clientId: z.number().positive(),
@@ -88,13 +88,13 @@ export const salesSheetsRouter = router({
       );
     }),
 
-  getById: requirePermission("orders:read")
+  getById: protectedProcedure.use(requirePermission("orders:read"))
     .input(z.object({ sheetId: z.number().positive() }))
     .query(async ({ input }) => {
       return await salesSheetsDb.getSalesSheetById(input.sheetId);
     }),
 
-  delete: requirePermission("orders:read")
+  delete: protectedProcedure.use(requirePermission("orders:read"))
     .input(z.object({ sheetId: z.number().positive() }))
     .mutation(async ({ input }) => {
       await salesSheetsDb.deleteSalesSheet(input.sheetId);
@@ -102,7 +102,7 @@ export const salesSheetsRouter = router({
     }),
 
   // Templates
-  createTemplate: requirePermission("orders:create")
+  createTemplate: protectedProcedure.use(requirePermission("orders:create"))
     .input(
       z.object({
         name: z.string().min(1).max(255),
@@ -119,7 +119,7 @@ export const salesSheetsRouter = router({
       });
     }),
 
-  getTemplates: requirePermission("orders:read")
+  getTemplates: protectedProcedure.use(requirePermission("orders:read"))
     .input(
       z.object({
         clientId: z.number().positive().optional(),
@@ -133,13 +133,13 @@ export const salesSheetsRouter = router({
       );
     }),
 
-  loadTemplate: requirePermission("orders:read")
+  loadTemplate: protectedProcedure.use(requirePermission("orders:read"))
     .input(z.object({ templateId: z.number().positive() }))
     .query(async ({ input }) => {
       return await salesSheetsDb.loadTemplate(input.templateId);
     }),
 
-  deleteTemplate: requirePermission("orders:read")
+  deleteTemplate: protectedProcedure.use(requirePermission("orders:read"))
     .input(z.object({ templateId: z.number().positive() }))
     .mutation(async ({ input }) => {
       await salesSheetsDb.deleteTemplate(input.templateId);

@@ -4,13 +4,13 @@
  */
 
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as inventoryMovementsDb from "../inventoryMovementsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const inventoryMovementsRouter = router({
   // Record a manual inventory movement
-  record: requirePermission("inventory:read")
+  record: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({
       batchId: z.number(),
       movementType: z.enum(["INTAKE", "SALE", "REFUND_RETURN", "ADJUSTMENT", "QUARANTINE", "RELEASE_FROM_QUARANTINE", "DISPOSAL", "TRANSFER", "SAMPLE"]),
@@ -38,7 +38,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Decrease inventory (for sales)
-  decrease: requirePermission("inventory:read")
+  decrease: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({
       batchId: z.number(),
       quantity: z.string(),
@@ -60,7 +60,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Increase inventory (for refunds)
-  increase: requirePermission("inventory:read")
+  increase: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({
       batchId: z.number(),
       quantity: z.string(),
@@ -82,7 +82,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Adjust inventory (manual adjustment)
-  adjust: requirePermission("inventory:read")
+  adjust: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({
       batchId: z.number(),
       newQuantity: z.string(),
@@ -102,7 +102,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Get movements for a batch
-  getByBatch: requirePermission("inventory:read")
+  getByBatch: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({
       batchId: z.number(),
       limit: z.number().optional().default(100),
@@ -112,7 +112,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Get movements by reference
-  getByReference: requirePermission("inventory:read")
+  getByReference: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({
       referenceType: z.string(),
       referenceId: z.number(),
@@ -125,7 +125,7 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Validate inventory availability
-  validateAvailability: requirePermission("inventory:read")
+  validateAvailability: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({
       batchId: z.number(),
       requestedQuantity: z.string(),
@@ -138,14 +138,14 @@ export const inventoryMovementsRouter = router({
     }),
 
   // Get movement summary for a batch
-  getSummary: requirePermission("inventory:read")
+  getSummary: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       return await inventoryMovementsDb.getBatchMovementSummary(input.batchId);
     }),
 
   // Reverse a movement
-  reverse: requirePermission("inventory:read")
+  reverse: protectedProcedure.use(requirePermission("inventory:read"))
     .input(z.object({
       movementId: z.number(),
       reason: z.string().min(1),

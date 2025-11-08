@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as commentsDb from "../commentsDb";
 import * as inboxDb from "../inboxDb";
 import * as mentionParser from "../services/mentionParser";
@@ -12,7 +12,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const commentsRouter = router({
   // Get all comments for an entity
-  getEntityComments: requirePermission("comments:read")
+  getEntityComments: protectedProcedure.use(requirePermission("comments:read"))
     .input(
       z.object({
         commentableType: z.string(),
@@ -29,7 +29,7 @@ export const commentsRouter = router({
     }),
 
   // Get a specific comment by ID
-  getById: requirePermission("comments:read")
+  getById: protectedProcedure.use(requirePermission("comments:read"))
     .input(
       z.object({
         commentId: z.number(),
@@ -42,7 +42,7 @@ export const commentsRouter = router({
     }),
 
   // Create a new comment
-  create: requirePermission("comments:create")
+  create: protectedProcedure.use(requirePermission("comments:create"))
     .input(
       z.object({
         commentableType: z.string(),
@@ -94,7 +94,7 @@ export const commentsRouter = router({
     }),
 
   // Update a comment
-  update: requirePermission("comments:update")
+  update: protectedProcedure.use(requirePermission("comments:update"))
     .input(
       z.object({
         commentId: z.number(),
@@ -153,7 +153,7 @@ export const commentsRouter = router({
     }),
 
   // Delete a comment
-  delete: requirePermission("comments:delete")
+  delete: protectedProcedure.use(requirePermission("comments:delete"))
     .input(
       z.object({
         commentId: z.number(),
@@ -176,7 +176,7 @@ export const commentsRouter = router({
     }),
 
   // Mark comment as resolved
-  resolve: requirePermission("comments:read")
+  resolve: protectedProcedure.use(requirePermission("comments:read"))
     .input(
       z.object({
         commentId: z.number(),
@@ -189,7 +189,7 @@ export const commentsRouter = router({
     }),
 
   // Mark comment as unresolved
-  unresolve: requirePermission("comments:read")
+  unresolve: protectedProcedure.use(requirePermission("comments:read"))
     .input(
       z.object({
         commentId: z.number(),
@@ -202,7 +202,7 @@ export const commentsRouter = router({
     }),
 
   // Get unresolved comments count for an entity
-  getUnresolvedCount: requirePermission("comments:read")
+  getUnresolvedCount: protectedProcedure.use(requirePermission("comments:read"))
     .input(
       z.object({
         commentableType: z.string(),
@@ -220,7 +220,7 @@ export const commentsRouter = router({
     }),
 
   // Get mentions for a comment
-  getCommentMentions: requirePermission("comments:read")
+  getCommentMentions: protectedProcedure.use(requirePermission("comments:read"))
     .input(
       z.object({
         commentId: z.number(),
@@ -233,7 +233,7 @@ export const commentsRouter = router({
     }),
 
   // Get all mentions for current user
-  getMyMentions: requirePermission("comments:read").query(async ({ ctx }) => {
+  getMyMentions: protectedProcedure.use(requirePermission("comments:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
 
     return await commentsDb.getUserMentions(ctx.user.id);

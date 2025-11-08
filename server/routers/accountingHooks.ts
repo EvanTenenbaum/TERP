@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as accountingHooks from "../accountingHooks";
 import * as cogsCalculation from "../cogsCalculation";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -13,7 +13,7 @@ export const accountingHooksRouter = router({
   /**
    * Seed standard chart of accounts
    */
-  seedAccounts: requirePermission("accounting:manage").mutation(async () => {
+  seedAccounts: protectedProcedure.use(requirePermission("accounting:manage")).mutation(async () => {
     await accountingHooks.seedStandardAccounts();
     return { success: true };
   }),
@@ -21,7 +21,7 @@ export const accountingHooksRouter = router({
   /**
    * Calculate COGS for a sale
    */
-  calculateSaleCOGS: requirePermission("accounting:manage")
+  calculateSaleCOGS: protectedProcedure.use(requirePermission("accounting:manage"))
     .input(
       z.object({
         lineItems: z.array(
@@ -43,7 +43,7 @@ export const accountingHooksRouter = router({
   /**
    * Calculate weighted average COGS
    */
-  calculateWeightedAverageCOGS: requirePermission("accounting:manage")
+  calculateWeightedAverageCOGS: protectedProcedure.use(requirePermission("accounting:manage"))
     .input(z.object({ batchIds: z.array(z.number()) }))
     .query(async ({ input }) => {
       return await cogsCalculation.calculateWeightedAverageCOGS(input.batchIds);
@@ -52,14 +52,14 @@ export const accountingHooksRouter = router({
   /**
    * Calculate total inventory value
    */
-  calculateInventoryValue: requirePermission("accounting:manage").query(async () => {
+  calculateInventoryValue: protectedProcedure.use(requirePermission("accounting:manage")).query(async () => {
     return await cogsCalculation.calculateTotalInventoryValue();
   }),
 
   /**
    * Get COGS breakdown by product
    */
-  getCOGSBreakdown: requirePermission("accounting:manage")
+  getCOGSBreakdown: protectedProcedure.use(requirePermission("accounting:manage"))
     .input(z.object({ productId: z.number() }))
     .query(async ({ input }) => {
       return await cogsCalculation.getCOGSBreakdownByProduct(input.productId);
@@ -68,7 +68,7 @@ export const accountingHooksRouter = router({
   /**
    * Reverse GL entries for a transaction
    */
-  reverseGLEntries: requirePermission("accounting:manage")
+  reverseGLEntries: protectedProcedure.use(requirePermission("accounting:manage"))
     .input(
       z.object({
         referenceType: z.string(),

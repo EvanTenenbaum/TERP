@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { userDashboardPreferences, type WidgetConfig } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -59,7 +59,7 @@ export const dashboardPreferencesRouter = router({
    * 
    * @returns UserDashboardPreferences or default preferences
    */
-  getPreferences: requirePermission("dashboard:read").query(async ({ ctx }) => {
+  getPreferences: protectedProcedure.use(requirePermission("dashboard:read")).query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) {
       throw new Error("Database not available");
@@ -107,7 +107,7 @@ export const dashboardPreferencesRouter = router({
    * @param input.widgetConfig - Array of widget visibility/settings
    * @returns Success status
    */
-  updatePreferences: requirePermission("dashboard:read")
+  updatePreferences: protectedProcedure.use(requirePermission("dashboard:read"))
     .input(preferencesInputSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -165,7 +165,7 @@ export const dashboardPreferencesRouter = router({
    * 
    * @returns Success status
    */
-  resetPreferences: requirePermission("dashboard:read").mutation(async ({ ctx }) => {
+  resetPreferences: protectedProcedure.use(requirePermission("dashboard:read")).mutation(async ({ ctx }) => {
     const db = await getDb();
     if (!db) {
       throw new Error("Database not available");
@@ -195,7 +195,7 @@ export const dashboardPreferencesRouter = router({
    * 
    * @returns Default preferences object
    */
-  getDefaults: requirePermission("dashboard:read").query(async () => {
+  getDefaults: protectedProcedure.use(requirePermission("dashboard:read")).query(async () => {
     return getDefaultPreferences();
   }),
 });
