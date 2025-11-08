@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { db } from "../db";
+import { getDb } from "../db";
 import { 
   permissions, 
   rolePermissions,
@@ -33,6 +33,10 @@ export const rbacPermissionsRouter = router({
     }))
     .query(async ({ input }) => {
       try {
+        const db = await getDb();
+
+
+        
         // Build query
         let query = db
           .select({
@@ -108,6 +112,9 @@ export const rbacPermissionsRouter = router({
     .use(requirePermission("rbac:permissions:read"))
     .query(async () => {
       try {
+        const db = await getDb();
+
+
         const modules = await db
           .selectDistinct({
             module: permissions.module,
@@ -138,6 +145,9 @@ export const rbacPermissionsRouter = router({
     .input(z.object({ permissionId: z.number() }))
     .query(async ({ input }) => {
       try {
+        const db = await getDb();
+
+
         // Get permission details
         const permission = await db
           .select({
@@ -212,6 +222,7 @@ export const rbacPermissionsRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Check if permission name already exists
         const existing = await db
           .select({ id: permissions.id })
@@ -265,6 +276,7 @@ export const rbacPermissionsRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Check if permission exists
         const permission = await db
           .select({ 
@@ -328,6 +340,7 @@ export const rbacPermissionsRouter = router({
     .input(z.object({ permissionId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Check if permission exists
         const permission = await db
           .select({ 
@@ -372,6 +385,9 @@ export const rbacPermissionsRouter = router({
     .use(requirePermission("rbac:permissions:read"))
     .query(async () => {
       try {
+        const db = await getDb();
+
+
         // Get all permissions
         const allPermissions = await db
           .select({
@@ -438,6 +454,9 @@ export const rbacPermissionsRouter = router({
     }))
     .query(async ({ input }) => {
       try {
+        const db = await getDb();
+
+
         // Get all permissions (we'll filter client-side for simplicity)
         const allPermissions = await db
           .select({
@@ -483,6 +502,9 @@ export const rbacPermissionsRouter = router({
     .use(requirePermission("rbac:permissions:read"))
     .query(async () => {
       try {
+        const db = await getDb();
+
+
         // Total permissions
         const totalPermissions = await db
           .select({

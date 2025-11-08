@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { getDb } from "../db";
 import { 
   roles, 
   permissions, 
@@ -53,6 +53,8 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
   logger.debug({ msg: "Permission cache miss, fetching from database", userId });
 
   try {
+    const db = await getDb();
+    
     // 1. Get user's roles
     const userRoleRecords = await db
       .select({
@@ -212,6 +214,8 @@ export async function hasAnyPermission(
  */
 export async function getUserRoles(userId: string): Promise<Array<{ id: number; name: string; description: string | null }>> {
   try {
+    const db = await getDb();
+    
     const userRoleRecords = await db
       .select({
         roleId: userRoles.roleId,
