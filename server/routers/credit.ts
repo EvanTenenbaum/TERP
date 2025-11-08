@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router } from "../_core/trpc";
 import * as creditEngine from "../creditEngine";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const creditRouter = router({
     // Calculate credit limit for a client
-    calculate: protectedProcedure
+    calculate: requirePermission("credits:read")
       .input(z.object({
         clientId: z.number(),
         customWeights: z.object({
@@ -27,7 +28,7 @@ export const creditRouter = router({
       }),
 
     // Get credit limit for a client
-    getByClientId: protectedProcedure
+    getByClientId: requirePermission("credits:read")
       .input(z.object({ clientId: z.number() }))
       .query(async ({ input }) => {
         const db = await import("../db").then(m => m.getDb());
@@ -39,7 +40,7 @@ export const creditRouter = router({
       }),
 
     // Get signal history for a client
-    getSignalHistory: protectedProcedure
+    getSignalHistory: requirePermission("credits:read")
       .input(z.object({
         clientId: z.number(),
         limit: z.number().optional().default(30),
@@ -58,7 +59,7 @@ export const creditRouter = router({
       }),
 
     // Get system settings
-    getSettings: protectedProcedure
+    getSettings: requirePermission("credits:update")
       .query(async () => {
         const db = await import("../db").then(m => m.getDb());
         if (!db) throw new Error("Database not available");
@@ -73,7 +74,7 @@ export const creditRouter = router({
       }),
 
     // Update system settings
-    updateSettings: protectedProcedure
+    updateSettings: requirePermission("credits:update")
       .input(z.object({
         revenueMomentumWeight: z.number().min(0).max(100),
         cashCollectionWeight: z.number().min(0).max(100),
@@ -115,7 +116,7 @@ export const creditRouter = router({
       }),
 
     // Get audit log for a client
-    getAuditLog: protectedProcedure
+    getAuditLog: requirePermission("credits:read")
       .input(z.object({
         clientId: z.number(),
         limit: z.number().optional().default(50),

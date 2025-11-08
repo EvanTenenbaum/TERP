@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router } from "../_core/trpc";
 import * as freeformNotesDb from "../freeformNotesDb";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const freeformNotesRouter = router({
     // Get all notes for user
-    list: protectedProcedure
+    list: requirePermission("notes:read")
       .input(z.object({
         limit: z.number().optional().default(50),
         offset: z.number().optional().default(0),
@@ -21,7 +22,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Get single note by ID
-    getById: protectedProcedure
+    getById: requirePermission("notes:read")
       .input(z.object({ noteId: z.number() }))
       .query(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
@@ -29,7 +30,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Create new note
-    create: protectedProcedure
+    create: requirePermission("notes:create")
       .input(z.object({
         title: z.string().min(1).max(500),
         content: z.any().optional(),
@@ -42,7 +43,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Update note
-    update: protectedProcedure
+    update: requirePermission("notes:update")
       .input(z.object({
         noteId: z.number(),
         title: z.string().min(1).max(500).optional(),
@@ -56,7 +57,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Delete note
-    delete: protectedProcedure
+    delete: requirePermission("notes:delete")
       .input(z.object({ noteId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
@@ -64,7 +65,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Toggle pin
-    togglePin: protectedProcedure
+    togglePin: requirePermission("notes:read")
       .input(z.object({ noteId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
@@ -72,7 +73,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Toggle archive
-    toggleArchive: protectedProcedure
+    toggleArchive: requirePermission("notes:read")
       .input(z.object({ noteId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
@@ -80,7 +81,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Share note
-    share: protectedProcedure
+    share: requirePermission("notes:read")
       .input(z.object({
         noteId: z.number(),
         shareWithUserIds: z.array(z.number()),
@@ -95,7 +96,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Update last viewed
-    updateLastViewed: protectedProcedure
+    updateLastViewed: requirePermission("notes:update")
       .input(z.object({ noteId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
@@ -103,7 +104,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Search notes
-    search: protectedProcedure
+    search: requirePermission("notes:read")
       .input(z.object({
         query: z.string().min(1),
         limit: z.number().optional().default(20),
@@ -114,7 +115,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Get notes by template
-    getByTemplate: protectedProcedure
+    getByTemplate: requirePermission("notes:read")
       .input(z.object({ templateType: z.string() }))
       .query(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
@@ -122,7 +123,7 @@ export const freeformNotesRouter = router({
       }),
 
     // Get notes by tag
-    getByTag: protectedProcedure
+    getByTag: requirePermission("notes:read")
       .input(z.object({ tag: z.string() }))
       .query(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
@@ -131,14 +132,14 @@ export const freeformNotesRouter = router({
 
     // Comments
     comments: router({
-      list: protectedProcedure
+      list: requirePermission("notes:read")
         .input(z.object({ noteId: z.number() }))
         .query(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Unauthorized");
           return await freeformNotesDb.getNoteComments(input.noteId, ctx.user.id);
         }),
 
-      add: protectedProcedure
+      add: requirePermission("notes:create")
         .input(z.object({
           noteId: z.number(),
           content: z.string().min(1).max(5000),
@@ -154,7 +155,7 @@ export const freeformNotesRouter = router({
           );
         }),
 
-      resolve: protectedProcedure
+      resolve: requirePermission("notes:read")
         .input(z.object({ commentId: z.number() }))
         .mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Unauthorized");
@@ -164,7 +165,7 @@ export const freeformNotesRouter = router({
 
     // Activity log
     activity: router({
-      list: protectedProcedure
+      list: requirePermission("notes:read")
         .input(z.object({
           noteId: z.number(),
           limit: z.number().optional().default(50),

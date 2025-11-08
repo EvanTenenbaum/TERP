@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as productIntakeDb from "../productIntakeDb";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const productIntakeRouter = router({
   // Create new intake session

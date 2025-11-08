@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router } from "../_core/trpc";
 import { getDb } from "../db";
 import { strains } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -7,6 +7,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 // ES module compatibility
 const __filename = fileURLToPath(import.meta.url);
@@ -55,7 +56,7 @@ export const adminImportRouter = router({
    * Import strains in batches
    * Returns immediately with status, continues in background
    */
-  importStrainsBatch: protectedProcedure
+  importStrainsBatch: requirePermission("system:manage")
     .input(z.object({
       batchSize: z.number().default(500),
       offset: z.number().default(0),
@@ -174,7 +175,7 @@ export const adminImportRouter = router({
   /**
    * Get import progress
    */
-  getImportProgress: protectedProcedure
+  getImportProgress: requirePermission("system:manage")
     .query(async () => {
       const db = await getDb();
       if (!db) {

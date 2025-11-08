@@ -4,6 +4,7 @@ import * as recurringOrdersDb from "../recurringOrdersDb";
 import * as orderEnhancements from "../orderEnhancements";
 import * as productRecommendations from "../productRecommendations";
 import * as alertConfigurationDb from "../alertConfigurationDb";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const orderEnhancementsRouter = router({
   // ===== RECURRING ORDERS =====
