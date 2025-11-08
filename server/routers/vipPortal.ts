@@ -23,6 +23,7 @@ import * as priceAlertsService from "../services/priceAlertsService";
 import { eq, and, desc, gte, lte, sql, like, or, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * VIP Portal Router

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as historicalAnalysis from "../historicalAnalysis";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Matching Router (Enhanced Version)

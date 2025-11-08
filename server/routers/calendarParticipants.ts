@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Calendar Participants Router

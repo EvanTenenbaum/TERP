@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router } from "../_core/trpc";
 import { strainService } from "../services/strainService";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const analyticsRouter = router({
   // Get client's strain family preferences
-  clientStrainPreferences: protectedProcedure
+  clientStrainPreferences: requirePermission("analytics:read")
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -20,7 +21,7 @@ export const analyticsRouter = router({
     }),
 
   // Get top selling strain families
-  topStrainFamilies: protectedProcedure
+  topStrainFamilies: requirePermission("analytics:read")
     .input(z.object({
       limit: z.number().min(1).max(50).optional().default(10),
       startDate: z.date().optional(),
@@ -39,7 +40,7 @@ export const analyticsRouter = router({
     }),
 
   // Get strain family trends over time
-  strainFamilyTrends: protectedProcedure
+  strainFamilyTrends: requirePermission("analytics:read")
     .input(z.object({
       familyId: z.number(),
       months: z.number().min(1).max(24).optional().default(6),
