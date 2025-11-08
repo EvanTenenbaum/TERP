@@ -8,6 +8,7 @@ import { Plus, Trash2, Edit2, Save, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { UserManagement } from "@/components/UserManagement";
+import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagement";
 
 export default function Settings() {
   return (
@@ -20,8 +21,9 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="rbac">User Roles</TabsTrigger>
           <TabsTrigger value="locations">Locations</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
@@ -29,6 +31,10 @@ export default function Settings() {
 
         <TabsContent value="users" className="space-y-4">
           <UserManagement />
+        </TabsContent>
+
+        <TabsContent value="rbac" className="space-y-4">
+          <UserRoleManagement />
         </TabsContent>
 
         <TabsContent value="locations" className="space-y-4">
