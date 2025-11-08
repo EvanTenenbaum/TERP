@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { UserManagement } from "@/components/UserManagement";
 import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagement";
 import { RoleManagement } from "@/components/settings/rbac/RoleManagement";
+import { PermissionAssignment } from "@/components/settings/rbac/PermissionAssignment";
 
 export default function Settings() {
   return (
@@ -22,10 +23,11 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6 lg:w-auto">
+        <TabsList className="grid w-full grid-cols-7 lg:w-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="rbac">User Roles</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
+          <TabsTrigger value="permissions">Permissions</TabsTrigger>
           <TabsTrigger value="locations">Locations</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
@@ -41,6 +43,10 @@ export default function Settings() {
 
         <TabsContent value="roles" className="space-y-4">
           <RoleManagement />
+        </TabsContent>
+
+        <TabsContent value="permissions" className="space-y-4">
+          <PermissionAssignment />
         </TabsContent>
 
         <TabsContent value="locations" className="space-y-4">
