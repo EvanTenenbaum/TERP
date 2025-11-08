@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as accountingDb from "../accountingDb";
 import * as arApDb from "../arApDb";
 import * as cashExpensesDb from "../cashExpensesDb";
@@ -8,7 +8,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
 export const accountingRouter = router({
     // Chart of Accounts
     accounts: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           accountType: z.enum(["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]).optional(),
           isActive: z.boolean().optional(),
@@ -18,19 +18,19 @@ export const accountingRouter = router({
           return await accountingDb.getAccounts(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await accountingDb.getAccountById(input.id);
         }),
 
-      getByNumber: requirePermission("accounting:read")
+      getByNumber: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ accountNumber: z.string() }))
         .query(async ({ input }) => {
           return await accountingDb.getAccountByNumber(input.accountNumber);
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           accountNumber: z.string(),
           accountName: z.string(),
@@ -45,7 +45,7 @@ export const accountingRouter = router({
           return await accountingDb.createAccount(input);
         }),
 
-      update: requirePermission("accounting:update")
+      update: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
           accountName: z.string().optional(),
@@ -57,7 +57,7 @@ export const accountingRouter = router({
           return await accountingDb.updateAccount(id, data);
         }),
 
-      getBalance: requirePermission("accounting:read")
+      getBalance: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           accountId: z.number(),
           asOfDate: z.date(),
@@ -66,7 +66,7 @@ export const accountingRouter = router({
           return await accountingDb.getAccountBalance(input.accountId, input.asOfDate);
         }),
 
-      getChartOfAccounts: requirePermission("accounting:read")
+      getChartOfAccounts: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await accountingDb.getChartOfAccounts();
         }),
@@ -74,7 +74,7 @@ export const accountingRouter = router({
 
     // General Ledger
     ledger: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           accountId: z.number().optional(),
           startDate: z.date().optional(),
@@ -90,13 +90,13 @@ export const accountingRouter = router({
           return await accountingDb.getLedgerEntries(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await accountingDb.getLedgerEntryById(input.id);
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           entryNumber: z.string(),
           entryDate: z.date(),
@@ -117,7 +117,7 @@ export const accountingRouter = router({
           });
         }),
 
-      postJournalEntry: requirePermission("accounting:read")
+      postJournalEntry: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           entryDate: z.date(),
           debitAccountId: z.number(),
@@ -136,7 +136,7 @@ export const accountingRouter = router({
           });
         }),
 
-      getTrialBalance: requirePermission("accounting:read")
+      getTrialBalance: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           fiscalPeriodId: z.number(),
         }))
@@ -147,7 +147,7 @@ export const accountingRouter = router({
 
     // Fiscal Periods
     fiscalPeriods: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           status: z.enum(["OPEN", "CLOSED", "LOCKED"]).optional(),
           year: z.number().optional(),
@@ -156,18 +156,18 @@ export const accountingRouter = router({
           return await accountingDb.getFiscalPeriods(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await accountingDb.getFiscalPeriodById(input.id);
         }),
 
-      getCurrent: requirePermission("accounting:read")
+      getCurrent: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await accountingDb.getCurrentFiscalPeriod();
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           periodName: z.string(),
           startDate: z.date(),
@@ -179,20 +179,20 @@ export const accountingRouter = router({
           return await accountingDb.createFiscalPeriod(input);
         }),
 
-      close: requirePermission("accounting:read")
+      close: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Unauthorized");
           return await accountingDb.closeFiscalPeriod(input.id, ctx.user.id);
         }),
 
-      lock: requirePermission("accounting:read")
+      lock: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await accountingDb.lockFiscalPeriod(input.id);
         }),
 
-      reopen: requirePermission("accounting:read")
+      reopen: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await accountingDb.reopenFiscalPeriod(input.id);
@@ -201,7 +201,7 @@ export const accountingRouter = router({
 
     // Invoices (Accounts Receivable)
     invoices: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           customerId: z.number().optional(),
           status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"]).optional(),
@@ -215,13 +215,13 @@ export const accountingRouter = router({
           return await arApDb.getInvoices(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await arApDb.getInvoiceById(input.id);
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           invoiceNumber: z.string(),
           customerId: z.number(),
@@ -262,7 +262,7 @@ export const accountingRouter = router({
           );
         }),
 
-      update: requirePermission("accounting:update")
+      update: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
           invoiceDate: z.date().optional(),
@@ -279,7 +279,7 @@ export const accountingRouter = router({
           return await arApDb.updateInvoice(id, data);
         }),
 
-      updateStatus: requirePermission("accounting:update")
+      updateStatus: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
           status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"]),
@@ -288,7 +288,7 @@ export const accountingRouter = router({
           return await arApDb.updateInvoiceStatus(input.id, input.status);
         }),
 
-      recordPayment: requirePermission("accounting:read")
+      recordPayment: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           invoiceId: z.number(),
           amount: z.number(),
@@ -297,17 +297,17 @@ export const accountingRouter = router({
           return await arApDb.recordInvoicePayment(input.invoiceId, input.amount);
         }),
 
-      getOutstandingReceivables: requirePermission("accounting:read")
+      getOutstandingReceivables: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await arApDb.getOutstandingReceivables();
         }),
 
-      getARAging: requirePermission("accounting:read")
+      getARAging: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await arApDb.calculateARAging();
         }),
 
-      generateNumber: requirePermission("accounting:read")
+      generateNumber: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await arApDb.generateInvoiceNumber();
         }),
@@ -315,7 +315,7 @@ export const accountingRouter = router({
 
     // Bills (Accounts Payable)
     bills: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           vendorId: z.number().optional(),
           status: z.enum(["DRAFT", "PENDING", "PARTIAL", "PAID", "OVERDUE", "VOID"]).optional(),
@@ -329,13 +329,13 @@ export const accountingRouter = router({
           return await arApDb.getBills(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await arApDb.getBillById(input.id);
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           billNumber: z.string(),
           vendorId: z.number(),
@@ -376,7 +376,7 @@ export const accountingRouter = router({
           );
         }),
 
-      update: requirePermission("accounting:update")
+      update: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
           billDate: z.date().optional(),
@@ -393,7 +393,7 @@ export const accountingRouter = router({
           return await arApDb.updateBill(id, data);
         }),
 
-      updateStatus: requirePermission("accounting:update")
+      updateStatus: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
           status: z.enum(["DRAFT", "PENDING", "PARTIAL", "PAID", "OVERDUE", "VOID"]),
@@ -402,7 +402,7 @@ export const accountingRouter = router({
           return await arApDb.updateBillStatus(input.id, input.status);
         }),
 
-      recordPayment: requirePermission("accounting:read")
+      recordPayment: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           billId: z.number(),
           amount: z.number(),
@@ -411,17 +411,17 @@ export const accountingRouter = router({
           return await arApDb.recordBillPayment(input.billId, input.amount);
         }),
 
-      getOutstandingPayables: requirePermission("accounting:read")
+      getOutstandingPayables: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await arApDb.getOutstandingPayables();
         }),
 
-      getAPAging: requirePermission("accounting:read")
+      getAPAging: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await arApDb.calculateAPAging();
         }),
 
-      generateNumber: requirePermission("accounting:read")
+      generateNumber: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await arApDb.generateBillNumber();
         }),
@@ -429,7 +429,7 @@ export const accountingRouter = router({
 
     // Payments
     payments: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           paymentType: z.enum(["RECEIVED", "SENT"]).optional(),
           customerId: z.number().optional(),
@@ -445,13 +445,13 @@ export const accountingRouter = router({
           return await arApDb.getPayments(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await arApDb.getPaymentById(input.id);
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           paymentNumber: z.string(),
           paymentType: z.enum(["RECEIVED", "SENT"]),
@@ -474,7 +474,7 @@ export const accountingRouter = router({
           });
         }),
 
-      generateNumber: requirePermission("accounting:read")
+      generateNumber: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           type: z.enum(["RECEIVED", "SENT"]),
         }))
@@ -482,13 +482,13 @@ export const accountingRouter = router({
           return await arApDb.generatePaymentNumber(input.type);
         }),
 
-      getForInvoice: requirePermission("accounting:read")
+      getForInvoice: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ invoiceId: z.number() }))
         .query(async ({ input }) => {
           return await arApDb.getPaymentsForInvoice(input.invoiceId);
         }),
 
-      getForBill: requirePermission("accounting:read")
+      getForBill: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ billId: z.number() }))
         .query(async ({ input }) => {
           return await arApDb.getPaymentsForBill(input.billId);
@@ -497,7 +497,7 @@ export const accountingRouter = router({
 
     // Bank Accounts
     bankAccounts: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           accountType: z.enum(["CHECKING", "SAVINGS", "MONEY_MARKET", "CREDIT_CARD"]).optional(),
           isActive: z.boolean().optional(),
@@ -506,13 +506,13 @@ export const accountingRouter = router({
           return await cashExpensesDb.getBankAccounts(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await cashExpensesDb.getBankAccountById(input.id);
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           accountName: z.string(),
           accountType: z.enum(["CHECKING", "SAVINGS", "MONEY_MARKET", "CREDIT_CARD"]),
@@ -527,7 +527,7 @@ export const accountingRouter = router({
           return await cashExpensesDb.createBankAccount(input);
         }),
 
-      update: requirePermission("accounting:update")
+      update: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
           accountName: z.string().optional(),
@@ -540,7 +540,7 @@ export const accountingRouter = router({
           return await cashExpensesDb.updateBankAccount(id, data);
         }),
 
-      updateBalance: requirePermission("accounting:update")
+      updateBalance: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
           newBalance: z.number(),
@@ -549,7 +549,7 @@ export const accountingRouter = router({
           return await cashExpensesDb.updateBankAccountBalance(input.id, input.newBalance);
         }),
 
-      getTotalCashBalance: requirePermission("accounting:read")
+      getTotalCashBalance: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await cashExpensesDb.getTotalCashBalance();
         }),
@@ -557,7 +557,7 @@ export const accountingRouter = router({
 
     // Bank Transactions
     bankTransactions: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           bankAccountId: z.number().optional(),
           transactionType: z.enum(["DEPOSIT", "WITHDRAWAL", "TRANSFER", "FEE", "INTEREST"]).optional(),
@@ -572,13 +572,13 @@ export const accountingRouter = router({
           return await cashExpensesDb.getBankTransactions(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await cashExpensesDb.getBankTransactionById(input.id);
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           bankAccountId: z.number(),
           transactionDate: z.date(),
@@ -592,19 +592,19 @@ export const accountingRouter = router({
           return await cashExpensesDb.createBankTransaction(input);
         }),
 
-      reconcile: requirePermission("accounting:read")
+      reconcile: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await cashExpensesDb.reconcileBankTransaction(input.id);
         }),
 
-      getUnreconciled: requirePermission("accounting:read")
+      getUnreconciled: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ bankAccountId: z.number() }))
         .query(async ({ input }) => {
           return await cashExpensesDb.getUnreconciledTransactions(input.bankAccountId);
         }),
 
-      getBalanceAtDate: requirePermission("accounting:read")
+      getBalanceAtDate: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           bankAccountId: z.number(),
           asOfDate: z.date(),
@@ -616,7 +616,7 @@ export const accountingRouter = router({
 
     // Expense Categories
     expenseCategories: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           isActive: z.boolean().optional(),
         }))
@@ -624,13 +624,13 @@ export const accountingRouter = router({
           return await cashExpensesDb.getExpenseCategories(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await cashExpensesDb.getExpenseCategoryById(input.id);
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           categoryName: z.string(),
           description: z.string().optional(),
@@ -641,7 +641,7 @@ export const accountingRouter = router({
           return await cashExpensesDb.createExpenseCategory(input);
         }),
 
-      update: requirePermission("accounting:update")
+      update: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
           categoryName: z.string().optional(),
@@ -657,7 +657,7 @@ export const accountingRouter = router({
 
     // Expenses
     expenses: router({
-      list: requirePermission("accounting:read")
+      list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           categoryId: z.number().optional(),
           vendorId: z.number().optional(),
@@ -671,13 +671,13 @@ export const accountingRouter = router({
           return await cashExpensesDb.getExpenses(input);
         }),
 
-      getById: requirePermission("accounting:read")
+      getById: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await cashExpensesDb.getExpenseById(input.id);
         }),
 
-      create: requirePermission("accounting:create")
+      create: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           expenseNumber: z.string(),
           expenseDate: z.date(),
@@ -701,7 +701,7 @@ export const accountingRouter = router({
           });
         }),
 
-      update: requirePermission("accounting:update")
+      update: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
           expenseDate: z.date().optional(),
@@ -718,18 +718,18 @@ export const accountingRouter = router({
           return await cashExpensesDb.updateExpense(id, data);
         }),
 
-      markReimbursed: requirePermission("accounting:read")
+      markReimbursed: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await cashExpensesDb.markExpenseReimbursed(input.id);
         }),
 
-      getPendingReimbursements: requirePermission("accounting:read")
+      getPendingReimbursements: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await cashExpensesDb.getPendingReimbursements();
         }),
 
-      getBreakdownByCategory: requirePermission("accounting:read")
+      getBreakdownByCategory: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           startDate: z.date().optional(),
           endDate: z.date().optional(),
@@ -738,7 +738,7 @@ export const accountingRouter = router({
           return await cashExpensesDb.getExpenseBreakdownByCategory(input.startDate, input.endDate);
         }),
 
-      getTotalExpenses: requirePermission("accounting:read")
+      getTotalExpenses: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           startDate: z.date().optional(),
           endDate: z.date().optional(),
@@ -747,7 +747,7 @@ export const accountingRouter = router({
           return await cashExpensesDb.getTotalExpenses(input.startDate, input.endDate);
         }),
 
-      generateNumber: requirePermission("accounting:read")
+      generateNumber: protectedProcedure.use(requirePermission("accounting:read"))
         .query(async () => {
           return await cashExpensesDb.generateExpenseNumber();
         }),

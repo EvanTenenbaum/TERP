@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as auditLogger from "../auditLogger";
 import { requirePermission } from "../_core/permissionMiddleware";
 
@@ -12,7 +12,7 @@ export const auditLogsRouter = router({
   /**
    * Query audit logs with filters
    */
-  query: requirePermission("audit:read")
+  query: protectedProcedure.use(requirePermission("audit:read"))
     .input(
       z.object({
         entityType: z.string().optional(),
@@ -38,7 +38,7 @@ export const auditLogsRouter = router({
   /**
    * Get audit trail for a specific entity
    */
-  getEntityTrail: requirePermission("audit:read")
+  getEntityTrail: protectedProcedure.use(requirePermission("audit:read"))
     .input(
       z.object({
         entityType: z.string(),
@@ -55,7 +55,7 @@ export const auditLogsRouter = router({
   /**
    * Export audit logs to JSON
    */
-  export: requirePermission("audit:read")
+  export: protectedProcedure.use(requirePermission("audit:read"))
     .input(
       z.object({
         entityType: z.string().optional(),
