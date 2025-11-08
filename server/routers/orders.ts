@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as ordersDb from "../ordersDb";
 
 export const ordersRouter = router({
     // Create
-    create: requirePermission("orders:create")
+    create: protectedProcedure.use(requirePermission("orders:create"))
       .input(z.object({
         orderType: z.enum(['QUOTE', 'SALE']),
         isDraft: z.boolean().optional(),
@@ -31,12 +31,12 @@ export const ordersRouter = router({
         });
       }),
     // Read
-    getById: requirePermission("orders:read")
+    getById: protectedProcedure.use(requirePermission("orders:read"))
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await ordersDb.getOrderById(input.id);
       }),
-    getByClient: requirePermission("orders:read")
+    getByClient: protectedProcedure.use(requirePermission("orders:read"))
       .input(z.object({ 
         clientId: z.number(),
         orderType: z.enum(['QUOTE', 'SALE']).optional(),
@@ -44,7 +44,7 @@ export const ordersRouter = router({
       .query(async ({ input }) => {
         return await ordersDb.getOrdersByClient(input.clientId, input.orderType);
       }),
-    getAll: requirePermission("orders:read")
+    getAll: protectedProcedure.use(requirePermission("orders:read"))
       .input(z.object({
         orderType: z.enum(['QUOTE', 'SALE']).optional(),
         isDraft: z.boolean().optional(),
@@ -58,7 +58,7 @@ export const ordersRouter = router({
         return await ordersDb.getAllOrders(input);
       }),
     // Update
-    update: requirePermission("orders:update")
+    update: protectedProcedure.use(requirePermission("orders:update"))
       .input(z.object({
         id: z.number(),
         notes: z.string().optional(),
@@ -69,14 +69,14 @@ export const ordersRouter = router({
         return await ordersDb.updateOrder(id, updates);
       }),
     // Delete
-    delete: requirePermission("orders:delete")
+    delete: protectedProcedure.use(requirePermission("orders:delete"))
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await ordersDb.deleteOrder(input.id);
         return { success: true };
       }),
     // Convert (backward compatibility)
-    convertToSale: requirePermission("orders:create")
+    convertToSale: protectedProcedure.use(requirePermission("orders:create"))
       .input(z.object({
         quoteId: z.number(),
         paymentTerms: z.enum(['NET_7', 'NET_15', 'NET_30', 'COD', 'PARTIAL', 'CONSIGNMENT']),
@@ -88,7 +88,7 @@ export const ordersRouter = router({
       }),
     
     // Confirm Draft Order (NEW)
-    confirmDraftOrder: requirePermission("orders:create")
+    confirmDraftOrder: protectedProcedure.use(requirePermission("orders:create"))
       .input(z.object({
         orderId: z.number(),
         paymentTerms: z.enum(['NET_7', 'NET_15', 'NET_30', 'COD', 'PARTIAL', 'CONSIGNMENT']),
@@ -103,7 +103,7 @@ export const ordersRouter = router({
       }),
     
     // Update Draft Order (NEW)
-    updateDraftOrder: requirePermission("orders:update")
+    updateDraftOrder: protectedProcedure.use(requirePermission("orders:update"))
       .input(z.object({
         orderId: z.number(),
         items: z.array(z.object({
@@ -123,7 +123,7 @@ export const ordersRouter = router({
       }),
     
     // Delete Draft Order (NEW)
-    deleteDraftOrder: requirePermission("orders:delete")
+    deleteDraftOrder: protectedProcedure.use(requirePermission("orders:delete"))
       .input(z.object({
         orderId: z.number(),
       }))
@@ -131,7 +131,7 @@ export const ordersRouter = router({
         return await ordersDb.deleteDraftOrder(input);
       }),
     // Export
-    export: requirePermission("orders:read")
+    export: protectedProcedure.use(requirePermission("orders:read"))
       .input(z.object({
         id: z.number(),
         format: z.enum(['pdf', 'clipboard', 'image']),
@@ -141,7 +141,7 @@ export const ordersRouter = router({
       }),
     
     // Fulfillment Status Management
-    updateOrderStatus: requirePermission("orders:update")
+    updateOrderStatus: protectedProcedure.use(requirePermission("orders:update"))
       .input(z.object({
         orderId: z.number(),
         newStatus: z.enum(['PENDING', 'PACKED', 'SHIPPED']),
@@ -154,14 +154,14 @@ export const ordersRouter = router({
         });
       }),
     
-    getOrderStatusHistory: requirePermission("orders:read")
+    getOrderStatusHistory: protectedProcedure.use(requirePermission("orders:read"))
       .input(z.object({ orderId: z.number() }))
       .query(async ({ input }) => {
         return await ordersDb.getOrderStatusHistory(input.orderId);
       }),
     
     // Returns Management
-    processReturn: requirePermission("orders:update")
+    processReturn: protectedProcedure.use(requirePermission("orders:update"))
       .input(z.object({
         orderId: z.number(),
         items: z.array(z.object({
@@ -178,14 +178,14 @@ export const ordersRouter = router({
         });
       }),
     
-    getOrderReturns: requirePermission("orders:read")
+    getOrderReturns: protectedProcedure.use(requirePermission("orders:read"))
       .input(z.object({ orderId: z.number() }))
       .query(async ({ input }) => {
         return await ordersDb.getOrderReturns(input.orderId);
       }),
     
     // Quote to Sale Conversion
-    convertQuoteToSale: requirePermission("orders:create")
+    convertQuoteToSale: protectedProcedure.use(requirePermission("orders:create"))
       .input(z.object({ 
         quoteId: z.number(),
         paymentTerms: z.enum(['NET_7', 'NET_15', 'NET_30', 'COD', 'PARTIAL', 'CONSIGNMENT']).optional(),

@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as creditEngine from "../creditEngine";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const creditRouter = router({
     // Calculate credit limit for a client
-    calculate: requirePermission("credits:read")
+    calculate: protectedProcedure.use(requirePermission("credits:read"))
       .input(z.object({
         clientId: z.number(),
         customWeights: z.object({
@@ -28,7 +28,7 @@ export const creditRouter = router({
       }),
 
     // Get credit limit for a client
-    getByClientId: requirePermission("credits:read")
+    getByClientId: protectedProcedure.use(requirePermission("credits:read"))
       .input(z.object({ clientId: z.number() }))
       .query(async ({ input }) => {
         const db = await import("../db").then(m => m.getDb());
@@ -40,7 +40,7 @@ export const creditRouter = router({
       }),
 
     // Get signal history for a client
-    getSignalHistory: requirePermission("credits:read")
+    getSignalHistory: protectedProcedure.use(requirePermission("credits:read"))
       .input(z.object({
         clientId: z.number(),
         limit: z.number().optional().default(30),
@@ -59,7 +59,7 @@ export const creditRouter = router({
       }),
 
     // Get system settings
-    getSettings: requirePermission("credits:update")
+    getSettings: protectedProcedure.use(requirePermission("credits:update"))
       .query(async () => {
         const db = await import("../db").then(m => m.getDb());
         if (!db) throw new Error("Database not available");
@@ -74,7 +74,7 @@ export const creditRouter = router({
       }),
 
     // Update system settings
-    updateSettings: requirePermission("credits:update")
+    updateSettings: protectedProcedure.use(requirePermission("credits:update"))
       .input(z.object({
         revenueMomentumWeight: z.number().min(0).max(100),
         cashCollectionWeight: z.number().min(0).max(100),
@@ -116,7 +116,7 @@ export const creditRouter = router({
       }),
 
     // Get audit log for a client
-    getAuditLog: requirePermission("credits:read")
+    getAuditLog: protectedProcedure.use(requirePermission("credits:read"))
       .input(z.object({
         clientId: z.number(),
         limit: z.number().optional().default(50),

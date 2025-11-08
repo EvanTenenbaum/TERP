@@ -1,22 +1,22 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as pricingEngine from "../pricingEngine";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const pricingRouter = router({
     // Pricing Rules
-    listRules: requirePermission("pricing:read")
+    listRules: protectedProcedure.use(requirePermission("pricing:read"))
       .query(async () => {
         return await pricingEngine.getPricingRules();
       }),
 
-    getRuleById: requirePermission("pricing:read")
+    getRuleById: protectedProcedure.use(requirePermission("pricing:read"))
       .input(z.object({ ruleId: z.number() }))
       .query(async ({ input }) => {
         return await pricingEngine.getPricingRuleById(input.ruleId);
       }),
 
-    createRule: requirePermission("pricing:create")
+    createRule: protectedProcedure.use(requirePermission("pricing:create"))
       .input(z.object({
         name: z.string(),
         description: z.string().optional(),
@@ -30,7 +30,7 @@ export const pricingRouter = router({
         return await pricingEngine.createPricingRule(input);
       }),
 
-    updateRule: requirePermission("pricing:update")
+    updateRule: protectedProcedure.use(requirePermission("pricing:update"))
       .input(z.object({
         ruleId: z.number(),
         name: z.string().optional(),
@@ -48,7 +48,7 @@ export const pricingRouter = router({
         return { success: true };
       }),
 
-    deleteRule: requirePermission("pricing:read")
+    deleteRule: protectedProcedure.use(requirePermission("pricing:read"))
       .input(z.object({ ruleId: z.number() }))
       .mutation(async ({ input }) => {
         await pricingEngine.deletePricingRule(input.ruleId);
@@ -56,18 +56,18 @@ export const pricingRouter = router({
       }),
 
     // Pricing Profiles
-    listProfiles: requirePermission("pricing:read")
+    listProfiles: protectedProcedure.use(requirePermission("pricing:read"))
       .query(async () => {
         return await pricingEngine.getPricingProfiles();
       }),
 
-    getProfileById: requirePermission("pricing:read")
+    getProfileById: protectedProcedure.use(requirePermission("pricing:read"))
       .input(z.object({ profileId: z.number() }))
       .query(async ({ input }) => {
         return await pricingEngine.getPricingProfileById(input.profileId);
       }),
 
-    createProfile: requirePermission("pricing:create")
+    createProfile: protectedProcedure.use(requirePermission("pricing:create"))
       .input(z.object({
         name: z.string(),
         description: z.string().optional(),
@@ -80,7 +80,7 @@ export const pricingRouter = router({
         });
       }),
 
-    updateProfile: requirePermission("pricing:update")
+    updateProfile: protectedProcedure.use(requirePermission("pricing:update"))
       .input(z.object({
         profileId: z.number(),
         name: z.string().optional(),
@@ -93,14 +93,14 @@ export const pricingRouter = router({
         return { success: true };
       }),
 
-    deleteProfile: requirePermission("pricing:read")
+    deleteProfile: protectedProcedure.use(requirePermission("pricing:read"))
       .input(z.object({ profileId: z.number() }))
       .mutation(async ({ input }) => {
         await pricingEngine.deletePricingProfile(input.profileId);
         return { success: true };
       }),
 
-    applyProfileToClient: requirePermission("pricing:read")
+    applyProfileToClient: protectedProcedure.use(requirePermission("pricing:read"))
       .input(z.object({ clientId: z.number(), profileId: z.number() }))
       .mutation(async ({ input }) => {
         await pricingEngine.applyProfileToClient(input.clientId, input.profileId);
@@ -108,7 +108,7 @@ export const pricingRouter = router({
       }),
 
     // Client Pricing
-    getClientPricingRules: requirePermission("pricing:read")
+    getClientPricingRules: protectedProcedure.use(requirePermission("pricing:read"))
       .input(z.object({ clientId: z.number() }))
       .query(async ({ input }) => {
         return await pricingEngine.getClientPricingRules(input.clientId);

@@ -4,14 +4,14 @@
  */
 
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as todoActivityDb from "../todoActivityDb";
 import * as permissions from "../services/todoPermissions";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const todoActivityRouter = router({
   // Get activity for a specific task
-  getTaskActivity: requirePermission("todos:read")
+  getTaskActivity: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         taskId: z.number(),
@@ -27,7 +27,7 @@ export const todoActivityRouter = router({
     }),
 
   // Get recent activity for current user
-  getMyRecentActivity: requirePermission("todos:read")
+  getMyRecentActivity: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z
         .object({

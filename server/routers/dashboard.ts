@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as arApDb from "../arApDb";
 import * as dashboardDb from "../dashboardDb";
 import * as inventoryDb from "../inventoryDb";
@@ -7,7 +7,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const dashboardRouter = router({
     // Get real-time KPI data
-    getKpis: requirePermission("dashboard:read")
+    getKpis: protectedProcedure.use(requirePermission("dashboard:read"))
       .query(async () => {
         // Get inventory stats
         const inventoryStats = await inventoryDb.getDashboardStats();
@@ -41,14 +41,14 @@ export const dashboardRouter = router({
         };
       }),
     // Get user's widget layout
-    getLayout: requirePermission("dashboard:read")
+    getLayout: protectedProcedure.use(requirePermission("dashboard:read"))
       .query(async ({ ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
         return await dashboardDb.getUserWidgetLayout(ctx.user.id);
       }),
 
     // Save user's widget layout
-    saveLayout: requirePermission("dashboard:read")
+    saveLayout: protectedProcedure.use(requirePermission("dashboard:read"))
       .input(z.object({
         widgets: z.array(z.object({
           widgetType: z.string(),
@@ -65,14 +65,14 @@ export const dashboardRouter = router({
       }),
 
     // Reset user's layout to role default
-    resetLayout: requirePermission("dashboard:read")
+    resetLayout: protectedProcedure.use(requirePermission("dashboard:read"))
       .mutation(async ({ ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
         return await dashboardDb.resetUserWidgetLayout(ctx.user.id);
       }),
 
     // Get role default layout (admin only)
-    getRoleDefault: requirePermission("dashboard:read")
+    getRoleDefault: protectedProcedure.use(requirePermission("dashboard:read"))
       .input(z.object({
         role: z.enum(["user", "admin"]),
       }))
@@ -84,7 +84,7 @@ export const dashboardRouter = router({
       }),
 
     // Save role default layout (admin only)
-    saveRoleDefault: requirePermission("dashboard:read")
+    saveRoleDefault: protectedProcedure.use(requirePermission("dashboard:read"))
       .input(z.object({
         role: z.enum(["user", "admin"]),
         widgets: z.array(z.object({
@@ -104,14 +104,14 @@ export const dashboardRouter = router({
       }),
 
     // Get KPI configuration for user's role
-    getKpiConfig: requirePermission("dashboard:read")
+    getKpiConfig: protectedProcedure.use(requirePermission("dashboard:read"))
       .query(async ({ ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
         return await dashboardDb.getRoleKpiConfig(ctx.user.role);
       }),
 
     // Save KPI configuration for a role (admin only)
-    saveKpiConfig: requirePermission("dashboard:read")
+    saveKpiConfig: protectedProcedure.use(requirePermission("dashboard:read"))
       .input(z.object({
         role: z.enum(["user", "admin"]),
         kpis: z.array(z.object({
@@ -130,7 +130,7 @@ export const dashboardRouter = router({
     // Widget Data Endpoints
     
     // Sales by Client (with time period filter)
-    getSalesByClient: requirePermission("dashboard:read")
+    getSalesByClient: protectedProcedure.use(requirePermission("dashboard:read"))
       .input(z.object({
         timePeriod: z.enum(["LIFETIME", "YEAR", "QUARTER", "MONTH"]).default("LIFETIME"),
       }))
@@ -156,7 +156,7 @@ export const dashboardRouter = router({
       }),
 
     // Cash Collected (24 months by client)
-    getCashCollected: requirePermission("dashboard:read")
+    getCashCollected: protectedProcedure.use(requirePermission("dashboard:read"))
       .input(z.object({
         months: z.number().default(24),
       }))
@@ -184,7 +184,7 @@ export const dashboardRouter = router({
       }),
 
     // Client Debt (current debt + aging)
-    getClientDebt: requirePermission("dashboard:read")
+    getClientDebt: protectedProcedure.use(requirePermission("dashboard:read"))
       .query(async () => {
         const receivablesResult = await arApDb.getOutstandingReceivables();
         const receivables = receivablesResult.invoices || [];
@@ -201,7 +201,7 @@ export const dashboardRouter = router({
       }),
 
     // Client Profit Margin
-    getClientProfitMargin: requirePermission("dashboard:read")
+    getClientProfitMargin: protectedProcedure.use(requirePermission("dashboard:read"))
       .query(async () => {
         const invoices = await arApDb.getInvoices({});
         const allInvoices = invoices.invoices || [];
@@ -230,7 +230,7 @@ export const dashboardRouter = router({
       }),
 
     // Transaction Snapshot (Today vs This Week)
-    getTransactionSnapshot: requirePermission("dashboard:read")
+    getTransactionSnapshot: protectedProcedure.use(requirePermission("dashboard:read"))
       .query(async () => {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -275,7 +275,7 @@ export const dashboardRouter = router({
       }),
 
     // Inventory Snapshot (by category)
-    getInventorySnapshot: requirePermission("dashboard:read")
+    getInventorySnapshot: protectedProcedure.use(requirePermission("dashboard:read"))
       .query(async () => {
         const stats = await inventoryDb.getDashboardStats();
         return {
@@ -286,7 +286,7 @@ export const dashboardRouter = router({
       }),
 
     // Sales Time Period Comparison
-    getSalesComparison: requirePermission("dashboard:read")
+    getSalesComparison: protectedProcedure.use(requirePermission("dashboard:read"))
       .query(async () => {
         const invoices = await arApDb.getInvoices({});
         const allInvoices = invoices.invoices || [];
@@ -342,7 +342,7 @@ export const dashboardRouter = router({
       }),
 
     // Cash Flow (with time period filter)
-    getCashFlow: requirePermission("dashboard:read")
+    getCashFlow: protectedProcedure.use(requirePermission("dashboard:read"))
       .input(z.object({
         timePeriod: z.enum(["LIFETIME", "YEAR", "QUARTER", "MONTH"]).default("LIFETIME"),
       }))
@@ -361,7 +361,7 @@ export const dashboardRouter = router({
       }),
 
     // Total Debt (AR vs AP)
-    getTotalDebt: requirePermission("dashboard:read")
+    getTotalDebt: protectedProcedure.use(requirePermission("dashboard:read"))
       .query(async () => {
         const receivablesResult = await arApDb.getOutstandingReceivables();
         const payablesResult = await arApDb.getOutstandingPayables();
