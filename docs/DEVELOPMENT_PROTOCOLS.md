@@ -1,7 +1,7 @@
 # TERP Development Protocols
 
-**Version:** 2.5  
-**Last Updated:** November 6, 2025  
+**Version:** 3.0  
+**Last Updated:** November 7, 2025  
 **Purpose:** Ensure systematic integration, production-ready code, and maintainable architecture throughout TERP development
 
 ---
@@ -94,27 +94,328 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 
 ---
 
-## Table of Contents
+## 🚨 MANDATORY TESTING & QUALITY PROTOCOLS
 
-1. [System Integration & Change Management Protocol](#system-integration--change-management-protocol)
-2. [Production-Ready Code Standard](#production-ready-code-standard)
-3. [Breaking Change Protocol](#breaking-change-protocol)
-4. [Quality Standards Checklist](#quality-standards-checklist)
-5. [Deployment Monitoring Protocol](#deployment-monitoring-protocol)
-6. [Version Management Protocol](#version-management-protocol)
-7. [Reference Documentation](#reference-documentation)
-8. [Automated Enforcement Protocol](#8-automated-enforcement-protocol)
-9. [TypeScript Strictness Protocol](#9-typescript-strictness-protocol)
-10. [Structured Logging Protocol](#10-structured-logging-protocol-mandatory)
-11. [Definition of Done](#11-definition-of-done-dod)
-12. [Feature Documentation Protocol](#12-feature-documentation-protocol)
+**⚠️ READ THIS SECTION FIRST - THESE PROTOCOLS ARE NON-NEGOTIABLE ⚠️**
 
-13. [Testing Protocol](#13-testing-protocol-mandatory)
-14. [Git Workflow Protocol](#14-git-workflow-protocol)
-15. [Test Failure Monitoring Protocol](#15-test-failure-monitoring-protocol-mandatory)
+**FAILURE TO FOLLOW THESE PROTOCOLS WILL RESULT IN IMMEDIATE REJECTION OF WORK.**
+
+This section contains the most critical protocols that MUST be followed for every single line of code you write. No exceptions.
 
 ---
 
+## 1. Testing Protocol (MANDATORY)
+
+**Status:** ✅ Active & Enforced  
+**Last Updated:** November 7, 2025
+
+**FAILURE TO FOLLOW THIS PROTOCOL WILL RESULT IN IMMEDIATE REJECTION OF WORK.**
+
+---
+
+### 🚨 **Core Mandate: No Code Without Tests**
+
+1.  **Every line of code you write must be tested.** This is not optional.
+2.  **Test-Driven Development (TDD) is the required workflow.** Write tests _before_ you write the implementation code.
+3.  **All tests must pass** before you can commit your code. The pre-commit hook will block you if they don't.
+4.  **Bypassing tests is strictly prohibited.** Using `git commit --no-verify` will result in your work being rejected.
+
+---
+
+### 📋 **Step-by-Step TDD Workflow (MANDATORY)**
+
+Follow this exact workflow for every feature, fix, or refactor.
+
+#### **Step 1: Create the Test File**
+
+Before writing any implementation code, create the test file.
+
+- **Copy the template**: Use `server/routers/pricing.test.ts` as your template.
+- **Naming**: `feature.ts` → `feature.test.ts`
+- **Location**: Place the test file next to the file it's testing.
+
+#### **Step 2: Write a Failing Test (Red)**
+
+- Write a test for the functionality you are about to build.
+- **Run the test and watch it fail.** This is expected. It proves your test is working correctly.
+
+```bash
+# Run the test for your specific file
+pnpm test server/routers/your-feature.test.ts
+```
+
+#### **Step 3: Write the Implementation Code (Green)**
+
+- Write the minimum amount of code required to make the failing test pass.
+- **Run the test again and watch it pass.**
+
+#### **Step 4: Refactor**
+
+- Clean up your implementation code and your test code.
+- Ensure it's readable, efficient, and follows best practices.
+- Run the tests again to ensure they still pass.
+
+#### **Step 5: Repeat for All Functionality**
+
+- Continue this Red-Green-Refactor cycle for every piece of functionality in the feature.
+
+---
+
+### 🏆 **Testing Trophy Model (Required)**
+
+Your tests must follow this distribution:
+
+| Test Type       | Percentage | Purpose                                | Tools                 |
+| --------------- | ---------- | -------------------------------------- | --------------------- |
+| **Integration** | 70%        | Test how modules work together         | `vitest`, `vi.mock()` |
+| **Unit**        | 20%        | Test individual functions in isolation | `vitest`              |
+| **E2E**         | 10%        | Test full user flows in the browser    | `playwright`          |
+| **Static**      | 0%         | Handled by ESLint & TypeScript         | `eslint`, `tsc`       |
+
+**Focus on integration tests.** Most of your tests should be for tRPC routers, mocking the database layer.
+
+---
+
+### Mocking Pattern (MANDATORY)
+
+**You MUST mock all external dependencies.** Never connect to a real database in your tests.
+
+```typescript
+// 1. Mock the entire database module at the top of your test file
+vi.mock("../db/queries/your-db-module");
+
+// 2. Use vi.mocked() in your tests to provide mock return values
+it("should do something", async () => {
+  // Arrange
+  const mockData = { id: 1, name: "Test" };
+  vi.mocked(yourDbModule.getSomething).mockResolvedValue(mockData);
+
+  // Act
+  const result = await caller.yourRouter.getSomething({ id: 1 });
+
+  // Assert
+  expect(result).toEqual(mockData);
+});
+```
+
+---
+
+### ❌ **Prohibited Actions**
+
+- **DO NOT** commit code without a corresponding test file.
+- **DO NOT** commit failing or skipped tests (unless explicitly approved).
+- **DO NOT** use `git commit --no-verify`.
+- **DO NOT** write tests that depend on other tests.
+- **DO NOT** connect to a real database in any test.
+
+---
+
+### 📖 **Reference Documents**
+
+- **Template**: `server/routers/pricing.test.ts`
+- **Quick Guide**: `docs/testing/AI_AGENT_QUICK_REFERENCE.md`
+- **Full Guide**: `docs/testing/TERP_TESTING_USAGE_GUIDE.md`
+
+---
+
+## 2. Definition of Done (DoD)
+
+**Status:** ✅ Active & Enforced  
+**Last Updated:** November 7, 2025
+
+A feature or task is considered **Done** only when it meets all of the following criteria. No work will be accepted or merged unless it satisfies every point.
+
+---
+
+### 📋 **Mandatory Checklist for "Done"**
+
+| Category          | Requirement                                | Verification                  |
+| ----------------- | ------------------------------------------ | ----------------------------- |
+| **Code Quality**  | Production-ready, no placeholders or stubs | Manual code review            |
+|                   | Follows all Bible protocols                | Manual code review            |
+|                   | No linting or type errors                  | `pnpm check` must pass        |
+| **Testing**       | **100% of new code is tested**             | `pnpm test:coverage`          |
+|                   | **All tests pass (100%)**                  | `pnpm test` must pass         |
+|                   | Follows TDD workflow                       | Review commit history         |
+|                   | Mocks all external dependencies            | Manual code review            |
+| **Functionality** | Meets all user requirements                | User acceptance testing (UAT) |
+|                   | Works end-to-end without errors            | Manual testing                |
+|                   | Handles edge cases gracefully              | Manual testing                |
+| **Documentation** | All related documents updated              | Manual review                 |
+|                   | Code is well-commented                     | Manual code review            |
+| **Git**           | Follows branch and commit conventions      | Review PR and commit history  |
+|                   | All commits are atomic and logical         | Review commit history         |
+| **CI/CD**         | All pipeline checks pass                   | GitHub Actions must be green  |
+
+---
+
+### 🚨 **Explicit Confirmation Required**
+
+When you deliver your work, you **MUST** explicitly confirm that you have met the Definition of Done by including this checklist in your summary:
+
+```
+### ✅ Definition of Done Checklist
+
+- [x] **Code Quality**: Production-ready, follows all protocols
+- [x] **Testing**: 100% of new code tested, all tests pass
+- [x] **Functionality**: Meets all requirements, works end-to-end
+- [x] **Documentation**: All related documents updated
+- [x] **Git**: Follows all conventions
+- [x] **CI/CD**: All checks passing
+```
+
+**Work delivered without this confirmation will be rejected.**
+
+---
+
+## 3. Test Failure Monitoring Protocol (MANDATORY)
+
+**FAILURE TO MONITOR TEST STATUS WILL RESULT IN BROKEN BUILDS AND REJECTED WORK.**
+
+### 🚨 **Core Requirement: Check Test Status Before and After Every Push**
+
+Test failures are **automatically posted as comments** on PRs and commits. You **MUST** check these comments using GitHub CLI—you do not need DigitalOcean access.
+
+---
+
+### 📋 **When to Check Test Status**
+
+| Timing                    | Command                                                                  | What to Check                 |
+| ------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
+| **Before starting work**  | `gh run list --limit 5`                                                  | Is the main branch healthy?   |
+| **After creating a PR**   | `gh pr view <PR#> --comments`                                            | Did my PR pass all checks?    |
+| **After pushing to main** | `gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments` | Did my commit pass all tests? |
+| **If build fails**        | `gh run view <RUN_ID>`                                                   | What exactly failed?          |
+
+---
+
+### ✅ **How to Check Test Status (Step-by-Step)**
+
+#### **1. Check if Main Branch is Healthy (Before Starting Work)**
+
+```bash
+# View recent workflow runs
+gh run list --limit 5
+
+# Check the latest run status
+gh run view $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
+```
+
+**Expected Output:**
+- ✅ **Green checkmark** = Main branch is healthy, safe to start work
+- ❌ **Red X** = Main branch is broken, **DO NOT** start work until fixed
+
+#### **2. Check Your PR Status (After Creating PR)**
+
+```bash
+# View PR checks
+gh pr view <PR_NUMBER> --json statusCheckRollup
+
+# View PR comments (test failures are posted here)
+gh pr view <PR_NUMBER> --comments
+```
+
+**Expected Output:**
+- ✅ **All checks passed** = Your PR is ready to merge
+- ❌ **Some checks failed** = Read the failure comments, fix the issues
+
+#### **3. Check Commit Status (After Pushing to Main)**
+
+```bash
+# View commit status
+gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/status
+
+# View commit comments (test failures are posted here)
+gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments
+```
+
+**Expected Output:**
+- ✅ **State: success** = Your commit passed all tests
+- ❌ **State: failure** = Your commit broke the build, **REVERT IMMEDIATELY**
+
+---
+
+### 🚨 **What to Do If Tests Fail**
+
+#### **Scenario 1: Your PR Fails Tests**
+
+1. **Read the failure comment** on your PR (posted by GitHub Actions)
+2. **Fix the failing tests** in your feature branch
+3. **Push the fix** to your feature branch
+4. **Wait for CI to re-run** (automatic)
+5. **Check PR status again** using `gh pr view <PR#> --json statusCheckRollup`
+
+#### **Scenario 2: Your Commit to Main Breaks Tests**
+
+1. **IMMEDIATELY revert your commit:**
+   ```bash
+   git revert HEAD
+   git push origin main
+   ```
+2. **Create a new feature branch** to fix the issue
+3. **Fix the tests** in the feature branch
+4. **Create a new PR** with the fix
+5. **Merge only after all tests pass**
+
+#### **Scenario 3: Main Branch is Already Broken (Not Your Fault)**
+
+1. **DO NOT start new work** on a broken main branch
+2. **Check who broke it:**
+   ```bash
+   gh run list --limit 10
+   gh run view <FAILING_RUN_ID>
+   ```
+3. **Notify the user** if you cannot fix it yourself
+4. **Wait for main to be fixed** before starting your work
+
+---
+
+### ❌ **Prohibited Actions**
+
+- **DO NOT** ignore test failures
+- **DO NOT** merge PRs with failing tests
+- **DO NOT** push to main without checking test status first
+- **DO NOT** assume tests passed without verifying
+- **DO NOT** use `--no-verify` to bypass pre-commit hooks
+
+---
+
+### ✅ **Best Practices**
+
+- **Always check main branch health** before starting work
+- **Run tests locally** before pushing (`pnpm test`)
+- **Check PR status** within 5 minutes of creating it
+- **Monitor commit status** after pushing to main
+- **Fix test failures immediately** - do not let them linger
+
+---
+
+## Table of Contents
+
+**🚨 MANDATORY TESTING & QUALITY PROTOCOLS** (see above)
+
+1. [Testing Protocol](#1-testing-protocol-mandatory)
+2. [Definition of Done](#2-definition-of-done-dod)
+3. [Test Failure Monitoring Protocol](#3-test-failure-monitoring-protocol-mandatory)
+
+**Core Development Protocols**
+
+4. [System Integration & Change Management Protocol](#4-system-integration--change-management-protocol)
+5. [Production-Ready Code Standard](#5-production-ready-code-standard)
+6. [Breaking Change Protocol](#6-breaking-change-protocol)
+7. [Quality Standards Checklist](#7-quality-standards-checklist)
+8. [Deployment Monitoring Protocol](#8-deployment-monitoring-protocol)
+9. [Version Management Protocol](#9-version-management-protocol)
+10. [Reference Documentation](#10-reference-documentation)
+11. [Automated Enforcement Protocol](#11-automated-enforcement-protocol)
+12. [TypeScript Strictness Protocol](#12-typescript-strictness-protocol)
+13. [Structured Logging Protocol](#13-structured-logging-protocol-mandatory)
+14. [Feature Documentation Protocol](#14-feature-documentation-protocol)
+15. [Git Workflow Protocol](#15-git-workflow-protocol)
+
+---
+
+## 4. System Integration & Change Management Protocol
 ## System Integration & Change Management Protocol
 
 ### 1. IMPACT ANALYSIS (Before Making Changes)
@@ -753,167 +1054,6 @@ Fixes #123
 
 ---
 
-## 13. Testing Protocol (MANDATORY)
-
-**Status:** ✅ Active & Enforced  
-**Last Updated:** November 6, 2025
-
-**FAILURE TO FOLLOW THIS PROTOCOL WILL RESULT IN IMMEDIATE REJECTION OF WORK.**
-
----
-
-### 🚨 **Core Mandate: No Code Without Tests**
-
-1.  **Every line of code you write must be tested.** This is not optional.
-2.  **Test-Driven Development (TDD) is the required workflow.** Write tests _before_ you write the implementation code.
-3.  **All tests must pass** before you can commit your code. The pre-commit hook will block you if they don't.
-4.  **Bypassing tests is strictly prohibited.** Using `git commit --no-verify` will result in your work being rejected.
-
----
-
-### 📋 **Step-by-Step TDD Workflow (MANDATORY)**
-
-Follow this exact workflow for every feature, fix, or refactor.
-
-#### **Step 1: Create the Test File**
-
-Before writing any implementation code, create the test file.
-
-- **Copy the template**: Use `server/routers/pricing.test.ts` as your template.
-- **Naming**: `feature.ts` → `feature.test.ts`
-- **Location**: Place the test file next to the file it's testing.
-
-#### **Step 2: Write a Failing Test (Red)**
-
-- Write a test for the functionality you are about to build.
-- **Run the test and watch it fail.** This is expected. It proves your test is working correctly.
-
-```bash
-# Run the test for your specific file
-pnpm test server/routers/your-feature.test.ts
-```
-
-#### **Step 3: Write the Implementation Code (Green)**
-
-- Write the minimum amount of code required to make the failing test pass.
-- **Run the test again and watch it pass.**
-
-#### **Step 4: Refactor**
-
-- Clean up your implementation code and your test code.
-- Ensure it's readable, efficient, and follows best practices.
-- Run the tests again to ensure they still pass.
-
-#### **Step 5: Repeat for All Functionality**
-
-- Continue this Red-Green-Refactor cycle for every piece of functionality in the feature.
-
----
-
-### 🏆 **Testing Trophy Model (Required)**
-
-Your tests must follow this distribution:
-
-| Test Type       | Percentage | Purpose                                | Tools                 |
-| --------------- | ---------- | -------------------------------------- | --------------------- |
-| **Integration** | 70%        | Test how modules work together         | `vitest`, `vi.mock()` |
-| **Unit**        | 20%        | Test individual functions in isolation | `vitest`              |
-| **E2E**         | 10%        | Test full user flows in the browser    | `playwright`          |
-| **Static**      | 0%         | Handled by ESLint & TypeScript         | `eslint`, `tsc`       |
-
-**Focus on integration tests.** Most of your tests should be for tRPC routers, mocking the database layer.
-
----
-
-### mocking Pattern (MANDATORY)
-
-**You MUST mock all external dependencies.** Never connect to a real database in your tests.
-
-```typescript
-// 1. Mock the entire database module at the top of your test file
-vi.mock("../db/queries/your-db-module");
-
-// 2. Use vi.mocked() in your tests to provide mock return values
-it("should do something", async () => {
-  // Arrange
-  const mockData = { id: 1, name: "Test" };
-  vi.mocked(yourDbModule.getSomething).mockResolvedValue(mockData);
-
-  // Act
-  const result = await caller.yourRouter.getSomething({ id: 1 });
-
-  // Assert
-  expect(result).toEqual(mockData);
-});
-```
-
----
-
-### ❌ **Prohibited Actions**
-
-- **DO NOT** commit code without a corresponding test file.
-- **DO NOT** commit failing or skipped tests (unless explicitly approved).
-- **DO NOT** use `git commit --no-verify`.
-- **DO NOT** write tests that depend on other tests.
-- **DO NOT** connect to a real database in any test.
-
----
-
-### 📖 **Reference Documents**
-
-- **Template**: `server/routers/pricing.test.ts`
-- **Quick Guide**: `docs/testing/AI_AGENT_QUICK_REFERENCE.md`
-- **Full Guide**: `docs/testing/TERP_TESTING_USAGE_GUIDE.md`
-
-## 11. Definition of Done (DoD)
-
-**Status:** ✅ Active & Enforced  
-**Last Updated:** November 6, 2025
-
-A feature or task is considered **Done** only when it meets all of the following criteria. No work will be accepted or merged unless it satisfies every point.
-
----
-
-### 📋 **Mandatory Checklist for "Done"**
-
-| Category          | Requirement                                | Verification                  |
-| ----------------- | ------------------------------------------ | ----------------------------- |
-| **Code Quality**  | Production-ready, no placeholders or stubs | Manual code review            |
-|                   | Follows all Bible protocols                | Manual code review            |
-|                   | No linting or type errors                  | `pnpm check` must pass        |
-| **Testing**       | **100% of new code is tested**             | `pnpm test:coverage`          |
-|                   | **All tests pass (100%)**                  | `pnpm test` must pass         |
-|                   | Follows TDD workflow                       | Review commit history         |
-|                   | Mocks all external dependencies            | Manual code review            |
-| **Functionality** | Meets all user requirements                | User acceptance testing (UAT) |
-|                   | Works end-to-end without errors            | Manual testing                |
-|                   | Handles edge cases gracefully              | Manual testing                |
-| **Documentation** | All related documents updated              | Manual review                 |
-|                   | Code is well-commented                     | Manual code review            |
-| **Git**           | Follows branch and commit conventions      | Review PR and commit history  |
-|                   | All commits are atomic and logical         | Review commit history         |
-| **CI/CD**         | All pipeline checks pass                   | GitHub Actions must be green  |
-
----
-
-### 🚨 **Explicit Confirmation Required**
-
-When you deliver your work, you **MUST** explicitly confirm that you have met the Definition of Done by including this checklist in your summary:
-
-```
-### ✅ Definition of Done Checklist
-
-- [x] **Code Quality**: Production-ready, follows all protocols
-- [x] **Testing**: 100% of new code tested, all tests pass
-- [x] **Functionality**: Meets all requirements, works end-to-end
-- [x] **Documentation**: All related documents updated
-- [x] **Git**: Follows all conventions
-- [x] **CI/CD**: All checks passing
-```
-
-**Work delivered without this confirmation will be rejected.**
-
----
 
 ## 15. Test Failure Monitoring Protocol (MANDATORY)
 
@@ -1071,3 +1211,351 @@ gh api repos/EvanTenenbaum/TERP/commits/<COMMIT_SHA>/comments | jq -r '.[].body'
 **Failure to follow this protocol means you are working blind and will break the build.**
 
 ---
+
+## Role-Based Access Control (RBAC) Protocol
+
+**Version:** 1.0  
+**Last Updated:** November 7, 2025  
+**Purpose:** Ensure consistent implementation and maintenance of RBAC across the TERP system
+
+---
+
+### Overview
+
+The TERP system implements a comprehensive Role-Based Access Control (RBAC) system that controls access to all features and data. This protocol defines how to work with RBAC when developing new features or modifying existing ones.
+
+### Core Principles
+
+1. **Backend Enforcement is Primary** - All permission checks MUST be enforced on the backend. Frontend checks are for UX only.
+2. **Super Admin Bypass** - Super Admins bypass all permission checks and have access to everything.
+3. **Permission Inheritance** - Users inherit permissions from all assigned roles.
+4. **Permission Overrides** - Individual permissions can be granted or revoked per user, overriding role permissions.
+5. **Cache Invalidation** - Permission cache MUST be cleared when roles or permissions change.
+
+### Permission Naming Convention
+
+Permissions follow the format: `{module}:{action}`
+
+**Common Modules:**
+- `orders`, `inventory`, `clients`, `vendors`, `purchase_orders`
+- `accounting`, `dashboard`, `calendar`, `todos`
+- `rbac`, `system`, `settings`
+
+**Common Actions:**
+- `read` - View/list data
+- `create` - Create new records
+- `update` - Modify existing records
+- `delete` - Remove records
+- `manage` - Full CRUD access (admin only)
+
+**Examples:**
+- `orders:read` - View orders
+- `orders:create` - Create new orders
+- `inventory:update` - Update inventory
+- `rbac:manage` - Full RBAC administration
+
+### Backend Implementation
+
+#### 1. Protecting API Endpoints
+
+All tRPC router endpoints MUST use the `requirePermission` middleware:
+
+```typescript
+import { router, protectedProcedure } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
+
+export const myRouter = router({
+  // Read operation
+  list: protectedProcedure
+    .use(requirePermission("module:read"))
+    .input(z.object({ ... }))
+    .query(async ({ input }) => { ... }),
+    
+  // Create operation
+  create: protectedProcedure
+    .use(requirePermission("module:create"))
+    .input(z.object({ ... }))
+    .mutation(async ({ input }) => { ... }),
+    
+  // Update operation
+  update: protectedProcedure
+    .use(requirePermission("module:update"))
+    .input(z.object({ ... }))
+    .mutation(async ({ input }) => { ... }),
+    
+  // Delete operation
+  delete: protectedProcedure
+    .use(requirePermission("module:delete"))
+    .input(z.object({ ... }))
+    .mutation(async ({ input }) => { ... }),
+});
+```
+
+#### 2. Multiple Permission Checks
+
+For operations requiring multiple permissions:
+
+```typescript
+import { requireAllPermissions, requireAnyPermission } from "../_core/permissionMiddleware";
+
+// Requires ALL permissions
+complexOperation: protectedProcedure
+  .use(requireAllPermissions(["orders:read", "pricing:read"]))
+  .query(async ({ input }) => { ... }),
+
+// Requires ANY permission
+flexibleOperation: protectedProcedure
+  .use(requireAnyPermission(["orders:create", "quotes:create"]))
+  .mutation(async ({ input }) => { ... }),
+```
+
+#### 3. Adding New Permissions
+
+When adding a new module or feature:
+
+1. **Add permission to seed script** (`scripts/seed-rbac.ts`):
+   ```typescript
+   await createPermission("new_module:read", "View new module data", "new_module");
+   await createPermission("new_module:create", "Create new module records", "new_module");
+   ```
+
+2. **Assign to appropriate roles** in the seed script:
+   ```typescript
+   await assignPermissionToRole("Sales Representative", "new_module:read");
+   await assignPermissionToRole("Manager", "new_module:create");
+   ```
+
+3. **Run migration** to update the database:
+   ```bash
+   pnpm tsx scripts/seed-rbac.ts
+   ```
+
+4. **Update permission mapping** in `docs/RBAC_ROUTER_PERMISSION_MAPPING.md`
+
+### Frontend Implementation
+
+#### 1. Using the usePermissions Hook
+
+For conditional rendering based on permissions:
+
+```typescript
+import { usePermissions } from "@/hooks/usePermissions";
+
+function MyComponent() {
+  const { hasPermission, isSuperAdmin } = usePermissions();
+
+  return (
+    <div>
+      {hasPermission('orders:create') && (
+        <Button>Create Order</Button>
+      )}
+      
+      {isSuperAdmin && (
+        <Button>Admin Panel</Button>
+      )}
+    </div>
+  );
+}
+```
+
+#### 2. Using the PermissionGate Component
+
+For declarative permission checks:
+
+```typescript
+import { PermissionGate } from "@/hooks/usePermissions";
+
+<PermissionGate permission="orders:create">
+  <CreateOrderButton />
+</PermissionGate>
+
+<PermissionGate 
+  permissions={['inventory:update', 'inventory:delete']} 
+  requireAll={false}
+  fallback={<div>No access</div>}
+>
+  <InventoryActions />
+</PermissionGate>
+```
+
+#### 3. Using the useModulePermissions Hook
+
+For CRUD operations on a specific module:
+
+```typescript
+import { useModulePermissions } from "@/hooks/usePermissions";
+
+function OrdersPage() {
+  const { canRead, canCreate, canUpdate, canDelete } = useModulePermissions('orders');
+
+  return (
+    <div>
+      {canRead && <OrdersList />}
+      {canCreate && <CreateOrderButton />}
+      {canUpdate && <EditOrderButton />}
+      {canDelete && <DeleteOrderButton />}
+    </div>
+  );
+}
+```
+
+### Testing Requirements
+
+When implementing RBAC for a new feature:
+
+1. **Unit Tests** - Test permission middleware:
+   ```typescript
+   it('requires permission to access endpoint', async () => {
+     const user = await createTestUser({ permissions: [] });
+     await expect(caller(user).myRouter.create()).rejects.toThrow('Insufficient permissions');
+   });
+   ```
+
+2. **Integration Tests** - Test full permission flow:
+   ```typescript
+   it('allows access with correct permission', async () => {
+     const user = await createTestUser({ permissions: ['module:create'] });
+     const result = await caller(user).myRouter.create({ ... });
+     expect(result).toBeDefined();
+   });
+   ```
+
+3. **Manual QA** - Test with different roles:
+   - Log in as each role
+   - Verify UI elements appear/disappear correctly
+   - Verify API calls succeed/fail appropriately
+
+### Common Patterns
+
+#### Pattern 1: Conditional Button Rendering
+
+```typescript
+{hasPermission('orders:delete') && (
+  <Button variant="destructive" onClick={handleDelete}>
+    Delete
+  </Button>
+)}
+```
+
+#### Pattern 2: Disable vs Hide
+
+```typescript
+// Option 1: Hide completely
+{hasPermission('orders:delete') && <DeleteButton />}
+
+// Option 2: Show but disable
+<Button 
+  disabled={!hasPermission('orders:delete')}
+  title={!hasPermission('orders:delete') ? "No permission" : "Delete"}
+>
+  Delete
+</Button>
+```
+
+#### Pattern 3: Conditional Page Access
+
+```typescript
+function AdminPage() {
+  const { hasPermission, isLoading } = usePermissions();
+
+  if (isLoading) return <LoadingSpinner />;
+  
+  if (!hasPermission('system:manage')) {
+    return <AccessDenied />;
+  }
+
+  return <AdminDashboard />;
+}
+```
+
+### Troubleshooting
+
+#### Permission Cache Issues
+
+If permissions don't update after role changes:
+
+1. **Check cache clearing** - Ensure `clearPermissionCache(userId)` is called:
+   ```typescript
+   import { clearPermissionCache } from "../services/permissionService";
+   
+   // After role assignment
+   await assignRoleToUser(userId, roleId);
+   clearPermissionCache(userId);
+   ```
+
+2. **User may need to refresh** - Permission cache has a TTL of 5 minutes
+
+#### Permission Denied Errors
+
+If users get unexpected permission errors:
+
+1. **Check user's roles** - Verify user has the correct roles assigned
+2. **Check role permissions** - Verify the role has the required permissions
+3. **Check permission overrides** - Check if user has a revoked override
+4. **Check logs** - Permission checks are logged for debugging
+
+### Security Considerations
+
+1. **Never trust frontend checks** - Always enforce on backend
+2. **Log permission failures** - All permission denials are logged
+3. **Audit permission changes** - Role and permission changes are logged
+4. **Protect RBAC endpoints** - Only admins can modify roles and permissions
+5. **Validate permission names** - Ensure permission strings are valid
+
+### Maintenance
+
+#### Adding a New Role
+
+1. Update `scripts/seed-rbac.ts`:
+   ```typescript
+   const newRole = await createRole(
+     "New Role Name",
+     "Description of the role",
+     false // isSystemRole
+   );
+   ```
+
+2. Assign permissions:
+   ```typescript
+   await assignPermissionToRole("New Role Name", "orders:read");
+   await assignPermissionToRole("New Role Name", "orders:create");
+   ```
+
+3. Run seed script:
+   ```bash
+   pnpm tsx scripts/seed-rbac.ts
+   ```
+
+#### Modifying Role Permissions
+
+1. Update seed script with new permission assignments
+2. Run seed script to update database
+3. Clear permission cache for affected users
+4. Test with affected roles
+
+### Documentation References
+
+- **Implementation Roadmap**: `docs/RBAC_IMPLEMENTATION_ROADMAP.md`
+- **Permission Mapping**: `docs/RBAC_ROUTER_PERMISSION_MAPPING.md`
+- **Frontend Guide**: `docs/RBAC_FRONTEND_IMPLEMENTATION_GUIDE.md`
+- **Testing Plan**: `docs/RBAC_TESTING_PLAN.md`
+
+### Checklist for New Features
+
+When adding a new feature to TERP:
+
+- [ ] Define required permissions (read, create, update, delete)
+- [ ] Add permissions to seed script
+- [ ] Assign permissions to appropriate roles
+- [ ] Protect all API endpoints with `requirePermission`
+- [ ] Add frontend permission checks for UI elements
+- [ ] Write unit tests for permission enforcement
+- [ ] Write integration tests for permission flow
+- [ ] Test manually with different roles
+- [ ] Update permission mapping documentation
+- [ ] Run seed script to update database
+
+---
+
+**Last Updated:** November 7, 2025  
+**Maintained By:** TERP Development Team

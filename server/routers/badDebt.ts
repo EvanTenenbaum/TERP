@@ -4,12 +4,13 @@
  */
 
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as badDebtDb from "../badDebtDb";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const badDebtRouter = router({
   // Write off bad debt
-  writeOff: protectedProcedure
+  writeOff: protectedProcedure.use(requirePermission("accounting:manage"))
     .input(z.object({
       transactionId: z.number(),
       writeOffAmount: z.string(),
@@ -29,7 +30,7 @@ export const badDebtRouter = router({
     }),
 
   // Reverse a write-off
-  reverse: protectedProcedure
+  reverse: protectedProcedure.use(requirePermission("accounting:manage"))
     .input(z.object({
       writeOffTransactionId: z.number(),
       reason: z.string().min(1),
@@ -45,7 +46,7 @@ export const badDebtRouter = router({
     }),
 
   // Get write-offs for a client
-  getByClient: protectedProcedure
+  getByClient: protectedProcedure.use(requirePermission("accounting:manage"))
     .input(z.object({
       clientId: z.number(),
       includeReversed: z.boolean().optional().default(false),
@@ -55,7 +56,7 @@ export const badDebtRouter = router({
     }),
 
   // Get total write-offs for a client
-  getClientTotal: protectedProcedure
+  getClientTotal: protectedProcedure.use(requirePermission("accounting:manage"))
     .input(z.object({
       clientId: z.number(),
       includeReversed: z.boolean().optional().default(false),
@@ -65,7 +66,7 @@ export const badDebtRouter = router({
     }),
 
   // Get bad debt aging report
-  getAgingReport: protectedProcedure
+  getAgingReport: protectedProcedure.use(requirePermission("accounting:manage"))
     .input(z.object({
       daysThreshold: z.number().optional().default(90),
     }))

@@ -5,21 +5,22 @@
  */
 
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { pricingService } from "../services/pricingService";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const pricingDefaultsRouter = router({
   /**
    * Get all default margins
    */
-  getAll: protectedProcedure.query(async () => {
+  getAll: protectedProcedure.use(requirePermission("pricing:read")).query(async () => {
     return await pricingService.getAllDefaults();
   }),
 
   /**
    * Get default margin for category
    */
-  getByCategory: protectedProcedure
+  getByCategory: protectedProcedure.use(requirePermission("pricing:read"))
     .input(
       z.object({
         productCategory: z.string(),
@@ -45,7 +46,7 @@ export const pricingDefaultsRouter = router({
   /**
    * Create or update default margin
    */
-  upsert: protectedProcedure
+  upsert: protectedProcedure.use(requirePermission("pricing:read"))
     .input(
       z.object({
         productCategory: z.string(),
@@ -76,7 +77,7 @@ export const pricingDefaultsRouter = router({
    * Get margin with fallback logic
    * Used by order creation to determine margin
    */
-  getMarginWithFallback: protectedProcedure
+  getMarginWithFallback: protectedProcedure.use(requirePermission("pricing:read"))
     .input(
       z.object({
         clientId: z.number(),

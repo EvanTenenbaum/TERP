@@ -1,15 +1,16 @@
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
 import * as paymentMethodsDb from "../paymentMethodsDb";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const settingsRouter = router({
     // Locations
     locations: router({
-      list: protectedProcedure.query(async () => {
+      list: protectedProcedure.use(requirePermission("settings:read")).query(async () => {
         return await inventoryDb.getAllLocations();
       }),
-      create: protectedProcedure
+      create: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           site: z.string(),
           zone: z.string().optional(),
@@ -20,7 +21,7 @@ export const settingsRouter = router({
         .mutation(async ({ input }) => {
           return await inventoryDb.createLocation(input);
         }),
-      update: protectedProcedure
+      update: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           id: z.number(),
           site: z.string(),
@@ -32,7 +33,7 @@ export const settingsRouter = router({
         .mutation(async ({ input }) => {
           return await inventoryDb.updateLocation(input);
         }),
-      delete: protectedProcedure
+      delete: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await inventoryDb.deleteLocation(input.id);
@@ -41,15 +42,15 @@ export const settingsRouter = router({
 
     // Categories
     categories: router({
-      list: protectedProcedure.query(async () => {
+      list: protectedProcedure.use(requirePermission("settings:read")).query(async () => {
         return await inventoryDb.getAllCategoriesWithSubcategories();
       }),
-      create: protectedProcedure
+      create: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ name: z.string() }))
         .mutation(async ({ input }) => {
           return await inventoryDb.createCategory(input.name);
         }),
-      update: protectedProcedure
+      update: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           id: z.number(),
           name: z.string(),
@@ -58,7 +59,7 @@ export const settingsRouter = router({
         .mutation(async ({ input }) => {
           return await inventoryDb.updateCategory(input.id, input.name, input.updateProducts);
         }),
-      delete: protectedProcedure
+      delete: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await inventoryDb.deleteCategory(input.id);
@@ -67,7 +68,7 @@ export const settingsRouter = router({
 
     // Subcategories
     subcategories: router({
-      create: protectedProcedure
+      create: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           categoryId: z.number(),
           name: z.string(),
@@ -75,7 +76,7 @@ export const settingsRouter = router({
         .mutation(async ({ input }) => {
           return await inventoryDb.createSubcategory(input.categoryId, input.name);
         }),
-      update: protectedProcedure
+      update: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           id: z.number(),
           name: z.string(),
@@ -84,7 +85,7 @@ export const settingsRouter = router({
         .mutation(async ({ input }) => {
           return await inventoryDb.updateSubcategory(input.id, input.name, input.updateProducts);
         }),
-      delete: protectedProcedure
+      delete: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await inventoryDb.deleteSubcategory(input.id);
@@ -93,15 +94,15 @@ export const settingsRouter = router({
 
     // Grades
     grades: router({
-      list: protectedProcedure.query(async () => {
+      list: protectedProcedure.use(requirePermission("settings:read")).query(async () => {
         return await inventoryDb.getAllGrades();
       }),
-      create: protectedProcedure
+      create: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ name: z.string() }))
         .mutation(async ({ input }) => {
           return await inventoryDb.createGrade(input.name);
         }),
-      update: protectedProcedure
+      update: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           id: z.number(),
           name: z.string(),
@@ -110,7 +111,7 @@ export const settingsRouter = router({
         .mutation(async ({ input }) => {
           return await inventoryDb.updateGrade(input.id, input.name, input.updateProducts);
         }),
-      delete: protectedProcedure
+      delete: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await inventoryDb.deleteGrade(input.id);
@@ -119,7 +120,7 @@ export const settingsRouter = router({
 
     // Payment Methods
     paymentMethods: router({
-      list: protectedProcedure
+      list: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           activeOnly: z.boolean().optional().default(false),
         }))
@@ -127,19 +128,19 @@ export const settingsRouter = router({
           return await paymentMethodsDb.getAllPaymentMethods(input.activeOnly);
         }),
       
-      getById: protectedProcedure
+      getById: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
           return await paymentMethodsDb.getPaymentMethodById(input.id);
         }),
       
-      getByCode: protectedProcedure
+      getByCode: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ code: z.string() }))
         .query(async ({ input }) => {
           return await paymentMethodsDb.getPaymentMethodByCode(input.code);
         }),
       
-      create: protectedProcedure
+      create: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           code: z.string().min(1).max(50),
           name: z.string().min(1).max(100),
@@ -150,7 +151,7 @@ export const settingsRouter = router({
           return await paymentMethodsDb.createPaymentMethod(input);
         }),
       
-      update: protectedProcedure
+      update: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           id: z.number(),
           code: z.string().min(1).max(50).optional(),
@@ -163,25 +164,25 @@ export const settingsRouter = router({
           return await paymentMethodsDb.updatePaymentMethod(id, data);
         }),
       
-      activate: protectedProcedure
+      activate: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await paymentMethodsDb.activatePaymentMethod(input.id);
         }),
       
-      deactivate: protectedProcedure
+      deactivate: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await paymentMethodsDb.deactivatePaymentMethod(input.id);
         }),
       
-      delete: protectedProcedure
+      delete: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await paymentMethodsDb.deletePaymentMethod(input.id);
         }),
       
-      reorder: protectedProcedure
+      reorder: protectedProcedure.use(requirePermission("settings:read"))
         .input(z.object({
           orderedIds: z.array(z.number()),
         }))
@@ -189,7 +190,7 @@ export const settingsRouter = router({
           return await paymentMethodsDb.reorderPaymentMethods(input.orderedIds);
         }),
       
-      seedDefaults: protectedProcedure
+      seedDefaults: protectedProcedure.use(requirePermission("settings:read"))
         .mutation(async () => {
           await paymentMethodsDb.seedDefaultPaymentMethods();
           return { success: true };

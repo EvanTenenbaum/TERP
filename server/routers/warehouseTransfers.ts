@@ -8,6 +8,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { batchLocations, inventoryMovements } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const warehouseTransfersRouter = router({
   // Transfer batch quantity between locations

@@ -4,12 +4,13 @@
  */
 
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as inboxDb from "../inboxDb";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const inboxRouter = router({
   // Get all inbox items for current user
-  getMyItems: protectedProcedure
+  getMyItems: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z
         .object({
@@ -27,14 +28,14 @@ export const inboxRouter = router({
     }),
 
   // Get unread inbox items
-  getUnread: protectedProcedure.query(async ({ ctx }) => {
+  getUnread: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
 
     return await inboxDb.getUnreadInboxItems(ctx.user.id);
   }),
 
   // Get inbox items by status
-  getByStatus: protectedProcedure
+  getByStatus: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         status: z.enum(["unread", "seen", "completed"]),
@@ -47,7 +48,7 @@ export const inboxRouter = router({
     }),
 
   // Get a specific inbox item
-  getById: protectedProcedure
+  getById: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -67,7 +68,7 @@ export const inboxRouter = router({
     }),
 
   // Mark item as seen
-  markAsSeen: protectedProcedure
+  markAsSeen: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -86,7 +87,7 @@ export const inboxRouter = router({
     }),
 
   // Mark item as completed
-  markAsCompleted: protectedProcedure
+  markAsCompleted: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -105,7 +106,7 @@ export const inboxRouter = router({
     }),
 
   // Mark item as unread
-  markAsUnread: protectedProcedure
+  markAsUnread: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -124,7 +125,7 @@ export const inboxRouter = router({
     }),
 
   // Archive an item
-  archive: protectedProcedure
+  archive: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -143,7 +144,7 @@ export const inboxRouter = router({
     }),
 
   // Unarchive an item
-  unarchive: protectedProcedure
+  unarchive: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -162,7 +163,7 @@ export const inboxRouter = router({
     }),
 
   // Delete an inbox item
-  delete: protectedProcedure
+  delete: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         itemId: z.number(),
@@ -182,14 +183,14 @@ export const inboxRouter = router({
     }),
 
   // Get inbox statistics
-  getStats: protectedProcedure.query(async ({ ctx }) => {
+  getStats: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
 
     return await inboxDb.getUserInboxStats(ctx.user.id);
   }),
 
   // Bulk mark items as seen
-  bulkMarkAsSeen: protectedProcedure
+  bulkMarkAsSeen: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         itemIds: z.array(z.number()),
@@ -211,7 +212,7 @@ export const inboxRouter = router({
     }),
 
   // Bulk mark items as completed
-  bulkMarkAsCompleted: protectedProcedure
+  bulkMarkAsCompleted: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         itemIds: z.array(z.number()),
@@ -233,7 +234,7 @@ export const inboxRouter = router({
     }),
 
   // Auto-archive old completed items
-  autoArchiveOld: protectedProcedure.mutation(async ({ ctx }) => {
+  autoArchiveOld: protectedProcedure.use(requirePermission("todos:read")).mutation(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
 
     const count = await inboxDb.autoArchiveOldItems();

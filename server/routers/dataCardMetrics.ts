@@ -8,6 +8,7 @@ import { router, publicProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import * as metricsDb from "../dataCardMetricsDb";
 import { handleError } from "../_core/errors";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 const moduleIdSchema = z.enum([
   'inventory',
