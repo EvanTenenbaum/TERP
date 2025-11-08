@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import * as calendarDb from "../calendarDb";
 import { calendarEvents } from "../../drizzle/schema";
 import { and, eq, gte, lte, isNull } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Calendar Financials Router

@@ -4,19 +4,20 @@
  */
 
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as todoListsDb from "../todoListsDb";
 import * as permissions from "../services/todoPermissions";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const todoListsRouter = router({
   // Get all lists accessible by current user
-  getMyLists: protectedProcedure.query(async ({ ctx }) => {
+  getMyLists: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
     return await todoListsDb.getUserLists(ctx.user.id);
   }),
 
   // Get a specific list by ID
-  getById: protectedProcedure
+  getById: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
@@ -31,7 +32,7 @@ export const todoListsRouter = router({
     }),
 
   // Create a new list
-  create: protectedProcedure
+  create: protectedProcedure.use(requirePermission("todos:create"))
     .input(
       z.object({
         name: z.string().min(1).max(255),
@@ -51,7 +52,7 @@ export const todoListsRouter = router({
     }),
 
   // Update a list
-  update: protectedProcedure
+  update: protectedProcedure.use(requirePermission("todos:update"))
     .input(
       z.object({
         listId: z.number(),
@@ -70,7 +71,7 @@ export const todoListsRouter = router({
     }),
 
   // Delete a list
-  delete: protectedProcedure
+  delete: protectedProcedure.use(requirePermission("todos:delete"))
     .input(
       z.object({
         listId: z.number(),
@@ -86,7 +87,7 @@ export const todoListsRouter = router({
     }),
 
   // Get list members
-  getMembers: protectedProcedure
+  getMembers: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
@@ -101,7 +102,7 @@ export const todoListsRouter = router({
     }),
 
   // Add a member to a list
-  addMember: protectedProcedure
+  addMember: protectedProcedure.use(requirePermission("todos:create"))
     .input(
       z.object({
         listId: z.number(),
@@ -126,7 +127,7 @@ export const todoListsRouter = router({
     }),
 
   // Update member role
-  updateMemberRole: protectedProcedure
+  updateMemberRole: protectedProcedure.use(requirePermission("todos:update"))
     .input(
       z.object({
         listId: z.number(),
@@ -148,7 +149,7 @@ export const todoListsRouter = router({
     }),
 
   // Remove a member from a list
-  removeMember: protectedProcedure
+  removeMember: protectedProcedure.use(requirePermission("todos:delete"))
     .input(
       z.object({
         listId: z.number(),
@@ -165,7 +166,7 @@ export const todoListsRouter = router({
     }),
 
   // Get user's role in a list
-  getMyRole: protectedProcedure
+  getMyRole: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),

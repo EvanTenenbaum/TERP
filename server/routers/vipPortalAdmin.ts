@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { 
   clients, 
@@ -16,6 +16,7 @@ import * as pricingEngine from "../pricingEngine";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * VIP Portal Admin Router
@@ -28,7 +29,7 @@ export const vipPortalAdminRouter = router({
   
   clients: router({
     // Get all VIP-enabled clients
-    listVipClients: protectedProcedure
+    listVipClients: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         limit: z.number().optional().default(50),
         offset: z.number().optional().default(0),
@@ -47,7 +48,7 @@ export const vipPortalAdminRouter = router({
       }),
 
     // Enable VIP portal for a client
-    enableVipPortal: protectedProcedure
+    enableVipPortal: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
         email: z.string().email(),
@@ -164,7 +165,7 @@ export const vipPortalAdminRouter = router({
       }),
 
     // Disable VIP portal for a client
-    disableVipPortal: protectedProcedure
+    disableVipPortal: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
       }))
@@ -179,7 +180,7 @@ export const vipPortalAdminRouter = router({
       }),
 
     // Get last login info for a client
-    getLastLogin: protectedProcedure
+    getLastLogin: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
       }))
@@ -207,7 +208,7 @@ export const vipPortalAdminRouter = router({
   
   config: router({
     // Get configuration for a client
-    get: protectedProcedure
+    get: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
       }))
@@ -229,7 +230,7 @@ export const vipPortalAdminRouter = router({
       }),
 
     // Update configuration for a client
-    update: protectedProcedure
+    update: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
         moduleDashboardEnabled: z.boolean().optional(),
@@ -258,7 +259,7 @@ export const vipPortalAdminRouter = router({
       }),
 
     // Apply a template to a client's configuration
-    applyTemplate: protectedProcedure
+    applyTemplate: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
         template: z.enum(["FULL_ACCESS", "FINANCIAL_ONLY", "MARKETPLACE_ONLY", "BASIC"]),
@@ -330,7 +331,7 @@ export const vipPortalAdminRouter = router({
       }),
 
     // Copy configuration from one client to another
-    copyConfig: protectedProcedure
+    copyConfig: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         sourceClientId: z.number(),
         targetClientId: z.number(),
@@ -365,7 +366,7 @@ export const vipPortalAdminRouter = router({
   
   tier: router({
     // Get tier configuration (global settings)
-    getConfig: protectedProcedure
+    getConfig: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .query(async () => {
         // TODO: Implement tier configuration storage
         // For now, return hardcoded tiers
@@ -414,7 +415,7 @@ export const vipPortalAdminRouter = router({
       }),
 
     // Update tier configuration
-    updateConfig: protectedProcedure
+    updateConfig: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         tiers: z.array(z.any()),
       }))
@@ -432,7 +433,7 @@ export const vipPortalAdminRouter = router({
   
   leaderboard: router({
     // Get leaderboard configuration for a client
-    getConfig: protectedProcedure
+    getConfig: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
       }))
@@ -460,7 +461,7 @@ export const vipPortalAdminRouter = router({
       }),
 
     // Update leaderboard configuration for a client
-    updateConfig: protectedProcedure
+    updateConfig: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
         moduleLeaderboardEnabled: z.boolean(),
@@ -508,7 +509,7 @@ export const vipPortalAdminRouter = router({
   
   liveCatalog: router({
     // Save Live Catalog configuration
-    saveConfiguration: protectedProcedure
+    saveConfiguration: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
         enabled: z.boolean(),
@@ -589,7 +590,7 @@ export const vipPortalAdminRouter = router({
       }),
     
     // Get Live Catalog configuration
-    getConfiguration: protectedProcedure
+    getConfiguration: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
         clientId: z.number(),
       }))
@@ -607,7 +608,7 @@ export const vipPortalAdminRouter = router({
     // Interest Lists Management
     interestLists: router({
       // Get interest lists by client
-      getByClient: protectedProcedure
+      getByClient: protectedProcedure.use(requirePermission("vip_portal:manage"))
         .input(z.object({
           clientId: z.number(),
           status: z.enum(['NEW', 'REVIEWED', 'CONVERTED', 'ARCHIVED']).optional(),
@@ -646,7 +647,7 @@ export const vipPortalAdminRouter = router({
         }),
       
       // Get interest list by ID
-      getById: protectedProcedure
+      getById: protectedProcedure.use(requirePermission("vip_portal:manage"))
         .input(z.object({
           listId: z.number(),
         }))
@@ -758,7 +759,7 @@ export const vipPortalAdminRouter = router({
         }),
       
       // Update interest list status
-      updateStatus: protectedProcedure
+      updateStatus: protectedProcedure.use(requirePermission("vip_portal:manage"))
         .input(z.object({
           listId: z.number(),
           status: z.enum(['NEW', 'REVIEWED', 'CONVERTED', 'ARCHIVED']),
@@ -793,7 +794,7 @@ export const vipPortalAdminRouter = router({
         }),
       
       // Add to new order
-      addToNewOrder: protectedProcedure
+      addToNewOrder: protectedProcedure.use(requirePermission("vip_portal:manage"))
         .input(z.object({
           listId: z.number(),
           itemIds: z.array(z.number()),
@@ -882,7 +883,7 @@ export const vipPortalAdminRouter = router({
         }),
       
       // Add to draft order
-      addToDraftOrder: protectedProcedure
+      addToDraftOrder: protectedProcedure.use(requirePermission("vip_portal:manage"))
         .input(z.object({
           listId: z.number(),
           orderId: z.number(),
@@ -1004,7 +1005,7 @@ export const vipPortalAdminRouter = router({
     
     // Draft Interests (Admin View)
     draftInterests: router({
-      getByClient: protectedProcedure
+      getByClient: protectedProcedure.use(requirePermission("vip_portal:manage"))
         .input(z.object({
           clientId: z.number(),
         }))
@@ -1100,7 +1101,7 @@ export const vipPortalAdminRouter = router({
 
     priceAlerts: router({
       // List price alerts for a client
-      list: protectedProcedure
+      list: protectedProcedure.use(requirePermission("vip_portal:manage"))
         .input(z.object({
           clientId: z.number(),
         }))
@@ -1113,7 +1114,7 @@ export const vipPortalAdminRouter = router({
         }),
 
       // Deactivate a price alert
-      deactivate: protectedProcedure
+      deactivate: protectedProcedure.use(requirePermission("vip_portal:manage"))
         .input(z.object({
           alertId: z.number(),
         }))

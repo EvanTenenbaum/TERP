@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as scratchPadDb from "../scratchPadDb";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const scratchPadRouter = router({
     // Get user's notes (infinite scroll)
-    list: protectedProcedure
+    list: protectedProcedure.use(requirePermission("notes:read"))
       .input(z.object({
         limit: z.number().optional().default(50),
         cursor: z.number().optional(),
@@ -15,7 +16,7 @@ export const scratchPadRouter = router({
       }),
 
     // Create new note
-    create: protectedProcedure
+    create: protectedProcedure.use(requirePermission("notes:create"))
       .input(z.object({
         content: z.string().min(1).max(10000),
       }))
@@ -25,7 +26,7 @@ export const scratchPadRouter = router({
       }),
 
     // Update note content
-    update: protectedProcedure
+    update: protectedProcedure.use(requirePermission("notes:update"))
       .input(z.object({
         noteId: z.number(),
         content: z.string().min(1).max(10000),
@@ -36,7 +37,7 @@ export const scratchPadRouter = router({
       }),
 
     // Toggle note completion
-    toggleComplete: protectedProcedure
+    toggleComplete: protectedProcedure.use(requirePermission("notes:read"))
       .input(z.object({
         noteId: z.number(),
       }))
@@ -46,7 +47,7 @@ export const scratchPadRouter = router({
       }),
 
     // Delete note
-    delete: protectedProcedure
+    delete: protectedProcedure.use(requirePermission("notes:delete"))
       .input(z.object({
         noteId: z.number(),
       }))
@@ -56,7 +57,7 @@ export const scratchPadRouter = router({
       }),
 
     // Get note count
-    count: protectedProcedure
+    count: protectedProcedure.use(requirePermission("notes:read"))
       .query(async ({ ctx }) => {
         if (!ctx.user) throw new Error("Unauthorized");
         return await scratchPadDb.getNoteCount(ctx.user.id);

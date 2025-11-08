@@ -4,6 +4,7 @@ import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
 import { calendarEvents, calendarEventParticipants, clientMeetingHistory } from "../../drizzle/schema";
 import { and, eq, lt, isNull, inArray } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Calendar Meetings Router

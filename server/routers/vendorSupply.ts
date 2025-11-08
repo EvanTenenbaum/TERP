@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as vendorSupplyDb from "../vendorSupplyDb";
 import * as matchingEngine from "../matchingEngine";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Vendor Supply Router

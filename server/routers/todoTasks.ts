@@ -4,15 +4,16 @@
  */
 
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as todoTasksDb from "../todoTasksDb";
 import * as todoActivityDb from "../todoActivityDb";
 import * as inboxDb from "../inboxDb";
 import * as permissions from "../services/todoPermissions";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const todoTasksRouter = router({
   // Get all tasks in a list
-  getListTasks: protectedProcedure
+  getListTasks: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
@@ -27,13 +28,13 @@ export const todoTasksRouter = router({
     }),
 
   // Get tasks assigned to current user
-  getMyTasks: protectedProcedure.query(async ({ ctx }) => {
+  getMyTasks: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
     return await todoTasksDb.getUserAssignedTasks(ctx.user.id);
   }),
 
   // Get a specific task by ID
-  getById: protectedProcedure
+  getById: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         taskId: z.number(),
@@ -48,7 +49,7 @@ export const todoTasksRouter = router({
     }),
 
   // Create a new task
-  create: protectedProcedure
+  create: protectedProcedure.use(requirePermission("todos:create"))
     .input(
       z.object({
         listId: z.number(),
@@ -95,7 +96,7 @@ export const todoTasksRouter = router({
     }),
 
   // Update a task
-  update: protectedProcedure
+  update: protectedProcedure.use(requirePermission("todos:update"))
     .input(
       z.object({
         taskId: z.number(),
@@ -143,7 +144,7 @@ export const todoTasksRouter = router({
     }),
 
   // Delete a task
-  delete: protectedProcedure
+  delete: protectedProcedure.use(requirePermission("todos:delete"))
     .input(
       z.object({
         taskId: z.number(),
@@ -162,7 +163,7 @@ export const todoTasksRouter = router({
     }),
 
   // Mark task as completed
-  complete: protectedProcedure
+  complete: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         taskId: z.number(),
@@ -182,7 +183,7 @@ export const todoTasksRouter = router({
     }),
 
   // Mark task as incomplete
-  uncomplete: protectedProcedure
+  uncomplete: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         taskId: z.number(),
@@ -207,7 +208,7 @@ export const todoTasksRouter = router({
     }),
 
   // Assign task to a user
-  assign: protectedProcedure
+  assign: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         taskId: z.number(),
@@ -246,7 +247,7 @@ export const todoTasksRouter = router({
     }),
 
   // Reorder tasks in a list
-  reorder: protectedProcedure
+  reorder: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
@@ -268,19 +269,19 @@ export const todoTasksRouter = router({
     }),
 
   // Get overdue tasks
-  getOverdue: protectedProcedure.query(async ({ ctx }) => {
+  getOverdue: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
     return await todoTasksDb.getOverdueTasks();
   }),
 
   // Get tasks due soon
-  getDueSoon: protectedProcedure.query(async ({ ctx }) => {
+  getDueSoon: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
     return await todoTasksDb.getTasksDueSoon();
   }),
 
   // Get task statistics for a list
-  getListStats: protectedProcedure
+  getListStats: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),

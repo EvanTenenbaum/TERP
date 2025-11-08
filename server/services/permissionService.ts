@@ -1,0 +1,263 @@
+import { getDb } from "../db";
+import { 
+  roles, 
+  permissions, 
+  rolePermissions, 
+  userRoles, 
+  userPermissionOverrides 
+} from "../../drizzle/schema";
+import { eq, and, inArray } from "drizzle-orm";
+import { logger } from "../_core/logger";
+
+/**
+ * Permission Service
+ * 
+ * This service provides functions for checking user permissions against the RBAC system.
+ * It implements caching for performance and supports per-user permission overrides.
+ */
+
+// In-memory cache for user permissions
+// Key: userId, Value: { permissions: Set<string>, timestamp: number }
+const permissionCache = new Map<string, { permissions: Set<string>; timestamp: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Clear the permission cache for a specific user or all users
+ */
+export function clearPermissionCache(userId?: string) {
+  if (userId) {
+    permissionCache.delete(userId);
+    logger.info({ msg: "Permission cache cleared for user", userId });
+  } else {
+    permissionCache.clear();
+    logger.info({ msg: "Permission cache cleared for all users" });
+  }
+}
+
+/**
+ * Get all permissions for a user
+ * This function checks:
+ * 1. User's assigned roles and their permissions
+ * 2. User-specific permission overrides (grants and revocations)
+ * 
+ * Results are cached for performance.
+ */
+export async function getUserPermissions(userId: string): Promise<Set<string>> {
+  // Check cache first
+  const cached = permissionCache.get(userId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    logger.debug({ msg: "Permission cache hit", userId });
+    return cached.permissions;
+  }
+
+  logger.debug({ msg: "Permission cache miss, fetching from database", userId });
+
+  try {
+    const db = await getDb();
+    
+    // 1. Get user's roles
+    const userRoleRecords = await db
+      .select({
+        roleId: userRoles.roleId,
+      })
+      .from(userRoles)
+      .where(eq(userRoles.userId, userId));
+
+    if (userRoleRecords.length === 0) {
+      logger.warn({ msg: "User has no roles assigned", userId });
+      // User has no roles, return empty set
+      const emptySet = new Set<string>();
+      permissionCache.set(userId, { permissions: emptySet, timestamp: Date.now() });
+      return emptySet;
+    }
+
+    const roleIds = userRoleRecords.map((r) => r.roleId);
+
+    // 2. Get permissions for those roles
+    const rolePermissionRecords = await db
+      .select({
+        permissionId: rolePermissions.permissionId,
+      })
+      .from(rolePermissions)
+      .where(inArray(rolePermissions.roleId, roleIds));
+
+    const permissionIds = rolePermissionRecords.map((rp) => rp.permissionId);
+
+    // 3. Get permission names
+    const permissionRecords = await db
+      .select({
+        name: permissions.name,
+      })
+      .from(permissions)
+      .where(inArray(permissions.id, permissionIds));
+
+    const userPermissions = new Set(permissionRecords.map((p) => p.name));
+
+    // 4. Apply user-specific permission overrides
+    const overrideRecords = await db
+      .select({
+        permissionId: userPermissionOverrides.permissionId,
+        granted: userPermissionOverrides.granted,
+      })
+      .from(userPermissionOverrides)
+      .where(eq(userPermissionOverrides.userId, userId));
+
+    if (overrideRecords.length > 0) {
+      const overridePermissionIds = overrideRecords.map((o) => o.permissionId);
+      const overridePermissionRecords = await db
+        .select({
+          id: permissions.id,
+          name: permissions.name,
+        })
+        .from(permissions)
+        .where(inArray(permissions.id, overridePermissionIds));
+
+      for (const override of overrideRecords) {
+        const permission = overridePermissionRecords.find((p) => p.id === override.permissionId);
+        if (permission) {
+          if (override.granted === 1) {
+            // Grant permission
+            userPermissions.add(permission.name);
+            logger.debug({ 
+              msg: "Permission override: granted", 
+              userId, 
+              permission: permission.name 
+            });
+          } else {
+            // Revoke permission
+            userPermissions.delete(permission.name);
+            logger.debug({ 
+              msg: "Permission override: revoked", 
+              userId, 
+              permission: permission.name 
+            });
+          }
+        }
+      }
+    }
+
+    // Cache the result
+    permissionCache.set(userId, { permissions: userPermissions, timestamp: Date.now() });
+
+    logger.info({ 
+      msg: "User permissions loaded", 
+      userId, 
+      permissionCount: userPermissions.size 
+    });
+
+    return userPermissions;
+  } catch (error) {
+    logger.error({ msg: "Error fetching user permissions", userId, error });
+    throw error;
+  }
+}
+
+/**
+ * Check if a user has a specific permission
+ */
+export async function hasPermission(userId: string, permissionName: string): Promise<boolean> {
+  const userPermissions = await getUserPermissions(userId);
+  const hasIt = userPermissions.has(permissionName);
+  
+  logger.debug({ 
+    msg: "Permission check", 
+    userId, 
+    permission: permissionName, 
+    result: hasIt 
+  });
+  
+  return hasIt;
+}
+
+/**
+ * Check if a user has ALL of the specified permissions
+ */
+export async function hasAllPermissions(
+  userId: string, 
+  permissionNames: string[]
+): Promise<boolean> {
+  const userPermissions = await getUserPermissions(userId);
+  const hasAll = permissionNames.every((p) => userPermissions.has(p));
+  
+  logger.debug({ 
+    msg: "Multiple permission check (AND)", 
+    userId, 
+    permissions: permissionNames, 
+    result: hasAll 
+  });
+  
+  return hasAll;
+}
+
+/**
+ * Check if a user has ANY of the specified permissions
+ */
+export async function hasAnyPermission(
+  userId: string, 
+  permissionNames: string[]
+): Promise<boolean> {
+  const userPermissions = await getUserPermissions(userId);
+  const hasAny = permissionNames.some((p) => userPermissions.has(p));
+  
+  logger.debug({ 
+    msg: "Multiple permission check (OR)", 
+    userId, 
+    permissions: permissionNames, 
+    result: hasAny 
+  });
+  
+  return hasAny;
+}
+
+/**
+ * Get all roles for a user
+ */
+export async function getUserRoles(userId: string): Promise<Array<{ id: number; name: string; description: string | null }>> {
+  try {
+    const db = await getDb();
+    
+    const userRoleRecords = await db
+      .select({
+        roleId: userRoles.roleId,
+      })
+      .from(userRoles)
+      .where(eq(userRoles.userId, userId));
+
+    if (userRoleRecords.length === 0) {
+      return [];
+    }
+
+    const roleIds = userRoleRecords.map((r) => r.roleId);
+
+    const roleRecords = await db
+      .select({
+        id: roles.id,
+        name: roles.name,
+        description: roles.description,
+      })
+      .from(roles)
+      .where(inArray(roles.id, roleIds));
+
+    return roleRecords;
+  } catch (error) {
+    logger.error({ msg: "Error fetching user roles", userId, error });
+    throw error;
+  }
+}
+
+/**
+ * Check if a user is a Super Admin
+ * Super Admins have unrestricted access to the entire system
+ */
+export async function isSuperAdmin(userId: string): Promise<boolean> {
+  const userRolesList = await getUserRoles(userId);
+  const isSA = userRolesList.some((role) => role.name === "Super Admin");
+  
+  logger.debug({ 
+    msg: "Super Admin check", 
+    userId, 
+    result: isSA 
+  });
+  
+  return isSA;
+}
