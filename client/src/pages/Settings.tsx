@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { UserManagement } from "@/components/UserManagement";
 import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagement";
+import { RoleManagement } from "@/components/settings/rbac/RoleManagement";
 
 export default function Settings() {
   return (
@@ -21,9 +22,10 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="rbac">User Roles</TabsTrigger>
+          <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="locations">Locations</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
@@ -35,6 +37,10 @@ export default function Settings() {
 
         <TabsContent value="rbac" className="space-y-4">
           <UserRoleManagement />
+        </TabsContent>
+
+        <TabsContent value="roles" className="space-y-4">
+          <RoleManagement />
         </TabsContent>
 
         <TabsContent value="locations" className="space-y-4">
