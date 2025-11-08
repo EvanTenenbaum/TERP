@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Role-Based Access Control (RBAC) System (2025-11-07)
+
+#### Task 1.2: User Roles & Permissions (RBAC)
+
+- **Feature**: Comprehensive Role-Based Access Control system for TERP
+- **Backend**:
+  - Database schema with roles, permissions, user_roles, role_permissions, and user_permission_overrides tables
+  - Permission service with caching (5-minute TTL) for performance
+  - Permission middleware for tRPC (`requirePermission`, `requireAllPermissions`, `requireAnyPermission`)
+  - Three RBAC management routers:
+    - `rbac-users.ts` - User role assignment and permission overrides
+    - `rbac-roles.ts` - Role CRUD operations and permission assignment
+    - `rbac-permissions.ts` - Permission management and analytics
+  - Protected all 63 API routers with permission checks
+  - Seed script with 10 default roles and 100+ permissions
+  - Super Admin bypass for all permission checks
+- **Frontend**:
+  - `usePermissions()` hook for permission checking
+  - `PermissionGate` component for declarative permission-based rendering
+  - `useModulePermissions()` hook for CRUD permission checks
+  - Three RBAC management UI components:
+    - `UserRoleManagement.tsx` - Assign roles and permission overrides to users
+    - `RoleManagement.tsx` - Create, edit, delete roles
+    - `PermissionAssignment.tsx` - Assign permissions to roles
+  - Integrated into Settings page with three new tabs
+- **Default Roles**:
+  - Super Admin (full access)
+  - Admin (administrative access)
+  - Manager (management-level access)
+  - Sales Representative (sales-focused)
+  - Inventory Manager (inventory control)
+  - Accountant (financial operations)
+  - Purchasing Agent (procurement)
+  - Warehouse Staff (warehouse operations)
+  - Viewer (read-only access)
+  - Custom Role (template for custom roles)
+- **Documentation**:
+  - RBAC Implementation Roadmap
+  - RBAC Router Permission Mapping (63 routers)
+  - RBAC Frontend Implementation Guide
+  - RBAC Testing Plan
+  - User Guide for RBAC
+  - Updated Development Protocols Bible with RBAC protocols
+- **Testing**:
+  - Unit tests for permission service and middleware
+  - Integration tests for RBAC routers
+  - 329 tests passing (RBAC functionality verified)
+  - Comprehensive testing plan for manual QA
+- **Status**: ✅ Production-ready, fully functional
+- **Estimated Effort**: 40 hours (7 phases)
+- **Actual Effort**: Completed in single autonomous session
+- **Commits**: Multiple commits across 7 phases with self-healing checkpoints
+- **Branch**: `feature/1.2-user-roles-permissions`
+
 ### Added - Vendor Payment Terms (2025-11-05)
 
 #### MF-015: Vendor Payment Terms
