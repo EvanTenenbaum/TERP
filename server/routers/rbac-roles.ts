@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { db } from "../db";
+import { getDb } from "../db";
 import { 
   roles, 
   permissions, 
@@ -33,6 +33,9 @@ export const rbacRolesRouter = router({
     }))
     .query(async ({ input }) => {
       try {
+        const db = await getDb();
+
+
         // Get all roles
         let query = db
           .select({
@@ -115,6 +118,9 @@ export const rbacRolesRouter = router({
     .input(z.object({ roleId: z.number() }))
     .query(async ({ input }) => {
       try {
+        const db = await getDb();
+
+
         // Get role details
         const role = await db
           .select({
@@ -190,6 +196,7 @@ export const rbacRolesRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Check if role name already exists
         const existing = await db
           .select({ id: roles.id })
@@ -242,6 +249,7 @@ export const rbacRolesRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Check if role exists and is not a system role
         const role = await db
           .select({ 
@@ -310,6 +318,7 @@ export const rbacRolesRouter = router({
     .input(z.object({ roleId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Check if role exists and is not a system role
         const role = await db
           .select({ 
@@ -366,6 +375,7 @@ export const rbacRolesRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Validate role and permission exist
         const role = await db
           .select({ id: roles.id, name: roles.name })
@@ -441,6 +451,7 @@ export const rbacRolesRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Get role and permission names for logging
         const role = await db
           .select({ name: roles.name })
@@ -496,6 +507,7 @@ export const rbacRolesRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Validate role exists
         const role = await db
           .select({ id: roles.id, name: roles.name })
@@ -570,6 +582,7 @@ export const rbacRolesRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       try {
+        const db = await getDb();
         // Validate role exists
         const role = await db
           .select({ id: roles.id, name: roles.name })

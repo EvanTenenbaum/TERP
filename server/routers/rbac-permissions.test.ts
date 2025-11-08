@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeAll, vi, beforeEach } from "vitest";
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db } from "../db";
+import { getDb } from "../db";
 import * as permissionService from "../services/permissionService";
 
 // Mock the database
