@@ -1,74 +1,54 @@
 # TERP Roadmap Progress Tracker
 
 **Last Updated:** November 7, 2025  
-**Current Phase:** Phase 1 (Months 1-3)
+**Current Phase:** Phase 0: Prerequisites
+
+---
+
+## Phase 0: Prerequisites
+
+| Task ID | Task                                | Status          |
+| ------- | ----------------------------------- | --------------- |
+| 0.1     | Test Data Strategy & Seeding        | **NEXT UP**     |
+| 0.2     | Database Migration & Rollback Plan  | PENDING         |
+| 0.3     | Create Handoff & Spec Documentation | ✅ COMPLETE     |
 
 ---
 
 ## Phase 1: Critical Fixes & Foundational Layers
 
-### ✅ 1.1 Inventory System Stability (COMPLETE)
+### ✅ 1.1 Inventory System Stability
 - **Status:** VERIFIED COMPLETE
-- **Duration:** 2 weeks
-- **Completion Date:** November 7, 2025
-- **Branch:** `feature/1.1-inventory-stability-verification`
-- **Notes:** System already implemented pessimistic locking correctly. Created verification tests and documentation.
+- **Notes:** System already implemented pessimistic locking correctly.
 
-### 🚧 1.2 User Roles & Permissions (RBAC) (28% COMPLETE - PAUSED)
-- **Status:** Phases 1-2 Complete, Phases 3-7 Pending
-- **Duration:** 6 weeks total (1.5 weeks completed)
-- **Start Date:** November 7, 2025
-- **Branch:** `feature/1.2-user-roles-permissions`
-- **Completed:**
-  - ✅ Phase 1: Database Schema & Seed Data
-  - ✅ Phase 2: Backend Permission Checking Middleware
-- **Pending:**
-  - ⏸️ Phase 3: User & Role Management UI (2 weeks)
-  - ⏸️ Phase 4: API Endpoint Protection (1 week)
-  - ⏸️ Phase 5: Frontend Visibility Control (1 week)
-  - ⏸️ Phase 6: Comprehensive Testing (1 week)
-  - ⏸️ Phase 7: Documentation & Handoff (1 week)
-- **Notes:** Foundation complete. Will resume later to complete UI and integration.
+### ✅ 1.3 Simplified RBAC System
+- **Status:** COMPLETE
+- **Notes:** Full 7-phase implementation is complete and production-ready.
 
-### ⏭️ 1.3 Workflow Queue Management (NEXT)
+### ⏭️ 1.2 Order Record Bug Fix
 - **Status:** NOT STARTED
-- **Duration:** 6 weeks
-- **Priority:** HIGH
-- **Dependencies:** Requires 1.2 (RBAC) to be fully complete
-- **PRD:** `docs/specs/WORKFLOW_QUEUE_MANAGEMENT_PRD.md`
-
-### ⏭️ 1.4 Order Record Bug Fix
-- **Status:** NOT STARTED
-- **Duration:** 2 weeks
 - **Priority:** CRITICAL
-
-### ⏭️ 1.5 Unified Tag System
-- **Status:** NOT STARTED
-- **Duration:** 8-10 weeks
-- **Priority:** MEDIUM
-- **PRD:** `docs/specs/TAG_SYSTEM_IMPLEMENTATION_PLAN.md`
 
 ---
 
 ## Overall Progress
 
-**Phase 1 Completion:** 22% (1.5 of 6.8 weeks completed)  
-**Total Roadmap Completion:** 6% (1.5 of 25 tasks completed)
+**Current Focus:** Completing Phase 0 prerequisites to ensure a stable development foundation.
 
 ---
 
 ## Key Deliverables Completed
 
-1. **RBAC Database Schema** - 5 tables, 10 roles, 255 permissions
-2. **RBAC Backend Middleware** - Permission service with caching, tRPC middleware
-3. **Inventory Stability Verification** - Comprehensive concurrency tests
-4. **Bible Restructuring** - Testing protocols moved to top (Version 3.0)
-5. **Comprehensive PRDs** - RBAC, Workflow Queue, Tag System
+1.  **Full RBAC Implementation** - All 7 phases, 10 roles, 100+ permissions, 329+ tests.
+2.  **Inventory Stability Verification** - Comprehensive concurrency tests.
+3.  **Bible Restructuring** - Mandatory testing protocols moved to top (Version 3.0).
+4.  **Phase 0 Documentation** - Simplified RBAC Model, Prerequisites Plan.
+5.  **Improved Roadmap v2** - New roadmap created to guide future development.
 
 ---
 
 ## Next Actions
 
-1. **Create PRDs** for remaining Phase 1 tasks
-2. **Begin Task 1.3** (Workflow Queue Management) after RBAC dependency is resolved OR
-3. **Begin Task 1.4** (Order Record Bug Fix) as it has no dependencies
+1.  **Execute Phase 0.1:** Develop and run the test data seeding script.
+2.  **Execute Phase 0.2:** Formalize and document the database migration and rollback plan.
+3.  **Begin Phase 1, Task 1.2:** Start work on the critical Order Record Bug Fix.
