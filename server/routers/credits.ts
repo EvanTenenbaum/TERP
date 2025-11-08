@@ -6,13 +6,13 @@
  */
 
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as creditsDb from "../creditsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const creditsRouter = router({
   // Create a new credit
-  create: requirePermission("credits:create")
+  create: protectedProcedure.use(requirePermission("credits:create"))
     .input(z.object({
       clientId: z.number(),
       creditAmount: z.string(),
@@ -41,21 +41,21 @@ export const creditsRouter = router({
     }),
 
   // Get credit by ID
-  getById: requirePermission("credits:read")
+  getById: protectedProcedure.use(requirePermission("credits:read"))
     .input(z.object({ creditId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getCreditById(input.creditId);
     }),
 
   // Get credit by number
-  getByNumber: requirePermission("credits:read")
+  getByNumber: protectedProcedure.use(requirePermission("credits:read"))
     .input(z.object({ creditNumber: z.string() }))
     .query(async ({ input }) => {
       return await creditsDb.getCreditByNumber(input.creditNumber);
     }),
 
   // Get all credits for a client
-  getByClient: requirePermission("credits:read")
+  getByClient: protectedProcedure.use(requirePermission("credits:read"))
     .input(z.object({
       clientId: z.number(),
       activeOnly: z.boolean().optional().default(false),
@@ -65,14 +65,14 @@ export const creditsRouter = router({
     }),
 
   // Get client credit balance
-  getBalance: requirePermission("credits:read")
+  getBalance: protectedProcedure.use(requirePermission("credits:read"))
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getClientCreditBalance(input.clientId);
     }),
 
   // Apply credit to an invoice
-  applyCredit: requirePermission("credits:update")
+  applyCredit: protectedProcedure.use(requirePermission("credits:update"))
     .input(z.object({
       creditId: z.number(),
       invoiceId: z.number(),
@@ -92,28 +92,28 @@ export const creditsRouter = router({
     }),
 
   // Get applications for a credit
-  getApplications: requirePermission("credits:read")
+  getApplications: protectedProcedure.use(requirePermission("credits:read"))
     .input(z.object({ creditId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getCreditApplications(input.creditId);
     }),
 
   // Get credits applied to an invoice
-  getInvoiceApplications: requirePermission("credits:read")
+  getInvoiceApplications: protectedProcedure.use(requirePermission("credits:read"))
     .input(z.object({ invoiceId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getInvoiceCreditApplications(input.invoiceId);
     }),
 
   // Get credit history for a client
-  getHistory: requirePermission("credits:read")
+  getHistory: protectedProcedure.use(requirePermission("credits:read"))
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       return await creditsDb.getClientCreditHistory(input.clientId);
     }),
 
   // Void a credit
-  void: requirePermission("credits:read")
+  void: protectedProcedure.use(requirePermission("credits:read"))
     .input(z.object({ creditId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
@@ -121,7 +121,7 @@ export const creditsRouter = router({
     }),
 
   // Mark expired credits (admin function, could be run as cron job)
-  markExpired: requirePermission("credits:read")
+  markExpired: protectedProcedure.use(requirePermission("credits:read"))
     .mutation(async ({ ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
       const count = await creditsDb.markExpiredCredits();

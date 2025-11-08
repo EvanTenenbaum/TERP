@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { strains, products } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
@@ -24,7 +24,7 @@ export const adminRouter = router({
    * 
    * Safe to run multiple times (all operations are idempotent).
    */
-  setupStrainSystem: requirePermission("system:manage")
+  setupStrainSystem: protectedProcedure.use(requirePermission("system:manage"))
     .mutation(async () => {
       const startTime = Date.now();
       const results = {
@@ -165,7 +165,7 @@ export const adminRouter = router({
    * - Strains are imported
    * - Performance is acceptable
    */
-  verifyStrainSystem: requirePermission("system:manage")
+  verifyStrainSystem: protectedProcedure.use(requirePermission("system:manage"))
     .query(async () => {
       const db = await getDb();
       if (!db) {
@@ -280,7 +280,7 @@ export const adminRouter = router({
    * 
    * Quick status check without running full verification.
    */
-  getStrainSystemStatus: requirePermission("system:manage")
+  getStrainSystemStatus: protectedProcedure.use(requirePermission("system:manage"))
     .query(async () => {
       const db = await getDb();
       if (!db) {

@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import type { Batch } from "../../drizzle/schema";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 export const cogsRouter = router({
     // Calculate COGS impact
-    calculateImpact: requirePermission("cogs:read")
+    calculateImpact: protectedProcedure.use(requirePermission("cogs:read"))
       .input(z.object({
         batchId: z.number(),
         newCogs: z.string(),
@@ -16,7 +16,7 @@ export const cogsRouter = router({
       }),
     
     // Update batch COGS
-    updateBatchCogs: requirePermission("cogs:update")
+    updateBatchCogs: protectedProcedure.use(requirePermission("cogs:update"))
       .input(z.object({
         batchId: z.number(),
         newCogs: z.string(),
@@ -29,7 +29,7 @@ export const cogsRouter = router({
       }),
     
     // Get COGS history
-    getHistory: requirePermission("cogs:read")
+    getHistory: protectedProcedure.use(requirePermission("cogs:read"))
       .input(z.object({ batchId: z.number() }))
       .query(async ({ input }) => {
         // TODO: Implement COGS management module
