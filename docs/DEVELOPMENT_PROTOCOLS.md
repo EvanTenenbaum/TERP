@@ -1071,3 +1071,351 @@ gh api repos/EvanTenenbaum/TERP/commits/<COMMIT_SHA>/comments | jq -r '.[].body'
 **Failure to follow this protocol means you are working blind and will break the build.**
 
 ---
+
+## Role-Based Access Control (RBAC) Protocol
+
+**Version:** 1.0  
+**Last Updated:** November 7, 2025  
+**Purpose:** Ensure consistent implementation and maintenance of RBAC across the TERP system
+
+---
+
+### Overview
+
+The TERP system implements a comprehensive Role-Based Access Control (RBAC) system that controls access to all features and data. This protocol defines how to work with RBAC when developing new features or modifying existing ones.
+
+### Core Principles
+
+1. **Backend Enforcement is Primary** - All permission checks MUST be enforced on the backend. Frontend checks are for UX only.
+2. **Super Admin Bypass** - Super Admins bypass all permission checks and have access to everything.
+3. **Permission Inheritance** - Users inherit permissions from all assigned roles.
+4. **Permission Overrides** - Individual permissions can be granted or revoked per user, overriding role permissions.
+5. **Cache Invalidation** - Permission cache MUST be cleared when roles or permissions change.
+
+### Permission Naming Convention
+
+Permissions follow the format: `{module}:{action}`
+
+**Common Modules:**
+- `orders`, `inventory`, `clients`, `vendors`, `purchase_orders`
+- `accounting`, `dashboard`, `calendar`, `todos`
+- `rbac`, `system`, `settings`
+
+**Common Actions:**
+- `read` - View/list data
+- `create` - Create new records
+- `update` - Modify existing records
+- `delete` - Remove records
+- `manage` - Full CRUD access (admin only)
+
+**Examples:**
+- `orders:read` - View orders
+- `orders:create` - Create new orders
+- `inventory:update` - Update inventory
+- `rbac:manage` - Full RBAC administration
+
+### Backend Implementation
+
+#### 1. Protecting API Endpoints
+
+All tRPC router endpoints MUST use the `requirePermission` middleware:
+
+```typescript
+import { router, protectedProcedure } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
+
+export const myRouter = router({
+  // Read operation
+  list: protectedProcedure
+    .use(requirePermission("module:read"))
+    .input(z.object({ ... }))
+    .query(async ({ input }) => { ... }),
+    
+  // Create operation
+  create: protectedProcedure
+    .use(requirePermission("module:create"))
+    .input(z.object({ ... }))
+    .mutation(async ({ input }) => { ... }),
+    
+  // Update operation
+  update: protectedProcedure
+    .use(requirePermission("module:update"))
+    .input(z.object({ ... }))
+    .mutation(async ({ input }) => { ... }),
+    
+  // Delete operation
+  delete: protectedProcedure
+    .use(requirePermission("module:delete"))
+    .input(z.object({ ... }))
+    .mutation(async ({ input }) => { ... }),
+});
+```
+
+#### 2. Multiple Permission Checks
+
+For operations requiring multiple permissions:
+
+```typescript
+import { requireAllPermissions, requireAnyPermission } from "../_core/permissionMiddleware";
+
+// Requires ALL permissions
+complexOperation: protectedProcedure
+  .use(requireAllPermissions(["orders:read", "pricing:read"]))
+  .query(async ({ input }) => { ... }),
+
+// Requires ANY permission
+flexibleOperation: protectedProcedure
+  .use(requireAnyPermission(["orders:create", "quotes:create"]))
+  .mutation(async ({ input }) => { ... }),
+```
+
+#### 3. Adding New Permissions
+
+When adding a new module or feature:
+
+1. **Add permission to seed script** (`scripts/seed-rbac.ts`):
+   ```typescript
+   await createPermission("new_module:read", "View new module data", "new_module");
+   await createPermission("new_module:create", "Create new module records", "new_module");
+   ```
+
+2. **Assign to appropriate roles** in the seed script:
+   ```typescript
+   await assignPermissionToRole("Sales Representative", "new_module:read");
+   await assignPermissionToRole("Manager", "new_module:create");
+   ```
+
+3. **Run migration** to update the database:
+   ```bash
+   pnpm tsx scripts/seed-rbac.ts
+   ```
+
+4. **Update permission mapping** in `docs/RBAC_ROUTER_PERMISSION_MAPPING.md`
+
+### Frontend Implementation
+
+#### 1. Using the usePermissions Hook
+
+For conditional rendering based on permissions:
+
+```typescript
+import { usePermissions } from "@/hooks/usePermissions";
+
+function MyComponent() {
+  const { hasPermission, isSuperAdmin } = usePermissions();
+
+  return (
+    <div>
+      {hasPermission('orders:create') && (
+        <Button>Create Order</Button>
+      )}
+      
+      {isSuperAdmin && (
+        <Button>Admin Panel</Button>
+      )}
+    </div>
+  );
+}
+```
+
+#### 2. Using the PermissionGate Component
+
+For declarative permission checks:
+
+```typescript
+import { PermissionGate } from "@/hooks/usePermissions";
+
+<PermissionGate permission="orders:create">
+  <CreateOrderButton />
+</PermissionGate>
+
+<PermissionGate 
+  permissions={['inventory:update', 'inventory:delete']} 
+  requireAll={false}
+  fallback={<div>No access</div>}
+>
+  <InventoryActions />
+</PermissionGate>
+```
+
+#### 3. Using the useModulePermissions Hook
+
+For CRUD operations on a specific module:
+
+```typescript
+import { useModulePermissions } from "@/hooks/usePermissions";
+
+function OrdersPage() {
+  const { canRead, canCreate, canUpdate, canDelete } = useModulePermissions('orders');
+
+  return (
+    <div>
+      {canRead && <OrdersList />}
+      {canCreate && <CreateOrderButton />}
+      {canUpdate && <EditOrderButton />}
+      {canDelete && <DeleteOrderButton />}
+    </div>
+  );
+}
+```
+
+### Testing Requirements
+
+When implementing RBAC for a new feature:
+
+1. **Unit Tests** - Test permission middleware:
+   ```typescript
+   it('requires permission to access endpoint', async () => {
+     const user = await createTestUser({ permissions: [] });
+     await expect(caller(user).myRouter.create()).rejects.toThrow('Insufficient permissions');
+   });
+   ```
+
+2. **Integration Tests** - Test full permission flow:
+   ```typescript
+   it('allows access with correct permission', async () => {
+     const user = await createTestUser({ permissions: ['module:create'] });
+     const result = await caller(user).myRouter.create({ ... });
+     expect(result).toBeDefined();
+   });
+   ```
+
+3. **Manual QA** - Test with different roles:
+   - Log in as each role
+   - Verify UI elements appear/disappear correctly
+   - Verify API calls succeed/fail appropriately
+
+### Common Patterns
+
+#### Pattern 1: Conditional Button Rendering
+
+```typescript
+{hasPermission('orders:delete') && (
+  <Button variant="destructive" onClick={handleDelete}>
+    Delete
+  </Button>
+)}
+```
+
+#### Pattern 2: Disable vs Hide
+
+```typescript
+// Option 1: Hide completely
+{hasPermission('orders:delete') && <DeleteButton />}
+
+// Option 2: Show but disable
+<Button 
+  disabled={!hasPermission('orders:delete')}
+  title={!hasPermission('orders:delete') ? "No permission" : "Delete"}
+>
+  Delete
+</Button>
+```
+
+#### Pattern 3: Conditional Page Access
+
+```typescript
+function AdminPage() {
+  const { hasPermission, isLoading } = usePermissions();
+
+  if (isLoading) return <LoadingSpinner />;
+  
+  if (!hasPermission('system:manage')) {
+    return <AccessDenied />;
+  }
+
+  return <AdminDashboard />;
+}
+```
+
+### Troubleshooting
+
+#### Permission Cache Issues
+
+If permissions don't update after role changes:
+
+1. **Check cache clearing** - Ensure `clearPermissionCache(userId)` is called:
+   ```typescript
+   import { clearPermissionCache } from "../services/permissionService";
+   
+   // After role assignment
+   await assignRoleToUser(userId, roleId);
+   clearPermissionCache(userId);
+   ```
+
+2. **User may need to refresh** - Permission cache has a TTL of 5 minutes
+
+#### Permission Denied Errors
+
+If users get unexpected permission errors:
+
+1. **Check user's roles** - Verify user has the correct roles assigned
+2. **Check role permissions** - Verify the role has the required permissions
+3. **Check permission overrides** - Check if user has a revoked override
+4. **Check logs** - Permission checks are logged for debugging
+
+### Security Considerations
+
+1. **Never trust frontend checks** - Always enforce on backend
+2. **Log permission failures** - All permission denials are logged
+3. **Audit permission changes** - Role and permission changes are logged
+4. **Protect RBAC endpoints** - Only admins can modify roles and permissions
+5. **Validate permission names** - Ensure permission strings are valid
+
+### Maintenance
+
+#### Adding a New Role
+
+1. Update `scripts/seed-rbac.ts`:
+   ```typescript
+   const newRole = await createRole(
+     "New Role Name",
+     "Description of the role",
+     false // isSystemRole
+   );
+   ```
+
+2. Assign permissions:
+   ```typescript
+   await assignPermissionToRole("New Role Name", "orders:read");
+   await assignPermissionToRole("New Role Name", "orders:create");
+   ```
+
+3. Run seed script:
+   ```bash
+   pnpm tsx scripts/seed-rbac.ts
+   ```
+
+#### Modifying Role Permissions
+
+1. Update seed script with new permission assignments
+2. Run seed script to update database
+3. Clear permission cache for affected users
+4. Test with affected roles
+
+### Documentation References
+
+- **Implementation Roadmap**: `docs/RBAC_IMPLEMENTATION_ROADMAP.md`
+- **Permission Mapping**: `docs/RBAC_ROUTER_PERMISSION_MAPPING.md`
+- **Frontend Guide**: `docs/RBAC_FRONTEND_IMPLEMENTATION_GUIDE.md`
+- **Testing Plan**: `docs/RBAC_TESTING_PLAN.md`
+
+### Checklist for New Features
+
+When adding a new feature to TERP:
+
+- [ ] Define required permissions (read, create, update, delete)
+- [ ] Add permissions to seed script
+- [ ] Assign permissions to appropriate roles
+- [ ] Protect all API endpoints with `requirePermission`
+- [ ] Add frontend permission checks for UI elements
+- [ ] Write unit tests for permission enforcement
+- [ ] Write integration tests for permission flow
+- [ ] Test manually with different roles
+- [ ] Update permission mapping documentation
+- [ ] Run seed script to update database
+
+---
+
+**Last Updated:** November 7, 2025  
+**Maintained By:** TERP Development Team
