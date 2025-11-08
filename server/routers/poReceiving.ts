@@ -8,6 +8,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { purchaseOrders, purchaseOrderItems, batches, inventoryMovements, intakeSessions } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const poReceivingRouter = router({
   // Receive a purchase order (create intake session and update inventory)

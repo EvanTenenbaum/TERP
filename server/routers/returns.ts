@@ -8,6 +8,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { returns, batches, inventoryMovements } from "../../drizzle/schema";
 import { eq, desc, sql } from "drizzle-orm";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const returnsRouter = router({
   // Get all returns

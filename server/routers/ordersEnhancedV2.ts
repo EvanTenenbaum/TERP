@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { orders, orderLineItems, batches } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -15,6 +15,7 @@ import { priceCalculationService } from "../services/priceCalculationService";
 import { orderValidationService } from "../services/orderValidationService";
 import { orderAuditService } from "../services/orderAuditService";
 import { cogsChangeIntegrationService } from "../services/cogsChangeIntegrationService";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 // Input schemas
 const lineItemInputSchema = z.object({
@@ -57,7 +58,7 @@ export const ordersEnhancedV2Router = router({
    * Create order (draft)
    * Saves order as draft without finalizing
    */
-  createDraft: protectedProcedure
+  createDraft: protectedProcedure.use(requirePermission("orders:create"))
     .input(createOrderInputSchema)
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -224,7 +225,7 @@ export const ordersEnhancedV2Router = router({
    * Update order draft
    * Updates existing draft order
    */
-  updateDraft: protectedProcedure
+  updateDraft: protectedProcedure.use(requirePermission("orders:update"))
     .input(
       z.object({
         orderId: z.number(),
@@ -403,7 +404,7 @@ export const ordersEnhancedV2Router = router({
    * Finalize order
    * Converts draft to finalized order
    */
-  finalize: protectedProcedure
+  finalize: protectedProcedure.use(requirePermission("orders:read"))
     .input(
       z.object({
         orderId: z.number(),
@@ -483,7 +484,7 @@ export const ordersEnhancedV2Router = router({
   /**
    * Get order with line items
    */
-  getOrderWithLineItems: protectedProcedure
+  getOrderWithLineItems: protectedProcedure.use(requirePermission("orders:read"))
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -511,7 +512,7 @@ export const ordersEnhancedV2Router = router({
    * Get margin for product
    * Returns margin with fallback logic
    */
-  getMarginForProduct: protectedProcedure
+  getMarginForProduct: protectedProcedure.use(requirePermission("orders:read"))
     .input(
       z.object({
         clientId: z.number(),
@@ -531,7 +532,7 @@ export const ordersEnhancedV2Router = router({
   /**
    * Calculate price from margin
    */
-  calculatePrice: protectedProcedure
+  calculatePrice: protectedProcedure.use(requirePermission("orders:read"))
     .input(
       z.object({
         cogs: z.number(),
@@ -558,7 +559,7 @@ export const ordersEnhancedV2Router = router({
    * Update COGS for line item
    * Triggers COGS change service
    */
-  updateLineItemCOGS: protectedProcedure
+  updateLineItemCOGS: protectedProcedure.use(requirePermission("orders:update"))
     .input(
       z.object({
         orderId: z.number(),
@@ -629,7 +630,7 @@ export const ordersEnhancedV2Router = router({
   /**
    * Get audit log for order
    */
-  getAuditLog: protectedProcedure
+  getAuditLog: protectedProcedure.use(requirePermission("orders:read"))
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();

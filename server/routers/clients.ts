@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import * as clientsDb from "../clientsDb";
 import * as transactionsDb from "../transactionsDb";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 export const clientsRouter = router({
   // List clients with pagination and filters
-  list: protectedProcedure
+  list: protectedProcedure.use(requirePermission("clients:read"))
     .input(z.object({
       limit: z.number().optional().default(50),
       offset: z.number().optional().default(0),
@@ -19,7 +20,7 @@ export const clientsRouter = router({
     }),
 
   // Get total count for pagination
-  count: protectedProcedure
+  count: protectedProcedure.use(requirePermission("clients:read"))
     .input(z.object({
       search: z.string().optional(),
       clientTypes: z.array(z.enum(["buyer", "seller", "brand", "referee", "contractor"])).optional(),
@@ -31,21 +32,21 @@ export const clientsRouter = router({
     }),
 
   // Get single client by ID
-  getById: protectedProcedure
+  getById: protectedProcedure.use(requirePermission("clients:read"))
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       return await clientsDb.getClientById(input.clientId);
     }),
 
   // Get client by TERI code
-  getByTeriCode: protectedProcedure
+  getByTeriCode: protectedProcedure.use(requirePermission("clients:read"))
     .input(z.object({ teriCode: z.string() }))
     .query(async ({ input }) => {
       return await clientsDb.getClientByTeriCode(input.teriCode);
     }),
 
   // Create new client
-  create: protectedProcedure
+  create: protectedProcedure.use(requirePermission("clients:create"))
     .input(z.object({
       teriCode: z.string().min(1).max(50),
       name: z.string().min(1).max(255),
@@ -65,7 +66,7 @@ export const clientsRouter = router({
     }),
 
   // Update client
-  update: protectedProcedure
+  update: protectedProcedure.use(requirePermission("clients:update"))
     .input(z.object({
       clientId: z.number(),
       name: z.string().min(1).max(255).optional(),
@@ -86,7 +87,7 @@ export const clientsRouter = router({
     }),
 
   // Delete client
-  delete: protectedProcedure
+  delete: protectedProcedure.use(requirePermission("clients:delete"))
     .input(z.object({ clientId: z.number() }))
     .mutation(async ({ input }) => {
       return await clientsDb.deleteClient(input.clientId);
@@ -94,7 +95,7 @@ export const clientsRouter = router({
 
   // Transactions
   transactions: router({
-    list: protectedProcedure
+    list: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({
         clientId: z.number(),
         limit: z.number().optional().default(50),
@@ -110,13 +111,13 @@ export const clientsRouter = router({
         return await clientsDb.getClientTransactions(clientId, options);
       }),
 
-    getById: protectedProcedure
+    getById: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({ transactionId: z.number() }))
       .query(async ({ input }) => {
         return await clientsDb.getTransactionById(input.transactionId);
       }),
 
-    create: protectedProcedure
+    create: protectedProcedure.use(requirePermission("clients:create"))
       .input(z.object({
         clientId: z.number(),
         transactionType: z.enum(["INVOICE", "PAYMENT", "QUOTE", "ORDER", "REFUND", "CREDIT"]),
@@ -134,7 +135,7 @@ export const clientsRouter = router({
         return await clientsDb.createTransaction(ctx.user.id, input);
       }),
 
-    update: protectedProcedure
+    update: protectedProcedure.use(requirePermission("clients:update"))
       .input(z.object({
         transactionId: z.number(),
         transactionDate: z.date().optional(),
@@ -150,7 +151,7 @@ export const clientsRouter = router({
         return await clientsDb.updateTransaction(transactionId, ctx.user.id, data);
       }),
 
-    recordPayment: protectedProcedure
+    recordPayment: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({
         transactionId: z.number(),
         paymentDate: z.date(),
@@ -166,14 +167,14 @@ export const clientsRouter = router({
         );
       }),
 
-    delete: protectedProcedure
+    delete: protectedProcedure.use(requirePermission("clients:delete"))
       .input(z.object({ transactionId: z.number() }))
       .mutation(async ({ input }) => {
         return await clientsDb.deleteTransaction(input.transactionId);
       }),
 
     // Link transactions (e.g., refund to original sale)
-    linkTransaction: protectedProcedure
+    linkTransaction: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({
         parentTransactionId: z.number(),
         childTransactionId: z.number(),
@@ -194,14 +195,14 @@ export const clientsRouter = router({
       }),
 
     // Get transaction with relationships
-    getWithRelationships: protectedProcedure
+    getWithRelationships: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({ transactionId: z.number() }))
       .query(async ({ input }) => {
         return await transactionsDb.getTransactionWithRelationships(input.transactionId);
       }),
 
     // Get transaction history with relationship counts
-    getHistory: protectedProcedure
+    getHistory: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({
         clientId: z.number(),
         limit: z.number().optional().default(50),
@@ -213,7 +214,7 @@ export const clientsRouter = router({
 
   // Activity log
   activity: router({
-    list: protectedProcedure
+    list: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({
         clientId: z.number(),
         limit: z.number().optional().default(50),
@@ -225,12 +226,12 @@ export const clientsRouter = router({
 
   // Tags
   tags: router({
-    getAll: protectedProcedure
+    getAll: protectedProcedure.use(requirePermission("clients:read"))
       .query(async () => {
         return await clientsDb.getAllTags();
       }),
 
-    add: protectedProcedure
+    add: protectedProcedure.use(requirePermission("clients:create"))
       .input(z.object({
         clientId: z.number(),
         tag: z.string().min(1).max(50),
@@ -240,7 +241,7 @@ export const clientsRouter = router({
         return await clientsDb.addTag(input.clientId, ctx.user.id, input.tag);
       }),
 
-    remove: protectedProcedure
+    remove: protectedProcedure.use(requirePermission("clients:delete"))
       .input(z.object({
         clientId: z.number(),
         tag: z.string(),
@@ -253,12 +254,12 @@ export const clientsRouter = router({
 
   // Client notes
   notes: router({
-    getNoteId: protectedProcedure
+    getNoteId: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({ clientId: z.number() }))
       .query(async ({ input }) => {
         return await clientsDb.getClientNoteId(input.clientId);
       }),
-    linkNote: protectedProcedure
+    linkNote: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({
         clientId: z.number(),
         noteId: z.number(),
@@ -271,7 +272,7 @@ export const clientsRouter = router({
 
   // Client communications
   communications: router({
-    list: protectedProcedure
+    list: protectedProcedure.use(requirePermission("clients:read"))
       .input(z.object({ 
         clientId: z.number(),
         type: z.enum(['CALL', 'EMAIL', 'MEETING', 'NOTE']).optional(),
@@ -280,7 +281,7 @@ export const clientsRouter = router({
         return await clientsDb.getClientCommunications(input.clientId, input.type);
       }),
     
-    add: protectedProcedure
+    add: protectedProcedure.use(requirePermission("clients:create"))
       .input(z.object({
         clientId: z.number(),
         type: z.enum(['CALL', 'EMAIL', 'MEETING', 'NOTE']),

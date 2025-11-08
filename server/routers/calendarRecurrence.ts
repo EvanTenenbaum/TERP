@@ -3,6 +3,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import InstanceGenerationService from "../_core/instanceGenerationService";
 import PermissionService from "../_core/permissionService";
+import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Calendar Recurrence Router
