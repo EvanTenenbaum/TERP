@@ -14,7 +14,7 @@
  * ```
  */
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 
 export interface UsePermissionsReturn {
