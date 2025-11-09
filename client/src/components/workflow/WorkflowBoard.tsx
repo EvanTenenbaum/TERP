@@ -1,0 +1,147 @@
+/**
+ * Workflow Board Component
+ * 
+ * Kanban-style board with drag-and-drop functionality for managing batch workflow.
+ * Uses @dnd-kit for accessible drag-and-drop interactions.
+ */
+
+import { useState } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { WorkflowColumn } from "./WorkflowColumn";
+import { WorkflowBatchCard } from "./WorkflowBatchCard";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+
+interface WorkflowBoardProps {
+  statuses: Array<{
+    id: number;
+    name: string;
+    slug: string;
+    color: string;
+    order: number;
+  }>;
+  queues: Record<number, Array<any>>;
+}
+
+export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
+  const [activeBatch, setActiveBatch] = useState<any | null>(null);
+  const utils = trpc.useUtils();
+
+  // Mutation for updating batch status
+  const updateBatchStatus = trpc.workflowQueue.updateBatchStatus.useMutation({
+    onSuccess: () => {
+      toast.success("Batch status updated successfully");
+      // Invalidate and refetch queues
+      utils.workflowQueue.getQueues.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Failed to update batch status: ${error.message}`);
+    },
+  });
+
+  // Configure drag sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required to start drag
+      },
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const batchId = active.id as number;
+
+    // Find the batch being dragged
+    for (const statusId in queues) {
+      const batch = queues[statusId].find((b: any) => b.id === batchId);
+      if (batch) {
+        setActiveBatch(batch);
+        break;
+      }
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    setActiveBatch(null);
+
+    if (!over) return;
+
+    const batchId = active.id as number;
+    const newStatusId = over.id as number;
+
+    // Find current status
+    let currentStatusId: number | null = null;
+    for (const statusId in queues) {
+      if (queues[statusId].some((b: any) => b.id === batchId)) {
+        currentStatusId = parseInt(statusId);
+        break;
+      }
+    }
+
+    // If status hasn't changed, do nothing
+    if (currentStatusId === newStatusId) return;
+
+    // Update batch status
+    updateBatchStatus.mutate({
+      batchId,
+      toStatusId: newStatusId,
+    });
+  };
+
+  const handleDragCancel = () => {
+    setActiveBatch(null);
+  };
+
+  // Sort statuses by order
+  const sortedStatuses = [...statuses].sort((a, b) => a.order - b.order);
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <div className="h-full overflow-x-auto">
+        <div className="flex gap-4 p-6 h-full min-w-max">
+          {sortedStatuses.map((status) => {
+            const batches = queues[status.id] || [];
+            const batchIds = batches.map((b: any) => b.id);
+
+            return (
+              <WorkflowColumn
+                key={status.id}
+                status={status}
+                batches={batches}
+                batchIds={batchIds}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {activeBatch ? (
+          <div className="opacity-80">
+            <WorkflowBatchCard batch={activeBatch} isDragging />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}

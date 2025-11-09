@@ -461,6 +461,9 @@ export const batches = mysqlTable("batches", {
   productId: int("productId").notNull(),
   lotId: int("lotId").notNull(),
   status: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
+  statusId: int("statusId").references(() => workflowStatuses.id, {
+    onDelete: "set null",
+  }), // New workflow queue status (nullable for backward compatibility)
   grade: varchar("grade", { length: 10 }),
   isSample: int("isSample").notNull().default(0), // 0 = false, 1 = true
   sampleOnly: int("sampleOnly").notNull().default(0), // 0 = false, 1 = true (batch can only be sampled, not sold)
@@ -4243,6 +4246,113 @@ export type ClientMeetingHistoryEntry =
   typeof clientMeetingHistory.$inferSelect;
 export type InsertClientMeetingHistoryEntry =
   typeof clientMeetingHistory.$inferInsert;
+
+// ============================================================================
+// WORKFLOW QUEUE MANAGEMENT TABLES (Initiative 1.3)
+// ============================================================================
+
+/**
+ * Workflow Statuses table
+ * Defines the available workflow statuses for batch management
+ * Replaces the legacy batchStatusEnum with a flexible, database-driven approach
+ */
+export const workflowStatuses = mysqlTable(
+  "workflow_statuses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 100 }).notNull(),
+    slug: varchar("slug", { length: 50 }).notNull().unique(),
+    color: varchar("color", { length: 20 }).notNull().default("#6B7280"),
+    order: int("order").notNull().default(0),
+    isActive: int("isActive").notNull().default(1), // 0 = deleted, 1 = active
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    orderIdx: index("idx_workflow_statuses_order").on(table.order),
+    isActiveIdx: index("idx_workflow_statuses_isActive").on(table.isActive),
+  })
+);
+
+export type WorkflowStatus = typeof workflowStatuses.$inferSelect;
+export type InsertWorkflowStatus = typeof workflowStatuses.$inferInsert;
+
+/**
+ * Batch Status History table
+ * Audit log for all batch status changes
+ * Tracks who changed what, when, and why
+ */
+export const batchStatusHistory = mysqlTable(
+  "batch_status_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    batchId: int("batchId")
+      .notNull()
+      .references(() => batches.id, { onDelete: "cascade" }),
+    fromStatusId: int("fromStatusId").references(() => workflowStatuses.id, {
+      onDelete: "set null",
+    }),
+    toStatusId: int("toStatusId")
+      .notNull()
+      .references(() => workflowStatuses.id, { onDelete: "restrict" }),
+    changedBy: int("changedBy")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => ({
+    batchIdIdx: index("idx_batch_status_history_batchId").on(table.batchId),
+    toStatusIdIdx: index("idx_batch_status_history_toStatusId").on(
+      table.toStatusId
+    ),
+    changedByIdx: index("idx_batch_status_history_changedBy").on(
+      table.changedBy
+    ),
+    createdAtIdx: index("idx_batch_status_history_createdAt").on(
+      table.createdAt
+    ),
+  })
+);
+
+export type BatchStatusHistory = typeof batchStatusHistory.$inferSelect;
+export type InsertBatchStatusHistory = typeof batchStatusHistory.$inferInsert;
+
+/**
+ * Relations for workflow queue tables
+ */
+export const workflowStatusesRelations = relations(
+  workflowStatuses,
+  ({ many }) => ({
+    batches: many(batches),
+    historyTo: many(batchStatusHistory, { relationName: "toStatus" }),
+    historyFrom: many(batchStatusHistory, { relationName: "fromStatus" }),
+  })
+);
+
+export const batchStatusHistoryRelations = relations(
+  batchStatusHistory,
+  ({ one }) => ({
+    batch: one(batches, {
+      fields: [batchStatusHistory.batchId],
+      references: [batches.id],
+    }),
+    fromStatus: one(workflowStatuses, {
+      fields: [batchStatusHistory.fromStatusId],
+      references: [workflowStatuses.id],
+      relationName: "fromStatus",
+    }),
+    toStatus: one(workflowStatuses, {
+      fields: [batchStatusHistory.toStatusId],
+      references: [workflowStatuses.id],
+      relationName: "toStatus",
+    }),
+    changedByUser: one(users, {
+      fields: [batchStatusHistory.changedBy],
+      references: [users.id],
+    }),
+  })
+);
 
 // ============================================================================
 // VIP PORTAL LIVE CATALOG TABLES (Re-exported from schema-vip-portal.ts)
