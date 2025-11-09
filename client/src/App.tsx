@@ -43,6 +43,7 @@ import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
 import { InboxPage } from "@/pages/InboxPage";
 import CalendarPage from "@/pages/CalendarPage";
+import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useState } from "react";
@@ -118,6 +119,7 @@ function Router() {
               <Route path="/todos/:listId" component={TodoListDetailPage} />
               <Route path="/inbox" component={InboxPage} />
               <Route path="/calendar" component={CalendarPage} />
+              <Route path="/workflow-queue" component={WorkflowQueuePage} />
               <Route path="/404" component={NotFound} />
               {/* Final fallback route */}
               <Route component={NotFound} />
