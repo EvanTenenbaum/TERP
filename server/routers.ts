@@ -66,6 +66,7 @@ import { calendarFinancialsRouter } from "./routers/calendarFinancials";
 import { rbacUsersRouter } from "./routers/rbac-users";
 import { rbacRolesRouter } from "./routers/rbac-roles";
 import { rbacPermissionsRouter } from "./routers/rbac-permissions";
+import { workflowQueueRouter } from "./routers/workflow-queue";
 
 export const appRouter = router({
   system: systemRouter,
@@ -133,6 +134,7 @@ export const appRouter = router({
   rbacUsers: rbacUsersRouter,
   rbacRoles: rbacRolesRouter,
   rbacPermissions: rbacPermissionsRouter,
+  workflowQueue: workflowQueueRouter,
 });
 
 export type AppRouter = typeof appRouter;
