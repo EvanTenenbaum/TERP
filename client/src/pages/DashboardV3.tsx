@@ -20,6 +20,8 @@ import {
   SalesComparisonWidget,
   ProfitabilityWidget,
   MatchmakingOpportunitiesWidget,
+  WorkflowQueueWidget,
+  WorkflowActivityWidget,
 } from "@/components/dashboard/widgets-v2";
 
 function DashboardContent() {
@@ -56,6 +58,10 @@ function DashboardContent() {
         return <MatchmakingOpportunitiesWidget key={widgetId} />;
       case "inbox":
         return <InboxWidget key={widgetId} />;
+      case "workflow-queue":
+        return <WorkflowQueueWidget key={widgetId} />;
+      case "workflow-activity":
+        return <WorkflowActivityWidget key={widgetId} />;
       default:
         return null;
     }
