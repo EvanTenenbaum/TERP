@@ -30,6 +30,8 @@ export const LAYOUT_PRESETS: Record<string, DashboardLayout> = {
       { id: 'sales-comparison', isVisible: true, isExpanded: false, size: 'md' },
       { id: 'profitability', isVisible: true, isExpanded: false, size: 'lg' },
       { id: 'matchmaking-opportunities', isVisible: true, isExpanded: false, size: 'lg' },
+      { id: 'workflow-queue', isVisible: true, isExpanded: false, size: 'md' },
+      { id: 'workflow-activity', isVisible: false, isExpanded: false, size: 'md' },
       { id: 'inbox', isVisible: true, isExpanded: false, size: 'md' },
     ],
   },
@@ -103,6 +105,16 @@ export const WIDGET_METADATA = {
   'inbox': {
     name: 'Inbox',
     description: 'Recent notifications and mentions',
+    category: 'operations',
+  },
+  'workflow-queue': {
+    name: 'Workflow Queue',
+    description: 'Batch counts by workflow status',
+    category: 'operations',
+  },
+  'workflow-activity': {
+    name: 'Workflow Activity',
+    description: 'Recent batch status changes',
     category: 'operations',
   },
 };
