@@ -39,6 +39,7 @@ import {
   Truck,
   RefreshCw,
   Warehouse,
+  Workflow,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -50,6 +51,7 @@ const menuItems = [
   { icon: FileText, label: "Sales Sheets", path: "/sales-sheets" },
   { icon: Package, label: "Create Order", path: "/create-order" },
   { icon: Package, label: "Inventory", path: "/inventory" },
+  { icon: Workflow, label: "Workflow Queue", path: "/workflow-queue" },
   { icon: TrendingUp, label: "Matchmaking", path: "/matchmaking" },
   { icon: DollarSign, label: "Accounting", path: "/accounting" },
   { icon: Users, label: "Clients", path: "/clients" },
@@ -195,12 +197,6 @@ function DashboardLayoutContent({
                       {APP_TITLE}
                     </span>
                   </div>
-                  <button
-                    onClick={toggleSidebar}
-                    className="ml-auto h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-                  >
-                    <PanelLeft className="h-4 w-4 text-muted-foreground" />
-                  </button>
                 </>
               )}
             </div>
