@@ -16,6 +16,7 @@ import {
   Target,
   ListTodo,
   Calendar,
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { APP_TITLE } from "@/const";
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Sales Sheets", href: "/sales-sheets", icon: Layers },
   { name: "Create Order", href: "/orders/create", icon: FileText },
   { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Workflow Queue", href: "/workflow-queue", icon: Workflow },
   { name: "Matchmaking", href: "/matchmaking", icon: Target },
   { name: "Accounting", href: "/accounting/dashboard", icon: DollarSign },
   { name: "Clients", href: "/clients", icon: Users },
