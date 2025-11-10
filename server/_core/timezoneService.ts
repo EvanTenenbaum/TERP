@@ -137,10 +137,15 @@ export class TimezoneService {
       });
 
       const parts = formatter.formatToParts(testDate);
-      const formattedTime = `${parts.find(p => p.type === "hour")?.value}:${parts.find(p => p.type === "minute")?.value}:${parts.find(p => p.type === "second")?.value}`;
+      const formattedHour = parts.find(p => p.type === "hour")?.value;
+      const formattedMinute = parts.find(p => p.type === "minute")?.value;
+      const formattedTime = `${formattedHour}:${formattedMinute}`;
+
+      // Normalize input time to HH:MM format (remove seconds if present)
+      const normalizedInputTime = time.split(':').slice(0, 2).join(':');
 
       // If the formatted time doesn't match the input time, it's a ghost time
-      return formattedTime !== time;
+      return formattedTime !== normalizedInputTime;
     } catch (error) {
       return false;
     }
