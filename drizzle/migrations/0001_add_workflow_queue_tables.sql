@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS `batch_status_history` (
 -- 3. Add statusId column to batches table
 -- ============================================================================
 ALTER TABLE `batches` 
-ADD COLUMN `statusId` INT NULL COMMENT 'Reference to workflow_statuses.id (NULL = using legacy status enum)' AFTER `status`;
+ADD COLUMN `statusId` INT NULL COMMENT 'Reference to workflow_statuses.id (NULL = using legacy status enum)' AFTER `batchStatus`;
 
 -- Add foreign key constraint
 ALTER TABLE `batches`
