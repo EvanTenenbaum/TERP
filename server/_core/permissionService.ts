@@ -7,7 +7,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   calendarEvents,
@@ -213,8 +213,107 @@ export class PermissionService {
   }
 
   /**
+   * Batch check permissions for multiple events
+   * Returns a map of eventId -> hasPermission
+   * This is a performance optimization to avoid N+1 queries
+   * 
+   * @param userId - The user ID to check permissions for
+   * @param eventIds - Array of event IDs to check
+   * @param requiredPermission - The permission level required
+   * @returns Map of eventId to boolean (true if user has permission)
+   */
+  static async batchCheckPermissions(
+    userId: number,
+    eventIds: number[],
+    requiredPermission: PermissionLevel
+  ): Promise<Record<number, boolean>> {
+    if (eventIds.length === 0) {
+      return {};
+    }
+
+    const db = await getDb();
+    const permissionMap: Record<number, boolean> = {};
+
+    // Fetch all events in a single query using inArray for efficiency
+    const events = await db
+      .select()
+      .from(calendarEvents)
+      .where(inArray(calendarEvents.id, eventIds));
+
+    // Fetch all explicit permissions for these events in a single query
+    const explicitPermissions = await db
+      .select()
+      .from(calendarEventPermissions)
+      .where(
+        and(
+          eq(calendarEventPermissions.grantType, "USER"),
+          eq(calendarEventPermissions.granteeId, userId),
+          inArray(calendarEventPermissions.eventId, eventIds)
+        )
+      );
+
+    // Build a map of eventId -> permission level
+    const permissionLevelMap: Record<number, PermissionLevel[]> = {};
+    for (const perm of explicitPermissions) {
+      if (!permissionLevelMap[perm.eventId]) {
+        permissionLevelMap[perm.eventId] = [];
+      }
+      permissionLevelMap[perm.eventId].push(perm.permission);
+    }
+
+    // Check permissions for each event
+    for (const event of events) {
+      // Creator always has MANAGE permission
+      if (event.createdBy === userId) {
+        permissionMap[event.id] = true;
+        continue;
+      }
+
+      // Assigned user has EDIT permission
+      if (event.assignedTo === userId && this.isPermissionSufficient("EDIT", requiredPermission)) {
+        permissionMap[event.id] = true;
+        continue;
+      }
+
+      // Check visibility
+      if (event.visibility === "COMPANY" && requiredPermission === "VIEW") {
+        permissionMap[event.id] = true;
+        continue;
+      }
+
+      if (event.visibility === "PRIVATE" && requiredPermission === "VIEW") {
+        permissionMap[event.id] = event.createdBy === userId;
+        continue;
+      }
+
+      // Check explicit permissions
+      const eventPermissions = permissionLevelMap[event.id] || [];
+      let hasPermission = false;
+      for (const perm of eventPermissions) {
+        if (this.isPermissionSufficient(perm, requiredPermission)) {
+          hasPermission = true;
+          break;
+        }
+      }
+
+      permissionMap[event.id] = hasPermission;
+    }
+
+    // For any event IDs that weren't found in the database, set to false
+    for (const eventId of eventIds) {
+      if (!(eventId in permissionMap)) {
+        permissionMap[eventId] = false;
+      }
+    }
+
+    return permissionMap;
+  }
+
+  /**
    * Filter events by user permissions
    * Returns only events the user has permission to view
+   * 
+   * @deprecated Use batchCheckPermissions for better performance
    */
   static async filterEventsByPermission(
     userId: number,
