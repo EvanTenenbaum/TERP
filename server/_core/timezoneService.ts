@@ -289,3 +289,6 @@ export class TimezoneService {
     };
   }
 }
+
+// Default export for compatibility
+export default TimezoneService;

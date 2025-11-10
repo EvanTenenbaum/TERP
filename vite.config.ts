@@ -24,6 +24,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'trpc-vendor': ['@trpc/client', '@trpc/react-query', '@trpc/server'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+          // Split large components
+          'calendar': ['luxon'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600, // Increase limit slightly to 600KB
   },
   server: {
     host: true,
