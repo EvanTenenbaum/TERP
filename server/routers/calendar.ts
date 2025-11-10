@@ -71,19 +71,17 @@ export const calendarRouter = router({
         .from(calendarEvents)
         .where(and(...eventConditions));
 
-      // Filter by permissions
-      const visibleEvents = await Promise.all(
-        events.map(async (event) => {
-          const hasPermission = await PermissionService.checkEventPermission(
-            userId,
-            event.id,
-            "VIEW"
-          );
-          return hasPermission ? event : null;
-        })
-      );
-
-      const filteredEvents = visibleEvents.filter((e) => e !== null);
+      // Filter by permissions using batch check (fixes N+1 query problem)
+      let filteredEvents = events;
+      if (events.length > 0) {
+        const eventIds = events.map((e) => e.id);
+        const permissionMap = await PermissionService.batchCheckPermissions(
+          userId,
+          eventIds,
+          "VIEW"
+        );
+        filteredEvents = events.filter((e) => permissionMap[e.id]);
+      }
 
       // Query recurrence instances
       const instanceConditions: any[] = [
