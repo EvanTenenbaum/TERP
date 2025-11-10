@@ -305,16 +305,13 @@ export const calendarRouter = router({
       // Validate timezone
       TimezoneService.validateTimezone(input.timezone);
 
-      // Validate date/time
+      // Validate date/time (throws error if invalid)
       if (input.startTime && !input.isFloatingTime) {
-        const validation = TimezoneService.validateDateTime(
+        TimezoneService.validateDateTime(
           input.startDate,
           input.startTime,
           input.timezone
         );
-        if (!validation.isValid) {
-          throw new Error(validation.error || "Invalid date/time");
-        }
       }
 
       // Create event in transaction
