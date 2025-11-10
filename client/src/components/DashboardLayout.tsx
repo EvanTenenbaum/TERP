@@ -112,10 +112,30 @@ function DashboardLayoutContent({
   children,
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
-  // Authentication temporarily disabled
-  const user = { name: "Guest", email: "guest@example.com" };
-  const logout = () => {
-    window.location.href = "/login";
+  // Fetch current user from auth API
+  const [user, setUser] = React.useState<{ name: string; email: string } | null>(null);
+  
+  React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {
+        // User not logged in
+        setUser({ name: "Guest", email: "guest@example.com" });
+      });
+  }, []);
+  
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
