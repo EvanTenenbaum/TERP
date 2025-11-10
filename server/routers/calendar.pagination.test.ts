@@ -1,6 +1,6 @@
 /**
- * Calendar Router Tests
- * Tests for calendar event operations with focus on performance and permissions
+ * Calendar Router Pagination Tests
+ * Tests for API pagination implementation
  * 
  * Following TERP Testing Protocol:
  * - TDD workflow (Red → Green → Refactor)
@@ -10,18 +10,14 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { calendarRouter } from "./calendar";
-import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
-import TimezoneService from "../_core/timezoneService";
 import { getDb } from "../db";
 
 // Mock all external dependencies
-vi.mock("../calendarDb");
 vi.mock("../_core/permissionService");
-vi.mock("../_core/timezoneService");
 vi.mock("../db");
 
-describe("Calendar Router - getEvents", () => {
+describe("Calendar Router - Pagination", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -30,8 +26,8 @@ describe("Calendar Router - getEvents", () => {
     vi.restoreAllMocks();
   });
 
-  describe("N+1 Query Fix - Batch Permission Checking", () => {
-    it("should use batch permission checking instead of individual checks", async () => {
+  describe("getEvents with Pagination", () => {
+    it("should support limit parameter to restrict number of results", async () => {
       // Arrange
       const mockDb = {
         select: vi.fn().mockReturnThis(),
@@ -43,96 +39,140 @@ describe("Calendar Router - getEvents", () => {
 
       vi.mocked(getDb).mockResolvedValue(mockDb as any);
 
-      const mockEvents = [
-        {
-          id: 1,
-          title: "Event 1",
-          startDate: "2025-11-01",
-          endDate: "2025-11-01",
-          createdBy: 1,
-          visibility: "COMPANY",
-          deletedAt: null,
-        },
-        {
-          id: 2,
-          title: "Event 2",
-          startDate: "2025-11-02",
-          endDate: "2025-11-02",
-          createdBy: 1,
-          visibility: "COMPANY",
-          deletedAt: null,
-        },
-        {
-          id: 3,
-          title: "Event 3",
-          startDate: "2025-11-03",
-          endDate: "2025-11-03",
-          createdBy: 1,
-          visibility: "COMPANY",
-          deletedAt: null,
-        },
-      ];
+      // Create 50 mock events
+      const mockEvents = Array.from({ length: 50 }, (_, i) => ({
+        id: i + 1,
+        title: `Event ${i + 1}`,
+        startDate: "2025-11-01",
+        endDate: "2025-11-01",
+        createdBy: 1,
+        visibility: "COMPANY",
+        deletedAt: null,
+      }));
 
-      // Mock database to return events first, then empty recurrence instances
+      // Mock database query chain
+      mockDb.where.mockReturnValueOnce(mockDb); // First where for events
+      mockDb.limit.mockReturnValueOnce(mockDb);
+      mockDb.offset.mockResolvedValueOnce(mockEvents.slice(0, 10));
+      mockDb.where.mockResolvedValueOnce([]); // Second where for instances
+
+      // Mock batch permission checking - all events visible
+      const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
+      const permissionMap = Object.fromEntries(
+        mockEvents.slice(0, 10).map((e) => [e.id, true])
+      );
+      batchCheckSpy.mockResolvedValue(permissionMap);
+
+      const caller = calendarRouter.createCaller({
+        user: { id: 1 },
+      } as any);
+
+      // Act
+      const result = await caller.getEvents({
+        startDate: "2025-11-01",
+        endDate: "2025-11-30",
+        limit: 10,
+      });
+
+      // Assert
+      expect(mockDb.limit).toHaveBeenCalledWith(10);
+      expect(result).toHaveLength(10);
+      expect(result[0].id).toBe(1);
+      expect(result[9].id).toBe(10);
+    });
+
+    it("should support offset parameter for pagination", async () => {
+      // Arrange
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        offset: vi.fn().mockReturnThis(),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      // Create 50 mock events
+      const mockEvents = Array.from({ length: 50 }, (_, i) => ({
+        id: i + 1,
+        title: `Event ${i + 1}`,
+        startDate: "2025-11-01",
+        endDate: "2025-11-01",
+        createdBy: 1,
+        visibility: "COMPANY",
+        deletedAt: null,
+      }));
+
+      // Mock database query chain
+      mockDb.where.mockReturnValueOnce(mockDb); // First where for events
+      mockDb.limit.mockReturnValueOnce(mockDb);
+      mockDb.offset.mockResolvedValueOnce(mockEvents.slice(10, 20));
+      mockDb.where.mockResolvedValueOnce([]); // Second where for instances
+
+      // Mock batch permission checking
+      const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
+      const permissionMap = Object.fromEntries(
+        mockEvents.slice(10, 20).map((e) => [e.id, true])
+      );
+      batchCheckSpy.mockResolvedValue(permissionMap);
+
+      const caller = calendarRouter.createCaller({
+        user: { id: 1 },
+      } as any);
+
+      // Act
+      const result = await caller.getEvents({
+        startDate: "2025-11-01",
+        endDate: "2025-11-30",
+        limit: 10,
+        offset: 10,
+      });
+
+      // Assert
+      expect(mockDb.limit).toHaveBeenCalledWith(10);
+      expect(mockDb.offset).toHaveBeenCalledWith(10);
+      expect(result).toHaveLength(10);
+      expect(result[0].id).toBe(11);
+      expect(result[9].id).toBe(20);
+    });
+
+    it("should return total count for pagination metadata", async () => {
+      // Arrange
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        offset: vi.fn().mockReturnThis(),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(mockDb as any);
+
+      const mockEvents = Array.from({ length: 10 }, (_, i) => ({
+        id: i + 1,
+        title: `Event ${i + 1}`,
+        startDate: "2025-11-01",
+        endDate: "2025-11-01",
+        createdBy: 1,
+        visibility: "COMPANY",
+        deletedAt: null,
+      }));
+
+      // First call for count
+      mockDb.where.mockResolvedValueOnce([{ count: 50 }]);
+      // Second call for limited results
       mockDb.where.mockReturnValueOnce(mockDb);
       mockDb.limit.mockReturnValueOnce(mockDb);
       mockDb.offset.mockResolvedValueOnce(mockEvents);
+      // Third call for instances
       mockDb.where.mockResolvedValueOnce([]);
 
-      // Mock batch permission checking (NEW METHOD)
       const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
-      batchCheckSpy.mockResolvedValue({
-        1: true,
-        2: true,
-        3: false, // User doesn't have permission for event 3
-      });
-
-      // Create a mock caller
-      const caller = calendarRouter.createCaller({
-        user: { id: 1 },
-      } as any);
-
-      // Act
-      const result = await caller.getEvents({
-        startDate: "2025-11-01",
-        endDate: "2025-11-30",
-      });
-
-      // Assert
-      // 1. Batch permission check should be called ONCE with all event IDs
-      expect(batchCheckSpy).toHaveBeenCalledTimes(1);
-      expect(batchCheckSpy).toHaveBeenCalledWith(
-        1, // userId
-        [1, 2, 3], // all event IDs
-        "VIEW"
+      const permissionMap = Object.fromEntries(
+        mockEvents.map((e) => [e.id, true])
       );
-
-      // 2. Individual hasPermission should NOT be called
-      const individualCheckSpy = vi.spyOn(PermissionService, "hasPermission");
-      expect(individualCheckSpy).not.toHaveBeenCalled();
-
-      // 3. Result should only include events with permission
-      expect(result).toHaveLength(2);
-      expect(result.map((e: any) => e.id)).toEqual([1, 2]);
-    });
-
-    it("should handle empty event list efficiently", async () => {
-      // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnThis(),
-        offset: vi.fn().mockReturnThis(),
-      };
-
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
-      mockDb.where.mockReturnValueOnce(mockDb);
-      mockDb.limit.mockReturnValueOnce(mockDb);
-      mockDb.offset.mockResolvedValueOnce([]);
-      mockDb.where.mockResolvedValueOnce([]);
-
-      const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
+      batchCheckSpy.mockResolvedValue(permissionMap);
 
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
@@ -142,14 +182,21 @@ describe("Calendar Router - getEvents", () => {
       const result = await caller.getEvents({
         startDate: "2025-11-01",
         endDate: "2025-11-30",
+        limit: 10,
+        offset: 0,
+        includeTotalCount: true,
       });
 
       // Assert
-      expect(batchCheckSpy).not.toHaveBeenCalled(); // No need to check permissions for empty list
-      expect(result).toHaveLength(0);
+      expect(result).toHaveProperty("data");
+      expect(result).toHaveProperty("pagination");
+      expect(result.pagination.total).toBe(50);
+      expect(result.pagination.limit).toBe(10);
+      expect(result.pagination.offset).toBe(0);
+      expect(result.pagination.hasMore).toBe(true);
     });
 
-    it("should handle large event lists efficiently (100+ events)", async () => {
+    it("should have default limit of 100 if not specified", async () => {
       // Arrange
       const mockDb = {
         select: vi.fn().mockReturnThis(),
@@ -161,7 +208,6 @@ describe("Calendar Router - getEvents", () => {
 
       vi.mocked(getDb).mockResolvedValue(mockDb as any);
 
-      // Create 100 mock events
       const mockEvents = Array.from({ length: 100 }, (_, i) => ({
         id: i + 1,
         title: `Event ${i + 1}`,
@@ -172,13 +218,12 @@ describe("Calendar Router - getEvents", () => {
         deletedAt: null,
       }));
 
-      // Mock database to return events first, then empty recurrence instances
+      // Mock database query chain
       mockDb.where.mockReturnValueOnce(mockDb);
       mockDb.limit.mockReturnValueOnce(mockDb);
       mockDb.offset.mockResolvedValueOnce(mockEvents);
       mockDb.where.mockResolvedValueOnce([]);
 
-      // Mock batch permission checking - all events visible
       const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
       const permissionMap = Object.fromEntries(
         mockEvents.map((e) => [e.id, true])
@@ -196,69 +241,27 @@ describe("Calendar Router - getEvents", () => {
       });
 
       // Assert
-      // Should make only ONE batch permission check, not 100 individual checks
-      expect(batchCheckSpy).toHaveBeenCalledTimes(1);
-      expect(batchCheckSpy).toHaveBeenCalledWith(
-        1,
-        expect.arrayContaining([1, 2, 3, 100]), // All event IDs
-        "VIEW"
-      );
-      expect(result).toHaveLength(100);
+      expect(mockDb.limit).toHaveBeenCalledWith(100);
     });
 
-    it("should handle mixed permission results correctly", async () => {
+    it("should enforce maximum limit of 500", async () => {
       // Arrange
-      const mockDb = {
-        select: vi.fn().mockReturnThis(),
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnThis(),
-        offset: vi.fn().mockReturnThis(),
-      };
-
-      vi.mocked(getDb).mockResolvedValue(mockDb as any);
-
-      const mockEvents = [
-        { id: 1, title: "Event 1", startDate: "2025-11-01", endDate: "2025-11-01", createdBy: 1, visibility: "COMPANY", deletedAt: null },
-        { id: 2, title: "Event 2", startDate: "2025-11-02", endDate: "2025-11-02", createdBy: 2, visibility: "PRIVATE", deletedAt: null },
-        { id: 3, title: "Event 3", startDate: "2025-11-03", endDate: "2025-11-03", createdBy: 1, visibility: "TEAM", deletedAt: null },
-        { id: 4, title: "Event 4", startDate: "2025-11-04", endDate: "2025-11-04", createdBy: 3, visibility: "COMPANY", deletedAt: null },
-      ];
-
-      // Mock to return events first, then empty instances
-      mockDb.where.mockReturnValueOnce(mockDb);
-      mockDb.limit.mockReturnValueOnce(mockDb);
-      mockDb.offset.mockResolvedValueOnce(mockEvents);
-      mockDb.where.mockResolvedValueOnce([]);
-
-      // User has permission for events 1, 3, and 4, but not 2 (private event by another user)
-      const batchCheckSpy = vi.spyOn(PermissionService, "batchCheckPermissions");
-      batchCheckSpy.mockResolvedValue({
-        1: true,
-        2: false,
-        3: true,
-        4: true,
-      });
-
       const caller = calendarRouter.createCaller({
         user: { id: 1 },
       } as any);
 
-      // Act
-      const result = await caller.getEvents({
-        startDate: "2025-11-01",
-        endDate: "2025-11-30",
-      });
-
-      // Assert
-      expect(result).toHaveLength(3);
-      expect(result.map((e: any) => e.id)).toEqual([1, 3, 4]);
-      expect(result.map((e: any) => e.id)).not.toContain(2);
+      // Act & Assert
+      // Should throw validation error for limit > 500
+      await expect(
+        caller.getEvents({
+          startDate: "2025-11-01",
+          endDate: "2025-12-31",
+          limit: 1000, // Try to request more than max
+        })
+      ).rejects.toThrow();
     });
-  });
 
-  describe("Existing Functionality - Regression Tests", () => {
-    it("should filter events by module", async () => {
+    it("should work with existing filters (modules, eventTypes, etc.)", async () => {
       // Arrange
       const mockDb = {
         select: vi.fn().mockReturnThis(),
@@ -272,10 +275,10 @@ describe("Calendar Router - getEvents", () => {
 
       const mockEvents = [
         { id: 1, title: "Event 1", module: "INVENTORY", startDate: "2025-11-01", endDate: "2025-11-01", createdBy: 1, visibility: "COMPANY", deletedAt: null },
-        { id: 2, title: "Event 2", module: "ACCOUNTING", startDate: "2025-11-02", endDate: "2025-11-02", createdBy: 1, visibility: "COMPANY", deletedAt: null },
+        { id: 2, title: "Event 2", module: "INVENTORY", startDate: "2025-11-02", endDate: "2025-11-02", createdBy: 1, visibility: "COMPANY", deletedAt: null },
       ];
 
-      // Mock database to return events first, then empty recurrence instances
+      // Mock database query chain
       mockDb.where.mockReturnValueOnce(mockDb);
       mockDb.limit.mockReturnValueOnce(mockDb);
       mockDb.offset.mockResolvedValueOnce(mockEvents);
@@ -293,15 +296,14 @@ describe("Calendar Router - getEvents", () => {
         startDate: "2025-11-01",
         endDate: "2025-11-30",
         modules: ["INVENTORY"],
+        limit: 10,
+        offset: 0,
       });
 
-      // Assert - database query should have been called with module filter
+      // Assert
       expect(mockDb.where).toHaveBeenCalled();
-      // Note: The actual filtering happens in the database query, not in the result
+      expect(mockDb.limit).toHaveBeenCalledWith(10);
+      expect(mockDb.offset).toHaveBeenCalledWith(0);
     });
-
-    // Note: Timezone conversion test removed as it requires complex mocking
-    // Timezone functionality is tested separately in timezoneService.test.ts
-    // The batch permission check is the focus of this fix
   });
 });
