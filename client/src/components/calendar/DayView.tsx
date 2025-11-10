@@ -37,7 +37,10 @@ export default function DayView({ currentDate, events, onEventClick }: DayViewPr
   const dayEvents = useMemo(() => {
     const dateStr = currentDate.toISOString().split("T")[0];
     return events.filter((event) => {
-      return event.startDate <= dateStr && event.endDate >= dateStr;
+      // Extract date part from ISO datetime strings
+      const eventStartDate = event.startDate.split("T")[0];
+      const eventEndDate = event.endDate.split("T")[0];
+      return eventStartDate <= dateStr && eventEndDate >= dateStr;
     });
   }, [currentDate, events]);
 

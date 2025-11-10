@@ -127,7 +127,9 @@ function getEventsForDayAndHour(date: Date, hour: number, events: Event[]): Even
   const dateStr = date.toISOString().split("T")[0];
 
   return events.filter((event) => {
-    if (event.startDate !== dateStr) return false;
+    // Extract date part from ISO datetime string
+    const eventStartDate = event.startDate.split("T")[0];
+    if (eventStartDate !== dateStr) return false;
 
     if (event.startTime) {
       const eventHour = parseInt(event.startTime.split(":")[0]);
