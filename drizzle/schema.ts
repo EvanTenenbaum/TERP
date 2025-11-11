@@ -4408,9 +4408,6 @@ export const deployments = mysqlTable(
     // Metadata
     githubDeliveryId: varchar("githubDeliveryId", { length: 255 }),
     webhookPayload: json("webhookPayload"),
-
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },
   table => ({
     statusIdx: index("idx_deployments_status").on(table.status),
