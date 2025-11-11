@@ -123,8 +123,14 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
       commitSha: head_commit.id.substring(0, 7),
     });
   } catch (error) {
-    console.error("Error processing GitHub webhook:", error);
-    // Return 200 to prevent GitHub from retrying
-    return res.status(200).json({ error: "Internal server error" });
+    console.error("GitHub webhook error", {
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      } : error
+    });
+    // Return 500 during development to see errors in GitHub webhook deliveries
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
