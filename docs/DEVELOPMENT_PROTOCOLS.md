@@ -70,7 +70,18 @@ doctl apps get 1fd40be5-b9af-4e71-ab1d-3af0864a7da4
 
 ### Deployment Monitoring Protocol
 
-**MANDATORY**: All AI agents MUST monitor deployments using the following methods. Never ask the user "did it deploy?" or "check the deployment" - YOU must check it yourself.
+**🚨 CRITICAL - MANDATORY FOR ALL DEPLOYMENTS 🚨**
+
+**EVERY DEPLOYMENT MUST BE VERIFIED BEFORE REPORTING TASK COMPLETION**
+
+All AI agents MUST:
+1. ✅ **VERIFY** every deployment reaches "success" status
+2. ✅ **CONFIRM** the deployment record exists in the database
+3. ✅ **CHECK** the commit SHA matches what was pushed
+4. ❌ **NEVER** report "deployment complete" without verification
+5. ❌ **NEVER** ask the user "did it deploy?" - YOU must check it yourself
+
+**If you push code to main and don't verify the deployment, you have failed the task.**
 
 **PRIMARY METHOD: Use Method 1 (Database)** - This is the most reliable and doesn't require external tools.
 
@@ -139,12 +150,18 @@ console.log(`Average duration: ${stats.averageDuration}s`);
 
 #### When to Check Deployments
 
-**ALWAYS check deployment status:**
-1. After pushing code to main branch
-2. Before reporting "deployment complete" to user
-3. When user reports issues with production
-4. After making database migrations
-5. When implementing new features
+**MANDATORY VERIFICATION CHECKLIST:**
+
+✅ **After EVERY push to main branch** - Wait for deployment to complete (typically 3-5 minutes)
+✅ **Before reporting task completion** - Verify deployment status is "success"
+✅ **Before marking deployment as complete** - Confirm the commit SHA in database matches your push
+✅ **When user reports production issues** - Check deployment history for recent failures
+✅ **After database migrations** - Ensure migration completed successfully
+✅ **After implementing new features** - Verify feature is live in production
+
+**FAILURE TO VERIFY = INCOMPLETE TASK**
+
+If you push code and report "done" without checking the deployment status, you have not completed the task. The deployment could have failed, and you would not know.
 
 **Polling Pattern:**
 ```bash
@@ -202,6 +219,35 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 **FAILURE TO FOLLOW THESE PROTOCOLS WILL RESULT IN IMMEDIATE REJECTION OF WORK.**
 
 This section contains the most critical protocols that MUST be followed for every single line of code you write. No exceptions.
+
+### 🚨 MANDATORY TASK COMPLETION CHECKLIST
+
+**Before reporting ANY task as complete, you MUST verify:**
+
+1. ✅ **All tests pass** - Run the full test suite
+2. ✅ **Code is committed and pushed** - Changes are in GitHub
+3. ✅ **Deployment is verified** - Check database for deployment record with "success" status
+4. ✅ **Deployment commit SHA matches** - Confirm the deployed commit is what you pushed
+5. ✅ **Production is healthy** - Visit the production URL and verify it loads
+
+**If ANY of these checks fail, the task is NOT complete. Do not report success to the user.**
+
+**Example verification command:**
+```bash
+# After pushing to main, wait 3-5 minutes, then run:
+mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
+      --port=25060 \
+      --user=doadmin \
+      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --database=defaultdb \
+      --ssl-mode=REQUIRED \
+      -e "SELECT commitSha, status, startedAt, completedAt FROM deployments ORDER BY startedAt DESC LIMIT 1;"
+```
+
+**Expected output:**
+- `status` should be "success"
+- `commitSha` should match your git commit
+- `completedAt` should be a recent timestamp
 
 ---
 
