@@ -72,7 +72,9 @@ doctl apps get 1fd40be5-b9af-4e71-ab1d-3af0864a7da4
 
 **MANDATORY**: All AI agents MUST monitor deployments using the following methods. Never ask the user "did it deploy?" or "check the deployment" - YOU must check it yourself.
 
-#### Method 1: Check Deployment Database (Fastest)
+**PRIMARY METHOD: Use Method 1 (Database)** - This is the most reliable and doesn't require external tools.
+
+#### Method 1: Check Deployment Database (Fastest, Most Reliable)
 
 ```bash
 # Check latest deployment status
@@ -94,17 +96,19 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
       -e "SELECT id, commitSha, status, startedAt FROM deployments WHERE status IN ('pending', 'building', 'deploying') ORDER BY createdAt DESC;"
 ```
 
-#### Method 2: Check DigitalOcean App Status
+#### Method 2: Check DigitalOcean App Status (Optional - doctl has auth issues)
+
+**NOTE:** The `doctl` CLI tool has known authentication issues even with valid API keys. Use Method 1 (database) or Method 3 (tRPC) instead. This method is documented for reference only.
 
 ```bash
-# Get current deployment status
+# Get current deployment status (may fail with auth errors)
 doctl apps get 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --format ID,Spec.Name,ActiveDeployment.ID,ActiveDeployment.Phase,ActiveDeployment.Progress.SuccessSteps,ActiveDeployment.Progress.TotalSteps
 
-# List recent deployments
+# List recent deployments (may fail with auth errors)
 doctl apps list-deployments 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --format ID,Phase,Cause,CreatedAt
 ```
 
-#### Method 3: Use tRPC API (From Code)
+#### Method 3: Use tRPC API (Reliable, Programmatic Access)
 
 ```typescript
 // Check latest deployment
