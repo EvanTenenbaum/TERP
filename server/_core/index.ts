@@ -86,11 +86,13 @@ async function startServer() {
     async (req, res) => {
       try {
         const { handleGitHubWebhook } = await import("../webhooks/github.js");
-        // Convert raw body back to JSON
-        req.body = JSON.parse(req.body.toString());
+        // Convert raw body back to JSON if it's a Buffer
+        if (Buffer.isBuffer(req.body)) {
+          req.body = JSON.parse(req.body.toString());
+        }
         await handleGitHubWebhook(req, res);
       } catch (error) {
-        logger.error({ msg: "GitHub webhook error", error });
+        logger.error({ err: error, msg: "GitHub webhook route error" });
         res.status(500).json({ error: "Internal server error" });
       }
     }
