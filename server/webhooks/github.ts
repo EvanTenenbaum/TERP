@@ -56,6 +56,7 @@ function verifyGitHubSignature(
  */
 export async function handleGitHubWebhook(req: Request, res: Response) {
   try {
+    console.log("[WEBHOOK] Received webhook request");
     // Get webhook secret from environment
     const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
     if (!webhookSecret) {
@@ -69,6 +70,7 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     const deliveryId = req.headers["x-github-delivery"] as string;
 
     // Verify signature
+    console.log("[WEBHOOK] Verifying signature");
     const payload = JSON.stringify(req.body);
     if (!verifyGitHubSignature(payload, signature, webhookSecret)) {
       console.error("Invalid GitHub webhook signature");
@@ -92,6 +94,7 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
       return res.status(200).json({ message: "Not TERP repository" });
     }
 
+    console.log("[WEBHOOK] Passed all validation checks, extracting commit info");
     // Extract commit information
     const { head_commit, pusher } = pushPayload;
     if (!head_commit) {
@@ -99,7 +102,9 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     }
 
     // Create deployment record
+    console.log("[WEBHOOK] Getting database connection");
     const db = await getDb();
+    console.log("[WEBHOOK] Database connection obtained, inserting deployment");
     const result = await db.insert(deployments).values({
       commitSha: head_commit.id,
       commitMessage: head_commit.message,
@@ -112,6 +117,7 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
       webhookPayload: pushPayload,
     });
 
+    console.log("[WEBHOOK] Deployment record inserted successfully");
     console.log(`Deployment created: ${head_commit.id.substring(0, 7)} by ${pusher.name}`);
 
     // TODO: Trigger background job to poll DigitalOcean API
