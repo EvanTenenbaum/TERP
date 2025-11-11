@@ -79,6 +79,23 @@ async function startServer() {
   // Simple auth routes under /api/auth
   registerSimpleAuthRoutes(app);
   
+  // GitHub webhook endpoint (must be before JSON body parser middleware)
+  // We need raw body for signature verification
+  app.post("/api/webhooks/github", 
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      try {
+        const { handleGitHubWebhook } = await import("../webhooks/github.js");
+        // Convert raw body back to JSON
+        req.body = JSON.parse(req.body.toString());
+        await handleGitHubWebhook(req, res);
+      } catch (error) {
+        logger.error({ msg: "GitHub webhook error", error });
+        res.status(500).json({ error: "Internal server error" });
+      }
+    }
+  );
+  
   // Apply rate limiting
   app.use("/api/trpc", apiLimiter);
   app.use("/api/trpc/auth", authLimiter);
