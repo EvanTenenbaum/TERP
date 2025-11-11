@@ -68,6 +68,103 @@ doctl apps get 1fd40be5-b9af-4e71-ab1d-3af0864a7da4
 
 **CRITICAL**: Always use API or CLI to get build/deployment logs. Never ask user for logs unless both API and CLI have been tried.
 
+### Deployment Monitoring Protocol
+
+**MANDATORY**: All AI agents MUST monitor deployments using the following methods. Never ask the user "did it deploy?" or "check the deployment" - YOU must check it yourself.
+
+#### Method 1: Check Deployment Database (Fastest)
+
+```bash
+# Check latest deployment status
+mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
+      --port=25060 \
+      --user=doadmin \
+      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --database=defaultdb \
+      --ssl-mode=REQUIRED \
+      -e "SELECT id, commitSha, status, startedAt, completedAt, duration, errorMessage FROM deployments ORDER BY createdAt DESC LIMIT 1;"
+
+# Check deployments in progress
+mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
+      --port=25060 \
+      --user=doadmin \
+      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
+      --database=defaultdb \
+      --ssl-mode=REQUIRED \
+      -e "SELECT id, commitSha, status, startedAt FROM deployments WHERE status IN ('pending', 'building', 'deploying') ORDER BY createdAt DESC;"
+```
+
+#### Method 2: Check DigitalOcean App Status
+
+```bash
+# Get current deployment status
+doctl apps get 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --format ID,Spec.Name,ActiveDeployment.ID,ActiveDeployment.Phase,ActiveDeployment.Progress.SuccessSteps,ActiveDeployment.Progress.TotalSteps
+
+# List recent deployments
+doctl apps list-deployments 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --format ID,Phase,Cause,CreatedAt
+```
+
+#### Method 3: Use tRPC API (From Code)
+
+```typescript
+// Check latest deployment
+const latest = await trpc.deployments.latest.query();
+console.log(`Latest: ${latest.commitSha.substring(0, 7)} - ${latest.status}`);
+
+// Check current deployment in progress
+const current = await trpc.deployments.current.query();
+if (current) {
+  console.log(`Deployment in progress: ${current.status}`);
+} else {
+  console.log('No deployment in progress');
+}
+
+// Get deployment statistics
+const stats = await trpc.deployments.stats.query();
+console.log(`Success rate: ${stats.successRate}%`);
+console.log(`Average duration: ${stats.averageDuration}s`);
+```
+
+#### Deployment Status Values
+
+- `pending` - Deployment created, waiting to start
+- `building` - Code is being built
+- `deploying` - Built code is being deployed
+- `success` - Deployment completed successfully
+- `failed` - Deployment failed (check errorMessage)
+
+#### When to Check Deployments
+
+**ALWAYS check deployment status:**
+1. After pushing code to main branch
+2. Before reporting "deployment complete" to user
+3. When user reports issues with production
+4. After making database migrations
+5. When implementing new features
+
+**Polling Pattern:**
+```bash
+# Check every 30 seconds until deployment completes
+while true; do
+  STATUS=$(mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com --port=25060 --user=doadmin --password=AVNS_Q_RGkS7-uB3Bk7xC2am --database=defaultdb --ssl-mode=REQUIRED -sN -e "SELECT status FROM deployments ORDER BY createdAt DESC LIMIT 1;")
+  echo "Status: $STATUS"
+  if [ "$STATUS" = "success" ] || [ "$STATUS" = "failed" ]; then
+    break
+  fi
+  sleep 30
+done
+```
+
+#### Getting Build Logs on Failure
+
+```bash
+# Get the deployment ID from database
+DEPLOYMENT_ID=$(mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com --port=25060 --user=doadmin --password=AVNS_Q_RGkS7-uB3Bk7xC2am --database=defaultdb --ssl-mode=REQUIRED -sN -e "SELECT doDeploymentId FROM deployments WHERE status='failed' ORDER BY createdAt DESC LIMIT 1;")
+
+# Get build logs
+doctl apps logs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --deployment $DEPLOYMENT_ID --type build
+```
+
 ### Production Database
 
 - **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
