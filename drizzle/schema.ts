@@ -4377,6 +4377,53 @@ export {
 
 
 // ============================================================================
+// DEPLOYMENT MONITORING
+// ============================================================================
+
+export const deployments = mysqlTable(
+  "deployments",
+  {
+    id: int("id").primaryKey().autoincrement(),
+
+    // Git information
+    commitSha: varchar("commitSha", { length: 40 }).notNull(),
+    commitMessage: text("commitMessage").notNull(),
+    commitTimestamp: timestamp("commitTimestamp").notNull(),
+    branch: varchar("branch", { length: 255 }).notNull(),
+    author: varchar("author", { length: 255 }).notNull(),
+    pusher: varchar("pusher", { length: 255 }).notNull(),
+
+    // Deployment status
+    status: varchar("status", { length: 50 }).notNull().default("pending"),
+    startedAt: timestamp("startedAt").notNull().defaultNow(),
+    completedAt: timestamp("completedAt"),
+    duration: int("duration"), // seconds
+
+    // DigitalOcean information
+    doDeploymentId: varchar("doDeploymentId", { length: 255 }),
+    buildLogs: text("buildLogs"),
+    deploymentUrl: varchar("deploymentUrl", { length: 500 }),
+    errorMessage: text("errorMessage"),
+
+    // Metadata
+    githubDeliveryId: varchar("githubDeliveryId", { length: 255 }),
+    webhookPayload: json("webhookPayload"),
+
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  },
+  table => ({
+    statusIdx: index("idx_deployments_status").on(table.status),
+    branchIdx: index("idx_deployments_branch").on(table.branch),
+    createdAtIdx: index("idx_deployments_created_at").on(table.createdAt),
+    commitShaIdx: index("idx_deployments_commit_sha").on(table.commitSha),
+  })
+);
+
+export type Deployment = typeof deployments.$inferSelect;
+export type InsertDeployment = typeof deployments.$inferInsert;
+
+// ============================================================================
 // RBAC TABLES (Role-Based Access Control)
 // ============================================================================
 export {
