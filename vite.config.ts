@@ -26,13 +26,26 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Split vendor chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'trpc-vendor': ['@trpc/client', '@trpc/react-query', '@trpc/server'],
-          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
-          // Split large components
-          'calendar': ['luxon'],
+        manualChunks(id) {
+          // Split vendor chunks only if they're actually imported
+          if (id.includes('node_modules')) {
+            // React core libraries
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            // tRPC libraries
+            if (id.includes('@trpc')) {
+              return 'trpc-vendor';
+            }
+            // Radix UI components
+            if (id.includes('@radix-ui')) {
+              return 'ui-vendor';
+            }
+            // Date/time libraries
+            if (id.includes('luxon') || id.includes('date-fns')) {
+              return 'calendar';
+            }
+          }
         },
       },
     },
