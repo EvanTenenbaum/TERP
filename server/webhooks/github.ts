@@ -123,13 +123,12 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
       commitSha: head_commit.id.substring(0, 7),
     });
   } catch (error) {
-    console.error("GitHub webhook error", {
-      error: error instanceof Error ? {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      } : error
-    });
+    // Log error details - Pino requires error as direct property
+    if (error instanceof Error) {
+      console.error({ err: error, msg: "GitHub webhook error" });
+    } else {
+      console.error({ error, msg: "GitHub webhook error (non-Error)" });
+    }
     // Return 500 during development to see errors in GitHub webhook deliveries
     return res.status(500).json({ error: "Internal server error" });
   }
