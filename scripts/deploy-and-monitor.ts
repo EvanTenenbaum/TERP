@@ -11,37 +11,37 @@
  *   tsx scripts/deploy-and-monitor.ts
  *
  * This is called by Claude Code after pushing to main.
+ * Automatically discovers the app ID using auto-discovery.
  */
 
 import https from 'https';
 import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
 
 const DIGITALOCEAN_TOKEN = process.env.DIGITALOCEAN_TOKEN;
 
 if (!DIGITALOCEAN_TOKEN) {
   console.error('❌ DIGITALOCEAN_TOKEN environment variable is required');
-  console.error('   Set it in ~/.config/claude-code/config.json or export it as an env var');
+  console.error('   Run: tsx scripts/setup-do-token.ts for setup instructions');
   process.exit(1);
 }
 
-// Load app config
-const configPath = path.join(process.cwd(), '.do', 'config.json');
-if (!fs.existsSync(configPath)) {
-  console.error('❌ .do/config.json not found. Please configure your DO app ID.');
+// Auto-discover app ID
+let APP_ID: string;
+try {
+  console.log('🔍 Discovering Digital Ocean app...');
+  const output = execSync('tsx scripts/do-auto-discover.ts', { encoding: 'utf-8' });
+  // Extract the app ID from output (last line)
+  const lines = output.trim().split('\n');
+  APP_ID = lines[lines.length - 1];
+
+  if (!APP_ID || APP_ID.length < 10) {
+    throw new Error('Invalid app ID received from auto-discovery');
+  }
+} catch (error) {
+  console.error('❌ Failed to discover app ID');
+  console.error('   Run: tsx scripts/do-auto-discover.ts for details');
   process.exit(1);
 }
-
-const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-
-if (!config.appId || config.appId === 'YOUR_DO_APP_ID_HERE') {
-  console.error('❌ Please set your Digital Ocean App ID in .do/config.json');
-  console.error('   Get it from: https://cloud.digitalocean.com/apps');
-  process.exit(1);
-}
-
-const APP_ID = config.appId;
 
 interface AppResponse {
   app: {
@@ -149,8 +149,7 @@ async function waitForNewDeployment(afterTimestamp: string): Promise<string> {
 async function main() {
   try {
     console.log('🚀 Digital Ocean Deployment Workflow\n');
-    console.log(`App ID: ${APP_ID}`);
-    console.log(`App Name: ${config.appName}\n`);
+    console.log(`App ID: ${APP_ID}\n`);
 
     // Get current deployment as baseline
     const currentDeployment = await getLatestDeployment();
