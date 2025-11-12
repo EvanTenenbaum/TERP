@@ -156,3 +156,108 @@ export function logPerformance<T>(
       throw error;
     });
 }
+
+/**
+ * Calendar-specific logging utilities
+ * Following TERP Bible monitoring protocols
+ */
+export const calendarLogger = {
+  /**
+   * Log calendar event creation
+   */
+  eventCreated: (eventId: number, userId: number, eventType: string, context?: Record<string, unknown>) => {
+    logger.info(
+      { eventId, userId, eventType, ...context },
+      `Calendar event created: ${eventType} (ID: ${eventId})`
+    );
+  },
+
+  /**
+   * Log payment processing
+   */
+  paymentProcessed: (
+    paymentId: number,
+    amount: number,
+    paymentType: "AR" | "AP",
+    context?: Record<string, unknown>
+  ) => {
+    logger.info(
+      { paymentId, amount, paymentType, ...context },
+      `Payment processed: ${paymentType} $${amount} (ID: ${paymentId})`
+    );
+  },
+
+  /**
+   * Log order creation from appointment
+   */
+  orderCreated: (orderId: number, eventId: number, context?: Record<string, unknown>) => {
+    logger.info(
+      { orderId, eventId, ...context },
+      `Order created from appointment (Order ID: ${orderId}, Event ID: ${eventId})`
+    );
+  },
+
+  /**
+   * Log conflict detection
+   */
+  conflictDetected: (conflictCount: number, requestedSlot: any) => {
+    logger.warn(
+      { conflictCount, requestedSlot },
+      `Scheduling conflict detected: ${conflictCount} conflicting event(s)`
+    );
+  },
+
+  /**
+   * Log batch linking
+   */
+  batchLinked: (batchId: number, eventId: number) => {
+    logger.info(
+      { batchId, eventId },
+      `Batch linked to photo session (Batch ID: ${batchId}, Event ID: ${eventId})`
+    );
+  },
+
+  /**
+   * Log VIP portal booking
+   */
+  externalBooking: (eventId: number, clientId: number, confirmationNumber: string) => {
+    logger.info(
+      { eventId, clientId, confirmationNumber },
+      `External booking created via VIP portal (Confirmation: ${confirmationNumber})`
+    );
+  },
+
+  /**
+   * Log calendar operation start
+   */
+  operationStart: (operation: string, context: Record<string, unknown>) => {
+    logger.debug(
+      { operation, ...context },
+      `Starting calendar operation: ${operation}`
+    );
+  },
+
+  /**
+   * Log calendar operation success
+   */
+  operationSuccess: (operation: string, context: Record<string, unknown>) => {
+    logger.info(
+      { operation, ...context },
+      `Completed calendar operation: ${operation}`
+    );
+  },
+
+  /**
+   * Log calendar operation failure
+   */
+  operationFailure: (
+    operation: string,
+    error: Error,
+    context: Record<string, unknown>
+  ) => {
+    logger.error(
+      { operation, error: error.message, stack: error.stack, ...context },
+      `Failed calendar operation: ${operation}`
+    );
+  },
+};

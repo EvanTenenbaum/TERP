@@ -784,3 +784,125 @@ export async function updateMeetingHistoryEntry(
 
   return { success: true };
 }
+
+// ============================================================================
+// v3.2: NEW QUERY FUNCTIONS
+// ============================================================================
+
+/**
+ * Get events by client ID
+ * v3.2: Uses explicit client_id foreign key for better performance
+ */
+export async function getEventsByClient(clientId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select()
+    .from(calendarEvents)
+    .where(
+      and(
+        eq(calendarEvents.clientId, clientId),
+        isNull(calendarEvents.deletedAt)
+      )
+    )
+    .orderBy(desc(calendarEvents.startDate));
+}
+
+/**
+ * Get events by vendor ID
+ * v3.2: Uses explicit vendor_id foreign key for better performance
+ */
+export async function getEventsByVendor(vendorId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select()
+    .from(calendarEvents)
+    .where(
+      and(
+        eq(calendarEvents.vendorId, vendorId),
+        isNull(calendarEvents.deletedAt)
+      )
+    )
+    .orderBy(desc(calendarEvents.startDate));
+}
+
+/**
+ * Check for conflicting events in a time range
+ * v3.2: Fix #4 - Conflict detection for quick book
+ * 
+ * @param params - Time range and optional event to exclude
+ * @returns Array of conflicting events
+ */
+export async function checkConflicts(params: {
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+  excludeEventId?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { startDate, startTime, endDate, endTime, excludeEventId } = params;
+
+  // Build conditions
+  const conditions: any[] = [
+    // Not cancelled
+    or(
+      eq(calendarEvents.status, "SCHEDULED"),
+      eq(calendarEvents.status, "IN_PROGRESS"),
+      eq(calendarEvents.status, "COMPLETED")
+    ),
+    // Not soft deleted
+    isNull(calendarEvents.deletedAt),
+    // Overlapping time range
+    or(
+      // New event starts during existing event
+      and(
+        lte(calendarEvents.startDate, startDate),
+        gte(calendarEvents.endDate, startDate)
+      ),
+      // New event ends during existing event
+      and(
+        lte(calendarEvents.startDate, endDate),
+        gte(calendarEvents.endDate, endDate)
+      ),
+      // New event completely contains existing event
+      and(
+        gte(calendarEvents.startDate, startDate),
+        lte(calendarEvents.endDate, endDate)
+      )
+    ),
+  ];
+
+  // Exclude specific event if provided (for updates)
+  if (excludeEventId) {
+    conditions.push(eq(calendarEvents.id, excludeEventId));
+  }
+
+  return await db
+    .select()
+    .from(calendarEvents)
+    .where(and(...conditions));
+}
+
+/**
+ * Execute callback within a database transaction
+ * v3.2: Fix #10 - Add transactions for multi-step operations
+ * 
+ * @param callback - Function to execute within transaction
+ * @returns Result of callback
+ */
+export async function withTransaction<T>(
+  callback: (tx: any) => Promise<T>
+): Promise<T> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db.transaction(async (tx) => {
+    return await callback(tx);
+  });
+}
