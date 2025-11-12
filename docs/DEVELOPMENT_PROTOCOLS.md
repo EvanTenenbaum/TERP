@@ -1704,5 +1704,140 @@ When adding a new feature to TERP:
 
 ---
 
-**Last Updated:** November 7, 2025  
+## 16. Status Updates & GitHub Sync Protocol (MANDATORY)
+
+**Status:** ✅ Active & Enforced
+**Last Updated:** November 12, 2025
+
+### 🚨 Core Mandate: GitHub is the Single Source of Truth
+
+**EVERY status update MUST be committed and pushed to GitHub immediately.**
+
+### 📋 What Must Go to GitHub
+
+**Status Files (Update + Commit + Push):**
+1. `docs/ACTIVE_SESSIONS.md` - Session status updates
+2. `docs/roadmaps/MASTER_ROADMAP.md` - Task progress
+3. Any other status/tracking files
+
+**When to Update & Commit:**
+
+| Event | Update File | Commit Message | Push |
+|-------|-------------|----------------|------|
+| **Start work** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] started on [Task]` | ✅ Immediately |
+| **Progress (every 30 min)** | ACTIVE_SESSIONS.md | `status: Session-[ID] progress update ([%])` | ✅ Immediately |
+| **Pause work** | ACTIVE_SESSIONS.md | `status: Session-[ID] paused - [reason]` | ✅ Immediately |
+| **Block encountered** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] blocked - [reason]` | ✅ Immediately |
+| **Complete task** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] completed [Task]` | ✅ Immediately |
+| **Merge to main** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: [Task] merged to production` | ✅ Immediately |
+
+### 🎯 Why This Matters
+
+**For other developers:**
+- See real-time progress
+- Know what's being worked on
+- Avoid duplicate work
+- Understand blockers
+
+**For other AI agents:**
+- Pick up exactly where you left off
+- No context loss between sessions
+- Full history available
+- Can resume any paused work
+
+**For project management:**
+- Real-time visibility
+- Accurate status tracking
+- Audit trail
+- Historical data
+
+### ✅ Implementation Pattern
+
+**Every time Claude updates status:**
+
+```bash
+# 1. Update the status file(s)
+# (Claude edits ACTIVE_SESSIONS.md and/or MASTER_ROADMAP.md)
+
+# 2. Commit immediately
+git add docs/ACTIVE_SESSIONS.md docs/roadmaps/MASTER_ROADMAP.md
+git commit -m "status: Session-ABC123 [event]"
+
+# 3. Push immediately
+git push origin [current-branch]
+
+# 4. Verify push succeeded
+# (Check for errors, retry if needed)
+```
+
+**Example commit messages:**
+- `status: Session-011CV4V started on codebase analysis`
+- `status: Session-011CV4V progress update (75% complete)`
+- `status: Session-011CV4V paused - waiting on user feedback`
+- `status: Session-011CV4V blocked - need API key decision`
+- `status: Session-011CV4V completed codebase analysis`
+- `status: Codebase analysis merged to production`
+
+### ❌ Prohibited Actions
+
+- **DO NOT** update status files without committing
+- **DO NOT** commit without pushing immediately
+- **DO NOT** batch status updates (commit each change)
+- **DO NOT** leave local-only state
+- **DO NOT** skip status updates to "save time"
+
+### 🔄 Continuous Sync
+
+**Rule:** Local files = GitHub files (always)
+
+**Verification:**
+```bash
+# Before ending session, verify all changes are pushed
+git status  # Should show "nothing to commit, working tree clean"
+git log origin/[branch]..HEAD  # Should show no unpushed commits
+```
+
+### 🚨 Critical for Multi-Agent Workflow
+
+**With this protocol:**
+- ✅ 3-4 Claude sessions can work in parallel
+- ✅ No coordination overhead
+- ✅ Real-time conflict detection
+- ✅ Seamless handoffs between agents
+- ✅ Zero information loss
+
+**Without this protocol:**
+- ❌ Sessions lose track of each other
+- ❌ Duplicate work happens
+- ❌ Blockers aren't visible
+- ❌ Context is lost between sessions
+- ❌ GitHub becomes stale
+
+### 📊 Monitoring
+
+**How to verify compliance:**
+
+```bash
+# Check recent status commits
+git log --oneline --grep="status:" -10
+
+# Check if status files are up-to-date
+git diff origin/[branch] docs/ACTIVE_SESSIONS.md
+git diff origin/[branch] docs/roadmaps/MASTER_ROADMAP.md
+
+# Should show no differences (files in sync)
+```
+
+### 🎯 Success Criteria
+
+**Protocol is working when:**
+- ✅ Status updates appear on GitHub within 1 minute
+- ✅ Other agents can see current status
+- ✅ No "local only" state exists
+- ✅ Full history available in git log
+- ✅ Zero manual syncing needed
+
+---
+
+**Last Updated:** November 12, 2025
 **Maintained By:** TERP Development Team

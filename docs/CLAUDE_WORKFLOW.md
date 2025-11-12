@@ -94,15 +94,25 @@ This is **THE ONLY roadmap** that matters. All others are archived.
 
 ### 🔄 Update Protocol
 
-**Claude updates the roadmap automatically:**
-1. **Before starting:** Marks task as `[~]` in progress
-2. **After completing:** Marks task as `[x]` completed, adds deployment date
-3. **If blocked:** Marks as `[!]`, documents blocker
+**🚨 CRITICAL: All Updates Go to GitHub Immediately**
+
+**Claude updates the roadmap automatically AND commits to GitHub:**
+1. **Before starting:** Marks task as `[~]` in progress → **Commits + Pushes to GitHub**
+2. **After completing:** Marks task as `[x]` completed, adds deployment date → **Commits + Pushes to GitHub**
+3. **If blocked:** Marks as `[!]`, documents blocker → **Commits + Pushes to GitHub**
+4. **Every status change:** Updates ACTIVE_SESSIONS.md → **Commits + Pushes to GitHub**
+
+**Why GitHub?**
+- ✅ Other developers can see current state
+- ✅ Other AI agents can pick up where you left off
+- ✅ GitHub = single source of truth
+- ✅ Local and GitHub always mirror each other
+- ✅ Full history and audit trail
 
 **You update the roadmap when:**
-- Adding new tasks
-- Changing priorities
-- Moving things to backlog
+- Adding new tasks (Claude commits for you)
+- Changing priorities (Claude commits for you)
+- Moving things to backlog (Claude commits for you)
 
 ---
 
@@ -224,13 +234,21 @@ This is **THE ONLY roadmap** that matters. All others are archived.
 **What happens automatically:**
 
 ```
+Claude updates ACTIVE_SESSIONS.md (status: starting)
+     ↓
+Commits + Pushes status to GitHub (other agents see it)
+     ↓
 Claude writes code
      ↓
 Runs tests locally
      ↓
-Commits to feature branch
+Commits code to feature branch
      ↓
 Pushes to GitHub (triggers CI/CD)
+     ↓
+Updates ACTIVE_SESSIONS.md (status: deploying)
+     ↓
+Commits + Pushes status to GitHub
      ↓
 GitHub Actions runs tests
      ↓
@@ -242,8 +260,16 @@ Deployment completes (3-5 minutes)
      ↓
 Claude verifies success
      ↓
+Updates MASTER_ROADMAP.md (task completed)
+     ↓
+Updates ACTIVE_SESSIONS.md (status: ready for review)
+     ↓
+Commits + Pushes all updates to GitHub
+     ↓
 Claude reports: "✅ Deployed! Ready for review"
 ```
+
+**Key principle: GitHub is ALWAYS up-to-date. Local = GitHub.**
 
 ### 👀 Your Review Process
 
@@ -293,12 +319,21 @@ Main branch deploys (automatic)
      ↓
 Claude verifies main deployment
      ↓
-Updates roadmap: marks task [x] completed
+Updates MASTER_ROADMAP.md: marks task [x] completed
      ↓
 Updates ACTIVE_SESSIONS.md: moves to completed
      ↓
+Commits + Pushes all status updates to GitHub (main branch)
+     ↓
 Claude reports: "✅ Merged and live on main!"
+     ↓
+**GitHub now shows: Task completed, deployment verified**
 ```
+
+**🚨 CRITICAL: Every status change is immediately committed to GitHub.**
+- Other developers see real-time progress
+- Other AI agents can resume work instantly
+- No "local only" state ever exists
 
 **Deployment Monitoring:**
 - Claude checks database for deployment status
