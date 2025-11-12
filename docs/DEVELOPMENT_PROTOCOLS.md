@@ -1704,5 +1704,227 @@ When adding a new feature to TERP:
 
 ---
 
-**Last Updated:** November 7, 2025  
+## 16. Status Updates & GitHub Sync Protocol (MANDATORY)
+
+**Status:** ✅ Active & Enforced
+**Last Updated:** November 12, 2025
+
+### 🚨 Core Mandate: GitHub is the Single Source of Truth
+
+**EVERY status update MUST be committed and pushed to GitHub immediately.**
+
+### 📋 What Must Go to GitHub
+
+**Status Files (Update + Commit + Push):**
+1. `docs/ACTIVE_SESSIONS.md` - Session status updates
+2. `docs/roadmaps/MASTER_ROADMAP.md` - Task progress
+3. Any other status/tracking files
+
+**When to Update & Commit:**
+
+| Event | Update File | Commit Message | Push |
+|-------|-------------|----------------|------|
+| **Start work** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] started on [Task]` | ✅ Immediately |
+| **Progress (every 30 min)** | ACTIVE_SESSIONS.md | `status: Session-[ID] progress update ([%])` | ✅ Immediately |
+| **Pause work** | ACTIVE_SESSIONS.md | `status: Session-[ID] paused - [reason]` | ✅ Immediately |
+| **Block encountered** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] blocked - [reason]` | ✅ Immediately |
+| **Complete task** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] completed [Task]` | ✅ Immediately |
+| **Merge to main** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: [Task] merged to production` | ✅ Immediately |
+
+### 🎯 Why This Matters
+
+**For other developers:**
+- See real-time progress
+- Know what's being worked on
+- Avoid duplicate work
+- Understand blockers
+
+**For other AI agents:**
+- Pick up exactly where you left off
+- No context loss between sessions
+- Full history available
+- Can resume any paused work
+
+**For project management:**
+- Real-time visibility
+- Accurate status tracking
+- Audit trail
+- Historical data
+
+### ✅ Implementation Pattern
+
+**Every time Claude updates status:**
+
+```bash
+# 1. Update the status file(s)
+# (Claude edits ACTIVE_SESSIONS.md and/or MASTER_ROADMAP.md)
+
+# 2. Commit immediately
+git add docs/ACTIVE_SESSIONS.md docs/roadmaps/MASTER_ROADMAP.md
+git commit -m "status: Session-ABC123 [event]"
+
+# 3. Push immediately with retry logic
+git push origin [current-branch]
+
+# 4. Verify push succeeded
+# (See Retry & Rollback Protocol below)
+```
+
+### 🔄 Retry & Rollback Protocol
+
+**If push fails (network error, conflict, etc.), use exponential backoff:**
+
+```bash
+#!/bin/bash
+# Retry logic for git push
+
+MAX_RETRIES=4
+RETRY_DELAYS=(2 4 8 16)  # seconds
+
+for i in $(seq 0 $((MAX_RETRIES-1))); do
+    if git push origin "$BRANCH"; then
+        echo "✅ Push succeeded"
+        exit 0
+    else
+        if [ $i -lt $((MAX_RETRIES-1)) ]; then
+            DELAY=${RETRY_DELAYS[$i]}
+            echo "⚠️  Push failed, retrying in ${DELAY}s..."
+            sleep $DELAY
+        fi
+    fi
+done
+
+echo "❌ Push failed after $MAX_RETRIES attempts"
+exit 1
+```
+
+**Retry Schedule:**
+- Attempt 1: Immediate
+- Attempt 2: After 2 seconds
+- Attempt 3: After 4 seconds
+- Attempt 4: After 8 seconds
+- Attempt 5: After 16 seconds
+- **Total max time:** 30 seconds
+
+**If all retries fail:**
+
+1. **Alert user:**
+   ```
+   ⚠️  WARNING: Status update failed to push to GitHub
+   - Local status: Updated
+   - GitHub status: Out of sync
+   - Action: Will retry on next update
+   ```
+
+2. **Save status locally:**
+   - Status file is updated locally
+   - Commit exists locally
+   - Continue working
+
+3. **Auto-retry on next update:**
+   - Next status update will include both updates
+   - Or run: `git push --force-with-lease origin [branch]`
+
+**Manual Recovery (if needed):**
+
+```bash
+# Check for unpushed commits
+git log origin/[branch]..HEAD
+
+# If commits exist, force push safely
+git push --force-with-lease origin [branch]
+
+# Verify sync
+git status  # Should show "up-to-date with origin"
+```
+
+**Conflict Resolution:**
+
+If push fails due to conflict (another session pushed first):
+
+```bash
+# 1. Fetch latest
+git fetch origin [branch]
+
+# 2. Check what changed
+git diff origin/[branch]..HEAD
+
+# 3. If only session files changed (no code conflict):
+git pull --rebase origin [branch]
+git push origin [branch]
+
+# 4. If code conflict, alert user:
+echo "⚠️  Merge conflict detected - manual resolution needed"
+```
+
+**Example commit messages:**
+- `status: Session-011CV4V started on codebase analysis`
+- `status: Session-011CV4V progress update (75% complete)`
+- `status: Session-011CV4V paused - waiting on user feedback`
+- `status: Session-011CV4V blocked - need API key decision`
+- `status: Session-011CV4V completed codebase analysis`
+- `status: Codebase analysis merged to production`
+
+### ❌ Prohibited Actions
+
+- **DO NOT** update status files without committing
+- **DO NOT** commit without pushing immediately
+- **DO NOT** batch status updates (commit each change)
+- **DO NOT** leave local-only state
+- **DO NOT** skip status updates to "save time"
+
+### 🔄 Continuous Sync
+
+**Rule:** Local files = GitHub files (always)
+
+**Verification:**
+```bash
+# Before ending session, verify all changes are pushed
+git status  # Should show "nothing to commit, working tree clean"
+git log origin/[branch]..HEAD  # Should show no unpushed commits
+```
+
+### 🚨 Critical for Multi-Agent Workflow
+
+**With this protocol:**
+- ✅ 3-4 Claude sessions can work in parallel
+- ✅ No coordination overhead
+- ✅ Real-time conflict detection
+- ✅ Seamless handoffs between agents
+- ✅ Zero information loss
+
+**Without this protocol:**
+- ❌ Sessions lose track of each other
+- ❌ Duplicate work happens
+- ❌ Blockers aren't visible
+- ❌ Context is lost between sessions
+- ❌ GitHub becomes stale
+
+### 📊 Monitoring
+
+**How to verify compliance:**
+
+```bash
+# Check recent status commits
+git log --oneline --grep="status:" -10
+
+# Check if status files are up-to-date
+git diff origin/[branch] docs/ACTIVE_SESSIONS.md
+git diff origin/[branch] docs/roadmaps/MASTER_ROADMAP.md
+
+# Should show no differences (files in sync)
+```
+
+### 🎯 Success Criteria
+
+**Protocol is working when:**
+- ✅ Status updates appear on GitHub within 1 minute
+- ✅ Other agents can see current status
+- ✅ No "local only" state exists
+- ✅ Full history available in git log
+- ✅ Zero manual syncing needed
+
+---
+
+**Last Updated:** November 12, 2025
 **Maintained By:** TERP Development Team
