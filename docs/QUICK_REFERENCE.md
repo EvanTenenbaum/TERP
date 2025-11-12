@@ -377,6 +377,313 @@ You: "Pause work on [TASK]"
 
 ---
 
+## 📖 15 Real-World Examples
+
+### Example 1: Start Work on Backlog Item
+
+```
+You: "Work on the email notifications feature from the backlog"
+
+Claude:
+✅ Found task in MASTER_ROADMAP.md backlog
+✅ Moved to current sprint
+✅ Created branch: claude/email-notifications-ABC123
+✅ Started implementation
+```
+
+### Example 2: Change Task Priority Mid-Work
+
+```
+You: "Actually, pause that. The login bug is more urgent"
+
+Claude:
+✅ Paused email notifications work
+✅ Updated session status to "paused"
+✅ Started login bug fix (new session)
+✅ Will resume email notifications after
+```
+
+### Example 3: Pause for Urgent Task
+
+```
+Claude: Working on dashboard improvements (50% done)
+
+You: "Pause that, site is down!"
+
+Claude:
+✅ Saved progress in session file
+✅ Marked as paused in ACTIVE_SESSIONS.md
+✅ Switched to emergency investigation
+✅ Dashboard work ready to resume anytime
+```
+
+### Example 4: Resume Paused Work
+
+```
+You: "Resume the dashboard improvements from yesterday"
+
+Claude:
+✅ Found paused session: Session-20251111-dashboard-XYZ789
+✅ Read handoff notes (was 50% done)
+✅ Continued from line 45 in dashboardDb.ts
+✅ Completed remaining 50%
+```
+
+### Example 5: Handle Merge Conflict
+
+```
+Claude: ⚠️  Merge conflict detected in ordersDb.ts
+
+Two sessions modified the same function:
+- Session A: Added wholesale COGS
+- Session B: Added retail COGS
+
+Which should I keep?
+
+You: "Merge both - we need separate functions for each"
+
+Claude:
+✅ Created calculateWholesaleCOGS()
+✅ Created calculateRetailCOGS()
+✅ Kept both features
+✅ Conflict resolved, deploying...
+```
+
+### Example 6: Abandon Work Cleanly
+
+```
+You: "Actually, stop work on that feature. We're going a different direction"
+
+Claude:
+✅ Documented progress in session file:
+   - Completed: Database schema
+   - In progress: API endpoints (60% done)
+   - Not started: UI components
+✅ Moved session to docs/sessions/abandoned/
+✅ Kept branch: claude/feature-x-ABC123 (can cherry-pick later)
+✅ Updated roadmap: Task moved to backlog
+```
+
+### Example 7: Check Other Sessions
+
+```
+You: "What are the other Claude sessions working on?"
+
+Claude:
+📊 Active Sessions:
+
+Session A (Session-20251112-inventory-ABC123):
+- Task: Add batch expiry tracking
+- Module: Inventory
+- Progress: 75% (finalizing tests)
+- ETA: 30 minutes
+
+Session B (Session-20251112-accounting-XYZ789):
+- Task: Implement tax reports
+- Module: Accounting
+- Progress: 40% (building UI)
+- ETA: 1 hour
+
+✅ No conflicts - different modules
+```
+
+### Example 8: Emergency Site Rollback
+
+```
+You: "Emergency! The order page is broken, revert the last merge immediately!"
+
+Claude:
+✅ Identified last merge: commit a1b2c3d (COGS improvements)
+✅ Running git revert...
+✅ Tests passing
+✅ Pushing revert...
+✅ Deployment started (2-3 min)
+✅ Site restored!
+
+The broken COGS change is reverted. Want me to fix it and redeploy?
+```
+
+### Example 9: Multiple Claudes on Same Module
+
+```
+Claude A: Working on Orders module (ordersDb.ts)
+
+You start Claude B: "Add recurring orders feature"
+
+Claude B:
+⚠️  WARNING: Potential conflict detected
+
+Session A (ABC123) is currently working on Orders module
+Files being modified: ordersDb.ts, orders.tsx
+
+Recommendations:
+1. Wait for Session A to finish (ETA: 30 min) ✅ RECOMMENDED
+2. Work on different module (Inventory, Accounting)
+3. Coordinate: Work on different files in Orders
+
+What would you like to do?
+```
+
+### Example 10: Handoff to Another Agent
+
+```
+Your Session Ends (must leave)
+
+You: "I need to go. Document your progress for the next Claude"
+
+Claude:
+✅ Updated session file with handoff notes:
+
+## Handoff Notes
+**Status:** 60% complete
+
+**Completed:**
+- ✅ Database schema for recurring orders
+- ✅ API endpoints: create, list, update
+- ✅ Tests for all API endpoints (passing)
+
+**In Progress:**
+- ⏱️ UI components (50% done)
+- File: client/src/components/RecurringOrders.tsx
+- Next: Complete the edit form (lines 150-200)
+
+**Not Started:**
+- ❌ Notification system
+- ❌ Integration with existing orders
+
+**Next Steps:**
+1. Finish UI edit form
+2. Test full flow end-to-end
+3. Add notifications
+4. Deploy and verify
+
+**Blockers:** None
+**Branch:** claude/recurring-orders-ABC123
+```
+
+### Example 11: Review Backlog Weekly
+
+```
+You: "Let's review the backlog. Show me what's there"
+
+Claude:
+📦 Backlog Review (12 items)
+
+**High value / Low effort (consider promoting):**
+1. Email notifications (2-3 days)
+2. CSV export for reports (1 day)
+
+**Waiting on decisions:**
+3. Payment gateway integration (Which provider?)
+4. Internal messaging (User said no internal, only email)
+
+**Low priority / Nice to have:**
+5-8. [4 items listed]
+
+**Should probably remove:**
+9. Tax reporting automation (User explicitly said no)
+
+**Recommendations:**
+- Promote #1 and #2 to next sprint
+- Remove #9 (explicitly excluded)
+- Get decision on #3 and #4
+```
+
+### Example 12: Move Task to Backlog
+
+```
+You: "Move the mobile app task to the backlog. Not ready for that yet"
+
+Claude:
+✅ Moved task from "Next Sprint" to "Backlog"
+✅ Updated MASTER_ROADMAP.md:
+
+## 📦 Backlog
+- [ ] Mobile Native App (Phase 5+)
+  - Reason: Not ready yet, PWA sufficient for now
+  - Review: Q2 2026
+  - Priority: Low
+  - Estimate: 2-3 months
+
+✅ Committed and pushed to GitHub
+```
+
+### Example 13: Debug Deployment Failure
+
+```
+Claude: Deployment failed!
+
+Claude (automatically):
+✅ Retrieved error logs from database
+✅ Error: "Module not found: @/components/NewComponent"
+
+Analysis: Import path incorrect (should be relative, not alias)
+
+✅ Fixed import: ./components/NewComponent
+✅ Committed fix
+✅ Pushing... deployment restarted
+✅ Monitoring... deployment succeeded!
+
+Issue was a TypeScript import path. Fixed and deployed.
+```
+
+### Example 14: Verify All Tests Pass
+
+```
+You: "Before we merge, run all tests and show me the results"
+
+Claude:
+🧪 Running full test suite...
+
+✅ Unit tests: 145/145 passed
+✅ Integration tests: 23/23 passed
+✅ Coverage: 84% (above 80% minimum)
+✅ TypeScript: 0 errors
+✅ Linting: 0 warnings
+✅ Build: Successful
+
+📊 Test Summary:
+- Duration: 45 seconds
+- Files tested: 68
+- Assertions: 892
+- Flaky tests: 0
+- Skipped tests: 0
+
+✅ All checks passed - safe to merge!
+```
+
+### Example 15: Quick Status Check
+
+```
+You: "Status check"
+
+Claude:
+📊 TERP System Status
+
+**Active Work:**
+- Session-ABC123: Dashboard improvements (90% done, deploying)
+
+**Recent Deployments:**
+- 10 min ago: COGS improvements ✅ Success
+- 2 hours ago: Sample management ✅ Success
+
+**System Health:**
+- ✅ All tests passing (168 tests)
+- ✅ TypeScript: 0 errors
+- ✅ Last deployment: Successful
+- ✅ Site: https://terp-app-b9s35.ondigitalocean.app (online)
+- ✅ GitHub sync: Up-to-date
+
+**Roadmap:**
+- Current sprint: 3/5 tasks complete
+- Next sprint: 4 tasks planned
+- Backlog: 12 items
+
+**Recommendation:** System healthy, ready for more work!
+```
+
+---
+
 ## 🎓 When To Read Full Docs
 
 **Read CLAUDE_WORKFLOW.md when:**

@@ -205,12 +205,46 @@ This is **THE ONLY roadmap** that matters. All others are archived.
 1. Pick a task from MASTER_ROADMAP.md
 2. Tell Claude: "Work on task X from the roadmap"
 3. Claude automatically:
-   - Creates branch with unique session ID
-   - Updates ACTIVE_SESSIONS.md
+   - Creates branch with unique session ID (see format below)
+   - Creates individual session file in docs/sessions/active/
    - Marks task as in-progress in roadmap
+
+**Session ID Format:**
+```
+Session-[DATE]-[TASK_SLUG]-[RANDOM]
+
+Examples:
+- Session-20251112-codebase-analysis-011CV4V
+- Session-20251112-cogs-improvements-X7Y9Z2
+- Session-20251112-dashboard-fix-A1B2C3
+
+Components:
+- Date: YYYYMMDD (e.g., 20251112)
+- Task slug: First 3 words of task name, kebab-case (e.g., cogs-improvements)
+- Random: 7 alphanumeric characters (e.g., X7Y9Z2)
+```
+
+**Branch Naming:**
+```
+claude/[task-slug]-[SESSION_ID]
+
+Examples:
+- claude/cogs-improvements-011CV4V
+- claude/dashboard-fix-X7Y9Z2
+```
+
+**Session File Naming:**
+```
+docs/sessions/active/Session-[ID].md
+
+Examples:
+- docs/sessions/active/Session-20251112-codebase-analysis-011CV4V.md
+- docs/sessions/active/Session-20251112-cogs-improvements-X7Y9Z2.md
+```
 
 **To avoid conflicts:**
 - Don't assign same module to 2 Claudes
+- Each session gets its own file (no merge conflicts!)
 - ✅ Good: Claude-A on inventory, Claude-B on accounting
 - ❌ Bad: Claude-A and Claude-B both on inventory
 
@@ -355,6 +389,25 @@ main (live production site)
  └── claude/feature-c-DEF456 (Session C working here)
 ```
 
+**Two-Track Commit Strategy:**
+
+1. **Code Commits** (feature-specific):
+   - Go to feature branch only (e.g., `claude/feature-a-ABC123`)
+   - Contain actual code changes
+   - Merged to main when you approve
+
+2. **Status Commits** (coordination):
+   - Go to feature branch, update session file
+   - Session file: `docs/sessions/active/Session-[ID].md`
+   - No conflicts (each session has own file!)
+   - Aggregated view auto-generated from all session files
+
+**Why This Works:**
+- Each session writes to its own file in `docs/sessions/active/`
+- No merge conflicts between parallel sessions
+- Status always visible on GitHub (in feature branch or main)
+- Other agents run `scripts/aggregate-sessions.sh` to see all active work
+
 **Key Concepts (Simplified):**
 
 | Term | What It Means | What You Do |
@@ -447,6 +500,38 @@ Claude **MUST** follow these rules **100% of the time**:
 - ✅ Check commit SHA matches
 - ✅ Confirm site is accessible
 - ❌ NEVER report "done" without verification
+
+**Verification Implementation:**
+
+Use `scripts/verify-deployment.sh` to check deployment status:
+
+```bash
+# Verify deployment by commit SHA
+./scripts/verify-deployment.sh [commit-sha]
+
+# Example
+./scripts/verify-deployment.sh abc123def456
+```
+
+**How it works:**
+- Queries database for deployment status every 30 seconds
+- Checks: `SELECT status, commitSha FROM deployments WHERE commitSha='...'`
+- Timeout: 10 minutes
+- Returns: success (exit 0) or failure (exit 1)
+
+**Deployment States:**
+- `pending` - Deployment queued
+- `building` - Building app
+- `deploying` - Deploying to DigitalOcean
+- `success` - ✅ Deployment complete
+- `failed` - ❌ Deployment failed (check logs)
+
+**On deployment failure:**
+1. Retrieve error logs from database or DigitalOcean
+2. Analyze the error
+3. Fix the issue
+4. Re-commit and push
+5. Verify again
 
 **5. Architecture Patterns**
 - ✅ Use `authProvider` / `dataProvider` abstractions

@@ -1763,11 +1763,98 @@ When adding a new feature to TERP:
 git add docs/ACTIVE_SESSIONS.md docs/roadmaps/MASTER_ROADMAP.md
 git commit -m "status: Session-ABC123 [event]"
 
-# 3. Push immediately
+# 3. Push immediately with retry logic
 git push origin [current-branch]
 
 # 4. Verify push succeeded
-# (Check for errors, retry if needed)
+# (See Retry & Rollback Protocol below)
+```
+
+### 🔄 Retry & Rollback Protocol
+
+**If push fails (network error, conflict, etc.), use exponential backoff:**
+
+```bash
+#!/bin/bash
+# Retry logic for git push
+
+MAX_RETRIES=4
+RETRY_DELAYS=(2 4 8 16)  # seconds
+
+for i in $(seq 0 $((MAX_RETRIES-1))); do
+    if git push origin "$BRANCH"; then
+        echo "✅ Push succeeded"
+        exit 0
+    else
+        if [ $i -lt $((MAX_RETRIES-1)) ]; then
+            DELAY=${RETRY_DELAYS[$i]}
+            echo "⚠️  Push failed, retrying in ${DELAY}s..."
+            sleep $DELAY
+        fi
+    fi
+done
+
+echo "❌ Push failed after $MAX_RETRIES attempts"
+exit 1
+```
+
+**Retry Schedule:**
+- Attempt 1: Immediate
+- Attempt 2: After 2 seconds
+- Attempt 3: After 4 seconds
+- Attempt 4: After 8 seconds
+- Attempt 5: After 16 seconds
+- **Total max time:** 30 seconds
+
+**If all retries fail:**
+
+1. **Alert user:**
+   ```
+   ⚠️  WARNING: Status update failed to push to GitHub
+   - Local status: Updated
+   - GitHub status: Out of sync
+   - Action: Will retry on next update
+   ```
+
+2. **Save status locally:**
+   - Status file is updated locally
+   - Commit exists locally
+   - Continue working
+
+3. **Auto-retry on next update:**
+   - Next status update will include both updates
+   - Or run: `git push --force-with-lease origin [branch]`
+
+**Manual Recovery (if needed):**
+
+```bash
+# Check for unpushed commits
+git log origin/[branch]..HEAD
+
+# If commits exist, force push safely
+git push --force-with-lease origin [branch]
+
+# Verify sync
+git status  # Should show "up-to-date with origin"
+```
+
+**Conflict Resolution:**
+
+If push fails due to conflict (another session pushed first):
+
+```bash
+# 1. Fetch latest
+git fetch origin [branch]
+
+# 2. Check what changed
+git diff origin/[branch]..HEAD
+
+# 3. If only session files changed (no code conflict):
+git pull --rebase origin [branch]
+git push origin [branch]
+
+# 4. If code conflict, alert user:
+echo "⚠️  Merge conflict detected - manual resolution needed"
 ```
 
 **Example commit messages:**
