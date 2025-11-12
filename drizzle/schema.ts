@@ -475,6 +475,10 @@ export const batches = mysqlTable("batches", {
   paymentTerms: paymentTermsEnum.notNull(),
   amountPaid: varchar("amountPaid", { length: 20 }).default("0"), // For COD/Partial tracking
   metadata: text("metadata"), // JSON string: test results, harvest code, COA, etc.
+  
+  // v3.2: Link to PHOTOGRAPHY calendar event if batch had photo session
+  photoSessionEventId: int("photo_session_event_id").references(() => calendarEvents.id, { onDelete: "set null" }),
+  
   onHandQty: varchar("onHandQty", { length: 20 }).notNull().default("0"),
   sampleQty: varchar("sampleQty", { length: 20 }).notNull().default("0"),
   reservedQty: varchar("reservedQty", { length: 20 }).notNull().default("0"),
@@ -1843,6 +1847,9 @@ export const orders = mysqlTable(
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
     clientNeedId: int("client_need_id"), // Link to client need if order was created from a need
+    
+    // v3.2: Link to INTAKE calendar event if order was created from appointment
+    intakeEventId: int("intake_event_id").references(() => calendarEvents.id, { onDelete: "set null" }),
 
     // Items (same structure for both quotes and sales)
     items: json("items").notNull(),
@@ -3752,6 +3759,8 @@ export const calendarEvents = mysqlTable(
       "RECURRING_ORDER",
       "SAMPLE_REQUEST",
       "OTHER",
+      "AR_COLLECTION", // v3.2: Customer payment collection
+      "AP_PAYMENT", // v3.2: Vendor payment
     ]).notNull(),
 
     // Status and priority
@@ -3773,6 +3782,13 @@ export const calendarEvents = mysqlTable(
     // Entity linking (polymorphic)
     entityType: varchar("entity_type", { length: 50 }), // e.g., "order", "invoice", "client"
     entityId: int("entity_id"),
+
+    // v3.2: Explicit foreign keys for common entities (alongside polymorphic)
+    clientId: int("client_id").references(() => clients.id, { onDelete: "set null" }),
+    vendorId: int("vendor_id").references(() => vendors.id, { onDelete: "set null" }),
+
+    // v3.2: JSON metadata for v3.1 metadata system
+    metadata: json("metadata"),
 
     // Ownership and permissions
     createdBy: int("created_by")
@@ -3811,6 +3827,9 @@ export const calendarEvents = mysqlTable(
     assignedIdx: index("idx_calendar_assigned").on(table.assignedTo),
     statusIdx: index("idx_calendar_status").on(table.status),
     createdByIdx: index("idx_calendar_created_by").on(table.createdBy),
+    // v3.2: Indexes for explicit foreign keys
+    clientIdIdx: index("idx_calendar_events_client_id").on(table.clientId),
+    vendorIdIdx: index("idx_calendar_events_vendor_id").on(table.vendorId),
   })
 );
 
