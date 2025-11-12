@@ -1,0 +1,7 @@
+{
+  "appId": "YOUR_DO_APP_ID_HERE",
+  "appName": "terp",
+  "region": "nyc",
+  "primaryBranch": "main",
+  "monitoringEnabled": true
+}
