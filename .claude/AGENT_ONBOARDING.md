@@ -1,8 +1,13 @@
-# AGENT ONBOARDING - READ THIS FIRST
+# 🚀 TERP Agent Onboarding - COMPLETE GUIDE
+## MANDATORY Reading for All Development Agents
 
-**MANDATORY:** All AI agents working on TERP must read this document before starting any work.
+**Purpose:** Ensure every agent/engineer builds production-quality code in alignment with TERP's workflow system
+**Time Required:** 20 minutes
+**Last Updated:** November 12, 2025
 
-## 🚨 CRITICAL RULES - NO EXCEPTIONS
+---
+
+## 🚨 PART 1: CRITICAL RULES - NO EXCEPTIONS
 
 ### 1. Security Requirements (BLOCKING)
 Before making ANY code changes, review:
@@ -16,84 +21,186 @@ Before making ANY code changes, review:
 - ❌ **NO `any` types** - Define proper interfaces
 - ❌ **NO files over 500 lines** - Split into modules
 - ❌ **NO N+1 queries** - Batch database operations
+- ❌ **NO placeholders, TODOs, stubs** - Only production-ready code
 - ✅ **ALWAYS add pagination** to list endpoints
 - ✅ **ALWAYS use TRPCError** for error handling
-- ✅ **ALWAYS write tests** for new routers/services
+- ✅ **ALWAYS write tests** for new routers/services (TDD)
 
 ### 3. Mandatory Checks Before Committing
 ```bash
 # 1. Type check passes
 pnpm check
 
-# 2. No new `any` types introduced
-git diff | grep -c ": any" && echo "❌ BLOCKED: New 'any' types found"
+# 2. Tests pass
+pnpm test
 
-# 3. Large files check
-find . -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print "❌ BLOCKED: " $2 " exceeds 500 lines (" $1 ")"}'
-
-# 4. Tests exist for new routers
-# If adding server/routers/foo.ts, must also add server/routers/foo.test.ts
+# 3. Pre-commit hooks pass (will auto-check):
+# - No `any` types
+# - No files over 500 lines
+# - No TODO/FIXME/console.log
+# - No placeholders or stubs
 ```
 
-## 📚 Required Reading (15 min)
+---
 
-### Start Here:
-1. **CODE_QA_EXECUTIVE_SUMMARY.md** (5 min)
-   - Critical findings and priorities
-   - Security vulnerabilities to avoid
+## 📚 PART 2: Required Reading (15 minutes)
 
-2. **Current Phase** (Check README.md for current sprint):
-   - Phase 1 (Week 1): Security fixes
-   - Phase 2 (Weeks 2-4): Performance & quality
-   - Phase 3 (Weeks 5-7): Technical debt
-   - (See executive summary for details)
+### Phase 1: Code Quality & Security (7 minutes)
 
-3. **Architecture Patterns** (5 min):
-   ```
-   Router (thin) → Service (business logic) → Repository (data access)
+**1. CODE_QA_EXECUTIVE_SUMMARY.md (5 min)**
+```
+Location: CODE_QA_EXECUTIVE_SUMMARY.md
+```
+- Critical findings and priorities
+- Security vulnerabilities to avoid
+- Current phase work:
+  - Phase 1 (Week 1): Security fixes
+  - Phase 2 (Weeks 2-4): Performance & quality
+  - Phase 3 (Weeks 5-7): Technical debt
 
-   ✅ GOOD:
-   router → service.createOrder() → orderRepo.save()
+**2. Architecture Patterns (2 min)**
+```
+Router (thin) → Service (business logic) → Repository (data access)
 
-   ❌ BAD:
-   router → db.insert() directly
-   router → 70 lines of business logic
-   ```
+✅ GOOD:
+router → service.createOrder() → orderRepo.save()
 
-4. **Error Handling Pattern** (2 min):
-   ```typescript
-   // ✅ ALWAYS use TRPCError
-   throw new TRPCError({
-     code: 'NOT_FOUND', // BAD_REQUEST, UNAUTHORIZED, INTERNAL_SERVER_ERROR
-     message: 'Order not found',
-     cause: error, // Include original error for logging
-   });
+❌ BAD:
+router → db.insert() directly
+router → 70 lines of business logic
+```
 
-   // ❌ NEVER use generic Error
-   throw new Error("Something went wrong");
+### Phase 2: Workflow & Process (8 minutes)
 
-   // ❌ NEVER return success/error objects
-   return { success: false, error: "..." };
-   ```
+**3. QUICK_REFERENCE.md (2 minutes)** ⭐
+```
+Location: docs/QUICK_REFERENCE.md
+```
+- 2-minute overview of entire system
+- 15 real-world examples
+- Essential commands
 
-5. **Database Query Patterns** (3 min):
-   ```typescript
-   // ❌ N+1 PROBLEM - BLOCKED
-   for (const item of items) {
-     const batch = await db.query.batches.findFirst({
-       where: eq(batches.id, item.batchId)
-     });
-   }
+**4. MASTER_ROADMAP.md (3 minutes)**
+```
+Location: docs/roadmaps/MASTER_ROADMAP.md
+```
+- **THE ONLY ROADMAP** that matters (single source of truth)
+- Current sprint priorities
+- Backlog items
+- What NOT to build
 
-   // ✅ CORRECT - Batch load
-   const batchIds = items.map(i => i.batchId);
-   const batches = await db.query.batches.findMany({
-     where: inArray(batches.id, batchIds)
-   });
-   const batchMap = new Map(batches.map(b => [b.id, b]));
-   ```
+**5. DEVELOPMENT_PROTOCOLS.md - Section 16 (2 minutes)**
+```
+Location: docs/DEVELOPMENT_PROTOCOLS.md#16-status-updates--github-sync-protocol-mandatory
+```
+- GitHub sync protocol (MANDATORY)
+- Status update requirements every 30 minutes
+- Retry/rollback procedures
 
-## 🔍 How to Find Information
+**6. CLAUDE_WORKFLOW.md - Skim Key Sections (1 minute)**
+```
+Location: docs/CLAUDE_WORKFLOW.md
+```
+- Sections 1-3 (Quick Start, SSOT, Parallel Development)
+- Session IDs and branch naming
+- Status tracking
+
+---
+
+## 🎯 PART 3: Your Workflow (Required for EVERY Session)
+
+### At Start of EVERY Session
+
+**Step 1: Check Active Work (30 seconds)**
+```bash
+cat docs/ACTIVE_SESSIONS.md
+# OR regenerate it
+./scripts/aggregate-sessions.sh
+```
+- See what other agents are working on
+- Avoid conflicts (don't work on same module!)
+
+**Step 2: Pick Your Task (1 minute)**
+```bash
+cat docs/roadmaps/MASTER_ROADMAP.md
+```
+- Choose from "Current Sprint" section
+- Check priorities: 🔴 HIGH → 🟡 MEDIUM → 🟢 LOW
+- Tell user: "I'm going to work on [TASK] from the roadmap"
+
+**Step 3: Create Your Session (automatic)**
+
+Claude will automatically:
+- Generate session ID: `Session-YYYYMMDD-task-slug-RANDOM`
+- Create branch: `claude/task-slug-SESSIONID`
+- Create session file: `docs/sessions/active/Session-[ID].md`
+- Update ACTIVE_SESSIONS.md
+
+---
+
+## 📋 PART 4: During Development (TDD + Best Practices)
+
+### 1. Write Tests First (TDD - MANDATORY)
+```bash
+# Copy test template
+cp test-examples/pricing.test.ts test/your-feature.test.ts
+
+# Write failing test
+pnpm test your-feature.test.ts
+
+# Write code to pass test
+pnpm test your-feature.test.ts
+
+# Refactor if needed
+```
+
+### 2. Error Handling Pattern
+```typescript
+// ✅ ALWAYS use TRPCError
+throw new TRPCError({
+  code: 'NOT_FOUND', // BAD_REQUEST, UNAUTHORIZED, INTERNAL_SERVER_ERROR
+  message: 'Order not found',
+  cause: error, // Include original error for logging
+});
+
+// ❌ NEVER use generic Error
+throw new Error("Something went wrong");
+
+// ❌ NEVER return success/error objects
+return { success: false, error: "..." };
+```
+
+### 3. Database Query Patterns
+```typescript
+// ❌ N+1 PROBLEM - BLOCKED
+for (const item of items) {
+  const batch = await db.query.batches.findFirst({
+    where: eq(batches.id, item.batchId)
+  });
+}
+
+// ✅ CORRECT - Batch load
+const batchIds = items.map(i => i.batchId);
+const batches = await db.query.batches.findMany({
+  where: inArray(batches.id, batchIds)
+});
+const batchMap = new Map(batches.map(b => [b.id, b]));
+```
+
+### 4. Status Updates (Every 30 minutes)
+```bash
+# Update session file
+echo "Status: Implementing feature X, ETA 20 min" >> docs/sessions/active/Session-[ID].md
+
+# Commit + push immediately
+git add docs/sessions/active/Session-[ID].md
+git commit -m "status: [brief update]"
+git push origin claude/task-slug-SESSIONID
+```
+
+---
+
+## 🔍 PART 5: How to Find Information
 
 ### "I need to add a new API endpoint"
 1. Check: `CODE_QA_DETAILED_TECHNICAL_REPORT.md` → Phase 5 (API Router Analysis)
@@ -119,9 +226,11 @@ find . -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {print "❌ B
 2. See specific refactoring recommendations for that file
 3. Pattern: Split by responsibility, extract to services
 
+---
+
 ## ⚠️ BLOCKERS - Will Fail PR Review
 
-These will be **automatically rejected** in code review:
+These will be **automatically rejected** in code review or blocked by pre-commit hooks:
 
 1. ❌ New `publicProcedure` for financial/admin data
 2. ❌ New `any` types without TODO comment + justification
@@ -133,120 +242,151 @@ These will be **automatically rejected** in code review:
 8. ❌ Console.log instead of logger
 9. ❌ Generic Error instead of TRPCError
 10. ❌ Dead code (commented out blocks)
+11. ❌ TODO, FIXME, placeholders, or "coming soon" comments
+12. ❌ Stub functions or incomplete implementations
+
+---
+
+## 🚫 Prohibited Actions (NEVER VIOLATE)
+
+These actions are **STRICTLY FORBIDDEN** and will cause immediate rejection:
+
+❌ **Write code without tests** - TDD is mandatory
+❌ **Skip status updates** - Update every 30 minutes
+❌ **Use `git commit --no-verify`** - Pre-commit hooks exist for a reason
+❌ **Work on same module as another agent** - Check ACTIVE_SESSIONS.md first
+❌ **Push directly to main** - Always use feature branches
+❌ **Create TODOs or placeholder code** - Only production-ready code
+❌ **Report task "done" without verifying all requirements** - Check everything first
+
+---
 
 ## 📋 Task-Specific Guides
 
 ### Adding New Features
 1. Read relevant section in QA report
-2. Check if router already exists (68 routers, many unused)
-3. Follow 3-layer architecture (router → service → repository)
-4. Write tests FIRST (TDD)
-5. Add error boundaries (frontend)
-6. Document in API_Documentation.md
+2. Check MASTER_ROADMAP.md for priority
+3. Check if router already exists (68 routers, many unused)
+4. Follow 3-layer architecture (router → service → repository)
+5. Write tests FIRST (TDD)
+6. Add error boundaries (frontend)
+7. Document in API_Documentation.md (if adding API)
+8. Update status every 30 minutes
 
 ### Fixing Bugs
 1. Check if bug is in QA report (likely already identified)
-2. Add failing test that reproduces bug
-3. Fix bug
-4. Verify test passes
-5. Check for similar bugs in codebase
-
-### Performance Optimization
-1. Measure first (don't optimize blindly)
-2. Check QA report for known bottlenecks
-3. Fix in order: Database queries → Frontend rendering → Bundle size
-4. Add monitoring/logging for future detection
+2. Write test that reproduces bug
+3. Fix bug (test should pass)
+4. Ensure no regressions (run full test suite)
+5. Update session file with fix details
 
 ### Refactoring
-1. Ensure test coverage exists BEFORE refactoring
-2. Refactor in small, reviewable chunks
-3. Keep tests passing at each step
-4. Update documentation
-
-## 🚀 Quick Start Checklist
-
-When starting work on TERP:
-
-- [ ] Read `CODE_QA_EXECUTIVE_SUMMARY.md` (5 min)
-- [ ] Check current sprint phase (README.md or ask)
-- [ ] Review relevant QA report section for your task
-- [ ] Understand 3-layer architecture pattern
-- [ ] Set up pre-commit hooks (see below)
-- [ ] Verify you can run tests locally
-- [ ] Confirm you have required environment variables
-
-## 🔧 Development Setup
-
-### Install Pre-commit Hooks
-```bash
-# Enforce quality standards automatically
-pnpm run prepare
-
-# Verify hooks are active
-ls -la .git/hooks/
-```
-
-### Environment Variables Required
-See: `CODE_QA_DETAILED_TECHNICAL_REPORT.md` → Phase 3.2
-- `DATABASE_URL` (required)
-- `JWT_SECRET` (required, no defaults!)
-- `BUILT_IN_FORGE_API_URL` (if using AI features)
-- `BUILT_IN_FORGE_API_KEY` (if using AI features)
-
-## 📞 When You Need Help
-
-### Q: "Can I use `publicProcedure` for this endpoint?"
-A: Ask: "Does it expose user data, financial data, or admin functions?"
-   - YES → Use `protectedProcedure` or `adminProcedure`
-   - NO → Only if truly public (e.g., health check)
-
-### Q: "Is this file too large?"
-A: Run: `wc -l yourfile.ts`
-   - Over 500 lines → Must split
-   - 300-500 lines → Consider splitting
-   - Under 300 lines → Probably fine
-
-### Q: "Should I write tests for this?"
-A: YES. Always. No exceptions.
-
-### Q: "Can I use `any` here?"
-A: Only if:
-   1. You add a TODO comment explaining why
-   2. You create a ticket to fix it properly
-   3. You can justify it in PR review
-
-## 🎓 Learning Resources
-
-### Good Examples in Codebase
-- ✅ `server/routers/calendar.ts` - Well-structured router
-- ✅ `server/services/permissionService.ts` - Good service pattern
-- ✅ `server/routers/calendar.test.ts` - Good test coverage
-
-### Bad Examples (Learn What NOT to Do)
-- ❌ `server/routers/vipPortal.ts` - Too large (1,495 lines)
-- ❌ `client/src/pages/ComponentShowcase.tsx` - Dead code
-- ❌ `server/routers/ordersEnhancedV2.ts` - N+1 queries
-
-## 🎯 Success Criteria
-
-You're following the standards when:
-
-1. ✅ Your PR passes all automated checks
-2. ✅ You can explain the 3-layer architecture
-3. ✅ Your code has tests with >80% coverage
-4. ✅ No `any` types (or justified with TODO)
-5. ✅ All endpoints have proper auth
-6. ✅ Database queries are optimized
-7. ✅ Files are under 500 lines
-8. ✅ Error handling uses TRPCError
+1. Check QA report for specific recommendations
+2. Write tests for existing behavior FIRST
+3. Refactor while keeping tests green
+4. Verify no performance degradation
+5. Update documentation if needed
 
 ---
 
-**Remember:** This codebase is recovering from technical debt. Your job is to:
-1. **NOT make it worse** (follow standards above)
-2. **Make it better** (fix issues from QA report when you touch code)
+## ✅ Before Reporting "Done"
 
-**Questions?** Check the QA reports first - your answer is probably there.
+Check ALL of these before saying you're finished:
 
-**Last Updated:** 2025-11-12
-**Review Frequency:** Update after each sprint/phase completion
+- [ ] All tests pass (`pnpm test`)
+- [ ] Zero TypeScript errors (`pnpm check`)
+- [ ] Code follows TDD (tests written first)
+- [ ] Test coverage ≥ 80% for new code
+- [ ] No TODO, FIXME, or placeholder comments
+- [ ] All code is production-ready (no stubs)
+- [ ] Session file updated with completion status
+- [ ] Branch pushed to GitHub
+- [ ] Status update committed
+- [ ] Pre-commit hooks all pass
+- [ ] No `any` types added
+- [ ] No files over 500 lines
+- [ ] All database queries use batch loading (no N+1)
+- [ ] All list endpoints have pagination
+- [ ] All errors use TRPCError
+- [ ] Security requirements met (proper auth checks)
+
+---
+
+## 🆘 Emergency Procedures
+
+### If You Get Blocked
+1. Update session file: `Status: BLOCKED - [reason]`
+2. Commit + push immediately
+3. Tell user: "I'm blocked by [X], need guidance"
+
+### If Tests Fail
+1. DO NOT commit broken code
+2. Fix the tests first
+3. If stuck, ask user for help
+
+### If Another Agent is Working on Same Module
+1. Check ACTIVE_SESSIONS.md
+2. Choose different task from MASTER_ROADMAP.md
+3. Never work on same module simultaneously
+
+### If Push Fails
+1. Retry with exponential backoff (2s, 4s, 8s, 16s)
+2. Up to 4 retry attempts
+3. If still failing, tell user
+
+---
+
+## 📊 Summary Checklist
+
+Use this as your mental checklist for EVERY session:
+
+**Before Starting:**
+- [ ] Read ACTIVE_SESSIONS.md
+- [ ] Picked task from MASTER_ROADMAP.md
+- [ ] Created session file
+- [ ] Created feature branch
+
+**During Development:**
+- [ ] Writing tests first (TDD)
+- [ ] Following architecture patterns
+- [ ] Using TRPCError for errors
+- [ ] Batch loading database queries
+- [ ] Updating status every 30 minutes
+- [ ] Committing + pushing status updates
+
+**Before Completion:**
+- [ ] All tests pass
+- [ ] Zero TypeScript errors
+- [ ] No prohibited patterns (TODO, any, etc.)
+- [ ] Session file marked complete
+- [ ] Pushed to GitHub
+
+---
+
+## 📞 Questions?
+
+If you're unclear on any requirement:
+1. Check the relevant documentation first
+2. Search QA reports for guidance
+3. Ask the user if still unclear
+
+**DO NOT:**
+- Make assumptions
+- Skip requirements
+- Create placeholder code "to be filled later"
+- Report done without verifying everything
+
+---
+
+## 🎯 Your Success Criteria
+
+You'll know you're successful when:
+- ✅ Your code passes all pre-commit hooks automatically
+- ✅ Your PRs are approved without major revision requests
+- ✅ Your tests have ≥ 80% coverage
+- ✅ Your code follows the 3-layer architecture
+- ✅ You never create merge conflicts with other agents
+- ✅ Your status updates are timely and accurate
+- ✅ You complete tasks fully before moving on
+
+Welcome to the team! 🚀
