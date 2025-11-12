@@ -15,6 +15,7 @@ vi.mock("../db", () => ({
   db: {
     select: vi.fn(),
   },
+  getDb: vi.fn(),
 }));
 
 // Mock the logger
