@@ -1,4 +1,8 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Run QA standards check first
+.husky/pre-commit-qa-check.sh || exit 1
+
+# Then run lint-staged
 npx lint-staged
