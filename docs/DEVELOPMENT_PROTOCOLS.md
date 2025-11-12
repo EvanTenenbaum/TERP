@@ -1,8 +1,23 @@
-# TERP Development Protocols
+# ⚠️ DEPRECATED - TERP Development Protocols ("The Bible")
 
-**Version:** 3.0  
+> **🚨 THIS DOCUMENT IS DEPRECATED AS OF NOVEMBER 12, 2025**
+>
+> **Please use the new workflow system instead:**
+>
+> - **[CLAUDE_WORKFLOW.md](./CLAUDE_WORKFLOW.md)** - Complete workflow guide (read this first)
+> - **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - 1-page summary for quick reference
+> - **[MASTER_ROADMAP.md](./roadmaps/MASTER_ROADMAP.md)** - Single source of truth for all tasks
+> - **[NEW_AGENT_PROMPT.md](./NEW_AGENT_PROMPT.md)** - Mandatory prompt for all new agents
+>
+> **The content below is kept for historical reference only.**
+> **All new development must follow the new workflow system.**
+
+---
+
+**Version:** 3.0 (DEPRECATED)  
 **Last Updated:** November 7, 2025  
-**Purpose:** Ensure systematic integration, production-ready code, and maintainable architecture throughout TERP development
+**Deprecated:** November 12, 2025  
+**Purpose:** [HISTORICAL] Ensure systematic integration, production-ready code, and maintainable architecture throughout TERP development
 
 ---
 
@@ -75,6 +90,7 @@ doctl apps get 1fd40be5-b9af-4e71-ab1d-3af0864a7da4
 **EVERY DEPLOYMENT MUST BE VERIFIED BEFORE REPORTING TASK COMPLETION**
 
 All AI agents MUST:
+
 1. ✅ **VERIFY** every deployment reaches "success" status
 2. ✅ **CONFIRM** the deployment record exists in the database
 3. ✅ **CHECK** the commit SHA matches what was pushed
@@ -131,7 +147,7 @@ const current = await trpc.deployments.current.query();
 if (current) {
   console.log(`Deployment in progress: ${current.status}`);
 } else {
-  console.log('No deployment in progress');
+  console.log("No deployment in progress");
 }
 
 // Get deployment statistics
@@ -164,6 +180,7 @@ console.log(`Average duration: ${stats.averageDuration}s`);
 If you push code and report "done" without checking the deployment status, you have not completed the task. The deployment could have failed, and you would not know.
 
 **Polling Pattern:**
+
 ```bash
 # Check every 30 seconds until deployment completes
 while true; do
@@ -233,6 +250,7 @@ This section contains the most critical protocols that MUST be followed for ever
 **If ANY of these checks fail, the task is NOT complete. Do not report success to the user.**
 
 **Example verification command:**
+
 ```bash
 # After pushing to main, wait 3-5 minutes, then run:
 mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
@@ -245,6 +263,7 @@ mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 ```
 
 **Expected output:**
+
 - `status` should be "success"
 - `commitSha` should match your git commit
 - `completedAt` should be a recent timestamp
@@ -449,6 +468,7 @@ gh run view $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
 ```
 
 **Expected Output:**
+
 - ✅ **Green checkmark** = Main branch is healthy, safe to start work
 - ❌ **Red X** = Main branch is broken, **DO NOT** start work until fixed
 
@@ -463,6 +483,7 @@ gh pr view <PR_NUMBER> --comments
 ```
 
 **Expected Output:**
+
 - ✅ **All checks passed** = Your PR is ready to merge
 - ❌ **Some checks failed** = Read the failure comments, fix the issues
 
@@ -477,6 +498,7 @@ gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments
 ```
 
 **Expected Output:**
+
 - ✅ **State: success** = Your commit passed all tests
 - ❌ **State: failure** = Your commit broke the build, **REVERT IMMEDIATELY**
 
@@ -563,6 +585,7 @@ gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments
 ---
 
 ## 4. System Integration & Change Management Protocol
+
 ## System Integration & Change Management Protocol
 
 ### 1. IMPACT ANALYSIS (Before Making Changes)
@@ -1201,7 +1224,6 @@ Fixes #123
 
 ---
 
-
 ## 15. Test Failure Monitoring Protocol (MANDATORY)
 
 **FAILURE TO MONITOR TEST STATUS WILL RESULT IN BROKEN BUILDS AND REJECTED WORK.**
@@ -1384,11 +1406,13 @@ The TERP system implements a comprehensive Role-Based Access Control (RBAC) syst
 Permissions follow the format: `{module}:{action}`
 
 **Common Modules:**
+
 - `orders`, `inventory`, `clients`, `vendors`, `purchase_orders`
 - `accounting`, `dashboard`, `calendar`, `todos`
 - `rbac`, `system`, `settings`
 
 **Common Actions:**
+
 - `read` - View/list data
 - `create` - Create new records
 - `update` - Modify existing records
@@ -1396,6 +1420,7 @@ Permissions follow the format: `{module}:{action}`
 - `manage` - Full CRUD access (admin only)
 
 **Examples:**
+
 - `orders:read` - View orders
 - `orders:create` - Create new orders
 - `inventory:update` - Update inventory
@@ -1417,19 +1442,19 @@ export const myRouter = router({
     .use(requirePermission("module:read"))
     .input(z.object({ ... }))
     .query(async ({ input }) => { ... }),
-    
+
   // Create operation
   create: protectedProcedure
     .use(requirePermission("module:create"))
     .input(z.object({ ... }))
     .mutation(async ({ input }) => { ... }),
-    
+
   // Update operation
   update: protectedProcedure
     .use(requirePermission("module:update"))
     .input(z.object({ ... }))
     .mutation(async ({ input }) => { ... }),
-    
+
   // Delete operation
   delete: protectedProcedure
     .use(requirePermission("module:delete"))
@@ -1461,18 +1486,29 @@ flexibleOperation: protectedProcedure
 When adding a new module or feature:
 
 1. **Add permission to seed script** (`scripts/seed-rbac.ts`):
+
    ```typescript
-   await createPermission("new_module:read", "View new module data", "new_module");
-   await createPermission("new_module:create", "Create new module records", "new_module");
+   await createPermission(
+     "new_module:read",
+     "View new module data",
+     "new_module"
+   );
+   await createPermission(
+     "new_module:create",
+     "Create new module records",
+     "new_module"
+   );
    ```
 
 2. **Assign to appropriate roles** in the seed script:
+
    ```typescript
    await assignPermissionToRole("Sales Representative", "new_module:read");
    await assignPermissionToRole("Manager", "new_module:create");
    ```
 
 3. **Run migration** to update the database:
+
    ```bash
    pnpm tsx scripts/seed-rbac.ts
    ```
@@ -1496,7 +1532,7 @@ function MyComponent() {
       {hasPermission('orders:create') && (
         <Button>Create Order</Button>
       )}
-      
+
       {isSuperAdmin && (
         <Button>Admin Panel</Button>
       )}
@@ -1516,8 +1552,8 @@ import { PermissionGate } from "@/hooks/usePermissions";
   <CreateOrderButton />
 </PermissionGate>
 
-<PermissionGate 
-  permissions={['inventory:update', 'inventory:delete']} 
+<PermissionGate
+  permissions={['inventory:update', 'inventory:delete']}
   requireAll={false}
   fallback={<div>No access</div>}
 >
@@ -1551,14 +1587,18 @@ function OrdersPage() {
 When implementing RBAC for a new feature:
 
 1. **Unit Tests** - Test permission middleware:
+
    ```typescript
-   it('requires permission to access endpoint', async () => {
+   it("requires permission to access endpoint", async () => {
      const user = await createTestUser({ permissions: [] });
-     await expect(caller(user).myRouter.create()).rejects.toThrow('Insufficient permissions');
+     await expect(caller(user).myRouter.create()).rejects.toThrow(
+       "Insufficient permissions"
+     );
    });
    ```
 
 2. **Integration Tests** - Test full permission flow:
+
    ```typescript
    it('allows access with correct permission', async () => {
      const user = await createTestUser({ permissions: ['module:create'] });
@@ -1591,7 +1631,7 @@ When implementing RBAC for a new feature:
 {hasPermission('orders:delete') && <DeleteButton />}
 
 // Option 2: Show but disable
-<Button 
+<Button
   disabled={!hasPermission('orders:delete')}
   title={!hasPermission('orders:delete') ? "No permission" : "Delete"}
 >
@@ -1606,7 +1646,7 @@ function AdminPage() {
   const { hasPermission, isLoading } = usePermissions();
 
   if (isLoading) return <LoadingSpinner />;
-  
+
   if (!hasPermission('system:manage')) {
     return <AccessDenied />;
   }
@@ -1622,9 +1662,10 @@ function AdminPage() {
 If permissions don't update after role changes:
 
 1. **Check cache clearing** - Ensure `clearPermissionCache(userId)` is called:
+
    ```typescript
    import { clearPermissionCache } from "../services/permissionService";
-   
+
    // After role assignment
    await assignRoleToUser(userId, roleId);
    clearPermissionCache(userId);
@@ -1654,6 +1695,7 @@ If users get unexpected permission errors:
 #### Adding a New Role
 
 1. Update `scripts/seed-rbac.ts`:
+
    ```typescript
    const newRole = await createRole(
      "New Role Name",
@@ -1663,6 +1705,7 @@ If users get unexpected permission errors:
    ```
 
 2. Assign permissions:
+
    ```typescript
    await assignPermissionToRole("New Role Name", "orders:read");
    await assignPermissionToRole("New Role Name", "orders:create");
@@ -1716,36 +1759,40 @@ When adding a new feature to TERP:
 ### 📋 What Must Go to GitHub
 
 **Status Files (Update + Commit + Push):**
+
 1. `docs/ACTIVE_SESSIONS.md` - Session status updates
 2. `docs/roadmaps/MASTER_ROADMAP.md` - Task progress
 3. Any other status/tracking files
 
 **When to Update & Commit:**
 
-| Event | Update File | Commit Message | Push |
-|-------|-------------|----------------|------|
-| **Start work** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] started on [Task]` | ✅ Immediately |
-| **Progress (every 30 min)** | ACTIVE_SESSIONS.md | `status: Session-[ID] progress update ([%])` | ✅ Immediately |
-| **Pause work** | ACTIVE_SESSIONS.md | `status: Session-[ID] paused - [reason]` | ✅ Immediately |
-| **Block encountered** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] blocked - [reason]` | ✅ Immediately |
-| **Complete task** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] completed [Task]` | ✅ Immediately |
-| **Merge to main** | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: [Task] merged to production` | ✅ Immediately |
+| Event                       | Update File                            | Commit Message                               | Push           |
+| --------------------------- | -------------------------------------- | -------------------------------------------- | -------------- |
+| **Start work**              | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] started on [Task]`     | ✅ Immediately |
+| **Progress (every 30 min)** | ACTIVE_SESSIONS.md                     | `status: Session-[ID] progress update ([%])` | ✅ Immediately |
+| **Pause work**              | ACTIVE_SESSIONS.md                     | `status: Session-[ID] paused - [reason]`     | ✅ Immediately |
+| **Block encountered**       | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] blocked - [reason]`    | ✅ Immediately |
+| **Complete task**           | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: Session-[ID] completed [Task]`      | ✅ Immediately |
+| **Merge to main**           | ACTIVE_SESSIONS.md + MASTER_ROADMAP.md | `status: [Task] merged to production`        | ✅ Immediately |
 
 ### 🎯 Why This Matters
 
 **For other developers:**
+
 - See real-time progress
 - Know what's being worked on
 - Avoid duplicate work
 - Understand blockers
 
 **For other AI agents:**
+
 - Pick up exactly where you left off
 - No context loss between sessions
 - Full history available
 - Can resume any paused work
 
 **For project management:**
+
 - Real-time visibility
 - Accurate status tracking
 - Audit trail
@@ -1799,6 +1846,7 @@ exit 1
 ```
 
 **Retry Schedule:**
+
 - Attempt 1: Immediate
 - Attempt 2: After 2 seconds
 - Attempt 3: After 4 seconds
@@ -1809,6 +1857,7 @@ exit 1
 **If all retries fail:**
 
 1. **Alert user:**
+
    ```
    ⚠️  WARNING: Status update failed to push to GitHub
    - Local status: Updated
@@ -1858,6 +1907,7 @@ echo "⚠️  Merge conflict detected - manual resolution needed"
 ```
 
 **Example commit messages:**
+
 - `status: Session-011CV4V started on codebase analysis`
 - `status: Session-011CV4V progress update (75% complete)`
 - `status: Session-011CV4V paused - waiting on user feedback`
@@ -1878,6 +1928,7 @@ echo "⚠️  Merge conflict detected - manual resolution needed"
 **Rule:** Local files = GitHub files (always)
 
 **Verification:**
+
 ```bash
 # Before ending session, verify all changes are pushed
 git status  # Should show "nothing to commit, working tree clean"
@@ -1887,6 +1938,7 @@ git log origin/[branch]..HEAD  # Should show no unpushed commits
 ### 🚨 Critical for Multi-Agent Workflow
 
 **With this protocol:**
+
 - ✅ 3-4 Claude sessions can work in parallel
 - ✅ No coordination overhead
 - ✅ Real-time conflict detection
@@ -1894,6 +1946,7 @@ git log origin/[branch]..HEAD  # Should show no unpushed commits
 - ✅ Zero information loss
 
 **Without this protocol:**
+
 - ❌ Sessions lose track of each other
 - ❌ Duplicate work happens
 - ❌ Blockers aren't visible
@@ -1918,6 +1971,7 @@ git diff origin/[branch] docs/roadmaps/MASTER_ROADMAP.md
 ### 🎯 Success Criteria
 
 **Protocol is working when:**
+
 - ✅ Status updates appear on GitHub within 1 minute
 - ✅ Other agents can see current status
 - ✅ No "local only" state exists
