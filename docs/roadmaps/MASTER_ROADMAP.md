@@ -16,6 +16,12 @@
   - Delivered: Comprehensive analysis report
   - Deployed: N/A (documentation only)
 
+- [~] **Integrate Technical Debt Roadmap** (Claude-Session-20251112-roadmap-1cf97d3c) 🔴 HIGH
+  - Status: In Progress
+  - Task: Add comprehensive 4-phase technical debt plan to roadmap
+  - Includes: Critical security fixes, stabilization, refactoring
+  - Estimate: 30 minutes
+
 - [ ] **Implement Abstraction Layer** (Unassigned) 🔴 URGENT
   - Create `server/_core/authProvider.ts`
   - Create `server/_core/dataProvider.ts`
