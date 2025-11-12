@@ -1,0 +1,336 @@
+# TERP Agent Onboarding
+
+Welcome! This document outlines essential information for Claude Code agents working on the TERP codebase.
+
+## Overview
+
+TERP is a [brief description of project]. This project is configured with:
+- ✅ Automatic deployment to Digital Ocean App Platform when code is pushed to `main`
+- ✅ Zero-configuration Claude Code auto-deploy with monitoring
+- ✅ Digital Ocean API integration for real-time deployment tracking
+
+## Critical: Always Push to Main for Deployment
+
+**When given a task to deploy code:**
+
+1. Implement the requested changes
+2. Run tests and verify everything works
+3. Commit with a clear, descriptive message
+4. **Push directly to `main` branch** (not a PR or feature branch)
+5. The system will automatically:
+   - Trigger Digital Ocean deployment
+   - Monitor deployment progress
+   - Detect and report any failures
+   - Automatically attempt fixes if needed
+
+### Important: Use Main Branch
+
+- Feature branches are for exploratory work only
+- **All production deployments go directly to `main`**
+- Branch protection has been removed on `main` to allow direct pushes
+- This is intentional - the user wants instant deployments
+- No PR reviews are required for deployment
+
+## Auto-Deploy System
+
+### How It Works
+
+The `scripts/` directory contains the deployment monitoring system:
+
+- **scripts/do-auto-discover.ts** - Auto-discovers your Digital Ocean app by name from `.do/app.yaml`
+  - Queries the Digital Ocean API
+  - Caches the app ID in `.git/config` for speed
+  - First run: ~2 seconds, subsequent runs: instant
+  - Requires: `DIGITALOCEAN_TOKEN` environment variable
+
+- **scripts/deploy-and-monitor.ts** - Monitors deployments after pushing to main
+  - Uses auto-discovery to find the app
+  - Polls Digital Ocean for deployment status every 5 seconds
+  - Shows real-time progress (building, deploying, etc.)
+  - Detects and reports failures with error details
+
+- **scripts/validate-deployment-setup.ts** - Validates the setup is ready
+  - Checks `DIGITALOCEAN_TOKEN` is set
+  - Verifies auto-discovery works
+  - Helpful error messages if something is missing
+
+### Configuration
+
+**Important**: The system is fully automatic. You don't need to:
+- ❌ Provide an app ID
+- ❌ Manually configure anything
+- ❌ Set up per-session
+- ❌ Ask the user for information
+
+**Already set up for you**:
+- ✅ `DIGITALOCEAN_TOKEN` - Set in user's shell config (~/.bashrc, ~/.zshrc)
+- ✅ App name - Read from `.do/app.yaml` (app name: "terp")
+- ✅ App ID caching - Stored in `.git/config` after first discovery
+- ✅ Monitoring scripts - In `scripts/` directory
+
+## Workflow Example
+
+```
+User: "Add dark mode feature and deploy it"
+
+You:
+1. Implement dark mode feature
+2. Test thoroughly (run `npm test`)
+3. Commit: git commit -m "feat: add dark mode toggle to settings"
+4. Push to main: git push origin main
+   ↓
+5. System automatically:
+   - Discovers app ID from Digital Ocean API
+   - Waits for deployment to start
+   - Shows: 🔨 Building... (3/10 steps)
+   - Shows: 🚀 Deploying... (8/10 steps)
+   - Shows: ✅ Deployment successful!
+
+User sees the feature live on production immediately.
+```
+
+## Environment Variables
+
+**DIGITALOCEAN_TOKEN** (Already configured)
+- Required for deployment monitoring
+- Should be set in user's shell config
+- Never committed to git
+- Read-only scope (can't modify infrastructure)
+- Format: `dop_v1_*`
+
+## Digital Ocean Setup
+
+The Digital Ocean App Platform is already configured:
+
+- **Config file**: `.do/app.yaml`
+- **App name**: "terp"
+- **Auto-deploy**: Enabled on push to `main`
+- **Logs**: Forwarded to Papertrail (see `.do/app.yaml`)
+- **Build**: Configured for Node.js deployment
+
+### How Auto-Deploy Works
+
+1. You push code to `main`
+2. Digital Ocean detects the push
+3. Automatically starts a new deployment:
+   - Builds the app (installs deps, runs build scripts)
+   - Deploys to production
+   - Routes traffic to new version
+4. Our monitoring scripts track progress and status
+
+## Key Files to Know
+
+```
+/TERP
+├── .do/
+│   ├── app.yaml              # Digital Ocean configuration (DO NOT MODIFY)
+│   └── SETUP.md              # Quick reference for DO setup
+├── scripts/
+│   ├── do-auto-discover.ts   # App ID auto-discovery
+│   ├── deploy-and-monitor.ts # Main deployment monitoring
+│   └── validate-deployment-setup.ts  # Setup validation
+├── docs/
+│   └── CLAUDE_AUTO_DEPLOY.md # Detailed auto-deploy documentation
+├── QUICKSTART_CLAUDE_DEPLOY.md  # User's quick start guide
+└── AGENT_ONBOARDING.md       # This file
+```
+
+## Troubleshooting
+
+### "DIGITALOCEAN_TOKEN not set" error
+
+The token is missing from the environment. This shouldn't happen as it's already configured in the user's shell.
+
+**Solution**:
+- The token should be in `~/.bashrc` or `~/.zshrc`
+- If working in a new shell, make sure to source the config: `source ~/.bashrc`
+
+### "App auto-discovery failed"
+
+The script couldn't find the app on Digital Ocean.
+
+**Possible causes**:
+- Network connectivity issue (expected in isolated environments)
+- App name in `.do/app.yaml` doesn't match Digital Ocean app name
+- Token expired or invalid
+
+**Solution**:
+- Check network connectivity
+- Verify app name in `.do/app.yaml` matches the DO console
+- Verify token is valid at https://cloud.digitalocean.com/account/api/tokens
+
+### Deployment appears stuck
+
+The monitoring script polls every 5 seconds. If it seems stuck:
+- Check Digital Ocean console directly: https://cloud.digitalocean.com/apps
+- Look at the deployment logs in the DO console
+- Kill the monitoring process and check DO dashboard
+
+## What You Should NOT Do
+
+❌ **Don't modify `.do/app.yaml`** - This is the Digital Ocean config and should match their setup exactly
+
+❌ **Don't commit `DIGITALOCEAN_TOKEN`** - It should only be in shell config, never in git
+
+❌ **Don't use feature branches for deployment** - Always push to `main` for production
+
+❌ **Don't try to pass app ID manually** - The system auto-discovers it
+
+❌ **Don't wait for user to provide deployment info** - You have everything you need
+
+## What You Should Always Do
+
+✅ **Test before committing** - Run the test suite (`npm test`) to verify changes work
+
+✅ **Write clear commit messages** - Use conventional commit format:
+```
+feat: add feature name
+fix: fix bug description
+docs: update documentation
+refactor: reorganize code
+chore: dependencies, config, etc
+```
+
+✅ **Push to main for any production changes** - This triggers auto-deployment
+
+✅ **Monitor the deployment** - Check that it completes successfully
+
+✅ **Report status to user** - Let them know when deployment is done
+
+## Testing Locally Before Deploy
+
+Before pushing to main:
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Build the app
+npm run build
+
+# Start locally (if you need to verify)
+npm start
+```
+
+## Common Tasks
+
+### Deploy a bug fix
+```bash
+# 1. Fix the bug
+# 2. Test it: npm test
+# 3. Commit it
+git commit -m "fix: resolve login issue with email verification"
+# 4. Push to main
+git push origin main
+# 5. System monitors deployment automatically
+```
+
+### Deploy a new feature
+```bash
+# 1. Implement feature
+# 2. Test thoroughly: npm test
+# 3. Commit
+git commit -m "feat: add dark mode toggle to user preferences"
+# 4. Push to main
+git push origin main
+# 5. Deployment and monitoring happens automatically
+```
+
+### Deploy a hotfix
+```bash
+# Same process, but explain urgency in commit message:
+git commit -m "fix: critical security issue in password reset endpoint"
+git push origin main
+```
+
+## FAQ
+
+**Q: Will the system try to fix deployment failures automatically?**
+A: Yes! If a deployment fails, the monitoring system will detect it and pass detailed error information back. You should then fix the issue and push again.
+
+**Q: What if there's a network issue during deployment?**
+A: The monitoring script has retry logic built in. It will retry up to 4 times with exponential backoff before giving up.
+
+**Q: Do I need to tell the user about deployment progress?**
+A: Yes! Provide updates as the deployment progresses. Users appreciate knowing when their changes are live.
+
+**Q: Can I deploy to a branch other than main?**
+A: No. Only `main` is configured for auto-deployment. Use feature branches for development, then merge/push to main for production.
+
+**Q: What happens if my commit message has multiple lines?**
+A: That's fine! Use the format:
+```bash
+git commit -m "feat: add feature name
+
+This is a longer description of what changed and why.
+Can span multiple lines.
+"
+```
+
+**Q: Should I wait for all tests to pass before pushing?**
+A: Absolutely. Always run `npm test` locally and verify all tests pass before pushing to main.
+
+## Deployment Success Indicators
+
+You'll see these messages when deployment succeeds:
+```
+✅ Deployment successful!
+🚀 Production URL: [app-url]
+```
+
+When deployment fails, you'll see:
+```
+❌ Build failed: [error details]
+or
+❌ Deployment failed: [error details]
+```
+
+## Git Operations
+
+### Push to main (standard)
+```bash
+git push origin main
+```
+
+### Push to feature branch (for exploration)
+```bash
+git push -u origin feature/my-feature
+```
+
+### Check status
+```bash
+git status
+```
+
+### See recent commits
+```bash
+git log --oneline -10
+```
+
+## Support
+
+If something doesn't work:
+
+1. Check the error message carefully
+2. Verify the deployment in the DO console: https://cloud.digitalocean.com/apps
+3. Look at deployment logs for detailed error information
+4. Check DIGITALOCEAN_TOKEN is set in shell config
+5. Verify `.do/app.yaml` hasn't been modified
+6. Ask the user to check their GitHub and Digital Ocean settings
+
+## Additional Resources
+
+- **Detailed auto-deploy guide**: `docs/CLAUDE_AUTO_DEPLOY.md`
+- **Digital Ocean setup reference**: `.do/SETUP.md`
+- **User's quick start**: `QUICKSTART_CLAUDE_DEPLOY.md`
+- **Digital Ocean console**: https://cloud.digitalocean.com/apps
+- **Project structure**: Check the README.md in the root directory
+
+---
+
+**Last Updated**: November 12, 2025
+
+This document is kept up-to-date as the deployment system evolves. Always refer to this file as the source of truth for deployment procedures.
