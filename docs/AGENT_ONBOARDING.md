@@ -1,155 +1,103 @@
-# ⚠️ TERP Agent Onboarding - MOVED
+# 🚀 TERP Agent Onboarding (v4.0)
 
-**THIS FILE IS DEPRECATED - See below for new location**
+**Purpose:** Quick start guide for new development agents working on TERP.
 
 **Last Updated:** November 12, 2025
 
 ---
 
-## 🚨 **STOP! This Document Has Moved**
+## 🚨 **STOP! Read This First.**
 
-The onboarding system has been completely redesigned and integrated with the Claude Workflow System.
-
----
-
-## 📍 **NEW LOCATION - READ THESE INSTEAD:**
-
-### **1. MANDATORY_READING.md** (START HERE)
-```
-Location: MANDATORY_READING.md (project root)
-Time: 15 minutes
-```
-- **Your entry point for all onboarding**
-- Complete documentation index
-- Pre-work checklist
-
-### **2. .claude/AGENT_ONBOARDING.md** (COMPLETE GUIDE)
-```
-Location: .claude/AGENT_ONBOARDING.md
-Time: 5 minutes
-```
-- Replaces this document
-- Updated for Claude Workflow System
-- Session-based parallel development
-- GitHub sync protocols
-
-### **3. docs/QUICK_REFERENCE.md** (QUICK START)
-```
-Location: docs/QUICK_REFERENCE.md
-Time: 2 minutes
-```
-- 2-minute system overview
-- 15 real-world examples
-- Essential commands
+Your work will be **rejected** if you do not follow the new workflow system. Read this document carefully.
 
 ---
 
-## 🎯 **What's New in the Updated System?**
+## ✅ **The New Workflow System (Mandatory)**
 
-**November 2025 - Major Updates:**
+As of November 12, 2025, TERP uses a new, streamlined workflow system. The old "Bible" (`DEVELOPMENT_PROTOCOLS.md`) has been deprecated.
 
-1. **Claude Workflow System Integrated**
-   - Support for 3-4 concurrent agents
-   - Session-based coordination
-   - Zero merge conflicts
-
-2. **MASTER_ROADMAP.md** (replaces ACTIVE.md)
-   - Single source of truth
-   - Backlog management
-   - Clear priorities
-
-3. **Session Files** (replaces HANDOFF_CONTEXT.md)
-   - Individual files per agent
-   - No conflicts
-   - `docs/sessions/active/Session-[ID].md`
-
-4. **GitHub Sync Mandatory**
-   - Update every 30 minutes
-   - Commit + push immediately
-   - Status always current
-
-5. **Enhanced QA System**
-   - `.claude/QA_SYSTEM_README.md`
-   - Pre-commit hooks
-   - Automated enforcement
+**You MUST use the new system for all development work.**
 
 ---
 
-## 🚀 **Quick Migration Instructions**
+## 📋 **Step 1: Read the Mandatory Prompt**
 
-### **If You're Starting Fresh:**
+**Action:** Read `docs/NEW_AGENT_PROMPT.md` in full.
 
-1. Read `MANDATORY_READING.md` (15 min)
-2. Follow the onboarding path
-3. Start working
+This document contains the **mandatory 4-phase workflow** that you must follow for every task:
 
-### **If You're Continuing Work:**
+1.  **Phase 1:** Pre-Flight Check (verify roadmap, check active sessions, declare task)
+2.  **Phase 2:** Session Startup & Automation (create session, branch, update roadmap)
+3.  **Phase 3:** Development (TDD, code quality, push-to-main)
+4.  **Phase 4:** Completion & Merge (user approval, final checks, archive session)
 
-1. Check `docs/ACTIVE_SESSIONS.md` (who's working on what)
-2. Review `.claude/AGENT_ONBOARDING.md` (new protocols)
-3. Create your session file
-4. Continue with updated workflow
+**You may not skip any phase or any checklist item within a phase.**
 
 ---
 
-## 📚 **Updated Documentation Map**
+## 📚 **Step 2: Read the Core Documentation**
 
-### **Core Documents (New):**
-- `MANDATORY_READING.md` - Entry point
-- `.claude/AGENT_ONBOARDING.md` - Complete onboarding
-- `.claude/QA_SYSTEM_README.md` - QA system overview
+After reading the mandatory prompt, read these documents in order:
 
-### **Workflow (New):**
-- `docs/CLAUDE_WORKFLOW.md` - 20-page complete guide
-- `docs/QUICK_REFERENCE.md` - 2-minute overview
-- `docs/ACTIVE_SESSIONS.md` - Real-time coordination
-- `docs/CONFLICT_RESOLUTION.md` - Handling conflicts
+1.  **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** (5 minutes)
+    - A 1-page summary of the entire workflow.
+    - Keep this open in a tab while you work.
 
-### **Roadmaps (Changed):**
-- `docs/roadmaps/MASTER_ROADMAP.md` - ONLY roadmap (replaced ACTIVE.md)
+2.  **[CLAUDE_WORKFLOW.md](./CLAUDE_WORKFLOW.md)** (15 minutes)
+    - The complete, detailed guide to the workflow system.
+    - Explains the single source of truth, parallel development, and deployment cycle.
 
-### **Protocols (Unchanged):**
-- `docs/DEVELOPMENT_PROTOCOLS.md` - The Bible (still mandatory)
-- Section 16 added: GitHub Sync Protocol
+3.  **[MASTER_ROADMAP.md](./roadmaps/MASTER_ROADMAP.md)** (5 minutes)
+    - The single source of truth for all tasks.
+    - You will pick your task from the "Current Sprint" section.
 
-### **Templates (New):**
-- `docs/templates/SESSION_TEMPLATE.md` - Session file template
-- `.github/PULL_REQUEST_TEMPLATE.md` - PR checklist
-- `.github/ISSUE_TEMPLATE/` - Issue templates
+4.  **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** (5 minutes)
+    - Understand the system architecture and tech stack.
 
-### **Scripts (New):**
-- `scripts/health-check.sh` - System health monitoring
-- `scripts/aggregate-sessions.sh` - Generate ACTIVE_SESSIONS.md
-- `scripts/verify-deployment.sh` - Deployment verification
+**Total Reading Time:** 30 minutes
 
 ---
 
-## ⚠️ **CRITICAL: Updated Constraints**
+## 🎯 **Step 3: Start Your First Task**
 
-**These rules are now STRICTLY ENFORCED:**
+Once you have read all the documentation, you are ready to start your first task.
 
-1. **NO PLACEHOLDERS** - Automated pre-commit check
-2. **NO PSEUDOCODE** - Automated pre-commit check
-3. **NO STUBS** - Automated pre-commit check
-4. **TDD MANDATORY** - Pre-commit hook enforces
-5. **STATUS UPDATES** - Every 30 minutes (GitHub sync)
-6. **100% COMPLETION** - Don't report done unless done
+**Follow the 4-phase workflow from `NEW_AGENT_PROMPT.md` exactly.**
 
----
-
-## 🎯 **Action Required NOW**
-
-**Stop reading this file. Go to:**
-
-```
-MANDATORY_READING.md
-```
-
-**That's your new starting point!**
+1.  **Phase 1:** Complete the Pre-Flight Check.
+2.  **Phase 2:** Verify that the session automation completes successfully.
+3.  **Phase 3:** Develop using TDD and push-to-main.
+4.  **Phase 4:** Complete the final checklist before reporting "done."
 
 ---
 
-**For questions or issues with the new system:**
-- Check `docs/QUICK_REFERENCE.md`
-- Check `.claude/AGENT_ONBOARDING.md`
-- Check `docs/CLAUDE_WORKFLOW.md`
+## ❌ **Prohibited Actions (Immediate Rejection)**
+
+- **DO NOT** skip any phase of the mandatory workflow.
+- **DO NOT** write code without tests (TDD is mandatory).
+- **DO NOT** commit failing or skipped tests.
+- **DO NOT** use `git commit --no-verify`.
+- **DO NOT** work on a task that is already assigned to another active session.
+- **DO NOT** report a task as "done" without completing the Phase 4 checklist.
+
+---
+
+## ✅ **Checklist: Am I Ready?**
+
+- [ ] I have read **NEW_AGENT_PROMPT.md** and understand the 4-phase workflow.
+- [ ] I have read **QUICK_REFERENCE.md** and know the 3 commands.
+- [ ] I have read **CLAUDE_WORKFLOW.md** and understand the single source of truth.
+- [ ] I have read **MASTER_ROADMAP.md** and can identify unassigned tasks.
+- [ ] I will follow the mandatory workflow for every task.
+
+If you have checked all boxes, you are ready. Start with Phase 1 of the mandatory workflow. 🚀
+
+---
+
+## 📞 **Questions or Issues?**
+
+- **For workflow questions:** Re-read `CLAUDE_WORKFLOW.md`.
+- **For task questions:** Check `MASTER_ROADMAP.md`.
+- **For technical questions:** Ask the user.
+
+**DO NOT** make assumptions or skip steps. The system only works if all agents follow the workflow exactly.
