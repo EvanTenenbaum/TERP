@@ -1,0 +1,275 @@
+name: PR Auto-Fix & Monitor
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to process'
+        required: true
+        type: number
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  auto-fix:
+    name: Auto-fix Issues
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Check for merge conflicts with main
+        id: check_conflicts
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "conflicts=false" >> $GITHUB_OUTPUT
+            echo "✅ No merge conflicts detected"
+          else
+            # Try to merge main to see if there are conflicts
+            if git merge --no-commit --no-ff origin/main 2>&1 | grep -q "CONFLICT"; then
+              echo "conflicts=true" >> $GITHUB_OUTPUT
+              echo "⚠️ Merge conflicts detected"
+              git merge --abort || true
+            else
+              echo "conflicts=false" >> $GITHUB_OUTPUT
+              echo "✅ No merge conflicts detected"
+              git merge --abort || true
+            fi
+          fi
+
+      - name: Auto-resolve merge conflicts
+        if: steps.check_conflicts.outputs.conflicts == 'true'
+        id: resolve_conflicts
+        run: |
+          echo "🔧 Attempting to auto-resolve conflicts..."
+
+          # Start merge to create conflict state
+          git merge --no-commit --no-ff origin/main || true
+
+          # Run auto-resolution script
+          if ./scripts/auto-resolve-conflicts.sh; then
+            echo "✅ Conflicts auto-resolved"
+            git commit -m "chore: auto-resolve merge conflicts with main"
+            echo "resolved=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Could not auto-resolve all conflicts"
+            git merge --abort || true
+            echo "resolved=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run type check
+        id: type_check
+        run: |
+          if pnpm check; then
+            echo "✅ Type check passed"
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Type check failed"
+            echo "passed=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Run linting
+        id: lint
+        run: |
+          if pnpm run lint:fix; then
+            echo "✅ Linting passed"
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Linting issues found, attempting auto-fix"
+            echo "passed=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Run formatting
+        id: format
+        run: |
+          pnpm run format || true
+          if git diff --quiet; then
+            echo "✅ No formatting changes needed"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "📝 Auto-formatted code"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for prohibited patterns
+        id: check_patterns
+        run: |
+          echo "🔍 Checking for prohibited patterns..."
+
+          PATTERNS=(
+            "TODO:"
+            "FIXME:"
+            "console.log"
+            "@ts-ignore"
+            "placeholder"
+            "stub"
+            "coming soon"
+            "will go here"
+          )
+
+          FOUND=0
+          for pattern in "${PATTERNS[@]}"; do
+            if git diff origin/main...HEAD | grep "+.*$pattern" > /dev/null 2>&1; then
+              echo "❌ Found prohibited pattern: $pattern"
+              FOUND=1
+            fi
+          done
+
+          if [ $FOUND -eq 0 ]; then
+            echo "✅ No prohibited patterns found"
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            echo "found=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit auto-fixes
+        id: commit_fixes
+        if: steps.format.outputs.changed == 'true' || steps.resolve_conflicts.outputs.resolved == 'true'
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No changes to commit"
+            echo "committed=false" >> $GITHUB_OUTPUT
+          else
+            git add -A
+            git commit -m "chore: auto-fix formatting and conflicts
+
+Auto-fixes applied by GitHub Actions:
+- Merge conflicts resolved: ${{ steps.resolve_conflicts.outputs.resolved }}
+- Code formatted: ${{ steps.format.outputs.changed }}
+
+[skip ci]" || echo "Nothing to commit"
+            echo "committed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push auto-fixes
+        if: steps.commit_fixes.outputs.committed == 'true'
+        run: |
+          git push origin ${{ github.event.pull_request.head.ref }} || {
+            echo "Push failed, retrying with exponential backoff..."
+            for i in 2 4 8 16; do
+              sleep $i
+              if git push origin ${{ github.event.pull_request.head.ref }}; then
+                echo "✅ Push succeeded after retry"
+                exit 0
+              fi
+            done
+            echo "❌ Push failed after retries"
+            exit 1
+          }
+
+      - name: Comment PR status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const conflicts_resolved = '${{ steps.resolve_conflicts.outputs.resolved }}' === 'true';
+            const type_check_passed = '${{ steps.type_check.outputs.passed }}' === 'true';
+            const lint_passed = '${{ steps.lint.outputs.passed }}' === 'true';
+            const patterns_found = '${{ steps.check_patterns.outputs.found }}' === 'true';
+            const auto_fixed = '${{ steps.commit_fixes.outputs.committed }}' === 'true';
+
+            let status = '## 🤖 PR Auto-Fix Status\n\n';
+
+            if (auto_fixed) {
+              status += '✅ **Auto-fixes applied and pushed**\n\n';
+            }
+
+            status += '### Checks:\n';
+            status += conflicts_resolved ? '✅ Merge conflicts auto-resolved\n' : '⬜ No merge conflicts\n';
+            status += type_check_passed ? '✅ Type check passed\n' : '❌ Type check failed\n';
+            status += lint_passed ? '✅ Linting passed\n' : '⚠️ Linting issues found\n';
+            status += !patterns_found ? '✅ No prohibited patterns\n' : '❌ Prohibited patterns found\n';
+
+            if (!type_check_passed || patterns_found) {
+              status += '\n### ⚠️ Action Required:\n';
+              if (!type_check_passed) {
+                status += '- Fix TypeScript errors: Run `pnpm check` locally\n';
+              }
+              if (patterns_found) {
+                status += '- Remove prohibited patterns (TODO, FIXME, console.log, etc.)\n';
+              }
+            } else {
+              status += '\n✅ **All automated checks passed!**\n';
+            }
+
+            // Find existing bot comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('PR Auto-Fix Status')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: status
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: status
+              });
+            }
+
+      - name: Fail if critical issues remain
+        if: steps.type_check.outputs.passed == 'false' || steps.check_patterns.outputs.found == 'true'
+        run: |
+          echo "❌ Critical issues remain that could not be auto-fixed"
+          echo "Please address the issues listed in the PR comment"
+          exit 1
