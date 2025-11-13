@@ -8,12 +8,13 @@
  */
 import { describe, it, expect, beforeAll, vi, beforeEach } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
+import { setupPermissionMock } from "../test-utils/testPermissions";
 
 // Mock the database (MUST be before other imports)
 vi.mock("../db", () => setupDbMock());
 
-// Mock permission service
-vi.mock("../services/permissionService");
+// Mock permission service (MUST be before other imports)
+vi.mock("../services/permissionService", () => setupPermissionMock());
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
