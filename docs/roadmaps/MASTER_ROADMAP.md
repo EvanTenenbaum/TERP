@@ -152,6 +152,94 @@
   - Estimate: 3-4 hours (increased for verification)
   - **Note:** Create list of 29 routers before deletion for review
 
+- [ ] **ST-007: Implement System-Wide Pagination** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-007
+  - Scope: Expand RF-002 to cover ALL list endpoints, not just dashboard
+  - Action: Add pagination (limit/offset or cursor-based) to all `getAll` and list endpoints
+  - Priority Endpoints: Accounting, inventory, orders, clients, vendors
+  - Implementation: Add `limit` and `offset` parameters to all list procedures
+  - Testing: Verify pagination works with large datasets (1000+ records)
+  - Impact: Prevent browser crashes with large datasets
+  - Estimate: 3-4 days
+  - Note: This addresses Kimi AI's finding about missing pagination
+
+- [ ] **ST-008: Implement Error Tracking (Sentry)** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-008
+  - Action: Set up Sentry integration for error tracking
+  - **Checklist:**
+    1. ☐ Install Sentry SDK: `pnpm add @sentry/nextjs`
+    2. ☐ Configure Sentry in `sentry.client.config.ts` and `sentry.server.config.ts`
+    3. ☐ Add error boundaries in React components
+    4. ☐ Configure source maps for production
+    5. ☐ Test error reporting in staging
+  - Impact: Better error tracking and debugging in production
+  - Estimate: 1-2 days
+  - Note: Addresses Kimi AI's finding about missing error tracking
+
+- [ ] **ST-009: Implement API Monitoring** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-009
+  - Action: Set up API monitoring (Datadog or New Relic)
+  - **Checklist:**
+    1. ☐ Choose monitoring provider (Datadog recommended)
+    2. ☐ Install monitoring SDK
+    3. ☐ Add performance metrics to tRPC procedures
+    4. ☐ Set up alerts for slow queries (>1s)
+    5. ☐ Create monitoring dashboard
+  - Impact: Proactive performance monitoring
+  - Estimate: 2-3 days
+  - Note: Addresses Kimi AI's finding about missing API monitoring
+
+- [ ] **ST-010: Add Integration Tests** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-010
+  - Action: Write integration tests for critical paths
+  - **Coverage Required:**
+    - All accounting operations (GL entries, invoices, payments)
+    - Order creation and fulfillment flow
+    - Inventory intake and movement
+    - Client needs matching engine
+  - Framework: Vitest with tRPC testing utilities
+  - Target: 50+ integration tests
+  - Impact: Catch integration bugs before production
+  - Estimate: 3-4 days
+  - Note: Addresses Kimi AI's finding about missing integration tests
+
+- [ ] **ST-011: Add E2E Tests** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-011
+  - Action: Set up E2E testing framework (Playwright or Cypress)
+  - **Critical User Flows:**
+    - Login and dashboard access
+    - Create and submit order
+    - Process inventory intake
+    - Generate and view invoice
+    - Run accounting reports
+  - Target: 20+ E2E tests covering critical paths
+  - Impact: Ensure UI and API work together correctly
+  - Estimate: 3-4 days
+  - Note: Addresses Kimi AI's finding about missing E2E tests
+
+- [ ] **ST-012: Implement API Rate Limiting** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-012
+  - Action: Add rate limiting middleware to tRPC
+  - Implementation: Use `@trpc/server` middleware with rate limiting
+  - Limits: 100 requests/minute per user, 1000/minute per IP
+  - Exemptions: Admin users have higher limits
+  - Impact: Prevent API abuse and DDoS attacks
+  - Estimate: 1-2 days
+  - Note: Addresses Kimi AI's finding about missing rate limiting
+
+- [ ] **ST-013: Standardize Soft Deletes** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-013
+  - Action: Audit all tables and add consistent `deletedAt` field
+  - **Checklist:**
+    1. ☐ Audit all schema tables for `deletedAt` field
+    2. ☐ Add `deletedAt` to financial tables (invoices, payments, GL entries)
+    3. ☐ Update all delete operations to soft delete
+    4. ☐ Add filters to exclude soft-deleted records in queries
+    5. ☐ Create admin endpoint to view/restore deleted records
+  - Impact: Maintain audit trail for financial data
+  - Estimate: 2-3 days
+  - Note: Addresses Kimi AI's finding about inconsistent soft deletes
+
 - [ ] **Refactor Thick Routers** (Unassigned) 🟡 MEDIUM
   - `server/routers/vipPortal.ts` (49 KB)
   - `server/routers/vipPortalAdmin.ts` (40 KB)
