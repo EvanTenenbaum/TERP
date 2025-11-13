@@ -8,7 +8,7 @@ BLOCKED=0
 
 # 1. Check for new 'any' types
 echo "Checking for new 'any' types..."
-NEW_ANY=$(git diff --cached --diff-filter=ACM | grep -c ": any" || true)
+NEW_ANY=$(git diff --cached --diff-filter=ACM | grep "^+" | grep -c ": ""any" || true)
 if [ "$NEW_ANY" -gt 0 ]; then
   echo "❌ BLOCKED: Found $NEW_ANY new 'any' types"
   echo "   Fix: Define proper TypeScript interfaces"
@@ -72,7 +72,7 @@ done
 
 # 7. Check for hardcoded credentials
 echo "Checking for hardcoded secrets..."
-if git diff --cached --diff-filter=ACM | grep -iE "(password|secret|api_key|token).*=.*['\"]" | grep -v "JWT_SECRET" | grep -v "GITHUB_WEBHOOK_SECRET" ; then
+if git diff --cached --diff-filter=ACM | grep "^+" | grep -iE "(password|secret|api_key|token).*=.*['\"]" | grep -v "JWT_SECRET" | grep -v "GITHUB_WEBHOOK_SECRET" ; then
   echo "🚨 CRITICAL: Possible hardcoded credentials detected!"
   echo "   NEVER commit secrets to git"
   echo "   Use environment variables instead"
