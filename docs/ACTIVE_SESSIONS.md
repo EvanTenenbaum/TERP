@@ -1,4 +1,5 @@
 # Active Claude Sessions
+
 ## Real-Time Coordination for Parallel Development
 
 **Last Updated:** $(date '+%Y-%m-%d %I:%M %p %Z')
@@ -9,27 +10,28 @@
 
 ## 🟢 Currently Working
 
-| Session ID | Task | Branch | Module | Status | Started | ETA |
-|------------|------|--------|--------|--------|---------|-----|
-| 011CV4V | Complete Workflow System + GitHub Sync + QA | claude/terp-codebase-analysis-011CV4VkhLnxVcCAEBLYp8WF | Documentation & Infrastructure | ✅ Complete - Ready for Review | 2025-11-12 18:00 | Complete |
+| Session ID                         | Task                                        | Branch                                                             | Module                         | Status                         | Started          | ETA      |
+| ---------------------------------- | ------------------------------------------- | ------------------------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------- | -------- |
+| 011CV4V                            | Complete Workflow System + GitHub Sync + QA | claude/terp-codebase-analysis-011CV4VkhLnxVcCAEBLYp8WF             | Documentation & Infrastructure | ✅ Complete - Ready for Review | 2025-11-12 18:00 | Complete |
+| 20251113-st002-completion-3f7ae026 | ST-002 Completion Documentation             | claude/st002-completion-Session-20251113-st002-completion-3f7ae026 | server/\_core/                 | 🔄 Documenting Completion      | 2025-11-13 16:10 | 30 min   |
 
 ## ⏸️ Paused / Waiting
 
 | Session ID | Task | Branch | Reason | Paused At | Resume When |
-|------------|------|--------|--------|-----------|-------------|
-| _(none)_ | - | - | - | - | - |
+| ---------- | ---- | ------ | ------ | --------- | ----------- |
+| _(none)_   | -    | -      | -      | -         | -           |
 
 ## ✅ Completed Today
 
 | Session ID | Task | Branch | Merged At | Commit |
-|------------|------|--------|-----------|--------|
-| _(none)_ | - | - | - | - |
+| ---------- | ---- | ------ | --------- | ------ |
+| _(none)_   | -    | -      | -         | -      |
 
 ## 🔴 Blocked
 
 | Session ID | Task | Branch | Blocked By | Since | Action Needed |
-|------------|------|--------|------------|-------|---------------|
-| _(none)_ | - | - | - | - | - |
+| ---------- | ---- | ------ | ---------- | ----- | ------------- |
+| _(none)_   | -    | -      | -          | -     | -             |
 
 ---
 
@@ -40,9 +42,9 @@
 ---
 
 **Note:** This file is auto-generated. To see detailed status for a session, check:
+
 - Active: `docs/sessions/active/Session-[ID].md`
 - Completed: `docs/sessions/completed/Session-[ID].md`
 - Abandoned: `docs/sessions/abandoned/Session-[ID].md`
 
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
-
