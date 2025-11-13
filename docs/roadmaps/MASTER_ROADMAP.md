@@ -193,7 +193,7 @@
   - Impact: Improved query performance
   - Estimate: 4-6 hours
 
-- [🔄] **ST-006: Remove Dead Code** (Session-20251113-st006-deadcode-2f6b7778) 🟡 MEDIUM - IN PROGRESS
+- [x] **ST-006: Remove Dead Code** (Session-20251113-st006-deadcode-2f6b7778) 🟡 MEDIUM - ✅ COMPLETE
   - Task ID: ST-006
   - **Verified Dead Code:**
     - `server/cogsManagement.ts` (exists, verify unused)
