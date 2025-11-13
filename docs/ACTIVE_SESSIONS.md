@@ -12,6 +12,7 @@
 | Session ID | Task | Branch | Module | Status | Started | ETA |
 |------------|------|--------|--------|--------|---------|-----|
 | 011CV4V | Complete Workflow System + GitHub Sync + QA | claude/terp-codebase-analysis-011CV4VkhLnxVcCAEBLYp8WF | Documentation & Infrastructure | ✅ Complete - Ready for Review | 2025-11-12 18:00 | Complete |
+| 20251113-609fa199 | ST-001: Consolidate .env Files | claude/env-consolidation-Session-20251113-609fa199 | Environment Configuration | 🟢 In Progress | 2025-11-13 | 1-2 hours |
 
 ## ⏸️ Paused / Waiting
 
