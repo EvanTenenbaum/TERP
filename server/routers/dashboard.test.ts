@@ -8,16 +8,22 @@
  */
 
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { appRouter } from "../routers";
-import { createContext } from "../_core/context";
-import * as arApDb from "../arApDb";
-import * as dashboardDb from "../dashboardDb";
-import * as inventoryDb from "../inventoryDb";
+import { setupDbMock } from "../test-utils/testDb";
+
+// Mock the database (MUST be before other imports)
+vi.mock("../db", () => setupDbMock());
 
 // Mock the database modules
 vi.mock("../arApDb");
 vi.mock("../dashboardDb");
 vi.mock("../inventoryDb");
+
+import { appRouter } from "../routers";
+import { createContext } from "../_core/context";
+import { db } from "../db";
+import * as arApDb from "../arApDb";
+import * as dashboardDb from "../dashboardDb";
+import * as inventoryDb from "../inventoryDb";
 
 // Mock user for authenticated requests
 const mockUser = {

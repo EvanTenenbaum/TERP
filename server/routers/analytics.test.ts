@@ -8,12 +8,18 @@
  */
 
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { appRouter } from "../routers";
-import { createContext } from "../_core/context";
-import { strainService } from "../services/strainService";
+import { setupDbMock } from "../test-utils/testDb";
+
+// Mock the database (MUST be before other imports)
+vi.mock("../db", () => setupDbMock());
 
 // Mock the strain service
 vi.mock("../services/strainService");
+
+import { appRouter } from "../routers";
+import { createContext } from "../_core/context";
+import { db } from "../db";
+import { strainService } from "../services/strainService";
 
 // Mock user for authenticated requests
 const mockUser = {

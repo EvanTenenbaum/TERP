@@ -9,17 +9,19 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { calendarRouter } from "./calendar";
-import * as calendarDb from "../calendarDb";
-import PermissionService from "../_core/permissionService";
-import TimezoneService from "../_core/timezoneService";
-import { getDb } from "../db";
+import { setupDbMock } from "../test-utils/testDb";
 
-// Mock all external dependencies
+// Mock all external dependencies (db MUST be before other imports)
+vi.mock("../db", () => setupDbMock());
 vi.mock("../calendarDb");
 vi.mock("../_core/permissionService");
 vi.mock("../_core/timezoneService");
-vi.mock("../db");
+
+import { calendarRouter } from "./calendar";
+import { db, getDb } from "../db";
+import * as calendarDb from "../calendarDb";
+import PermissionService from "../_core/permissionService";
+import TimezoneService from "../_core/timezoneService";
 
 describe("Calendar Router - getEvents", () => {
   beforeEach(() => {

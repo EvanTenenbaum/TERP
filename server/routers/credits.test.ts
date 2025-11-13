@@ -8,12 +8,18 @@
  */
 
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { appRouter } from "../routers";
-import { createContext } from "../_core/context";
-import * as creditsDb from "../creditsDb";
+import { setupDbMock } from "../test-utils/testDb";
+
+// Mock the database (MUST be before other imports)
+vi.mock("../db", () => setupDbMock());
 
 // Mock the credits module
 vi.mock("../creditsDb");
+
+import { appRouter } from "../routers";
+import { createContext } from "../_core/context";
+import { db } from "../db";
+import * as creditsDb from "../creditsDb";
 
 // Mock user for authenticated requests
 const mockUser = {

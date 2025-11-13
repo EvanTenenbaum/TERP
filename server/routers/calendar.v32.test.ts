@@ -5,14 +5,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { setupDbMock } from "../test-utils/testDb";
+
+// Mock dependencies (db MUST be before other imports)
+vi.mock("../db", () => setupDbMock());
+vi.mock("../_core/permissionMiddleware");
+
 import { calendarV32Router } from "./calendar.v32";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { getDb } from "../db";
+import { db, getDb } from "../db";
 import { checkConflicts } from "../calendarDb";
-
-// Mock dependencies
-vi.mock("../_core/permissionMiddleware");
-vi.mock("../db");
 vi.mock("../calendarDb", async () => {
   const actual = await vi.importActual("../calendarDb");
   return {

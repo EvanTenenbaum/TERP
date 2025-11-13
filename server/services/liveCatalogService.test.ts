@@ -1,27 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { setupDbMock } from '../test-utils/testDb';
+
+// Mock database (MUST be before other imports)
+vi.mock('../db', () => setupDbMock());
+
 import { db } from '../db';
 import * as liveCatalogService from './liveCatalogService';
-
-// Mock database
-vi.mock('../db', () => ({
-  db: {
-    select: vi.fn(),
-    query: {
-      batches: {
-        findMany: vi.fn(),
-      },
-      products: {
-        findMany: vi.fn(),
-      },
-      vipPortalConfigurations: {
-        findFirst: vi.fn(),
-      },
-      clientCatalogViews: {
-        findMany: vi.fn(),
-      },
-    },
-  },
-}));
 
 describe('liveCatalogService', () => {
   beforeEach(() => {
