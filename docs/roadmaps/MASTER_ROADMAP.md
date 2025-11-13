@@ -1,4 +1,5 @@
 # TERP Master Roadmap
+
 ## Single Source of Truth for All Development
 
 **Version:** 2.0
@@ -13,13 +14,13 @@
 
 **Objective:** Immediately patch all critical security and data integrity vulnerabilities.
 
-- [ ] **CL-001: Fix SQL Injection Vulnerability** (Unassigned) 🔴 CRITICAL
+- [x] **CL-001: Fix SQL Injection Vulnerability** (Completed: 2025-11-12) 🔴 CRITICAL
   - Task ID: CL-001
   - Files: `server/advancedTagFeatures.ts` (lines 94, 121, 143)
   - Vulnerability: String interpolation in SQL queries using template literals
   - Affected Functions: `booleanTagSearch()` - three SQL queries with unsanitized input
   - Action: Replace string interpolation with `inArray()` and proper parameterization
-  - Example Fix: Change `sql\`LOWER(${tags.name}) IN (${terms.map(t => \`'${t}'\`).join(',')})\`` to use `inArray(tags.name, terms)`
+  - Example Fix: Change `sql\`LOWER(${tags.name}) IN (${terms.map(t => \`'${t}'\`).join(',')})\``to use`inArray(tags.name, terms)`
   - Security Risk: HIGH - SQL injection via tag search expressions
   - Testing: Add test cases with SQL injection attempts (e.g., `'; DROP TABLE--`)
   - Verification: Run `grep -n "\${.*\.map" server/advancedTagFeatures.ts` should return no results
@@ -217,7 +218,7 @@
   - Estimate: 3-4 days
   - Note: Addresses Kimi AI's finding about missing E2E tests
 
-- [ ] **ST-012: Implement API Rate Limiting** (Unassigned) 🟡 MEDIUM
+- [ ] **ST-012: Add API Rate Limiting** (Unassigned) 🟡 MEDIUM
   - Task ID: ST-012
   - Action: Add rate limiting middleware to tRPC
   - Implementation: Use `@trpc/server` middleware with rate limiting
@@ -226,6 +227,25 @@
   - Impact: Prevent API abuse and DDoS attacks
   - Estimate: 1-2 days
   - Note: Addresses Kimi AI's finding about missing rate limiting
+
+- [ ] **ST-014: Fix Broken Test Infrastructure** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-014
+  - Issue: 167 pre-existing test failures blocking development
+  - Root Cause: Database mocking issues in test files
+  - Affected Files: rbac-users.test.ts, salesSheets.test.ts, and 15+ other test files
+  - Error Pattern: "db is not defined" or "Cannot read properties of null (reading 'select')"
+  - Action: Fix database mocking in all test files
+  - **Checklist:**
+    1. ☐ Audit all failing tests to categorize failure types
+    2. ☐ Create proper test database setup utility
+    3. ☐ Fix database mocking pattern across all test files
+    4. ☐ Ensure all tests can run independently
+    5. ☐ Update test documentation with proper patterns
+    6. ☐ Verify all tests pass before committing
+  - Impact: Unblocks development, enables CI/CD
+  - Estimate: 8-12 hours
+  - Priority: HIGH - Currently blocking pre-commit hooks
+  - Note: Created during CL-001 - security fix was blocked by these failures
 
 - [ ] **ST-013: Standardize Soft Deletes** (Unassigned) 🟡 MEDIUM
   - Task ID: ST-013
@@ -523,6 +543,7 @@ These should **NOT** be built:
 ## 📊 Roadmap Statistics
 
 **Overall Progress:**
+
 - ✅ Completed: 19+ major modules
 - 🔄 In Progress: 0 tasks
 - 📋 This Sprint: 13 tasks (4 critical, 9 high/medium)
@@ -531,6 +552,7 @@ These should **NOT** be built:
 - ❌ Excluded: 12 items
 
 **Code Health:**
+
 - TypeScript Errors: 0
 - Test Coverage: 80%+
 - Database Tables: 60+
@@ -538,12 +560,14 @@ These should **NOT** be built:
 - Lines of Code: ~150,000+
 
 **Deployment Status:**
+
 - Production URL: https://terp-app-b9s35.ondigitalocean.app
 - Last Deploy: Auto (on every merge to main)
 - Deploy Success Rate: 95%+
 - Average Deploy Time: 3-5 minutes
 
 **Security Status:**
+
 - 🔴 Critical Vulnerabilities: 4 (CL-001 through CL-004)
 - 🟡 High Priority Issues: 6 (ST-001 through ST-006)
 - Action Required: Immediate attention to Phase 1 tasks
@@ -555,12 +579,14 @@ These should **NOT** be built:
 **When adding new tasks, use this framework:**
 
 ### 🔴 CRITICAL Priority (Do Immediately)
+
 - Security vulnerabilities
 - Data integrity issues
 - Production-breaking bugs
 - **Examples:** SQL injection, exposed secrets, unauthorized access
 
 ### 🔴 HIGH Priority (Do This Sprint)
+
 - Blocks other work
 - Critical bug or security issue
 - User explicitly requested as urgent
@@ -568,6 +594,7 @@ These should **NOT** be built:
 - **Examples:** Abstraction layer, critical bugs
 
 ### 🟡 MEDIUM Priority (Do Next Sprint)
+
 - Improves performance significantly
 - Enhances user experience
 - Reduces technical debt
@@ -575,6 +602,7 @@ These should **NOT** be built:
 - **Examples:** Redis caching, COA enhancements
 
 ### 🟢 LOW Priority (Backlog)
+
 - Nice to have, not urgent
 - Future phase work
 - Needs user decision
@@ -582,6 +610,7 @@ These should **NOT** be built:
 - **Examples:** Email notifications, mobile app
 
 ### ⚫ EXCLUDED (Don't Build)
+
 - User explicitly said not needed
 - Out of scope
 - Violates system philosophy
@@ -594,16 +623,19 @@ These should **NOT** be built:
 ### When Claude Updates
 
 **Before starting task:**
+
 ```markdown
 - [~] Task name (Claude-SessionID) 🔴 Priority
 ```
 
 **After completing task:**
+
 ```markdown
 - [x] Task name (Deployed: 2025-11-12)
 ```
 
 **If blocked:**
+
 ```markdown
 - [!] Task name (Blocked by: reason)
 ```
@@ -611,18 +643,21 @@ These should **NOT** be built:
 ### When User Updates
 
 **Adding new task:**
+
 1. Pick priority level (🔴/🟡/🟢)
 2. Add to appropriate section
 3. Include estimate if known
 4. Note dependencies if any
 
 **Moving to backlog:**
+
 1. Move from sprint to backlog
 2. Add reason for hold
 3. Add context for future reference
 4. Set review date if applicable
 
 **Removing task:**
+
 1. Strike through with ~~strikethrough~~
 2. Add reason for removal
 3. Move to "Explicitly Excluded" if rejected
@@ -632,11 +667,13 @@ These should **NOT** be built:
 ## 📞 Questions?
 
 **For roadmap questions:**
+
 - Check CLAUDE_WORKFLOW.md for process
 - Check DEVELOPMENT_PROTOCOLS.md for rules
 - Ask Claude to update roadmap based on your feedback
 
 **For priority questions:**
+
 - Use decision framework above
 - When in doubt, mark as 🟡 MEDIUM
 - Claude will ask for clarification if needed
