@@ -13,7 +13,7 @@ Found 183 markdown files in `docs/` directory. Need to consolidate by archiving 
 
 **Core Documentation:**
 - `AGENT_ONBOARDING.md` - Agent onboarding guide
-- `AUTONOMOUS_EXECUTION_PROGRESS.md` - Current progress tracking
+- ~~`AUTONOMOUS_EXECUTION_PROGRESS.md`~~ → Archived to `archive/completion-reports/`
 - `CLAUDE_WORKFLOW.md` - Workflow guide
 - `DEVELOPMENT_PROTOCOLS.md` - The Bible
 - `ERROR_HANDLING_GUIDE.md` - ST-002 deliverable
@@ -22,9 +22,9 @@ Found 183 markdown files in `docs/` directory. Need to consolidate by archiving 
 - `ACTIVE_SESSIONS.md` - Active sessions tracking
 
 **Recent Security Fixes:**
-- `CL-002-SECRET-ROTATION-GUIDE.md`
-- `CL-004-INVESTIGATION-REPORT.md`
-- `CL-005-ENV-FILE-SECURITY.md`
+- ~~`CL-002-SECRET-ROTATION-GUIDE.md`~~ → Archived to `archive/guides/`
+- ~~`CL-004-INVESTIGATION-REPORT.md`~~ → Archived to `archive/investigation-reports/`
+- ~~`CL-005-ENV-FILE-SECURITY.md`~~ → Archived to `archive/guides/`
 
 **Current Roadmaps:**
 - `roadmaps/MASTER_ROADMAP.md`
@@ -94,7 +94,7 @@ Found 183 markdown files in `docs/` directory. Need to consolidate by archiving 
 - `CREDIT_CENTER_IMPLEMENTATION.md`
 
 **Miscellaneous (10+ files):**
-- `roadmap-integration-summary.md` (superseded by AUTONOMOUS_EXECUTION_PROGRESS.md)
+- `roadmap-integration-summary.md` (superseded, now archived)
 - `typescript-strictness-progress.md` (old progress tracking)
 - `TERP_v3.5.0_QA_REPORT.md` (old version)
 - Session summaries from October
