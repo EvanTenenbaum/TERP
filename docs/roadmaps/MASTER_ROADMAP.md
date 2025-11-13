@@ -47,7 +47,7 @@
   - Estimate: 2-3 hours (increased due to coordination)
   - Priority: MUST DO IMMEDIATELY
 
-- [ ] **CL-003: Secure Admin Endpoints** (Unassigned) 🔴 CRITICAL
+- [x] **CL-003: Secure Admin Endpoints** (Completed: 2025-11-12) 🔴 CRITICAL
   - Task ID: CL-003
   - Files: 6 admin routers (excluding test files)
     1. `server/routers/admin.ts`
@@ -64,7 +64,7 @@
   - Estimate: 2-3 hours
   - Priority: MUST DO IMMEDIATELY
 
-- [ ] **CL-004: Investigate and Resolve Duplicate Schema** (Unassigned) 🔴 CRITICAL
+- [x] **CL-004: Investigate and Resolve Duplicate Schema** (Completed: 2025-11-12) 🔴 CRITICAL
   - Task ID: CL-004
   - File: `drizzle/schema_po_addition.ts`
   - **WARNING:** This is NOT a simple delete - requires investigation first
