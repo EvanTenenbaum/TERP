@@ -132,7 +132,7 @@
 
 **Objective:** Improve developer experience by cleaning up documentation, removing dead code, and fixing high-impact architectural issues.
 
-- [ ] **ST-001: Consolidate .env Files** (Unassigned) 🟡 MEDIUM
+- [x] **ST-001: Consolidate .env Files** (Session-20251113-609fa199) 🟡 MEDIUM - 🟢 IN PROGRESS
   - Task ID: ST-001
   - Action: Create single accurate `.env.example`, delete all others
   - Impact: Improved developer onboarding
