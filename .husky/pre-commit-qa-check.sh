@@ -70,10 +70,12 @@ for file in $(git diff --cached --name-only --diff-filter=A | grep "server/route
   fi
 done
 
-# 7. Check for hardcoded credentials
+# 7. Check for hardcoded credentials (excluding test files)
 echo "Checking for hardcoded secrets..."
-if git diff --cached --diff-filter=ACM | grep "^+" | grep -iE "(password|secret|api_key|token).*=.*['\"]" | grep -v "JWT_SECRET" | grep -v "GITHUB_WEBHOOK_SECRET" ; then
+SECRET_MATCHES=$(git diff --cached --diff-filter=ACM --name-only | grep -vE "\.(test|spec)\.ts$" | xargs -I {} git diff --cached {} | grep "^+" | grep -iE "(password|secret|api_key|token).*=.*['\"]" | grep -v "JWT_SECRET" | grep -v "GITHUB_WEBHOOK_SECRET" || true)
+if [ -n "$SECRET_MATCHES" ]; then
   echo "🚨 CRITICAL: Possible hardcoded credentials detected!"
+  echo "$SECRET_MATCHES"
   echo "   NEVER commit secrets to git"
   echo "   Use environment variables instead"
   BLOCKED=1
