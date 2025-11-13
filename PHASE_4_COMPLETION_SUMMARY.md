@@ -145,7 +145,7 @@ git push origin test-ci-cd
 1. ✅ **Add ARGOS_TOKEN to GitHub Secrets** (see instructions above)
 2. ⏸️ **Test CI/CD pipeline** with a test PR
 3. ⏸️ **Upgrade Sentry to Pro** when ready for production monitoring
-4. ⏸️ **Add deployment logic** to merge workflow (Railway, DigitalOcean, etc.)
+4. ⏸️ **Add deployment logic** to merge workflow (DigitalOcean)
 
 ## Status
 
