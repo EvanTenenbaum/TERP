@@ -1,5 +1,39 @@
 # 🚀 Quick Deployment Instructions
 
+## Environment Variables Setup
+
+Before deploying, ensure all required environment variables are configured.
+
+### Required Variables
+
+**On DigitalOcean App Platform:**
+
+1. Go to your app in the DigitalOcean dashboard
+2. Navigate to Settings > App-Level Environment Variables
+3. Add the following required variables:
+
+```bash
+DATABASE_URL=mysql://user:password@host:port/database
+JWT_SECRET=<generate with: openssl rand -base64 32>
+NODE_ENV=production
+```
+
+**Optional but Recommended:**
+
+```bash
+SENTRY_DSN=<your-sentry-dsn>
+CLERK_PUBLISHABLE_KEY=<your-clerk-key>
+CLERK_SECRET_KEY=<your-clerk-secret>
+```
+
+### Validation
+
+The application will automatically validate environment variables at startup. If validation fails, check the logs for specific error messages.
+
+**See:** `docs/ENVIRONMENT_VARIABLES.md` for complete documentation.
+
+---
+
 ## Production Deployment - Run on Production Server
 
 ### Option 1: Automated Script (Recommended)
