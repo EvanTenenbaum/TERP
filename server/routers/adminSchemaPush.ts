@@ -1,4 +1,4 @@
-import { router, publicProcedure } from "../_core/trpc";
+import { router, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -12,7 +12,7 @@ export const adminSchemaPushRouter = router({
   /**
    * Push all schema changes to database
    */
-  pushSchema: publicProcedure.mutation(async () => {
+  pushSchema: adminProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
@@ -198,7 +198,7 @@ export const adminSchemaPushRouter = router({
   /**
    * Verify schema was pushed successfully
    */
-  verifySchema: publicProcedure.query(async () => {
+  verifySchema: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     

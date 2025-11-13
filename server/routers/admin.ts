@@ -10,7 +10,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
  * Admin Router
  * 
  * Administrative endpoints for system setup and maintenance.
- * Note: Using publicProcedure since authentication is currently disabled.
+ * All endpoints require admin privileges via protectedProcedure + permission middleware.
  */
 export const adminRouter = router({
   /**
