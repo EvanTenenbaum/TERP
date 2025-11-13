@@ -300,6 +300,50 @@
   - Estimate: 2-3 days
   - Note: Addresses Kimi AI's finding about inconsistent soft deletes
 
+- [ ] **ST-015: Benchmark Critical Paths** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-015
+  - Action: Measure actual performance of critical operations before optimization
+  - **Checklist:**
+    1. ☐ Benchmark client needs matching with 1000+ batches
+    2. ☐ Measure dashboard load time with real data
+    3. ☐ Measure report generation time (accounting, AR aging, etc.)
+    4. ☐ Document baseline metrics in `docs/performance-baseline.md`
+  - Impact: Data-driven optimization decisions (avoid premature optimization)
+  - Estimate: 2-3 hours
+  - Priority: DO BEFORE implementing Redis or other performance fixes
+  - Note: Validates performance claims from external analysis
+
+- [ ] **ST-016: Add Smoke Test Script** (Unassigned) 🔴 HIGH
+  - Task ID: ST-016
+  - Action: Create `scripts/smoke-test.sh` for automated security and quality checks
+  - **Checklist:**
+    1. ☐ Create script with TypeScript check (`pnpm check`)
+    2. ☐ Add test suite execution (`pnpm test`)
+    3. ☐ Add SQL injection pattern check (grep for unsafe template literal interpolation)
+    4. ☐ Add admin security check (grep for `publicProcedure` in admin routers)
+    5. ☐ Test script locally
+    6. ☐ Add to CI/CD pipeline or deployment verification
+  - Impact: Automated regression prevention, catches security issues early
+  - Estimate: 30 minutes
+  - Priority: High value, low effort - prevents security regressions
+  - Note: Based on validated security patterns from codebase analysis
+
+- [ ] **ST-017: Implement Batch Status Transition Logic** (Unassigned) 🔴 HIGH
+  - Task ID: ST-017
+  - Action: Implement server-side logic for inventory batch status transitions
+  - **Context:** Analysis revealed that batch status logic is missing from backend
+  - **Checklist:**
+    1. ☐ Create tRPC router for batch status management
+    2. ☐ Implement functions for each valid state transition per `batchStatusEnum` in schema
+    3. ☐ Add business rule guards (e.g., COGS validation, qty validation)
+    4. ☐ Implement status transition validation (prevent invalid transitions)
+    5. ☐ Write unit tests for every valid and invalid transition
+    6. ☐ Add audit logging for status changes
+  - Impact: Core business logic implementation, prevents invalid inventory states
+  - Estimate: 1-2 days
+  - Priority: Critical gap in system logic
+  - Note: Based on codebase validation showing missing status transition implementation
+
 - [ ] **Refactor Thick Routers** (Unassigned) 🟡 MEDIUM
   - `server/routers/vipPortal.ts` (49 KB)
   - `server/routers/vipPortalAdmin.ts` (40 KB)
