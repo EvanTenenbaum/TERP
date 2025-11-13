@@ -27,7 +27,7 @@
   - Estimate: 2-3 hours
   - Priority: MUST DO IMMEDIATELY
 
-- [ ] **CL-002: Purge Secrets from Git History** (Unassigned) 🔴 CRITICAL
+- [x] **CL-002: Purge Secrets from Git History** (Completed: 2025-11-12) 🔴 CRITICAL
   - Task ID: CL-002
   - File: `.env.backup` in Git history
   - Action: Multi-step process (see checklist below)
