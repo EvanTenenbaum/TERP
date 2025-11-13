@@ -4,13 +4,17 @@ import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import { sanitizeUserInput } from "./sanitization";
 import { logger } from "./logger";
+import { createErrorHandlingMiddleware } from "./errorHandling";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
 });
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
+// Global error handling middleware applied to all procedures
+const errorHandlingMiddleware = createErrorHandlingMiddleware();
+
+export const publicProcedure = t.procedure.use(errorHandlingMiddleware);
 export const middleware = t.middleware;
 
 /**
@@ -83,10 +87,12 @@ const requireUser = t.middleware(async opts => {
 });
 
 export const protectedProcedure = t.procedure
+  .use(errorHandlingMiddleware)
   .use(sanitizationMiddleware)
   .use(requireUser);
 
 export const adminProcedure = t.procedure
+  .use(errorHandlingMiddleware)
   .use(sanitizationMiddleware)
   .use(
     t.middleware(async opts => {
