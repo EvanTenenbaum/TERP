@@ -8,8 +8,8 @@
 
 ## Summary
 
-**Total Files to Delete:** 5
-**Total Size:** ~46.9 KB
+**Total Files to Delete:** 6 (corrected after QA)
+**Total Size:** ~74.9 KB
 
 ---
 
@@ -32,10 +32,20 @@
 - **Status:** ✅ VERIFIED UNUSED
 - **Verification:**
   - ☑️ Not imported in `server/routers.ts`
-  - ☑️ No direct imports found in codebase
+  - ☑️ No direct imports found in codebase (except test file)
+  - ☑️ Superseded by `calendar.ts` (18 KB, actively used)
 - **Reason for Deletion:** Old version file, not registered in main router
+- **⚠️ Note:** Has associated test file that must also be deleted (see #3)
 
-### 3. server/routers/calendarHealth.generated.ts
+### 3. server/routers/calendar.v32.test.ts
+- **Size:** 27 KB
+- **Status:** ✅ MUST DELETE (orphaned test)
+- **Verification:**
+  - ☑️ Tests `calendar.v32.ts` which is being deleted
+  - ☑️ No other dependencies
+- **Reason for Deletion:** Test file for unused router, will cause failures if not deleted
+
+### 4. server/routers/calendarHealth.generated.ts
 - **Size:** 1.3 KB
 - **Status:** ✅ VERIFIED UNUSED
 - **Verification:**
@@ -43,7 +53,7 @@
   - ☑️ No direct imports found in codebase
 - **Reason for Deletion:** Generated file not in use, not registered in main router
 
-### 4. server/routers/clientNeeds.ts
+### 5. server/routers/clientNeeds.ts
 - **Size:** 8.7 KB
 - **Status:** ✅ VERIFIED UNUSED
 - **Verification:**
@@ -52,7 +62,7 @@
 - **Note:** Roadmap indicated this was "already deleted" but file still exists
 - **Reason for Deletion:** Superseded by `clientNeedsEnhanced.ts`
 
-### 5. server/routers/matching.ts
+### 6. server/routers/matching.ts
 - **Size:** 7.7 KB
 - **Status:** ✅ VERIFIED UNUSED
 - **Verification:**
@@ -65,7 +75,7 @@
 ## Discrepancy with Roadmap
 
 **Roadmap Claim:** "29 Unused Routers"
-**Actual Finding:** 4 unused routers
+**Actual Finding:** 4 unused routers + 1 test file = 5 router files (+ 1 non-router file)
 
 **Analysis:**
 - Total router files in `server/routers/`: 70
@@ -116,8 +126,8 @@ grep -r "import.*[filename]" server/ src/
 ## Impact Assessment
 
 **Benefits:**
-- Reduced codebase size by ~46.9 KB
-- Removed 5 unused files
+- Reduced codebase size by ~74.9 KB
+- Removed 6 unused files (5 routers + 1 test file)
 - Improved code maintainability
 - Reduced confusion for future developers
 
