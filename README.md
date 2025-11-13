@@ -51,8 +51,8 @@ git push origin main  # Auto-deploys to DigitalOcean
 - 53 passing tests
 
 **Clerk Authentication:**
-- Replaced Butterfly Effect OAuth
-- No IP restrictions (works with DigitalOcean)
+- Modern authentication with no IP restrictions
+- Works seamlessly with DigitalOcean
 - Email/password and social login
 - Session management with JWT
 - User sync with local database
