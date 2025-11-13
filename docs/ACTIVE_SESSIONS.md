@@ -13,6 +13,7 @@
 | Session ID | Task                                        | Branch                                                 | Module                         | Status                         | Started          | ETA      |
 | ---------- | ------------------------------------------- | ------------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------- | -------- |
 | 011CV4V    | Complete Workflow System + GitHub Sync + QA | claude/terp-codebase-analysis-011CV4VkhLnxVcCAEBLYp8WF | Documentation & Infrastructure | ✅ Complete - Ready for Review | 2025-11-12 18:00 | Complete |
+| 20251113-st003-doc-consolidation-017686f0 | ST-003 Consolidate Documentation | claude/ST-003-doc-consolidation-Session-20251113-st003-doc-consolidation-017686f0 | Documentation (docs/ directory) | 🔄 In Progress - Audit phase | 2025-11-13 | 2 hours |
 
 ## ⏸️ Paused / Waiting
 
