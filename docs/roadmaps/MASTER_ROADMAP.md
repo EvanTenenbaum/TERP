@@ -169,7 +169,7 @@
   - Documentation: docs/ERROR_HANDLING_GUIDE.md
   - Branch: Merged to main
 
-- [ ] **ST-003: Consolidate Documentation** (Unassigned) 🟡 MEDIUM
+- [ ] **ST-003: Consolidate Documentation** (Agent 2 - Session-20251113-st003-doc-consolidation-017686f0) 🔄 IN PROGRESS
   - Task ID: ST-003
   - Action: Move 60+ markdown files to `docs/archive/`
   - Impact: Cleaner documentation structure
