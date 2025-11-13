@@ -15,35 +15,71 @@
 
 - [ ] **CL-001: Fix SQL Injection Vulnerability** (Unassigned) 🔴 CRITICAL
   - Task ID: CL-001
-  - File: `server/routers/advancedTagFeatures.ts`
-  - Action: Rewrite to use parameterized queries
-  - Security Risk: HIGH - SQL injection vulnerability
+  - Files: `server/advancedTagFeatures.ts` (lines 94, 121, 143)
+  - Vulnerability: String interpolation in SQL queries using template literals
+  - Affected Functions: `booleanTagSearch()` - three SQL queries with unsanitized input
+  - Action: Replace string interpolation with `inArray()` and proper parameterization
+  - Example Fix: Change `sql\`LOWER(${tags.name}) IN (${terms.map(t => \`'${t}'\`).join(',')})\`` to use `inArray(tags.name, terms)`
+  - Security Risk: HIGH - SQL injection via tag search expressions
+  - Testing: Add test cases with SQL injection attempts (e.g., `'; DROP TABLE--`)
+  - Verification: Run `grep -n "\${.*\.map" server/advancedTagFeatures.ts` should return no results
   - Estimate: 2-3 hours
   - Priority: MUST DO IMMEDIATELY
 
 - [ ] **CL-002: Purge Secrets from Git History** (Unassigned) 🔴 CRITICAL
   - Task ID: CL-002
   - File: `.env.backup` in Git history
-  - Action: Use BFG Repo-Cleaner to remove from history, rotate all secrets
-  - Security Risk: HIGH - Exposed credentials
-  - Estimate: 1-2 hours
+  - Action: Multi-step process (see checklist below)
+  - Security Risk: HIGH - Exposed credentials in Git history
+  - **IMPORTANT:** Coordinate with user before rotating secrets to avoid service disruption
+  - **Checklist:**
+    1. ☐ Review `.env.backup` to identify all exposed secrets
+    2. ☐ Use BFG Repo-Cleaner: `java -jar bfg.jar --delete-files .env.backup`
+    3. ☐ Force push cleaned history (requires force push permissions)
+    4. ☐ Rotate Database credentials (MySQL/PostgreSQL)
+    5. ☐ Rotate DigitalOcean API tokens
+    6. ☐ Rotate any third-party API keys found in backup
+    7. ☐ Update production environment variables
+    8. ☐ Verify all services still functional
+    9. ☐ Notify team members to re-clone repository
+  - Verification: Run `git log --all --full-history -- "*.env*"` should not show .env.backup
+  - Estimate: 2-3 hours (increased due to coordination)
   - Priority: MUST DO IMMEDIATELY
 
 - [ ] **CL-003: Secure Admin Endpoints** (Unassigned) 🔴 CRITICAL
   - Task ID: CL-003
-  - Files: 6 admin routers
-  - Action: Replace `publicProcedure` with `adminProcedure` in all admin routers
+  - Files: 6 admin routers (excluding test files)
+    1. `server/routers/admin.ts`
+    2. `server/routers/adminImport.ts`
+    3. `server/routers/adminMigrations.ts`
+    4. `server/routers/adminQuickFix.ts`
+    5. `server/routers/adminSchemaPush.ts`
+    6. `server/routers/vipPortalAdmin.ts`
+  - Action: Replace `publicProcedure` with `adminProcedure` in all procedures
   - Security Risk: HIGH - Unauthorized access to admin functions
+  - Implementation: Import `adminProcedure` from `server/_core/trpc` and replace all instances
+  - Testing: Verify non-admin users cannot access these endpoints
+  - Verification: Run `grep -l "publicProcedure" server/routers/admin*.ts server/routers/vipPortalAdmin.ts` should return no results
   - Estimate: 2-3 hours
   - Priority: MUST DO IMMEDIATELY
 
-- [ ] **CL-004: Delete Duplicate Schema** (Unassigned) 🔴 CRITICAL
+- [ ] **CL-004: Investigate and Resolve Duplicate Schema** (Unassigned) 🔴 CRITICAL
   - Task ID: CL-004
   - File: `drizzle/schema_po_addition.ts`
-  - Action: Remove duplicate schema file
-  - Risk: Data integrity issues
-  - Estimate: 30 minutes
-  - Priority: MUST DO IMMEDIATELY
+  - **WARNING:** This is NOT a simple delete - requires investigation first
+  - Issue: File appears to be an incomplete merge/migration, not a true duplicate
+  - Action: Multi-step investigation and resolution
+  - **Checklist:**
+    1. ☐ Compare `schema_po_addition.ts` with main `drizzle/schema.ts`
+    2. ☐ Verify if `purchaseOrders` and `purchaseOrderItems` are fully defined in main schema
+    3. ☐ Check if any code imports from `schema_po_addition.ts`
+    4. ☐ Test purchase order functionality without this file
+    5. ☐ If truly duplicate: Delete file and verify all tests pass
+    6. ☐ If not duplicate: Merge definitions into main schema properly
+  - Risk: Data integrity issues, broken purchase order features
+  - Verification: All tests pass and PO features work
+  - Estimate: 1-2 hours (increased for investigation)
+  - Priority: MUST INVESTIGATE BEFORE DELETING
 
 ### 🔴 HIGH PRIORITY
 
@@ -102,10 +138,19 @@
 
 - [ ] **ST-006: Remove Dead Code** (Unassigned) 🟡 MEDIUM
   - Task ID: ST-006
-  - Files: `clientNeeds.ts`, `ComponentShowcase.tsx`, `cogsManagement.ts`, 29 unused routers
-  - Action: Delete unused files and routers
+  - **Verified Dead Code:**
+    - `server/cogsManagement.ts` (exists, verify unused)
+    - Note: `clientNeeds.ts` and `ComponentShowcase.tsx` already deleted
+  - **29 Unused Routers:** Requires investigation to identify
+  - Action: Identify and delete unused files and routers
+  - **Verification Method:**
+    1. ☐ Run `grep -r "import.*cogsManagement" server/ src/` to verify no imports
+    2. ☐ Identify unused routers: Compare `server/routers.ts` imports vs files in `server/routers/`
+    3. ☐ For each unused router: Verify no imports in codebase
+    4. ☐ Delete files and run `pnpm check` and `pnpm test`
   - Impact: Reduced codebase complexity
-  - Estimate: 2-3 hours
+  - Estimate: 3-4 hours (increased for verification)
+  - **Note:** Create list of 29 routers before deletion for review
 
 - [ ] **Refactor Thick Routers** (Unassigned) 🟡 MEDIUM
   - `server/routers/vipPortal.ts` (49 KB)
@@ -166,9 +211,20 @@
 
 - [ ] **RF-006: Remove Unused Dependencies** (Unassigned)
   - Task ID: RF-006
-  - Action: Uninstall Clerk and Socket.io
+  - Dependencies to Remove: Clerk and Socket.io
+  - **WARNING:** Requires verification before removal
+  - **Checklist:**
+    1. ☐ Verify Clerk is not used: `grep -r "@clerk" src/ server/`
+    2. ☐ Verify Socket.io is not used: `grep -r "socket\.io" src/ server/`
+    3. ☐ Check package.json for both dependencies and devDependencies
+    4. ☐ Remove from package.json: `pnpm remove @clerk/nextjs socket.io socket.io-client`
+    5. ☐ Run `pnpm install` to update lockfile
+    6. ☐ Run `pnpm check` to verify no type errors
+    7. ☐ Run `pnpm test` to verify all tests pass
+    8. ☐ Test build: `pnpm build`
   - Impact: Reduced bundle size
-  - Estimate: 1-2 hours
+  - Note: Roadmap mentions "current Clerk auth is fine" - verify auth system before removing
+  - Estimate: 2-3 hours (increased for verification)
 
 ### Performance & Architecture
 
