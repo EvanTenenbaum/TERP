@@ -175,13 +175,15 @@
   - Impact: Cleaner documentation structure
   - Estimate: 2 hours
 
-- [x] **ST-004: Remove Outdated References** (Agent 3 - Session-20251113-st004-outdated-refs-7474b80a) 🟡 MEDIUM 🟢 IN PROGRESS
+- [x] **ST-004: Remove Outdated References** (Agent 3 - Session-20251113-st004-outdated-refs-7474b80a) 🟡 MEDIUM ✅ COMPLETE
   - Task ID: ST-004
   - Action: Remove all Railway and Butterfly Effect references
   - Impact: Reduced confusion
   - Estimate: 1-2 hours
   - Started: 2025-11-13
+  - Completed: 2025-11-13
   - Branch: claude/ST-004-outdated-refs-Session-20251113-st004-outdated-refs-7474b80a
+  - Merged: Commit 86a815e
 
 - [ ] **ST-005: Add Missing Database Indexes** (Unassigned) 🟡 MEDIUM
   - Task ID: ST-005
