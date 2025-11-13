@@ -1,4 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { setupDbMock } from "../test-utils/testDb";
+
+// Mock the database (MUST be before other imports)
+vi.mock("../db", () => setupDbMock());
+
 import { 
   getUserPermissions, 
   hasPermission, 
@@ -9,14 +14,6 @@ import {
   clearPermissionCache
 } from "./permissionService";
 import { db } from "../db";
-
-// Mock the database
-vi.mock("../db", () => ({
-  db: {
-    select: vi.fn(),
-  },
-  getDb: vi.fn(),
-}));
 
 // Mock the logger
 vi.mock("../_core/logger", () => ({

@@ -7,23 +7,18 @@
  * @module server/routers/rbac-users.test.ts
  */
 import { describe, it, expect, beforeAll, vi, beforeEach } from "vitest";
-import { appRouter } from "../routers";
-import { createContext } from "../_core/context";
-import { getDb } from "../db";
-import * as permissionService from "../services/permissionService";
+import { setupDbMock } from "../test-utils/testDb";
 
-// Mock the database
-vi.mock("../db", () => ({
-  db: {
-    select: vi.fn(),
-    insert: vi.fn(),
-    delete: vi.fn(),
-    update: vi.fn(),
-  },
-}));
+// Mock the database (MUST be before other imports)
+vi.mock("../db", () => setupDbMock());
 
 // Mock permission service
 vi.mock("../services/permissionService");
+
+import { appRouter } from "../routers";
+import { createContext } from "../_core/context";
+import { db } from "../db";
+import * as permissionService from "../services/permissionService";
 
 // Mock user for authenticated requests (Super Admin)
 const mockUser = {

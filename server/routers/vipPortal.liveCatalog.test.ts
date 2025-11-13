@@ -6,9 +6,14 @@
  * Uses AAA (Arrange, Act, Assert) pattern for clarity.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { setupDbMock } from '../test-utils/testDb';
+
+// Mock the database (MUST be before other imports)
+vi.mock('../db', () => setupDbMock());
+
 import { appRouter } from '../routers';
-import { getDb } from '../db';
+import { db, getDb } from '../db';
 import { 
   clients, 
   vipPortalConfigurations,
