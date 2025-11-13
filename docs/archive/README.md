@@ -14,6 +14,15 @@ Current month's archived documentation, organized by category:
 - **testing-reports/** - Test reports and investigation documents
 - **analysis/** - Codebase analysis and strategy documents
 
+### Task-Specific Archives (Added 2025-11-13)
+
+- **completion-reports/** - Task completion reports and final status documents
+- **guides/** - Historical guides and procedural documentation
+- **investigation-reports/** - Bug and issue investigation reports
+- **planning/** - Historical planning documents and migration plans
+- **patterns/** - Historical implementation patterns
+- **fixes/** - Historical bug fix documentation
+
 ### Feature-Specific Archives
 
 - **calendar/** - Calendar module evolution specs and historical docs (V3.0-V3.2)
@@ -65,6 +74,7 @@ Documents are archived when they:
 
 ---
 
-**Last Updated:** November 12, 2025  
-**Archived Count:** ~142 files  
-**Active Count:** ~41 files
+**Last Updated:** November 13, 2025 (ST-003 Consolidation)  
+**Archived Count:** 186 files  
+**Active Count:** 44 files  
+**Recent Additions:** 15 files archived in ST-003 (completion reports, guides, investigation reports, planning docs)
