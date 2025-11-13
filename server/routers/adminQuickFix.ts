@@ -1,4 +1,4 @@
-import { router, publicProcedure } from "../_core/trpc";
+import { router, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -11,7 +11,7 @@ export const adminQuickFixRouter = router({
   /**
    * Check if columns exist
    */
-  checkColumns: publicProcedure.query(async () => {
+  checkColumns: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
@@ -42,7 +42,7 @@ export const adminQuickFixRouter = router({
   /**
    * Add missing columns one by one
    */
-  addMissingColumns: publicProcedure.mutation(async () => {
+  addMissingColumns: adminProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
@@ -165,7 +165,7 @@ export const adminQuickFixRouter = router({
   /**
    * Add strainId to client_needs
    */
-  addStrainIdToClientNeeds: publicProcedure.mutation(async () => {
+  addStrainIdToClientNeeds: adminProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     

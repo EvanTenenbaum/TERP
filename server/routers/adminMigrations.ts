@@ -1,4 +1,4 @@
-import { router, publicProcedure } from "../_core/trpc";
+import { router, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -15,7 +15,7 @@ export const adminMigrationsRouter = router({
   /**
    * Run all pending migrations
    */
-  runAllMigrations: publicProcedure.mutation(async () => {
+  runAllMigrations: adminProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
@@ -204,7 +204,7 @@ export const adminMigrationsRouter = router({
   /**
    * Check migration status
    */
-  checkMigrationStatus: publicProcedure.query(async () => {
+  checkMigrationStatus: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
