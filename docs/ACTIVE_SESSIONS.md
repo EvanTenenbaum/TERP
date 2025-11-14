@@ -52,3 +52,4 @@
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
 
 - QA-003: Session-20251114-QA-003-3c07375f (2025-11-14)
+- QA-004: Session-20251114-QA-004-ed5fa51d (2025-11-14)
