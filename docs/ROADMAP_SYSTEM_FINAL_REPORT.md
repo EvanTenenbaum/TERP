@@ -39,7 +39,7 @@ All 12 user requirements have been verified and addressed in the final design:
 |  5  | Max agents without risky conflicts            |   ✅   | ACTIVE_SESSIONS.md + module conflict detection + atomic registration                 |
 |  6  | Works outside Manus sandbox                   |   ✅   | Pure GitHub + markdown, works with ANY AI agent                                      |
 |  7  | Everything lives in GitHub                    |   ✅   | All components in repository (roadmap, prompts, templates, workflows, enforcement)   |
-|  8  | "Add to roadmap" triggers full protocol       |   ✅   | `.claude/AGENT_ONBOARDING.md` has prominent section → points to `HOW_TO_ADD_TASK.md` |
+|  8  | "Add to roadmap" triggers full protocol       |   ✅   | `docs/ROADMAP_AGENT_GUIDE.md` has prominent section → points to `HOW_TO_ADD_TASK.md` |
 |  9  | Entire system GitHub-native with enforcement  |   ✅   | 4-layer architecture (docs, prompts, workflows, GitHub-native enforcement)           |
 | 10  | Generate prompts for parallel agents          |   ✅   | Each task has prompt file, user can deploy multiple agents to different tasks        |
 | 11  | Ensure compliance and integration             |   ✅   | 4-phase workflow in every prompt + GitHub Actions validation + PR review             |
@@ -215,7 +215,7 @@ TERP/
 **Agent Process:**
 
 1. Clone repository (if needed)
-2. Read `.claude/AGENT_ONBOARDING.md`
+2. Read `docs/ROADMAP_AGENT_GUIDE.md`
 3. Navigate to `docs/roadmaps/MASTER_ROADMAP.md`
 4. Find ST-005
 5. Click prompt link: `docs/prompts/ST-005.md`
@@ -246,7 +246,7 @@ TERP/
 
 **Agent Process:**
 
-1. Read `.claude/AGENT_ONBOARDING.md`
+1. Read `docs/ROADMAP_AGENT_GUIDE.md`
 2. See: "If user says: Add task to TERP roadmap"
 3. Read `docs/HOW_TO_ADD_TASK.md`
 4. Follow checklist:
@@ -411,7 +411,7 @@ To implement this system in the TERP repository, follow these steps:
 1. Create `.github/CODEOWNERS`
 2. Create `.github/workflows/roadmap-validation.yml`
 3. Create all validation scripts in `scripts/`
-4. Create `.claude/AGENT_ONBOARDING.md`
+4. Create `docs/ROADMAP_AGENT_GUIDE.md`
 5. Create `docs/ACTIVE_SESSIONS.md`
 
 ### Phase 2: Templates & Workflows (1-2 hours)

@@ -13,6 +13,7 @@ The complete GitHub-native roadmap management system V3.2 has been successfully 
 ### Core Infrastructure (100% Complete)
 
 ✅ **Branch Protection Configured**
+
 - Main branch requires pull requests
 - Requires 1 approval from CODEOWNER
 - Requires status checks to pass
@@ -20,6 +21,7 @@ The complete GitHub-native roadmap management system V3.2 has been successfully 
 - Verified and active
 
 ✅ **CODEOWNERS File**
+
 - Location: `.github/CODEOWNERS`
 - Requires @EvanTenenbaum approval for:
   - `docs/roadmaps/`
@@ -27,6 +29,7 @@ The complete GitHub-native roadmap management system V3.2 has been successfully 
   - `docs/HOW_TO_*.md`
 
 ✅ **Validation Scripts (7 scripts)**
+
 - `scripts/validate-roadmap.js` - Validates roadmap structure
 - `scripts/check-circular-deps.js` - Detects circular dependencies
 - `scripts/validate-prompts.js` - Validates prompt metadata
@@ -38,44 +41,52 @@ The complete GitHub-native roadmap management system V3.2 has been successfully 
 ### Documentation (100% Complete)
 
 ✅ **Agent Onboarding**
-- Location: `.claude/AGENT_ONBOARDING.md`
+
+- Location: `docs/ROADMAP_AGENT_GUIDE.md`
 - Complete protocol for AI agents
 - Entry point for all agents
 
 ✅ **Workflow Documentation**
+
 - `docs/HOW_TO_ADD_TASK.md` - Adding new tasks
 - `docs/HOW_TO_DEPRECATE_TASK.md` - Deprecating obsolete tasks
 - `docs/HOW_TO_ROLLBACK.md` - Reverting completed tasks
 - `docs/HOW_TO_ABORT_TASK.md` - Safely stopping work
 
 ✅ **System Documentation**
+
 - `docs/ROADMAP_SYSTEM_OVERVIEW.md` - Human-friendly guide
 - `docs/REPOSITORY_SECURITY.md` - Security policies
 - `docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.2_FINAL.md` - Complete design
 - `docs/ROADMAP_SYSTEM_FINAL_REPORT.md` - Executive summary
 
 ✅ **Templates**
+
 - `docs/templates/TASK_TEMPLATE.md`
 - `docs/templates/PROMPT_TEMPLATE.md`
 - `docs/templates/SESSION_TEMPLATE.md`
 - `docs/templates/COMPLETION_REPORT_TEMPLATE.md`
 
 ✅ **Active Files**
+
 - `docs/ACTIVE_SESSIONS.md` - Conflict tracking
 - `docs/roadmaps/MASTER_ROADMAP.md` - Task list (already existed)
 
 ### Existing Components (100% Complete)
 
 ✅ **Design Documents**
+
 - All V3.0, V3.1, and V3.2 design documents
 - Expert QA report
 - Adversarial QA report
 - Requirements verification
 
 ✅ **Task Prompts**
+
 - 5 ready-to-use prompts (ST-005, ST-007, ST-008, ST-009, ST-010)
 
 ✅ **Updated README**
+
 - Added roadmap system section
 - Points to agent onboarding
 
@@ -96,14 +107,15 @@ The complete GitHub-native roadmap management system V3.2 has been successfully 
 **Solution:** The repository owner needs to manually add this file.
 
 **Content:**
+
 ```yaml
 name: Roadmap Validation
 on:
   pull_request:
     paths:
-      - 'docs/roadmaps/**'
-      - 'docs/prompts/**'
-      - 'docs/sessions/**'
+      - "docs/roadmaps/**"
+      - "docs/prompts/**"
+      - "docs/sessions/**"
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -112,7 +124,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '22'
+          node-version: "22"
       - name: Install dependencies
         run: npm install -g js-yaml
       - name: Validate roadmap structure
@@ -133,18 +145,18 @@ jobs:
 
 ## 📊 Implementation Status
 
-| Component | Status | Notes |
-| :--- | :---: | :--- |
-| Branch Protection | ✅ 100% | Configured and active |
-| CODEOWNERS | ✅ 100% | In PR #47 |
-| Validation Scripts | ✅ 100% | In PR #47 |
-| Agent Onboarding | ✅ 100% | In PR #47 |
-| Workflow Docs | ✅ 100% | In PR #47 |
-| Templates | ✅ 100% | In PR #47 |
-| System Docs | ✅ 100% | Already merged |
-| Design Docs | ✅ 100% | Already merged |
-| Task Prompts | ✅ 100% | Already merged |
-| GitHub Actions | ⚠️ 0% | Needs manual addition |
+| Component          | Status  | Notes                 |
+| :----------------- | :-----: | :-------------------- |
+| Branch Protection  | ✅ 100% | Configured and active |
+| CODEOWNERS         | ✅ 100% | In PR #47             |
+| Validation Scripts | ✅ 100% | In PR #47             |
+| Agent Onboarding   | ✅ 100% | In PR #47             |
+| Workflow Docs      | ✅ 100% | In PR #47             |
+| Templates          | ✅ 100% | In PR #47             |
+| System Docs        | ✅ 100% | Already merged        |
+| Design Docs        | ✅ 100% | Already merged        |
+| Task Prompts       | ✅ 100% | Already merged        |
+| GitHub Actions     |  ⚠️ 0%  | Needs manual addition |
 
 **Overall: 95% Complete**
 
@@ -194,7 +206,7 @@ Once the workflow file is added, the system will be fully operational with:
 ### For AI Agents
 
 - ✅ Clone repository and start working immediately
-- ✅ Read `.claude/AGENT_ONBOARDING.md` for complete protocol
+- ✅ Read `docs/ROADMAP_AGENT_GUIDE.md` for complete protocol
 - ✅ Execute tasks from `docs/roadmaps/MASTER_ROADMAP.md`
 - ✅ Follow self-contained prompts in `docs/prompts/`
 - ✅ Atomic session registration prevents conflicts
@@ -244,7 +256,7 @@ The system will be considered fully successful when:
 - **Repository:** https://github.com/EvanTenenbaum/TERP
 - **Design Document:** `docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.2_FINAL.md`
 - **Final Report:** `docs/ROADMAP_SYSTEM_FINAL_REPORT.md`
-- **Agent Onboarding:** `.claude/AGENT_ONBOARDING.md`
+- **Agent Onboarding:** `docs/ROADMAP_AGENT_GUIDE.md`
 - **Master Roadmap:** `docs/roadmaps/MASTER_ROADMAP.md`
 
 ---

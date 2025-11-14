@@ -31,7 +31,7 @@
 
 **How:**
 
-- Agent reads `.claude/AGENT_ONBOARDING.md`
+- Agent reads `docs/ROADMAP_AGENT_GUIDE.md`
 - Navigates to `docs/roadmaps/MASTER_ROADMAP.md`
 - Finds task by ID
 - Clicks prompt link
@@ -170,7 +170,7 @@
 - ✅ Enforcement (GitHub branch protection)
 - ✅ Validation (GitHub Actions)
 - ✅ Sessions (`docs/sessions/`)
-- ✅ Protocols (`.claude/AGENT_ONBOARDING.md`)
+- ✅ Protocols (`docs/ROADMAP_AGENT_GUIDE.md`)
 
 **Location in V3 Design:**
 
@@ -185,7 +185,7 @@
 
 **How:**
 
-- `.claude/AGENT_ONBOARDING.md` has prominent section
+- `docs/ROADMAP_AGENT_GUIDE.md` has prominent section
 - Says "STOP - Do NOT edit directly"
 - Points to `docs/HOW_TO_ADD_TASK.md`
 - Checklist ensures protocol followed

@@ -28,7 +28,7 @@ This entire system is designed to be **100% platform-agnostic and self-contained
 **The agent's journey begins here:**
 
 1.  Clone `https://github.com/EvanTenenbaum/TERP`
-2.  Read `.claude/AGENT_ONBOARDING.md`
+2.  Read `docs/ROADMAP_AGENT_GUIDE.md`
 3.  Follow the documented workflows to execute tasks.
 
 ---

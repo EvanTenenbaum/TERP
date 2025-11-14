@@ -13,7 +13,7 @@
 Any AI agent can:
 
 1. Clone `https://github.com/EvanTenenbaum/TERP`
-2. Read `.claude/AGENT_ONBOARDING.md`
+2. Read `docs/ROADMAP_AGENT_GUIDE.md`
 3. Follow documented workflows
 4. Execute tasks using roadmap system
 
@@ -124,7 +124,7 @@ Add database indexes to improve query performance for foreign key relationships.
 **Before starting, verify:**
 
 - [ ] You have cloned the TERP repository
-- [ ] You have read `.claude/AGENT_ONBOARDING.md`
+- [ ] You have read `docs/ROADMAP_AGENT_GUIDE.md`
 - [ ] No other agent is working on database schema (check `docs/ACTIVE_SESSIONS.md`)
 - [ ] You understand the 4-phase workflow
 
@@ -424,7 +424,7 @@ Ready for your review!
 ## 🆘 If You Get Stuck
 
 1. **Read the docs:**
-   - `.claude/AGENT_ONBOARDING.md`
+   - `docs/ROADMAP_AGENT_GUIDE.md`
    - `docs/DEVELOPMENT_PROTOCOLS.md`
    - `docs/CLAUDE_WORKFLOW.md`
 
@@ -441,7 +441,7 @@ Ready for your review!
 
 ## 📚 Related Documentation
 
-- [Agent Onboarding](.claude/AGENT_ONBOARDING.md)
+- [Agent Onboarding](docs/ROADMAP_AGENT_GUIDE.md)
 - [Development Protocols](../DEVELOPMENT_PROTOCOLS.md)
 - [4-Phase Workflow](../CLAUDE_WORKFLOW.md)
 - [Database Schema Guide](../../server/db/README.md)
@@ -469,7 +469,7 @@ Ready for your review!
 
 #### Enforcement Mechanism 1: Documentation Clarity
 
-**`.claude/AGENT_ONBOARDING.md`** (First thing agents read):
+**`docs/ROADMAP_AGENT_GUIDE.md`** (First thing agents read):
 
 ```markdown
 # 🚨 CRITICAL: Read This First
@@ -671,7 +671,7 @@ jobs:
 **Agent workflow:**
 
 1. Clone repo (if not already)
-2. Read `.claude/AGENT_ONBOARDING.md`
+2. Read `docs/ROADMAP_AGENT_GUIDE.md`
 3. Navigate to `docs/roadmaps/MASTER_ROADMAP.md`
 4. Find "Ready for Deployment" section
 5. Look for highest priority `status: ready` task
@@ -690,7 +690,7 @@ jobs:
 
 **Agent workflow:**
 
-1. Read `.claude/AGENT_ONBOARDING.md`
+1. Read `docs/ROADMAP_AGENT_GUIDE.md`
 2. See "STOP - Do NOT edit directly"
 3. Navigate to `docs/HOW_TO_ADD_TASK.md`
 4. Follow checklist step-by-step

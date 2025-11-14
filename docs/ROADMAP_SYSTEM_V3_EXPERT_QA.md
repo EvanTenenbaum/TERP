@@ -648,7 +648,7 @@ README.md says:
 ```markdown
 ## For AI Agents
 
-**Start here:** `.claude/AGENT_ONBOARDING.md`
+**Start here:** `docs/ROADMAP_AGENT_GUIDE.md`
 
 That file will guide you to everything else.
 ```

@@ -165,7 +165,7 @@ When complete:
 
 ---
 
-**Need help?** Check `.claude/AGENT_ONBOARDING.md` for protocols.
+**Need help?** Check `docs/ROADMAP_AGENT_GUIDE.md` for protocols.
 
 ````
 

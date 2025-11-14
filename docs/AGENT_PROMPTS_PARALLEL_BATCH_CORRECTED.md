@@ -29,7 +29,7 @@ PARALLEL WORK COORDINATION:
 
 MANDATORY FIRST STEPS:
 1. Clone repo: git clone https://github.com/EvanTenenbaum/TERP.git
-2. Read: .claude/AGENT_ONBOARDING.md (REQUIRED - contains all protocols)
+2. Read: docs/ROADMAP_AGENT_GUIDE.md (REQUIRED - contains all protocols)
 3. Check: docs/ACTIVE_SESSIONS.md (verify no conflicts)
 4. Read: docs/roadmaps/MASTER_ROADMAP.md (find ST-002 task - line 141-145)
 5. Confirm you understand ALL protocols before proceeding
@@ -90,7 +90,7 @@ BEFORE REPORTING DONE:
 - [ ] Roadmap updated (ST-002 marked complete)
 - [ ] Session archived
 
-START BY: Reading .claude/AGENT_ONBOARDING.md and confirming you understand all protocols.
+START BY: Reading docs/ROADMAP_AGENT_GUIDE.md and confirming you understand all protocols.
 ```
 
 ---
@@ -115,7 +115,7 @@ PARALLEL WORK COORDINATION:
 
 MANDATORY FIRST STEPS:
 1. Clone repo: git clone https://github.com/EvanTenenbaum/TERP.git
-2. Read: .claude/AGENT_ONBOARDING.md (REQUIRED - contains all protocols)
+2. Read: docs/ROADMAP_AGENT_GUIDE.md (REQUIRED - contains all protocols)
 3. Check: docs/ACTIVE_SESSIONS.md (verify no conflicts)
 4. Read: docs/roadmaps/MASTER_ROADMAP.md (find ST-006 task - line 165-179)
 5. Confirm you understand ALL protocols before proceeding
@@ -179,7 +179,7 @@ BEFORE REPORTING DONE:
 - [ ] Roadmap updated (ST-006 marked complete)
 - [ ] Session archived
 
-START BY: Reading .claude/AGENT_ONBOARDING.md and confirming you understand all protocols.
+START BY: Reading docs/ROADMAP_AGENT_GUIDE.md and confirming you understand all protocols.
 ```
 
 ---
@@ -204,7 +204,7 @@ PARALLEL WORK COORDINATION:
 
 MANDATORY FIRST STEPS:
 1. Clone repo: git clone https://github.com/EvanTenenbaum/TERP.git
-2. Read: .claude/AGENT_ONBOARDING.md (REQUIRED - contains all protocols)
+2. Read: docs/ROADMAP_AGENT_GUIDE.md (REQUIRED - contains all protocols)
 3. Check: docs/ACTIVE_SESSIONS.md (verify no conflicts)
 4. Read: docs/roadmaps/MASTER_ROADMAP.md (find ST-001 task - line 135-139)
 5. Confirm you understand ALL protocols before proceeding
@@ -266,7 +266,7 @@ BEFORE REPORTING DONE:
 - [ ] Roadmap updated (ST-001 marked complete)
 - [ ] Session archived
 
-START BY: Reading .claude/AGENT_ONBOARDING.md and confirming you understand all protocols.
+START BY: Reading docs/ROADMAP_AGENT_GUIDE.md and confirming you understand all protocols.
 ```
 
 ---

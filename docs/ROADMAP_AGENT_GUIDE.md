@@ -75,7 +75,7 @@ The guide provides a complete checklist for creating a new task, including:
 
 ## 📁 Key Files
 
-- **`.claude/AGENT_ONBOARDING.md`**: This file.
+- **`docs/ROADMAP_AGENT_GUIDE.md`**: This file.
 - **`docs/roadmaps/MASTER_ROADMAP.md`**: The list of all tasks.
 - **`docs/prompts/`**: Directory containing detailed, step-by-step task instructions.
 - **`docs/templates/`**: All official templates for tasks, prompts, etc.
