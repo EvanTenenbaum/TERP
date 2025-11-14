@@ -50,3 +50,5 @@
 - Abandoned: `docs/sessions/abandoned/Session-[ID].md`
 
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
+
+- QA-002: Session-20251114-QA-002-07bc42d1 (2025-11-14)
