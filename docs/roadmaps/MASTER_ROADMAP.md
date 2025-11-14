@@ -1080,22 +1080,22 @@ Export CSV button in Inventory module is unresponsive.
 ## See docs/QA-010-COMPLETION-REPORT.md for details.
 
 ### QA-011: Fix Orders - Export CSV Button
+
 **Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
 Export CSV button in Orders module is unresponsive.
 
 **Resolution:** Fixed race condition in export handler. Added validation to ensure client data is loaded before export, preventing silent failures and providing user feedback.
 
-See docs/QA-011-COMPLETION-REPORT.md for details.
----
+## See docs/QA-011-COMPLETION-REPORT.md for details.
 
 ### QA-012: Fix Global Search Functionality
+
 **Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-12h
 Global search bar accepts input but doesn't trigger search on Enter.
 
 **Resolution:** Implemented complete search functionality in AppHeader component. Added state management, event handlers for Enter key and form submission, and navigation to search results page.
 
-See docs/QA-012-COMPLETION-REPORT.md for details.
----
+## See docs/QA-012-COMPLETION-REPORT.md for details.
 
 ## 🟡 QA-IDENTIFIED MEDIUM PRIORITY BUGS
 
@@ -1307,8 +1307,10 @@ The "Settings" icon in the main navigation is unresponsive and does not trigger 
 
 ### QA-032: Fix User Profile Icon Responsiveness
 
-**Priority:** P0 | **Status:** Not Started | **Effort:** 1-2h
+**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 1-2h
 The user profile icon in the main navigation is also unresponsive.
+
+**Resolution:** Fixed alongside QA-031. Added onClick handler to User Profile button in AppHeader.tsx to navigate to /settings route. Also added title attribute for accessibility. Both Settings and User Profile icons now navigate to the same settings page, which includes user management features.
 
 ---
 
