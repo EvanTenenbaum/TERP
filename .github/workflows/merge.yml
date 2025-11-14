@@ -194,36 +194,28 @@ jobs:
             body += '---\n\n';
             
             if (!allPassed) {
-              body += `## 🚨 Action Required
-
-The main branch build has failed. **All agents must stop work immediately** and check this status.
-
-**How to check this via GitHub CLI:**
-\`\`\`bash
-# View this commit's status
-gh api repos/EvanTenenbaum/TERP/commits/${context.sha}/comments
-
-# View the workflow run
-gh run view ${{ github.run_id }}
-
-# View recent workflow runs
-gh run list --limit 5
-\`\`\`
-
-**What to do:**
-1. Read the error details in the dropdowns above
-2. Pull the latest changes: \`git pull origin main\`
-3. Run the failing tests locally
-4. Fix the issues
-5. Create a PR with the fix
-
-**Do not push more changes to main until this is fixed.**`;
+              body += '## 🚨 Action Required\n\n';
+              body += 'The main branch build has failed. **All agents must stop work immediately** and check this status.\n\n';
+              body += '**How to check this via GitHub CLI:**\n';
+              body += '```bash\n';
+              body += '# View this commit\'s status\n';
+              body += 'gh api repos/EvanTenenbaum/TERP/commits/' + context.sha + '/comments\n\n';
+              body += '# View the workflow run\n';
+              body += 'gh run view ${{ github.run_id }}\n\n';
+              body += '# View recent workflow runs\n';
+              body += 'gh run list --limit 5\n';
+              body += '```\n\n';
+              body += '**What to do:**\n';
+              body += '1. Read the error details in the dropdowns above\n';
+              body += '2. Pull the latest changes: `git pull origin main`\n';
+              body += '3. Run the failing tests locally\n';
+              body += '4. Fix the issues\n';
+              body += '5. Create a PR with the fix\n\n';
+              body += '**Do not push more changes to main until this is fixed.**';
             } else {
-              body += `## 🎉 Build Successful
-
-All tests passed! The main branch is healthy.
-
-📸 [View visual changes in Argos](https://app.argos-ci.com/EvanTenenbaum/TERP)`;
+              body += '## 🎉 Build Successful\n\n';
+              body += 'All tests passed! The main branch is healthy.\n\n';
+              body += '📸 [View visual changes in Argos](https://app.argos-ci.com/EvanTenenbaum/TERP)';
             }
             
             try {
