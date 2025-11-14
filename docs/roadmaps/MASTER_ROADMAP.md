@@ -1176,6 +1176,7 @@ See docs/QA-020-COMPLETION-REPORT.md for details.
 **Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
 
 **Resolution:** Verified form implementation through comprehensive code review. No bugs found:
+
 - All React imports present and correct
 - Correct tRPC v11 API usage (isPending)
 - Proper error handling and validation
@@ -1432,8 +1433,19 @@ The "Create Event" form has been redesigned with the following changes:
 
 ### QA-043: Add Event Attendees Functionality
 
-**Priority:** P1 | **Status:** Not Started | **Effort:** 8-16h
-The "Create Event" form needs a way to add both internal team members and external contacts as attendees.
+**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
+
+Event attendees functionality has been implemented:
+
+- Added multi-select dropdown for selecting internal team members as attendees
+- Updated userManagement.listUsers to include user ID for proper foreign key relations
+- Attendees are saved as participants with REQUIRED role and PENDING response status
+- Existing attendees are loaded when editing events
+- Full integration with calendarEventParticipants table
+- Notifications enabled by default for all attendees
+- Added comprehensive test coverage (4 tests)
+
+Note: External contacts functionality not implemented as no contacts table exists yet
 
 ---
 
