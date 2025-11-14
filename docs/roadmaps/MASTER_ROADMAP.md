@@ -1003,7 +1003,7 @@ Module `/analytics` returns 404. Business intelligence features unavailable.
 
 ### QA-005: Investigate and Fix Systemic Data Access Issues
 
-**Priority:** P0 | **Status:** Not Started | **Effort:** 16-24h
+**Priority:** P0 | **Status:** In Progress (Session-20251114-QA-005-e9e20a5d) | **Effort:** 16-24h
 
 **CRITICAL:** Widespread "No data found" across all modules despite UI expecting data.
 
