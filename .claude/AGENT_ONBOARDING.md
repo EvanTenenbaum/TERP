@@ -1,4 +1,5 @@
 '''
+
 # TERP Agent Onboarding Protocol
 
 **Welcome to the TERP project.** This document is your entry point for contributing. Follow these instructions exactly.
@@ -30,10 +31,11 @@ Click the link in the `Prompt:` field for your task. This will take you to a det
 ### 4. Follow the Prompt Exactly
 
 The prompt contains the complete 4-phase workflow. Do not deviate from it. It includes critical steps for:
+
 - **Phase 1: Pre-Flight Check:** Registering your session atomically to prevent conflicts.
 - **Phase 2: Session Startup:** Creating a branch and updating the roadmap.
 - **Phase 3: Development:** Writing tests and implementing the solution.
-- **Phase 4: Completion:** Creating a completion report and submitting a pull request.
+- **Phase 4: Completion:** Creating a completion report and pushing directly to main.
 
 ---
 
@@ -52,6 +54,7 @@ Navigate to and read the `docs/HOW_TO_ADD_TASK.md` file.
 ### 3. Follow the Checklist
 
 The guide provides a complete checklist for creating a new task, including:
+
 - Creating a new branch.
 - Using the `TASK_TEMPLATE.md`.
 - Creating a corresponding prompt using `PROMPT_TEMPLATE.md`.
@@ -63,7 +66,7 @@ The guide provides a complete checklist for creating a new task, including:
 ## ⚠️ Critical Rules
 
 1.  **Always follow the documented workflows.** They are located in `docs/HOW_TO_*.md`.
-2.  **Never push directly to the `main` branch.** All changes must go through a pull request.
+2.  \*\*NAlways push directly to the `main` branch after completing a task. Do not create pull requests..
 3.  **Atomic session registration is mandatory.** You must successfully push your session to `docs/ACTIVE_SESSIONS.md` before starting any work to prevent race conditions.
 4.  **Check for module conflicts before starting.** Read `docs/ACTIVE_SESSIONS.md` to ensure no other agent is working on the same files.
 5.  **TDD is mandatory.** Write tests before you write implementation code.

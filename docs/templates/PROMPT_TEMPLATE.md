@@ -12,6 +12,7 @@
 **Module:** [MODULE]
 
 ⚠️ **SECURITY WARNING**
+
 - NEVER include real secrets in this prompt
 - Use placeholders like: `YOUR_API_KEY_HERE`
 - Secrets belong in `.env` file only
@@ -39,6 +40,7 @@
 [State the primary goal of the task.]
 
 **Success Criteria:**
+
 - [Success criterion 1]
 - [Success criterion 2]
 - [Success criterion 3]
@@ -73,6 +75,7 @@
 ### Step 1.3: Verify Environment
 
 Run these commands:
+
 ```bash
 node --version
 pnpm --version
@@ -139,13 +142,13 @@ Change the status of your task to `review` in `docs/roadmaps/MASTER_ROADMAP.md`.
 
 Mark your session as complete.
 
-### Step 4.5: Create Pull Request
+### Step 4.5: Push to Main
 
-Create a pull request from your feature branch to `main`.
+Push your changes directly to the `main` branch.
 
 ### Step 4.6: Notify User
 
-Inform the user that the task is complete and the PR is ready for review.
+Inform the user that the task is complete and has been pushed to main.
 
 ---
 
