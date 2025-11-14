@@ -1,4 +1,5 @@
 import { getDb } from "../db";
+import { seedRBACDefaults } from "./seedRBAC";
 import {
   locations,
   categories,
@@ -280,6 +281,9 @@ export async function seedAllDefaults() {
   console.log("🌱 Starting default data seeding...");
 
   try {
+    // Seed RBAC first (roles and permissions must exist before user-role assignments)
+    await seedRBACDefaults();
+    
     await seedDefaultLocations();
     await seedDefaultCategories();
     await seedDefaultGrades();

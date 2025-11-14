@@ -15,6 +15,7 @@ import { logger, replaceConsole } from "./logger";
 import { performHealthCheck, livenessCheck, readinessCheck } from "./healthCheck";
 import { setupGracefulShutdown } from "./gracefulShutdown";
 import { seedAllDefaults } from "../services/seedDefaults";
+import { assignRoleToUser } from "../services/seedRBAC";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
 
@@ -52,8 +53,14 @@ async function startServer() {
     // Create admin user if it doesn't exist
     const adminExists = await getUserByEmail("Evan");
     if (!adminExists) {
-      await simpleAuth.createUser("Evan", "oliver", "Evan (Admin)");
+      const newAdmin = await simpleAuth.createUser("Evan", "oliver", "Evan (Admin)");
       logger.info("Admin user created: Evan / oliver");
+      
+      // Assign Super Admin role to the default admin user
+      if (newAdmin && newAdmin.openId) {
+        await assignRoleToUser(newAdmin.openId, "Super Admin");
+        logger.info("Super Admin role assigned to Evan");
+      }
     }
   } catch (error) {
     logger.warn({ msg: "Failed to seed defaults or create admin user", error });
