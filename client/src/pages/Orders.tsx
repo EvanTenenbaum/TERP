@@ -158,6 +158,12 @@ export default function Orders() {
       return;
     }
     
+    // Check if clients data is loaded
+    if (!clients) {
+      toast.error('Client data is still loading. Please try again.');
+      return;
+    }
+    
     try {
       const exportData = ordersToExport.map(order => ({
         id: order.id,
