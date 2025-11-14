@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { UserSelector } from "@/components/common/UserSelector";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 interface TodoListFormProps {
   list?: {
@@ -35,27 +37,106 @@ export function TodoListForm({
   const [name, setName] = useState(list?.name || "");
   const [description, setDescription] = useState(list?.description || "");
   const [isShared, setIsShared] = useState(list?.isShared || false);
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
 
   const utils = trpc.useContext();
 
+  // Fetch available users for sharing
+  const { data: availableUsers = [] } = trpc.users.list.useQuery();
+
+  // Fetch current list members if editing
+  const { data: currentMembers = [] } = trpc.todoLists.getMembers.useQuery(
+    { listId: list?.id || 0 },
+    { enabled: !!list?.id }
+  );
+
+  // Update selected users when editing and members are loaded
+  useEffect(() => {
+    if (list && currentMembers.length > 0) {
+      const memberUserIds = currentMembers.map(m => m.userId);
+      setSelectedUserIds(memberUserIds);
+    }
+  }, [list, currentMembers]);
+
   const createList = trpc.todoLists.create.useMutation({
-    onSuccess: () => {
+    onSuccess: async (newList) => {
+      // If shared and users selected, add them as members
+      if (isShared && selectedUserIds.length > 0) {
+        try {
+          // Add each selected user as a member
+          for (const userId of selectedUserIds) {
+            await addMember.mutateAsync({
+              listId: newList.id,
+              userId,
+              role: "editor",
+            });
+          }
+          toast.success(`List created and shared with ${selectedUserIds.length} user(s)`);
+        } catch (error) {
+          toast.error("List created but failed to add some members");
+        }
+      } else {
+        toast.success("List created successfully");
+      }
+
       utils.todoLists.getMyLists.invalidate();
       onSuccess?.();
       handleClose();
+    },
+    onError: () => {
+      toast.error("Failed to create list");
     },
   });
 
   const updateList = trpc.todoLists.update.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Update list members if shared
+      if (list && isShared) {
+        try {
+          const currentMemberIds = currentMembers.map(m => m.userId);
+          
+          // Add new members
+          const usersToAdd = selectedUserIds.filter(id => !currentMemberIds.includes(id));
+          for (const userId of usersToAdd) {
+            await addMember.mutateAsync({
+              listId: list.id,
+              userId,
+              role: "editor",
+            });
+          }
+
+          // Remove members no longer selected
+          const usersToRemove = currentMemberIds.filter(id => !selectedUserIds.includes(id));
+          for (const userId of usersToRemove) {
+            await removeMember.mutateAsync({
+              listId: list.id,
+              userId,
+            });
+          }
+
+          toast.success("List updated successfully");
+        } catch (error) {
+          toast.error("List updated but failed to update some members");
+        }
+      } else {
+        toast.success("List updated successfully");
+      }
+
       utils.todoLists.getMyLists.invalidate();
       if (list) {
         utils.todoLists.getById.invalidate({ listId: list.id });
+        utils.todoLists.getMembers.invalidate({ listId: list.id });
       }
       onSuccess?.();
       handleClose();
     },
+    onError: () => {
+      toast.error("Failed to update list");
+    },
   });
+
+  const addMember = trpc.todoLists.addMember.useMutation();
+  const removeMember = trpc.todoLists.removeMember.useMutation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,12 +163,25 @@ export function TodoListForm({
     setName("");
     setDescription("");
     setIsShared(false);
+    setSelectedUserIds([]);
     onClose();
   };
 
+  // Reset form when opening
+  useEffect(() => {
+    if (isOpen) {
+      setName(list?.name || "");
+      setDescription(list?.description || "");
+      setIsShared(list?.isShared || false);
+      if (!list) {
+        setSelectedUserIds([]);
+      }
+    }
+  }, [isOpen, list]);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{list ? "Edit List" : "Create New List"}</DialogTitle>
           <DialogDescription>
@@ -134,6 +228,23 @@ export function TodoListForm({
                 onCheckedChange={setIsShared}
               />
             </div>
+
+            {/* User Selection - only shown when isShared is true */}
+            {isShared && (
+              <div className="space-y-2">
+                <Label>Share With</Label>
+                <UserSelector
+                  users={availableUsers}
+                  selectedUserIds={selectedUserIds}
+                  onSelectionChange={setSelectedUserIds}
+                  placeholder="Select users to share with..."
+                  disabled={createList.isPending || updateList.isPending}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Selected users will be able to view and edit this list
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
