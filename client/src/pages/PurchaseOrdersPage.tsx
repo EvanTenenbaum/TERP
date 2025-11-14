@@ -28,6 +28,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { useToast } from "../hooks/use-toast";
 import { Plus, Search, FileText, Trash2 } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 
 export default function PurchaseOrdersPage() {
@@ -208,6 +209,7 @@ export default function PurchaseOrdersPage() {
 
   return (
     <div className="p-6">
+      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Purchase Orders</h1>
         <p className="text-gray-600">

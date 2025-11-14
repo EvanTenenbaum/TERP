@@ -7,10 +7,12 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart3, TrendingUp, Users, Package } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 
 export default function AnalyticsPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>

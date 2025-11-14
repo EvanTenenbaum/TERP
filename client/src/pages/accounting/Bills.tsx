@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Plus, FileText, DollarSign } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { StatusBadge, AgingBadge } from "@/components/accounting";
 
@@ -72,6 +73,7 @@ export default function Bills() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      <BackButton label="Back to Accounting" to="/accounting" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

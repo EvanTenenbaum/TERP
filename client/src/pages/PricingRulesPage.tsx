@@ -40,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Plus, Edit, Trash, Search, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { toast } from "sonner";
 import type { PricingRule } from "../../../drizzle/schema";
 
@@ -358,6 +359,7 @@ export default function PricingRulesPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
+      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

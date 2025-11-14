@@ -29,6 +29,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { useToast } from "../hooks/use-toast";
 import { PackageX, Plus, TrendingDown } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { Checkbox } from "../components/ui/checkbox";
 
 export default function ReturnsPage() {
@@ -98,6 +99,7 @@ export default function ReturnsPage() {
 
   return (
     <div className="p-8">
+      <BackButton label="Back to Orders" to="/orders" className="mb-4" />
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Returns Management</h1>
         <p className="text-muted-foreground">Process and track order returns</p>

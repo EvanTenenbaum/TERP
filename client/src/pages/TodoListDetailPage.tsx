@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useParams } from "wouter";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, MoreVertical } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
+import { Plus, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {

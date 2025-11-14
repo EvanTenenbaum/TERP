@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Edit2, Save, X } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { UserManagement } from "@/components/UserManagement";
@@ -15,6 +16,7 @@ import { PermissionAssignment } from "@/components/settings/rbac/PermissionAssig
 export default function Settings() {
   return (
     <div className="p-4 md:p-6 space-y-6">
+      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
       <div>
         <h1 className="text-2xl md:text-3xl font-bold">Settings</h1>
         <p className="text-muted-foreground mt-1">

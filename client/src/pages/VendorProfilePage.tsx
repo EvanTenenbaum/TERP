@@ -21,8 +21,8 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { BackButton } from "@/components/common/BackButton";
 import {
-  ArrowLeft,
   Pencil,
   FileText,
   Package,
@@ -174,13 +174,7 @@ export default function VendorProfilePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/vendors")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <BackButton to="/vendors" size="icon" />
           <div>
             <h1 className="text-3xl font-bold">{vendor.name}</h1>
             <p className="text-sm text-muted-foreground mt-1">

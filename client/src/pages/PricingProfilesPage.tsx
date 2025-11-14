@@ -34,6 +34,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit, Trash, Search, Settings } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { toast } from "sonner";
 import type { PricingProfile, PricingRule } from "../../../drizzle/schema";
 
@@ -271,6 +272,7 @@ export default function PricingProfilesPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
+      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

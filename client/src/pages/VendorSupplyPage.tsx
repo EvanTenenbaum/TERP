@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Search, Plus, Loader2, Package, TrendingUp } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { DataCardSection } from "@/components/data-cards";
 
 /**
@@ -65,6 +66,7 @@ export default function VendorSupplyPage() {
 
   return (
     <div className="space-y-6 p-6">
+      <BackButton label="Back to Vendors" to="/vendors" className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

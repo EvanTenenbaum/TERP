@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Building2, DollarSign } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 
 export default function BankAccounts() {
   // Fetch bank accounts
@@ -47,6 +48,7 @@ export default function BankAccounts() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      <BackButton label="Back to Accounting" to="/accounting" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

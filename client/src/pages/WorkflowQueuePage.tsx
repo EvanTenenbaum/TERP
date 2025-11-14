@@ -12,6 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Settings, History, BarChart3 } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { WorkflowBoard } from "@/components/workflow/WorkflowBoard";
 import { WorkflowSettings } from "@/components/workflow/WorkflowSettings";
 import { WorkflowHistory } from "@/components/workflow/WorkflowHistory";
@@ -47,7 +48,9 @@ export default function WorkflowQueuePage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-4">
+            <BackButton label="Back to Dashboard" to="/" />
+            <div>
             <h1 className="text-2xl font-bold text-gray-900">Workflow Queue</h1>
             <p className="text-sm text-gray-600 mt-1">
               Manage batch processing workflow and track status changes
