@@ -1371,8 +1371,10 @@ The "Comments" feature is non-functional; users cannot submit comments.
 
 ### QA-038: Fix @ Tagging in Comments
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 4-8h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-8h (Actual: ~2h)
 The functionality for tagging users with `@` in comments is untested and likely broken.
+
+**Resolution:** Implemented complete @ tagging UI with autocomplete, keyboard navigation, and visual highlighting. Created MentionInput component with user filtering, MentionRenderer for display, and integrated with existing comment system. 17 tests passing. See `docs/QA-038-COMPLETION-REPORT.md` for details.
 
 ---
 
