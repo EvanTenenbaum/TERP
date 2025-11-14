@@ -1,3 +1,42 @@
+# TERP Project & Roadmap Management System
+
+This repository contains both the TERP (Task-driven Execution and Resolution Protocol) project and the GitHub-native roadmap management system that governs its development.
+
+---
+
+## 🗺️ Roadmap Management System
+
+This project is managed by a platform-agnostic, GitHub-native roadmap system designed for AI agent collaboration.
+
+### 🎯 For AI Agents
+
+**Your starting point is `.claude/AGENT_ONBOARDING.md`**
+
+This file contains the complete protocol for interacting with the TERP roadmap system. To begin work, read and follow the instructions in that file.
+
+```bash
+# To start, read this file:
+cat .claude/AGENT_ONBOARDING.md
+```
+
+### 👨‍💻 For Human Collaborators
+
+**Your starting point is `docs/ROADMAP_SYSTEM_OVERVIEW.md`**
+
+This document provides a human-friendly overview of the GitHub-native roadmap system, explaining the architecture, workflows, and how to effectively collaborate with AI agents within this framework.
+
+#### Quick Links
+
+- **[Master Roadmap](docs/roadmaps/MASTER_ROADMAP.md):** View all active and ready tasks.
+- **[System Design](docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.2_FINAL.md):** Read the final architecture and design document.
+- **[Repository Security](docs/REPOSITORY_SECURITY.md):** Understand the security and enforcement policies.
+
+---
+
+## 🚀 TERP Application Information
+
+Below is the original README for the TERP application itself.
+
 # TERP - Modern ERP System
 
 A world-class, production-ready ERP system with intelligent needs matching, comprehensive accounting, and modern authentication.
@@ -9,6 +48,7 @@ A world-class, production-ready ERP system with intelligent needs matching, comp
 ## 🚀 Quick Start
 
 ### Local Development
+
 ```bash
 cd /home/ubuntu/TERP
 pnpm install
@@ -16,6 +56,7 @@ pnpm dev
 ```
 
 ### Production Deployment
+
 ```bash
 git push origin main  # Auto-deploys to DigitalOcean
 ```
@@ -44,6 +85,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 ### 🎯 Recent Additions
 
 **Needs & Matching Intelligence Module:**
+
 - Multi-source matching (inventory + vendor supply)
 - Confidence scoring (0-100)
 - Historical purchase analysis
@@ -51,6 +93,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 - 53 passing tests
 
 **Clerk Authentication:**
+
 - Modern authentication with no IP restrictions
 - Works seamlessly with DigitalOcean
 - Email/password and social login
@@ -62,6 +105,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 ## 🏗️ Architecture
 
 **Frontend:**
+
 - React 19 + TypeScript
 - Tailwind CSS 4
 - shadcn/ui components
@@ -69,6 +113,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 - Clerk React SDK
 
 **Backend:**
+
 - Node.js + Express + tRPC
 - Drizzle ORM
 - MySQL 8.0 database
@@ -76,12 +121,14 @@ git push origin main  # Auto-deploys to DigitalOcean
 - JWT session management
 
 **Infrastructure:**
+
 - DigitalOcean App Platform
 - Managed MySQL database
 - Auto-deploy on git push
 - SSL/HTTPS enabled
 
 **Features:**
+
 - 20+ database tables
 - 80+ tRPC API endpoints
 - 100% mobile-optimized
@@ -156,6 +203,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 ### Needs & Matching Intelligence (NEW)
 
 **Capabilities:**
+
 - Intelligent matching between client needs and available inventory
 - Multi-source matching (inventory + vendor supply)
 - Confidence scoring (0-100) based on:
@@ -167,6 +215,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 - Match history tracking
 
 **Pages:**
+
 - `/needs` - Manage client needs
 - `/vendor-supply` - Track vendor inventory
 - `/clients/:id` - Client profile with "Needs & History" tab
@@ -174,6 +223,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 ### Authentication (Clerk)
 
 **Features:**
+
 - Email/password authentication
 - Social login (Google, GitHub, etc.)
 - Multi-factor authentication (MFA)
@@ -182,12 +232,14 @@ git push origin main  # Auto-deploys to DigitalOcean
 - No IP restrictions
 
 **Routes:**
+
 - `/sign-in` - Sign in page
 - `/sign-up` - Sign up page
 
 ### Accounting Module
 
 **10 Pages:**
+
 - Accounting Dashboard - Financial overview
 - Chart of Accounts - Account hierarchy
 - General Ledger - Journal entries
@@ -200,6 +252,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 - Expenses - Expense tracking
 
 **Features:**
+
 - Double-entry accounting
 - AR/AP aging reports
 - Bank reconciliation
@@ -210,6 +263,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 ### Inventory Module
 
 **Features:**
+
 - Batch lifecycle tracking
 - Status management (Awaiting Intake → Sold)
 - Advanced filtering and sorting
@@ -220,6 +274,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 ### Client Management
 
 **Features:**
+
 - Client profiles with contact info
 - Credit limit tracking
 - Purchase history
@@ -229,6 +284,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 ### Pricing Engine
 
 **Features:**
+
 - Rule-based pricing
 - Pricing profiles per client
 - Dynamic price calculation
@@ -239,6 +295,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 ## 📱 Mobile Optimization
 
 **100% Mobile-Optimized:**
+
 - Mobile-first responsive design
 - Single-column layouts on mobile
 - Stacked buttons and filters
@@ -246,6 +303,7 @@ git push origin main  # Auto-deploys to DigitalOcean
 - Responsive typography
 
 **Breakpoints:**
+
 - Mobile: < 640px
 - Tablet: 640px - 1024px
 - Desktop: > 1024px
@@ -279,6 +337,7 @@ pnpm db:push
 ### Environment Variables
 
 **Required for Local Development:**
+
 ```bash
 # .env
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA
@@ -299,6 +358,7 @@ NODE_ENV=development
 **Live URL:** https://terp-app-b9s35.ondigitalocean.app
 
 **Auto-Deploy:**
+
 ```bash
 git add .
 git commit -m "Your changes"
@@ -306,6 +366,7 @@ git push origin main  # Triggers automatic deployment
 ```
 
 **Manual Deployment via API:**
+
 ```bash
 # Update environment variables
 curl -X PUT \
@@ -316,6 +377,7 @@ curl -X PUT \
 ```
 
 **Monitoring:**
+
 - Dashboard: https://cloud.digitalocean.com/apps/1fd40be5-b9af-4e71-ab1d-3af0864a7da4
 - Logs: Available via DigitalOcean dashboard or API
 - Metrics: CPU, memory, and bandwidth usage
@@ -355,9 +417,11 @@ curl -X PUT \
 **20+ Production Tables:**
 
 **Inventory (5 tables):**
+
 - batches, products, brands, vendors, strains
 
 **Accounting (12 tables):**
+
 - accounts, ledgerEntries, fiscalPeriods
 - invoices, invoiceLineItems
 - bills, billLineItems
@@ -366,9 +430,11 @@ curl -X PUT \
 - expenses, expenseCategories
 
 **Needs & Matching (3 tables):**
+
 - clientNeeds, vendorSupply, matchRecords
 
 **Core (3 tables):**
+
 - users, clients, quotes
 
 ---
@@ -376,6 +442,7 @@ curl -X PUT \
 ## 🧪 Testing
 
 **Test Coverage:**
+
 - 53 passing tests
 - 3 test suites
 - Matching engine tests
@@ -383,6 +450,7 @@ curl -X PUT \
 - Quote creation tests
 
 **Run Tests:**
+
 ```bash
 pnpm test
 ```
@@ -392,6 +460,7 @@ pnpm test
 ## 🎨 Design System
 
 **Principles:**
+
 - Card-based layouts
 - Color-coded status indicators
 - Persistent sidebar navigation
@@ -399,6 +468,7 @@ pnpm test
 - Clarity over cleverness
 
 **Components:**
+
 - shadcn/ui base components
 - Custom accounting components
 - Custom inventory components
@@ -412,13 +482,16 @@ pnpm test
 **80+ tRPC Endpoints:**
 
 **Authentication:**
+
 - `auth.me` - Get current user
 - `auth.logout` - Sign out
 
 **Inventory:**
+
 - `inventory.*` - 6 endpoints
 
 **Accounting:**
+
 - `accounting.accounts.*` - 7 endpoints
 - `accounting.ledger.*` - 5 endpoints
 - `accounting.fiscalPeriods.*` - 7 endpoints
@@ -431,10 +504,12 @@ pnpm test
 - `accounting.expenses.*` - 9 endpoints
 
 **Needs & Matching:**
+
 - `clientNeedsEnhanced.*` - 10 endpoints
 - `vendorSupply.*` - 6 endpoints
 
 **Clients & Quotes:**
+
 - `clients.*` - 8 endpoints
 - `quotes.*` - 6 endpoints
 
@@ -496,11 +571,13 @@ Proprietary - All rights reserved
 ## 💰 Cost
 
 **Monthly Infrastructure:**
+
 - DigitalOcean App: $5/month
 - MySQL Database: $15/month
 - **Total: $20/month**
 
 **Free Tier Services:**
+
 - Clerk Authentication: Free tier (10,000 MAU)
 - GitHub: Free for public repositories
 
@@ -509,4 +586,3 @@ Proprietary - All rights reserved
 **Built with ❤️ by Manus AI**
 
 For questions or support, see [DEPLOYMENT_STATUS.md](./docs/DEPLOYMENT_STATUS.md) or [CLERK_AUTHENTICATION.md](./docs/CLERK_AUTHENTICATION.md)
-

@@ -29,7 +29,12 @@
     "seed:live": "tsx scripts/seed-live-database.ts",
     "seed:realistic": "tsx scripts/seed-realistic-main.ts full",
     "prepare": "husky install || true",
-    "reseed:prod": "tsx scripts/reseed-production-safe.ts"
+    "reseed:prod": "tsx scripts/reseed-production-safe.ts",
+    "roadmap": "tsx scripts/roadmap.ts",
+    "roadmap:validate": "tsx scripts/roadmap.ts validate",
+    "roadmap:capacity": "tsx scripts/roadmap.ts capacity",
+    "roadmap:next-batch": "tsx scripts/roadmap.ts next-batch",
+    "roadmap:list": "tsx scripts/roadmap.ts list"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
