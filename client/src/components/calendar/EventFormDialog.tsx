@@ -30,11 +30,15 @@ export default function EventFormDialog({
   const [priority, setPriority] = useState("MEDIUM");
   const [visibility, setVisibility] = useState("COMPANY");
   const [isRecurring, setIsRecurring] = useState(false);
+  const [attendees, setAttendees] = useState<number[]>([]);
 
   // Recurrence state
   const [recurrenceFrequency, setRecurrenceFrequency] = useState("WEEKLY");
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
+
+  // Queries
+  const { data: users } = trpc.userManagement.listUsers.useQuery();
 
   // Mutations
   const createEvent = trpc.calendar.createEvent.useMutation();
@@ -70,6 +74,11 @@ export default function EventFormDialog({
         const endDate = eventData.recurrenceRule.endDate;
         setRecurrenceEndDate(endDate ? (typeof endDate === 'string' ? endDate : new Date(endDate).toISOString().split('T')[0]) : "");
       }
+
+      // Load participants
+      if (eventData.participants && eventData.participants.length > 0) {
+        setAttendees(eventData.participants.map((p: any) => p.userId));
+      }
     } else {
       // Reset form for new event
       const today = new Date().toISOString().split("T")[0];
@@ -89,6 +98,7 @@ export default function EventFormDialog({
       setIsRecurring(false);
       setRecurrenceFrequency("WEEKLY");
       setRecurrenceInterval(1);
+      setAttendees([]);
       setRecurrenceEndDate("");
     }
   }, [eventData]);
@@ -112,6 +122,7 @@ export default function EventFormDialog({
       priority,
       visibility,
       isRecurring,
+      participants: attendees.length > 0 ? attendees : undefined,
     };
 
     if (isRecurring) {
@@ -334,6 +345,33 @@ export default function EventFormDialog({
                 <option value="PRIVATE">Private</option>
                 <option value="COMPANY">Company</option>
               </select>
+            </div>
+
+            {/* Attendees */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                <Users className="inline h-4 w-4 mr-1" />
+                Attendees
+              </label>
+              <select
+                multiple
+                value={attendees.map(String)}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value));
+                  setAttendees(selected);
+                }}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                size={5}
+              >
+                {users?.map((user: any) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name || user.email}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Hold Ctrl/Cmd to select multiple attendees
+              </p>
             </div>
 
             {/* Recurring */}
