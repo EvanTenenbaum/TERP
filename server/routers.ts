@@ -54,6 +54,7 @@ import { dashboardPreferencesRouter } from "./routers/dashboardPreferences";
 import { todoListsRouter } from "./routers/todoLists";
 import { todoTasksRouter } from "./routers/todoTasks";
 import { commentsRouter } from "./routers/comments";
+import { usersRouter } from "./routers/users";
 import { inboxRouter } from "./routers/inbox";
 import { todoActivityRouter } from "./routers/todoActivity";
 import { calendarRouter } from "./routers/calendar";
@@ -123,6 +124,7 @@ export const appRouter = router({
   todoLists: todoListsRouter,
   todoTasks: todoTasksRouter,
   comments: commentsRouter,
+  users: usersRouter,
   inbox: inboxRouter,
   todoActivity: todoActivityRouter,
   calendar: calendarRouter,
