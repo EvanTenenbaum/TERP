@@ -1069,11 +1069,12 @@ Dashboard Locations button returns 404.
 ---
 
 ### QA-010: Fix Inventory - Export CSV Button
-
-**Priority:** P1 | **Status:** Not Started | **Effort:** 4-6h
-
+**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
 Export CSV button in Inventory module is unresponsive.
 
+**Resolution:** Fixed data mapping issue in export handler. Added transformation logic to map nested inventory data (batch, product, brand, vendor) to flat objects before export.
+
+See docs/QA-010-COMPLETION-REPORT.md for details.
 ---
 
 ### QA-011: Fix Orders - Export CSV Button
