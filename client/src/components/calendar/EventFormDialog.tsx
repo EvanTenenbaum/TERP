@@ -52,8 +52,8 @@ export default function EventFormDialog({
       setTitle(eventData.title);
       setDescription(eventData.description || "");
       setLocation(eventData.location || "");
-      setStartDate(eventData.startDate);
-      setEndDate(eventData.endDate);
+      setStartDate(typeof eventData.startDate === 'string' ? eventData.startDate : new Date(eventData.startDate).toISOString().split('T')[0]);
+      setEndDate(typeof eventData.endDate === 'string' ? eventData.endDate : new Date(eventData.endDate).toISOString().split('T')[0]);
       setStartTime(eventData.startTime || "");
       setEndTime(eventData.endTime || "");
       setIsAllDay(!eventData.startTime);
@@ -67,7 +67,8 @@ export default function EventFormDialog({
       if (eventData.recurrenceRule) {
         setRecurrenceFrequency(eventData.recurrenceRule.frequency);
         setRecurrenceInterval(eventData.recurrenceRule.interval);
-        setRecurrenceEndDate(eventData.recurrenceRule.endDate || "");
+        const endDate = eventData.recurrenceRule.endDate;
+        setRecurrenceEndDate(endDate ? (typeof endDate === 'string' ? endDate : new Date(endDate).toISOString().split('T')[0]) : "");
       }
     } else {
       // Reset form for new event
@@ -452,10 +453,10 @@ export default function EventFormDialog({
             </button>
             <button
               type="submit"
-              disabled={createEvent.isLoading || updateEvent.isLoading}
+              disabled={createEvent.isPending || updateEvent.isPending}
               className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {createEvent.isLoading || updateEvent.isLoading
+              {createEvent.isPending || updateEvent.isPending
                 ? "Saving..."
                 : eventId
                 ? "Update Event"
