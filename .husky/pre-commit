@@ -6,3 +6,9 @@
 
 # Then run lint-staged
 npx lint-staged
+
+# Validate roadmap ONLY if it changed (conditional validation for performance)
+if git diff --cached --name-only | grep -q "docs/roadmaps/MASTER_ROADMAP.md"; then
+  echo "🔍 Validating MASTER_ROADMAP.md..."
+  pnpm roadmap validate --incremental || exit 1
+fi
