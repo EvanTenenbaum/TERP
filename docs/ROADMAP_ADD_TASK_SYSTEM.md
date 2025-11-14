@@ -17,7 +17,7 @@
 
 ### 1. Entry Point: Agent Onboarding Document
 
-**Location:** `.claude/AGENT_ONBOARDING.md`
+**Location:** `docs/ROADMAP_AGENT_GUIDE.md`
 
 **Add prominent section:**
 
@@ -123,7 +123,7 @@ fi
 
 **Update these files:**
 
-1. **`.claude/AGENT_ONBOARDING.md`**
+1. **`docs/ROADMAP_AGENT_GUIDE.md`**
    - Add "Adding Tasks to Roadmap" section at top
    - Make it impossible to miss
 

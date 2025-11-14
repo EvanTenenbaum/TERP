@@ -26,7 +26,7 @@
 Any AI agent can:
 
 1. Clone `https://github.com/EvanTenenbaum/TERP`
-2. Read `.claude/AGENT_ONBOARDING.md`
+2. Read `docs/ROADMAP_AGENT_GUIDE.md`
 3. Follow documented workflows
 4. Execute tasks using roadmap system
 
@@ -823,7 +823,7 @@ npm install -g pnpm
 ## 📚 Additional Resources
 
 - **Roadmap:** `docs/roadmaps/MASTER_ROADMAP.md`
-- **Agent Onboarding:** `.claude/AGENT_ONBOARDING.md`
+- **Agent Onboarding:** `docs/ROADMAP_AGENT_GUIDE.md`
 - **TDD Guide:** `docs/TDD_GUIDE.md`
 - **Database Docs:** `server/db/README.md`
 - **Troubleshooting:** `docs/TROUBLESHOOTING.md`
@@ -1712,7 +1712,7 @@ TERP/
 
 **Agent process:**
 1. Clone repository (if needed)
-2. Read `.claude/AGENT_ONBOARDING.md`
+2. Read `docs/ROADMAP_AGENT_GUIDE.md`
 3. Navigate to `docs/roadmaps/MASTER_ROADMAP.md`
 4. Find ST-005
 5. Click prompt link: `docs/prompts/ST-005.md`
@@ -1741,7 +1741,7 @@ TERP/
 ### Scenario 2: "Add email notifications to TERP roadmap"
 
 **Agent process:**
-1. Read `.claude/AGENT_ONBOARDING.md`
+1. Read `docs/ROADMAP_AGENT_GUIDE.md`
 2. See: "If user says: Add task to TERP roadmap"
 3. Read `docs/HOW_TO_ADD_TASK.md`
 4. Follow checklist:

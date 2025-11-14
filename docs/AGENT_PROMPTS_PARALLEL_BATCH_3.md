@@ -26,7 +26,7 @@ PARALLEL WORK COORDINATION:
 
 MANDATORY FIRST STEPS:
 1. Clone repo: git clone https://github.com/EvanTenenbaum/TERP.git
-2. Read: .claude/AGENT_ONBOARDING.md (REQUIRED - contains all protocols)
+2. Read: docs/ROADMAP_AGENT_GUIDE.md (REQUIRED - contains all protocols)
 3. Check: docs/ACTIVE_SESSIONS.md (verify no conflicts)
 4. Read: docs/roadmaps/MASTER_ROADMAP.md (find ST-005 task - line 190-194)
 5. Confirm you understand ALL protocols before proceeding
@@ -188,7 +188,7 @@ BEFORE REPORTING DONE:
 
 ⚠️ CRITICAL: This task affects database performance. Test thoroughly before merging!
 
-START BY: Reading .claude/AGENT_ONBOARDING.md and IMMEDIATELY creating your session file.
+START BY: Reading docs/ROADMAP_AGENT_GUIDE.md and IMMEDIATELY creating your session file.
 
 ```
 
@@ -216,7 +216,7 @@ PARALLEL WORK COORDINATION:
 MANDATORY FIRST STEPS:
 
 1. Clone repo: git clone https://github.com/EvanTenenbaum/TERP.git
-2. Read: .claude/AGENT_ONBOARDING.md (REQUIRED - contains all protocols)
+2. Read: docs/ROADMAP_AGENT_GUIDE.md (REQUIRED - contains all protocols)
 3. Check: docs/ACTIVE_SESSIONS.md (verify no conflicts)
 4. Read: docs/roadmaps/MASTER_ROADMAP.md (find ST-008 task - line 223-234)
 5. Confirm you understand ALL protocols before proceeding
@@ -495,7 +495,7 @@ BEFORE REPORTING DONE:
 
 ⚠️ IMPORTANT: Use test/staging Sentry project, not production!
 
-START BY: Reading .claude/AGENT_ONBOARDING.md and confirming you understand all protocols.
+START BY: Reading docs/ROADMAP_AGENT_GUIDE.md and confirming you understand all protocols.
 
 ```
 
@@ -523,7 +523,7 @@ PARALLEL WORK COORDINATION:
 MANDATORY FIRST STEPS:
 
 1. Clone repo: git clone https://github.com/EvanTenenbaum/TERP.git
-2. Read: .claude/AGENT_ONBOARDING.md (REQUIRED - contains all protocols)
+2. Read: docs/ROADMAP_AGENT_GUIDE.md (REQUIRED - contains all protocols)
 3. Check: docs/ACTIVE_SESSIONS.md (verify no conflicts)
 4. Read: docs/roadmaps/MASTER_ROADMAP.md (find ST-009 task - line 236-247)
 5. Confirm you understand ALL protocols before proceeding
@@ -850,7 +850,7 @@ BEFORE REPORTING DONE:
 
 ⚠️ IMPORTANT: Use test/staging Datadog account, not production!
 
-START BY: Reading .claude/AGENT_ONBOARDING.md and confirming you understand all protocols.
+START BY: Reading docs/ROADMAP_AGENT_GUIDE.md and confirming you understand all protocols.
 
 ```
 
@@ -879,7 +879,7 @@ PARALLEL WORK COORDINATION:
 MANDATORY FIRST STEPS:
 
 1. Clone repo: git clone https://github.com/EvanTenenbaum/TERP.git
-2. Read: .claude/AGENT_ONBOARDING.md (REQUIRED - contains all protocols)
+2. Read: docs/ROADMAP_AGENT_GUIDE.md (REQUIRED - contains all protocols)
 3. Check: docs/ACTIVE_SESSIONS.md (verify no conflicts)
 4. Read: docs/roadmaps/MASTER_ROADMAP.md (find ST-007 task - line 212-221)
 5. Confirm you understand ALL protocols before proceeding
@@ -1171,7 +1171,7 @@ RECOMMENDED APPROACH:
 - Day 3: Orders + Clients + Vendors routers
 - Day 4: Performance testing + documentation
 
-START BY: Reading .claude/AGENT_ONBOARDING.md and confirming you understand all protocols.
+START BY: Reading docs/ROADMAP_AGENT_GUIDE.md and confirming you understand all protocols.
 
 ```
 

@@ -606,7 +606,7 @@ MODULE: path/to/files/
 QUICK START:
 
 1. Clone repo: git clone https://github.com/EvanTenenbaum/TERP.git
-2. Read protocols: .claude/AGENT_ONBOARDING.md
+2. Read protocols: docs/ROADMAP_AGENT_GUIDE.md
 3. Create session: docs/sessions/active/Session-[ID]-ST-XXX.md
 4. Create branch: claude/ST-XXX-[description]-Session-[ID]
 5. Update roadmap: Mark ST-XXX "In Progress"
