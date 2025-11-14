@@ -1,0 +1,30 @@
+name: Roadmap Validation
+on:
+  pull_request:
+    paths:
+      - 'docs/roadmaps/**'
+      - 'docs/prompts/**'
+      - 'docs/sessions/**'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install -g js-yaml
+      - name: Validate roadmap structure
+        run: node scripts/validate-roadmap.js
+      - name: Check for circular dependencies
+        run: node scripts/check-circular-deps.js
+      - name: Validate prompts match roadmap
+        run: node scripts/validate-prompts.js
+      - name: Check for secrets in prompts
+        run: node scripts/check-secrets.js
+      - name: Validate session files
+        run: node scripts/validate-sessions.js
+      - name: Scan for dangerous commands in prompts
+        run: node scripts/check-prompt-safety.js
