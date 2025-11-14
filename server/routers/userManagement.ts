@@ -15,6 +15,7 @@ export const userManagementRouter = router({
     }
 
     const allUsers = await database.select({
+      id: users.id,
       openId: users.openId,
       email: users.email,
       name: users.name,
