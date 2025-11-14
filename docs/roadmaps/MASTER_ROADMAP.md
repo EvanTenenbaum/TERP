@@ -1069,13 +1069,13 @@ Dashboard Locations button returns 404.
 ---
 
 ### QA-010: Fix Inventory - Export CSV Button
+
 **Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
 Export CSV button in Inventory module is unresponsive.
 
 **Resolution:** Fixed data mapping issue in export handler. Added transformation logic to map nested inventory data (batch, product, brand, vendor) to flat objects before export.
 
-See docs/QA-010-COMPLETION-REPORT.md for details.
----
+## See docs/QA-010-COMPLETION-REPORT.md for details.
 
 ### QA-011: Fix Orders - Export CSV Button
 
@@ -1106,7 +1106,10 @@ See docs/QA-013-COMPLETION-REPORT.md for details.
 
 ### QA-014: Fix Workflow Queue - History Button 404
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 4-6h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+
+**Resolution:** Investigation complete - History button works correctly as a view mode switcher. No actual 404 errors exist. Test coverage provided by QA-013.
+See docs/QA-014-COMPLETION-REPORT.md for details.
 
 ---
 
