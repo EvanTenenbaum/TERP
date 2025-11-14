@@ -8,12 +8,18 @@ export default defineConfig({
   test: {
     globals: true,
     // Use different environments for server vs client tests
-    environment: "node", // Default for server tests
+    environment: "jsdom", // Use jsdom for client tests by default
     include: [
       "server/**/*.test.ts",
       "server/**/*.spec.ts",
       "client/**/*.test.{ts,tsx}",
       "client/**/*.spec.{ts,tsx}",
+    ],
+    environmentMatchGlobs: [
+      ['server/**/*.test.ts', 'node'],
+      ['server/**/*.spec.ts', 'node'],
+      ['client/**/*.test.{ts,tsx}', 'jsdom'],
+      ['client/**/*.spec.{ts,tsx}', 'jsdom'],
     ],
     setupFiles: ["./tests/setup.ts"],
     coverage: {
