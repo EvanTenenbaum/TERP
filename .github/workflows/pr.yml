@@ -104,25 +104,23 @@ jobs:
             }
             
             if (!allPassed) {
-              body += `---\n\n**Action Required:**
-1. Pull the latest changes: \`git pull origin main\`
-2. Run the failing checks locally:
-   - Lint: \`pnpm lint\`
-   - Type Check: \`pnpm check\`
-   - Tests: \`pnpm test\`
-3. Fix the errors shown above
-4. Commit and push your fixes
-
-**Check via GitHub CLI:**
-\`\`\`bash
-# View this comment
-gh pr view ${{ github.event.pull_request.number }} --comments
-
-# View workflow status
-gh run view ${{ github.run_id }}
-\`\`\``;
+              body += '---\n\n**Action Required:**\n';
+              body += '1. Pull the latest changes: `git pull origin main`\n';
+              body += '2. Run the failing checks locally:\n';
+              body += '   - Lint: `pnpm lint`\n';
+              body += '   - Type Check: `pnpm check`\n';
+              body += '   - Tests: `pnpm test`\n';
+              body += '3. Fix the errors shown above\n';
+              body += '4. Commit and push your fixes\n\n';
+              body += '**Check via GitHub CLI:**\n';
+              body += '```bash\n';
+              body += '# View this comment\n';
+              body += 'gh pr view ${{ github.event.pull_request.number }} --comments\n\n';
+              body += '# View workflow status\n';
+              body += 'gh run view ${{ github.run_id }}\n';
+              body += '```';
             } else {
-              body += `---\n\nYour PR is ready for review! 🎉`;
+              body += '---\n\nYour PR is ready for review! 🎉';
             }
             
             await github.rest.issues.createComment({
