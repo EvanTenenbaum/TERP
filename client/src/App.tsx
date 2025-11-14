@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardV3 from "./pages/DashboardV3";
@@ -115,6 +115,14 @@ function Router() {
                 path="/clients/:clientId/vip-portal-config"
                 component={VIPPortalConfigPage}
               />
+              {/* Todo Lists - support both /todo and /todos */}
+              <Route path="/todo">
+                {() => {
+                  const [, setLocation] = useLocation();
+                  setLocation("/todos");
+                  return null;
+                }}
+              </Route>
               <Route path="/todos" component={TodoListsPage} />
               <Route path="/todos/:listId" component={TodoListDetailPage} />
               <Route path="/inbox" component={InboxPage} />
