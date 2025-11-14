@@ -22,6 +22,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Load user's default view
   const { data: defaultView } = trpc.calendarViews.getDefaultView.useQuery();
@@ -76,6 +77,13 @@ export default function CalendarPage() {
 
   const handleCreateEvent = () => {
     setSelectedEventId(null);
+    setSelectedDate(null);
+    setIsEventDialogOpen(true);
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedEventId(null);
+    setSelectedDate(date);
     setIsEventDialogOpen(true);
   };
 
@@ -193,6 +201,7 @@ export default function CalendarPage() {
             currentDate={currentDate}
             events={events || []}
             onEventClick={handleEventClick}
+            onDateClick={handleDateClick}
           />
         )}
         {currentView === "WEEK" && (
@@ -223,6 +232,7 @@ export default function CalendarPage() {
         isOpen={isEventDialogOpen}
         onClose={() => setIsEventDialogOpen(false)}
         eventId={selectedEventId}
+        initialDate={selectedDate}
         onSaved={handleEventSaved}
       />
     </div>

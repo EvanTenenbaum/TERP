@@ -16,9 +16,10 @@ interface MonthViewProps {
   currentDate: Date;
   events: Event[];
   onEventClick: (eventId: number) => void;
+  onDateClick?: (date: Date) => void;
 }
 
-export default function MonthView({ currentDate, events, onEventClick }: MonthViewProps) {
+export default function MonthView({ currentDate, events, onEventClick, onDateClick }: MonthViewProps) {
   // Generate calendar grid
   const calendarDays = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -104,7 +105,8 @@ export default function MonthView({ currentDate, events, onEventClick }: MonthVi
         {calendarDays.map((day, index) => (
           <div
             key={index}
-            className={`min-h-[120px] border-b border-r border-gray-200 p-2 last:border-r-0 ${
+            onClick={() => onDateClick?.(day.date)}
+            className={`min-h-[120px] border-b border-r border-gray-200 p-2 last:border-r-0 cursor-pointer hover:bg-gray-100 ${
               !day.isCurrentMonth ? "bg-gray-50" : ""
             } ${day.isToday ? "bg-blue-50" : ""}`}
           >
@@ -126,7 +128,10 @@ export default function MonthView({ currentDate, events, onEventClick }: MonthVi
               {day.events.slice(0, 3).map((event) => (
                 <button
                   key={event.id}
-                  onClick={() => onEventClick(event.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEventClick(event.id);
+                  }}
                   className={`w-full truncate rounded px-2 py-1 text-left text-xs font-medium ${getEventColorClass(
                     event
                   )} hover:opacity-80`}
