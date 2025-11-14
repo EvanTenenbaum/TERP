@@ -1407,8 +1407,10 @@ When creating a shared list, there is no option to select which users to share t
 
 ### QA-040: Mark List Name Field as Required
 
-**Priority:** P3 | **Status:** Not Started | **Effort:** 1-2h
+**Priority:** P3 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 1-2h (Actual: 30min)
 The "List Name" field in the "Create New List" modal is required but not visually indicated as such.
+
+**Resolution:** Upon investigation, the List Name field was already properly implemented as required with multi-layer validation: HTML5 `required` attribute, client-side JavaScript validation, disabled submit button, and server-side Zod validation. Enhanced server-side validation by making the name field required in the update mutation (previously optional) to ensure consistency across all CRUD operations. Full completion report at `docs/QA-040-COMPLETION-REPORT.md`.
 
 ---
 

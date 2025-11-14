@@ -56,7 +56,7 @@ export const todoListsRouter = router({
     .input(
       z.object({
         listId: z.number(),
-        name: z.string().min(1).max(255).optional(),
+        name: z.string().min(1).max(255),
         description: z.string().optional(),
         isShared: z.boolean().optional(),
       })
