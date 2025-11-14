@@ -1,147 +1,160 @@
-# {{TASK_ID}}: {{TITLE}}
+# [TASK_ID]: [TASK_TITLE]
 
-> **Auto-generated from:** MASTER_ROADMAP.md  
-> **Version:** {{VERSION}}  
-> **Last updated:** {{TIMESTAMP}}  
-> **Status:** Ready
+<!-- METADATA (for validation) -->
+<!-- TASK_ID: [TASK_ID] -->
+<!-- TASK_TITLE: [TASK_TITLE] -->
+<!-- PROMPT_VERSION: 1.0 -->
+<!-- LAST_VALIDATED: YYYY-MM-DD -->
 
-## Quick Start
+**Repository:** https://github.com/EvanTenenbaum/TERP  
+**Task ID:** [TASK_ID]  
+**Estimated Time:** [ESTIMATE]  
+**Module:** [MODULE]
+
+⚠️ **SECURITY WARNING**
+- NEVER include real secrets in this prompt
+- Use placeholders like: `YOUR_API_KEY_HERE`
+- Secrets belong in `.env` file only
+
+---
+
+## 📋 Table of Contents
+
+1. [Context](#context)
+2. [Phase 1: Pre-Flight Check](#phase-1-pre-flight-check)
+3. [Phase 2: Session Startup](#phase-2-session-startup)
+4. [Phase 3: Development](#phase-3-development)
+5. [Phase 4: Completion](#phase-4-completion)
+6. [Quick Reference](#quick-reference)
+7. [Troubleshooting](#troubleshooting)
+
+---
+
+## 🎯 Context
+
+**Background:**
+[Provide a brief background of the task.]
+
+**Goal:**
+[State the primary goal of the task.]
+
+**Success Criteria:**
+- [Success criterion 1]
+- [Success criterion 2]
+- [Success criterion 3]
+
+---
+
+## Phase 1: Pre-Flight Check
+
+**Objective:** Verify environment and check for conflicts BEFORE starting work.
+
+### Step 1.1: Register Your Session
+
+1. Create session file: `docs/sessions/active/Session-[DATE]-[NUMBER].md`
+2. Use template: `docs/templates/SESSION_TEMPLATE.md`
+3. Fill in your session details.
+
+### Step 1.2: Register Session (Atomic) ⚠️ CRITICAL
+
+**This step prevents race conditions. Follow it exactly.**
+
+1.  `git pull origin main` (to get the latest `ACTIVE_SESSIONS.md`)
+2.  Read `docs/ACTIVE_SESSIONS.md` and check for module conflicts.
+3.  If clear, add your session to the file.
+4.  Commit and push **immediately**:
+    ```bash
+    git add docs/ACTIVE_SESSIONS.md
+    git commit -m "Register session for [TASK_ID]"
+    git push origin main
+    ```
+5.  **If the push fails due to a conflict, another agent registered first.** STOP, pull again, and re-evaluate. Do not proceed until your session is successfully pushed to `main`.
+
+### Step 1.3: Verify Environment
+
+Run these commands:
+```bash
+node --version
+pnpm --version
+git status
+```
+
+### Step 1.4: Verify Permissions
+
+Test your push access before starting work:
+`git push --dry-run origin main`
+If this command fails, you do not have the required permissions. STOP and ask the user for write access to the repository.
+
+---
+
+## Phase 2: Session Startup
+
+**Objective:** Set up your workspace and update the roadmap.
+
+### Step 2.1: Create Feature Branch
 
 ```bash
-git clone https://github.com/EvanTenenbaum/TERP.git
-cd TERP
-pnpm install
+git checkout main
+git pull origin main
+git checkout -b [TASK_ID]-feature-branch
 ```
 
-## Task Context
+### Step 2.2: Update Roadmap Status
 
-- **Task ID:** {{TASK_ID}}
-- **Estimate:** {{ESTIMATE}}
-- **Module:** `{{MODULE}}`
-- **Dependencies:** {{DEPENDENCIES}}
-- **Priority:** {{PRIORITY}}
+**File:** `docs/roadmaps/MASTER_ROADMAP.md`
 
-## Objectives
+Change the status of your task to `in-progress`.
 
-{{OBJECTIVES}}
+### Step 2.3: Update Session File Progress
 
-## Parallel Coordination
-
-{{COORDINATION}}
-
-## Implementation Guide
-
-### Phase 1: Setup (X min)
-
-**Goal:** Prepare development environment and understand requirements
-
-```bash
-# Review existing code
-ls -lh {{MODULE}}
-
-# Check dependencies
-pnpm list | grep [relevant-packages]
-```
-
-**Steps:**
-
-1. Read task objectives and deliverables carefully
-2. Review related files in `{{MODULE}}`
-3. Check ACTIVE_SESSIONS.md for coordination needs
-4. Create feature branch: `git checkout -b claude/{{TASK_ID}}-Session-[ID]`
+Update your session file with your progress.
 
 ---
 
-### Phase 2: Implementation (X hours)
+## Phase 3: Development
 
-**Goal:** Complete core functionality
+**Objective:** Complete the task following TDD.
 
-[FILL IN: Step-by-step implementation instructions with code examples]
-
-**Example:**
-
-```typescript
-// Example code structure
-export function newFeature() {
-  // Implementation
-}
-```
+[Provide specific, step-by-step instructions for the development phase.]
 
 ---
 
-### Phase 3: Testing (X min)
+## Phase 4: Completion
 
-**Goal:** Ensure all tests pass and no regressions
+**Objective:** Finalize your work and submit it for review.
 
-```bash
-# Run tests
-pnpm test {{MODULE}}
+### Step 4.1: Verify All Deliverables
 
-# Run full test suite
-pnpm test --run
+Ensure all deliverables listed in the roadmap have been completed.
 
-# Check TypeScript
-pnpm check
-```
+### Step 4.2: Create Completion Report
 
-**Test Requirements:**
+Use the template at `docs/templates/COMPLETION_REPORT_TEMPLATE.md`.
 
-- Minimum 10 tests for new functionality
-- 100% coverage of new code
-- All existing tests still passing
-- Zero TypeScript errors
+### Step 4.3: Update Roadmap to `review`
 
----
+Change the status of your task to `review` in `docs/roadmaps/MASTER_ROADMAP.md`.
 
-### Phase 4: Documentation (X min)
+### Step 4.4: Update ACTIVE_SESSIONS.md
 
-**Goal:** Document changes and complete deliverables
+Mark your session as complete.
 
-**Required Documentation:**
+### Step 4.5: Create Pull Request
 
-- Update relevant .md files
-- Add inline code comments
-- Update MASTER_ROADMAP.md status
-- Create completion report (if needed)
+Create a pull request from your feature branch to `main`.
+
+### Step 4.6: Notify User
+
+Inform the user that the task is complete and the PR is ready for review.
 
 ---
 
-## Deliverables Checklist
+## ⚡ Quick Reference
 
-{{DELIVERABLES}}
-
-- [ ] All tests passing (no regressions)
-- [ ] Zero TypeScript errors
-- [ ] Zero ESLint warnings
-- [ ] Documentation updated
-- [ ] Session file archived
-- [ ] MASTER_ROADMAP.md updated to "✅ Complete"
-
-## Completion
-
-When complete:
-
-1. **Update roadmap status:**
-
-   ```bash
-   # Edit docs/roadmaps/MASTER_ROADMAP.md
-   # Change: **Status:** 📋 Ready
-   # To:     **Status:** ✅ Complete
-   ```
-
-2. **Archive session file:**
-
-   ```bash
-   mv docs/sessions/active/Session-*.md docs/sessions/completed/
-   ```
-
-3. **Push to GitHub:**
-   ```bash
-   git add -A
-   git commit -m "feat: Complete {{TASK_ID}}"
-   git push origin main
-   ```
+[Add any relevant commands or file paths here.]
 
 ---
 
-**Need help?** Check `.claude/AGENT_ONBOARDING.md` for protocols.
+## 🆘 Troubleshooting
+
+[Add any potential issues and their solutions here.]
