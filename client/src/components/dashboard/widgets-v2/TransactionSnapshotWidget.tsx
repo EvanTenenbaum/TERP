@@ -1,5 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
@@ -10,13 +17,15 @@ export function TransactionSnapshotWidget() {
   );
 
   const formatCurrency = (value: number) => {
-    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return `$${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Transaction Snapshot</CardTitle>
+        <CardTitle className="text-lg font-semibold">
+          Transaction Snapshot
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -37,28 +46,47 @@ export function TransactionSnapshotWidget() {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">Sales</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.today.sales)}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.thisWeek.sales)}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.today.sales)}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.thisWeek.sales)}
+                </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Cash Collected</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.today.cashCollected)}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.thisWeek.cashCollected)}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.today.cashCollected)}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.thisWeek.cashCollected)}
+                </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="font-medium">Units Sold</TableCell>
-                <TableCell className="text-right font-mono">{data.today.unitsSold}</TableCell>
-                <TableCell className="text-right font-mono">{data.thisWeek.unitsSold}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {data.today.unitsSold}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {data.thisWeek.unitsSold}
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No transaction data available
+          <div className="text-center py-8 space-y-2">
+            <p className="text-muted-foreground">
+              No transaction data available
+            </p>
+            <p className="text-xs text-muted-foreground">
+              To see data here, seed the database with:{" "}
+              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
+                pnpm seed
+              </code>
+            </p>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
-

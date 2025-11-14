@@ -3,7 +3,8 @@ import { trpc } from "@/lib/trpc";
 import { TrendingUp, DollarSign, Percent, Package } from "lucide-react";
 
 export function ProfitabilityWidget() {
-  const { data: summary, isLoading } = trpc.inventory.profitability.summary.useQuery();
+  const { data: summary, isLoading } =
+    trpc.inventory.profitability.summary.useQuery();
   const { data: topBatches } = trpc.inventory.profitability.top.useQuery(5);
 
   if (isLoading) {
@@ -19,15 +20,25 @@ export function ProfitabilityWidget() {
     return (
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Profitability Analysis</h3>
-        <div className="text-sm text-muted-foreground">No data available</div>
+        <div className="text-center py-8 space-y-2">
+          <p className="text-muted-foreground">
+            No profitability data available
+          </p>
+          <p className="text-xs text-muted-foreground">
+            To see data here, seed the database with:{" "}
+            <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
+              pnpm seed
+            </code>
+          </p>
+        </div>
       </Card>
     );
   }
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
@@ -117,4 +128,3 @@ export function ProfitabilityWidget() {
     </Card>
   );
 }
-

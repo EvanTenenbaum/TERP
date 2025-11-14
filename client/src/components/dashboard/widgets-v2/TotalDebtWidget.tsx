@@ -4,13 +4,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
 export function TotalDebtWidget() {
-  const { data, isLoading } = trpc.dashboard.getTotalDebt.useQuery(
-    undefined,
-    { refetchInterval: 60000 }
-  );
+  const { data, isLoading } = trpc.dashboard.getTotalDebt.useQuery(undefined, {
+    refetchInterval: 60000,
+  });
 
   const formatCurrency = (value: number) => {
-    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   return (
@@ -28,13 +27,17 @@ export function TotalDebtWidget() {
           <Table>
             <TableBody>
               <TableRow>
-                <TableCell className="font-medium">Total Debt Owed to Me</TableCell>
+                <TableCell className="font-medium">
+                  Total Debt Owed to Me
+                </TableCell>
                 <TableCell className="text-right font-mono text-green-600">
                   {formatCurrency(data.totalDebtOwedToMe)}
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Total Debt I Owe Vendors</TableCell>
+                <TableCell className="font-medium">
+                  Total Debt I Owe Vendors
+                </TableCell>
                 <TableCell className="text-right font-mono text-red-600">
                   {formatCurrency(data.totalDebtIOwevVendors)}
                 </TableCell>
@@ -42,12 +45,17 @@ export function TotalDebtWidget() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No debt data available
+          <div className="text-center py-8 space-y-2">
+            <p className="text-muted-foreground">No debt data available</p>
+            <p className="text-xs text-muted-foreground">
+              To see data here, seed the database with:{" "}
+              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
+                pnpm seed
+              </code>
+            </p>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
-

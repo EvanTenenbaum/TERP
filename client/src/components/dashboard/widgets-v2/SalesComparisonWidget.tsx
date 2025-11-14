@@ -1,5 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
@@ -10,7 +17,7 @@ export function SalesComparisonWidget() {
   );
 
   const formatCurrency = (value: number) => {
-    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return `$${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   const calculateVariance = (current: number, prior: number) => {
@@ -23,7 +30,9 @@ export function SalesComparisonWidget() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Sales - Time Period Comparison</CardTitle>
+        <CardTitle className="text-lg font-semibold">
+          Sales - Time Period Comparison
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -46,71 +55,109 @@ export function SalesComparisonWidget() {
               {/* Weekly */}
               <TableRow>
                 <TableCell className="font-medium">Weekly</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.weekly.last7Days)}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.weekly.prior7Days)}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.weekly.last7Days)}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.weekly.prior7Days)}
+                </TableCell>
                 <TableCell className="text-right font-mono">
                   {(() => {
-                    const variance = calculateVariance(data.weekly.last7Days, data.weekly.prior7Days);
-                    const color = variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                    const variance = calculateVariance(
+                      data.weekly.last7Days,
+                      data.weekly.prior7Days
+                    );
+                    const color =
+                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
                     return (
                       <span className={color}>
-                        {variance.amount >= 0 ? "+" : ""}{variance.percent.toFixed(0)}%
+                        {variance.amount >= 0 ? "+" : ""}
+                        {variance.percent.toFixed(0)}%
                       </span>
                     );
                   })()}
                 </TableCell>
               </TableRow>
-              
+
               {/* Monthly */}
               <TableRow>
                 <TableCell className="font-medium">Monthly</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.monthly.last30Days)}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.monthly.prior30Days)}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.monthly.last30Days)}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.monthly.prior30Days)}
+                </TableCell>
                 <TableCell className="text-right font-mono">
                   {(() => {
-                    const variance = calculateVariance(data.monthly.last30Days, data.monthly.prior30Days);
-                    const color = variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                    const variance = calculateVariance(
+                      data.monthly.last30Days,
+                      data.monthly.prior30Days
+                    );
+                    const color =
+                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
                     return (
                       <span className={color}>
-                        {variance.amount >= 0 ? "+" : ""}{variance.percent.toFixed(0)}%
+                        {variance.amount >= 0 ? "+" : ""}
+                        {variance.percent.toFixed(0)}%
                       </span>
                     );
                   })()}
                 </TableCell>
               </TableRow>
-              
+
               {/* 6 Month */}
               <TableRow>
                 <TableCell className="font-medium">6 Month</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.sixMonth.last6Months)}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.sixMonth.prior6Months)}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.sixMonth.last6Months)}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.sixMonth.prior6Months)}
+                </TableCell>
                 <TableCell className="text-right font-mono">
                   {(() => {
-                    const variance = calculateVariance(data.sixMonth.last6Months, data.sixMonth.prior6Months);
-                    const color = variance.amount >= 0 ? "text-green-600" : "text-red-600";
-                    const bgColor = variance.amount < 0 ? "bg-red-50 dark:bg-red-950/20" : "";
+                    const variance = calculateVariance(
+                      data.sixMonth.last6Months,
+                      data.sixMonth.prior6Months
+                    );
+                    const color =
+                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                    const bgColor =
+                      variance.amount < 0 ? "bg-red-50 dark:bg-red-950/20" : "";
                     return (
                       <span className={`${color} ${bgColor} px-2 py-1 rounded`}>
-                        {variance.amount >= 0 ? "+" : ""}{variance.percent.toFixed(0)}%
+                        {variance.amount >= 0 ? "+" : ""}
+                        {variance.percent.toFixed(0)}%
                       </span>
                     );
                   })()}
                 </TableCell>
               </TableRow>
-              
+
               {/* Yearly */}
               <TableRow>
                 <TableCell className="font-medium">Yearly</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.yearly.last365)}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(data.yearly.prior365)}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.yearly.last365)}
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(data.yearly.prior365)}
+                </TableCell>
                 <TableCell className="text-right font-mono">
                   {(() => {
-                    const variance = calculateVariance(data.yearly.last365, data.yearly.prior365);
-                    const color = variance.amount >= 0 ? "text-green-600" : "text-red-600";
-                    const bgColor = variance.amount < 0 ? "bg-red-50 dark:bg-red-950/20" : "";
+                    const variance = calculateVariance(
+                      data.yearly.last365,
+                      data.yearly.prior365
+                    );
+                    const color =
+                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                    const bgColor =
+                      variance.amount < 0 ? "bg-red-50 dark:bg-red-950/20" : "";
                     return (
                       <span className={`${color} ${bgColor} px-2 py-1 rounded`}>
-                        {variance.amount >= 0 ? "+" : ""}{variance.percent.toFixed(0)}%
+                        {variance.amount >= 0 ? "+" : ""}
+                        {variance.percent.toFixed(0)}%
                       </span>
                     );
                   })()}
@@ -119,12 +166,19 @@ export function SalesComparisonWidget() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No sales comparison data available
+          <div className="text-center py-8 space-y-2">
+            <p className="text-muted-foreground">
+              No sales comparison data available
+            </p>
+            <p className="text-xs text-muted-foreground">
+              To see data here, seed the database with:{" "}
+              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
+                pnpm seed
+              </code>
+            </p>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
-
