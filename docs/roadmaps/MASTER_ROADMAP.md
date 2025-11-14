@@ -1379,8 +1379,17 @@ The current "Inbox" and "To-Do List" features should be consolidated into a sing
 
 ### QA-042: Redesign Event Creation Form
 
-**Priority:** P1 | **Status:** Not Started | **Effort:** 16-24h
-The "Create Event" form needs a major overhaul. This includes: renaming "Module" to "Meeting Type," consolidating "Task" and "Deadline" into a single "Task" type, reviewing and clarifying the purpose of other event types, removing the "Status" and "Priority" dropdowns, and simplifying the "Visibility" options to "Private" and "Company."
+**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 16-24h
+
+The "Create Event" form has been redesigned with the following changes:
+
+- Renamed "Module" label to "Meeting Type" in the form
+- Consolidated "Task" and "Deadline" event types into a single "Task" type
+- Removed "Status" and "Priority" dropdowns from the form (now managed by backend with defaults)
+- Simplified "Visibility" options to only "Private" and "Company"
+- Updated validation and filters throughout the application
+- Added comprehensive test coverage (7 tests)
+- Maintains backward compatibility with existing events
 
 ---
 
