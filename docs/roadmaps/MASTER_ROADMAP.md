@@ -971,7 +971,7 @@ These should **NOT** be built:
 
 ### QA-001: Fix 404 Error - Todo Lists Module
 
-**Priority:** P0 | **Status:** Not Started | **Effort:** 4-8h
+**Priority:** P0 | **Status:** In Progress | **Effort:** 4-8h
 
 Module `/todo` returns 404. Users cannot access task management functionality.
 
