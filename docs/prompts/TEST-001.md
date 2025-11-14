@@ -168,7 +168,7 @@ Update your session file:
 - Add completion timestamp
 - Move to `docs/sessions/completed/`
 
-### 4.4 Create Pull Request
+### 4.4 Push to Main
 
 ```bash
 git add docs/completion-reports/ docs/roadmaps/ docs/sessions/
