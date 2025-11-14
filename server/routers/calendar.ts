@@ -247,7 +247,6 @@ export const calendarRouter = router({
         ]),
         eventType: z.enum([
           "MEETING",
-          "DEADLINE",
           "TASK",
           "DELIVERY",
           "PAYMENT_DUE",
