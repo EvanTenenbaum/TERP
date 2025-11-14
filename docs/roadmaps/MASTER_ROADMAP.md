@@ -992,9 +992,9 @@ See docs/sessions/completed/Session-20251114-QA-002-07bc42d1.md for details.
 
 ### QA-003: Fix 404 Error - COGS Settings Module
 
-**Priority:** P0 | **Status:** Not Started | **Effort:** 4-8h
+**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-8h
 
-Module `/cogs-settings` returns 404. Cannot configure cost calculations.
+**Resolution:** Fixed routing mismatch between sidebar menu and App.tsx. See docs/QA-003-COMPLETION-REPORT.md for details.
 
 ---
 
