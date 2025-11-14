@@ -100,23 +100,64 @@ export default function Inventory() {
     }
     
     try {
+      // Map the nested data structure to flat objects for CSV export
+      const exportData = filteredBatches.map(item => {
+        const batch = item.batch;
+        const product = item.product;
+        const brand = item.brand;
+        const vendor = item.vendor;
+        
+        const onHand = batch ? parseFloat(batch.onHandQty) : 0;
+        const reserved = batch ? parseFloat(batch.reservedQty) : 0;
+        const quarantine = batch ? parseFloat(batch.quarantineQty) : 0;
+        const hold = batch ? parseFloat(batch.holdQty) : 0;
+        const available = onHand - reserved - quarantine - hold;
+        
+        return {
+          id: batch?.id || '',
+          sku: batch?.sku || '',
+          productName: product?.nameCanonical || '',
+          category: product?.category || '',
+          subcategory: product?.subcategory || '',
+          vendor: vendor?.name || '',
+          brand: brand?.name || '',
+          grade: batch?.grade || '',
+          status: batch?.status || '',
+          onHand: onHand.toFixed(2),
+          reserved: reserved.toFixed(2),
+          quarantine: quarantine.toFixed(2),
+          hold: hold.toFixed(2),
+          available: available.toFixed(2),
+          unitCogs: batch?.unitCogs || '',
+          totalValue: batch?.unitCogs ? (parseFloat(batch.unitCogs) * onHand).toFixed(2) : '',
+          purchaseDate: batch?.purchaseDate || '',
+          expirationDate: batch?.expirationDate || '',
+          location: batch?.location || '',
+        };
+      });
+      
       exportToCSVWithLabels(
-        filteredBatches,
+        exportData,
         [
           { key: 'id', label: 'Batch ID' },
+          { key: 'sku', label: 'SKU' },
           { key: 'productName', label: 'Product Name' },
           { key: 'category', label: 'Category' },
+          { key: 'subcategory', label: 'Subcategory' },
           { key: 'vendor', label: 'Vendor' },
           { key: 'brand', label: 'Brand' },
+          { key: 'grade', label: 'Grade' },
           { key: 'status', label: 'Status' },
-          { key: 'quantityAvailable', label: 'Available' },
-          { key: 'quantityReserved', label: 'Reserved' },
-          { key: 'quantityInTransit', label: 'In Transit' },
-          { key: 'quantityOnHold', label: 'On Hold' },
-          { key: 'quantityDamaged', label: 'Damaged' },
-          { key: 'unitCost', label: 'Unit Cost' },
+          { key: 'onHand', label: 'On Hand' },
+          { key: 'reserved', label: 'Reserved' },
+          { key: 'quarantine', label: 'Quarantine' },
+          { key: 'hold', label: 'On Hold' },
+          { key: 'available', label: 'Available' },
+          { key: 'unitCogs', label: 'Unit Cost' },
           { key: 'totalValue', label: 'Total Value' },
           { key: 'purchaseDate', label: 'Purchase Date' },
+          { key: 'expirationDate', label: 'Expiration Date' },
+          { key: 'location', label: 'Location' },
         ],
         'inventory'
       );
