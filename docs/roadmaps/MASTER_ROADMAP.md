@@ -981,9 +981,12 @@ Module `/todo` returns 404. Users cannot access task management functionality.
 
 ### QA-002: Fix 404 Error - Accounting Module
 
-**Priority:** P0 | **Status:** Not Started | **Effort:** 8-16h
+**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
 
 Module `/accounting` returns 404. Critical business function unavailable.
+
+**Resolution:** Added route for `/accounting` that displays AccountingDashboard component. Also fixed React hooks error in `/todo` redirect.
+See docs/sessions/completed/Session-20251114-QA-002-07bc42d1.md for details.
 
 ---
 
