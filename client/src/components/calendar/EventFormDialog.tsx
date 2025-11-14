@@ -6,6 +6,7 @@ interface EventFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
   eventId: number | null;
+  initialDate?: Date | null;
   onSaved: () => void;
 }
 
@@ -13,6 +14,7 @@ export default function EventFormDialog({
   isOpen,
   onClose,
   eventId,
+  initialDate,
   onSaved,
 }: EventFormDialogProps) {
   // Form state
@@ -81,12 +83,13 @@ export default function EventFormDialog({
       }
     } else {
       // Reset form for new event
-      const today = new Date().toISOString().split("T")[0];
+      const dateToUse = initialDate || new Date();
+      const dateStr = dateToUse.toISOString().split("T")[0];
       setTitle("");
       setDescription("");
       setLocation("");
-      setStartDate(today);
-      setEndDate(today);
+      setStartDate(dateStr);
+      setEndDate(dateStr);
       setStartTime("09:00");
       setEndTime("10:00");
       setIsAllDay(false);
@@ -101,7 +104,7 @@ export default function EventFormDialog({
       setAttendees([]);
       setRecurrenceEndDate("");
     }
-  }, [eventData]);
+  }, [eventData, initialDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
