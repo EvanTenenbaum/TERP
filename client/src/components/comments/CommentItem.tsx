@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { MentionRenderer } from "./MentionRenderer";
 
 interface CommentItemProps {
   comment: {
@@ -183,7 +184,7 @@ export function CommentItem({
           </div>
         </div>
       ) : (
-        <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+        <MentionRenderer content={comment.content} />
       )}
     </div>
   );
