@@ -1295,8 +1295,10 @@ The application lacks in-app back buttons, forcing reliance on the browser's bac
 
 ### QA-031: Fix Settings Icon Responsiveness
 
-**Priority:** P0 | **Status:** Not Started | **Effort:** 1-2h
+**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 1-2h
 The "Settings" icon in the main navigation is unresponsive and does not trigger any action.
+
+**Resolution:** Added onClick handler to Settings button in AppHeader.tsx to navigate to /settings route. Also added title attribute for accessibility. The settings route already existed in App.tsx, so only the button handler was needed.
 
 ---
 
