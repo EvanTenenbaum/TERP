@@ -33,7 +33,6 @@ import {
   TrendingUp,
   DollarSign,
   BarChart3,
-  Settings,
   HelpCircle,
   CalendarDays,
   ClipboardList,
@@ -63,7 +62,7 @@ const menuItems = [
   { icon: BarChart3, label: "Pricing Rules", path: "/pricing-rules" },
   { icon: BarChart3, label: "Pricing Profiles", path: "/pricing-profiles" },
   { icon: DollarSign, label: "Credit Settings", path: "/credit-settings" },
-  { icon: DollarSign, label: "COGS Settings", path: "/cogs-settings" },
+  { icon: DollarSign, label: "COGS Settings", path: "/settings/cogs" },
   { icon: BarChart3, label: "Analytics", path: "/analytics" },
   { icon: Settings, label: "Settings", path: "/settings" },
   { icon: HelpCircle, label: "Help", path: "/help" },
@@ -114,10 +113,13 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   // Fetch current user from auth API
-  const [user, setUser] = React.useState<{ name: string; email: string } | null>(null);
-  
+  const [user, setUser] = React.useState<{
+    name: string;
+    email: string;
+  } | null>(null);
+
   React.useEffect(() => {
-    fetch('/api/auth/me')
+    fetch("/api/auth/me")
       .then(res => res.json())
       .then(data => {
         if (data.user) {
@@ -129,13 +131,13 @@ function DashboardLayoutContent({
         setUser({ name: "Guest", email: "guest@example.com" });
       });
   }, []);
-  
+
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/';
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/";
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
   const [location, setLocation] = useLocation();
@@ -249,7 +251,7 @@ function DashboardLayoutContent({
           <SidebarFooter className="p-3">
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <button 
+                <button
                   type="button"
                   className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring touch-manipulation"
                   aria-label="User menu"
