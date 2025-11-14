@@ -35,6 +35,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Plus, Calendar as CalendarIcon, Lock, Unlock, XCircle } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -197,6 +198,7 @@ export default function FiscalPeriods() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      <BackButton label="Back to Accounting" to="/accounting" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Calendar, List, Grid3x3, Clock } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import MonthView from "../components/calendar/MonthView";
 import WeekView from "../components/calendar/WeekView";
 import DayView from "../components/calendar/DayView";
@@ -91,6 +92,7 @@ export default function CalendarPage() {
       <div className="border-b bg-white px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <BackButton label="Back to Dashboard" to="/" />
             <h1 className="text-2xl font-semibold text-gray-900">Calendar</h1>
             
             {/* Date Navigation */}

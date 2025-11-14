@@ -30,6 +30,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, Plus, Edit, DollarSign, ChevronRight, ChevronDown } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { toast } from "sonner";
 import type { AccountType } from "@/components/accounting";
 
@@ -166,6 +167,7 @@ export default function ChartOfAccounts() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      <BackButton label="Back to Accounting" to="/accounting" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

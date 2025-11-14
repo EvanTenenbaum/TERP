@@ -47,8 +47,8 @@ import { AddCommunicationModal } from "@/components/clients/AddCommunicationModa
 import { PurchasePatternsWidget } from "@/components/clients/PurchasePatternsWidget";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
+import { BackButton } from "@/components/common/BackButton";
 import {
-  ArrowLeft,
   Edit,
   DollarSign,
   TrendingUp,
@@ -248,12 +248,7 @@ export default function ClientProfilePage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb and Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Clients
-        </Button>
-      </div>
+      <BackButton label="Back to Clients" to="/clients" />
 
       {/* Client Header */}
       <Card>

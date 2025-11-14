@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { MatchBadge } from "@/components/needs/MatchBadge";
 import { Search, Plus, Loader2, Package, Users, Target } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 import { getProductDisplayName } from "@/lib/displayHelpers";
 
@@ -134,6 +135,7 @@ export default function MatchmakingServicePage() {
 
   return (
     <div className="space-y-6 p-6">
+      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
       {/* Header */}
       <div className="flex flex-col space-y-4">
         <div className="flex items-center justify-between">

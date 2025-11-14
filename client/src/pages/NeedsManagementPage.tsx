@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { MatchBadge } from "@/components/needs/MatchBadge";
 import { Search, Filter, Plus, Loader2, Package, TrendingUp, Users } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 
 /**
@@ -76,6 +77,7 @@ export default function NeedsManagementPage() {
 
   return (
     <div className="space-y-6 p-6">
+      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

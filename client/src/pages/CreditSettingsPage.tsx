@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Check, Info, RotateCcw, Save } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 
 
 export default function CreditSettingsPage() {
@@ -102,6 +103,7 @@ export default function CreditSettingsPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto p-4 sm:p-6 space-y-6">
+      <BackButton label="Back to Dashboard" to="/" className="mb-4" />
         <div className="text-center">Loading credit settings...</div>
       </div>
     );

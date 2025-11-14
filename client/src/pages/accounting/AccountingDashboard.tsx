@@ -19,6 +19,7 @@ import {
   Plus,
   ArrowRight
 } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { StatusBadge, AgingBadge } from "@/components/accounting";
 import { DataCardSection } from "@/components/data-cards";
@@ -71,6 +72,7 @@ export default function AccountingDashboard() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      <BackButton label="Back to Accounting" to="/accounting" />
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Accounting Dashboard</h1>

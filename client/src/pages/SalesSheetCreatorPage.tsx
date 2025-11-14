@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { FileText } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { SalesSheetPreview } from "@/components/sales/SalesSheetPreview";
 
@@ -57,6 +58,7 @@ export default function SalesSheetCreatorPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
+      <BackButton label="Back to Orders" to="/orders" className="mb-4" />
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">

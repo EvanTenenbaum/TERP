@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { ChevronDown, ChevronRight, Eye, ArrowLeft } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye } from "lucide-react";
+import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -254,13 +255,7 @@ export default function VIPPortalConfigPage() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => window.history.back()}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <BackButton size="icon" />
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">
               VIP Portal Configuration
