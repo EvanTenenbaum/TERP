@@ -1,0 +1,155 @@
+diff --git a/.github/workflows/merge.yml b/.github/workflows/merge.yml
+index 6742099..9aada1e 100644
+--- a/.github/workflows/merge.yml
++++ b/.github/workflows/merge.yml
+@@ -194,36 +194,28 @@ jobs:
+             body += '---\n\n';
+             
+             if (!allPassed) {
+-              body += `## 🚨 Action Required
+-
+-The main branch build has failed. **All agents must stop work immediately** and check this status.
+-
+-**How to check this via GitHub CLI:**
+-\`\`\`bash
+-# View this commit's status
+-gh api repos/EvanTenenbaum/TERP/commits/${context.sha}/comments
+-
+-# View the workflow run
+-gh run view ${{ github.run_id }}
+-
+-# View recent workflow runs
+-gh run list --limit 5
+-\`\`\`
+-
+-**What to do:**
+-1. Read the error details in the dropdowns above
+-2. Pull the latest changes: \`git pull origin main\`
+-3. Run the failing tests locally
+-4. Fix the issues
+-5. Create a PR with the fix
+-
+-**Do not push more changes to main until this is fixed.**`;
++              body += `## 🚨 Action Required\n\n` +
++                `The main branch build has failed. **All agents must stop work immediately** and check this status.\n\n` +
++                `**How to check this via GitHub CLI:**\n` +
++                `\`\`\`bash\n` +
++                `# View this commit's status\n` +
++                `gh api repos/EvanTenenbaum/TERP/commits/${context.sha}/comments\n\n` +
++                `# View the workflow run\n` +
++                `gh run view ${{ github.run_id }}\n\n` +
++                `# View recent workflow runs\n` +
++                `gh run list --limit 5\n` +
++                `\`\`\`\n\n` +
++                `**What to do:**\n` +
++                `1. Read the error details in the dropdowns above\n` +
++                `2. Pull the latest changes: \`git pull origin main\`\n` +
++                `3. Run the failing tests locally\n` +
++                `4. Fix the issues\n` +
++                `5. Create a PR with the fix\n\n` +
++                `**Do not push more changes to main until this is fixed.**`;
+             } else {
+-              body += `## 🎉 Build Successful
+-
+-All tests passed! The main branch is healthy.
+-
+-📸 [View visual changes in Argos](https://app.argos-ci.com/EvanTenenbaum/TERP)`;
++              body += `## 🎉 Build Successful\n\n` +
++                `All tests passed! The main branch is healthy.\n\n` +
++                `📸 [View visual changes in Argos](https://app.argos-ci.com/EvanTenenbaum/TERP)`;
+             }
+             
+             try {
+diff --git a/.github/workflows/pr-auto-fix.yml b/.github/workflows/pr-auto-fix.yml
+index 934d0b8..c6f31ed 100644
+--- a/.github/workflows/pr-auto-fix.yml
++++ b/.github/workflows/pr-auto-fix.yml
+@@ -177,13 +177,13 @@ jobs:
+             echo "committed=false" >> $GITHUB_OUTPUT
+           else
+             git add -A
+-            git commit -m "chore: auto-fix formatting and conflicts
+-
+-Auto-fixes applied by GitHub Actions:
+-- Merge conflicts resolved: ${{ steps.resolve_conflicts.outputs.resolved }}
+-- Code formatted: ${{ steps.format.outputs.changed }}
+-
+-[skip ci]" || echo "Nothing to commit"
++            git commit -m "chore: auto-fix formatting and conflicts" \
++              -m "" \
++              -m "Auto-fixes applied by GitHub Actions:" \
++              -m "- Merge conflicts resolved: ${{ steps.resolve_conflicts.outputs.resolved }}" \
++              -m "- Code formatted: ${{ steps.format.outputs.changed }}" \
++              -m "" \
++              -m "[skip ci]" || echo "Nothing to commit"
+             echo "committed=true" >> $GITHUB_OUTPUT
+           fi
+ 
+diff --git a/.github/workflows/pr.yml b/.github/workflows/pr.yml
+index d52bc96..3c5a9b9 100644
+--- a/.github/workflows/pr.yml
++++ b/.github/workflows/pr.yml
+@@ -104,23 +104,21 @@ jobs:
+             }
+             
+             if (!allPassed) {
+-              body += `---\n\n**Action Required:**
+-1. Pull the latest changes: \`git pull origin main\`
+-2. Run the failing checks locally:
+-   - Lint: \`pnpm lint\`
+-   - Type Check: \`pnpm check\`
+-   - Tests: \`pnpm test\`
+-3. Fix the errors shown above
+-4. Commit and push your fixes
+-
+-**Check via GitHub CLI:**
+-\`\`\`bash
+-# View this comment
+-gh pr view ${{ github.event.pull_request.number }} --comments
+-
+-# View workflow status
+-gh run view ${{ github.run_id }}
+-\`\`\``;
++              body += `---\n\n**Action Required:**\n\n` +
++                `1. Pull the latest changes: \`git pull origin main\`\n` +
++                `2. Run the failing checks locally:\n` +
++                `   - Lint: \`pnpm lint\`\n` +
++                `   - Type Check: \`pnpm check\`\n` +
++                `   - Tests: \`pnpm test\`\n` +
++                `3. Fix the errors shown above\n` +
++                `4. Commit and push your fixes\n\n` +
++                `**Check via GitHub CLI:**\n` +
++                `\`\`\`bash\n` +
++                `# View this comment\n` +
++                `gh pr view ${{ github.event.pull_request.number }} --comments\n\n` +
++                `# View workflow status\n` +
++                `gh run view ${{ github.run_id }}\n` +
++                `\`\`\``;
+             } else {
+               body += `---\n\nYour PR is ready for review! 🎉`;
+             }
+diff --git a/.github/workflows/roadmap-validation.yml b/.github/workflows/roadmap-validation.yml
+index d6b87e4..7cd5906 100644
+--- a/.github/workflows/roadmap-validation.yml
++++ b/.github/workflows/roadmap-validation.yml
+@@ -17,14 +17,14 @@ jobs:
+       - name: Install dependencies
+         run: npm install -g js-yaml
+       - name: Validate roadmap structure
+-        run: node scripts/validate-roadmap.js
++        run: node scripts/validate-roadmap.cjs
+       - name: Check for circular dependencies
+-        run: node scripts/check-circular-deps.js
++        run: node scripts/check-circular-deps.cjs
+       - name: Validate prompts match roadmap
+-        run: node scripts/validate-prompts.js
++        run: node scripts/validate-prompts.cjs
+       - name: Check for secrets in prompts
+-        run: node scripts/check-secrets.js
++        run: node scripts/check-secrets.cjs
+       - name: Validate session files
+-        run: node scripts/validate-sessions.js
++        run: node scripts/validate-sessions.cjs
+       - name: Scan for dangerous commands in prompts
+-        run: node scripts/check-prompt-safety.js
++        run: node scripts/check-prompt-safety.cjs
