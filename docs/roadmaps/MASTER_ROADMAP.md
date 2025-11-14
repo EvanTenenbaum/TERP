@@ -1158,9 +1158,15 @@ See docs/QA-019-COMPLETION-REPORT.md for details.
 
 ### QA-020: Test and Fix Calendar - Create Event Form
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 4-6h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
 
-Create Event form opens but submission not tested.
+**Resolution:** Fixed critical bugs preventing form from working:
+- Added missing React imports (useState, useEffect)
+- Updated tRPC mutation API from isLoading to isPending
+- Added type-safe date handling for Date objects
+- Created comprehensive test suite
+
+See docs/QA-020-COMPLETION-REPORT.md for details.
 
 ---
 
