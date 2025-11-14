@@ -1,0 +1,168 @@
+# New Tasks Backlog - November 14, 2025
+
+This backlog contains 23 new tasks identified from the video walkthrough bug report.
+
+---
+
+## 🐞 Bugs (13 tasks)
+
+### QA-028: Fix Old Sidebar Navigation
+
+**Priority:** P1 | **Status:** Not Started | **Effort:** 4-8h
+An old, out-of-place sidebar navigation menu appears on the dashboard, most prominently on mobile.
+
+---
+
+### QA-029: Fix Inbox Dropdown Navigation
+
+**Priority:** P2 | **Status:** Not Started | **Effort:** 2-4h
+The "Inbox" button in the main navigation acts as a direct link instead of a dropdown menu.
+
+---
+
+### QA-030: Add In-App Back Buttons
+
+**Priority:** P2 | **Status:** Not Started | **Effort:** 8-16h
+The application lacks in-app back buttons, forcing reliance on the browser's back button for navigation.
+
+---
+
+### QA-031: Fix Settings Icon Responsiveness
+
+**Priority:** P0 | **Status:** Not Started | **Effort:** 1-2h
+The "Settings" icon in the main navigation is unresponsive and does not trigger any action.
+
+---
+
+### QA-032: Fix User Profile Icon Responsiveness
+
+**Priority:** P0 | **Status:** Not Started | **Effort:** 1-2h
+The user profile icon in the main navigation is also unresponsive.
+
+---
+
+### QA-033: Fix Custom Layout Blank Dashboard
+
+**Priority:** P1 | **Status:** Not Started | **Effort:** 8-16h
+Selecting the "Custom" layout preset from the "Customize" panel results in a blank dashboard.
+
+---
+
+### QA-034: Fix Widget Visibility Disappearing
+
+**Priority:** P1 | **Status:** Not Started | **Effort:** 4-8h
+The "Widget Visibility" options disappear when the "Custom" layout is selected.
+
+---
+
+### QA-035: Fix Dashboard Widgets Showing No Data
+
+**Priority:** P0 | **Status:** Not Started | **Effort:** 16-24h
+All dashboard widgets show "No data available," even though seed data is expected to be present.
+
+---
+
+### QA-036: Fix Time Period Filters on Widgets
+
+**Priority:** P2 | **Status:** Not Started | **Effort:** 4-8h
+The time period filter dropdowns on dashboard widgets do not affect the displayed data.
+
+---
+
+### QA-037: Fix Comments Submission
+
+**Priority:** P1 | **Status:** Not Started | **Effort:** 8-16h
+The "Comments" feature is non-functional; users cannot submit comments.
+
+---
+
+### QA-038: Fix @ Tagging in Comments
+
+**Priority:** P2 | **Status:** Not Started | **Effort:** 4-8h
+The functionality for tagging users with `@` in comments is untested and likely broken.
+
+---
+
+### QA-039: Add User Selection for Shared Lists
+
+**Priority:** P1 | **Status:** Not Started | **Effort:** 8-16h
+When creating a shared list, there is no option to select which users to share the list with.
+
+---
+
+### QA-040: Mark List Name Field as Required
+
+**Priority:** P3 | **Status:** Not Started | **Effort:** 1-2h
+The "List Name" field in the "Create New List" modal is required but not visually indicated as such.
+
+---
+
+## ✨ Feature Requests (10 tasks)
+
+### QA-041: Merge Inbox and To-Do List Modules
+
+**Priority:** P2 | **Status:** Not Started | **Effort:** 24-40h
+The current "Inbox" and "To-Do List" features should be consolidated into a single, unified system for managing tasks and notifications.
+
+---
+
+### QA-042: Redesign Event Creation Form
+
+**Priority:** P1 | **Status:** Not Started | **Effort:** 16-24h
+The "Create Event" form needs a major overhaul. This includes: renaming "Module" to "Meeting Type," consolidating "Task" and "Deadline" into a single "Task" type, reviewing and clarifying the purpose of other event types, removing the "Status" and "Priority" dropdowns, and simplifying the "Visibility" options to "Private" and "Company."
+
+---
+
+### QA-043: Add Event Attendees Functionality
+
+**Priority:** P1 | **Status:** Not Started | **Effort:** 8-16h
+The "Create Event" form needs a way to add both internal team members and external contacts as attendees.
+
+---
+
+### QA-044: Implement Event Invitation Workflow
+
+**Priority:** P1 | **Status:** Not Started | **Effort:** 16-24h
+A workflow for sending and managing event invitations needs to be designed. This should include options for auto-accepting invitations and admin-level controls.
+
+---
+
+### QA-045: Link Events to Clients
+
+**Priority:** P2 | **Status:** Not Started | **Effort:** 8-16h
+Events should be linkable to specific clients to track interactions and history.
+
+---
+
+### QA-046: Add Click-to-Create Event on Calendar
+
+**Priority:** P2 | **Status:** Not Started | **Effort:** 4-8h
+Users should be able to create a new calendar event by clicking directly on a day in the calendar view.
+
+---
+
+### QA-047: Set Default Calendar View to Business Hours
+
+**Priority:** P3 | **Status:** Not Started | **Effort:** 1-2h
+The week view in the calendar should default to a more standard business day view, such as starting at 7 a.m.
+
+---
+
+### QA-048: Design @ Mention Workflow
+
+**Priority:** P2 | **Status:** Not Started | **Effort:** 8-16h
+A clear workflow needs to be defined and implemented for how `@` mentions in comments create tasks or notifications in the user's unified inbox.
+
+---
+
+### QA-049: Conduct Mobile Responsiveness Review
+
+**Priority:** P2 | **Status:** Not Started | **Effort:** 8-16h
+The current review is focused on the desktop experience. A separate review should be conducted to assess and address issues on mobile devices.
+
+---
+
+### QA-050: Implement Mobile Responsiveness Fixes
+
+**Priority:** P1 | **Status:** Not Started | **Effort:** 16-24h
+Implement the fixes identified in the mobile responsiveness review (QA-049) responsiveness review.
