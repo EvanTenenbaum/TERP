@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useState } from "react";
 import versionInfo from "../../../version.json";
 
 interface AppHeaderProps {
@@ -12,9 +13,26 @@ interface AppHeaderProps {
 
 export function AppHeader({ onMenuClick }: AppHeaderProps) {
   const [, setLocation] = useLocation();
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch inbox stats for unread count
   const { data: inboxStats } = trpc.inbox.getStats.useQuery();
+  
+  // Handle search submission
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Navigate to a search results page with the query
+      setLocation(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+  
+  // Handle Enter key press
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch(e);
+    }
+  };
 
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b border-border bg-card">
@@ -40,16 +58,19 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
       </div>
 
       {/* Search bar */}
-      <div className="flex items-center flex-1 max-w-2xl">
+      <form onSubmit={handleSearch} className="flex items-center flex-1 max-w-2xl">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search quotes, customers, products..."
             className="pl-10 w-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
-      </div>
+      </form>
 
       {/* Action buttons */}
       <div className="flex items-center gap-1 md:gap-2 ml-2">
