@@ -1161,6 +1161,7 @@ See docs/QA-019-COMPLETION-REPORT.md for details.
 **Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
 
 **Resolution:** Fixed critical bugs preventing form from working:
+
 - Added missing React imports (useState, useEffect)
 - Updated tRPC mutation API from isLoading to isPending
 - Added type-safe date handling for Date objects
@@ -1290,8 +1291,10 @@ An old, out-of-place sidebar navigation menu appears on the dashboard, most prom
 
 ### QA-029: Fix Inbox Dropdown Navigation
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 2-4h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 2-4h
 The "Inbox" button in the main navigation acts as a direct link instead of a dropdown menu.
+
+**Resolution:** Converted Inbox button to dropdown menu with preview of recent unread items, "Mark all read" and "View all" buttons. All tests passing.
 
 ---
 
