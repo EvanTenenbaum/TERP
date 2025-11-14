@@ -177,13 +177,7 @@ jobs:
             echo "committed=false" >> $GITHUB_OUTPUT
           else
             git add -A
-            git commit -m "chore: auto-fix formatting and conflicts
-
-Auto-fixes applied by GitHub Actions:
-- Merge conflicts resolved: ${{ steps.resolve_conflicts.outputs.resolved }}
-- Code formatted: ${{ steps.format.outputs.changed }}
-
-[skip ci]" || echo "Nothing to commit"
+            git commit -m "chore: auto-fix formatting and conflicts" -m "Auto-fixes applied by GitHub Actions:" -m "- Merge conflicts resolved: ${{ steps.resolve_conflicts.outputs.resolved }}" -m "- Code formatted: ${{ steps.format.outputs.changed }}" -m "[skip ci]" || echo "Nothing to commit"
             echo "committed=true" >> $GITHUB_OUTPUT
           fi
 
