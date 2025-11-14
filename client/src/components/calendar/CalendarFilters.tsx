@@ -21,7 +21,6 @@ export default function CalendarFilters() {
 
   const eventTypes = [
     "MEETING",
-    "DEADLINE",
     "TASK",
     "DELIVERY",
     "PAYMENT_DUE",
