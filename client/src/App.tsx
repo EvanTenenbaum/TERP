@@ -33,6 +33,7 @@ import VendorsPage from "@/pages/VendorsPage";
 import VendorProfilePage from "@/pages/VendorProfilePage";
 import PurchaseOrdersPage from "@/pages/PurchaseOrdersPage";
 import ReturnsPage from "@/pages/ReturnsPage";
+import LocationsPage from "@/pages/LocationsPage";
 import MatchmakingServicePage from "@/pages/MatchmakingServicePage";
 import Login from "@/pages/Login";
 import Help from "@/pages/Help";
@@ -112,6 +113,7 @@ function Router() {
               <Route path="/vendors" component={VendorsPage} />
               <Route path="/purchase-orders" component={PurchaseOrdersPage} />
               <Route path="/returns" component={ReturnsPage} />
+              <Route path="/locations" component={LocationsPage} />
               <Route path="/matchmaking" component={MatchmakingServicePage} />
               <Route path="/help" component={Help} />
               <Route
