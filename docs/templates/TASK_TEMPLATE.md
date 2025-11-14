@@ -1,28 +1,25 @@
-### ST-XXX: [Task Title]
+### [TASK_ID]: [TASK_TITLE]
 
-**Status:** 📋 Ready  
-**Priority:** 🟡 MEDIUM  
-**Estimate:** 6h  
-**Module:** `server/path/to/module`  
-**Dependencies:** None  
-**Prompt:** [`docs/prompts/ST-XXX.md`](../prompts/ST-XXX.md)
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 0-0h
+**Module:** `path/to/module`
+**Dependencies:** None
+**Prompt:** [📄 docs/prompts/[TASK_ID].md](../prompts/[TASK_ID].md)
+**Prompt Version:** 1.0
+**Prompt Last Validated:** YYYY-MM-DD
+
+**Quick Summary:**
+[A brief, one-sentence summary of the task.]
 
 **Objectives:**
-
-- First objective (what will be accomplished)
-- Second objective (measurable outcome)
-- Third objective (specific deliverable)
-- Fourth objective (if applicable)
+- [Objective 1]
+- [Objective 2]
+- [Objective 3]
 
 **Deliverables:**
+- [ ] [Deliverable 1]
+- [ ] [Deliverable 2]
+- [ ] [Deliverable 3]
 
-- [ ] First deliverable (specific file or artifact)
-- [ ] Second deliverable (test coverage requirement)
-- [ ] Third deliverable (documentation)
-- [ ] Fourth deliverable (performance benchmark)
-- [ ] Fifth deliverable (deployment verification)
-- [ ] All tests passing (no regressions)
-- [ ] Zero TypeScript errors
-- [ ] Session archived
-
----
+**Tags:** [tag1, tag2, tag3]
