@@ -1124,9 +1124,10 @@ See docs/QA-013-COMPLETION-REPORT.md for details.
 
 ### QA-017: Fix Clients - Save Button (Customize Metrics)
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 2-4h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 2-4h
 
-Save button in Customize Metrics panel is unresponsive.
+**Resolution:** Fixed by adding event.preventDefault() and event.stopPropagation() to button handlers to prevent dropdown from closing before save operation completes. Also fixed drizzle-orm import issue and improved test infrastructure.
+See docs/QA-017-COMPLETION-REPORT.md for details.
 
 ---
 
