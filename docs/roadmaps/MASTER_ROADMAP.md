@@ -1191,6 +1191,7 @@ See docs/QA-021-COMPLETION-REPORT.md for details.
 **Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
 
 **Resolution:** Verified form implementation through comprehensive code review. No bugs found:
+
 - All React imports present and correct
 - Correct tRPC v11 API usage (isPending)
 - Proper error handling and validation
@@ -1473,15 +1474,29 @@ Events should be linkable to specific clients to track interactions and history.
 
 ### QA-046: Add Click-to-Create Event on Calendar
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 4-8h
-Users should be able to create a new calendar event by clicking directly on a day in the calendar view.
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-8h
+
+Click-to-create functionality has been implemented:
+
+- Added onDateClick prop to MonthView component
+- Calendar day cells now clickable with hover effect for visual feedback
+- Event buttons stop propagation to prevent triggering day click
+- EventFormDialog accepts initialDate prop to pre-fill start/end dates
+- Seamless UX - clicking a day opens the form with date pre-filled
+- Works alongside existing 'Create Event' button
 
 ---
 
 ### QA-047: Set Default Calendar View to Business Hours
 
-**Priority:** P3 | **Status:** Not Started | **Effort:** 1-2h
-The week view in the calendar should default to a more standard business day view, such as starting at 7 a.m.
+**Priority:** P3 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 1-2h
+
+Business hours view has been implemented:
+
+- Updated WeekView to show 7 AM - 7 PM instead of full 24 hours
+- Updated DayView to show 7 AM - 7 PM instead of full 24 hours
+- Cleaner, more focused view for typical business day scheduling
+- Reduces scrolling and improves usability for standard business operations
 
 ---
 
