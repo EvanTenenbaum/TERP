@@ -274,11 +274,11 @@ export default function EventFormDialog({
               </div>
             )}
 
-            {/* Module and Event Type */}
+            {/* Meeting Type and Event Type */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Module *
+                  Meeting Type *
                 </label>
                 <select
                   value={module}
@@ -307,7 +307,6 @@ export default function EventFormDialog({
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="MEETING">Meeting</option>
-                  <option value="DEADLINE">Deadline</option>
                   <option value="TASK">Task</option>
                   <option value="DELIVERY">Delivery</option>
                   <option value="PAYMENT_DUE">Payment Due</option>
@@ -316,42 +315,6 @@ export default function EventFormDialog({
                   <option value="INTAKE">Intake</option>
                   <option value="PHOTOGRAPHY">Photography</option>
                   <option value="OTHER">Other</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Status and Priority */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Status *
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="SCHEDULED">Scheduled</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="CANCELLED">Cancelled</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Priority *
-                </label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="URGENT">Urgent</option>
                 </select>
               </div>
             </div>
@@ -368,9 +331,7 @@ export default function EventFormDialog({
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="PRIVATE">Private</option>
-                <option value="TEAM">Team</option>
                 <option value="COMPANY">Company</option>
-                <option value="PUBLIC">Public</option>
               </select>
             </div>
 

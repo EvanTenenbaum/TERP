@@ -37,7 +37,7 @@ const eventTemplates = [
   {
     title: "Project Deadline",
     description: "Final deliverables due for Q4 project",
-    eventType: "DEADLINE",
+    eventType: "TASK",
     priority: "URGENT",
     module: "GENERAL",
     status: "SCHEDULED",
