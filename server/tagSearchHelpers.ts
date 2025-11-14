@@ -7,8 +7,7 @@
 
 import { getDb } from "./db";
 import { tags, productTags } from "../drizzle/schema";
-import { inArray } from "drizzle-orm";
-import { lower } from "drizzle-orm/sql";
+import { inArray, sql } from "drizzle-orm";
 
 /**
  * Tokenize search expression
@@ -72,7 +71,7 @@ export async function evaluateBooleanExpression(tokens: string[]): Promise<numbe
     // Use inArray with lowercase comparison for safe SQL (prevents SQL injection)
     const andTags = await db.select()
       .from(tags)
-      .where(inArray(lower(tags.name), andTerms));
+      .where(inArray(sql`lower(${tags.name})`, andTerms));
 
     if (andTags.length === 0) return [];
 
@@ -100,7 +99,7 @@ export async function evaluateBooleanExpression(tokens: string[]): Promise<numbe
     // Use inArray with lowercase comparison for safe SQL (prevents SQL injection)
     const orTags = await db.select()
       .from(tags)
-      .where(inArray(lower(tags.name), orTerms));
+      .where(inArray(sql`lower(${tags.name})`, orTerms));
 
     const orTagIds = orTags.map(t => t.id);
 
@@ -123,7 +122,7 @@ export async function evaluateBooleanExpression(tokens: string[]): Promise<numbe
     // Use inArray with lowercase comparison for safe SQL (prevents SQL injection)
     const notTags = await db.select()
       .from(tags)
-      .where(inArray(lower(tags.name), notTerms));
+      .where(inArray(sql`lower(${tags.name})`, notTerms));
 
     const notTagIds = notTags.map(t => t.id);
 

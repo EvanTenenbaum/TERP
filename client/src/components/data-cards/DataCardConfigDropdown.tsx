@@ -71,20 +71,24 @@ export function DataCardConfigDropdown({
     });
   };
 
-  const handleSave = () => {
+  const handleSave = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (selectedMetricIds.length > 0 && selectedMetricIds.length <= maxCards) {
       saveMetricIdsForModule(moduleId, selectedMetricIds);
-      setOpen(false);
       onSave?.();
+      setOpen(false);
     }
   };
 
-  const handleReset = () => {
+  const handleReset = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     const defaultIds = defaultMetrics.map((m) => m.id);
     setSelectedMetricIds(defaultIds);
     saveMetricIdsForModule(moduleId, defaultIds);
-    setOpen(false);
     onSave?.();
+    setOpen(false);
   };
 
   const isValid = selectedMetricIds.length > 0 && selectedMetricIds.length <= maxCards;
