@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MessageSquare, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionInput } from "./MentionInput";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { CommentList } from "./CommentList";
@@ -120,10 +120,10 @@ export function CommentWidget({
 
           {/* New Comment Input */}
           <div className="p-4 border-t">
-            <Textarea
-              placeholder="Write a comment... Use @username to mention someone"
+            <MentionInput
+              placeholder="Write a comment... Type @ to mention someone"
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              onChange={setNewComment}
               className="min-h-[80px] mb-2"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
