@@ -1089,11 +1089,12 @@ See docs/QA-011-COMPLETION-REPORT.md for details.
 ---
 
 ### QA-012: Fix Global Search Functionality
-
-**Priority:** P1 | **Status:** Not Started | **Effort:** 8-12h
-
+**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-12h
 Global search bar accepts input but doesn't trigger search on Enter.
 
+**Resolution:** Implemented complete search functionality in AppHeader component. Added state management, event handlers for Enter key and form submission, and navigation to search results page.
+
+See docs/QA-012-COMPLETION-REPORT.md for details.
 ---
 
 ## 🟡 QA-IDENTIFIED MEDIUM PRIORITY BUGS
