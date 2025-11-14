@@ -1149,7 +1149,10 @@ See docs/QA-018-COMPLETION-REPORT.md for details.
 
 ### QA-019: Fix Credit Settings - Reset to Defaults Button
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 2-4h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 2-4h
+
+**Resolution:** Completed as part of QA-018. The handleResetToDefaults function received the same event handling fix (event.preventDefault() and event.stopPropagation()) applied to all button handlers in Credit Settings.
+See docs/QA-019-COMPLETION-REPORT.md for details.
 
 ---
 
