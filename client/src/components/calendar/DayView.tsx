@@ -21,10 +21,10 @@ interface DayViewProps {
 }
 
 export default function DayView({ currentDate, events, onEventClick }: DayViewProps) {
-  // Time slots (24 hours)
+  // Time slots (business hours: 7 AM to 7 PM)
   const timeSlots = useMemo(() => {
     const slots = [];
-    for (let hour = 0; hour < 24; hour++) {
+    for (let hour = 7; hour <= 19; hour++) {
       slots.push({
         hour,
         label: formatHour(hour),
