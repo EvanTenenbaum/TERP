@@ -34,10 +34,10 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
     return days;
   }, [currentDate]);
 
-  // Time slots (24 hours)
+  // Time slots (business hours: 7 AM to 7 PM)
   const timeSlots = useMemo(() => {
     const slots = [];
-    for (let hour = 0; hour < 24; hour++) {
+    for (let hour = 7; hour <= 19; hour++) {
       slots.push({
         hour,
         label: formatHour(hour),
