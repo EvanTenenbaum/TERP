@@ -1400,8 +1400,10 @@ The functionality for tagging users with `@` in comments is untested and likely 
 
 ### QA-039: Add User Selection for Shared Lists
 
-**Priority:** P1 | **Status:** Not Started | **Effort:** 8-16h
+**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
 When creating a shared list, there is no option to select which users to share the list with.
+
+**Resolution:** Created users API router and UserSelector component for multi-user selection. Updated TodoListForm to include user selection when shared list is enabled. All tests passing (7/7). See docs/QA-039-SUMMARY.md for details.
 
 ---
 
