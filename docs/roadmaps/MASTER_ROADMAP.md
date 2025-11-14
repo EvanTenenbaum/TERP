@@ -1318,8 +1318,10 @@ The "Inbox" button in the main navigation acts as a direct link instead of a dro
 
 ### QA-030: Add In-App Back Buttons
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 8-16h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
 The application lacks in-app back buttons, forcing reliance on the browser's back button for navigation.
+
+**Resolution:** Created reusable BackButton component and added back buttons to 26 pages across the application. All tests passing (9/9). See docs/QA-030-SUMMARY.md for details.
 
 ---
 
