@@ -56,7 +56,9 @@ export default function CreditSettingsPage() {
     setHasChanges(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     // Validate weights sum to 100
     const sum = Object.values(weights).reduce((a, b) => a + b, 0);
     if (Math.abs(sum - 100) > 0.01) {
@@ -67,7 +69,9 @@ export default function CreditSettingsPage() {
     await updateSettingsMutation.mutateAsync(weights);
   };
 
-  const handleReset = () => {
+  const handleReset = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (settings) {
       setWeights({
         revenueMomentumWeight: settings.revenueMomentumWeight,
@@ -81,7 +85,9 @@ export default function CreditSettingsPage() {
     }
   };
 
-  const handleResetToDefaults = () => {
+  const handleResetToDefaults = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setWeights({
       revenueMomentumWeight: 20,
       cashCollectionWeight: 25,
