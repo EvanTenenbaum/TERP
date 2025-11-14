@@ -1139,7 +1139,10 @@ See docs/QA-017-COMPLETION-REPORT.md for details.
 
 ### QA-018: Fix Credit Settings - Save Changes Button
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 2-4h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 2-4h
+
+**Resolution:** Fixed by adding event.preventDefault() and event.stopPropagation() to button handlers. Applied consistent event handling to all three button functions (Save, Reset, Reset to Defaults).
+See docs/QA-018-COMPLETION-REPORT.md for details.
 
 ---
 
