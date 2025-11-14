@@ -47,6 +47,7 @@ export default [
         fetch: 'readonly',
         HTMLDivElement: 'readonly',
         HTMLElement: 'readonly',
+        HTMLInputElement: 'readonly',
         MouseEvent: 'readonly',
         Event: 'readonly',
         
