@@ -1231,7 +1231,10 @@ See docs/QA-014-COMPLETION-REPORT.md for details.
 
 ### QA-015: Fix Matchmaking - Add Need Button 404
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 4-6h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+
+**Resolution:** Fixed 404 errors for both "Add Need" and "Add Supply" buttons by correcting navigation routes. Add Need now navigates to /clients (where needs are created in client context), and Add Supply navigates to /vendor-supply (existing page). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
+See docs/QA-015-COMPLETION-REPORT.md for details.
 
 ---
 
@@ -1239,8 +1242,8 @@ See docs/QA-014-COMPLETION-REPORT.md for details.
 
 **Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
 
-**Resolution:** Fixed by updating button navigation routes. Changed Add Need button to navigate to /clients and Add Supply button to navigate to /vendor-supply (existing routes). Added comprehensive test coverage (4/4 tests passing). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
-See docs/QA-016-COMPLETION-REPORT.md for details.
+**Resolution:** Fixed together with QA-015 by updating button navigation routes. Changed Add Need button to navigate to /clients and Add Supply button to navigate to /vendor-supply (existing routes). Both buttons were navigating to non-existent routes (/needs/new and /supply/new). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
+See docs/QA-015-COMPLETION-REPORT.md and docs/QA-016-COMPLETION-REPORT.md for details.
 
 ---
 
