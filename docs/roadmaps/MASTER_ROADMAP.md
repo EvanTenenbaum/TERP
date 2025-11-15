@@ -442,6 +442,68 @@ Currently only 9 tables have seed data (clients, orders, invoices, strains, prod
 
 ---
 
+### INFRA-001: Remove Obsolete GitHub Workflows
+
+**Status:** ready  
+**Priority:** P2 (Infrastructure)  
+**Estimate:** 1-2h  
+**Module:** `.github/workflows/`  
+**Dependencies:** None  
+**Prompt:** [`docs/prompts/INFRA-001.md`](../prompts/INFRA-001.md)
+
+**Objectives:**
+
+- Remove 3 obsolete PR-based GitHub workflows that are failing
+- Clean up workflow list to show only active workflows
+- Improve clarity when reviewing GitHub Actions
+
+**Deliverables:**
+
+- [ ] Removed `roadmap-validation.yml`
+- [ ] Removed `pr-auto-fix.yml`
+- [ ] Removed `pr.yml`
+- [ ] Verified remaining workflows still function
+- [ ] Session file archived
+- [ ] MASTER_ROADMAP updated to ✅ Complete
+
+**Context:**
+
+Three workflows are designed for PR-based development but the project now pushes directly to main. These workflows never trigger and show as failed runs, cluttering the GitHub Actions interface.
+
+---
+
+### INFRA-002: Add Session Cleanup Validation
+
+**Status:** ready  
+**Priority:** P2 (Infrastructure)  
+**Estimate:** 2-4h  
+**Module:** `.husky/`, `scripts/`  
+**Dependencies:** None  
+**Prompt:** [`docs/prompts/INFRA-002.md`](../prompts/INFRA-002.md)
+
+**Objectives:**
+
+- Add automated validation to prevent stale sessions in ACTIVE_SESSIONS.md
+- Detect when tasks are marked complete but sessions not archived
+- Prevent duplicate sessions for the same task
+
+**Deliverables:**
+
+- [ ] Created validation script (`scripts/validate-session-cleanup.ts`)
+- [ ] Added pre-commit hook for automatic validation
+- [ ] Script catches stale sessions
+- [ ] Script catches duplicate sessions
+- [ ] Documentation created
+- [ ] Manual validation command available (`pnpm validate:sessions`)
+- [ ] Session file archived
+- [ ] MASTER_ROADMAP updated to ✅ Complete
+
+**Context:**
+
+Agents sometimes mark tasks complete but forget to archive sessions and remove them from ACTIVE_SESSIONS.md. Recent examples: QA-010, QA-031, QA-037, QA-038 marked complete but sessions still active. QA-015 had duplicate sessions due to race condition.
+
+---
+
 ### ST-005: Add Missing Database Indexes
 
 **Status:** ready  
