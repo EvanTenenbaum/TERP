@@ -411,7 +411,7 @@ importers:
         specifier: ^27.0.2
         version: 27.0.2
       tsx:
-        specifier: ^4.19.1
+        specifier: ^4.20.6
         version: 4.20.6
       tw-animate-css:
         specifier: ^1.4.0
