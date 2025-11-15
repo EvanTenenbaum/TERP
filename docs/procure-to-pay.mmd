@@ -1,0 +1,31 @@
+graph TD
+    subgraph "Procurement"
+        A[Create PO] --> B{purchaseOrders}
+        B --> C{purchaseOrderItems}
+    end
+
+    subgraph "Receiving"
+        D[Goods Received] --> E{intakeSessions}
+        E --> F{intakeSessionBatches}
+        F --> G{lots}
+        F --> H{batches}
+        H --> I{inventoryMovements}
+    end
+
+    subgraph "Billing"
+        J[Vendor Bill Received] --> K{bills}
+        K --> L{billLineItems}
+    end
+
+    subgraph "Payment"
+        M[Payment Sent] --> N{payments}
+        N --> O{ledgerEntries}
+        O --> P{accounts}
+    end
+
+    subgraph "Vendor Management"
+        B --> Q{vendors}
+        J --> Q
+        R[Add Note] --> S{vendorNotes}
+        S --> Q
+    end

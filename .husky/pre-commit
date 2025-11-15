@@ -12,3 +12,7 @@ if git diff --cached --name-only | grep -q "docs/roadmaps/MASTER_ROADMAP.md"; th
   echo "🔍 Validating MASTER_ROADMAP.md..."
   pnpm roadmap validate --incremental || exit 1
 fi
+
+# Validate session cleanup
+echo "🔍 Validating session cleanup..."
+pnpm validate:sessions || exit 1
