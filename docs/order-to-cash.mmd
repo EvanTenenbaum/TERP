@@ -1,0 +1,42 @@
+
+graph TD
+    subgraph "Order Creation"
+        A[Order Placed] --> B{orders}
+    end
+
+    subgraph "Invoicing"
+        B --> C{invoices}
+        B --> D{orderLineItems}
+    end
+
+    subgraph "Financials"
+        C --> E{ledgerEntries}
+        C --> F{clientTransactions}
+        E --> G{accounts}
+    end
+
+    subgraph "Accounts Receivable"
+        C --> H{creditSignalHistory}
+    end
+
+    subgraph "Inventory"
+        D --> I{inventoryMovements}
+        I --> J{batches}
+    end
+
+    subgraph "Client Management"
+        B --> K{clientActivity}
+    end
+
+    subgraph "Workflow"
+        B --> L{orderStatusHistory}
+    end
+
+    subgraph "Payment"
+        M[Payment Received] --> N{payments}
+        N --> E
+        N --> O{paymentHistory}
+        N --> P{bankTransactions}
+        P --> Q{bankAccounts}
+    end
+

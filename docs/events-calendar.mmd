@@ -1,0 +1,24 @@
+graph TD
+    subgraph "Event Creation"
+        A[Create Event] --> B{calendarEvents}
+        B --> C{calendarEventParticipants}
+        B --> D{calendarReminders}
+        B --> E{calendarEventAttachments}
+    end
+
+    subgraph "Event Lifecycle"
+        B -- Update --> F{calendarEventHistory}
+        C -- RSVP --> C
+        D -- Trigger --> G[Send Reminder]
+    end
+
+    subgraph "Permissions & Views"
+        H{users} --> I{calendarEventPermissions}
+        I --> B
+        J{calendarViews} --> B
+    end
+
+    subgraph "Recurrence"
+        B --> K{calendarRecurrenceRules}
+        K --> L{calendarRecurrenceInstances}
+    end

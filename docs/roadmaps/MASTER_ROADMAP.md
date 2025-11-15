@@ -187,6 +187,20 @@
   - Branch: claude/ST-004-outdated-refs-Session-20251113-st004-outdated-refs-7474b80a
   - Merged: Commit 86a815e
 
+- [x] **INFRA-001: Remove Obsolete GitHub Workflows** (Completed: 2025-11-14) 🟡 MEDIUM
+  - Task ID: INFRA-001
+  - Session: Session-20251114-INFRA-001-597889bf
+  - Action: Remove 3 obsolete PR-based workflows that were failing
+  - Removed Files:
+    - .github/workflows/roadmap-validation.yml
+    - .github/workflows/pr-auto-fix.yml
+    - .github/workflows/pr.yml
+  - Impact: Cleaner workflow list, reduced confusion in GitHub Actions
+  - Actual Time: 30 minutes
+  - Priority: ✅ COMPLETE
+  - Resolution: Removed 3 obsolete PR-based workflows (roadmap-validation.yml, pr-auto-fix.yml, pr.yml). These were failing because the project pushes directly to main instead of using PRs. No functional impact, cleanup only.
+  - Branch: Merged to main (commit a3d05d2)
+
 - [ ] **ST-005: Add Missing Database Indexes** (Unassigned) 🟡 MEDIUM
   - Task ID: ST-005
   - Action: Audit all foreign keys and add missing indexes
@@ -408,17 +422,20 @@
 
 ### DATA-001: Comprehensive Production Data Seeding with Operational Coherence
 
-**Status:** ready  
-**Priority:** P0 (CRITICAL)  
-**Estimate:** 120-160h (3-4 weeks)  
-**Module:** `scripts/generators/`, `scripts/seed-*.ts`  
-**Dependencies:** None  
+**Status:** ✅ COMPLETE (2025-11-14)
+**Priority:** P0 (CRITICAL)
+**Actual Time:** ~10 hours (automated)
+**Module:** `scripts/generators/`, `scripts/seed-*.ts`
+**Dependencies:** None
 **Prompt:** [`docs/prompts/DATA-001.md`](../prompts/DATA-001.md)
 
 **Objectives:**
 
-- Extend seeding infrastructure from 9/107 tables (8%) to 107/107 (100%)
-- Generate operationally coherent data reflecting 22 months of business operations
+- ✅ Extended seeding infrastructure from 9/107 tables (8%) to 107/107 (100%)
+- ✅ Generated operationally coherent data reflecting 22 months of business operations
+- ✅ Created comprehensive generator suite for all major business domains
+- ✅ Developed and executed a robust validation suite
+- ✅ Produced extensive documentation, including flow diagrams and deployment guide
 - Ensure all transactions create appropriate downstream records (invoices → line items → ledger → AR → payments)
 - Implement transaction context and cascading generators for operational linkage
 - Validate financial integrity (double-entry bookkeeping, account reconciliation)
@@ -439,6 +456,68 @@
 **Context:**
 
 Currently only 9 tables have seed data (clients, orders, invoices, strains, products, lots, batches, returns, brands). Recently-built features (events, comments, lists, dashboard widgets) have no data and appear broken. More critically, existing data lacks operational coherence - orders don't create invoices with line items, invoices don't have payment records, batches don't have workflow history. This task models complete business operations where every transaction creates all related records, enabling realistic testing and demonstration.
+
+---
+
+### INFRA-001: Remove Obsolete GitHub Workflows
+
+**Status:** ready  
+**Priority:** P2 (Infrastructure)  
+**Estimate:** 1-2h  
+**Module:** `.github/workflows/`  
+**Dependencies:** None  
+**Prompt:** [`docs/prompts/INFRA-001.md`](../prompts/INFRA-001.md)
+
+**Objectives:**
+
+- Remove 3 obsolete PR-based GitHub workflows that are failing
+- Clean up workflow list to show only active workflows
+- Improve clarity when reviewing GitHub Actions
+
+**Deliverables:**
+
+- [ ] Removed `roadmap-validation.yml`
+- [ ] Removed `pr-auto-fix.yml`
+- [ ] Removed `pr.yml`
+- [ ] Verified remaining workflows still function
+- [ ] Session file archived
+- [ ] MASTER_ROADMAP updated to ✅ Complete
+
+**Context:**
+
+Three workflows are designed for PR-based development but the project now pushes directly to main. These workflows never trigger and show as failed runs, cluttering the GitHub Actions interface.
+
+---
+
+### INFRA-002: Add Session Cleanup Validation
+
+**Status:** ready  
+**Priority:** P2 (Infrastructure)  
+**Estimate:** 2-4h  
+**Module:** `.husky/`, `scripts/`  
+**Dependencies:** None  
+**Prompt:** [`docs/prompts/INFRA-002.md`](../prompts/INFRA-002.md)
+
+**Objectives:**
+
+- Add automated validation to prevent stale sessions in ACTIVE_SESSIONS.md
+- Detect when tasks are marked complete but sessions not archived
+- Prevent duplicate sessions for the same task
+
+**Deliverables:**
+
+- [ ] Created validation script (`scripts/validate-session-cleanup.ts`)
+- [ ] Added pre-commit hook for automatic validation
+- [ ] Script catches stale sessions
+- [ ] Script catches duplicate sessions
+- [ ] Documentation created
+- [ ] Manual validation command available (`pnpm validate:sessions`)
+- [ ] Session file archived
+- [ ] MASTER_ROADMAP updated to ✅ Complete
+
+**Context:**
+
+Agents sometimes mark tasks complete but forget to archive sessions and remove them from ACTIVE_SESSIONS.md. Recent examples: QA-010, QA-031, QA-037, QA-038 marked complete but sessions still active. QA-015 had duplicate sessions due to race condition.
 
 ---
 
@@ -1155,13 +1234,19 @@ See docs/QA-014-COMPLETION-REPORT.md for details.
 
 ### QA-015: Fix Matchmaking - Add Need Button 404
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 4-6h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+
+**Resolution:** Fixed 404 errors for both "Add Need" and "Add Supply" buttons by correcting navigation routes. Add Need now navigates to /clients (where needs are created in client context), and Add Supply navigates to /vendor-supply (existing page). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
+See docs/QA-015-COMPLETION-REPORT.md for details.
 
 ---
 
 ### QA-016: Fix Matchmaking - Add Supply Button 404
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 4-6h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+
+**Resolution:** Fixed together with QA-015 by updating button navigation routes. Changed Add Need button to navigate to /clients and Add Supply button to navigate to /vendor-supply (existing routes). Both buttons were navigating to non-existent routes (/needs/new and /supply/new). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
+See docs/QA-015-COMPLETION-REPORT.md and docs/QA-016-COMPLETION-REPORT.md for details.
 
 ---
 
@@ -1382,8 +1467,18 @@ The user profile icon in the main navigation is also unresponsive.
 
 ### QA-033: Fix Custom Layout Blank Dashboard
 
-**Priority:** P1 | **Status:** Not Started | **Effort:** 8-16h
-Selecting the "Custom" layout preset from the "Customize" panel results in a blank dashboard.
+**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h | **Actual:** 2h
+
+**Issue:** Selecting the "Custom" layout preset from the "Customize" panel resulted in a blank dashboard.
+
+**Root Cause:** The Custom layout preset had an empty widgets array, and the `setActiveLayout` function was replacing the current widgets with this empty array.
+
+**Resolution:** Modified `DashboardPreferencesContext.tsx` to preserve current widgets when switching to Custom layout instead of replacing them with an empty array. Added comprehensive test suite with 12 tests (all passing).
+
+**Session:** Session-20251114-QA-033-46dfba44  
+**Branch:** qa-033-fix  
+**Commit:** 79299a3  
+**Completion Report:** docs/sessions/completed/Session-20251114-QA-033-46dfba44-COMPLETION.md
 
 ---
 
