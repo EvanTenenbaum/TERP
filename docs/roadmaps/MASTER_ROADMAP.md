@@ -1461,8 +1461,18 @@ The user profile icon in the main navigation is also unresponsive.
 
 ### QA-033: Fix Custom Layout Blank Dashboard
 
-**Priority:** P1 | **Status:** Not Started | **Effort:** 8-16h
-Selecting the "Custom" layout preset from the "Customize" panel results in a blank dashboard.
+**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h | **Actual:** 2h
+
+**Issue:** Selecting the "Custom" layout preset from the "Customize" panel resulted in a blank dashboard.
+
+**Root Cause:** The Custom layout preset had an empty widgets array, and the `setActiveLayout` function was replacing the current widgets with this empty array.
+
+**Resolution:** Modified `DashboardPreferencesContext.tsx` to preserve current widgets when switching to Custom layout instead of replacing them with an empty array. Added comprehensive test suite with 12 tests (all passing).
+
+**Session:** Session-20251114-QA-033-46dfba44  
+**Branch:** qa-033-fix  
+**Commit:** 79299a3  
+**Completion Report:** docs/sessions/completed/Session-20251114-QA-033-46dfba44-COMPLETION.md
 
 ---
 
