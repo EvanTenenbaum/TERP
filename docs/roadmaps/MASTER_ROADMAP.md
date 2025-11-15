@@ -187,6 +187,20 @@
   - Branch: claude/ST-004-outdated-refs-Session-20251113-st004-outdated-refs-7474b80a
   - Merged: Commit 86a815e
 
+- [x] **INFRA-001: Remove Obsolete GitHub Workflows** (Completed: 2025-11-14) 🟡 MEDIUM
+  - Task ID: INFRA-001
+  - Session: Session-20251114-INFRA-001-597889bf
+  - Action: Remove 3 obsolete PR-based workflows that were failing
+  - Removed Files:
+    - .github/workflows/roadmap-validation.yml
+    - .github/workflows/pr-auto-fix.yml
+    - .github/workflows/pr.yml
+  - Impact: Cleaner workflow list, reduced confusion in GitHub Actions
+  - Actual Time: 30 minutes
+  - Priority: ✅ COMPLETE
+  - Resolution: Removed 3 obsolete PR-based workflows (roadmap-validation.yml, pr-auto-fix.yml, pr.yml). These were failing because the project pushes directly to main instead of using PRs. No functional impact, cleanup only.
+  - Branch: Merged to main (commit a3d05d2)
+
 - [ ] **ST-005: Add Missing Database Indexes** (Unassigned) 🟡 MEDIUM
   - Task ID: ST-005
   - Action: Audit all foreign keys and add missing indexes
