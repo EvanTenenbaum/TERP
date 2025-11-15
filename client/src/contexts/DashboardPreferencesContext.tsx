@@ -182,11 +182,24 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
   const setActiveLayout = useCallback((layoutId: string) => {
     const preset = LAYOUT_PRESETS[layoutId];
     if (preset) {
-      setState((prev) => ({
-        ...prev,
-        activeLayoutId: layoutId,
-        widgets: preset.widgets,
-      }));
+      setState((prev) => {
+        // Special handling for 'custom' layout: preserve current widgets
+        // instead of replacing with empty array
+        if (layoutId === 'custom') {
+          return {
+            ...prev,
+            activeLayoutId: layoutId,
+            // Keep existing widgets when switching to custom
+          };
+        }
+        
+        // For other presets, use the preset's widget configuration
+        return {
+          ...prev,
+          activeLayoutId: layoutId,
+          widgets: preset.widgets,
+        };
+      });
     }
   }, []);
 
