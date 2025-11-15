@@ -1,0 +1,25 @@
+graph TD
+    A[AWAITING_INTAKE] --> B(LIVE)
+    B --> C{ON_HOLD}
+    C --> B
+    B --> D{QUARANTINED}
+    D --> B
+    B --> E(PHOTOGRAPHY_COMPLETE)
+    E --> F(SOLD_OUT)
+    F --> G(CLOSED)
+
+    subgraph "State Transitions"
+        A -- Intake Session --> B
+        B -- Manual Hold --> C
+        C -- Release Hold --> B
+        B -- QC Issue --> D
+        D -- QC Pass --> B
+        B -- Photos Done --> E
+        E -- Order Fulfillment --> F
+        F -- Reconciliation --> G
+    end
+
+    subgraph "Related Tables"
+        H{batches} --> I{batchStatusHistory}
+        I -- Records every state change --> H
+    end
