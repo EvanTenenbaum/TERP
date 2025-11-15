@@ -148,13 +148,13 @@ export default function MatchmakingServicePage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setLocation("/needs/new")}>
+            <Button onClick={() => setLocation("/clients")}>
               <Plus className="mr-2 h-4 w-4" />
               Add Need
             </Button>
             <Button
               variant="outline"
-              onClick={() => setLocation("/supply/new")}
+              onClick={() => setLocation("/vendor-supply")}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Supply
@@ -370,7 +370,9 @@ export default function MatchmakingServicePage() {
                         </Badge>
                       )}
                     </div>
-                    <h4 className="font-medium">{getProductDisplayName(item)}</h4>
+                    <h4 className="font-medium">
+                      {getProductDisplayName(item)}
+                    </h4>
                     <p className="text-sm text-muted-foreground">
                       {item.category && `${item.category}`}
                       {item.grade && ` • ${item.grade}`}

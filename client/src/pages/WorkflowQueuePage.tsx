@@ -1,23 +1,21 @@
 /**
  * Workflow Queue Management Page
- * 
+ *
  * Kanban-style workflow queue management system for batch processing.
  * Features drag-and-drop, real-time updates, and status history tracking.
- * 
+ *
  * Initiative: 1.3 Workflow Queue Management
  */
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Settings, History, BarChart3 } from "lucide-react";
+import { Settings, History, BarChart3 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { WorkflowBoard } from "@/components/workflow/WorkflowBoard";
 import { WorkflowSettings } from "@/components/workflow/WorkflowSettings";
 import { WorkflowHistory } from "@/components/workflow/WorkflowHistory";
 import { WorkflowAnalytics } from "@/components/workflow/WorkflowAnalytics";
-import { toast } from "sonner";
 
 type ViewMode = "board" | "settings" | "history" | "analytics";
 
@@ -25,10 +23,12 @@ export default function WorkflowQueuePage() {
   const [viewMode, setViewMode] = useState<ViewMode>("board");
 
   // Fetch workflow statuses
-  const { data: statuses, isLoading: statusesLoading } = trpc.workflowQueue.listStatuses.useQuery();
+  const { data: statuses, isLoading: statusesLoading } =
+    trpc.workflowQueue.listStatuses.useQuery();
 
   // Fetch batches grouped by status
-  const { data: queues, isLoading: queuesLoading } = trpc.workflowQueue.getQueues.useQuery();
+  const { data: queues, isLoading: queuesLoading } =
+    trpc.workflowQueue.getQueues.useQuery();
 
   const isLoading = statusesLoading || queuesLoading;
 
@@ -51,10 +51,13 @@ export default function WorkflowQueuePage() {
           <div className="flex items-center gap-4">
             <BackButton label="Back to Dashboard" to="/" />
             <div>
-            <h1 className="text-2xl font-bold text-gray-900">Workflow Queue</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Manage batch processing workflow and track status changes
-            </p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Workflow Queue
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage batch processing workflow and track status changes
+              </p>
+            </div>
           </div>
 
           {/* View Mode Switcher */}
@@ -99,7 +102,9 @@ export default function WorkflowQueuePage() {
         {viewMode === "board" && (
           <WorkflowBoard statuses={statuses || []} queues={queues || {}} />
         )}
-        {viewMode === "settings" && <WorkflowSettings statuses={statuses || []} />}
+        {viewMode === "settings" && (
+          <WorkflowSettings statuses={statuses || []} />
+        )}
         {viewMode === "history" && <WorkflowHistory />}
         {viewMode === "analytics" && <WorkflowAnalytics />}
       </div>
