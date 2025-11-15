@@ -4267,6 +4267,184 @@ export type InsertClientMeetingHistoryEntry =
   typeof clientMeetingHistory.$inferInsert;
 
 // ============================================================================
+// EVENT INVITATION WORKFLOW TABLES (QA-044)
+// ============================================================================
+
+/**
+ * Calendar Event Invitations table
+ * Formal invitation workflow layer on top of participant system
+ * Supports auto-accept functionality and admin controls
+ */
+export const calendarEventInvitations = mysqlTable(
+  "calendar_event_invitations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    // Event reference
+    eventId: int("event_id")
+      .notNull()
+      .references(() => calendarEvents.id, { onDelete: "cascade" }),
+
+    // Invitee information (polymorphic)
+    inviteeType: mysqlEnum("invitee_type", ["USER", "CLIENT", "EXTERNAL"])
+      .notNull(),
+    userId: int("user_id").references(() => users.id, { onDelete: "cascade" }),
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "cascade",
+    }),
+    externalEmail: varchar("external_email", { length: 320 }),
+    externalName: varchar("external_name", { length: 255 }),
+
+    // Invitation details
+    role: mysqlEnum("role", ["ORGANIZER", "REQUIRED", "OPTIONAL", "OBSERVER"])
+      .default("REQUIRED")
+      .notNull(),
+    message: text("message"),
+
+    // Status tracking
+    status: mysqlEnum("status", [
+      "DRAFT",
+      "PENDING",
+      "ACCEPTED",
+      "DECLINED",
+      "AUTO_ACCEPTED",
+      "CANCELLED",
+      "EXPIRED",
+    ])
+      .default("DRAFT")
+      .notNull(),
+
+    // Auto-accept functionality
+    autoAccept: boolean("auto_accept").default(false).notNull(),
+    autoAcceptReason: varchar("auto_accept_reason", { length: 255 }),
+
+    // Admin controls
+    adminOverride: boolean("admin_override").default(false).notNull(),
+    overriddenBy: int("overridden_by").references(() => users.id),
+    overrideReason: text("override_reason"),
+    overriddenAt: timestamp("overridden_at"),
+
+    // Timestamps
+    sentAt: timestamp("sent_at"),
+    respondedAt: timestamp("responded_at"),
+    expiresAt: timestamp("expires_at"),
+
+    // Metadata
+    createdBy: int("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+
+    // Link to participant record (created after acceptance)
+    participantId: int("participant_id").references(
+      () => calendarEventParticipants.id,
+      { onDelete: "set null" }
+    ),
+  },
+  table => ({
+    // Indexes for performance
+    eventIdx: index("idx_invitation_event").on(table.eventId),
+    userIdx: index("idx_invitation_user").on(table.userId),
+    clientIdx: index("idx_invitation_client").on(table.clientId),
+    statusIdx: index("idx_invitation_status").on(table.status),
+    createdByIdx: index("idx_invitation_created_by").on(table.createdBy),
+
+    // Unique constraint: one invitation per invitee per event
+    uniqueInvitation: unique("idx_unique_invitation").on(
+      table.eventId,
+      table.inviteeType,
+      table.userId,
+      table.clientId,
+      table.externalEmail
+    ),
+  })
+);
+
+export type CalendarEventInvitation =
+  typeof calendarEventInvitations.$inferSelect;
+export type InsertCalendarEventInvitation =
+  typeof calendarEventInvitations.$inferInsert;
+
+/**
+ * Calendar Invitation Settings table
+ * User-level settings for auto-accepting invitations
+ */
+export const calendarInvitationSettings = mysqlTable(
+  "calendar_invitation_settings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    userId: int("user_id")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Auto-accept rules
+    autoAcceptAll: boolean("auto_accept_all").default(false).notNull(),
+    autoAcceptFromOrganizers:
+      json("auto_accept_from_organizers").$type<number[]>(),
+    autoAcceptByEventType: json("auto_accept_by_event_type").$type<string[]>(),
+    autoAcceptByModule: json("auto_accept_by_module").$type<string[]>(),
+
+    // Notification preferences
+    notifyOnInvitation: boolean("notify_on_invitation").default(true).notNull(),
+    notifyOnAutoAccept: boolean("notify_on_auto_accept").default(true).notNull(),
+
+    // Metadata
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  }
+);
+
+export type CalendarInvitationSettings =
+  typeof calendarInvitationSettings.$inferSelect;
+export type InsertCalendarInvitationSettings =
+  typeof calendarInvitationSettings.$inferInsert;
+
+/**
+ * Calendar Invitation History table
+ * Audit trail for invitation actions
+ */
+export const calendarInvitationHistory = mysqlTable(
+  "calendar_invitation_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+
+    invitationId: int("invitation_id")
+      .notNull()
+      .references(() => calendarEventInvitations.id, { onDelete: "cascade" }),
+
+    action: mysqlEnum("action", [
+      "CREATED",
+      "SENT",
+      "ACCEPTED",
+      "DECLINED",
+      "AUTO_ACCEPTED",
+      "CANCELLED",
+      "EXPIRED",
+      "ADMIN_OVERRIDE",
+      "RESENT",
+    ]).notNull(),
+
+    performedBy: int("performed_by").references(() => users.id),
+    performedAt: timestamp("performed_at").defaultNow().notNull(),
+
+    notes: text("notes"),
+    metadata: json("metadata"),
+  },
+  table => ({
+    invitationIdx: index("idx_history_invitation").on(table.invitationId),
+    performedByIdx: index("idx_history_performed_by").on(table.performedBy),
+  })
+);
+
+export type CalendarInvitationHistory =
+  typeof calendarInvitationHistory.$inferSelect;
+export type InsertCalendarInvitationHistory =
+  typeof calendarInvitationHistory.$inferInsert;
+
+// ============================================================================
 // WORKFLOW QUEUE MANAGEMENT TABLES (Initiative 1.3)
 // ============================================================================
 
