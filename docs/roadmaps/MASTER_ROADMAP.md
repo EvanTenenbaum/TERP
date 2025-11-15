@@ -406,6 +406,42 @@
 
 ---
 
+### DATA-001: Comprehensive Production Data Seeding with Operational Coherence
+
+**Status:** ready  
+**Priority:** P0 (CRITICAL)  
+**Estimate:** 120-160h (3-4 weeks)  
+**Module:** `scripts/generators/`, `scripts/seed-*.ts`  
+**Dependencies:** None  
+**Prompt:** [`docs/prompts/DATA-001.md`](../prompts/DATA-001.md)
+
+**Objectives:**
+
+- Extend seeding infrastructure from 9/107 tables (8%) to 107/107 (100%)
+- Generate operationally coherent data reflecting 22 months of business operations
+- Ensure all transactions create appropriate downstream records (invoices → line items → ledger → AR → payments)
+- Implement transaction context and cascading generators for operational linkage
+- Validate financial integrity (double-entry bookkeeping, account reconciliation)
+- Enable realistic testing of all features with production-quality data
+
+**Deliverables:**
+
+- [ ] Operational flow diagrams for all major business processes
+- [ ] Enhanced generator architecture (transaction context, cascading generators, state validators)
+- [ ] 40+ new generators covering all remaining tables
+- [ ] Comprehensive validation test suite (operational coherence, referential integrity, temporal coherence)
+- [ ] Production seeding script with safety measures
+- [ ] Seeded production database with 100% table coverage
+- [ ] Validation report confirming all success criteria met
+- [ ] Session file archived
+- [ ] MASTER_ROADMAP updated to ✅ Complete
+
+**Context:**
+
+Currently only 9 tables have seed data (clients, orders, invoices, strains, products, lots, batches, returns, brands). Recently-built features (events, comments, lists, dashboard widgets) have no data and appear broken. More critically, existing data lacks operational coherence - orders don't create invoices with line items, invoices don't have payment records, batches don't have workflow history. This task models complete business operations where every transaction creates all related records, enabling realistic testing and demonstration.
+
+---
+
 ### ST-005: Add Missing Database Indexes
 
 **Status:** ready  
