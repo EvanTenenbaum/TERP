@@ -1,0 +1,10 @@
+graph TD
+    A[Communication] --> B{clientCommunications}
+    C[Meeting] --> D{clientMeetingHistory}
+    E[Note Taken] --> F{clientNotes}
+    B --> G{clientActivity}
+    D --> G
+    F --> G
+    H{clients} <-- G
+    I[Create Task] --> J{todoTasks}
+    J --> H
