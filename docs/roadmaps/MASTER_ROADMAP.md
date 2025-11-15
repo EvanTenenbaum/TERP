@@ -1237,7 +1237,10 @@ See docs/QA-014-COMPLETION-REPORT.md for details.
 
 ### QA-016: Fix Matchmaking - Add Supply Button 404
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 4-6h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+
+**Resolution:** Fixed by updating button navigation routes. Changed Add Need button to navigate to /clients and Add Supply button to navigate to /vendor-supply (existing routes). Added comprehensive test coverage (4/4 tests passing). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
+See docs/QA-016-COMPLETION-REPORT.md for details.
 
 ---
 
