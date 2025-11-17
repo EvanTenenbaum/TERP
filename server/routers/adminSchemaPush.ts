@@ -16,7 +16,7 @@ export const adminSchemaPushRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
-    const results: any[] = [];
+    const results: Array<{ step: string; status: string; message?: string }> = [];
     const startTime = Date.now();
 
     try {
@@ -26,11 +26,12 @@ export const adminSchemaPushRouter = router({
           ALTER TABLE strains ADD COLUMN openthcId VARCHAR(255) NULL
         `);
         results.push({ step: 'add_openthcId', status: 'success' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ step: 'add_openthcId', status: 'already_exists' });
         } else {
-          results.push({ step: 'add_openthcId', status: 'error', message: error.message });
+          results.push({ step: 'add_openthcId', status: 'error', message: errorMessage });
         }
       }
 
@@ -40,11 +41,12 @@ export const adminSchemaPushRouter = router({
           ALTER TABLE strains ADD COLUMN openthcStub VARCHAR(255) NULL
         `);
         results.push({ step: 'add_openthcStub', status: 'success' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ step: 'add_openthcStub', status: 'already_exists' });
         } else {
-          results.push({ step: 'add_openthcStub', status: 'error', message: error.message });
+          results.push({ step: 'add_openthcStub', status: 'error', message: errorMessage });
         }
       }
 
@@ -54,11 +56,12 @@ export const adminSchemaPushRouter = router({
           ALTER TABLE strains ADD COLUMN parentStrainId INT NULL
         `);
         results.push({ step: 'add_parentStrainId', status: 'success' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ step: 'add_parentStrainId', status: 'already_exists' });
         } else {
-          results.push({ step: 'add_parentStrainId', status: 'error', message: error.message });
+          results.push({ step: 'add_parentStrainId', status: 'error', message: errorMessage });
         }
       }
 
@@ -68,11 +71,12 @@ export const adminSchemaPushRouter = router({
           ALTER TABLE strains ADD COLUMN baseStrainName VARCHAR(255) NULL
         `);
         results.push({ step: 'add_baseStrainName', status: 'success' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ step: 'add_baseStrainName', status: 'already_exists' });
         } else {
-          results.push({ step: 'add_baseStrainName', status: 'error', message: error.message });
+          results.push({ step: 'add_baseStrainName', status: 'error', message: errorMessage });
         }
       }
 
@@ -82,11 +86,12 @@ export const adminSchemaPushRouter = router({
           ALTER TABLE client_needs ADD COLUMN strainId INT NULL
         `);
         results.push({ step: 'add_client_needs_strainId', status: 'success' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ step: 'add_client_needs_strainId', status: 'already_exists' });
         } else {
-          results.push({ step: 'add_client_needs_strainId', status: 'error', message: error.message });
+          results.push({ step: 'add_client_needs_strainId', status: 'error', message: errorMessage });
         }
       }
 
@@ -94,44 +99,44 @@ export const adminSchemaPushRouter = router({
       try {
         await db.execute(sql`CREATE INDEX idx_strains_openthc_id ON strains(openthcId)`);
         results.push({ step: 'index_openthcId', status: 'success' });
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.message.includes('Duplicate') || error.message.includes('already exists')) {
           results.push({ step: 'index_openthcId', status: 'already_exists' });
         } else {
-          results.push({ step: 'index_openthcId', status: 'error', message: error.message });
+          results.push({ step: 'index_openthcId', status: 'error', message: errorMessage });
         }
       }
 
       try {
         await db.execute(sql`CREATE INDEX idx_strains_parent ON strains(parentStrainId)`);
         results.push({ step: 'index_parentStrainId', status: 'success' });
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.message.includes('Duplicate') || error.message.includes('already exists')) {
           results.push({ step: 'index_parentStrainId', status: 'already_exists' });
         } else {
-          results.push({ step: 'index_parentStrainId', status: 'error', message: error.message });
+          results.push({ step: 'index_parentStrainId', status: 'error', message: errorMessage });
         }
       }
 
       try {
         await db.execute(sql`CREATE INDEX idx_strains_base_name ON strains(baseStrainName)`);
         results.push({ step: 'index_baseStrainName', status: 'success' });
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.message.includes('Duplicate') || error.message.includes('already exists')) {
           results.push({ step: 'index_baseStrainName', status: 'already_exists' });
         } else {
-          results.push({ step: 'index_baseStrainName', status: 'error', message: error.message });
+          results.push({ step: 'index_baseStrainName', status: 'error', message: errorMessage });
         }
       }
 
       try {
         await db.execute(sql`CREATE INDEX idx_client_needs_strain ON client_needs(strainId)`);
         results.push({ step: 'index_client_needs_strain', status: 'success' });
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.message.includes('Duplicate') || error.message.includes('already exists')) {
           results.push({ step: 'index_client_needs_strain', status: 'already_exists' });
         } else {
-          results.push({ step: 'index_client_needs_strain', status: 'error', message: error.message });
+          results.push({ step: 'index_client_needs_strain', status: 'error', message: errorMessage });
         }
       }
 
@@ -143,11 +148,11 @@ export const adminSchemaPushRouter = router({
           FOREIGN KEY (parentStrainId) REFERENCES strains(id) ON DELETE SET NULL
         `);
         results.push({ step: 'fk_parent_strain', status: 'success' });
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.message.includes('Duplicate') || error.message.includes('already exists')) {
           results.push({ step: 'fk_parent_strain', status: 'already_exists' });
         } else {
-          results.push({ step: 'fk_parent_strain', status: 'error', message: error.message });
+          results.push({ step: 'fk_parent_strain', status: 'error', message: errorMessage });
         }
       }
 
@@ -158,11 +163,11 @@ export const adminSchemaPushRouter = router({
           FOREIGN KEY (strainId) REFERENCES strains(id) ON DELETE SET NULL
         `);
         results.push({ step: 'fk_client_needs_strain', status: 'success' });
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.message.includes('Duplicate') || error.message.includes('already exists')) {
           results.push({ step: 'fk_client_needs_strain', status: 'already_exists' });
         } else {
-          results.push({ step: 'fk_client_needs_strain', status: 'error', message: error.message });
+          results.push({ step: 'fk_client_needs_strain', status: 'error', message: errorMessage });
         }
       }
 
@@ -180,7 +185,7 @@ export const adminSchemaPushRouter = router({
           duration
         }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         error: error.message,
@@ -211,7 +216,7 @@ export const adminSchemaPushRouter = router({
         AND TABLE_NAME = 'strains'
       `);
       
-      const strainsCols = (strainsColumns as any[]).map((row: any) => row.COLUMN_NAME);
+      const strainsCols = (strainsColumns as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
       
       // Check client_needs columns
       const clientNeedsColumns = await db.execute(sql`
@@ -221,7 +226,7 @@ export const adminSchemaPushRouter = router({
         AND TABLE_NAME = 'client_needs'
       `);
       
-      const clientNeedsCols = (clientNeedsColumns as any[]).map((row: any) => row.COLUMN_NAME);
+      const clientNeedsCols = (clientNeedsColumns as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
 
       const verification = {
         strains: {
@@ -247,7 +252,7 @@ export const adminSchemaPushRouter = router({
         verification,
         message: allPresent ? 'All schema changes applied successfully' : 'Some columns are missing'
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         allPresent: false,
         error: error.message
