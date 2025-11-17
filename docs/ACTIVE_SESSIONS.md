@@ -12,6 +12,7 @@
 
 | Session ID | Task                                        | Branch                                                 | Module                         | Status                         | Started          | ETA      |
 | ---------- | ------------------------------------------- | ------------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------- | -------- |
+| 20251114-testing-infra-687ceb | ST-016: Smoke Test Script + ST-010: Integration Tests | claude/testing-infra-Session-20251114-testing-infra-687ceb | Testing Infrastructure | 🟢 In Progress | 2025-11-14 | 2-4h |
 | 20251114-QA-044-b04ecb75 | QA-044: Event Invitation Workflow | qa-044-event-invitations | Events & Calendar | 🟢 In Progress | 2025-11-14 | 16-24h |
 | 011CV4V    | Complete Workflow System + GitHub Sync + QA | claude/terp-codebase-analysis-011CV4VkhLnxVcCAEBLYp8WF | Documentation & Infrastructure | ✅ Complete - Ready for Review | 2025-11-12 18:00 | Complete |
 
