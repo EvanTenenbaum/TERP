@@ -13,7 +13,8 @@ export default function PendingInvitationsWidget() {
   const { data: pendingInvitations, refetch } =
     trpc.calendarInvitations.getPendingInvitations.useQuery();
 
-  const respondToInvitation = trpc.calendarInvitations.respondToInvitation.useMutation();
+  const respondToInvitation =
+    trpc.calendarInvitations.respondToInvitation.useMutation();
 
   const handleAccept = async (invitationId: number) => {
     try {
@@ -22,8 +23,10 @@ export default function PendingInvitationsWidget() {
         response: "ACCEPTED",
       });
       refetch();
-    } catch (error: any) {
-      alert(`Failed to accept invitation: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error(`Failed to accept invitation: ${errorMessage}`);
     }
   };
 
@@ -34,8 +37,10 @@ export default function PendingInvitationsWidget() {
         response: "DECLINED",
       });
       refetch();
-    } catch (error: any) {
-      alert(`Failed to decline invitation: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error(`Failed to decline invitation: ${errorMessage}`);
     }
   };
 
@@ -82,11 +87,16 @@ export default function PendingInvitationsWidget() {
                   </span>
                 </div>
                 {invitation.message && (
-                  <p className="mt-2 text-sm text-gray-600">{invitation.message}</p>
+                  <p className="mt-2 text-sm text-gray-600">
+                    {invitation.message}
+                  </p>
                 )}
                 <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
                   <Clock className="h-3 w-3" />
-                  Sent {new Date(invitation.sentAt!).toLocaleDateString()}
+                  Sent{" "}
+                  {invitation.sentAt
+                    ? new Date(invitation.sentAt).toLocaleDateString()
+                    : "Unknown"}
                 </div>
               </div>
               <InvitationStatusBadge status={invitation.status} size="sm" />
@@ -95,7 +105,7 @@ export default function PendingInvitationsWidget() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleAccept(invitation.id)}
-                disabled={respondToInvitation.isLoading}
+                disabled={respondToInvitation.isPending}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
               >
                 <CheckCircle className="h-4 w-4" />
@@ -103,7 +113,7 @@ export default function PendingInvitationsWidget() {
               </button>
               <button
                 onClick={() => handleDecline(invitation.id)}
-                disabled={respondToInvitation.isLoading}
+                disabled={respondToInvitation.isPending}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 <XCircle className="h-4 w-4" />
