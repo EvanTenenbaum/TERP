@@ -25,16 +25,41 @@ export default function CalendarPage() {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  // Load user's default view
-  const { data: defaultView } = trpc.calendarViews.getDefaultView.useQuery();
+  // Load user's default view (for future use)
+  // const { data: defaultView } = trpc.calendarViews.getDefaultView.useQuery();
 
   // Load events for current date range
   const dateRange = getDateRange(currentDate, currentView);
-  const { data: events, refetch: refetchEvents } = trpc.calendar.getEvents.useQuery({
-    startDate: dateRange.start,
-    endDate: dateRange.end,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  });
+  const { data: eventsData, refetch: refetchEvents } =
+    trpc.calendar.getEvents.useQuery({
+      startDate: dateRange.start,
+      endDate: dateRange.end,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+
+  // Handle the response which could be an array or an object with data property
+  const events = Array.isArray(eventsData)
+    ? eventsData
+    : eventsData?.data || [];
+
+  // Convert events to the format expected by view components
+  const formattedEvents = events.map(event => ({
+    id: event.id,
+    title: event.title,
+    startDate:
+      typeof event.startDate === "string"
+        ? event.startDate
+        : event.startDate.toISOString().split("T")[0],
+    endDate:
+      typeof event.endDate === "string"
+        ? event.endDate
+        : event.endDate.toISOString().split("T")[0],
+    startTime: event.startTime,
+    endTime: event.endTime,
+    eventType: "eventType" in event ? event.eventType : "MEETING",
+    status: "status" in event ? event.status : "SCHEDULED",
+    priority: "priority" in event ? event.priority : "MEDIUM",
+  }));
 
   // Handle view change
   const handleViewChange = (view: ViewType) => {
@@ -102,7 +127,7 @@ export default function CalendarPage() {
           <div className="flex items-center gap-4">
             <BackButton label="Back to Dashboard" to="/" />
             <h1 className="text-2xl font-semibold text-gray-900">Calendar</h1>
-            
+
             {/* Date Navigation */}
             <div className="flex items-center gap-2">
               <button
@@ -201,7 +226,7 @@ export default function CalendarPage() {
         {currentView === "MONTH" && (
           <MonthView
             currentDate={currentDate}
-            events={events || []}
+            events={formattedEvents}
             onEventClick={handleEventClick}
             onDateClick={handleDateClick}
           />
@@ -209,21 +234,21 @@ export default function CalendarPage() {
         {currentView === "WEEK" && (
           <WeekView
             currentDate={currentDate}
-            events={events || []}
+            events={formattedEvents}
             onEventClick={handleEventClick}
           />
         )}
         {currentView === "DAY" && (
           <DayView
             currentDate={currentDate}
-            events={events || []}
+            events={formattedEvents}
             onEventClick={handleEventClick}
           />
         )}
         {currentView === "AGENDA" && (
           <AgendaView
             currentDate={currentDate}
-            events={events || []}
+            events={formattedEvents}
             onEventClick={handleEventClick}
           />
         )}

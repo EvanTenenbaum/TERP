@@ -18,10 +18,12 @@ export default function InvitationSettingsDialog({
   onClose,
 }: InvitationSettingsDialogProps) {
   const [autoAcceptAll, setAutoAcceptAll] = useState(false);
-  const [autoAcceptFromOrganizers, setAutoAcceptFromOrganizers] = useState<number[]>(
+  const [autoAcceptFromOrganizers, setAutoAcceptFromOrganizers] = useState<
+    number[]
+  >([]);
+  const [autoAcceptByEventType, setAutoAcceptByEventType] = useState<string[]>(
     []
   );
-  const [autoAcceptByEventType, setAutoAcceptByEventType] = useState<string[]>([]);
   const [autoAcceptByModule, setAutoAcceptByModule] = useState<string[]>([]);
   const [notifyOnInvitation, setNotifyOnInvitation] = useState(true);
   const [notifyOnAutoAccept, setNotifyOnAutoAccept] = useState(true);
@@ -32,7 +34,8 @@ export default function InvitationSettingsDialog({
   const { data: users } = trpc.userManagement.listUsers.useQuery();
 
   // Mutations
-  const updateSettings = trpc.calendarInvitations.updateInvitationSettings.useMutation();
+  const updateSettings =
+    trpc.calendarInvitations.updateInvitationSettings.useMutation();
 
   // Load settings
   useEffect(() => {
@@ -41,7 +44,9 @@ export default function InvitationSettingsDialog({
       setAutoAcceptFromOrganizers(
         (settings.autoAcceptFromOrganizers as number[]) || []
       );
-      setAutoAcceptByEventType((settings.autoAcceptByEventType as string[]) || []);
+      setAutoAcceptByEventType(
+        (settings.autoAcceptByEventType as string[]) || []
+      );
       setAutoAcceptByModule((settings.autoAcceptByModule as string[]) || []);
       setNotifyOnInvitation(settings.notifyOnInvitation);
       setNotifyOnAutoAccept(settings.notifyOnAutoAccept);
@@ -60,10 +65,12 @@ export default function InvitationSettingsDialog({
         notifyOnAutoAccept,
       });
       refetch();
-      alert("Settings saved successfully");
+      console.log("Settings saved successfully");
       onClose();
-    } catch (error: any) {
-      alert(`Failed to save settings: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error(`Failed to save settings: ${errorMessage}`);
     }
   };
 
@@ -284,10 +291,10 @@ export default function InvitationSettingsDialog({
           </button>
           <button
             onClick={handleSave}
-            disabled={updateSettings.isLoading}
+            disabled={updateSettings.isPending}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {updateSettings.isLoading ? (
+            {updateSettings.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Saving...

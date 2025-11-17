@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from "react";
-import { X, UserPlus, Users, Mail, Send, Loader2 } from "lucide-react";
+import { X, UserPlus, Users, Send, Loader2 } from "lucide-react";
 import { trpc } from "../../lib/trpc";
 import InvitationStatusBadge from "./InvitationStatusBadge";
 
@@ -38,9 +38,9 @@ export default function EventInvitationDialog({
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [externalEmail, setExternalEmail] = useState("");
   const [externalName, setExternalName] = useState("");
-  const [role, setRole] = useState<"ORGANIZER" | "REQUIRED" | "OPTIONAL" | "OBSERVER">(
-    "REQUIRED"
-  );
+  const [role, setRole] = useState<
+    "ORGANIZER" | "REQUIRED" | "OPTIONAL" | "OBSERVER"
+  >("REQUIRED");
   const [message, setMessage] = useState("");
   const [invitees, setInvitees] = useState<Invitee[]>([]);
 
@@ -51,27 +51,30 @@ export default function EventInvitationDialog({
     trpc.calendarInvitations.getInvitationsByEvent.useQuery({ eventId });
 
   // Mutations
-  const bulkSendInvitations = trpc.calendarInvitations.bulkSendInvitations.useMutation();
+  const bulkSendInvitations =
+    trpc.calendarInvitations.bulkSendInvitations.useMutation();
 
   // Add invitee to list
   const handleAddInvitee = () => {
     if (inviteeType === "USER" && !selectedUserId) {
-      alert("Please select a user");
+      console.error("Please select a user");
       return;
     }
     if (inviteeType === "CLIENT" && !selectedClientId) {
-      alert("Please select a client");
+      console.error("Please select a client");
       return;
     }
     if (inviteeType === "EXTERNAL" && !externalEmail) {
-      alert("Please enter an email address");
+      console.error("Please enter an email address");
       return;
     }
 
     const newInvitee: Invitee = {
       inviteeType,
-      userId: inviteeType === "USER" ? selectedUserId! : undefined,
-      clientId: inviteeType === "CLIENT" ? selectedClientId! : undefined,
+      userId:
+        inviteeType === "USER" ? (selectedUserId ?? undefined) : undefined,
+      clientId:
+        inviteeType === "CLIENT" ? (selectedClientId ?? undefined) : undefined,
       externalEmail: inviteeType === "EXTERNAL" ? externalEmail : undefined,
       externalName: inviteeType === "EXTERNAL" ? externalName : undefined,
       role,
@@ -95,7 +98,7 @@ export default function EventInvitationDialog({
   // Send invitations
   const handleSendInvitations = async () => {
     if (invitees.length === 0) {
-      alert("Please add at least one invitee");
+      console.error("Please add at least one invitee");
       return;
     }
 
@@ -113,13 +116,15 @@ export default function EventInvitationDialog({
         message: message || undefined,
       });
 
-      alert(`Successfully sent ${invitees.length} invitation(s)`);
+      console.log(`Successfully sent ${invitees.length} invitation(s)`);
       setInvitees([]);
       setMessage("");
       refetchInvitations();
       onClose();
-    } catch (error: any) {
-      alert(`Failed to send invitations: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error(`Failed to send invitations: ${errorMessage}`);
     }
   };
 
@@ -181,10 +186,13 @@ export default function EventInvitationDialog({
                       <Users className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-900">
                         {inv.inviteeType === "USER" && `User #${inv.userId}`}
-                        {inv.inviteeType === "CLIENT" && `Client #${inv.clientId}`}
+                        {inv.inviteeType === "CLIENT" &&
+                          `Client #${inv.clientId}`}
                         {inv.inviteeType === "EXTERNAL" && inv.externalEmail}
                       </span>
-                      <span className="text-xs text-gray-500">({inv.role})</span>
+                      <span className="text-xs text-gray-500">
+                        ({inv.role})
+                      </span>
                     </div>
                     <InvitationStatusBadge status={inv.status} size="sm" />
                   </div>
@@ -317,7 +325,11 @@ export default function EventInvitationDialog({
                 value={role}
                 onChange={e =>
                   setRole(
-                    e.target.value as "ORGANIZER" | "REQUIRED" | "OPTIONAL" | "OBSERVER"
+                    e.target.value as
+                      | "ORGANIZER"
+                      | "REQUIRED"
+                      | "OPTIONAL"
+                      | "OBSERVER"
                   )
                 }
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
@@ -397,10 +409,10 @@ export default function EventInvitationDialog({
           </button>
           <button
             onClick={handleSendInvitations}
-            disabled={invitees.length === 0 || bulkSendInvitations.isLoading}
+            disabled={invitees.length === 0 || bulkSendInvitations.isPending}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {bulkSendInvitations.isLoading ? (
+            {bulkSendInvitations.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Sending...
