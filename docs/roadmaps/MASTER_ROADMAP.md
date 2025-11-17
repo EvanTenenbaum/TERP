@@ -260,7 +260,7 @@
   - Estimate: 2-3 days
   - Note: Addresses Kimi AI's finding about missing API monitoring
 
-- [ ] **ST-010: Add Integration Tests** (Unassigned) 🟡 MEDIUM
+- [~] **ST-010: Add Integration Tests** (Session-20251114-testing-infra-687ceb) 🟡 MEDIUM
   - Task ID: ST-010
   - Action: Write integration tests for critical paths
   - **Coverage Required:**
@@ -358,7 +358,7 @@
   - Priority: DO BEFORE implementing Redis or other performance fixes
   - Note: Validates performance claims from external analysis
 
-- [ ] **ST-016: Add Smoke Test Script** (Unassigned) 🔴 HIGH
+- [~] **ST-016: Add Smoke Test Script** (Session-20251114-testing-infra-687ceb) 🔴 HIGH
   - Task ID: ST-016
   - Action: Create `scripts/smoke-test.sh` for automated security and quality checks
   - **Checklist:**
