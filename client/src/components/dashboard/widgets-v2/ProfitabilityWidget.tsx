@@ -1,8 +1,9 @@
+import { memo } from "react";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { TrendingUp, DollarSign, Percent, Package } from "lucide-react";
 
-export function ProfitabilityWidget() {
+export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
   const { data: summary, isLoading } =
     trpc.inventory.profitability.summary.useQuery();
   const { data: topBatches } = trpc.inventory.profitability.top.useQuery(5);
@@ -127,4 +128,4 @@ export function ProfitabilityWidget() {
       )}
     </Card>
   );
-}
+});
