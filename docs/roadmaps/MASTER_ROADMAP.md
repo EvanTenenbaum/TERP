@@ -1281,16 +1281,20 @@ See docs/QA-019-COMPLETION-REPORT.md for details.
 
 ### QA-020: Test and Fix Calendar - Create Event Form
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-17) | **Effort:** 2.5h | **Session:** Session-20251114-calendar-events-428937
 
-**Resolution:** Fixed critical bugs preventing form from working:
+**Resolution:** Verified and enhanced calendar event form functionality:
 
-- Added missing React imports (useState, useEffect)
-- Updated tRPC mutation API from isLoading to isPending
-- Added type-safe date handling for Date objects
-- Created comprehensive test suite
+- Fixed CalendarPage.tsx type handling for tRPC query responses
+- Added proper date formatting (Date objects → strings)
+- Handled missing properties in recurrence instances
+- Fixed tRPC v11 migration (isLoading → isPending) in 3 calendar components
+- Replaced alert() with proper console logging
+- Fixed all ESLint warnings and errors
+- All pre-commit hooks passing
+- Production-ready, no placeholders
 
-See docs/QA-020-COMPLETION-REPORT.md for details.
+**Commits:** 8983450, 6d6d38e
 
 ---
 
@@ -1682,9 +1686,9 @@ Events should be linkable to specific clients to track interactions and history.
 
 ### QA-046: Add Click-to-Create Event on Calendar
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-8h
+**Priority:** P2 | **Status:** ✅ Complete (2025-11-17) | **Effort:** 2.5h | **Session:** Session-20251114-calendar-events-428937
 
-Click-to-create functionality has been implemented:
+Click-to-create functionality verified and production-ready:
 
 - Added onDateClick prop to MonthView component
 - Calendar day cells now clickable with hover effect for visual feedback
@@ -1692,6 +1696,11 @@ Click-to-create functionality has been implemented:
 - EventFormDialog accepts initialDate prop to pre-fill start/end dates
 - Seamless UX - clicking a day opens the form with date pre-filled
 - Works alongside existing 'Create Event' button
+- All TypeScript errors resolved
+- All ESLint warnings fixed
+- Production-ready, no placeholders
+
+**Commits:** 8983450, 6d6d38e
 
 ---
 
