@@ -201,7 +201,7 @@
   - Resolution: Removed 3 obsolete PR-based workflows (roadmap-validation.yml, pr-auto-fix.yml, pr.yml). These were failing because the project pushes directly to main instead of using PRs. No functional impact, cleanup only.
   - Branch: Merged to main (commit a3d05d2)
 
-- [ ] **ST-005: Add Missing Database Indexes** (Unassigned) 🟡 MEDIUM
+- [~] **ST-005: Add Missing Database Indexes** (Session-20251114-db-performance-48d7cf) 🟡 MEDIUM
   - Task ID: ST-005
   - Action: Audit all foreign keys and add missing indexes
   - Impact: Improved query performance
@@ -345,7 +345,7 @@
   - Estimate: 2-3 days
   - Note: Addresses Kimi AI's finding about inconsistent soft deletes
 
-- [ ] **ST-015: Benchmark Critical Paths** (Unassigned) 🟡 MEDIUM
+- [~] **ST-015: Benchmark Critical Paths** (Session-20251114-db-performance-48d7cf) 🟡 MEDIUM
   - Task ID: ST-015
   - Action: Measure actual performance of critical operations before optimization
   - **Checklist:**
@@ -373,7 +373,7 @@
   - Priority: High value, low effort - prevents security regressions
   - Note: Based on validated security patterns from codebase analysis
 
-- [ ] **ST-017: Implement Batch Status Transition Logic** (Unassigned) 🔴 HIGH
+- [~] **ST-017: Implement Batch Status Transition Logic** (Session-20251114-db-performance-48d7cf) 🔴 HIGH
   - Task ID: ST-017
   - Action: Implement server-side logic for inventory batch status transitions
   - **Context:** Analysis revealed that batch status logic is missing from backend
