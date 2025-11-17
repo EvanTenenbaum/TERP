@@ -1,13 +1,16 @@
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
-export function ClientProfitMarginLeaderboard() {
-  const { data, isLoading } = trpc.dashboard.getClientProfitMargin.useQuery(
-    undefined,
+export const ClientProfitMarginLeaderboard = memo(function ClientProfitMarginLeaderboard() {
+  const { data: response, isLoading } = trpc.dashboard.getClientProfitMargin.useQuery(
+    {},
     { refetchInterval: 60000 }
   );
+
+  const data = response?.data || [];
 
   const formatPercent = (value: number) => {
     return `${value.toFixed(0)}%`;
@@ -25,7 +28,7 @@ export function ClientProfitMarginLeaderboard() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
-        ) : data && data.length > 0 ? (
+        ) : data.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -56,5 +59,5 @@ export function ClientProfitMarginLeaderboard() {
       </CardContent>
     </Card>
   );
-}
+});
 

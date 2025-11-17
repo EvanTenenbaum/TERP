@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,7 +13,7 @@ import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 
-export function InventorySnapshotWidget() {
+export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
   const [, setLocation] = useLocation();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
@@ -131,4 +131,4 @@ export function InventorySnapshotWidget() {
       </CardContent>
     </Card>
   );
-}
+});

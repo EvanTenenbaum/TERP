@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   Card,
   CardContent,
@@ -12,7 +13,7 @@ import { trpc } from "@/lib/trpc";
 import { Target, AlertTriangle, TrendingUp, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
 
-export function MatchmakingOpportunitiesWidget() {
+export const MatchmakingOpportunitiesWidget = memo(function MatchmakingOpportunitiesWidget() {
   const [, setLocation] = useLocation();
 
   // Get top matches from all active needs
@@ -236,4 +237,4 @@ export function MatchmakingOpportunitiesWidget() {
       </CardContent>
     </Card>
   );
-}
+});

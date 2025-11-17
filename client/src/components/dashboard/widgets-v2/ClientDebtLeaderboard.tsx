@@ -1,13 +1,16 @@
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
-export function ClientDebtLeaderboard() {
-  const { data, isLoading } = trpc.dashboard.getClientDebt.useQuery(
-    undefined,
+export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
+  const { data: response, isLoading } = trpc.dashboard.getClientDebt.useQuery(
+    {},
     { refetchInterval: 60000 }
   );
+
+  const data = response?.data || [];
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -30,7 +33,7 @@ export function ClientDebtLeaderboard() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
-        ) : data && data.length > 0 ? (
+        ) : data.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -63,5 +66,5 @@ export function ClientDebtLeaderboard() {
       </CardContent>
     </Card>
   );
-}
+});
 
