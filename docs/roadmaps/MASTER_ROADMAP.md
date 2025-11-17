@@ -688,7 +688,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - Impact: Reduced complexity, better maintainability
   - Estimate: 1-2 days
 
-- [~] **RF-002: Implement Dashboard Pagination** (Session-20251114-performance-cb5cb6) 🔴 P1
+- [x] **RF-002: Implement Dashboard Pagination** (Session-20251114-performance-cb5cb6) 🔴 P1
   - Task ID: RF-002
   - Action: Add pagination to the `getInvoices` call in the dashboard
   - Impact: Better performance for large datasets
@@ -701,7 +701,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - Impact: Improved type safety
   - Estimate: 1-2 days
 
-- [~] **RF-004: Add React.memo to Components** (Session-20251114-performance-cb5cb6) 🟡 P2
+- [x] **RF-004: Add React.memo to Components** (Session-20251114-performance-cb5cb6) 🟡 P2
   - Task ID: RF-004
   - Action: Identify and memoize the most frequently re-rendered components
   - Impact: Improved rendering performance
@@ -1739,17 +1739,20 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 **Prompt:** `docs/prompts/DATA-002.md`
 
 **Objectives:**
+
 - Seed comments table with 100+ comments on orders and clients
 - Seed comment_mentions for @mention functionality
 - Seed userDashboardPreferences for all users
 - Seed dashboard_widget_layouts and dashboard_kpi_configs
 
 **Deliverables:**
+
 - Simple seed script for comments (2 tables)
 - Simple seed script for dashboard (3 tables)
 - Validation that features work with seeded data
 
 **Context:**
+
 - Comments feature just fixed (QA-012, QA-013)
 - Dashboard widgets just fixed (QA-002, QA-004, QA-034)
 - Need data to test and demo these features
@@ -1764,15 +1767,18 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 **Prompt:** `docs/prompts/DATA-003.md`
 
 **Objectives:**
+
 - Seed pricing_rules with volume/client/product rules
 - Seed pricing_profiles for top clients
 - Seed pricing_defaults for all products
 
 **Deliverables:**
+
 - Simple seed script for pricing (3 tables)
 - Validation that pricing features work
 
 **Context:**
+
 - Pricing forms just tested (QA-041, QA-042, QA-043)
 - Need data to test pricing calculation logic
 
@@ -1786,6 +1792,7 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 **Prompt:** `docs/prompts/INFRA-003.md`
 
 **Objectives:**
+
 - Run pending database migrations OR
 - Update drizzle schema to match actual database
 - Fix inventoryMovements.adjustmentReason column issue
@@ -1793,13 +1800,14 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 - Validate all tables match drizzle schema
 
 **Deliverables:**
+
 - Database schema in sync with drizzle definitions
 - Migration system working properly
 - Documentation of schema sync process
 
 **Context:**
+
 - DATA-001 failed due to schema mismatches
 - inventoryMovements missing adjustmentReason column
 - orderStatusHistory has duplicate column names
 - Blocks future seeding efforts
-
