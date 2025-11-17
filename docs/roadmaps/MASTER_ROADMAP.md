@@ -694,7 +694,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - Impact: Better performance for large datasets
   - Estimate: 4-6 hours
 
-- [ ] **RF-003: Systematically Fix `any` Types** (Unassigned)
+- [~] **RF-003: Systematically Fix `any` Types** (Session-20251114-code-quality-6105e5)
   - Task ID: RF-003
   - Action: Start with the top 10 files with the most `any` types
   - Impact: Improved type safety
@@ -713,7 +713,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - Impact: Better maintainability
   - Estimate: 2-3 days
 
-- [ ] **RF-006: Remove Unused Dependencies** (Unassigned)
+- [~] **RF-006: Remove Unused Dependencies** (Session-20251114-code-quality-6105e5)
   - Task ID: RF-006
   - Dependencies to Remove: Clerk and Socket.io
   - **WARNING:** Requires verification before removal
