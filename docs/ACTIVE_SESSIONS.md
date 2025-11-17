@@ -12,6 +12,7 @@
 
 | Session ID                      | Task                                               | Branch                                                 | Module                         | Status                         | Started          | ETA      |
 | ------------------------------- | -------------------------------------------------- | ------------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------- | -------- |
+| 20251114-testing-infra-687ceb   | ST-016: Smoke Test Script + ST-010: Integration Tests | claude/testing-infra-Session-20251114-testing-infra-687ceb | Testing Infrastructure | ✅ Complete - Merging | 2025-11-14 | Complete |
 | 20251114-calendar-events-428937 | QA-020 & QA-046: Calendar Event Testing            | claude/calendar-events-428937                          | Events & Calendar              | 🟢 In Progress                 | 2025-11-14       | 2-4h     |
 | 20251114-performance-cb5cb6     | RF-002 & RF-004: Dashboard Pagination + React.memo | claude/performance-improvements-cb5cb6                 | Dashboard & Components         | 🟢 In Progress                 | 2025-11-14       | 8-12h    |
 | 20251114-QA-044-b04ecb75        | QA-044: Event Invitation Workflow                  | qa-044-event-invitations                               | Events & Calendar              | 🟢 In Progress                 | 2025-11-14       | 16-24h   |
