@@ -4,6 +4,35 @@ import * as arApDb from "../arApDb";
 import * as dashboardDb from "../dashboardDb";
 import * as inventoryDb from "../inventoryDb";
 import { requirePermission } from "../_core/permissionMiddleware";
+import type { Invoice, Payment } from "../../drizzle/schema";
+
+// Type definitions for aggregated data
+interface SalesByClient {
+  customerId: number;
+  customerName: string;
+  totalSales: number;
+}
+
+interface CashByClient {
+  customerId: number;
+  customerName: string;
+  cashCollected: number;
+}
+
+interface ClientDebt {
+  customerId: number;
+  customerName: string;
+  currentDebt: number;
+  oldestDebt: number;
+}
+
+interface ClientMargin {
+  customerId: number;
+  customerName: string;
+  revenue: number;
+  cost: number;
+  profitMargin: number;
+}
 
 export const dashboardRouter = router({
     // Get real-time KPI data
@@ -18,7 +47,7 @@ export const dashboardRouter = router({
         
         // Calculate total revenue from paid invoices
         const paidInvoices = paidInvoicesResult.invoices || [];
-        const totalRevenue = paidInvoices.reduce((sum: number, inv: any) => sum + Number(inv.totalAmount || 0), 0);
+        const totalRevenue = paidInvoices.reduce((sum: number, inv: Invoice) => sum + Number(inv.totalAmount || 0), 0);
         
         // Calculate active orders (non-paid invoices)
         const activeInvoicesResult = await arApDb.getInvoices({ status: 'SENT' });
@@ -56,7 +85,7 @@ export const dashboardRouter = router({
           width: z.number(),
           height: z.number(),
           isVisible: z.boolean(),
-          config: z.any().optional(),
+          config: z.record(z.unknown()).optional(),
         })),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -93,7 +122,7 @@ export const dashboardRouter = router({
           width: z.number(),
           height: z.number(),
           isVisible: z.boolean(),
-          config: z.any().optional(),
+          config: z.record(z.unknown()).optional(),
         })),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -139,7 +168,7 @@ export const dashboardRouter = router({
         const allInvoices = invoices.invoices || [];
         
         // Group by customer and sum total sales
-        const salesByClient = allInvoices.reduce((acc: any, inv: any) => {
+        const salesByClient = allInvoices.reduce((acc: Record<number, SalesByClient>, inv: Invoice) => {
           const customerId = inv.customerId;
           if (!acc[customerId]) {
             acc[customerId] = {
@@ -152,7 +181,7 @@ export const dashboardRouter = router({
           return acc;
         }, {});
         
-        return Object.values(salesByClient).sort((a: any, b: any) => b.totalSales - a.totalSales);
+        return Object.values(salesByClient).sort((a: SalesByClient, b: SalesByClient) => b.totalSales - a.totalSales);
       }),
 
     // Cash Collected (24 months by client)
@@ -165,7 +194,7 @@ export const dashboardRouter = router({
         const allPayments = paymentsResult.payments || [];
         
         // Group by customer
-        const cashByClient = allPayments.reduce((acc: any, pmt: any) => {
+        const cashByClient = allPayments.reduce((acc: Record<number, CashByClient>, pmt: Payment) => {
           const customerId = pmt.customerId;
           if (customerId) {
             if (!acc[customerId]) {
@@ -180,7 +209,7 @@ export const dashboardRouter = router({
           return acc;
         }, {});
         
-        return Object.values(cashByClient).sort((a: any, b: any) => b.cashCollected - a.cashCollected);
+        return Object.values(cashByClient).sort((a: CashByClient, b: CashByClient) => b.cashCollected - a.cashCollected);
       }),
 
     // Client Debt (current debt + aging)
@@ -192,7 +221,7 @@ export const dashboardRouter = router({
         const aging = agingResult; // Aging returns the buckets directly
         
         // Combine debt and aging data
-        return receivables.map((r: any) => ({
+        return receivables.map((r: Invoice): ClientDebt => ({
           customerId: r.customerId,
           customerName: `Customer ${r.customerId}`,
           currentDebt: Number(r.amountDue || 0),
@@ -207,7 +236,7 @@ export const dashboardRouter = router({
         const allInvoices = invoices.invoices || [];
         
         // Calculate profit margin by client (simplified)
-        const marginByClient = allInvoices.reduce((acc: any, inv: any) => {
+        const marginByClient = allInvoices.reduce((acc: Record<number, Omit<ClientMargin, 'profitMargin'>>, inv: Invoice) => {
           const customerId = inv.customerId;
           if (!acc[customerId]) {
             acc[customerId] = {
@@ -223,10 +252,10 @@ export const dashboardRouter = router({
           return acc;
         }, {});
         
-        return Object.values(marginByClient).map((c: any) => ({
+        return Object.values(marginByClient).map((c): ClientMargin => ({
           ...c,
           profitMargin: c.revenue > 0 ? ((c.revenue - c.cost) / c.revenue) * 100 : 0,
-        })).sort((a: any, b: any) => b.profitMargin - a.profitMargin);
+        })).sort((a: ClientMargin, b: ClientMargin) => b.profitMargin - a.profitMargin);
       }),
 
     // Transaction Snapshot (Today vs This Week)
@@ -244,28 +273,28 @@ export const dashboardRouter = router({
         
         // Calculate today's metrics
         const todaySales = allInvoices
-          .filter((i: any) => new Date(i.invoiceDate) >= today)
-          .reduce((sum: number, i: any) => sum + Number(i.totalAmount || 0), 0);
+          .filter((i: Invoice) => new Date(i.invoiceDate) >= today)
+          .reduce((sum: number, i: Invoice) => sum + Number(i.totalAmount || 0), 0);
         
         const todayCash = allPayments
-          .filter((p: any) => new Date(p.paymentDate) >= today)
-          .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+          .filter((p: Payment) => new Date(p.paymentDate) >= today)
+          .reduce((sum: number, p: Payment) => sum + Number(p.amount || 0), 0);
         
         const todayUnits = allInvoices
-          .filter((i: any) => new Date(i.invoiceDate) >= today)
+          .filter((i: Invoice) => new Date(i.invoiceDate) >= today)
           .length;
         
         // Calculate this week's metrics
         const weekSales = allInvoices
-          .filter((i: any) => new Date(i.invoiceDate) >= weekAgo)
-          .reduce((sum: number, i: any) => sum + Number(i.totalAmount || 0), 0);
+          .filter((i: Invoice) => new Date(i.invoiceDate) >= weekAgo)
+          .reduce((sum: number, i: Invoice) => sum + Number(i.totalAmount || 0), 0);
         
         const weekCash = allPayments
-          .filter((p: any) => new Date(p.paymentDate) >= weekAgo)
-          .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+          .filter((p: Payment) => new Date(p.paymentDate) >= weekAgo)
+          .reduce((sum: number, p: Payment) => sum + Number(p.amount || 0), 0);
         
         const weekUnits = allInvoices
-          .filter((i: any) => new Date(i.invoiceDate) >= weekAgo)
+          .filter((i: Invoice) => new Date(i.invoiceDate) >= weekAgo)
           .length;
         
         return {
@@ -279,7 +308,6 @@ export const dashboardRouter = router({
       .query(async () => {
         const stats = await inventoryDb.getDashboardStats();
         return {
-          categories: stats?.categoryStats || [],
           totalUnits: stats?.totalUnits || 0,
           totalValue: stats?.totalInventoryValue || 0,
         };
@@ -312,13 +340,13 @@ export const dashboardRouter = router({
         const prior365 = new Date(last365);
         prior365.setDate(prior365.getDate() - 365);
         
-        const calculateSales = (start: Date, end: Date) => {
+        const calculateSales = (start: Date, end: Date): number => {
           return allInvoices
-            .filter((i: any) => {
+            .filter((i: Invoice) => {
               const date = new Date(i.invoiceDate);
               return date >= start && date < end;
             })
-            .reduce((sum: number, i: any) => sum + Number(i.totalAmount || 0), 0);
+            .reduce((sum: number, i: Invoice) => sum + Number(i.totalAmount || 0), 0);
         };
         
         return {
@@ -350,8 +378,8 @@ export const dashboardRouter = router({
         const receivedPaymentsResult = await arApDb.getPayments({ paymentType: 'RECEIVED' });
         const sentPaymentsResult = await arApDb.getPayments({ paymentType: 'SENT' });
         
-        const cashCollected = (receivedPaymentsResult.payments || []).reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
-        const cashSpent = (sentPaymentsResult.payments || []).reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        const cashCollected = (receivedPaymentsResult.payments || []).reduce((sum: number, p: Payment) => sum + Number(p.amount || 0), 0);
+        const cashSpent = (sentPaymentsResult.payments || []).reduce((sum: number, p: Payment) => sum + Number(p.amount || 0), 0);
         
         return {
           cashCollected,
@@ -369,8 +397,8 @@ export const dashboardRouter = router({
         const receivables = receivablesResult.invoices || [];
         const payables = payablesResult.bills || [];
         
-        const totalAR = receivables.reduce((sum: number, r: any) => sum + Number(r.amountDue || 0), 0);
-        const totalAP = payables.reduce((sum: number, p: any) => sum + Number(p.amountDue || 0), 0);
+        const totalAR = receivables.reduce((sum: number, r: Invoice) => sum + Number(r.amountDue || 0), 0);
+        const totalAP = payables.reduce((sum: number, p: Invoice) => sum + Number(p.amountDue || 0), 0);
         
         return {
           totalDebtOwedToMe: totalAR,
