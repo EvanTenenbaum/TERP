@@ -23,7 +23,7 @@ export const adminQuickFixRouter = router({
         AND TABLE_NAME = 'strains'
       `);
       
-      const columnNames = (strainsColumns as any[]).map((row: any) => row.COLUMN_NAME);
+      const columnNames = (strainsColumns as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
       
       return {
         hasOpenthcId: columnNames.includes('openthcId'),
@@ -32,9 +32,9 @@ export const adminQuickFixRouter = router({
         hasBaseStrainName: columnNames.includes('baseStrainName'),
         allColumns: columnNames
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }),
@@ -46,20 +46,21 @@ export const adminQuickFixRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
-    const results: any[] = [];
+    const results: Array<{ column?: string; index?: string; constraint?: string; status: string; message?: string }> = [];
 
-    try{
+    try {
       // Add openthcId
       try {
         await db.execute(sql`
           ALTER TABLE strains ADD COLUMN openthcId VARCHAR(255) NULL
         `);
         results.push({ column: 'openthcId', status: 'added' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ column: 'openthcId', status: 'already_exists' });
         } else {
-          results.push({ column: 'openthcId', status: 'error', message: error.message });
+          results.push({ column: 'openthcId', status: 'error', message: errorMessage });
         }
       }
 
@@ -69,11 +70,12 @@ export const adminQuickFixRouter = router({
           ALTER TABLE strains ADD COLUMN openthcStub VARCHAR(255) NULL
         `);
         results.push({ column: 'openthcStub', status: 'added' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ column: 'openthcStub', status: 'already_exists' });
         } else {
-          results.push({ column: 'openthcStub', status: 'error', message: error.message });
+          results.push({ column: 'openthcStub', status: 'error', message: errorMessage });
         }
       }
 
@@ -83,11 +85,12 @@ export const adminQuickFixRouter = router({
           ALTER TABLE strains ADD COLUMN parentStrainId INT NULL
         `);
         results.push({ column: 'parentStrainId', status: 'added' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ column: 'parentStrainId', status: 'already_exists' });
         } else {
-          results.push({ column: 'parentStrainId', status: 'error', message: error.message });
+          results.push({ column: 'parentStrainId', status: 'error', message: errorMessage });
         }
       }
 
@@ -97,11 +100,12 @@ export const adminQuickFixRouter = router({
           ALTER TABLE strains ADD COLUMN baseStrainName VARCHAR(255) NULL
         `);
         results.push({ column: 'baseStrainName', status: 'added' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ column: 'baseStrainName', status: 'already_exists' });
         } else {
-          results.push({ column: 'baseStrainName', status: 'error', message: error.message });
+          results.push({ column: 'baseStrainName', status: 'error', message: errorMessage });
         }
       }
 
@@ -111,8 +115,8 @@ export const adminQuickFixRouter = router({
           CREATE INDEX IF NOT EXISTS idx_strains_openthc_id ON strains(openthcId)
         `);
         results.push({ index: 'idx_strains_openthc_id', status: 'added' });
-      } catch (error: any) {
-        results.push({ index: 'idx_strains_openthc_id', status: 'error', message: error.message });
+      } catch (error: unknown) {
+        results.push({ index: 'idx_strains_openthc_id', status: 'error', message: error instanceof Error ? error.message : 'Unknown error' });
       }
 
       try {
@@ -120,8 +124,8 @@ export const adminQuickFixRouter = router({
           CREATE INDEX IF NOT EXISTS idx_strains_parent ON strains(parentStrainId)
         `);
         results.push({ index: 'idx_strains_parent', status: 'added' });
-      } catch (error: any) {
-        results.push({ index: 'idx_strains_parent', status: 'error', message: error.message });
+      } catch (error: unknown) {
+        results.push({ index: 'idx_strains_parent', status: 'error', message: error instanceof Error ? error.message : 'Unknown error' });
       }
 
       try {
@@ -129,8 +133,8 @@ export const adminQuickFixRouter = router({
           CREATE INDEX IF NOT EXISTS idx_strains_base_name ON strains(baseStrainName)
         `);
         results.push({ index: 'idx_strains_base_name', status: 'added' });
-      } catch (error: any) {
-        results.push({ index: 'idx_strains_base_name', status: 'error', message: error.message });
+      } catch (error: unknown) {
+        results.push({ index: 'idx_strains_base_name', status: 'error', message: error instanceof Error ? error.message : 'Unknown error' });
       }
 
       // Add foreign key constraint
@@ -141,11 +145,12 @@ export const adminQuickFixRouter = router({
           FOREIGN KEY (parentStrainId) REFERENCES strains(id) ON DELETE SET NULL
         `);
         results.push({ constraint: 'fk_parent_strain', status: 'added' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate')) {
           results.push({ constraint: 'fk_parent_strain', status: 'already_exists' });
         } else {
-          results.push({ constraint: 'fk_parent_strain', status: 'error', message: error.message });
+          results.push({ constraint: 'fk_parent_strain', status: 'error', message: errorMessage });
         }
       }
 
@@ -153,23 +158,23 @@ export const adminQuickFixRouter = router({
         success: true,
         results
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         results
       };
     }
   }),
 
   /**
-   * Add strainId to client_needs
+   * Add missing columns to clientNeeds table
    */
-  addStrainIdToClientNeeds: adminProcedure.mutation(async () => {
+  addClientNeedsColumns: adminProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
-    const results: any[] = [];
+    const results: Array<{ column?: string; index?: string; constraint?: string; status: string; message?: string }> = [];
 
     try {
       // Add strainId column
@@ -178,11 +183,12 @@ export const adminQuickFixRouter = router({
           ALTER TABLE client_needs ADD COLUMN strainId INT NULL
         `);
         results.push({ column: 'strainId', status: 'added' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate column')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate column')) {
           results.push({ column: 'strainId', status: 'already_exists' });
         } else {
-          results.push({ column: 'strainId', status: 'error', message: error.message });
+          results.push({ column: 'strainId', status: 'error', message: errorMessage });
         }
       }
 
@@ -192,8 +198,8 @@ export const adminQuickFixRouter = router({
           CREATE INDEX IF NOT EXISTS idx_client_needs_strain ON client_needs(strainId)
         `);
         results.push({ index: 'idx_client_needs_strain', status: 'added' });
-      } catch (error: any) {
-        results.push({ index: 'idx_client_needs_strain', status: 'error', message: error.message });
+      } catch (error: unknown) {
+        results.push({ index: 'idx_client_needs_strain', status: 'error', message: error instanceof Error ? error.message : 'Unknown error' });
       }
 
       // Add foreign key
@@ -204,11 +210,12 @@ export const adminQuickFixRouter = router({
           FOREIGN KEY (strainId) REFERENCES strains(id) ON DELETE SET NULL
         `);
         results.push({ constraint: 'fk_client_needs_strain', status: 'added' });
-      } catch (error: any) {
-        if (error.message.includes('Duplicate')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : '';
+        if (errorMessage.includes('Duplicate')) {
           results.push({ constraint: 'fk_client_needs_strain', status: 'already_exists' });
         } else {
-          results.push({ constraint: 'fk_client_needs_strain', status: 'error', message: error.message });
+          results.push({ constraint: 'fk_client_needs_strain', status: 'error', message: errorMessage });
         }
       }
 
@@ -216,13 +223,12 @@ export const adminQuickFixRouter = router({
         success: true,
         results
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         results
       };
     }
   })
 });
-
