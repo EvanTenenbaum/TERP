@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -13,7 +13,7 @@ import { trpc } from "@/lib/trpc";
 
 type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
 
-export function CashFlowWidget() {
+export const CashFlowWidget = memo(function CashFlowWidget() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
 
   const { data, isLoading } = trpc.dashboard.getCashFlow.useQuery(
@@ -83,4 +83,4 @@ export function CashFlowWidget() {
       </CardContent>
     </Card>
   );
-}
+});

@@ -5,6 +5,34 @@ import * as dashboardDb from "../dashboardDb";
 import * as inventoryDb from "../inventoryDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 
+// Dashboard data types
+interface SalesByClient {
+  customerId: number;
+  customerName: string;
+  totalSales: number;
+}
+
+interface CashByClient {
+  customerId: number;
+  customerName: string;
+  cashCollected: number;
+}
+
+interface ClientDebt {
+  customerId: number;
+  customerName: string;
+  currentDebt: number;
+  oldestDebt: number;
+}
+
+interface ClientMargin {
+  customerId: number;
+  customerName: string;
+  revenue: number;
+  cost: number;
+  profitMargin: number;
+}
+
 export const dashboardRouter = router({
     // Get real-time KPI data
     getKpis: protectedProcedure.use(requirePermission("dashboard:read"))
@@ -133,6 +161,8 @@ export const dashboardRouter = router({
     getSalesByClient: protectedProcedure.use(requirePermission("dashboard:read"))
       .input(z.object({
         timePeriod: z.enum(["LIFETIME", "YEAR", "QUARTER", "MONTH"]).default("LIFETIME"),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
       }))
       .query(async ({ input }) => {
         const invoices = await arApDb.getInvoices({});
@@ -152,13 +182,25 @@ export const dashboardRouter = router({
           return acc;
         }, {});
         
-        return Object.values(salesByClient).sort((a: any, b: any) => b.totalSales - a.totalSales);
+        const sortedData = Object.values(salesByClient).sort((a: SalesByClient, b: SalesByClient) => b.totalSales - a.totalSales);
+        const total = sortedData.length;
+        const paginatedData = sortedData.slice(input.offset, input.offset + input.limit);
+        
+        return {
+          data: paginatedData,
+          total,
+          limit: input.limit,
+          offset: input.offset,
+          hasMore: input.offset + input.limit < total,
+        };
       }),
 
     // Cash Collected (24 months by client)
     getCashCollected: protectedProcedure.use(requirePermission("dashboard:read"))
       .input(z.object({
         months: z.number().default(24),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
       }))
       .query(async ({ input }) => {
         const paymentsResult = await arApDb.getPayments({ paymentType: 'RECEIVED' });
@@ -180,29 +222,58 @@ export const dashboardRouter = router({
           return acc;
         }, {});
         
-        return Object.values(cashByClient).sort((a: any, b: any) => b.cashCollected - a.cashCollected);
+        const sortedData = Object.values(cashByClient).sort((a: CashByClient, b: CashByClient) => b.cashCollected - a.cashCollected);
+        const total = sortedData.length;
+        const paginatedData = sortedData.slice(input.offset, input.offset + input.limit);
+        
+        return {
+          data: paginatedData,
+          total,
+          limit: input.limit,
+          offset: input.offset,
+          hasMore: input.offset + input.limit < total,
+        };
       }),
 
     // Client Debt (current debt + aging)
     getClientDebt: protectedProcedure.use(requirePermission("dashboard:read"))
-      .query(async () => {
+      .input(z.object({
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      }))
+      .query(async ({ input }) => {
         const receivablesResult = await arApDb.getOutstandingReceivables();
         const receivables = receivablesResult.invoices || [];
         const agingResult = await arApDb.calculateARAging();
         const aging = agingResult; // Aging returns the buckets directly
         
         // Combine debt and aging data
-        return receivables.map((r: any) => ({
+        const allData: ClientDebt[] = receivables.map((r: { customerId: number; amountDue: string | number }) => ({
           customerId: r.customerId,
           customerName: `Customer ${r.customerId}`,
           currentDebt: Number(r.amountDue || 0),
           oldestDebt: 0, // TODO: Calculate oldest invoice age from invoice dates
         }));
+        
+        const total = allData.length;
+        const paginatedData = allData.slice(input.offset, input.offset + input.limit);
+        
+        return {
+          data: paginatedData,
+          total,
+          limit: input.limit,
+          offset: input.offset,
+          hasMore: input.offset + input.limit < total,
+        };
       }),
 
     // Client Profit Margin
     getClientProfitMargin: protectedProcedure.use(requirePermission("dashboard:read"))
-      .query(async () => {
+      .input(z.object({
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      }))
+      .query(async ({ input }) => {
         const invoices = await arApDb.getInvoices({});
         const allInvoices = invoices.invoices || [];
         
@@ -223,10 +294,21 @@ export const dashboardRouter = router({
           return acc;
         }, {});
         
-        return Object.values(marginByClient).map((c: any) => ({
+        const sortedData: ClientMargin[] = Object.values(marginByClient).map((c: Omit<ClientMargin, 'profitMargin'>) => ({
           ...c,
           profitMargin: c.revenue > 0 ? ((c.revenue - c.cost) / c.revenue) * 100 : 0,
-        })).sort((a: any, b: any) => b.profitMargin - a.profitMargin);
+        })).sort((a: ClientMargin, b: ClientMargin) => b.profitMargin - a.profitMargin);
+        
+        const total = sortedData.length;
+        const paginatedData = sortedData.slice(input.offset, input.offset + input.limit);
+        
+        return {
+          data: paginatedData,
+          total,
+          limit: input.limit,
+          offset: input.offset,
+          hasMore: input.offset + input.limit < total,
+        };
       }),
 
     // Transaction Snapshot (Today vs This Week)

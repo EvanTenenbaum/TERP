@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
-export function TotalDebtWidget() {
+export const TotalDebtWidget = memo(function TotalDebtWidget() {
   const { data, isLoading } = trpc.dashboard.getTotalDebt.useQuery(undefined, {
     refetchInterval: 60000,
   });
@@ -58,4 +59,4 @@ export function TotalDebtWidget() {
       </CardContent>
     </Card>
   );
-}
+});

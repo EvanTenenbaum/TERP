@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { memo } from "react";
 import {
   Table,
   TableBody,
@@ -10,7 +11,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
-export function TransactionSnapshotWidget() {
+export const TransactionSnapshotWidget = memo(function TransactionSnapshotWidget() {
   const { data, isLoading } = trpc.dashboard.getTransactionSnapshot.useQuery(
     undefined,
     { refetchInterval: 60000 }
@@ -89,4 +90,4 @@ export function TransactionSnapshotWidget() {
       </CardContent>
     </Card>
   );
-}
+});
