@@ -1,3 +1,4 @@
+import { memo } from "react";
 /**
  * Workflow Recent Activity Widget
  * 
@@ -14,7 +15,7 @@ import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 
-export function WorkflowActivityWidget() {
+export const WorkflowActivityWidget = memo(function WorkflowActivityWidget() {
   const [, setLocation] = useLocation();
   
   const { data: recentChanges, isLoading: changesLoading } = trpc.workflowQueue.getRecentChanges.useQuery({
@@ -134,4 +135,4 @@ export function WorkflowActivityWidget() {
       </CardContent>
     </Card>
   );
-}
+});

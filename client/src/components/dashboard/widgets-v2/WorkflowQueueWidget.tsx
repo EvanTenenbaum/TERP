@@ -1,3 +1,4 @@
+import { memo } from "react";
 /**
  * Workflow Queue Summary Widget
  * 
@@ -13,7 +14,7 @@ import { ArrowRight, Layers } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 
-export function WorkflowQueueWidget() {
+export const WorkflowQueueWidget = memo(function WorkflowQueueWidget() {
   const [, setLocation] = useLocation();
   
   const { data: statuses, isLoading: statusesLoading } = trpc.workflowQueue.listStatuses.useQuery();
@@ -122,4 +123,4 @@ export function WorkflowQueueWidget() {
       </CardContent>
     </Card>
   );
-}
+});

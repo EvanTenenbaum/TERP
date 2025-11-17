@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -20,13 +20,15 @@ import { trpc } from "@/lib/trpc";
 
 type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
 
-export function SalesByClientWidget() {
+export const SalesByClientWidget = memo(function SalesByClientWidget() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
 
-  const { data, isLoading } = trpc.dashboard.getSalesByClient.useQuery(
+  const { data: response, isLoading } = trpc.dashboard.getSalesByClient.useQuery(
     { timePeriod },
     { refetchInterval: 60000 }
   );
+
+  const data = response?.data || [];
 
   return (
     <Card>
@@ -56,7 +58,7 @@ export function SalesByClientWidget() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
-        ) : data && data.length > 0 ? (
+        ) : data.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -108,4 +110,4 @@ export function SalesByClientWidget() {
       </CardContent>
     </Card>
   );
-}
+});

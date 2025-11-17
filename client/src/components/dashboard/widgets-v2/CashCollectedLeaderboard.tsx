@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
-export function CashCollectedLeaderboard() {
+export const CashCollectedLeaderboard = memo(function CashCollectedLeaderboard() {
   const [months, setMonths] = useState(24);
   
-  const { data, isLoading } = trpc.dashboard.getCashCollected.useQuery(
+  const { data: response, isLoading } = trpc.dashboard.getCashCollected.useQuery(
     { months },
     { refetchInterval: 60000 } // Refetch every 60 seconds
   );
+
+  const data = response?.data || [];
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -42,7 +44,7 @@ export function CashCollectedLeaderboard() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
-        ) : data && data.length > 0 ? (
+        ) : data.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -71,5 +73,5 @@ export function CashCollectedLeaderboard() {
       </CardContent>
     </Card>
   );
-}
+});
 

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -10,7 +11,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
-export function SalesComparisonWidget() {
+export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
   const { data, isLoading } = trpc.dashboard.getSalesComparison.useQuery(
     undefined,
     { refetchInterval: 60000 }
@@ -181,4 +182,4 @@ export function SalesComparisonWidget() {
       </CardContent>
     </Card>
   );
-}
+});
