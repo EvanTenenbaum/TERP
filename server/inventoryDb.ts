@@ -1074,17 +1074,29 @@ export async function deleteInventoryView(viewId: number, _userId: number) {
 /**
  * Bulk update batch status
  * Updates multiple batches at once with validation
+ * ✅ ENHANCED: ST-017 - Added status transition validation
  */
 export async function bulkUpdateBatchStatus(
   batchIds: number[],
   newStatus: string,
   _userId: number
-): Promise<{ success: boolean; updated: number }> {
+): Promise<{ 
+  success: boolean; 
+  updated: number; 
+  skipped: number;
+  errors: Array<{ batchId: number; reason: string }>;
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Import status transition validation
+  const { isValidStatusTransition } = await import("./inventoryUtils");
+  type BatchStatus = "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED";
+
   return await db.transaction(async tx => {
     let updated = 0;
+    let skipped = 0;
+    const errors: Array<{ batchId: number; reason: string }> = [];
 
     for (const batchId of batchIds) {
       // Get current batch
@@ -1092,10 +1104,23 @@ export async function bulkUpdateBatchStatus(
         .select()
         .from(batches)
         .where(eq(batches.id, batchId));
-      if (!batch) continue;
+      
+      if (!batch) {
+        errors.push({ batchId, reason: "Batch not found" });
+        skipped++;
+        continue;
+      }
 
-      // Skip if already SOLD_OUT or CLOSED
-      if (batch.status === "SOLD_OUT" || batch.status === "CLOSED") {
+      // Validate status transition
+      const currentStatus = batch.status as BatchStatus;
+      const targetStatus = newStatus as BatchStatus;
+      
+      if (!isValidStatusTransition(currentStatus, targetStatus)) {
+        errors.push({ 
+          batchId, 
+          reason: `Invalid transition from ${currentStatus} to ${targetStatus}` 
+        });
+        skipped++;
         continue;
       }
 
@@ -1111,7 +1136,7 @@ export async function bulkUpdateBatchStatus(
       updated++;
     }
 
-    return { success: true, updated };
+    return { success: true, updated, skipped, errors };
   });
 }
 
