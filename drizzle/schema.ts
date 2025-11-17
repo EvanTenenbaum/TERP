@@ -454,44 +454,51 @@ export type InsertLot = typeof lots.$inferInsert;
  * ADDED: amountPaid for COD/Partial payment tracking
  * REMOVED: unitCogsFloor (FLOOR mode removed)
  */
-export const batches = mysqlTable("batches", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  sku: varchar("sku", { length: 100 }).notNull().unique(),
-  productId: int("productId").notNull(),
-  lotId: int("lotId").notNull(),
-  status: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
-  statusId: int("statusId").references(() => workflowStatuses.id, {
-    onDelete: "set null",
-  }), // New workflow queue status (nullable for backward compatibility)
-  grade: varchar("grade", { length: 10 }),
-  isSample: int("isSample").notNull().default(0), // 0 = false, 1 = true
-  sampleOnly: int("sampleOnly").notNull().default(0), // 0 = false, 1 = true (batch can only be sampled, not sold)
-  sampleAvailable: int("sampleAvailable").notNull().default(0), // 0 = false, 1 = true (batch can be used for samples)
-  cogsMode: cogsModeEnum.notNull(),
-  unitCogs: varchar("unitCogs", { length: 20 }), // FIXED
-  unitCogsMin: varchar("unitCogsMin", { length: 20 }), // RANGE
-  unitCogsMax: varchar("unitCogsMax", { length: 20 }), // RANGE
-  paymentTerms: paymentTermsEnum.notNull(),
-  amountPaid: varchar("amountPaid", { length: 20 }).default("0"), // For COD/Partial tracking
-  metadata: text("metadata"), // JSON string: test results, harvest code, COA, etc.
-  
-  // v3.2: Link to PHOTOGRAPHY calendar event if batch had photo session
-  photoSessionEventId: int("photo_session_event_id").references(() => calendarEvents.id, { onDelete: "set null" }),
-  
-  onHandQty: varchar("onHandQty", { length: 20 }).notNull().default("0"),
-  sampleQty: varchar("sampleQty", { length: 20 }).notNull().default("0"),
-  reservedQty: varchar("reservedQty", { length: 20 }).notNull().default("0"),
-  quarantineQty: varchar("quarantineQty", { length: 20 })
-    .notNull()
-    .default("0"),
-  holdQty: varchar("holdQty", { length: 20 }).notNull().default("0"),
-  defectiveQty: varchar("defectiveQty", { length: 20 }).notNull().default("0"),
-  publishEcom: int("publishEcom").notNull().default(0), // 0 = false, 1 = true
-  publishB2b: int("publishB2b").notNull().default(0), // 0 = false, 1 = true
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const batches = mysqlTable(
+  "batches",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 50 }).notNull().unique(),
+    sku: varchar("sku", { length: 100 }).notNull().unique(),
+    productId: int("productId").notNull(),
+    lotId: int("lotId").notNull(),
+    status: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
+    statusId: int("statusId").references(() => workflowStatuses.id, {
+      onDelete: "set null",
+    }), // New workflow queue status (nullable for backward compatibility)
+    grade: varchar("grade", { length: 10 }),
+    isSample: int("isSample").notNull().default(0), // 0 = false, 1 = true
+    sampleOnly: int("sampleOnly").notNull().default(0), // 0 = false, 1 = true (batch can only be sampled, not sold)
+    sampleAvailable: int("sampleAvailable").notNull().default(0), // 0 = false, 1 = true (batch can be used for samples)
+    cogsMode: cogsModeEnum.notNull(),
+    unitCogs: varchar("unitCogs", { length: 20 }), // FIXED
+    unitCogsMin: varchar("unitCogsMin", { length: 20 }), // RANGE
+    unitCogsMax: varchar("unitCogsMax", { length: 20 }), // RANGE
+    paymentTerms: paymentTermsEnum.notNull(),
+    amountPaid: varchar("amountPaid", { length: 20 }).default("0"), // For COD/Partial tracking
+    metadata: text("metadata"), // JSON string: test results, harvest code, COA, etc.
+    
+    // v3.2: Link to PHOTOGRAPHY calendar event if batch had photo session
+    photoSessionEventId: int("photo_session_event_id").references(() => calendarEvents.id, { onDelete: "set null" }),
+    
+    onHandQty: varchar("onHandQty", { length: 20 }).notNull().default("0"),
+    sampleQty: varchar("sampleQty", { length: 20 }).notNull().default("0"),
+    reservedQty: varchar("reservedQty", { length: 20 }).notNull().default("0"),
+    quarantineQty: varchar("quarantineQty", { length: 20 })
+      .notNull()
+      .default("0"),
+    holdQty: varchar("holdQty", { length: 20 }).notNull().default("0"),
+    defectiveQty: varchar("defectiveQty", { length: 20 }).notNull().default("0"),
+    publishEcom: int("publishEcom").notNull().default(0), // 0 = false, 1 = true
+    publishB2b: int("publishB2b").notNull().default(0), // 0 = false, 1 = true
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    statusIdIdx: index("idx_batches_status_id").on(table.statusId),
+    photoSessionEventIdIdx: index("idx_batches_photo_session_event_id").on(table.photoSessionEventId),
+  })
+);
 
 export type Batch = typeof batches.$inferSelect;
 export type InsertBatch = typeof batches.$inferInsert;
@@ -698,19 +705,25 @@ export type InsertScratchPadNote = typeof scratchPadNotes.$inferInsert;
  * Stores user's customized widget positions and configurations
  * Each user can have their own layout, with role-based defaults
  */
-export const dashboardWidgetLayouts = mysqlTable("dashboard_widget_layouts", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").references(() => users.id, { onDelete: "cascade" }),
-  role: mysqlEnum("role", ["user", "admin"]),
-  widgetType: varchar("widgetType", { length: 100 }).notNull(),
-  position: int("position").notNull(),
-  width: int("width").default(1).notNull(),
-  height: int("height").default(1).notNull(),
-  isVisible: boolean("isVisible").default(true).notNull(),
-  config: json("config"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const dashboardWidgetLayouts = mysqlTable(
+  "dashboard_widget_layouts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").references(() => users.id, { onDelete: "cascade" }),
+    role: mysqlEnum("role", ["user", "admin"]),
+    widgetType: varchar("widgetType", { length: 100 }).notNull(),
+    position: int("position").notNull(),
+    width: int("width").default(1).notNull(),
+    height: int("height").default(1).notNull(),
+    isVisible: boolean("isVisible").default(true).notNull(),
+    config: json("config"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("idx_dashboard_widget_layouts_user_id").on(table.userId),
+  })
+);
 
 export type DashboardWidgetLayout = typeof dashboardWidgetLayouts.$inferSelect;
 export type InsertDashboardWidgetLayout =
@@ -1600,7 +1613,11 @@ export const creditSystemSettings = mysqlTable("credit_system_settings", {
   updatedBy: int("updated_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+},
+(table) => ({
+  updatedByIdx: index("idx_credit_system_settings_updated_by").on(table.updatedBy),
+})
+);
 
 export type CreditSystemSettings = typeof creditSystemSettings.$inferSelect;
 export type InsertCreditSystemSettings =
@@ -1640,6 +1657,7 @@ export const creditAuditLog = mysqlTable(
   table => ({
     clientIdIdx: index("idx_client_id").on(table.clientId),
     createdAtIdx: index("idx_created_at").on(table.createdAt),
+    triggeredByIdx: index("idx_credit_audit_log_triggered_by").on(table.triggeredBy),
   })
 );
 
@@ -1694,18 +1712,24 @@ export type InsertPricingRule = typeof pricingRules.$inferInsert;
  * Pricing Profiles
  * Named collections of pricing rules for reuse across clients
  */
-export const pricingProfiles = mysqlTable("pricing_profiles", {
-  id: int("id").primaryKey().autoincrement(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
+export const pricingProfiles = mysqlTable(
+  "pricing_profiles",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
 
-  // Array of rule IDs with priorities: [{ ruleId: 1, priority: 1 }, ...]
-  rules: json("rules").notNull(),
+    // Array of rule IDs with priorities: [{ ruleId: 1, priority: 1 }, ...]
+    rules: json("rules").notNull(),
 
-  createdBy: int("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+    createdBy: int("created_by").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  },
+  (table) => ({
+    createdByIdx: index("idx_pricing_profiles_created_by").on(table.createdBy),
+  })
+);
 
 export type PricingProfile = typeof pricingProfiles.$inferSelect;
 export type InsertPricingProfile = typeof pricingProfiles.$inferInsert;
@@ -1779,6 +1803,7 @@ export const salesSheetHistory = mysqlTable(
     clientIdIdx: index("idx_client_id").on(table.clientId),
     createdByIdx: index("idx_created_by").on(table.createdBy),
     createdAtIdx: index("idx_created_at").on(table.createdAt),
+    templateIdIdx: index("idx_sales_sheet_history_template_id").on(table.templateId),
   })
 );
 
@@ -1910,6 +1935,9 @@ export const orders = mysqlTable(
       table.fulfillmentStatus
     ),
     createdAtIdx: index("idx_created_at").on(table.createdAt),
+    intakeEventIdIdx: index("idx_orders_intake_event_id").on(table.intakeEventId),
+    packedByIdx: index("idx_orders_packed_by").on(table.packedBy),
+    shippedByIdx: index("idx_orders_shipped_by").on(table.shippedBy),
   })
 );
 
@@ -2243,6 +2271,7 @@ export const credits = mysqlTable(
     clientIdIdx: index("idx_credits_client_id").on(table.clientId),
     statusIdx: index("idx_credits_status").on(table.status),
     expirationDateIdx: index("idx_credits_expiration").on(table.expirationDate),
+    transactionIdIdx: index("idx_credits_transaction_id").on(table.transactionId),
   })
 );
 
@@ -2439,6 +2468,8 @@ export const sampleRequests = mysqlTable(
     relatedOrderIdx: index("idx_sample_requests_order").on(
       table.relatedOrderId
     ),
+    fulfilledByIdx: index("idx_sample_requests_fulfilled_by").on(table.fulfilledBy),
+    cancelledByIdx: index("idx_sample_requests_cancelled_by").on(table.cancelledBy),
   })
 );
 
@@ -2542,6 +2573,7 @@ export const inventoryAlerts = mysqlTable(
     statusIdx: index("idx_inventory_alerts_status").on(table.status),
     alertTypeIdx: index("idx_inventory_alerts_type").on(table.alertType),
     severityIdx: index("idx_inventory_alerts_severity").on(table.severity),
+    acknowledgedByIdx: index("idx_inventory_alerts_acknowledged_by").on(table.acknowledgedBy),
   })
 );
 
@@ -2988,6 +3020,7 @@ export const clientNeeds = mysqlTable(
     productNameIdx: index("idx_product_name_cn").on(table.productName),
     categoryIdx: index("idx_category").on(table.category),
     priorityIdx: index("idx_priority").on(table.priority),
+    strainIdIdx: index("idx_client_needs_strain_id").on(table.strainId),
   })
 );
 
@@ -3121,6 +3154,11 @@ export const matchRecords = mysqlTable(
     clientIdIdx: index("idx_client_id").on(table.clientId),
     matchTypeIdx: index("idx_match_type").on(table.matchType),
     userActionIdx: index("idx_user_action").on(table.userAction),
+    inventoryBatchIdIdx: index("idx_match_records_inventory_batch_id").on(table.inventoryBatchId),
+    vendorSupplyIdIdx: index("idx_match_records_vendor_supply_id").on(table.vendorSupplyId),
+    historicalOrderIdIdx: index("idx_match_records_historical_order_id").on(table.historicalOrderId),
+    actionedByIdx: index("idx_match_records_actioned_by").on(table.actionedBy),
+    saleOrderIdIdx: index("idx_match_records_sale_order_id").on(table.saleOrderId),
   })
 );
 
@@ -3538,6 +3576,7 @@ export const todoTasks = mysqlTable(
     statusIdx: index("idx_status").on(table.status),
     dueDateIdx: index("idx_due_date").on(table.dueDate),
     createdByIdx: index("idx_created_by").on(table.createdBy),
+    completedByIdx: index("idx_todo_tasks_completed_by").on(table.completedBy),
   })
 );
 
@@ -3615,6 +3654,7 @@ export const comments = mysqlTable(
     userIdIdx: index("idx_user_id").on(table.userId),
     isResolvedIdx: index("idx_is_resolved").on(table.isResolved),
     createdAtIdx: index("idx_created_at").on(table.createdAt),
+    resolvedByIdx: index("idx_comments_resolved_by").on(table.resolvedBy),
   })
 );
 
@@ -3939,6 +3979,8 @@ export const calendarRecurrenceInstances = mysqlTable(
       table.startTime
     ),
     statusIdx: index("idx_instance_status").on(table.status),
+    modifiedAssignedToIdx: index("idx_calendar_recurrence_instances_modified_assigned_to").on(table.modifiedAssignedTo),
+    modifiedByIdx: index("idx_calendar_recurrence_instances_modified_by").on(table.modifiedBy),
   })
 );
 
@@ -4349,6 +4391,7 @@ export const calendarEventInvitations = mysqlTable(
     clientIdx: index("idx_invitation_client").on(table.clientId),
     statusIdx: index("idx_invitation_status").on(table.status),
     createdByIdx: index("idx_invitation_created_by").on(table.createdBy),
+    overriddenByIdx: index("idx_calendar_event_invitations_overridden_by").on(table.overriddenBy),
 
     // Unique constraint: one invitation per invitee per event
     uniqueInvitation: unique("idx_unique_invitation").on(
@@ -4509,6 +4552,7 @@ export const batchStatusHistory = mysqlTable(
     createdAtIdx: index("idx_batch_status_history_createdAt").on(
       table.createdAt
     ),
+    fromStatusIdIdx: index("idx_batch_status_history_from_status_id").on(table.fromStatusId),
   })
 );
 
