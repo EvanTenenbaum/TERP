@@ -1811,3 +1811,45 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 - inventoryMovements missing adjustmentReason column
 - orderStatusHistory has duplicate column names
 - Blocks future seeding efforts
+
+---
+
+### TASK: Create Agent Prompts for Parallel Execution (INFRA-003, DATA-002, DATA-003)
+
+**Status:** ✅ COMPLETE (2025-11-17)  
+**Priority:** P1 (High)  
+**Actual Time:** 1 hour  
+**Module:** `docs/prompts/`  
+**Dependencies:** None
+
+**Objectives:**
+
+- ✅ Create comprehensive agent prompt for INFRA-003 (Fix Database Schema Sync)
+- ✅ Create comprehensive agent prompt for DATA-002 (Seed Comments & Dashboard)
+- ✅ Create comprehensive agent prompt for DATA-003 (Seed Pricing Tables)
+- ✅ Establish proper sequencing (INFRA-003 first, then DATA-002 + DATA-003 in parallel)
+- ✅ Document execution instructions for parallel agent coordination
+
+**Deliverables:**
+
+- ✅ `docs/prompts/INFRA-003.md` - Infrastructure schema sync task (2-4h estimate)
+- ✅ `docs/prompts/DATA-002.md` - Comments and dashboard seeding (2-4h estimate)
+- ✅ `docs/prompts/DATA-003.md` - Pricing tables seeding (2-3h estimate)
+- ✅ Parallel execution instructions with copy-paste ready prompts
+- ✅ Coordination guidelines and success criteria
+- ✅ All prompts committed to repository
+
+**Resolution:**
+
+Successfully created three comprehensive agent prompts following the proven 4-phase workflow pattern. Each prompt includes detailed implementation steps, validation procedures, session management, and success criteria. Established critical sequencing: INFRA-003 must complete first (fixes schema sync issues), then DATA-002 and DATA-003 can run in parallel with no conflicts.
+
+**Time Savings:** Parallel execution reduces total time from 6-11 hours (sequential) to 4-8 hours (parallel), saving 2-3 hours minimum.
+
+**Files Created:**
+
+- `docs/prompts/INFRA-003.md` (417 lines)
+- `docs/prompts/DATA-002.md` (492 lines)
+- `docs/prompts/DATA-003.md` (567 lines)
+- Execution instructions document
+
+**Next Steps:** Execute prompts in sequence - Agent 1 (INFRA-003) first, then Agents 2 & 3 (DATA-002, DATA-003) in parallel.
