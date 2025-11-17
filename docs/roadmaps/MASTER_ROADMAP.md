@@ -688,11 +688,12 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - Impact: Reduced complexity, better maintainability
   - Estimate: 1-2 days
 
-- [ ] **RF-002: Implement Dashboard Pagination** (Unassigned)
+- [~] **RF-002: Implement Dashboard Pagination** (Session-20251114-performance-cb5cb6) 🔴 P1
   - Task ID: RF-002
   - Action: Add pagination to the `getInvoices` call in the dashboard
   - Impact: Better performance for large datasets
   - Estimate: 4-6 hours
+  - Started: 2025-11-14
 
 - [ ] **RF-003: Systematically Fix `any` Types** (Unassigned)
   - Task ID: RF-003
@@ -700,11 +701,12 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - Impact: Improved type safety
   - Estimate: 1-2 days
 
-- [ ] **RF-004: Add React.memo to Components** (Unassigned)
+- [~] **RF-004: Add React.memo to Components** (Session-20251114-performance-cb5cb6) 🟡 P2
   - Task ID: RF-004
   - Action: Identify and memoize the most frequently re-rendered components
   - Impact: Improved rendering performance
-  - Estimate: 1-2 days
+  - Estimate: 4-6 hours
+  - Started: 2025-11-14
 
 - [ ] **RF-005: Refactor Oversized Files** (Unassigned)
   - Task ID: RF-005
