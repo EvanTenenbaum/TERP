@@ -1730,3 +1730,76 @@ The current review is focused on the desktop experience. A separate review shoul
 Implement the fixes identified in the mobile responsiveness review (QA-049).
 
 **Resolution:** Upon detailed code analysis, discovered that most critical mobile responsiveness features were already implemented: mobile sidebar navigation with hamburger menu, data table horizontal scrolling, responsive layouts, mobile detection hook, and proper touch targets. Created comprehensive documentation of responsive patterns (`docs/MOBILE_RESPONSIVE_PATTERNS.md`) and verified all implementations. Full completion report at `docs/QA-050-COMPLETION-REPORT.md`. Actual effort significantly less than estimated due to existing robust mobile infrastructure.
+
+### DATA-002: Seed Comments and Dashboard Tables
+
+**Status:** ready  
+**Priority:** P2 (Medium)  
+**Estimate:** 2-4 hours  
+**Prompt:** `docs/prompts/DATA-002.md`
+
+**Objectives:**
+- Seed comments table with 100+ comments on orders and clients
+- Seed comment_mentions for @mention functionality
+- Seed userDashboardPreferences for all users
+- Seed dashboard_widget_layouts and dashboard_kpi_configs
+
+**Deliverables:**
+- Simple seed script for comments (2 tables)
+- Simple seed script for dashboard (3 tables)
+- Validation that features work with seeded data
+
+**Context:**
+- Comments feature just fixed (QA-012, QA-013)
+- Dashboard widgets just fixed (QA-002, QA-004, QA-034)
+- Need data to test and demo these features
+
+---
+
+### DATA-003: Seed Pricing Tables
+
+**Status:** ready  
+**Priority:** P2 (Medium)  
+**Estimate:** 2-3 hours  
+**Prompt:** `docs/prompts/DATA-003.md`
+
+**Objectives:**
+- Seed pricing_rules with volume/client/product rules
+- Seed pricing_profiles for top clients
+- Seed pricing_defaults for all products
+
+**Deliverables:**
+- Simple seed script for pricing (3 tables)
+- Validation that pricing features work
+
+**Context:**
+- Pricing forms just tested (QA-041, QA-042, QA-043)
+- Need data to test pricing calculation logic
+
+---
+
+### INFRA-003: Fix Database Schema Sync
+
+**Status:** ready  
+**Priority:** P2 (Infrastructure)  
+**Estimate:** 2-4 hours  
+**Prompt:** `docs/prompts/INFRA-003.md`
+
+**Objectives:**
+- Run pending database migrations OR
+- Update drizzle schema to match actual database
+- Fix inventoryMovements.adjustmentReason column issue
+- Fix orderStatusHistory duplicate column mapping
+- Validate all tables match drizzle schema
+
+**Deliverables:**
+- Database schema in sync with drizzle definitions
+- Migration system working properly
+- Documentation of schema sync process
+
+**Context:**
+- DATA-001 failed due to schema mismatches
+- inventoryMovements missing adjustmentReason column
+- orderStatusHistory has duplicate column names
+- Blocks future seeding efforts
+

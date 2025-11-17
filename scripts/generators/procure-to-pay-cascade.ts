@@ -184,8 +184,12 @@ export function generateProcureToPayCascade(
 
   // For each vendor, create POs, intake sessions, and bills
   for (const [vendorId, vendorLots] of lotsByVendor) {
-    // Sort lots by date
-    vendorLots.sort((a, b) => a.receivedDate.getTime() - b.receivedDate.getTime());
+    // Sort lots by date (handle missing receivedDate)
+    vendorLots.sort((a, b) => {
+      const aDate = a.receivedDate ? new Date(a.receivedDate).getTime() : 0;
+      const bDate = b.receivedDate ? new Date(b.receivedDate).getTime() : 0;
+      return aDate - bDate;
+    });
 
     // Group lots into intake sessions (roughly one session per 2-3 lots)
     const sessionsPerVendor = Math.ceil(vendorLots.length / 2.5);

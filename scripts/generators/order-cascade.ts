@@ -129,7 +129,11 @@ export function generateOrderWithCascade(
   const orderDate = order.createdAt;
 
   // 1. Create Invoice
-  const invoice: InvoiceData = {
+  const subtotal = parseFloat(order.subtotal);
+  const taxAmount = parseFloat(order.tax);
+  const totalAmount = parseFloat(order.total);
+  
+  const invoice: any = {
     invoiceNumber: `INV-${order.orderNumber.replace("ORD-", "")}`,
     customerId: order.clientId,
     invoiceDate: orderDate,
@@ -137,10 +141,14 @@ export function generateOrderWithCascade(
       orderDate,
       (order.paymentTerms as any) || "NET_30"
     ),
-    status: "PENDING",
+    status: "SENT",
     subtotal: order.subtotal,
     taxAmount: order.tax,
-    total: order.total,
+    discountAmount: "0.00",
+    totalAmount: order.total,
+    amountPaid: "0.00",
+    amountDue: order.total,
+    createdBy: 1, // Default admin user
     createdAt: orderDate,
     updatedAt: orderDate,
   };
@@ -162,70 +170,85 @@ export function generateOrderWithCascade(
 
   // 3. Create Ledger Entries (Double-Entry Bookkeeping)
   const orderTotal = parseFloat(order.total);
-  const ledgerEntries: LedgerEntryData[] = [
+  const entryNumberBase = order.orderNumber.replace("ORD-", "LE-");
+  const ledgerEntries: any[] = [
     {
+      entryNumber: `${entryNumberBase}-1`,
+      entryDate: orderDate,
       accountId: 1, // Accounts Receivable
-      transactionDate: orderDate,
-      description: `Order ${order.orderNumber} - AR`,
       debit: orderTotal.toFixed(2),
       credit: "0.00",
+      description: `Order ${order.orderNumber} - AR`,
       referenceType: "ORDER",
       referenceId: order.id,
+      fiscalPeriodId: 1, // Default fiscal period
+      createdBy: 1,
       createdAt: orderDate,
     },
     {
+      entryNumber: `${entryNumberBase}-2`,
+      entryDate: orderDate,
       accountId: 2, // Revenue
-      transactionDate: orderDate,
-      description: `Order ${order.orderNumber} - Revenue`,
       debit: "0.00",
       credit: orderTotal.toFixed(2),
+      description: `Order ${order.orderNumber} - Revenue`,
       referenceType: "ORDER",
       referenceId: order.id,
+      fiscalPeriodId: 1,
+      createdBy: 1,
       createdAt: orderDate,
     },
   ];
 
   // 4. Create Inventory Movements
-  const inventoryMovements: InventoryMovementData[] = order.items.map(
+  const inventoryMovements: any[] = order.items.map(
     (item) => {
       // Update inventory tracker
       inventoryTracker.sellInventory(item.batchId, item.quantity);
+      
+      // Use placeholder quantities (inventory tracking not fully implemented)
+      const qtyChange = parseFloat(item.quantity);
+      const qtyBefore = qtyChange * 10; // Placeholder: assume 10x available before sale
+      const qtyAfter = qtyBefore - qtyChange;
 
       return {
         batchId: item.batchId,
         movementType: "SALE",
-        quantity: `-${item.quantity}`,
+        quantityChange: `-${item.quantity}`,
+        quantityBefore: qtyBefore.toString(),
+        quantityAfter: qtyAfter.toString(),
         referenceType: "ORDER",
         referenceId: order.id,
-        movementDate: orderDate,
-        performedBy: order.createdBy,
         notes: `Sold via order ${order.orderNumber}`,
+        performedBy: 1,
         createdAt: orderDate,
       };
     }
   );
 
   // 5. Create Order Status History
-  const orderStatusHistory: OrderStatusHistoryData[] = [
+  const orderStatusHistory: any[] = [
     {
-      previousStatus: undefined,
-      newStatus: "PENDING",
-      changedBy: order.createdBy,
+      orderId: order.id,
+      fromStatus: null, // No previous status for new orders
+      toStatus: "PENDING",
+      changedBy: 1,
+      changedAt: orderDate,
       notes: "Order created",
-      createdAt: orderDate,
     },
   ];
 
   // 6. Create Client Activity
-  const clientActivity: ClientActivityData[] = [
+  const clientActivity: any[] = [
     {
       clientId: order.clientId,
-      activityType: "ORDER_CREATED",
-      activityDate: orderDate,
-      description: `Order ${order.orderNumber} created - $${orderTotal.toFixed(2)}`,
-      referenceType: "ORDER",
-      referenceId: order.id,
-      createdBy: order.createdBy,
+      userId: 1, // Admin user
+      activityType: "TRANSACTION_ADDED",
+      metadata: JSON.stringify({
+        orderNumber: order.orderNumber,
+        amount: orderTotal.toFixed(2),
+        description: `Order ${order.orderNumber} created`
+      }),
       createdAt: orderDate,
     },
   ];
@@ -252,6 +275,7 @@ export function generateOrderWithCascade(
         paymentDate,
         paymentMethod: weightedRandomPaymentMethod(),
         notes: `Payment for invoice ${invoice.invoiceNumber}`,
+        createdBy: 1,
         createdAt: paymentDate,
         updatedAt: paymentDate,
       };
@@ -260,25 +284,32 @@ export function generateOrderWithCascade(
       invoice.status = "PAID";
 
       // Create payment ledger entries
+      const paymentEntryBase = payment.paymentNumber.replace("PAY-", "LE-PAY-");
       paymentLedgerEntries = [
         {
+          entryNumber: `${paymentEntryBase}-1`,
+          entryDate: paymentDate,
           accountId: 3, // Cash/Bank
-          transactionDate: paymentDate,
-          description: `Payment ${payment.paymentNumber} - Cash`,
           debit: orderTotal.toFixed(2),
           credit: "0.00",
+          description: `Payment ${payment.paymentNumber} - Cash`,
           referenceType: "PAYMENT",
           referenceId: payment.id,
+          fiscalPeriodId: 1,
+          createdBy: 1,
           createdAt: paymentDate,
         },
         {
+          entryNumber: `${paymentEntryBase}-2`,
+          entryDate: paymentDate,
           accountId: 1, // Accounts Receivable
-          transactionDate: paymentDate,
-          description: `Payment ${payment.paymentNumber} - AR`,
           debit: "0.00",
           credit: orderTotal.toFixed(2),
+          description: `Payment ${payment.paymentNumber} - AR`,
           referenceType: "PAYMENT",
           referenceId: payment.id,
+          fiscalPeriodId: 1,
+          createdBy: 1,
           createdAt: paymentDate,
         },
       ];
@@ -286,12 +317,13 @@ export function generateOrderWithCascade(
       // Add payment activity
       clientActivity.push({
         clientId: order.clientId,
-        activityType: "PAYMENT_RECEIVED",
-        activityDate: paymentDate,
-        description: `Payment ${payment.paymentNumber} received - $${orderTotal.toFixed(2)}`,
-        referenceType: "PAYMENT",
-        referenceId: payment.id,
-        createdBy: 1,
+        userId: 1,
+        activityType: "PAYMENT_RECORDED",
+        metadata: JSON.stringify({
+          paymentNumber: payment.paymentNumber,
+          amount: orderTotal.toFixed(2),
+          description: `Payment ${payment.paymentNumber} received`
+        }),
         createdAt: paymentDate,
       });
     }

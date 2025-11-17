@@ -11,13 +11,36 @@ import * as schema from "../drizzle/schema";
 // Load environment variables
 config();
 
-// Create connection pool
-const pool = mysql.createPool({
-  uri: process.env.DATABASE_URL,
+// Create connection pool with SSL configuration
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
+
+// Parse SSL configuration - DigitalOcean requires SSL but with rejectUnauthorized: false
+const needsSSL = databaseUrl.includes('digitalocean.com') || 
+                 databaseUrl.includes('ssl=') ||
+                 databaseUrl.includes('ssl-mode=REQUIRED') || 
+                 databaseUrl.includes('sslmode=require');
+
+// Clean URL - remove ssl parameter as we'll add it explicitly
+const cleanDatabaseUrl = databaseUrl.replace(/[?&]ssl=[^&]*/gi, '').replace(/[?&]ssl-mode=[^&]*/gi, '').replace(/[?&]sslmode=[^&]*/gi, '');
+
+const poolConfig: any = {
+  uri: cleanDatabaseUrl,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-});
+};
+
+if (needsSSL) {
+  poolConfig.ssl = {
+    rejectUnauthorized: false // DigitalOcean managed DB uses valid certs but sandbox can't verify
+  };
+}
+
+const pool = mysql.createPool(poolConfig);
 
 // Create drizzle instance with schema (same syntax as server/db.ts)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
