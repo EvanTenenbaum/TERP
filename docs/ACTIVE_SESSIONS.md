@@ -12,7 +12,7 @@
 
 | Session ID | Task                                        | Branch                                                 | Module                         | Status                         | Started          | ETA      |
 | ---------- | ------------------------------------------- | ------------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------- | -------- |
-| 20251114-code-quality-6105e5 | RF-003 & RF-006: Fix any types, Remove unused deps | claude/code-quality-6105e5 | Code Quality & Refactoring | 🟢 In Progress | 2025-11-14 | 8-12h |
+
 | 20251114-QA-044-b04ecb75 | QA-044: Event Invitation Workflow | qa-044-event-invitations | Events & Calendar | 🟢 In Progress | 2025-11-14 | 16-24h |
 | 011CV4V    | Complete Workflow System + GitHub Sync + QA | claude/terp-codebase-analysis-011CV4VkhLnxVcCAEBLYp8WF | Documentation & Infrastructure | ✅ Complete - Ready for Review | 2025-11-12 18:00 | Complete |
 
@@ -26,6 +26,7 @@
 
 | Session ID                                | Task                              | Branch                                                                            | Merged At        | Commit  |
 | ----------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------- | ---------------- | ------- |
+| 20251114-code-quality-6105e5              | RF-003 & RF-006: Fix any types, Remove deps | claude/code-quality-6105e5                                                   | Ready for Review | 986d23a |
 | 20251113-st002-completion-3f7ae026        | ST-002 Completion Documentation   | claude/st002-completion-Session-20251113-st002-completion-3f7ae026                | 2025-11-13 16:24 | 865c1c0 |
 | 20251113-st006-deadcode-2f6b7778          | ST-006 Remove Dead Code           | claude/st006-deadcode-Session-20251113-st006-deadcode-2f6b7778                    | 2025-11-13 18:35 | efde324 |
 | 20251113-st003-doc-consolidation-017686f0 | ST-003 Consolidate Documentation  | claude/ST-003-doc-consolidation-Session-20251113-st003-doc-consolidation-017686f0 | 2025-11-13 17:30 | 318282d |
