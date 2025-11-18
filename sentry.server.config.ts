@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+import { Handlers } from "@sentry/node";
 
 /**
  * Sentry Server Configuration
@@ -75,7 +76,7 @@ Sentry.init({
  * Example:
  * app.use(Sentry.Handlers.errorHandler());
  */
-export const sentryErrorHandler = Sentry.Handlers.errorHandler();
+export const sentryErrorHandler = Handlers.errorHandler();
 
 /**
  * Express request handler middleware
@@ -84,7 +85,7 @@ export const sentryErrorHandler = Sentry.Handlers.errorHandler();
  * Example:
  * app.use(Sentry.Handlers.requestHandler());
  */
-export const sentryRequestHandler = Sentry.Handlers.requestHandler();
+export const sentryRequestHandler = Handlers.requestHandler();
 
 // Export Sentry for manual error capturing
 export { Sentry };
