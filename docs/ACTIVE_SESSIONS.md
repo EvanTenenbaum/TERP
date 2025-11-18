@@ -75,4 +75,3 @@
 - Abandoned: `docs/sessions/abandoned/Session-[ID].md`
 
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
-- INFRA-003: Session-20251118-INFRA-003-b60d4cc0 (2025-11-18)
