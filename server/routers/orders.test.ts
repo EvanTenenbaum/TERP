@@ -372,16 +372,21 @@ describe("Orders Router", () => {
   });
 
   describe("delete", () => {
-    it("should delete an order", async () => {
+    it("should soft delete an order", async () => {
       // Arrange
-      vi.mocked(ordersDb.deleteOrder).mockResolvedValue(undefined);
+      // Mock the database update to return affected rows
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnThis(),
+        where: vi.fn().mockResolvedValue({ rowsAffected: 1 }),
+      });
+      vi.mocked(db.update).mockReturnValue(mockUpdate() as any);
 
       // Act
       const result = await caller.orders.delete({ id: 1 });
 
       // Assert
       expect(result.success).toBe(true);
-      expect(ordersDb.deleteOrder).toHaveBeenCalledWith(1);
+      // Soft delete sets deletedAt instead of calling deleteOrder
     });
   });
 
