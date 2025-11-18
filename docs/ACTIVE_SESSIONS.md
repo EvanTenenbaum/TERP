@@ -73,3 +73,4 @@
 - Abandoned: `docs/sessions/abandoned/Session-[ID].md`
 
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
+- Agent-01: Session-20251117-db-performance-d6d96289 - Database Performance (ST-005, ST-015, ST-017)
