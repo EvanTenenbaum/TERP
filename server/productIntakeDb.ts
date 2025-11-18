@@ -34,9 +34,9 @@ export async function createIntakeSession(data: {
     } as any);
 
     return { success: true, sessionId: session.insertId, sessionNumber };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error creating intake session:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -86,9 +86,9 @@ export async function addBatchToIntakeSession(data: {
       .where(eq(intakeSessions.id, data.intakeSessionId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error adding batch to intake session:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -151,9 +151,9 @@ export async function updateIntakeSessionBatch(
       .where(eq(intakeSessions.id, existing.intakeSessionId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error updating intake session batch:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -197,9 +197,9 @@ export async function removeBatchFromIntakeSession(intakeSessionBatchId: number)
       .where(eq(intakeSessions.id, intakeSessionId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error removing batch from intake session:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -266,9 +266,9 @@ export async function completeIntakeSession(intakeSessionId: number) {
       .where(eq(intakeSessions.id, intakeSessionId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error completing intake session:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -347,9 +347,9 @@ export async function generateVendorReceipt(intakeSessionId: number) {
       .where(eq(intakeSessions.id, intakeSessionId));
 
     return { success: true, receipt };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error generating vendor receipt:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -394,9 +394,9 @@ export async function getIntakeSession(intakeSessionId: number) {
         batches: sessionBatches,
       },
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting intake session:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -427,9 +427,9 @@ export async function listIntakeSessions(filters?: {
     const sessions = await query;
 
     return { success: true, sessions };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error listing intake sessions:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -460,9 +460,9 @@ export async function cancelIntakeSession(intakeSessionId: number) {
       .where(eq(intakeSessions.id, intakeSessionId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error cancelling intake session:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 

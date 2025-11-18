@@ -198,8 +198,8 @@ export function registerSimpleAuthRoutes(app: Express) {
       const { pushSchema } = await import("../services/pushSchema");
       const result = await pushSchema();
       res.json({ success: true, message: "Schema pushed successfully", output: result.output });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -217,8 +217,8 @@ export function registerSimpleAuthRoutes(app: Express) {
       }
       
       res.json({ success: true, message: "Seeding completed successfully" });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
     }
   });
 

@@ -47,7 +47,7 @@ export async function getClients(options: {
   let query = db.select().from(clients);
 
   // Build WHERE conditions
-  const conditions: any[] = [];
+  const conditions: unknown[] = [];
 
   // Enhanced multi-field search (TERI code, name, email, phone, address)
   if (search) {
@@ -64,7 +64,7 @@ export async function getClients(options: {
 
   // Filter by client types
   if (clientTypes && clientTypes.length > 0) {
-    const typeConditions: any[] = [];
+    const typeConditions: unknown[] = [];
     if (clientTypes.includes("buyer")) typeConditions.push(eq(clients.isBuyer, true));
     if (clientTypes.includes("seller")) typeConditions.push(eq(clients.isSeller, true));
     if (clientTypes.includes("brand")) typeConditions.push(eq(clients.isBrand, true));
@@ -120,7 +120,7 @@ export async function getClientCount(options: {
   let query = db.select({ count: sql<number>`count(*)` }).from(clients);
 
   // Build WHERE conditions (same as getClients)
-  const conditions: any[] = [];
+  const conditions: unknown[] = [];
 
   // Enhanced multi-field search (same as getClients)
   if (search) {
@@ -136,7 +136,7 @@ export async function getClientCount(options: {
   }
 
   if (clientTypes && clientTypes.length > 0) {
-    const typeConditions: any[] = [];
+    const typeConditions: unknown[] = [];
     if (clientTypes.includes("buyer")) typeConditions.push(eq(clients.isBuyer, true));
     if (clientTypes.includes("seller")) typeConditions.push(eq(clients.isSeller, true));
     if (clientTypes.includes("brand")) typeConditions.push(eq(clients.isBrand, true));

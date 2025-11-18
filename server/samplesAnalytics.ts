@@ -86,8 +86,8 @@ export async function getSampleDistributionReport(
         averageCostPerUnit: (p.cost / p.quantity).toFixed(2)
       }))
     };
-  } catch (error: any) {
-    throw new Error(`Failed to generate sample distribution report: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to generate sample distribution report: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -145,8 +145,8 @@ export async function getSampleConversionReport(
         ? (totalRevenue / convertedSamples.length).toFixed(2) 
         : "0.00"
     };
-  } catch (error: any) {
-    throw new Error(`Failed to generate sample conversion report: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to generate sample conversion report: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -233,8 +233,8 @@ export async function getSampleEffectivenessByProduct(
         roi: roi.toFixed(2) + "%"
       };
     }).sort((a, b) => parseFloat(b.roi) - parseFloat(a.roi)); // Sort by ROI descending
-  } catch (error: any) {
-    throw new Error(`Failed to generate sample effectiveness report: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to generate sample effectiveness report: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -281,8 +281,8 @@ export async function getSampleCostByProduct(
       requestCount: p.count,
       averageCostPerRequest: (p.cost / p.count).toFixed(2)
     })).sort((a, b) => parseFloat(b.totalCost) - parseFloat(a.totalCost));
-  } catch (error: any) {
-    throw new Error(`Failed to get sample cost by product: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get sample cost by product: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -328,8 +328,8 @@ export async function getSampleCostByClient(
       requestCount: c.count,
       averageCostPerRequest: (c.cost / c.count).toFixed(2)
     })).sort((a, b) => parseFloat(b.totalCost) - parseFloat(a.totalCost));
-  } catch (error: any) {
-    throw new Error(`Failed to get sample cost by client: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get sample cost by client: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -358,8 +358,8 @@ export async function getSampleROIAnalysis(
       distributionByClient: distributionReport.byClient,
       distributionByProduct: distributionReport.byProduct
     };
-  } catch (error: any) {
-    throw new Error(`Failed to generate sample ROI analysis: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to generate sample ROI analysis: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

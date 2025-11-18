@@ -21,9 +21,9 @@ export async function pushSchema() {
     console.log("✅ Schema pushed successfully");
     
     return { success: true, output: stdout };
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Schema push failed:", error);
-    throw new Error(`Schema push failed: ${error.message}`);
+    throw new Error(`Schema push failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

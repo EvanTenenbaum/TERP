@@ -50,8 +50,8 @@ export async function createSampleRequest(
       .limit(1);
 
     return newRequest[0];
-  } catch (error: any) {
-    throw new Error(`Failed to create sample request: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to create sample request: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -159,8 +159,8 @@ export async function fulfillSampleRequest(
       .limit(1);
 
     return updated;
-  } catch (error: any) {
-    throw new Error(`Failed to fulfill sample request: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to fulfill sample request: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -192,8 +192,8 @@ export async function cancelSampleRequest(
       .limit(1);
 
     return updated;
-  } catch (error: any) {
-    throw new Error(`Failed to cancel sample request: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to cancel sample request: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -221,8 +221,8 @@ export async function linkOrderToSample(
         updatedAt: new Date()
       })
       .where(eq(sampleRequests.id, sampleRequestId));
-  } catch (error: any) {
-    throw new Error(`Failed to link order to sample: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to link order to sample: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -264,8 +264,8 @@ export async function checkMonthlyAllocation(
     const requested = parseFloat(requestedQuantity);
 
     return requested <= remaining;
-  } catch (error: any) {
-    throw new Error(`Failed to check monthly allocation: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to check monthly allocation: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -311,8 +311,8 @@ async function updateMonthlyAllocation(
         })
         .where(eq(sampleAllocations.id, allocation.id));
     }
-  } catch (error: any) {
-    throw new Error(`Failed to update monthly allocation: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to update monthly allocation: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -334,8 +334,8 @@ export async function getSampleRequestsByClient(
       .limit(limit);
 
     return requests;
-  } catch (error: any) {
-    throw new Error(`Failed to get sample requests: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get sample requests: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -353,8 +353,8 @@ export async function getPendingSampleRequests(): Promise<SampleRequest[]> {
       .orderBy(desc(sampleRequests.requestDate));
 
     return requests;
-  } catch (error: any) {
-    throw new Error(`Failed to get pending sample requests: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get pending sample requests: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -391,8 +391,8 @@ export async function getMonthlyAllocation(
     }
 
     return allocation;
-  } catch (error: any) {
-    throw new Error(`Failed to get monthly allocation: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get monthly allocation: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -436,8 +436,8 @@ export async function setMonthlyAllocation(
         remainingQuantity: allocatedQuantity
       });
     }
-  } catch (error: any) {
-    throw new Error(`Failed to set monthly allocation: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to set monthly allocation: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

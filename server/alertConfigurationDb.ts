@@ -32,9 +32,9 @@ export async function createAlertConfiguration(data: {
     });
 
     return { success: true, alertConfigId: result.insertId };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error creating alert configuration:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -69,9 +69,9 @@ export async function updateAlertConfiguration(
       .where(eq(alertConfigurations.id, alertConfigId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error updating alert configuration:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -88,9 +88,9 @@ export async function deleteAlertConfiguration(alertConfigId: number) {
       .where(eq(alertConfigurations.id, alertConfigId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error deleting alert configuration:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -109,9 +109,9 @@ export async function getUserAlertConfigurations(userId: number) {
       .orderBy(desc(alertConfigurations.createdAt));
 
     return { success: true, configurations: configs };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting user alert configurations:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -133,9 +133,9 @@ export async function getAllActiveAlertConfigurations() {
       .where(eq(alertConfigurations.isActive, true));
 
     return { success: true, configurations: configs };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting all active alert configurations:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -162,9 +162,9 @@ export async function getAlertConfigurationsByType(alertType: string) {
       );
 
     return { success: true, configurations: configs };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting alert configurations by type:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -191,9 +191,9 @@ export async function toggleAlertConfiguration(alertConfigId: number) {
       .where(eq(alertConfigurations.id, alertConfigId));
 
     return { success: true, isActive: !existing.isActive };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error toggling alert configuration:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 

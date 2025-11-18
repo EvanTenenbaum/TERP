@@ -47,9 +47,9 @@ async function runTest(name: string, testFn: () => Promise<void>): Promise<void>
     const duration = Date.now() - startTime;
     testResults.push({ name, passed: true, duration });
     log(`✅ PASSED (${duration}ms)`, "green");
-  } catch (error: any) {
+  } catch (error) {
     const duration = Date.now() - startTime;
-    testResults.push({ name, passed: false, error: error.message, duration });
+    testResults.push({ name, passed: false, error: error instanceof Error ? error.message : String(error), duration });
     log(`❌ FAILED: ${error.message} (${duration}ms)`, "red");
   }
 }
@@ -298,9 +298,9 @@ async function runTests() {
         ON DUPLICATE KEY UPDATE
           description = new_status.description
       `);
-    } catch (error: any) {
+    } catch (error) {
       // If the new syntax fails, try old syntax
-      if (error.message?.includes("syntax")) {
+      if (error instanceof Error ? error.message : String(error)?.includes("syntax")) {
         await db.execute(sql`
           INSERT INTO workflow_statuses (name, description, color, \`order\`)
           VALUES ('Quality Check', 'Test duplicate', '#000000', 99)
@@ -333,8 +333,8 @@ async function runTests() {
         INSERT INTO batch_status_history (batchId, toStatusId)
         VALUES (999999, 999999)
       `);
-    } catch (error: any) {
-      if (error.message?.includes("foreign key constraint") || error.message?.includes("Cannot add or update")) {
+    } catch (error) {
+      if (error instanceof Error ? error.message : String(error)?.includes("foreign key constraint") || error.message?.includes("Cannot add or update")) {
         constraintWorks = true;
       }
     }
