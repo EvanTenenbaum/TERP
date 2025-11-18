@@ -148,34 +148,43 @@ async function seedCommentsAndDashboard() {
   // Seed comments on clients
   console.log("🔵 Seeding client comments...");
   const clientComments = [
-    { entity_type: "client", content: "Great customer, always pays on time." },
     {
-      entity_type: "client",
+      commentable_type: "Client",
+      content: "Great customer, always pays on time.",
+    },
+    {
+      commentable_type: "Client",
       content: "Prefers email communication over phone.",
     },
     {
-      entity_type: "client",
+      commentable_type: "Client",
       content: "Interested in bulk pricing for next quarter.",
     },
     {
-      entity_type: "client",
+      commentable_type: "Client",
       content: "New contact: Sarah Johnson, sarah@example.com.",
     },
     {
-      entity_type: "client",
+      commentable_type: "Client",
       content: "Requested product samples for evaluation.",
     },
-    { entity_type: "client", content: "VIP customer - priority service." },
-    { entity_type: "client", content: "Payment terms: Net 30, prefers ACH." },
-    { entity_type: "client", content: "Annual contract renewal due in Q1." },
+    { commentable_type: "Client", content: "VIP customer - priority service." },
+    {
+      commentable_type: "Client",
+      content: "Payment terms: Net 30, prefers ACH.",
+    },
+    {
+      commentable_type: "Client",
+      content: "Annual contract renewal due in Q1.",
+    },
   ];
 
   let commentCount = 0;
   for (let i = 0; i < Math.min(clientIds.length, 20); i++) {
     const comment = clientComments[i % clientComments.length];
     await db.execute(sql`
-      INSERT INTO comments (entity_type, entity_id, user_id, content)
-      VALUES (${comment.entity_type}, ${clientIds[i]}, ${userIds[0]}, ${comment.content})
+      INSERT INTO comments (commentable_type, commentable_id, user_id, content)
+      VALUES (${comment.commentable_type}, ${clientIds[i]}, ${userIds[0]}, ${comment.content})
     `);
     commentCount++;
   }
@@ -185,26 +194,32 @@ async function seedCommentsAndDashboard() {
   console.log("🔵 Seeding event comments...");
   const eventComments = [
     {
-      entity_type: "event",
+      commentable_type: "CalendarEvent",
       content: "Confirmed attendance, will bring samples.",
     },
     {
-      entity_type: "event",
+      commentable_type: "CalendarEvent",
       content: "Rescheduled to next week due to conflict.",
     },
     {
-      entity_type: "event",
+      commentable_type: "CalendarEvent",
       content: "Client requested virtual meeting instead.",
     },
-    { entity_type: "event", content: "Agenda sent, waiting for confirmation." },
-    { entity_type: "event", content: "Follow-up scheduled for next month." },
+    {
+      commentable_type: "CalendarEvent",
+      content: "Agenda sent, waiting for confirmation.",
+    },
+    {
+      commentable_type: "CalendarEvent",
+      content: "Follow-up scheduled for next month.",
+    },
   ];
 
   for (let i = 0; i < Math.min(eventIds.length, 30); i++) {
     const comment = eventComments[i % eventComments.length];
     await db.execute(sql`
-      INSERT INTO comments (entity_type, entity_id, user_id, content)
-      VALUES (${comment.entity_type}, ${eventIds[i]}, ${userIds[0]}, ${comment.content})
+      INSERT INTO comments (commentable_type, commentable_id, user_id, content)
+      VALUES (${comment.commentable_type}, ${eventIds[i]}, ${userIds[0]}, ${comment.content})
     `);
     commentCount++;
   }
@@ -222,8 +237,8 @@ async function seedCommentsAndDashboard() {
     for (const commentId of commentIds) {
       const mentionedUser = userIds[1]; // Mention second user
       await db.execute(sql`
-        INSERT INTO comment_mentions (comment_id, mentioned_user_id)
-        VALUES (${commentId}, ${mentionedUser})
+        INSERT INTO comment_mentions (comment_id, mentioned_user_id, mentioned_by_user_id)
+        VALUES (${commentId}, ${mentionedUser}, ${userIds[0]})
       `);
       mentionCount++;
     }
@@ -243,7 +258,7 @@ pnpm exec tsx scripts/seed-comments-dashboard.ts
 ```sql
 SELECT COUNT(*) FROM comments;
 SELECT COUNT(*) FROM comment_mentions;
-SELECT entity_type, COUNT(*) FROM comments GROUP BY entity_type;
+SELECT commentable_type, COUNT(*) FROM comments GROUP BY commentable_type;
 ```
 
 ---
