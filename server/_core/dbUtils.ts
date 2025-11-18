@@ -6,6 +6,8 @@
  */
 
 import { eq, and, type SQL } from "drizzle-orm";
+import type { MySql2Database } from "drizzle-orm/mysql2";
+import type { MySqlTable } from "drizzle-orm/mysql-core";
 
 /**
  * Generic findOrCreate pattern for database entities
@@ -25,14 +27,14 @@ import { eq, and, type SQL } from "drizzle-orm";
  *   { name: 'Acme Corp' }
  * );
  */
-export async function findOrCreate<TSelect>(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  table: any,
+export async function findOrCreate<
+  TTable extends MySqlTable,
+  TSelect = TTable['$inferSelect']
+>(
+  tx: MySql2Database<Record<string, unknown>>,
+  table: TTable,
   whereConditions: SQL[],
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  createValues: any
+  createValues: TTable['$inferInsert']
 ): Promise<TSelect> {
   // Find existing entity
   const whereClause =
@@ -66,18 +68,18 @@ export async function findOrCreate<TSelect>(
  * @param items - Array of { whereConditions, createValues } objects
  * @returns Array of found or created entities
  */
-export async function batchFindOrCreate<TSelect>(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  table: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  items: Array<{ whereConditions: SQL[]; createValues: any }>
+export async function batchFindOrCreate<
+  TTable extends MySqlTable,
+  TSelect = TTable['$inferSelect']
+>(
+  tx: MySql2Database<Record<string, unknown>>,
+  table: TTable,
+  items: Array<{ whereConditions: SQL[]; createValues: TTable['$inferInsert'] }>
 ): Promise<TSelect[]> {
   const results: TSelect[] = [];
 
   for (const item of items) {
-    const result = await findOrCreate<TSelect>(
+    const result = await findOrCreate<TTable, TSelect>(
       tx,
       table,
       item.whereConditions,
@@ -99,15 +101,13 @@ export async function batchFindOrCreate<TSelect>(
  * @returns Result of the transaction
  */
 export async function withTransaction<T>(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  db: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  operation: (tx: any) => Promise<T>,
+  db: MySql2Database<Record<string, unknown>>,
+  operation: (tx: MySql2Database<Record<string, unknown>>) => Promise<T>,
   operationName: string
 ): Promise<T> {
   try {
-    return await db.transaction(async (tx: unknown) => {
-      return await operation(tx);
+    return await db.transaction(async (tx) => {
+      return await operation(tx as MySql2Database<Record<string, unknown>>);
     });
   } catch (error) {
     console.error(`Transaction failed for ${operationName}:`, error);
