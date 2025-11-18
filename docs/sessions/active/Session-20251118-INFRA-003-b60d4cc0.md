@@ -1,0 +1,32 @@
+# INFRA-003: Fix Database Schema Sync
+
+**Session ID:** Session-20251118-INFRA-003-b60d4cc0
+**Started:** 2025-11-18
+**Agent:** Manus
+**Status:** In Progress
+**Risk Level:** MEDIUM (production database changes)
+
+## Objective
+Fix database schema synchronization between drizzle and production DB
+
+## Progress
+- [ ] Phase 1: Analyze Schema Drift (30 min)
+- [ ] Phase 2: Fix Migration System (30-60 min)
+- [ ] Phase 3: Run Pending Migrations (30-60 min)
+- [ ] Phase 4: Fix Specific Known Issues (30-60 min)
+- [ ] Phase 5: Create Schema Validation Tool (30 min)
+- [ ] Phase 6: Validation & Testing (30 min)
+- [ ] Phase 7: Documentation (15 min)
+- [ ] Phase 8: Completion (15 min)
+
+## Known Issues to Fix
+1. inventoryMovements missing adjustmentReason column
+2. orderStatusHistory has duplicate column mapping
+3. Migration system has SSL errors
+4. Schema drift between drizzle and database
+
+## Changes Made
+(Document all schema changes here)
+
+## Testing Completed
+(Document all tests here)
