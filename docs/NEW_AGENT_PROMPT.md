@@ -83,6 +83,11 @@
     - **Automation:** The `deploy-and-monitor.ts` script will automatically deploy your feature branch to a unique preview URL.
     - **Requirement:** You MUST wait for the deployment to complete and report the preview URL to the user for testing.
 
+5.  **Verify Build Status:**
+    - **Action:** After pushing to main, check the build status file: `cat .github/BUILD_STATUS.md`
+    - **Requirement:** Verify that the build succeeded and all tests passed.
+    - **Alternative:** If the file isn't updated yet, check the workflow run: `gh run list --limit 1`
+
 ---
 
 ## ✅ PHASE 4: COMPLETION & MERGE (MANDATORY CHECKLIST)

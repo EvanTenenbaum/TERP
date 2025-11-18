@@ -447,7 +447,7 @@ When you deliver your work, you **MUST** explicitly confirm that you have met th
 
 ### 🚨 **Core Requirement: Check Test Status Before and After Every Push**
 
-Test failures are **automatically posted as comments** on PRs and commits. You **MUST** check these comments using GitHub CLI—you do not need DigitalOcean access.
+Test results are **automatically written to `.github/BUILD_STATUS.md`** on every push to main. You **MUST** check this file using `cat .github/BUILD_STATUS.md` to verify build status.
 
 ---
 
@@ -457,7 +457,7 @@ Test failures are **automatically posted as comments** on PRs and commits. You *
 | ------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
 | **Before starting work**  | `gh run list --limit 5`                                                  | Is the main branch healthy?   |
 | **After creating a PR**   | `gh pr view <PR#> --comments`                                            | Did my PR pass all checks?    |
-| **After pushing to main** | `gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments` | Did my commit pass all tests? |
+| **After pushing to main** | `cat .github/BUILD_STATUS.md` | Did my commit pass all tests? |
 | **If build fails**        | `gh run view <RUN_ID>`                                                   | What exactly failed?          |
 
 ---
@@ -500,8 +500,8 @@ gh pr view <PR_NUMBER> --comments
 # View commit status
 gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/status
 
-# View commit comments (test failures are posted here)
-gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments
+# View build status file (test results are written here)
+cat .github/BUILD_STATUS.md
 ```
 
 **Expected Output:**
@@ -1237,7 +1237,7 @@ Fixes #123
 
 ### 🚨 **Core Requirement: Check Test Status Before and After Every Push**
 
-Test failures are **automatically posted as comments** on PRs and commits. You **MUST** check these comments using GitHub CLI—you do not need DigitalOcean access.
+Test results are **automatically written to `.github/BUILD_STATUS.md`** on every push to main. You **MUST** check this file using `cat .github/BUILD_STATUS.md` to verify build status.
 
 ---
 
@@ -1247,7 +1247,7 @@ Test failures are **automatically posted as comments** on PRs and commits. You *
 | ------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
 | **Before starting work**  | `gh run list --limit 5`                                                  | Is the main branch healthy?   |
 | **After creating a PR**   | `gh pr view <PR#> --comments`                                            | Did my PR pass all checks?    |
-| **After pushing to main** | `gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments` | Did my commit pass all tests? |
+| **After pushing to main** | `cat .github/BUILD_STATUS.md` | Did my commit pass all tests? |
 | **If build fails**        | `gh run view <RUN_ID>`                                                   | What exactly failed?          |
 
 ---
@@ -1293,11 +1293,11 @@ gh pr view 42 --comments
 #### **3. Check Your Commit Status (After Pushing to Main)**
 
 ```bash
-# Get comments on your latest commit
-gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/comments | jq -r '.[].body'
+# Get the latest build status
+cat .github/BUILD_STATUS.md
 
-# Or check a specific commit
-gh api repos/EvanTenenbaum/TERP/commits/<COMMIT_SHA>/comments | jq -r '.[].body'
+# Or check workflow runs
+gh run list --limit 1
 ```
 
 **What to look for:**
@@ -1331,10 +1331,10 @@ gh api repos/EvanTenenbaum/TERP/commits/<COMMIT_SHA>/comments | jq -r '.[].body'
 
 #### **If Main Branch Fails:**
 
-1. **Check the commit comment:**
+1. **Check the build status file:**
 
    ```bash
-   gh api repos/EvanTenenbaum/TERP/commits/<COMMIT_SHA>/comments | jq -r '.[].body'
+   cat .github/BUILD_STATUS.md
    ```
 
 2. **The comment will show:**
@@ -1371,7 +1371,7 @@ gh api repos/EvanTenenbaum/TERP/commits/<COMMIT_SHA>/comments | jq -r '.[].body'
 | Location            | How to Access                                            | What You'll See                                       |
 | ------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
 | **PR Comments**     | `gh pr view <PR#> --comments`                            | Lint, Type Check, and Unit Test results               |
-| **Commit Comments** | `gh api repos/EvanTenenbaum/TERP/commits/<SHA>/comments` | Integration, E2E, Schema, and Seed results            |
+| **Build Status**    | `cat .github/BUILD_STATUS.md`                            | Integration, E2E, Schema, and Seed results            |
 | **Workflow Runs**   | `gh run view <RUN_ID>`                                   | Full logs (only if comments don't have enough detail) |
 
 ---
@@ -1380,7 +1380,7 @@ gh api repos/EvanTenenbaum/TERP/commits/<COMMIT_SHA>/comments | jq -r '.[].body'
 
 - [ ] Before starting work: Check if main branch is healthy (`gh run list`)
 - [ ] After creating a PR: Check PR comments (`gh pr view <PR#> --comments`)
-- [ ] After pushing to main: Check commit comments (`gh api repos/.../commits/<SHA>/comments`)
+- [ ] After pushing to main: Check build status (`cat .github/BUILD_STATUS.md`)
 - [ ] If tests fail: Read the error details in the comments
 - [ ] If tests fail: Fix immediately and re-push
 
