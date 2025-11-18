@@ -115,9 +115,9 @@ export async function getProductRecommendations(
       }));
 
     return { success: true, recommendations };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting product recommendations:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -182,9 +182,9 @@ export async function getSimilarProducts(productId: number, limit: number = 10) 
       }));
 
     return { success: true, similarProducts: similar };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting similar products:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -260,9 +260,9 @@ export async function getFrequentlyBoughtTogether(
       .slice(0, limit);
 
     return { success: true, frequentlyBoughtTogether: frequentlyBought };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting frequently bought together:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 

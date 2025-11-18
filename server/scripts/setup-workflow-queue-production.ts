@@ -70,8 +70,8 @@ async function setupWorkflowQueue() {
         ADD FOREIGN KEY (statusId) REFERENCES workflow_statuses(id) ON DELETE SET NULL;
       `);
       console.log("✅ statusId column added to batches table\n");
-    } catch (error: any) {
-      if (error.message?.includes("Duplicate column")) {
+    } catch (error) {
+      if (error instanceof Error ? error.message : String(error)?.includes("Duplicate column")) {
         console.log("ℹ️  statusId column already exists, skipping\n");
       } else {
         throw error;
@@ -101,7 +101,7 @@ async function setupWorkflowQueue() {
             \`order\` = VALUES(\`order\`);
         `);
         console.log(`  ✓ ${status.name}`);
-      } catch (error: any) {
+      } catch (error) {
         console.log(`  ⚠️  ${status.name} - ${error.message}`);
       }
     }

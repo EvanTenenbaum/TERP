@@ -46,7 +46,7 @@ export async function findClientNeedsForBatch(batchId: number) {
       .leftJoin(clients, eq(clientNeeds.clientId, clients.id))
       .where(eq(clientNeeds.status, "ACTIVE"));
 
-    const matches: any[] = [];
+    const matches: unknown[] = [];
 
     for (const { need, client } of activeNeeds) {
       if (!client) continue;

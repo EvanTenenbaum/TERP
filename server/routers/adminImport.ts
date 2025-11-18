@@ -105,7 +105,7 @@ export const adminImportRouter = router({
       }
 
       // Import the batch
-      const strainsToInsert: any[] = [];
+      const strainsToInsert: unknown[] = [];
       let imported = 0;
       let skipped = 0;
 
