@@ -37,6 +37,7 @@
 | 20251113-st006-deadcode-2f6b7778 | ST-006: Remove Dead Code | ✅ Archived |
 | 20251114-performance-cb5cb6 | RF-002 & RF-004: Performance Optimizations | ✅ Complete |
 | 20251114-critical-404s-bd57b1 | QA-001/002/003: Critical 404 Fixes | ✅ Complete |
+| 20251117-db-performance-d6d96289 | ST-005/015/017: Database Performance | ✅ Complete |
 
 ## 🔴 Blocked
 
@@ -73,4 +74,4 @@
 - Abandoned: `docs/sessions/abandoned/Session-[ID].md`
 
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
-- Agent-01: Session-20251117-db-performance-d6d96289 - Database Performance (ST-005, ST-015, ST-017)
+
