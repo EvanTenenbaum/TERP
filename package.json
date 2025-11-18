@@ -36,7 +36,11 @@
     "roadmap:capacity": "tsx scripts/roadmap.ts capacity",
     "roadmap:next-batch": "tsx scripts/roadmap.ts next-batch",
     "roadmap:list": "tsx scripts/roadmap.ts list",
-    "validate:sessions": "tsx scripts/validate-session-cleanup.ts"
+    "validate:sessions": "tsx scripts/validate-session-cleanup.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
