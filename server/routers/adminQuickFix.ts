@@ -162,7 +162,9 @@ export const adminQuickFixRouter = router({
         results
       };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };error.message,
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
         results
       };
     }
