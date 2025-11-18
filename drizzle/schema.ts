@@ -2013,8 +2013,7 @@ export const orderStatusHistory = mysqlTable(
     orderId: int("order_id")
       .notNull()
       .references(() => orders.id, { onDelete: "cascade" }),
-    fromStatus: fulfillmentStatusEnum,
-    toStatus: fulfillmentStatusEnum.notNull(),
+    fulfillmentStatus: fulfillmentStatusEnum.notNull().default("PENDING"),
     changedBy: int("changed_by")
       .notNull()
       .references(() => users.id),

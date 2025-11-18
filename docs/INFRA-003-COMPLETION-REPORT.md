@@ -1,7 +1,7 @@
 # INFRA-003 Completion Report
 
 **Date:** 2025-11-18  
-**Session:** Session-20251118-INFRA-003-b60d4cc0  
+**Session:** Session-20251118-INFRA-003-b60d4cc0 (initial), Session-20251118-INFRA-003-c2977611 (additional fixes)  
 **Status:** ✅ Complete  
 **Agent:** Manus
 
@@ -38,7 +38,73 @@ Adopted a **database-first** strategy:
 
 ## Changes Made
 
-### 1. Schema Definitions (drizzle/schema.ts)
+### 1. RBAC Schema Fixes (drizzle/schema-rbac.ts) - Session c2977611
+
+**role_permissions table:**
+```typescript
+// BEFORE: Composite primary key
+export const rolePermissions = mysqlTable(
+  "role_permissions",
+  { roleId, permissionId, createdAt },
+  (table) => ({ pk: primaryKey({ columns: [table.roleId, table.permissionId] }) })
+);
+
+// AFTER: Auto-increment ID (matches database)
+export const rolePermissions = mysqlTable("role_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  roleId, permissionId, createdAt
+});
+```
+
+**user_roles table:**
+```typescript
+// BEFORE: Composite primary key, missing columns
+export const userRoles = mysqlTable(
+  "user_roles",
+  { userId, roleId, createdAt },
+  (table) => ({ pk: primaryKey({ columns: [table.userId, table.roleId] }) })
+);
+
+// AFTER: Auto-increment ID, added assignedAt/assignedBy
+export const userRoles = mysqlTable("user_roles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId, roleId,
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  assignedBy: varchar("assigned_by", { length: 255 })
+});
+```
+
+**user_permission_overrides table:**
+```typescript
+// BEFORE: Composite primary key, missing columns
+export const userPermissionOverrides = mysqlTable(
+  "user_permission_overrides",
+  { userId, permissionId, granted, createdAt },
+  (table) => ({ pk: primaryKey({ columns: [table.userId, table.permissionId] }) })
+);
+
+// AFTER: Auto-increment ID, added grantedAt/grantedBy
+export const userPermissionOverrides = mysqlTable("user_permission_overrides", {
+  id: int("id").autoincrement().primaryKey(),
+  userId, permissionId, granted,
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+  grantedBy: varchar("granted_by", { length: 255 })
+});
+```
+
+### 2. Order Status History Fix (drizzle/schema.ts) - Session c2977611
+
+**orderStatusHistory table:**
+```typescript
+// BEFORE: Two status columns (fromStatus, toStatus)
+fromStatus: fulfillmentStatusEnum,
+toStatus: fulfillmentStatusEnum.notNull(),
+
+// AFTER: Single status column (matches database)
+fulfillmentStatus: fulfillmentStatusEnum.notNull().default("PENDING"),
+```
+
+### 3. Schema Definitions (drizzle/schema.ts) - Session b60d4cc0
 
 **inventoryMovements table:**
 ```typescript
@@ -198,18 +264,21 @@ Created comprehensive documentation covering:
 - `scripts/validate-schema-sync.ts` - Schema validation tool
 - `docs/DATABASE_SCHEMA_SYNC.md` - Comprehensive sync documentation
 - `docs/INFRA-003-COMPLETION-REPORT.md` - This completion report
-- `docs/sessions/active/Session-20251118-INFRA-003-b60d4cc0.md` - Session tracking
+- `docs/sessions/active/Session-20251118-INFRA-003-b60d4cc0.md` - Session tracking (initial)
+- `docs/sessions/active/Session-20251118-INFRA-003-c2977611.md` - Session tracking (additional fixes)
 
 ### Modified:
-- `drizzle/schema.ts` - Fixed inventoryMovements schema definitions
+- `drizzle/schema.ts` - Fixed inventoryMovements schema definitions, fixed orderStatusHistory
+- `drizzle/schema-rbac.ts` - Fixed role_permissions, user_roles, user_permission_overrides
 - `drizzle.config.ts` - Added SSL configuration
 - `server/inventoryMovementsDb.ts` - Updated field names
 - `server/routers/inventoryMovements.ts` - Updated field names and validation
 - `server/auditLogger.ts` - Updated field references
 - `server/routers/warehouseTransfers.ts` - Updated field references
 - `.env` - Added DATABASE_URL
-- `docs/ACTIVE_SESSIONS.md` - Registered session
+- `docs/ACTIVE_SESSIONS.md` - Registered sessions
 - `docs/roadmaps/MASTER_ROADMAP.md` - Marked task complete
+- `docs/DATABASE_SCHEMA_SYNC.md` - Updated with additional fixes
 
 ## Lessons Learned
 

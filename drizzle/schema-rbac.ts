@@ -1,4 +1,4 @@
-import { mysqlTable, int, text, varchar, timestamp, primaryKey } from "drizzle-orm/mysql-core";
+import { mysqlTable, int, text, varchar, timestamp } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -53,21 +53,16 @@ export const permissionsRelations = relations(permissions, ({ many }) => ({
 // ROLE_PERMISSIONS TABLE (Many-to-Many)
 // ============================================================================
 
-export const rolePermissions = mysqlTable(
-  "role_permissions",
-  {
-    roleId: int("role_id")
-      .notNull()
-      .references(() => roles.id, { onDelete: "cascade" }),
-    permissionId: int("permission_id")
-      .notNull()
-      .references(() => permissions.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.roleId, table.permissionId] }),
-  })
-);
+export const rolePermissions = mysqlTable("role_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  roleId: int("role_id")
+    .notNull()
+    .references(() => roles.id, { onDelete: "cascade" }),
+  permissionId: int("permission_id")
+    .notNull()
+    .references(() => permissions.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
   role: one(roles, {
@@ -84,19 +79,15 @@ export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => 
 // USER_ROLES TABLE (Many-to-Many)
 // ============================================================================
 
-export const userRoles = mysqlTable(
-  "user_roles",
-  {
-    userId: varchar("user_id", { length: 255 }).notNull(), // Clerk user ID
-    roleId: int("role_id")
-      .notNull()
-      .references(() => roles.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.userId, table.roleId] }),
-  })
-);
+export const userRoles = mysqlTable("user_roles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull(), // Clerk user ID
+  roleId: int("role_id")
+    .notNull()
+    .references(() => roles.id, { onDelete: "cascade" }),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  assignedBy: varchar("assigned_by", { length: 255 }),
+});
 
 export const userRolesRelations = relations(userRoles, ({ one }) => ({
   role: one(roles, {
@@ -109,20 +100,16 @@ export const userRolesRelations = relations(userRoles, ({ one }) => ({
 // USER_PERMISSION_OVERRIDES TABLE (For per-user exceptions)
 // ============================================================================
 
-export const userPermissionOverrides = mysqlTable(
-  "user_permission_overrides",
-  {
-    userId: varchar("user_id", { length: 255 }).notNull(), // Clerk user ID
-    permissionId: int("permission_id")
-      .notNull()
-      .references(() => permissions.id, { onDelete: "cascade" }),
-    granted: int("granted").notNull().default(1), // 1 to grant, 0 to revoke
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.userId, table.permissionId] }),
-  })
-);
+export const userPermissionOverrides = mysqlTable("user_permission_overrides", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull(), // Clerk user ID
+  permissionId: int("permission_id")
+    .notNull()
+    .references(() => permissions.id, { onDelete: "cascade" }),
+  granted: int("granted").notNull(), // 1 to grant, 0 to revoke (stored as tinyint(1) in DB)
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+  grantedBy: varchar("granted_by", { length: 255 }),
+});
 
 export const userPermissionOverridesRelations = relations(userPermissionOverrides, ({ one }) => ({
   permission: one(permissions, {

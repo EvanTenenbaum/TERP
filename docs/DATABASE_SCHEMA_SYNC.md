@@ -242,7 +242,7 @@ To add more validation checks, edit the script and add new checks in the same pa
 
 ## History
 
-**2025-11-18 (INFRA-003):**
+**2025-11-18 (INFRA-003 - Session-20251118-INFRA-003-c2977611):**
 - Fixed schema drift issues
 - Updated `inventoryMovements` schema to match database
 - Changed `movementType` to `inventoryMovementType`
@@ -250,3 +250,10 @@ To add more validation checks, edit the script and add new checks in the same pa
 - Created validation script
 - Added SSL configuration to drizzle.config.ts
 - Documented database-first sync strategy
+- Fixed RBAC schema (role_permissions, user_roles, user_permission_overrides)
+  - Changed from composite primary keys to auto-increment ID columns
+  - Added missing columns (assignedAt, assignedBy, grantedAt, grantedBy)
+- Fixed orderStatusHistory table definition
+  - Changed from fromStatus/toStatus to single fulfillmentStatus column
+- Identified drizzle-kit tooling issue (generate/push commands fail)
+- Confirmed schema validation passes despite drizzle-kit errors
