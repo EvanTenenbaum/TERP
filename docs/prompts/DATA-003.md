@@ -12,10 +12,12 @@
 
 Seed 4 pricing-related tables with realistic, operationally coherent data:
 
-1. `priceTiers` - 3-5 pricing tiers (Retail, Wholesale, VIP)
-2. `productPricing` - Pricing for all products across tiers
-3. `clientPricingTiers` - Assign clients to pricing tiers
-4. `priceOverrides` - Special pricing for specific client-product combinations
+1. `pricing_defaults` - Default margins for product categories
+2. `pricing_profiles` - Pricing profiles for different customer tiers (Retail, Wholesale, VIP, Medical)
+3. `pricing_rules` - Dynamic pricing rules (bulk discounts, markups, special conditions)
+4. `client_price_alerts` - Price notification system for clients
+
+**Note:** The actual database schema differs from the original task specification. Tables use `pricing_profiles` and `pricing_rules` instead of `priceTiers` and `productPricing`.
 
 ---
 
@@ -30,10 +32,10 @@ Seed 4 pricing-related tables with realistic, operationally coherent data:
 
 **Current State:**
 
-- `priceTiers`: EMPTY (0 records)
-- `productPricing`: EMPTY (0 records)
-- `clientPricingTiers`: EMPTY (0 records)
-- `priceOverrides`: EMPTY (0 records)
+- `pricing_defaults`: EMPTY (0 records)
+- `pricing_profiles`: EMPTY (0 records)
+- `pricing_rules`: EMPTY (0 records)
+- `client_price_alerts`: EMPTY (0 records)
 - Products: 100+ products exist
 - Clients: 50 clients exist
 
@@ -49,10 +51,10 @@ Seed 4 pricing-related tables with realistic, operationally coherent data:
 ## Deliverables
 
 1. ✅ `scripts/seed-pricing.ts` - Simple, working seed script
-2. ✅ 3-5 price tiers created
-3. ✅ Pricing for 100+ products across all tiers
-4. ✅ 50 clients assigned to tiers
-5. ✅ 10-20 price overrides for special deals
+2. ✅ 8 pricing defaults for product categories
+3. ✅ 5 pricing profiles (Retail, Wholesale Tier 1 & 2, VIP, Medical)
+4. ✅ 8 pricing rules (bulk discounts, markups, special conditions)
+5. ✅ Client price alerts (if clients/batches exist)
 6. ✅ Validation that pricing logic works
 7. ✅ Roadmap updated to complete
 
