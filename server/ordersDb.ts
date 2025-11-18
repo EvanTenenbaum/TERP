@@ -350,7 +350,7 @@ export async function getAllOrders(filters?: {
     offset = 0,
   } = filters || {};
   
-  const conditions: any[] = [];
+  const conditions: unknown[] = [];
   
   if (orderType) {
     conditions.push(eq(orders.orderType, orderType));

@@ -294,9 +294,9 @@ async function setupWorkflowQueue() {
               \`order\` = new_status.\`order\`;
           `);
           logSuccess(`  ✓ ${status.name}`);
-        } catch (error: any) {
+        } catch (error) {
           // If the above syntax fails (older MySQL), try the old syntax
-          if (error.message?.includes("syntax")) {
+          if (error instanceof Error ? error.message : String(error)?.includes("syntax")) {
             try {
               await db.execute(sql`
                 INSERT INTO workflow_statuses (name, description, color, \`order\`)
@@ -307,7 +307,7 @@ async function setupWorkflowQueue() {
                   \`order\` = VALUES(\`order\`);
               `);
               logSuccess(`  ✓ ${status.name} (fallback syntax)`);
-            } catch (fallbackError: any) {
+            } catch (fallbackError) {
               logWarning(`  ⚠️  ${status.name} - ${fallbackError.message}`);
             }
           } else {
@@ -487,7 +487,7 @@ async function setupWorkflowQueue() {
       log("   Navigate to /workflow-queue to see your batches\n", "cyan");
     }
 
-  } catch (error: any) {
+  } catch (error) {
     logError("\nError during setup:");
     console.error(error);
     

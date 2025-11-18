@@ -86,9 +86,9 @@ export async function reorderFromPrevious(data: {
       newOrderId: newOrder.insertId,
       originalOrderId: data.originalOrderId,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error reordering from previous:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -111,9 +111,9 @@ export async function getRecentOrdersForReorder(clientId: number, limit: number 
       success: true,
       orders: recentOrders,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting recent orders for reorder:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -154,9 +154,9 @@ export async function updateClientPaymentTerms(
       .where(eq(clients.id, clientId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error updating client payment terms:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -225,9 +225,9 @@ export async function getClientPaymentTerms(clientId: number) {
       paymentTerms,
       creditLimit,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting client payment terms:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 

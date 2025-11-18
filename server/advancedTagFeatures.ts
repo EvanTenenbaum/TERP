@@ -41,7 +41,7 @@ export async function booleanTagSearch(
     const productIds = await evaluateBooleanExpression(tokens);
 
     return productIds;
-  } catch (error: any) {
-    throw new Error(`Failed to execute boolean tag search: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to execute boolean tag search: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

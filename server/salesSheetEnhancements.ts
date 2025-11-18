@@ -66,8 +66,8 @@ export async function createSalesSheetVersion(
       .limit(1);
 
     return newVersion;
-  } catch (error: any) {
-    throw new Error(`Failed to create sales sheet version: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to create sales sheet version: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -87,8 +87,8 @@ export async function getSalesSheetVersionHistory(
       .orderBy(desc(salesSheetVersions.versionNumber));
 
     return versions;
-  } catch (error: any) {
-    throw new Error(`Failed to get version history: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get version history: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -137,8 +137,8 @@ export async function restoreSalesSheetVersion(
       .limit(1);
 
     return updated;
-  } catch (error: any) {
-    throw new Error(`Failed to restore version: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to restore version: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -184,8 +184,8 @@ export async function cloneSalesSheetTemplate(
       .limit(1);
 
     return created;
-  } catch (error: any) {
-    throw new Error(`Failed to clone template: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to clone template: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -203,8 +203,8 @@ export async function setSalesSheetExpiration(
     await db.update(salesSheetTemplates)
       .set({ expirationDate })
       .where(eq(salesSheetTemplates.id, templateId));
-  } catch (error: any) {
-    throw new Error(`Failed to set expiration date: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to set expiration date: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -228,8 +228,8 @@ export async function deactivateExpiredSalesSheets(): Promise<number> {
       ));
 
     return 0; // Return count of deactivated sheets
-  } catch (error: any) {
-    throw new Error(`Failed to deactivate expired sales sheets: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to deactivate expired sales sheets: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -285,8 +285,8 @@ export async function createBulkOrdersFromSalesSheet(
     }
 
     return createdOrders;
-  } catch (error: any) {
-    throw new Error(`Failed to create bulk orders: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to create bulk orders: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -325,8 +325,8 @@ export async function getClientSpecificPricing(
       appliedDiscounts: [],
       notes: "Client-specific pricing applied"
     };
-  } catch (error: any) {
-    throw new Error(`Failed to get client-specific pricing: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get client-specific pricing: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -350,8 +350,8 @@ export async function getActiveSalesSheets(
     }
 
     return await query;
-  } catch (error: any) {
-    throw new Error(`Failed to get active sales sheets: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get active sales sheets: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -386,8 +386,8 @@ export async function getSalesSheetUsageStats(
       totalRevenue: totalRevenue.toFixed(2),
       lastUsed: history.length > 0 ? history[0].createdAt : null
     };
-  } catch (error: any) {
-    throw new Error(`Failed to get usage stats: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get usage stats: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

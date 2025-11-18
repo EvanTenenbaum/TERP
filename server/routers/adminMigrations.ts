@@ -19,7 +19,7 @@ export const adminMigrationsRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
-    const results: any[] = [];
+    const results: unknown[] = [];
     const startTime = Date.now();
 
     try {
@@ -46,11 +46,11 @@ export const adminMigrationsRouter = router({
           status: "success",
           message: "Added parentStrainId and baseStrainName columns with indexes"
         });
-      } catch (error: any) {
+      } catch (error) {
         results.push({
           migration: "add_strain_family_support",
           status: "error",
-          message: error.message
+          message: error instanceof Error ? error.message : String(error)
         });
       }
 
@@ -72,11 +72,11 @@ export const adminMigrationsRouter = router({
           status: "success",
           message: "Added strainId column to client_needs with index"
         });
-      } catch (error: any) {
+      } catch (error) {
         results.push({
           migration: "add_strainId_to_client_needs",
           status: "error",
-          message: error.message
+          message: error instanceof Error ? error.message : String(error)
         });
       }
 
@@ -105,11 +105,11 @@ export const adminMigrationsRouter = router({
           status: "success",
           message: "Created userDashboardPreferences table for cross-device sync"
         });
-      } catch (error: any) {
+      } catch (error) {
         results.push({
           migration: "create_user_dashboard_preferences",
           status: "error",
-          message: error.message
+          message: error instanceof Error ? error.message : String(error)
         });
       }
 
@@ -175,11 +175,11 @@ export const adminMigrationsRouter = router({
           status: "success",
           message: "Created 3 database views successfully"
         });
-      } catch (error: any) {
+      } catch (error) {
         results.push({
           migration: "create_strain_views",
           status: "error",
-          message: error.message
+          message: error instanceof Error ? error.message : String(error)
         });
       }
 
@@ -191,10 +191,10 @@ export const adminMigrationsRouter = router({
         duration,
         summary: `Ran ${results.length} migrations in ${duration}ms`
       };
-    } catch (error: any) {
+    } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         results,
         duration: Date.now() - startTime
       };
@@ -208,7 +208,7 @@ export const adminMigrationsRouter = router({
     const db = await getDb();
     if (!db) throw new Error("Database connection failed");
     
-    const checks: any[] = [];
+    const checks: unknown[] = [];
 
     try {
       // Check if parentStrainId column exists
@@ -219,11 +219,11 @@ export const adminMigrationsRouter = router({
         AND TABLE_NAME = 'strains'
       `);
       
-      const hasParentStrainId = (strainsColumns as any[]).some(
-        (row: any) => row.COLUMN_NAME === 'parentStrainId'
+      const hasParentStrainId = (strainsColumns as Array<{ COLUMN_NAME: string }>).some(
+        (row) => row.COLUMN_NAME === 'parentStrainId'
       );
-      const hasBaseStrainName = (strainsColumns as any[]).some(
-        (row: any) => row.COLUMN_NAME === 'baseStrainName'
+      const hasBaseStrainName = (strainsColumns as Array<{ COLUMN_NAME: string }>).some(
+        (row) => row.COLUMN_NAME === 'baseStrainName'
       );
 
       checks.push({
@@ -243,8 +243,8 @@ export const adminMigrationsRouter = router({
         AND TABLE_NAME = 'client_needs'
       `);
       
-      const hasStrainId = (clientNeedsColumns as any[]).some(
-        (row: any) => row.COLUMN_NAME === 'strainId'
+      const hasStrainId = (clientNeedsColumns as Array<{ COLUMN_NAME: string }>).some(
+        (row) => row.COLUMN_NAME === 'strainId'
       );
 
       checks.push({
@@ -274,7 +274,7 @@ export const adminMigrationsRouter = router({
         WHERE TABLE_SCHEMA = DATABASE()
       `);
       
-      const viewNames = (views as any[]).map((row: any) => row.TABLE_NAME);
+      const viewNames = (views as Array<{ TABLE_NAME: string }>).map((row) => row.TABLE_NAME);
       const hasProductsView = viewNames.includes('products_with_strain_family');
       const hasPreferencesView = viewNames.includes('client_strain_preferences');
       const hasStatsView = viewNames.includes('strain_family_stats');
@@ -296,10 +296,10 @@ export const adminMigrationsRouter = router({
         checks,
         summary: allPassed ? "All migrations applied" : "Some migrations pending"
       };
-    } catch (error: any) {
+    } catch (error) {
       return {
         allPassed: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         checks
       };
     }
