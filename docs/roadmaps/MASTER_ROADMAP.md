@@ -234,31 +234,66 @@
   - Estimate: 3-4 days
   - Note: This addresses Kimi AI's finding about missing pagination
 
-- [✅] **ST-008: Implement Error Tracking (Sentry)** (Unassigned) 🟡 MEDIUM
+- [x] **ST-008: Implement Error Tracking (Sentry)** (Session-20251117-monitoring-749ff8a8) ✅ CODE COMPLETE
   - Task ID: ST-008
+  - Status: Code deployed, configuration pending (see ST-012)
   - Action: Set up Sentry integration for error tracking
   - **Checklist:**
-    1. ☐ Install Sentry SDK: `pnpm add @sentry/nextjs`
-    2. ☐ Configure Sentry in `sentry.client.config.ts` and `sentry.server.config.ts`
-    3. ☐ Add error boundaries in React components
-    4. ☐ Configure source maps for production
-    5. ☐ Test error reporting in staging
+    1. ✅ Install Sentry SDK: `@sentry/react` and `@sentry/node`
+    2. ✅ Configure Sentry in `sentry.client.config.ts` and `sentry.server.config.ts`
+    3. ✅ Add error boundaries in React components
+    4. ✅ Configure source maps for production
+    5. ⚠️ Configure Sentry DSN and alerts (moved to ST-012)
   - Impact: Better error tracking and debugging in production
-  - Estimate: 1-2 days
-  - Note: Addresses Kimi AI's finding about missing error tracking
+  - Actual Time: 3-5 days (completed 2025-11-17)
+  - Note: Code complete, requires Sentry.io dashboard configuration
+  - Documentation: docs/MONITORING_SETUP.md, docs/SENTRY_QA_ANALYSIS.md
 
-- [✅] **ST-009: Implement API Monitoring** (Unassigned) 🟡 MEDIUM
+- [x] **ST-009: Implement API Monitoring** (Session-20251117-monitoring-749ff8a8) ✅ CODE COMPLETE
   - Task ID: ST-009
-  - Action: Set up API monitoring (Datadog or New Relic)
+  - Status: Code deployed, configuration pending (see ST-012)
+  - Action: Set up API monitoring with Sentry performance tracking
   - **Checklist:**
-    1. ☐ Choose monitoring provider (Datadog recommended)
-    2. ☐ Install monitoring SDK
-    3. ☐ Add performance metrics to tRPC procedures
-    4. ☐ Set up alerts for slow queries (>1s)
-    5. ☐ Create monitoring dashboard
+    1. ✅ Sentry performance monitoring (chosen over Datadog)
+    2. ✅ Install monitoring SDK
+    3. ✅ Add performance metrics to tRPC procedures
+    4. ✅ Set up slow query detection (>1s warning, >3s error)
+    5. ✅ Create monitoring dashboard (admin-only endpoints)
+    6. ⚠️ Configure Sentry DSN and alerts (moved to ST-012)
   - Impact: Proactive performance monitoring
-  - Estimate: 2-3 days
-  - Note: Addresses Kimi AI's finding about missing API monitoring
+  - Actual Time: 3-5 days (completed 2025-11-17)
+  - Note: Code complete, requires Sentry.io dashboard configuration
+  - Documentation: docs/MONITORING_SETUP.md, docs/SENTRY_QA_ANALYSIS.md
+
+- [ ] **ST-012: Configure Sentry Monitoring** (Evan) 🔴 HIGH
+  - Task ID: ST-012
+  - Assigned: Evan Tenenbaum
+  - Reminder: 2025-11-18 (tomorrow)
+  - Action: Configure Sentry.io dashboard for alerts and monitoring
+  - **Checklist:**
+    1. ☐ Create Sentry project at sentry.io (5 min)
+    2. ☐ Get DSN from project settings
+    3. ☐ Add `VITE_SENTRY_DSN` to Digital Ocean env vars
+    4. ☐ Add `SENTRY_DSN` to Digital Ocean env vars
+    5. ☐ Restart application and verify Sentry receiving events
+    6. ☐ Configure email notifications in Sentry
+    7. ☐ Create alert rule for new errors
+    8. ☐ Create alert rule for error rate spikes
+    9. ☐ Create alert rule for performance degradation
+    10. ☐ Set up Slack integration (optional but recommended)
+    11. ☐ Add UptimeRobot for /health endpoint monitoring (15 min)
+    12. ☐ Test all alerts work
+  - **AI Self-Healing Option (Development):**
+    - Consider: Webhook from Sentry → triggers Manus agent → analyzes error → creates PR with fix
+    - Setup: Sentry webhook → API endpoint → spawns Manus agent with error context
+    - Benefits: Automatic error resolution during development
+    - Implementation: Can be added after basic monitoring is working
+  - Impact: Real-time error notifications and proactive monitoring
+  - Estimate: 1-2 hours
+  - Priority: HIGH - Code is deployed but not actively monitoring
+  - Documentation: docs/SENTRY_QA_ANALYSIS.md (complete implementation guide)
+  - Cost: $0/month (free tier sufficient)
+  - Note: Without this configuration, Sentry will log errors but NOT send alerts
 
 - [x] **ST-010: Add Integration Tests** (Session-20251114-testing-infra-687ceb) 🟡 MEDIUM
   - Task ID: ST-010
