@@ -137,7 +137,7 @@ export const warehouseTransfersRouter = router({
         .where(
           and(
             eq(inventoryMovements.batchId, input.batchId),
-            eq(inventoryMovements.movementType, "TRANSFER")
+            eq(inventoryMovements.inventoryMovementType, "TRANSFER")
           )
         )
         .orderBy(desc(inventoryMovements.createdAt));
@@ -172,7 +172,7 @@ export const warehouseTransfersRouter = router({
         recentTransfers: sql<number>`SUM(CASE WHEN ${inventoryMovements.createdAt} >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END)`,
       })
       .from(inventoryMovements)
-      .where(eq(inventoryMovements.movementType, "TRANSFER"));
+      .where(eq(inventoryMovements.inventoryMovementType, "TRANSFER"));
 
     return stats[0] || {
       totalTransfers: 0,

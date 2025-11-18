@@ -26,7 +26,7 @@ export const inventoryMovementsRouter = router({
       
       return await inventoryMovementsDb.recordInventoryMovement({
         batchId: input.batchId,
-        movementType: input.movementType,
+        inventoryMovementType: input.inventoryMovementType,
         quantityChange: input.quantityChange,
         quantityBefore: input.quantityBefore,
         quantityAfter: input.quantityAfter,
@@ -86,7 +86,7 @@ export const inventoryMovementsRouter = router({
     .input(z.object({
       batchId: z.number(),
       newQuantity: z.string(),
-      adjustmentReason: z.enum(["DAMAGED", "EXPIRED", "LOST", "THEFT", "COUNT_DISCREPANCY", "QUALITY_ISSUE", "REWEIGH", "OTHER"]),
+      reason: z.string(),
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
@@ -95,7 +95,7 @@ export const inventoryMovementsRouter = router({
       return await inventoryMovementsDb.adjustInventory(
         input.batchId,
         input.newQuantity,
-        input.adjustmentReason,
+        input.reason,
         ctx.user.id,
         input.notes
       );
