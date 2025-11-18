@@ -10,13 +10,13 @@
 
 Seed comments and dashboard tables with realistic data to enable testing and demonstration of commenting and dashboard features.
 
-## Progress
+### Progress
 
-- [ ] Phase 1: Verify schema sync (15 min)
-- [ ] Phase 2: Seed comments tables (30-45 min)
-- [ ] Phase 3: Seed dashboard tables (45-60 min)
-- [ ] Phase 4: Testing & validation (30 min)
-- [ ] Phase 5: Documentation & completion (15 min)
+- [x] Phase 1: Verify schema sync (15 min)
+- [x] Phase 2: Seed comments tables (30-45 min)
+- [x] Phase 3: Seed dashboard tables (45-60 min)
+- [x] Phase 4: Testing & validation (30 min)
+- [x] Phase 5: Documentation & completion (15 min)
 
 ## Tables to Seed
 
@@ -26,10 +26,37 @@ Seed comments and dashboard tables with realistic data to enable testing and dem
 4. dashboard_widget_layouts
 5. dashboard_kpi_configs
 
-## Changes Made
+### Changes Made
 
-(Document all changes here)
+### Seeding Scripts Created
 
-## Testing Completed
+- `scripts/seed-comments-dashboard.ts` - Comprehensive seeding script for comments and dashboard tables
 
-(Document all tests here)
+### Data Seeded
+
+1. **Comments**: 170 total (90 CalendarEvent, 80 Client)
+2. **Comment Mentions**: 40 mentions
+3. **Dashboard Preferences**: 4 user preferences
+4. **Widget Layouts**: 20 widget configurations
+5. **KPI Configs**: 8 KPI configurations
+
+### Schema Adjustments
+
+- Updated script to use actual database column names:
+  - `commentable_type` and `commentable_id` instead of `entity_type` and `entity_id`
+  - `userId` instead of `user_id` in dashboard tables
+  - `mentioned_by_user_id` added to comment_mentions
+- Adapted dashboard seeding to match actual table structure (different from DATA-002 prompt)
+
+### Testing Completed
+
+1. ✅ Schema validation passed before seeding
+2. ✅ All 5 required tables verified to exist
+3. ✅ Comments seeded successfully (170 total)
+4. ✅ Comment mentions seeded successfully (40 total)
+5. ✅ Dashboard preferences created (4 users)
+6. ✅ Widget layouts created (20 widgets)
+7. ✅ KPI configs created (8 KPIs)
+8. ✅ Data distribution validated:
+   - Comments: 90 CalendarEvent, 80 Client
+   - All dashboard tables populated correctly
