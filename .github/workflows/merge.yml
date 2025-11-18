@@ -220,7 +220,6 @@ jobs:
             }
             
             // Write build status to a file for agent verification
-            const fs = require('fs');
             const statusFile = '.github/BUILD_STATUS.md';
             const timestamp = new Date().toISOString();
             
