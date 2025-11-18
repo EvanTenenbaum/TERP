@@ -73,3 +73,4 @@
 - Abandoned: `docs/sessions/abandoned/Session-[ID].md`
 
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
+- Agent-02: Session-20251117-monitoring-749ff8a8 - Monitoring (ST-008, ST-009)
