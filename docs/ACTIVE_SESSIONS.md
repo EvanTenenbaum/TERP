@@ -73,4 +73,3 @@
 - Abandoned: `docs/sessions/abandoned/Session-[ID].md`
 
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
-- Agent-03: Session-20251117-e2e-tests-30c9a27f - E2E Tests (ST-011)
