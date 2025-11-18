@@ -332,7 +332,7 @@
   - Documentation: docs/ST-014-COMPLETION-FINAL.md
   - Note: 93% pass rate achieved, remaining failures are integration tests
 
-- [ ] **ST-013: Standardize Soft Deletes** (Unassigned) 🟡 MEDIUM
+- [~] **ST-013: Standardize Soft Deletes** (Agent-05-Session-20251117-data-integrity-b9bcdea1) 🟡 MEDIUM
   - Task ID: ST-013
   - Action: Audit all tables and add consistent `deletedAt` field
   - **Checklist:**
@@ -682,7 +682,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 **Objective:** Refactor the codebase for better performance, maintainability, and type safety.
 
-- [ ] **RF-001: Consolidate Orders Router** (Unassigned)
+- [~] **RF-001: Consolidate Orders Router** (Agent-05-Session-20251117-data-integrity-b9bcdea1)
   - Task ID: RF-001
   - Action: Merge `orders` and `ordersEnhancedV2` into a single router
   - Impact: Reduced complexity, better maintainability
