@@ -15,6 +15,7 @@ import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
 import { orders, orderLineItems, batches } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { softDelete, restoreDeleted } from "../utils/softDelete";
 import { pricingService } from "../services/pricingService";
 import { marginCalculationService } from "../services/marginCalculationService";
 import { priceCalculationService } from "../services/priceCalculationService";
@@ -147,6 +148,7 @@ export const ordersRouter = router({
           fulfillmentStatus: z.string().optional(),
           limit: z.number().optional(),
           offset: z.number().optional(),
+          includeDeleted: z.boolean().optional(), // ST-013: Option to include soft-deleted records
         })
         .optional()
     )
@@ -172,15 +174,27 @@ export const ordersRouter = router({
     }),
 
   /**
-   * Delete order
-   * NOTE: Will be updated to soft delete in ST-013
+   * Delete order (soft delete)
+   * ST-013: Uses soft delete for data recovery
    */
   delete: protectedProcedure
     .use(requirePermission("orders:delete"))
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      await ordersDb.deleteOrder(input.id);
-      return { success: true };
+      const rowsAffected = await softDelete(orders, input.id);
+      return { success: rowsAffected > 0 };
+    }),
+
+  /**
+   * Restore deleted order
+   * ST-013: Restore a soft-deleted order
+   */
+  restore: protectedProcedure
+    .use(requirePermission("orders:delete"))
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const rowsAffected = await restoreDeleted(orders, input.id);
+      return { success: rowsAffected > 0 };
     }),
 
   // ==========================================================================
