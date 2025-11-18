@@ -101,7 +101,14 @@ All AI agents MUST:
 
 **PRIMARY METHOD: Use Method 1 (Database)** - This is the most reliable and doesn't require external tools.
 
-#### Method 1: Check Deployment Database (Fastest, Most Reliable)
+#### Method 1: Check Build Status File (Fastest, Most Reliable)
+
+```bash
+# Check latest build status
+cat .github/BUILD_STATUS.md
+```
+
+#### Method 2: Check Deployment Database (Secondary)
 
 ```bash
 # Check latest deployment status
