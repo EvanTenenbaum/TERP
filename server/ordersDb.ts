@@ -1262,31 +1262,17 @@ export async function getOrderReturns(orderId: number) {
 
 /**
  * Generates a unique order number.
- * @param orderType - The type of order (
-'QUOTE
-' or 
-'SALE
-')
+ * @param orderType - The type of order ('QUOTE' or 'SALE')
  * @param isDraft - Whether the order is a draft
  */
 export async function generateOrderNumber(
-  orderType: 
-'QUOTE
-' | 
-'SALE
-',
+  orderType: 'QUOTE' | 'SALE',
   isDraft: boolean = false
 ): Promise<string> {
   if (isDraft) {
     return `D-${Date.now()}`;
   }
 
-  const prefix = orderType === 
-'QUOTE
-' ? 
-'Q
-' : 
-'S
-';
+  const prefix = orderType === 'QUOTE' ? 'Q' : 'S';
   return `${prefix}-${Date.now()}`;
 }
