@@ -21,20 +21,25 @@ async function validateSchemaSync() {
   // Check for known issues
   console.log("🔍 Checking known issues...\n");
 
-  // Issue 1: inventoryMovements.adjustmentReason
+  // Issue 1: inventoryMovements.reason
   const invMovColumns = await db.execute(sql`
     SELECT COLUMN_NAME
     FROM information_schema.COLUMNS
     WHERE TABLE_NAME = 'inventoryMovements'
   `);
-  const invMovColumnNames = (
-    invMovColumns[0] as Array<{ COLUMN_NAME: string }>
-  ).map(c => c.COLUMN_NAME);
-
-  if (!invMovColumnNames.includes("adjustmentReason")) {
-    issues.push("❌ inventoryMovements missing adjustmentReason column");
+  const invMovColumnNames = (invMovColumns[0] as Array<{ COLUMN_NAME: string }>).map(c => c.COLUMN_NAME);
+  
+  if (!invMovColumnNames.includes('reason')) {
+    issues.push("❌ inventoryMovements missing reason column");
   } else {
-    console.log("✅ inventoryMovements.adjustmentReason exists");
+    console.log("✅ inventoryMovements.reason exists");
+  }
+  
+  // Check for inventoryMovementType column
+  if (!invMovColumnNames.includes('inventoryMovementType')) {
+    issues.push("❌ inventoryMovements missing inventoryMovementType column");
+  } else {
+    console.log("✅ inventoryMovements.inventoryMovementType exists");
   }
 
   // Issue 2: orderStatusHistory columns
