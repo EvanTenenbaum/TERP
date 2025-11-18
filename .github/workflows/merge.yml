@@ -219,6 +219,21 @@ jobs:
               body += '📸 [View visual changes in Argos](https://app.argos-ci.com/EvanTenenbaum/TERP)';
             }
             
+            // Write build status to a file for agent verification
+            const fs = require('fs');
+            const statusFile = '.github/BUILD_STATUS.md';
+            const timestamp = new Date().toISOString();
+            
+            const statusContent = `# Latest Build Status\n\n` +
+              `**Last Updated:** ${timestamp}\n` +
+              `**Commit:** \`${context.sha}\`\n` +
+              `**Status:** ${allPassed ? '✅ SUCCESS' : '❌ FAILED'}\n\n` +
+              body;
+            
+            fs.writeFileSync(statusFile, statusContent);
+            console.log('✅ Wrote build status to', statusFile);
+            
+            // Try to post commit comment (best effort)
             try {
               const comment = await github.rest.repos.createCommitComment({
                 owner: context.repo.owner,
@@ -228,10 +243,22 @@ jobs:
               });
               console.log('✅ Posted commit comment:', comment.data.html_url);
             } catch (error) {
-              console.error('❌ Failed to post commit comment:', error.message);
-              core.setFailed('Failed to post commit comment: ' + error.message);
-              throw error;
+              console.warn('⚠️ Could not post commit comment:', error.message);
+              console.log('Build status is available in', statusFile);
             }
+      
+      - name: Commit build status file
+        if: always()
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .github/BUILD_STATUS.md || true
+          if git diff --staged --quiet; then
+            echo "No changes to BUILD_STATUS.md"
+          else
+            git commit -m "Update build status [skip ci]"
+            git push || echo "Failed to push build status"
+          fi
       
       - name: Create fallback issue if comment failed
         uses: actions/github-script@v7
