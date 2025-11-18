@@ -61,7 +61,7 @@ export default function OrderCreatorPageV2() {
   const { totals, warnings, isValid } = useOrderCalculations(items, adjustment);
 
   // Mutations
-  const createDraftMutation = trpc.ordersEnhancedV2.createDraft.useMutation({
+  const createDraftMutation = trpc.orders.createDraftEnhanced.useMutation({
     onSuccess: data => {
       toast.success(`Draft order #${data.id} saved successfully`);
       // Reset form
@@ -73,7 +73,7 @@ export default function OrderCreatorPageV2() {
     },
   });
 
-  const finalizeMutation = trpc.ordersEnhancedV2.finalize.useMutation({
+  const finalizeMutation = trpc.orders.finalizeDraft.useMutation({
     onSuccess: data => {
       toast.success(`Order #${data.orderNumber} finalized successfully!`);
       // Navigate to order details or reset
