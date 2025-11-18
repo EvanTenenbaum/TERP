@@ -1,4 +1,4 @@
-import { Sentry, sentryRequestHandler, sentryErrorHandler } from "../../sentry.server.config";
+import { Sentry, setupSentryErrorHandler } from "../../sentry.server.config";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -40,24 +40,11 @@ export function captureMessage(
 }
 
 /**
- * Get Sentry request handler middleware
+ * Setup Sentry Express error handler
+ * Call this after all routes are defined
  */
-export function getRequestHandler() {
+export function setupErrorHandler(app: any) {
   if (process.env.SENTRY_DSN) {
-    return sentryRequestHandler;
+    setupSentryErrorHandler(app);
   }
-  return (req: any, res: any, next: any) => next();
-}
-
-/**
- * Get Sentry error handler middleware
- */
-export function getErrorHandler() {
-  if (process.env.SENTRY_DSN) {
-    return sentryErrorHandler;
-  }
-  return (err: any, req: any, res: any, next: any) => {
-    captureException(err);
-    next(err);
-  };
 }

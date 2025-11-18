@@ -9,7 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { apiLimiter, authLimiter } from "./rateLimiter";
-import { initMonitoring, getRequestHandler, getErrorHandler } from "./monitoring";
+import { initMonitoring, setupErrorHandler } from "./monitoring";
 import { requestLogger } from "./requestLogger";
 import { logger, replaceConsole } from "./logger";
 import { performHealthCheck, livenessCheck, readinessCheck } from "./healthCheck";
@@ -69,8 +69,7 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   
-  // Sentry request handler (must be first)
-  app.use(getRequestHandler());
+  // Sentry is now auto-instrumented via setupExpressErrorHandler
   
   // Request logging
   app.use(requestLogger);
@@ -148,8 +147,8 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  // Sentry error handler (must be last)
-  app.use(getErrorHandler());
+  // Sentry error handler (must be after all routes)
+  setupErrorHandler(app);
   
   // Setup graceful shutdown
   setupGracefulShutdown();

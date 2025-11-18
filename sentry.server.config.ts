@@ -69,22 +69,15 @@ Sentry.init({
 });
 
 /**
- * Express error handler middleware
- * Use this in your Express app to automatically capture errors
+ * Setup Express error handler
+ * Call this function with your Express app after all routes are defined
  * 
  * Example:
- * app.use(Sentry.Handlers.errorHandler());
+ * setupSentryErrorHandler(app);
  */
-export const sentryErrorHandler = Sentry.expressErrorHandler();
-
-/**
- * Express request handler middleware
- * Use this at the beginning of your Express app to capture request data
- * 
- * Example:
- * app.use(Sentry.Handlers.requestHandler());
- */
-export const sentryRequestHandler = Sentry.expressRequestHandler();
+export function setupSentryErrorHandler(app: any) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 // Export Sentry for manual error capturing
 export { Sentry };
