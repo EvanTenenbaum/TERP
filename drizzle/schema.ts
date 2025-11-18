@@ -2443,14 +2443,13 @@ export const inventoryMovements = mysqlTable(
     batchId: int("batchId")
       .notNull()
       .references(() => batches.id, { onDelete: "cascade" }),
-    movementType: inventoryMovementTypeEnum.notNull(),
+    inventoryMovementType: inventoryMovementTypeEnum.notNull(),
     quantityChange: varchar("quantityChange", { length: 20 }).notNull(), // Can be negative
     quantityBefore: varchar("quantityBefore", { length: 20 }).notNull(),
     quantityAfter: varchar("quantityAfter", { length: 20 }).notNull(),
     referenceType: varchar("referenceType", { length: 50 }), // "ORDER", "REFUND", "ADJUSTMENT", etc.
     referenceId: int("referenceId"),
-    adjustmentReason: adjustmentReasonEnum, // For ADJUSTMENT movement type
-    notes: text("notes"), // Additional context for any movement type
+    reason: text("reason"), // Reason for adjustment or additional context
     performedBy: int("performedBy")
       .notNull()
       .references(() => users.id),
@@ -2459,7 +2458,7 @@ export const inventoryMovements = mysqlTable(
   table => ({
     batchIdIdx: index("idx_inventory_movements_batch").on(table.batchId),
     movementTypeIdx: index("idx_inventory_movements_type").on(
-      table.movementType
+      table.inventoryMovementType
     ),
     referenceIdx: index("idx_inventory_movements_reference").on(
       table.referenceType,

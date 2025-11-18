@@ -272,7 +272,7 @@ export async function increaseInventory(
 export async function adjustInventory(
   batchId: number,
   newQuantity: string,
-  adjustmentReason: string,
+  reason: string,
   userId: number,
   notes?: string
 ): Promise<InventoryMovement> {
@@ -320,7 +320,7 @@ export async function adjustInventory(
           quantityAfter: newQty.toString(),
           referenceType: "MANUAL_ADJUSTMENT",
           referenceId: null,
-          adjustmentReason: adjustmentReason as any, // Enum value
+          reason,
           notes,
           performedBy: userId,
         })
@@ -619,7 +619,7 @@ export async function getBatchMovementSummary(batchId: number): Promise<{
     for (const movement of movements) {
       const change = parseFloat(movement.quantityChange);
 
-      switch (movement.movementType) {
+      switch (movement.inventoryMovementType) {
         case "SALE":
           totalSales += Math.abs(change);
           break;
