@@ -292,7 +292,9 @@ Claude monitors deployment
      ↓
 Deployment completes (3-5 minutes)
      ↓
-Claude verifies success
+Workflow updates `.github/BUILD_STATUS.md` with results
+     ↓
+Claude verifies success by reading the status file
      ↓
 Updates MASTER_ROADMAP.md (task completed)
      ↓
