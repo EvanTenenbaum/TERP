@@ -70,6 +70,7 @@ import { rbacRolesRouter } from "./routers/rbac-roles";
 import { rbacPermissionsRouter } from "./routers/rbac-permissions";
 import { workflowQueueRouter } from "./routers/workflow-queue";
 import { deploymentsRouter } from "./routers/deployments";
+import { monitoringRouter } from "./routers/monitoring";
 
 export const appRouter = router({
   system: systemRouter,
@@ -141,6 +142,7 @@ export const appRouter = router({
   rbacPermissions: rbacPermissionsRouter,
   workflowQueue: workflowQueueRouter,
   deployments: deploymentsRouter,
+  monitoring: monitoringRouter,
 });
 
 export type AppRouter = typeof appRouter;
