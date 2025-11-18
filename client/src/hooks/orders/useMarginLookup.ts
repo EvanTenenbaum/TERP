@@ -18,7 +18,7 @@ export interface MarginResult {
  * Uses customer profile → default → manual fallback logic
  */
 export function useMarginLookup(clientId: number, productCategory: string) {
-  const { data, isLoading, error } = trpc.ordersEnhancedV2.getMarginForProduct.useQuery(
+  const { data, isLoading, error } = trpc.orders.getMarginForProduct.useQuery(
     {
       clientId,
       productCategory,
@@ -41,7 +41,7 @@ export function useMarginLookup(clientId: number, productCategory: string) {
  * Hook to calculate price from COGS and margin
  */
 export function usePriceCalculation(cogs: number, marginPercent: number) {
-  const { data, isLoading } = trpc.ordersEnhancedV2.calculatePrice.useQuery(
+  const { data, isLoading } = trpc.orders.calculatePrice.useQuery(
     {
       cogs,
       marginPercent,
