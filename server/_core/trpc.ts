@@ -5,7 +5,6 @@ import type { TrpcContext } from "./context";
 import { sanitizeUserInput } from "./sanitization";
 import { logger } from "./logger";
 import { createErrorHandlingMiddleware } from "./errorHandling";
-import { performanceMiddleware } from "./performanceMiddleware";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -89,13 +88,11 @@ const requireUser = t.middleware(async opts => {
 
 export const protectedProcedure = t.procedure
   .use(errorHandlingMiddleware)
-  .use(performanceMiddleware)
   .use(sanitizationMiddleware)
   .use(requireUser);
 
 export const adminProcedure = t.procedure
   .use(errorHandlingMiddleware)
-  .use(performanceMiddleware)
   .use(sanitizationMiddleware)
   .use(
     t.middleware(async opts => {
