@@ -48,7 +48,7 @@ import { adminQuickFixRouter } from "./routers/adminQuickFix";
 import { adminSchemaPushRouter } from "./routers/adminSchemaPush";
 import { vipPortalRouter } from "./routers/vipPortal";
 import { vipPortalAdminRouter } from "./routers/vipPortalAdmin";
-import { ordersEnhancedV2Router } from "./routers/ordersEnhancedV2";
+// ordersEnhancedV2Router consolidated into ordersRouter (RF-001)
 import { pricingDefaultsRouter } from "./routers/pricingDefaults";
 import { dashboardPreferencesRouter } from "./routers/dashboardPreferences";
 import { todoListsRouter } from "./routers/todoLists";
@@ -70,6 +70,7 @@ import { rbacRolesRouter } from "./routers/rbac-roles";
 import { rbacPermissionsRouter } from "./routers/rbac-permissions";
 import { workflowQueueRouter } from "./routers/workflow-queue";
 import { deploymentsRouter } from "./routers/deployments";
+import { monitoringRouter } from "./routers/monitoring";
 
 export const appRouter = router({
   system: systemRouter,
@@ -119,7 +120,7 @@ export const appRouter = router({
   adminSchemaPush: adminSchemaPushRouter,
   vipPortal: vipPortalRouter,
   vipPortalAdmin: vipPortalAdminRouter,
-  ordersEnhancedV2: ordersEnhancedV2Router,
+  // ordersEnhancedV2: Consolidated into orders router (RF-001)
   pricingDefaults: pricingDefaultsRouter,
   dashboardPreferences: dashboardPreferencesRouter,
   todoLists: todoListsRouter,
@@ -141,6 +142,7 @@ export const appRouter = router({
   rbacPermissions: rbacPermissionsRouter,
   workflowQueue: workflowQueueRouter,
   deployments: deploymentsRouter,
+  monitoring: monitoringRouter,
 });
 
 export type AppRouter = typeof appRouter;

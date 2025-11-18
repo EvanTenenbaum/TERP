@@ -201,7 +201,7 @@
   - Resolution: Removed 3 obsolete PR-based workflows (roadmap-validation.yml, pr-auto-fix.yml, pr.yml). These were failing because the project pushes directly to main instead of using PRs. No functional impact, cleanup only.
   - Branch: Merged to main (commit a3d05d2)
 
-- [ ] **ST-005: Add Missing Database Indexes** (Unassigned) 🟡 MEDIUM
+- [x] **ST-005: Add Missing Database Indexes** ✅ Done (Agent-01, Session-20251117-db-performance-d6d96289)
   - Task ID: ST-005
   - Action: Audit all foreign keys and add missing indexes
   - Impact: Improved query performance
@@ -234,7 +234,7 @@
   - Estimate: 3-4 days
   - Note: This addresses Kimi AI's finding about missing pagination
 
-- [ ] **ST-008: Implement Error Tracking (Sentry)** (Unassigned) 🟡 MEDIUM
+- [✅] **ST-008: Implement Error Tracking (Sentry)** (Unassigned) 🟡 MEDIUM
   - Task ID: ST-008
   - Action: Set up Sentry integration for error tracking
   - **Checklist:**
@@ -247,7 +247,7 @@
   - Estimate: 1-2 days
   - Note: Addresses Kimi AI's finding about missing error tracking
 
-- [ ] **ST-009: Implement API Monitoring** (Unassigned) 🟡 MEDIUM
+- [✅] **ST-009: Implement API Monitoring** (Unassigned) 🟡 MEDIUM
   - Task ID: ST-009
   - Action: Set up API monitoring (Datadog or New Relic)
   - **Checklist:**
@@ -332,7 +332,7 @@
   - Documentation: docs/ST-014-COMPLETION-FINAL.md
   - Note: 93% pass rate achieved, remaining failures are integration tests
 
-- [ ] **ST-013: Standardize Soft Deletes** (Unassigned) 🟡 MEDIUM
+- [~] **ST-013: Standardize Soft Deletes** (Agent-05-Session-20251117-data-integrity-b9bcdea1) 🟡 MEDIUM
   - Task ID: ST-013
   - Action: Audit all tables and add consistent `deletedAt` field
   - **Checklist:**
@@ -345,7 +345,7 @@
   - Estimate: 2-3 days
   - Note: Addresses Kimi AI's finding about inconsistent soft deletes
 
-- [ ] **ST-015: Benchmark Critical Paths** (Unassigned) 🟡 MEDIUM
+- [x] **ST-015: Benchmark Critical Paths** ✅ Done (Agent-01, Session-20251117-db-performance-d6d96289)
   - Task ID: ST-015
   - Action: Measure actual performance of critical operations before optimization
   - **Checklist:**
@@ -373,7 +373,7 @@
   - Priority: High value, low effort - prevents security regressions
   - Note: Based on validated security patterns from codebase analysis
 
-- [ ] **ST-017: Implement Batch Status Transition Logic** (Unassigned) 🔴 HIGH
+- [x] **ST-017: Implement Batch Status Transition Logic** ✅ Done (Agent-01, Session-20251117-db-performance-d6d96289)
   - Task ID: ST-017
   - Action: Implement server-side logic for inventory batch status transitions
   - **Context:** Analysis revealed that batch status logic is missing from backend
@@ -682,7 +682,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 **Objective:** Refactor the codebase for better performance, maintainability, and type safety.
 
-- [ ] **RF-001: Consolidate Orders Router** (Unassigned)
+- [~] **RF-001: Consolidate Orders Router** (Agent-05-Session-20251117-data-integrity-b9bcdea1)
   - Task ID: RF-001
   - Action: Merge `orders` and `ordersEnhancedV2` into a single router
   - Impact: Reduced complexity, better maintainability
