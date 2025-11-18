@@ -1,24 +1,18 @@
-import * as Sentry from "@sentry/node";
+import { Sentry, sentryRequestHandler, sentryErrorHandler } from "../../sentry.server.config";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 /**
  * Initialize monitoring and error tracking
+ * Note: Sentry is now initialized in sentry.server.config.ts
  */
 export function initMonitoring() {
-  if (isProduction && process.env.SENTRY_DSN) {
-    Sentry.init({
-      dsn: process.env.SENTRY_DSN,
-      environment: process.env.NODE_ENV,
-      tracesSampleRate: 0.1, // 10% of requests
-      integrations: [
-        Sentry.httpIntegration(),
-      ],
-    });
-    
+  if (process.env.SENTRY_DSN) {
     console.log("✓ Sentry monitoring initialized");
   } else if (isProduction) {
     console.warn("⚠ Sentry DSN not configured - error tracking disabled");
+  } else {
+    console.log("ℹ Sentry disabled in development (set SENTRY_DSN to enable)");
   }
 }
 
@@ -26,7 +20,7 @@ export function initMonitoring() {
  * Capture exception with context
  */
 export function captureException(error: Error, context?: Record<string, any>) {
-  if (isProduction) {
+  if (process.env.SENTRY_DSN) {
     Sentry.captureException(error, {
       extra: context,
     });
@@ -40,7 +34,7 @@ export function captureMessage(
   message: string,
   level: Sentry.SeverityLevel = "info"
 ) {
-  if (isProduction) {
+  if (process.env.SENTRY_DSN) {
     Sentry.captureMessage(message, level);
   }
 }
@@ -49,7 +43,9 @@ export function captureMessage(
  * Get Sentry request handler middleware
  */
 export function getRequestHandler() {
-  // Sentry v10 doesn't use Handlers, return a no-op middleware
+  if (process.env.SENTRY_DSN) {
+    return sentryRequestHandler;
+  }
   return (req: any, res: any, next: any) => next();
 }
 
@@ -57,10 +53,11 @@ export function getRequestHandler() {
  * Get Sentry error handler middleware
  */
 export function getErrorHandler() {
-  // Sentry v10 doesn't use Handlers, return a no-op middleware
+  if (process.env.SENTRY_DSN) {
+    return sentryErrorHandler;
+  }
   return (err: any, req: any, res: any, next: any) => {
     captureException(err);
     next(err);
   };
 }
-

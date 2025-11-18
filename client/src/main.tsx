@@ -1,3 +1,6 @@
+// Initialize Sentry first, before any other imports
+import "../../sentry.client.config";
+
 import { trpc } from "@/lib/trpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
