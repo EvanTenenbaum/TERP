@@ -81,6 +81,3 @@
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
 
 ## 🟢 Currently Working (Updated 2025-11-18)
-
-| Session-20251118-DATA-002-2ddb9da5 | DATA-002: Seed Comments & Dashboard | main | Data | Active | 2025-11-18 | 2-3 hours |
-| Session-20251118-DATA-003-eb8c3d43 | DATA-003: Seed Pricing Tables | main | Data | Active | 2025-11-18 | 2-3 hours |
