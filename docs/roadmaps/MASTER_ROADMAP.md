@@ -497,7 +497,7 @@ Currently only 9 tables have seed data (clients, orders, invoices, strains, prod
 
 ### INFRA-001: Remove Obsolete GitHub Workflows
 
-**Status:** In Progress (Session-20251118-INFRA-003-b60d4cc0)  
+**Status:** ✅ Complete (2025-11-18)  
 **Priority:** P2 (Infrastructure)  
 **Estimate:** 1-2h  
 **Module:** `.github/workflows/`  
@@ -527,7 +527,7 @@ Three workflows are designed for PR-based development but the project now pushes
 
 ### INFRA-002: Add Session Cleanup Validation
 
-**Status:** In Progress (Session-20251118-INFRA-003-b60d4cc0)  
+**Status:** ✅ Complete (2025-11-18)  
 **Priority:** P2 (Infrastructure)  
 **Estimate:** 2-4h  
 **Module:** `.husky/`, `scripts/`  
@@ -559,7 +559,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### ST-005: Add Missing Database Indexes
 
-**Status:** In Progress (Session-20251118-INFRA-003-b60d4cc0)  
+**Status:** ✅ Complete (2025-11-18)  
 **Priority:** HIGH  
 **Estimate:** 4-6h  
 **Module:** `server/db/schema/`  
@@ -588,7 +588,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### ST-007: Implement System-Wide Pagination
 
-**Status:** In Progress (Session-20251118-INFRA-003-b60d4cc0)  
+**Status:** ✅ Complete (2025-11-18)  
 **Priority:** MEDIUM  
 **Estimate:** 3-4d  
 **Module:** `server/routers/*` (all list endpoints)  
@@ -618,7 +618,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### ST-008: Implement Error Tracking (Sentry)
 
-**Status:** In Progress (Session-20251118-INFRA-003-b60d4cc0)  
+**Status:** ✅ Complete (2025-11-18)  
 **Priority:** MEDIUM  
 **Estimate:** 1-2d  
 **Module:** Root config, `src/_app.tsx`, `server/`  
@@ -649,7 +649,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### ST-009: Implement API Monitoring (Datadog)
 
-**Status:** In Progress (Session-20251118-INFRA-003-b60d4cc0)  
+**Status:** ✅ Complete (2025-11-18)  
 **Priority:** MEDIUM  
 **Estimate:** 2-3d  
 **Module:** `server/_core/`, tRPC middleware  
@@ -1786,7 +1786,7 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 
 ### DATA-002: Seed Comments and Dashboard Tables
 
-**Status:** In Progress (Session-20251118-INFRA-003-b60d4cc0)  
+**Status:** ✅ Complete (2025-11-18)  
 **Priority:** P2 (Medium)  
 **Estimate:** 2-4 hours  
 **Prompt:** `docs/prompts/DATA-002.md`
@@ -1814,7 +1814,7 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 
 ### DATA-003: Seed Pricing Tables
 
-**Status:** In Progress (Session-20251118-INFRA-003-b60d4cc0)  
+**Status:** ✅ Complete (2025-11-18)  
 **Priority:** P2 (Medium)  
 **Estimate:** 2-3 hours  
 **Prompt:** `docs/prompts/DATA-003.md`
@@ -1839,7 +1839,7 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 
 ### INFRA-003: Fix Database Schema Sync
 
-**Status:** In Progress (Session-20251118-INFRA-003-b60d4cc0)  
+**Status:** ✅ Complete (2025-11-18)  
 **Priority:** P2 (Infrastructure)  
 **Estimate:** 2-4 hours  
 **Prompt:** `docs/prompts/INFRA-003.md`
