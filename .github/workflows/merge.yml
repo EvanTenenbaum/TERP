@@ -8,6 +8,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  discussions: write
 
 env:
   DATABASE_URL: mysql://terp_test:terp_test_password@localhost:3307/terp_test
@@ -219,14 +220,63 @@ jobs:
             }
             
             try {
-              await github.rest.repos.createCommitComment({
+              const comment = await github.rest.repos.createCommitComment({
                 owner: context.repo.owner,
                 repo: context.repo.name,
                 commit_sha: context.sha,
                 body: body
               });
+              console.log('✅ Posted commit comment:', comment.data.html_url);
             } catch (error) {
-              console.log('Could not post comment:', error.message);
+              console.error('❌ Failed to post commit comment:', error.message);
+              core.setFailed('Failed to post commit comment: ' + error.message);
+              throw error;
+            }
+      
+      - name: Create fallback issue if comment failed
+        uses: actions/github-script@v7
+        if: failure() && steps.schema.outputs.status != ''
+        with:
+          script: |
+            const steps = {
+              schema: '${{ steps.schema.outputs.status }}',
+              seed: '${{ steps.seed.outputs.status }}',
+              integration: '${{ steps.integration.outputs.status }}',
+              e2e: '${{ steps.e2e.outputs.status }}',
+            };
+            
+            let allPassed = steps.schema === 'passed' && 
+                           steps.seed === 'passed' && 
+                           steps.integration === 'passed' && 
+                           steps.e2e === 'passed';
+            
+            const title = allPassed 
+              ? `✅ Build ${context.sha.substring(0, 7)} succeeded (comment posting failed)`
+              : `❌ Build ${context.sha.substring(0, 7)} failed`;
+            
+            const body = `## Build Status Notification\n\n` +
+              `⚠️ **This issue was created because the automated commit comment failed to post.**\n\n` +
+              `**Commit:** \`${context.sha}\`\n` +
+              `**Branch:** \`main\`\n` +
+              `**Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n` +
+              `### Test Results\n\n` +
+              `- Database Schema: ${steps.schema === 'passed' ? '✅' : '❌'} ${steps.schema}\n` +
+              `- Database Seed: ${steps.seed === 'passed' ? '✅' : '❌'} ${steps.seed}\n` +
+              `- Integration Tests: ${steps.integration === 'passed' ? '✅' : '❌'} ${steps.integration}\n` +
+              `- E2E Tests: ${steps.e2e === 'passed' ? '✅' : '❌'} ${steps.e2e}\n\n` +
+              `**Action Required:** Fix the workflow permissions to allow commit comments.`;
+            
+            try {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.name,
+                title: title,
+                body: body,
+                labels: ['ci/cd', 'automated']
+              });
+              console.log('✅ Created fallback issue for build status');
+            } catch (error) {
+              console.error('❌ Failed to create fallback issue:', error.message);
             }
       
       - name: Fail if any test failed
