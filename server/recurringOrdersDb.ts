@@ -45,9 +45,9 @@ export async function createRecurringOrder(data: {
     } as any);
 
     return { success: true, recurringOrderId: result.insertId };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error creating recurring order:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -107,9 +107,9 @@ export async function updateRecurringOrder(
       .where(eq(recurringOrders.id, recurringOrderId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error updating recurring order:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -127,9 +127,9 @@ export async function pauseRecurringOrder(recurringOrderId: number) {
       .where(eq(recurringOrders.id, recurringOrderId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error pausing recurring order:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -167,9 +167,9 @@ export async function resumeRecurringOrder(recurringOrderId: number) {
       .where(eq(recurringOrders.id, recurringOrderId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error resuming recurring order:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -187,9 +187,9 @@ export async function cancelRecurringOrder(recurringOrderId: number) {
       .where(eq(recurringOrders.id, recurringOrderId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error cancelling recurring order:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -218,9 +218,9 @@ export async function getDueRecurringOrders() {
       );
 
     return { success: true, dueOrders };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting due recurring orders:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -258,9 +258,9 @@ export async function markRecurringOrderGenerated(recurringOrderId: number) {
       .where(eq(recurringOrders.id, recurringOrderId));
 
     return { success: true, nextGenerationDate };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error marking recurring order as generated:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -279,9 +279,9 @@ export async function listRecurringOrdersForClient(clientId: number) {
       .orderBy(desc(recurringOrders.createdAt));
 
     return { success: true, orders };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error listing recurring orders for client:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -307,9 +307,9 @@ export async function listAllRecurringOrders(status?: string) {
     const orders = await query;
 
     return { success: true, orders };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error listing all recurring orders:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 

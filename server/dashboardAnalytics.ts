@@ -60,8 +60,8 @@ export async function getSalesPerformance(
       revenueGrowth: revenueGrowth.toFixed(2),
       previousPeriodRevenue: prevRevenue.toFixed(2)
     };
-  } catch (error: any) {
-    throw new Error(`Failed to get sales performance: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get sales performance: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -117,8 +117,8 @@ export async function getARAgingReport(): Promise<any> {
       total: aging.total.toFixed(2),
       transactionCount: transactions.length
     };
-  } catch (error: any) {
-    throw new Error(`Failed to get AR aging report: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get AR aging report: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -153,8 +153,8 @@ export async function getInventoryValuation(): Promise<any> {
       batchCount: activeBatches.length,
       averageValuePerUnit: totalUnits > 0 ? (totalValue / totalUnits).toFixed(2) : "0.00"
     };
-  } catch (error: any) {
-    throw new Error(`Failed to get inventory valuation: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get inventory valuation: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -228,8 +228,8 @@ export async function getTopPerformingProducts(
       .slice(0, limit);
 
     return topProducts;
-  } catch (error: any) {
-    throw new Error(`Failed to get top performing products: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get top performing products: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -295,8 +295,8 @@ export async function getTopClients(
       .slice(0, limit);
 
     return topClients;
-  } catch (error: any) {
-    throw new Error(`Failed to get top clients: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get top clients: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -320,8 +320,8 @@ export async function getProfitabilityMetrics(
       topProducts,
       topClients
     };
-  } catch (error: any) {
-    throw new Error(`Failed to get profitability metrics: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get profitability metrics: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -358,8 +358,8 @@ export async function getDashboardData(
       topClients,
       generatedAt: new Date().toISOString()
     };
-  } catch (error: any) {
-    throw new Error(`Failed to get dashboard data: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to get dashboard data: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -418,8 +418,8 @@ export async function exportDashboardData(
     }
 
     return csv;
-  } catch (error: any) {
-    throw new Error(`Failed to export dashboard data: ${error.message}`);
+  } catch (error) {
+    throw new Error(`Failed to export dashboard data: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
