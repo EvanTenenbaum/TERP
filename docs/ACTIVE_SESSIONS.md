@@ -81,3 +81,4 @@
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
 
 ## 🟢 Currently Working (Updated 2025-11-18)
+- Session-20251119-BUG-001-ca579e66: BUG-001 - Fix all list views returning zero results
