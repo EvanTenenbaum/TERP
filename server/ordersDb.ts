@@ -357,7 +357,14 @@ export async function getAllOrders(filters?: {
   }
   
   if (isDraft !== undefined) {
-    conditions.push(eq(orders.isDraft, isDraft));
+    // FIX: MySQL stores boolean as TINYINT (0/1), so we need to handle both
+    // When isDraft is false, match both false and 0
+    // When isDraft is true, match both true and 1
+    if (isDraft === false) {
+      conditions.push(sql`${orders.isDraft} = 0`);
+    } else {
+      conditions.push(sql`${orders.isDraft} = 1`);
+    }
   }
   
   if (quoteStatus) {
