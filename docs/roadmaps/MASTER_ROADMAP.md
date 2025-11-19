@@ -1906,3 +1906,136 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
 - Execution instructions document
 
 **Next Steps:** Execute prompts in sequence - Agent 1 (INFRA-003) first, then Agents 2 & 3 (DATA-002, DATA-003) in parallel.
+
+---
+
+## Data Seeding Tasks
+
+### 🔄 DATA-004: Seed Orders & Line Items
+
+**Status:** In Progress (2025-11-18)  
+**Priority:** P1 (High)  
+**Estimate:** 1.5-2 hours  
+**Depends On:** DATA-002, DATA-003
+
+**Prompt:** `docs/prompts/DATA-004.md`
+
+**Objective:**  
+Seed 20-30 realistic orders with line items to enable sales workflow testing.
+
+**Deliverables:**
+
+- 20-30 orders across different statuses
+- 50-100 order line items
+- Order status history populated
+- Realistic order totals and dates
+
+**Impact:**  
+Enables order management, invoicing, sales reporting, and revenue analytics testing.
+
+---
+
+### DATA-005: Seed Order Fulfillment
+
+**Status:** Planned  
+**Priority:** P2 (Medium)  
+**Estimate:** 1-1.5 hours  
+**Depends On:** DATA-004
+
+**Objective:**  
+Seed fulfillment data (shipments, tracking) for orders created in DATA-004.
+
+**Deliverables:**
+
+- 15-20 shipments
+- Tracking numbers and delivery dates
+- Fulfillment status updates
+
+**Impact:**  
+Completes order lifecycle, enables fulfillment workflow and shipping tracking testing.
+
+---
+
+### DATA-006: Seed Batches
+
+**Status:** Planned  
+**Priority:** P2 (Medium)  
+**Estimate:** 2-2.5 hours  
+**Depends On:** Products, Lots (need verification)
+
+**Objective:**  
+Seed 20-30 batches for existing products to enable inventory management.
+
+**Deliverables:**
+
+- 20-30 batches with codes and SKUs
+- Inventory quantities and statuses
+- COGS data
+
+**Complexity:** HIGH - Requires productId, lotId, and complex inventory fields
+
+**Impact:**  
+Enables inventory management, batch tracking, and price alerts.
+
+---
+
+### DATA-007: Seed Inventory Movements
+
+**Status:** Planned  
+**Priority:** P2 (Medium)  
+**Estimate:** 1.5-2 hours  
+**Depends On:** DATA-006
+
+**Objective:**  
+Seed inventory movement records to track product flow.
+
+**Deliverables:**
+
+- 30-50 inventory movements
+- Movement types (INTAKE, TRANSFER, SALE, ADJUSTMENT)
+- Quantity changes with reasons
+
+**Impact:**  
+Enables inventory tracking, audit trail, and inventory reporting.
+
+---
+
+### DATA-008: Seed Client Contacts & Interactions
+
+**Status:** Planned  
+**Priority:** P3 (Low)  
+**Estimate:** 1-1.5 hours  
+**Depends On:** Clients (already exist)
+
+**Objective:**  
+Seed client contact information and interaction history.
+
+**Deliverables:**
+
+- 50-100 client contacts
+- 100-200 client interactions
+- Contact roles and interaction notes
+
+**Impact:**  
+Enhances CRM functionality, enables contact and interaction tracking.
+
+---
+
+### DATA-009: Seed Client Price Alerts
+
+**Status:** Planned  
+**Priority:** P3 (Low)  
+**Estimate:** 0.5-1 hour  
+**Depends On:** DATA-006 (batches)
+
+**Objective:**  
+Seed price alert configurations for clients monitoring specific batches.
+
+**Deliverables:**
+
+- 10-20 price alerts
+- Alert thresholds
+- Client-batch associations
+
+**Impact:**  
+Completes pricing feature set, enables price monitoring.
