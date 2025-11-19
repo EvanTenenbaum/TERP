@@ -87,6 +87,16 @@ export default function Orders() {
     fulfillmentStatus: statusFilter === 'ALL' ? undefined : statusFilter,
   });
 
+  // DEBUG: Log the raw data from API
+  useEffect(() => {
+    console.log('=== ORDERS DEBUG ===');
+    console.log('confirmedOrders:', confirmedOrders);
+    console.log('confirmedOrders length:', confirmedOrders?.length);
+    console.log('loadingConfirmed:', loadingConfirmed);
+    console.log('First 3 orders:', confirmedOrders?.slice(0, 3));
+    console.log('==================');
+  }, [confirmedOrders, loadingConfirmed]);
+
   // Filter orders by search query
   const filteredDrafts = draftOrders?.filter((order) => {
     if (!searchQuery) return true; // Show all if no search query
