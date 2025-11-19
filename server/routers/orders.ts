@@ -134,6 +134,32 @@ export const ordersRouter = router({
     }),
 
   /**
+   * DEBUG: Get raw order data for debugging
+   */
+  debugGetRaw: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      
+      const allOrders = await db.select().from(orders).limit(50);
+      const confirmedOrders = allOrders.filter(o => o.isDraft === false || o.isDraft === 0);
+      
+      return {
+        total: allOrders.length,
+        confirmed: confirmedOrders.length,
+        draft: allOrders.filter(o => o.isDraft === true || o.isDraft === 1).length,
+        sample: allOrders.slice(0, 3).map(o => ({
+          id: o.id,
+          orderNumber: o.orderNumber,
+          isDraft: o.isDraft,
+          isDraftType: typeof o.isDraft,
+          orderType: o.orderType,
+        })),
+      };
+    }),
+
+  /**
    * Get all orders with filtering
    */
   getAll: protectedProcedure
