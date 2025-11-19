@@ -394,10 +394,25 @@ export async function getAllOrders(filters?: {
   }
   
   // Transform results to include client data
-  return results.map(row => ({
+  const transformed = results.map(row => ({
     ...row.orders,
     client: row.clients,
   })) as any;
+  
+  // DEBUG: Log what we're returning
+  console.log('=== getAllOrders DEBUG ===');
+  console.log('Filters:', filters);
+  console.log('Raw results count:', results.length);
+  console.log('Transformed count:', transformed.length);
+  console.log('First 3 orders:', transformed.slice(0, 3).map((o: any) => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    isDraft: o.isDraft,
+    orderType: o.orderType,
+  })));
+  console.log('========================');
+  
+  return transformed;
 }
 
 // ============================================================================
