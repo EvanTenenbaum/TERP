@@ -26,6 +26,12 @@ export default function OrdersDebug() {
           <p>Loading...</p>
         ) : (
           <div className="space-y-3">
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <p className="text-sm font-semibold mb-1">Database Connection:</p>
+              <p className="text-xs"><strong>Host:</strong> {rawData?.dbInfo?.host}</p>
+              <p className="text-xs"><strong>Database:</strong> {rawData?.dbInfo?.database}</p>
+              <p className="text-xs"><strong>Has DATABASE_URL:</strong> {rawData?.dbInfo?.hasDbUrl ? 'Yes' : 'No'}</p>
+            </div>
             <p className="text-lg"><strong>Total orders in DB:</strong> <span className="text-blue-600 font-mono">{rawData?.total}</span></p>
             <p className="text-lg"><strong>Confirmed (isDraft = false or 0):</strong> <span className="text-green-600 font-mono">{rawData?.confirmed}</span></p>
             <p className="text-lg"><strong>Draft (isDraft = true or 1):</strong> <span className="text-orange-600 font-mono">{rawData?.draft}</span></p>
