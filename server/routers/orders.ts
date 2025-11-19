@@ -142,10 +142,20 @@ export const ordersRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       
+      // Get database connection info (without exposing credentials)
+      const dbUrl = process.env.DATABASE_URL || '';
+      const dbHost = dbUrl.match(/@([^:]+)/)?.[1] || 'unknown';
+      const dbName = dbUrl.match(/\/([^?]+)/)?.[1] || 'unknown';
+      
       const allOrders = await db.select().from(orders).limit(50);
       const confirmedOrders = allOrders.filter(o => o.isDraft === false || o.isDraft === 0);
       
       return {
+        dbInfo: {
+          host: dbHost,
+          database: dbName,
+          hasDbUrl: !!process.env.DATABASE_URL,
+        },
         total: allOrders.length,
         confirmed: confirmedOrders.length,
         draft: allOrders.filter(o => o.isDraft === true || o.isDraft === 1).length,
