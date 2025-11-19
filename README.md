@@ -586,3 +586,4 @@ Proprietary - All rights reserved
 **Built with ❤️ by Manus AI**
 
 For questions or support, see [DEPLOYMENT_STATUS.md](./docs/DEPLOYMENT_STATUS.md) or [CLERK_AUTHENTICATION.md](./docs/CLERK_AUTHENTICATION.md)
+# Trigger deployment to pick up DATABASE_URL
