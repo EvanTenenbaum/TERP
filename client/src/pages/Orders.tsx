@@ -89,21 +89,35 @@ export default function Orders() {
 
   // Filter orders by search query
   const filteredDrafts = draftOrders?.filter((order) => {
-    const searchLower = searchQuery.toLowerCase();
-    const clientName = getClientName(order.clientId);
-    return (
-      order.orderNumber.toLowerCase().includes(searchLower) ||
-      clientName.toLowerCase().includes(searchLower)
-    );
+    if (!searchQuery) return true; // Show all if no search query
+    try {
+      const searchLower = searchQuery.toLowerCase();
+      const orderNumber = order.orderNumber || '';
+      const clientName = getClientName(order.clientId) || '';
+      return (
+        orderNumber.toLowerCase().includes(searchLower) ||
+        clientName.toLowerCase().includes(searchLower)
+      );
+    } catch (error) {
+      console.error('Error filtering draft order:', error, order);
+      return true; // Include order if filter fails
+    }
   }) || [];
 
   const filteredConfirmed = confirmedOrders?.filter((order) => {
-    const searchLower = searchQuery.toLowerCase();
-    const clientName = getClientName(order.clientId);
-    return (
-      order.orderNumber.toLowerCase().includes(searchLower) ||
-      clientName.toLowerCase().includes(searchLower)
-    );
+    if (!searchQuery) return true; // Show all if no search query
+    try {
+      const searchLower = searchQuery.toLowerCase();
+      const orderNumber = order.orderNumber || '';
+      const clientName = getClientName(order.clientId) || '';
+      return (
+        orderNumber.toLowerCase().includes(searchLower) ||
+        clientName.toLowerCase().includes(searchLower)
+      );
+    } catch (error) {
+      console.error('Error filtering confirmed order:', error, order);
+      return true; // Include order if filter fails
+    }
   }) || [];
   
   // Calculate statistics
