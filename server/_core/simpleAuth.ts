@@ -56,12 +56,12 @@ class SimpleAuthService {
    */
   async authenticateRequest(req: Request): Promise<User> {
     try {
-      console.log('[Simple Auth] Cookies:', req.cookies);
-      console.log('[Simple Auth] Cookie name:', COOKIE_NAME);
+      console.log("[Simple Auth] Cookies:", req.cookies);
+      console.log("[Simple Auth] Cookie name:", COOKIE_NAME);
       // Get session token from cookie
       const token = req.cookies[COOKIE_NAME];
-      console.log('[Simple Auth] Token:', token ? 'found' : 'not found');
-      
+      console.log("[Simple Auth] Token:", token ? "found" : "not found");
+
       if (!token) {
         throw ForbiddenError("Not authenticated - no session token");
       }
@@ -74,7 +74,7 @@ class SimpleAuthService {
 
       // Get user from database
       const user = await db.getUser(payload.userId);
-      
+
       if (!user) {
         throw ForbiddenError("User not found");
       }
@@ -89,17 +89,20 @@ class SimpleAuthService {
   /**
    * Login with username and password
    */
-  async login(username: string, password: string): Promise<{ user: User; token: string }> {
+  async login(
+    username: string,
+    password: string
+  ): Promise<{ user: User; token: string }> {
     // Find user by email (we'll use email field for username)
     const user = await db.getUserByEmail(username);
-    
+
     if (!user) {
       throw ForbiddenError("Invalid username or password");
     }
 
     // Verify password (stored in loginMethod field temporarily)
     const isValid = await this.verifyPassword(password, user.loginMethod || "");
-    
+
     if (!isValid) {
       throw ForbiddenError("Invalid username or password");
     }
@@ -119,7 +122,11 @@ class SimpleAuthService {
   /**
    * Create a new user with username and password
    */
-  async createUser(username: string, password: string, name?: string): Promise<User> {
+  async createUser(
+    username: string,
+    password: string,
+    name?: string
+  ): Promise<User> {
     // Check if user already exists
     const existing = await db.getUserByEmail(username);
     if (existing) {
@@ -156,7 +163,9 @@ export function registerSimpleAuthRoutes(app: Express) {
       const { username, password } = req.body;
 
       if (!username || !password) {
-        return res.status(400).json({ error: "Username and password required" });
+        return res
+          .status(400)
+          .json({ error: "Username and password required" });
       }
 
       const { user, token } = await simpleAuth.login(username, password);
@@ -197,9 +206,17 @@ export function registerSimpleAuthRoutes(app: Express) {
     try {
       const { pushSchema } = await import("../services/pushSchema");
       const result = await pushSchema();
-      res.json({ success: true, message: "Schema pushed successfully", output: result.output });
+      res.json({
+        success: true,
+        message: "Schema pushed successfully",
+        output: result.output,
+      });
     } catch (error) {
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+      res
+        .status(500)
+        .json({
+          error: error instanceof Error ? error.message : String(error),
+        });
     }
   });
 
@@ -208,17 +225,21 @@ export function registerSimpleAuthRoutes(app: Express) {
     try {
       const { seedAllDefaults } = await import("../services/seedDefaults");
       await seedAllDefaults();
-      
+
       // Create admin user
       const { getUserByEmail } = await import("../db");
       const adminExists = await getUserByEmail("Evan");
       if (!adminExists) {
         await simpleAuth.createUser("Evan", "oliver", "Evan (Admin)");
       }
-      
+
       res.json({ success: true, message: "Seeding completed successfully" });
     } catch (error) {
-      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+      res
+        .status(500)
+        .json({
+          error: error instanceof Error ? error.message : String(error),
+        });
     }
   });
 
@@ -228,15 +249,21 @@ export function registerSimpleAuthRoutes(app: Express) {
       const { username, password, name } = req.body;
 
       if (!username || !password) {
-        return res.status(400).json({ error: "Username and password required" });
+        return res
+          .status(400)
+          .json({ error: "Username and password required" });
       }
 
       const user = await simpleAuth.createUser(username, password, name);
       res.json({ success: true, user: { name: user.name, email: user.email } });
     } catch (error) {
       console.error("[Auth] Create first user failed", error);
-      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to create user" });
+      res
+        .status(400)
+        .json({
+          error:
+            error instanceof Error ? error.message : "Failed to create user",
+        });
     }
   });
 }
-
