@@ -1979,7 +1979,7 @@ Enables inventory management, batch tracking, and price alerts.
 
 ---
 
-### DATA-007: Seed Inventory Movements
+### ✅ DATA-007: Seed Inventory Movements
 
 **Status:** Planned  
 **Priority:** P2 (Medium)  
@@ -2000,7 +2000,7 @@ Enables inventory tracking, audit trail, and inventory reporting.
 
 ---
 
-### DATA-008: Seed Client Contacts & Interactions
+### ✅ DATA-008: Seed Client Contacts & Interactions
 
 **Status:** Planned  
 **Priority:** P3 (Low)  
@@ -2021,7 +2021,7 @@ Enhances CRM functionality, enables contact and interaction tracking.
 
 ---
 
-### DATA-009: Seed Client Price Alerts
+### ✅ DATA-009: Seed Client Price Alerts
 
 **Status:** Planned  
 **Priority:** P3 (Low)  
