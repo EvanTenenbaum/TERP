@@ -3,7 +3,7 @@
 **Session ID:** Session-20251118-DATA-004-09debf2b  
 **Task:** DATA-004  
 **Started:** 2025-11-18  
-**Status:** In Progress
+**Status:** Paused (Blocked by DATA-006)
 
 ---
 
@@ -16,10 +16,12 @@ Seed 20-30 realistic orders with line items to enable sales workflow testing and
 ## Progress
 
 - [x] Phase 1: Setup & Schema Discovery
-- [ ] Phase 2: Create Seeding Script
-- [ ] Phase 3: Execute Seeding
-- [ ] Phase 4: Validation
-- [ ] Phase 5: Documentation & Commit
+- [x] Discovered blocker: order_line_items requires batch_id
+- [ ] Phase 2: Wait for DATA-006 (batches) to complete
+- [ ] Phase 3: Create Seeding Script
+- [ ] Phase 4: Execute Seeding
+- [ ] Phase 5: Validation
+- [ ] Phase 6: Documentation & Commit
 
 ---
 
@@ -66,10 +68,24 @@ Seed 20-30 realistic orders with line items to enable sales workflow testing and
 
 ---
 
+## Blocker Discovered
+
+**Issue:** `order_line_items` table requires `batch_id`, but 0 batches exist in database.
+
+**Resolution:** Pivot to DATA-006 to seed batches first, then resume DATA-004.
+
+**Schema Discovery:**
+
+- `orders` table: Uses JSON `items` column + separate `order_line_items` table
+- `order_line_items`: Requires batch_id (FK to batches table)
+- `batches`: 0 records (EMPTY)
+
 ## Next Steps
 
-1. Query actual table schemas
-2. Create seeding script
-3. Execute seeding
-4. Validate results
-5. Archive session and update roadmap
+1. ⏸️ Pause DATA-004
+2. 🔄 Execute DATA-006 (seed batches)
+3. ▶️ Resume DATA-004 with batches available
+4. Create seeding script
+5. Execute seeding
+6. Validate results
+7. Archive session and update roadmap
