@@ -85,6 +85,10 @@ export default function Orders() {
   const { data: confirmedOrders, isLoading: loadingConfirmed, refetch: refetchConfirmed } = trpc.orders.getAll.useQuery({
     isDraft: false,
     fulfillmentStatus: statusFilter === 'ALL' ? undefined : statusFilter,
+  }, {
+    refetchOnMount: 'always',
+    staleTime: 0,
+    cacheTime: 0,
   });
 
   // DEBUG: Log the raw data from API
