@@ -10,9 +10,11 @@ let _db: MySql2Database<typeof schema> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  if (!_db) {
     try {
       // Use connection pool for better performance
+      // Note: getConnectionPool() caches the pool, so this is safe to call multiple times
+      // Even if process.env.DATABASE_URL is not available at runtime, the cached pool will be returned
       const pool = getConnectionPool();
       _db = drizzle(pool as any, { schema, mode: 'default' }); // Pool is compatible with drizzle
       logger.info("Database connection established with connection pooling");
