@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { strains, products } from "../../drizzle/schema";
-import { sql } from "drizzle-orm";
+import { strains, products, users } from "../../drizzle/schema";
+import { sql, eq, or } from "drizzle-orm";
 import { importOpenTHCStrainsFromJSON } from "../import_openthc_strains";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { logger } from "../_core/logger";
 
 /**
  * Admin Router
@@ -315,5 +316,141 @@ export const adminRouter = router({
         throw new Error(`Failed to get status: ${error instanceof Error ? error.message : 'Unknown'}`);
       }
     }),
+
+  /**
+   * Fix User Permissions (BUG-001)
+   * 
+   * Makes a user a Super Admin to grant them all permissions.
+   * This is intentionally a PUBLIC endpoint for emergency fixes.
+   */
+  fixUserPermissions: publicProcedure
+    .input(
+      z.object({
+        username: z.string().optional(),
+        email: z.string().optional(),
+        makeAdmin: z.boolean().default(true),
+      })
+    )
+    .mutation(async ({ input }) => {
+      logger.info({ msg: "[Admin] fixUserPermissions called", input });
+
+      const db = await getDb();
+      if (!db) {
+        logger.error("[Admin] Database connection failed");
+        throw new Error("Database connection failed");
+      }
+
+      // Find user by username or email
+      const conditions = [];
+      if (input.username) {
+        conditions.push(eq(users.username, input.username));
+      }
+      if (input.email) {
+        conditions.push(eq(users.email, input.email));
+      }
+
+      if (conditions.length === 0) {
+        throw new Error("Must provide username or email");
+      }
+
+      const userRecords = await db
+        .select()
+        .from(users)
+        .where(or(...conditions))
+        .limit(1);
+
+      if (!userRecords || userRecords.length === 0) {
+        logger.error({ msg: "[Admin] User not found", input });
+        throw new Error("User not found");
+      }
+
+      const user = userRecords[0];
+      logger.info({
+        msg: "[Admin] Found user",
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        isSuperAdmin: user.isSuperAdmin,
+      });
+
+      // Check if already a super admin
+      if (user.isSuperAdmin) {
+        logger.info("[Admin] User is already a Super Admin");
+        return {
+          success: true,
+          message: "User is already a Super Admin",
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            isSuperAdmin: user.isSuperAdmin,
+          },
+        };
+      }
+
+      // Make user a Super Admin
+      if (input.makeAdmin) {
+        await db
+          .update(users)
+          .set({ isSuperAdmin: true })
+          .where(eq(users.id, user.id));
+
+        logger.info({
+          msg: "[Admin] User promoted to Super Admin",
+          userId: user.id,
+        });
+
+        return {
+          success: true,
+          message: "User is now a Super Admin",
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            isSuperAdmin: true,
+          },
+        };
+      }
+
+      return {
+        success: true,
+        message: "No changes made",
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          isSuperAdmin: user.isSuperAdmin,
+        },
+      };
+    }),
+
+  /**
+   * List All Users
+   * 
+   * Returns all users for debugging.
+   * This is intentionally a PUBLIC endpoint for emergency debugging.
+   */
+  listUsers: publicProcedure.query(async () => {
+    logger.info("[Admin] listUsers called");
+
+    const db = await getDb();
+    if (!db) {
+      throw new Error("Database connection failed");
+    }
+
+    const allUsers = await db.select().from(users);
+
+    return {
+      success: true,
+      count: allUsers.length,
+      users: allUsers.map((u) => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        openId: u.openId,
+        isSuperAdmin: u.isSuperAdmin,
+      })),
+    };
+  }),
 });
 
