@@ -22,13 +22,15 @@ export interface PoolConfig {
  * Get or create the connection pool
  */
 export function getConnectionPool(config?: PoolConfig): mysql.Pool {
+  // Return cached pool if it exists (even if DATABASE_URL is not available at runtime)
   if (pool) {
     return pool;
   }
 
+  // Only check DATABASE_URL when creating a NEW pool
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL environment variable is required");
+    throw new Error("DATABASE_URL environment variable is required to create connection pool");
   }
 
   const defaultConfig: PoolConfig = {
