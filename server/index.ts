@@ -9,14 +9,35 @@ const __dirname = path.dirname(__filename);
 
 // Load .env.production in production environment
 if (process.env.NODE_ENV === 'production') {
-  const envPath = path.join(__dirname, '../.env.production');
-  console.log('[BUG-001 FIX] Loading .env.production from:', envPath);
-  const result = dotenv.config({ path: envPath });
-  if (result.error) {
-    console.error('[BUG-001 FIX] Failed to load .env.production:', result.error);
-  } else {
-    console.log('[BUG-001 FIX] Successfully loaded .env.production');
-    console.log('[BUG-001 FIX] DATABASE_URL is now available:', !!process.env.DATABASE_URL);
+  console.log('[BUG-001 FIX] Current __dirname:', __dirname);
+  console.log('[BUG-001 FIX] Current working directory:', process.cwd());
+  
+  // Try multiple possible paths
+  const possiblePaths = [
+    path.join(__dirname, '../.env.production'),
+    path.join(process.cwd(), '.env.production'),
+    './.env.production',
+    '.env.production'
+  ];
+  
+  console.log('[BUG-001 FIX] Trying to load .env.production from multiple paths...');
+  let loaded = false;
+  
+  for (const envPath of possiblePaths) {
+    console.log('[BUG-001 FIX] Trying path:', envPath);
+    const result = dotenv.config({ path: envPath });
+    if (!result.error) {
+      console.log('[BUG-001 FIX] ✅ Successfully loaded .env.production from:', envPath);
+      console.log('[BUG-001 FIX] DATABASE_URL is now available:', !!process.env.DATABASE_URL);
+      loaded = true;
+      break;
+    } else {
+      console.log('[BUG-001 FIX] ❌ Failed to load from:', envPath, '- Error:', result.error.message);
+    }
+  }
+  
+  if (!loaded) {
+    console.error('[BUG-001 FIX] ❌ FAILED TO LOAD .env.production FROM ANY PATH!');
   }
 }
 
