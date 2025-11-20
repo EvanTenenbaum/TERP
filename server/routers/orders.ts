@@ -170,6 +170,15 @@ export const ordersRouter = router({
     }),
 
   /**
+   * DIAGNOSTIC TEST ENDPOINT - No permissions required
+   */
+  testEndpoint: publicProcedure
+    .query(async () => {
+      console.log('🧪 [orders.testEndpoint] TEST ENDPOINT CALLED!');
+      return { success: true, message: 'Test endpoint is working!', timestamp: new Date().toISOString() };
+    }),
+
+  /**
    * Get all orders with filtering
    */
   getAll: protectedProcedure

@@ -76,6 +76,9 @@ export default function Orders() {
     return client?.name || 'Unknown';
   };
 
+  // DIAGNOSTIC: Test endpoint to verify tRPC is working
+  const { data: testData } = trpc.orders.testEndpoint.useQuery();
+
   // Fetch draft orders
   const { data: draftOrders, isLoading: loadingDrafts, refetch: refetchDrafts } = trpc.orders.getAll.useQuery({
     isDraft: true,
@@ -240,6 +243,7 @@ export default function Orders() {
           <li><strong>Confirmed Query - First Order:</strong> {JSON.stringify(confirmedOrders?.[0])}</li>
           <li><strong>Draft Query - isDraft Value:</strong> {JSON.stringify(true)} (Type: {typeof true})</li>
           <li><strong>Draft Query - Data:</strong> {draftOrders ? `Array(${draftOrders.length})` : 'NULL/UNDEFINED'}</li>
+          <li style={{ marginTop: '10px', borderTop: '2px solid red', paddingTop: '10px' }}><strong>🧪 TEST ENDPOINT:</strong> {testData ? JSON.stringify(testData) : 'NULL/UNDEFINED'}</li>
         </ul>
       </div>
       {/* Header */}
