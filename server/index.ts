@@ -9,6 +9,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function startServer() {
+  // === DIAGNOSTIC LOGGING FOR BUG-001 ===
+  console.log("\n=== [BUG-001 DEBUG] DATABASE CONNECTIVITY CHECK ===");
+  console.log("[BUG-001] process.env.DATABASE_URL exists:", !!process.env.DATABASE_URL);
+  console.log("[BUG-001] process.env.DATABASE_URL length:", process.env.DATABASE_URL?.length || 0);
+  console.log("[BUG-001] process.env.DATABASE_URL (first 50 chars):", process.env.DATABASE_URL?.substring(0, 50) || "UNDEFINED");
+  console.log("[BUG-001] process.env.NODE_ENV:", process.env.NODE_ENV);
+  console.log("=== [BUG-001 DEBUG] END ===");
+  console.log("");
+  // === END DIAGNOSTIC LOGGING ===
+
   // Run auto-migrations on startup
   await runAutoMigrations();
 
