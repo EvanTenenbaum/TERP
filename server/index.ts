@@ -1,12 +1,29 @@
-import express from "express";
-import { createServer } from "http";
+// Load environment variables from .env.production file FIRST
+// This ensures DATABASE_URL is available before any other imports
+import dotenv from 'dotenv';
 import path from "path";
 import { fileURLToPath } from "url";
-import { runAutoMigrations } from "./autoMigrate.js";
-import { startPriceAlertsCron } from "./cron/priceAlertsCron.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load .env.production in production environment
+if (process.env.NODE_ENV === 'production') {
+  const envPath = path.join(__dirname, '../.env.production');
+  console.log('[BUG-001 FIX] Loading .env.production from:', envPath);
+  const result = dotenv.config({ path: envPath });
+  if (result.error) {
+    console.error('[BUG-001 FIX] Failed to load .env.production:', result.error);
+  } else {
+    console.log('[BUG-001 FIX] Successfully loaded .env.production');
+    console.log('[BUG-001 FIX] DATABASE_URL is now available:', !!process.env.DATABASE_URL);
+  }
+}
+
+import express from "express";
+import { createServer } from "http";
+import { runAutoMigrations } from "./autoMigrate.js";
+import { startPriceAlertsCron } from "./cron/priceAlertsCron.js";
 
 async function startServer() {
   // === DIAGNOSTIC LOGGING FOR BUG-001 ===
