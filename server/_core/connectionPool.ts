@@ -30,8 +30,24 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
   // Only check DATABASE_URL when creating a NEW pool
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL environment variable is required to create connection pool");
+    const errorMsg = "DATABASE_URL environment variable is required to create connection pool";
+    logger.error({ msg: errorMsg });
+    throw new Error(errorMsg);
   }
+
+  // Validate DATABASE_URL format
+  if (!databaseUrl.startsWith('mysql://')) {
+    const errorMsg = `Invalid DATABASE_URL format. Expected mysql://, got: ${databaseUrl.substring(0, 10)}...`;
+    logger.error({ msg: errorMsg });
+    throw new Error(errorMsg);
+  }
+
+  logger.info({ 
+    msg: "DATABASE_URL found", 
+    length: databaseUrl.length,
+    protocol: databaseUrl.split('://')[0],
+    hasSSLParam: databaseUrl.includes('ssl-mode') || databaseUrl.includes('sslmode'),
+  });
 
   const defaultConfig: PoolConfig = {
     connectionLimit: 10, // Maximum number of connections in pool
@@ -71,6 +87,7 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
 
   // Handle pool errors
   pool.on("connection", (connection) => {
+    logger.info({ msg: "New MySQL connection established" });
     connection.on("error", (err) => {
       logger.error({
         msg: "MySQL connection error",
@@ -78,6 +95,32 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
       });
     });
   });
+
+  // CRITICAL: Health check - Force immediate connection to verify pool works
+  // This will crash the app at startup if DB is unreachable, rather than failing silently
+  pool.getConnection()
+    .then(async (connection) => {
+      logger.info({ msg: "✅ Database health check: Connection successful" });
+      try {
+        const [rows] = await connection.query('SELECT 1 as health_check');
+        logger.info({ msg: "✅ Database health check: Query successful", result: rows });
+      } catch (queryErr) {
+        logger.error({ msg: "❌ Database health check: Query failed", error: queryErr });
+      } finally {
+        connection.release();
+        logger.info({ msg: "Health check connection released back to pool" });
+      }
+    })
+    .catch((err) => {
+      logger.error({
+        msg: "❌ CRITICAL: Database health check failed - Cannot establish connection",
+        error: err,
+        databaseUrl: cleanDatabaseUrl.replace(/:[^:@]+@/, ':****@'), // Mask password
+        sslEnabled: needsSSL,
+      });
+      // Don't throw here - let the app start but log the critical error
+      // The app will fail on first query attempt with better error context
+    });
 
   // Log pool statistics periodically (every 5 minutes)
   setInterval(() => {
