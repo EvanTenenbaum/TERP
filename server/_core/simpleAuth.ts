@@ -174,7 +174,7 @@ export function registerSimpleAuthRoutes(app: Express) {
       res.cookie(COOKIE_NAME, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "none", // Must be 'none' for cross-origin requests in production
+        sameSite: "lax", // Changed from 'none' - this is a same-origin app
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
