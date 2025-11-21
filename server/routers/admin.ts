@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { strains, products, users, permissions, userPermissionOverrides } from "../../drizzle/schema";
+import { roles, userRoles } from "../../drizzle/schema-rbac";
 import { sql, eq, or, and } from "drizzle-orm";
 import { importOpenTHCStrainsFromJSON } from "../import_openthc_strains";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -596,6 +597,118 @@ export const adminRouter = router({
           success: true,
           message: "Permission cache cleared for all users",
         };
+      }
+    }),
+
+  /**
+   * Assign Super Admin Role (BUG-001 FINAL FIX)
+   * 
+   * Assigns the "Super Admin" role to a user by creating a record in user_roles table.
+   * This is the correct way to grant full permissions in the RBAC system.
+   * This is intentionally a PUBLIC endpoint for emergency fixes.
+   */
+  assignSuperAdminRole: publicProcedure
+    .input(
+      z.object({
+        email: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      logger.info({ msg: "[Admin] assignSuperAdminRole called", input });
+
+      const db = await getDb();
+      if (!db) {
+        logger.error("[Admin] Database connection failed");
+        throw new Error("Database connection failed");
+      }
+
+      // Find user
+      const userRecords = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, input.email))
+        .limit(1);
+
+      if (!userRecords || userRecords.length === 0) {
+        logger.error({ msg: "[Admin] User not found", email: input.email });
+        throw new Error("User not found");
+      }
+
+      const user = userRecords[0];
+
+      // Find Super Admin role
+      const roleRecords = await db
+        .select()
+        .from(roles)
+        .where(eq(roles.name, "Super Admin"))
+        .limit(1);
+
+      if (!roleRecords || roleRecords.length === 0) {
+        logger.error("[Admin] Super Admin role not found in database");
+        throw new Error("Super Admin role not found");
+      }
+
+      const superAdminRole = roleRecords[0];
+
+      // Check if already assigned
+      const existingAssignment = await db
+        .select()
+        .from(userRoles)
+        .where(
+          and(
+            eq(userRoles.userId, user.openId),
+            eq(userRoles.roleId, superAdminRole.id)
+          )
+        )
+        .limit(1);
+
+      if (existingAssignment && existingAssignment.length > 0) {
+        logger.info("[Admin] User already has Super Admin role");
+        return {
+          success: true,
+          message: "User already has Super Admin role",
+          user: {
+            id: user.id,
+            email: user.email,
+            openId: user.openId,
+          },
+          role: {
+            id: superAdminRole.id,
+            name: superAdminRole.name,
+          },
+        };
+      }
+
+      // Assign Super Admin role
+      try {
+        await db.insert(userRoles).values({
+          userId: user.openId,
+          roleId: superAdminRole.id,
+          assignedBy: "admin-api",
+        });
+
+        logger.info({
+          msg: "[Admin] Super Admin role assigned",
+          userId: user.openId,
+          roleId: superAdminRole.id,
+        });
+
+        return {
+          success: true,
+          message: `Super Admin role assigned to user "${user.email}"`,
+          user: {
+            id: user.id,
+            email: user.email,
+            openId: user.openId,
+          },
+          role: {
+            id: superAdminRole.id,
+            name: superAdminRole.name,
+          },
+        };
+      } catch (error) {
+        logger.error({ msg: "[Admin] Failed to assign role", error });
+        throw new Error(`Failed to assign role: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     }),
 });
