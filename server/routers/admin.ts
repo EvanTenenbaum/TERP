@@ -370,44 +370,44 @@ export const adminRouter = router({
         userId: user.id,
         username: user.username,
         email: user.email,
-        isSuperAdmin: user.isSuperAdmin,
+        role: user.role,
       });
 
-      // Check if already a super admin
-      if (user.isSuperAdmin) {
-        logger.info("[Admin] User is already a Super Admin");
+      // Check if already an admin
+      if (user.role === "admin") {
+        logger.info("[Admin] User is already an admin");
         return {
           success: true,
-          message: "User is already a Super Admin",
+          message: "User is already an admin",
           user: {
             id: user.id,
             username: user.username,
             email: user.email,
-            isSuperAdmin: user.isSuperAdmin,
+            role: user.role,
           },
         };
       }
 
-      // Make user a Super Admin
+      // Make user an admin
       if (input.makeAdmin) {
         await db
           .update(users)
-          .set({ isSuperAdmin: true })
+          .set({ role: "admin" })
           .where(eq(users.id, user.id));
 
         logger.info({
-          msg: "[Admin] User promoted to Super Admin",
+          msg: "[Admin] User promoted to admin",
           userId: user.id,
         });
 
         return {
           success: true,
-          message: "User is now a Super Admin",
+          message: "User is now an admin",
           user: {
             id: user.id,
             username: user.username,
             email: user.email,
-            isSuperAdmin: true,
+            role: "admin",
           },
         };
       }
@@ -419,7 +419,7 @@ export const adminRouter = router({
           id: user.id,
           username: user.username,
           email: user.email,
-          isSuperAdmin: user.isSuperAdmin,
+          role: user.role,
         },
       };
     }),
@@ -448,7 +448,7 @@ export const adminRouter = router({
         username: u.username,
         email: u.email,
         openId: u.openId,
-        isSuperAdmin: u.isSuperAdmin,
+        role: u.role,
       })),
     };
   }),
