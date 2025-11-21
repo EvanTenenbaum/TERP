@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { strains, products, users } from "../../drizzle/schema";
-import { sql, eq, or } from "drizzle-orm";
+import { strains, products, users, permissions, userPermissionOverrides } from "../../drizzle/schema";
+import { sql, eq, or, and } from "drizzle-orm";
 import { importOpenTHCStrainsFromJSON } from "../import_openthc_strains";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
@@ -452,5 +452,119 @@ export const adminRouter = router({
       })),
     };
   }),
+
+  /**
+   * Grant Permission to User (BUG-001)
+   * 
+   * Grants a specific permission to a user via permission override.
+   * This is intentionally a PUBLIC endpoint for emergency fixes.
+   */
+  grantPermission: publicProcedure
+    .input(
+      z.object({
+        email: z.string(),
+        permissionName: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      logger.info({ msg: "[Admin] grantPermission called", input });
+
+      const db = await getDb();
+      if (!db) {
+        logger.error("[Admin] Database connection failed");
+        throw new Error("Database connection failed");
+      }
+
+      // Find user
+      const userRecords = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, input.email))
+        .limit(1);
+
+      if (!userRecords || userRecords.length === 0) {
+        logger.error({ msg: "[Admin] User not found", email: input.email });
+        throw new Error("User not found");
+      }
+
+      const user = userRecords[0];
+
+      // Find permission
+      const permissionRecords = await db
+        .select()
+        .from(permissions)
+        .where(eq(permissions.name, input.permissionName))
+        .limit(1);
+
+      if (!permissionRecords || permissionRecords.length === 0) {
+        logger.error({ msg: "[Admin] Permission not found", permissionName: input.permissionName });
+        throw new Error(`Permission "${input.permissionName}" not found`);
+      }
+
+      const permission = permissionRecords[0];
+
+      // Grant permission via override
+      try {
+        await db.insert(userPermissionOverrides).values({
+          userId: user.openId,
+          permissionId: permission.id,
+          granted: 1,
+        });
+
+        logger.info({
+          msg: "[Admin] Permission granted",
+          userId: user.openId,
+          permissionName: input.permissionName,
+        });
+
+        return {
+          success: true,
+          message: `Permission "${input.permissionName}" granted to user "${user.email}"`,
+          user: {
+            id: user.id,
+            email: user.email,
+            openId: user.openId,
+          },
+          permission: {
+            id: permission.id,
+            name: permission.name,
+          },
+        };
+      } catch (error: any) {
+        if (error.code === 'ER_DUP_ENTRY') {
+          // Update existing override
+          await db
+            .update(userPermissionOverrides)
+            .set({ granted: 1 })
+            .where(
+              and(
+                eq(userPermissionOverrides.userId, user.openId),
+                eq(userPermissionOverrides.permissionId, permission.id)
+              )
+            );
+
+          logger.info({
+            msg: "[Admin] Permission override updated",
+            userId: user.openId,
+            permissionName: input.permissionName,
+          });
+
+          return {
+            success: true,
+            message: `Permission "${input.permissionName}" already granted (override updated)`,
+            user: {
+              id: user.id,
+              email: user.email,
+              openId: user.openId,
+            },
+            permission: {
+              id: permission.id,
+              name: permission.name,
+            },
+          };
+        }
+        throw error;
+      }
+    }),
 });
 
