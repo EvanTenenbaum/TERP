@@ -24,6 +24,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import {
   LayoutDashboard,
   LogOut,
+  LogIn,
   Settings,
   PanelLeft,
   Users,
@@ -245,6 +246,22 @@ function DashboardLayoutContent({
                   </SidebarMenuItem>
                 );
               })}
+
+              {/* Dynamic Login/Logout Menu Item */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={user ? logout : () => setLocation("/login")}
+                  tooltip={user ? "Sign out" : "Sign in"}
+                  className={`h-10 transition-all font-normal ${!user ? "text-primary" : "text-destructive hover:text-destructive"}`}
+                >
+                  {user ? (
+                    <LogOut className="h-4 w-4" />
+                  ) : (
+                    <LogIn className="h-4 w-4" />
+                  )}
+                  <span>{user ? "Sign out" : "Sign in"}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
 
