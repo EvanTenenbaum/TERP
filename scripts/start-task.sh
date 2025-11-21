@@ -1,15 +1,44 @@
 #!/bin/bash
-# TERP Task Startup Script (Enhanced with Ad-Hoc Support)
+# TERP Task Startup Script v2.0 (Ironclad Edition)
 # Enforces protocol adherence by automating session creation
 
 set -e  # Exit on error
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# --- Configuration ---
+RED=\'\033[0;31m\'
+GREEN=\'\033[0;32m\'
+YELLOW=\'\033[1;33m\'
+BLUE=\'\033[0;34m\'
+NC=\'\033[0m\' # No Color
+
+MASTER_ROADMAP="docs/roadmaps/MASTER_ROADMAP.md"
+TESTING_ROADMAP="docs/roadmaps/TESTING_ROADMAP.md"
+ACTIVE_SESSIONS="docs/ACTIVE_SESSIONS.md"
+SESSION_DIR="docs/sessions/active"
+LOCK_FILE="/tmp/start-task.lock"
+
+# --- Functions ---
+
+# Generic error handler
+error_exit() {
+  echo -e "${RED}❌ ERROR: $1${NC}"
+  # Clean up lock file on error
+  rm -f "$LOCK_FILE"
+  exit 1
+}
+
+# --- Main Script ---
+
+# Acquire lock to prevent race conditions
+if [ -e "$LOCK_FILE" ]; then
+  error_exit "Another start-task process is running. Please wait."
+fi
+touch "$LOCK_FILE"
+
+# Ensure we are in the root of the TERP repository
+if [ ! -f "package.json" ] || [ ! -d ".git" ]; then
+  error_exit "This script must be run from the root of the TERP repository."
+fi
 
 # Parse arguments
 ADHOC_MODE=false
@@ -37,160 +66,104 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# If ad-hoc mode, generate task ID
+# --- Ad-Hoc Task Generation ---
 if [ "$ADHOC_MODE" = true ]; then
-  if [ -z "$TASK_DESCRIPTION" ]; then
-    echo -e "${RED}❌ ERROR: Task description is required for ad-hoc tasks${NC}"
-    echo "Usage: pnpm start-task --adhoc \"Task description\""
-    echo "Example: pnpm start-task --adhoc \"Fix login bug\" --category bug"
-    exit 1
+  # Validate task description
+  if [ -z "$TASK_DESCRIPTION" ] || [[ "$TASK_DESCRIPTION" =~ [\`\*\#\[\]\(\)] ]]; then
+    error_exit "Task description is required and cannot contain special characters like \"\`*#[]()\"."
   fi
   
   echo -e "${BLUE}🔄 Ad-hoc mode: Generating task ID...${NC}"
-  echo ""
   
-  # Generate task ID
   DATE=$(date +%Y%m%d)
-  
-  # Determine prefix based on category
-  case "$CATEGORY" in
-    bug)
-      PREFIX="BUG"
-      ;;
-    feature)
-      PREFIX="FEAT"
-      ;;
-    performance)
-      PREFIX="PERF"
-      ;;
-    refactor)
-      PREFIX="REFACTOR"
-      ;;
-    test)
-      PREFIX="TEST"
-      ;;
-    docs)
-      PREFIX="DOCS"
-      ;;
-    *)
-      PREFIX="ADHOC"
-      ;;
-  esac
+  PREFIX=$(echo "${CATEGORY:-adhoc}" | tr '[:lower:]' '[:upper:]')
   
   # Find next sequence number for today
-  LAST_SEQ=$(grep -oP "${PREFIX}-${DATE}-\K[0-9]+" docs/roadmaps/MASTER_ROADMAP.md 2>/dev/null | sort -n | tail -1 || echo "0")
+  LAST_SEQ=$(grep -oP "${PREFIX}-${DATE}-\K[0-9]+" "$MASTER_ROADMAP" 2>/dev/null | sort -n | tail -1 || echo "0")
   NEXT_SEQ=$(printf "%03d" $((LAST_SEQ + 1)))
   
   TASK_ID="${PREFIX}-${DATE}-${NEXT_SEQ}"
   
   echo -e "${GREEN}🆔 Generated Task ID: ${TASK_ID}${NC}"
-  echo -e "${GREEN}📝 Description: ${TASK_DESCRIPTION}${NC}"
-  if [ -n "$CATEGORY" ]; then
-    echo -e "${GREEN}🏷️  Category: ${CATEGORY}${NC}"
-  fi
-  echo ""
   
   # Add task to MASTER_ROADMAP.md
-  echo "" >> docs/roadmaps/MASTER_ROADMAP.md
-  echo "### ${TASK_ID}" >> docs/roadmaps/MASTER_ROADMAP.md
-  echo "- [ ] ${TASK_DESCRIPTION}" >> docs/roadmaps/MASTER_ROADMAP.md
-  echo "- **Priority:** 🔴 HIGH" >> docs/roadmaps/MASTER_ROADMAP.md
-  echo "- **Category:** ${CATEGORY:-adhoc}" >> docs/roadmaps/MASTER_ROADMAP.md
-  echo "- **Test Status:** ⚪ Untested" >> docs/roadmaps/MASTER_ROADMAP.md
-  echo "- **Created:** $(date +\"%Y-%m-%d %H:%M:%S\")" >> docs/roadmaps/MASTER_ROADMAP.md
+  echo "" >> "$MASTER_ROADMAP"
+  echo "### ${TASK_ID}" >> "$MASTER_ROADMAP"
+  echo "- [ ] ${TASK_DESCRIPTION}" >> "$MASTER_ROADMAP"
+  echo "- **Priority:** 🔴 HIGH" >> "$MASTER_ROADMAP"
+  echo "- **Category:** ${CATEGORY:-adhoc}" >> "$MASTER_ROADMAP"
+  echo "- **Test Status:** ⚪ Untested" >> "$MASTER_ROADMAP"
+  echo "- **Created:** $(date +\"%Y-%m-%d %H:%M:%S\")" >> "$MASTER_ROADMAP"
   
   echo -e "${GREEN}✅ Task added to MASTER_ROADMAP.md${NC}"
-  echo ""
+
+  # Auto-generate test task for features
+  if [ "$PREFIX" == "FEAT" ]; then
+    TEST_TASK_ID="TEST-${TASK_ID}"
+    echo "" >> "$TESTING_ROADMAP"
+    echo "### ${TEST_TASK_ID}" >> "$TESTING_ROADMAP"
+    echo "- [ ] Write and pass all tests for feature ${TASK_ID}" >> "$TESTING_ROADMAP"
+    echo "- **Linked Feature:** ${TASK_ID}" >> "$TESTING_ROADMAP"
+    echo "- **Priority:** 🔴 HIGH" >> "$TESTING_ROADMAP"
+    echo "- **Created:** $(date +\"%Y-%m-%d %H:%M:%S\")" >> "$TESTING_ROADMAP"
+    echo -e "${GREEN}✅ Linked test task ${TEST_TASK_ID} created in TESTING_ROADMAP.md${NC}"
+  fi
 fi
 
-# Check if TASK_ID is provided
+# --- Validation ---
 if [ -z "$TASK_ID" ]; then
-  echo -e "${RED}❌ ERROR: Task ID is required${NC}"
-  echo ""
-  echo "Usage:"
-  echo "  Mode 1 (Existing task): pnpm start-task \"TASK_ID\""
-  echo "  Mode 2 (Ad-hoc task):   pnpm start-task --adhoc \"Description\" [--category bug|feature|performance|refactor|test|docs]"
-  echo ""
-  echo "Examples:"
-  echo "  pnpm start-task \"FEAT-001\""
-  echo "  pnpm start-task --adhoc \"Fix login bug\" --category bug"
-  echo "  pnpm start-task -a \"Add dark mode\" -c feature"
-  exit 1
+  error_exit "Task ID is required. Use 'pnpm start-task \"TASK_ID\"' or 'pnpm start-task --adhoc \"Description\"'."
 fi
 
 SESSION_ID=$(date +%Y%m%d)-$(openssl rand -hex 4)
 BRANCH_NAME="claude/${TASK_ID}-${SESSION_ID}"
-SESSION_FILE="docs/sessions/active/Session-${SESSION_ID}.md"
+SESSION_FILE="${SESSION_DIR}/Session-${SESSION_ID}.md"
 
+# --- Pre-flight Checks ---
 echo -e "${GREEN}🚀 Starting task: ${TASK_ID}${NC}"
-echo ""
 
-# Step 1: Validate task exists in roadmap (skip if ad-hoc since we just added it)
+# 1. Validate task exists
 if [ "$ADHOC_MODE" = false ]; then
-  echo "📋 Step 1: Validating task..."
-
-  TASK_IN_MASTER=$(grep -c "\[${TASK_ID}\]" docs/roadmaps/MASTER_ROADMAP.md 2>/dev/null || echo "0")
-  TASK_IN_TESTING=$(grep -c "\[${TASK_ID}\]" docs/roadmaps/TESTING_ROADMAP.md 2>/dev/null || echo "0")
-
-  if [ "$TASK_IN_MASTER" -eq "0" ] && [ "$TASK_IN_TESTING" -eq "0" ]; then
-    echo -e "${RED}❌ ERROR: Task ${TASK_ID} not found in MASTER_ROADMAP.md or TESTING_ROADMAP.md${NC}"
-    echo "Please add the task to the appropriate roadmap first, or use --adhoc mode."
-    exit 1
+  if ! grep -q "${TASK_ID}" "$MASTER_ROADMAP" && ! grep -q "${TASK_ID}" "$TESTING_ROADMAP"; then
+    error_exit "Task ${TASK_ID} not found in any roadmap. Use --adhoc mode to create it."
   fi
-
-  # Determine which roadmap the task is in
-  if [ "$TASK_IN_MASTER" -gt "0" ]; then
-    ROADMAP_FILE="docs/roadmaps/MASTER_ROADMAP.md"
-    ROADMAP_TYPE="MASTER"
-  else
-    ROADMAP_FILE="docs/roadmaps/TESTING_ROADMAP.md"
-    ROADMAP_TYPE="TESTING"
-  fi
-
-  echo -e "${GREEN}✅ Task found in ${ROADMAP_TYPE}_ROADMAP.md${NC}"
-else
-  echo "📋 Step 1: Skipping validation (ad-hoc task just created)"
-  ROADMAP_FILE="docs/roadmaps/MASTER_ROADMAP.md"
-  ROADMAP_TYPE="MASTER"
 fi
 
-# Step 2: Check if task is already assigned
-echo "🔍 Step 2: Checking if task is already assigned..."
+# 2. Check if task is already assigned
+ROADMAP_FILE="$MASTER_ROADMAP"
+if ! grep -q "${TASK_ID}" "$MASTER_ROADMAP"; then
+  ROADMAP_FILE="$TESTING_ROADMAP"
+fi
 
-TASK_STATUS=$(grep "\[${TASK_ID}\]" "$ROADMAP_FILE" 2>/dev/null | grep -o "\[.\]" | head -1 || echo "")
-
+TASK_STATUS=$(grep "${TASK_ID}" "$ROADMAP_FILE" | grep -o "\[.\]" | head -1 || echo "")
 if [ "$TASK_STATUS" == "[~]" ] || [ "$TASK_STATUS" == "[x]" ]; then
-  echo -e "${RED}❌ ERROR: Task ${TASK_ID} is already in progress or completed${NC}"
-  echo "Current status: $TASK_STATUS"
-  echo "Check ACTIVE_SESSIONS.md for details."
-  exit 1
+  error_exit "Task ${TASK_ID} is already in progress or completed."
 fi
 
-echo -e "${GREEN}✅ Task is available${NC}"
-
-# Step 3: Check for conflicts with active sessions
-echo "🔒 Step 3: Checking for conflicts with active sessions..."
-
-if [ -f "docs/ACTIVE_SESSIONS.md" ] && grep -q "${TASK_ID}" docs/ACTIVE_SESSIONS.md; then
-  echo -e "${RED}❌ ERROR: Task ${TASK_ID} is already being worked on${NC}"
-  echo "Check ACTIVE_SESSIONS.md for details."
-  exit 1
+# 3. Check for conflicts
+if [ -f "$ACTIVE_SESSIONS" ] && grep -q "${TASK_ID}" "$ACTIVE_SESSIONS"; then
+  error_exit "Task ${TASK_ID} is already being worked on. Check ACTIVE_SESSIONS.md."
 fi
 
-echo -e "${GREEN}✅ No conflicts detected${NC}"
+# --- Execution with Rollback ---
 
-# Step 4: Create Git branch
-echo "🌿 Step 4: Creating Git branch..."
+# Create a function to rollback changes
+rollback() {
+  echo -e "${RED}🔄 Rolling back changes...${NC}"
+  git checkout -f HEAD
+  git branch -D "$BRANCH_NAME" 2>/dev/null || true
+  rm -f "$SESSION_FILE" 2>/dev/null || true
+  error_exit "Task startup failed. System has been restored to its previous state."
+}
 
-git checkout -b "$BRANCH_NAME"
+# Trap errors and call rollback function
+trap rollback ERR
 
-echo -e "${GREEN}✅ Branch created: ${BRANCH_NAME}${NC}"
+# 4. Create Git branch
+git checkout -b "$BRANCH_NAME" || error_exit "Failed to create Git branch."
 
-# Step 5: Create session file directory if needed
-echo "📝 Step 5: Creating session file..."
-
-mkdir -p docs/sessions/active
-
+# 5. Create session file
+mkdir -p "$SESSION_DIR"
 cat > "$SESSION_FILE" << EOF
 # Session: ${SESSION_ID}
 
@@ -204,7 +177,7 @@ cat > "$SESSION_FILE" << EOF
 
 ## Objective
 
-${TASK_DESCRIPTION:-[Describe what you're working on]}
+${TASK_DESCRIPTION:-[Describe what you are working on]}
 
 ---
 
@@ -212,84 +185,45 @@ ${TASK_DESCRIPTION:-[Describe what you're working on]}
 
 ### $(date +"%Y-%m-%d %H:%M")
 - Session started
-- Branch created: \`${BRANCH_NAME}\`
 
 ---
 
 ## Completion Checklist
 
 - [ ] Code written
-- [ ] Tests written
-- [ ] All tests pass
-- [ ] No linting/type errors
+- [ ] Tests written & passing
 - [ ] Roadmap updated
 - [ ] User approval received
 - [ ] Merged to main
-- [ ] Session file moved to completed/
+- [ ] Session file archived
 EOF
 
-echo -e "${GREEN}✅ Session file created: ${SESSION_FILE}${NC}"
-
-# Step 6: Update roadmap
-echo "📊 Step 6: Updating roadmap..."
-
-# Replace [ ] with [~] for the task
+# 6. Update roadmap
 sed -i "s/\(${TASK_ID}.*\)\[ \]/\1[~]/" "$ROADMAP_FILE"
+sed -i "s/\(${TASK_ID}.*\[~\]\)/\1 (Session: ${SESSION_ID})/" "$ROADMAP_FILE"
 
-# Add session ID to the task line (if not already there)
-if ! grep -q "${TASK_ID}.*Session: ${SESSION_ID}" "$ROADMAP_FILE"; then
-  sed -i "s/\(${TASK_ID}.*\[~\]\)/\1 (Session: ${SESSION_ID})/" "$ROADMAP_FILE"
+# 7. Update ACTIVE_SESSIONS.md
+if [ ! -f "$ACTIVE_SESSIONS" ]; then
+  echo "# Active Development Sessions" > "$ACTIVE_SESSIONS"
 fi
-
-echo -e "${GREEN}✅ Roadmap updated${NC}"
-
-# Step 7: Update ACTIVE_SESSIONS.md
-echo "📋 Step 7: Updating ACTIVE_SESSIONS.md..."
-
-# Create ACTIVE_SESSIONS.md if it doesn't exist
-if [ ! -f "docs/ACTIVE_SESSIONS.md" ]; then
-  cat > docs/ACTIVE_SESSIONS.md << EOF
-# Active Development Sessions
-
-This file tracks all currently active development sessions to prevent conflicts.
-
-**Last Updated:** $(date +"%Y-%m-%d %H:%M:%S")
-
----
-
-EOF
-fi
-
-cat >> docs/ACTIVE_SESSIONS.md << EOF
-
+echo "
 ## Session: ${SESSION_ID}
 
 **Task ID:** ${TASK_ID}  
 **Branch:** \`${BRANCH_NAME}\`  
-**Started:** $(date +"%Y-%m-%d %H:%M:%S")  
-**Agent:** Claude (Manus AI)  
-**Status:** 🟡 In Progress
+**Started:** $(date +"%Y-%m-%d %H:%M:%S")" >> "$ACTIVE_SESSIONS"
 
-EOF
+# 8. Commit and push
+git add . || error_exit "Failed to stage files."
+git commit -m "chore: start task ${TASK_ID} (Session: ${SESSION_ID})" --no-verify || error_exit "Failed to commit changes."
+git push -u origin "$BRANCH_NAME" || error_exit "Failed to push to GitHub."
 
-echo -e "${GREEN}✅ ACTIVE_SESSIONS.md updated${NC}"
+# --- Success ---
 
-# Step 8: Commit and push
-echo "💾 Step 8: Committing and pushing changes..."
+# Disable error trap
+trap - ERR
 
-git add "$SESSION_FILE" "$ROADMAP_FILE" docs/ACTIVE_SESSIONS.md
-git commit -m "chore: start task ${TASK_ID} (Session: ${SESSION_ID})"
-git push -u origin "$BRANCH_NAME"
+# Clean up lock file
+rm -f "$LOCK_FILE"
 
-echo -e "${GREEN}✅ Changes pushed to GitHub${NC}"
-echo ""
-echo -e "${GREEN}🎉 Task startup complete!${NC}"
-echo ""
-echo "Next steps:"
-echo "1. Write your code"
-echo "2. Commit with: git commit -m \"feat: your changes\""
-echo "3. Push with: git push"
-echo "4. Request review from the user"
-echo ""
-echo "Session file: ${SESSION_FILE}"
-echo "Branch: ${BRANCH_NAME}"
+echo -e "${GREEN}🎉 Task startup complete! You are now on branch ${BRANCH_NAME}.${NC}"
