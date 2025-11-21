@@ -1,123 +1,129 @@
-# 🚨 MANDATORY PROMPT FOR ALL TERP DEVELOPMENT AGENTS (v3.0)
+# 🚨 MANDATORY PROMPT FOR ALL TERP AGENTS (v4.0)
 
-**Objective:** To ensure every agent strictly follows the TERP workflow system for every task. This prompt must be used at the start of every new development session.
+**Objective:** To ensure every agent strictly follows the TERP workflow system for every task, including integrated testing protocols.
 
 ---
 
 ## 📋 PHASE 1: PRE-FLIGHT CHECK (MANDATORY)
 
-**Before you write a single line of code, you MUST complete this checklist.**
+**Before you start, you MUST complete this checklist.**
 
-1.  **Clone the Repo (if first time):**
-    - **Action:** `gh repo clone EvanTenenbaum/TERP && cd TERP`
-    - **Confirmation:** `[ ] I am inside the TERP repository.`
+1.  **Repo & Workflow Check:**
+    - `[ ]` I am inside the TERP repository.
+    - `[ ]` I have read `docs/QUICK_REFERENCE.md`.
 
-2.  **Read the Quick Reference Guide:**
-    - **Action:** Read `docs/QUICK_REFERENCE.md`.
-    - **Purpose:** To refresh your memory on the 3-step workflow and the 4 files that matter.
-    - **Confirmation:** `[ ] I have read and understood the Quick Reference Guide.`
+2.  **Task Identification:**
+    - **Option A: User provided a specific task ID**
+      - `[ ]` I have reviewed the roadmap and identified the task.
+      - `[ ]` I will use: `pnpm start-task "TASK_ID"`
+    
+    - **Option B: User gave an ad-hoc instruction**
+      - `[ ]` The user said something like "Fix X" or "Add Y" without a task ID.
+      - `[ ]` I will use: `pnpm start-task --adhoc "User's instruction"`
+      - `[ ]` I will optionally add `--category bug|feature|performance|refactor|test|docs`
 
-3.  **Review the Master Roadmap:**
-    - **Action:** Read `docs/roadmaps/MASTER_ROADMAP.md`.
-    - **Purpose:** To identify the highest priority task in the "Current Sprint" that is marked as `(Unassigned)`.
-    - **Confirmation:** `[ ] I have identified a high-priority, unassigned task from the Master Roadmap.`
+3.  **Conflict Check:**
+    - `[ ]` I have read `docs/ACTIVE_SESSIONS.md` and verified my task does not conflict with active sessions.
 
-4.  **Check Active Sessions:**
-    - **Action:** Read `docs/ACTIVE_SESSIONS.md`.
-    - **Purpose:** To ensure no other agent is currently working on the same module as your chosen task. If there is a conflict, choose a different task.
-    - **Confirmation:** `[ ] I have verified that my chosen task does not conflict with any active sessions.`
+4.  **Task Declaration:**
+    - `[ ]` I have declared my task: "I will now work on [TASK_ID]: [Task Name]"
 
-5.  **Declare Your Task:**
-    - **Action:** State the task you will be working on.
-    - **Format:** "I will now work on the task: [Your Task Name from Roadmap]"
-    - **Confirmation:** `[ ] I have declared the task I will be working on.`
-
-**You may not proceed until all five checklist items are complete.**
+**You may not proceed until all checklist items are complete.**
 
 ---
 
 ## 🚀 PHASE 2: SESSION STARTUP & AUTOMATION
 
-**Once you have declared your task, the system will automatically perform the following actions. You must verify they complete successfully.**
+**Verify the following automated actions complete successfully.**
 
-1.  **Session Creation:**
-    - **Automation:** A unique `Session-ID` will be generated.
-    - **Automation:** A new session file will be created at `docs/sessions/active/Session-[ID].md`.
-    - **Verification:** Confirm that the session file has been created.
+1.  **Session & Branch Creation:**
+    - `[ ]` Session file created in `docs/sessions/active/`.
+    - `[ ]` New Git branch created and checked out.
 
-2.  **Branch Creation:**
-    - **Automation:** A new Git branch will be created with the format `claude/task-slug-SESSION_ID`.
-    - **Verification:** Confirm that you are on the new feature branch.
+2.  **Roadmap Updates:**
+    - `[ ]` `MASTER_ROADMAP.md` or `TESTING_ROADMAP.md` updated with your session ID.
+    - `[ ]` `ACTIVE_SESSIONS.md` updated with your new session.
+    - `[ ]` All changes have been committed and pushed to GitHub.
 
-3.  **Roadmap Update:**
-    - **Automation:** The `MASTER_ROADMAP.md` will be updated to mark your task as `[~] In progress (Claude-Session-ID)`.
-    - **Automation:** The change will be committed and pushed to GitHub immediately.
-    - **Verification:** Confirm that the roadmap has been updated on GitHub.
-
-4.  **Active Sessions Update:**
-    - **Automation:** The `aggregate-sessions.sh` script will run to update `docs/ACTIVE_SESSIONS.md`.
-    - **Automation:** The change will be committed and pushed to GitHub immediately.
-    - **Verification:** Confirm that your new session is visible in the Active Sessions table on GitHub.
-
-**Report any failures in this phase immediately. Do not proceed with failing automation.**
+**Report any failures immediately.**
 
 ---
 
-## 💻 PHASE 3: DEVELOPMENT (TDD & PUSH-TO-MAIN)
+## 💻 PHASE 3: DEVELOPMENT & TESTING
 
-**Follow these protocols strictly during development.**
+**Follow these protocols strictly.**
 
-1.  **Test-Driven Development (TDD):**
-    - **Requirement:** You MUST write a failing test _before_ writing implementation code. Follow the Red-Green-Refactor cycle.
-    - **Requirement:** All new code must be covered by tests.
+### If Your Task is FEATURE DEVELOPMENT (from MASTER_ROADMAP):
 
-2.  **Code Quality:**
-    - **Requirement:** Adhere to all quality standards defined in `CLAUDE_WORKFLOW.md` (no `any` types, no files over 500 lines, no N+1 queries, etc.).
+1.  **Write Code (TDD):**
+    - Follow Test-Driven Development: Write a failing test, then write code to make it pass.
 
-3.  **Commit & Push Frequently:**
-    - **Requirement:** Commit your changes with clear, conventional commit messages.
-    - **Requirement:** Push to your feature branch frequently to back up your work.
+2.  **Create Test Task:**
+    - **MANDATORY:** After writing the feature code, you MUST create a corresponding test task.
+    - **Action:** Add a new task to `docs/roadmaps/TESTING_ROADMAP.md`.
+    - **Link:** Link the test task to your feature ID.
+    - **Status:** Set test task status to `Not Started`.
 
-4.  **Deployment for Review:**
-    - **Action:** When your feature is ready for review, **push your feature branch to GitHub.**
-    - **Automation:** The `deploy-and-monitor.ts` script will automatically deploy your feature branch to a unique preview URL.
-    - **Requirement:** You MUST wait for the deployment to complete and report the preview URL to the user for testing.
+3.  **Update Feature Test Status:**
+    - **Action:** In `MASTER_ROADMAP.md`, update your feature's `Test Status` to `⚪ Untested`.
 
-5.  **Verify Build Status:**
-    - **Action:** After pushing to main, check the build status file: `cat .github/BUILD_STATUS.md`
-    - **Requirement:** Verify that the build succeeded and all tests passed.
-    - **Alternative:** If the file isn't updated yet, check the workflow run: `gh run list --limit 1`
+4.  **Commit & Deploy for Review:**
+    - Commit all changes (code, tests, and roadmap updates) to your feature branch.
+    - Push to GitHub to trigger deployment for review.
+
+### If Your Task is TEST DEVELOPMENT (from TESTING_ROADMAP):
+
+1.  **Write Tests:**
+    - Write the tests as defined in the test task scope.
+
+2.  **Run Tests & Check Coverage:**
+    - Run `pnpm test` and verify all tests pass.
+    - Check code coverage. If below 80%, add more tests.
+
+3.  **Update Test & Feature Status:**
+    - **Action:** In `TESTING_ROADMAP.md`, update your test task's status to `✅ Tested`.
+    - **Action:** In `MASTER_ROADMAP.md`, find the linked feature and update its `Test Status` to `✅ Fully Tested`.
+
+4.  **Update Coverage Map:**
+    - **Action:** Run the coverage update script to refresh `docs/roadmaps/TEST_COVERAGE_MAP.md`.
+
+5.  **Commit & Push:**
+    - Commit all roadmap and coverage map updates.
+
+### If Your Task is LIVE QA (User Command: "live qa"):
+
+1.  **Load QA Prompt:** Read `docs/agent_prompts/live_qa/live_qa_prompt.md`.
+2.  **Follow QA Workflow:** Execute the 4-phase QA process defined in the template.
+3.  **Deliver Report:** Provide a comprehensive QA report and update `QA_TASKS_BACKLOG.md`.
 
 ---
 
-## ✅ PHASE 4: COMPLETION & MERGE (MANDATORY CHECKLIST)
+## ✅ PHASE 4: COMPLETION & MERGE
 
-**Before you can report your task as "done," you MUST complete this final checklist.**
+**Before merging, you MUST complete this final checklist.**
 
 1.  **User Approval:**
-    - **Requirement:** The user has tested the feature on the preview URL and given explicit approval (e.g., "Looks good, merge it").
-    - **Confirmation:** `[ ] User has approved the changes.`
+    - `[ ]` User has approved the changes on the preview URL.
 
 2.  **Final Checks:**
-    - **Action:** Run `pnpm test` and `pnpm check` one last time.
-    - **Confirmation:** `[ ] All tests are passing and there are zero TypeScript errors.`
+    - `[ ]` All tests pass (`pnpm test`).
+    - `[ ]` No linting or type errors (`pnpm check`).
 
-3.  **Merge to Main:**
-    - **Action:** Merge your feature branch into the `main` branch.
-    - **Automation:** This will trigger the final production deployment, which will be monitored by the system.
-    - **Confirmation:** `[ ] I have merged my branch into main.`
+3.  **Test Status Check (Pre-Merge Gate):**
+    - `[ ]` I have verified the feature's `Test Status` in `MASTER_ROADMAP.md`.
+    - **If `⚪ Untested` or `🟡 Partially Tested`:** WARN the user before merging.
+    - **If `🔴 Tests Failing`:** BLOCK the merge.
+    - **If `✅ Fully Tested`:** Proceed with merge.
 
-4.  **Update Roadmap:**
-    - **Action:** Update the `MASTER_ROADMAP.md` to mark your task as `[x] Completed`.
-    - **Automation:** Commit and push this change to GitHub.
-    - **Confirmation:** `[ ] The Master Roadmap is updated.`
+4.  **Merge to Main:**
+    - `[ ]` I have merged my branch into `main`.
 
-5.  **Update Session File:**
-    - **Action:** Move your session file from `docs/sessions/active/` to `docs/sessions/completed/`.
-    - **Automation:** Commit and push this change to GitHub.
-    - **Confirmation:** `[ ] My session file has been archived.`
+5.  **Final Roadmap & Session Updates:**
+    - `[ ]` `MASTER_ROADMAP.md` or `TESTING_ROADMAP.md` task marked as `[x] Completed`.
+    - `[ ]` Session file moved to `docs/sessions/completed/`.
+    - `[ ]` All changes committed and pushed to GitHub.
 
 6.  **Final Report:**
-    - **Action:** Provide a final summary report to the user, confirming that the task is complete, deployed, and all documentation has been updated.
+    - `[ ]` I have provided a final summary report to the user.
 
 **Your task is not complete until all items in this checklist are done.**

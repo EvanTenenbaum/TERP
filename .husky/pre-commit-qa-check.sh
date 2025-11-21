@@ -70,7 +70,34 @@ for file in $(git diff --cached --name-only --diff-filter=A | grep "server/route
   fi
 done
 
-# 7. Check for hardcoded credentials (excluding test files)
+# 7. Check branch name format
+echo "Checking branch name format..."
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ ! "$CURRENT_BRANCH" =~ ^claude/[A-Z]+-[0-9]+-?[0-9]*-[0-9]{8}-[a-f0-9]{8}$ ]] && [[ "$CURRENT_BRANCH" != "main" ]]; then
+  echo "❌ BLOCKED: Invalid branch name format"
+  echo "   Current branch: $CURRENT_BRANCH"
+  echo "   Expected format: claude/TASK_ID-SESSION_ID"
+  echo "   Example: claude/FEAT-001-20251119-a1b2c3d4"
+  echo ""
+  echo "   To fix: Use 'pnpm start-task \"TASK_ID\"' to create a proper branch"
+  echo "   Or for ad-hoc tasks: 'pnpm start-task --adhoc \"Description\"'"
+  BLOCKED=1
+fi
+
+# 8. Check if roadmap is updated when code changes
+echo "Checking roadmap updates..."
+CODE_FILES_CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' | grep -v '\.test\.' | wc -l)
+ROADMAP_CHANGED=$(git diff --cached --name-only | grep -E 'MASTER_ROADMAP\.md|TESTING_ROADMAP\.md' | wc -l)
+
+if [ "$CODE_FILES_CHANGED" -gt 0 ] && [ "$ROADMAP_CHANGED" -eq 0 ]; then
+  echo "⚠️  WARNING: Code files changed but roadmap not updated"
+  echo "   Changed files: $CODE_FILES_CHANGED"
+  echo "   Please update MASTER_ROADMAP.md or TESTING_ROADMAP.md"
+  echo "   (This is a warning, not blocking)"
+fi
+
+# 9. Check for hardcoded credentials (excluding test files)
 echo "Checking for hardcoded secrets..."
 SECRET_MATCHES=$(git diff --cached --diff-filter=ACM --name-only | grep -vE "\.(test|spec)\.ts$" | xargs -I {} git diff --cached {} | grep "^+" | grep -iE "(password|secret|api_key|token).*=.*['\"]" | grep -v "JWT_SECRET" | grep -v "GITHUB_WEBHOOK_SECRET" || true)
 if [ -n "$SECRET_MATCHES" ]; then

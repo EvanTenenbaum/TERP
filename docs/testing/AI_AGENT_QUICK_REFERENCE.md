@@ -23,6 +23,22 @@ Before every commit, verify:
 
 ---
 
+## 🔬 Live QA Workflow
+
+**When the user says "live qa":**
+
+1. **Load QA Prompt:** Read `docs/agent_prompts/live_qa/live_qa_prompt.md`
+2. **Follow 4-Phase Process:**
+   - Phase 1: Pre-Flight Check (8 steps)
+   - Phase 2: Session Startup & Automation
+   - Phase 3: Systematic Testing (7 layers)
+   - Phase 4: Reporting & Completion
+3. **Deliver QA Report:** Comprehensive findings logged in `QA_TASKS_BACKLOG.md`
+
+**This is NOT a development workflow - it's specialized QA testing.**
+
+---
+
 ## 🔄 TDD Workflow (MANDATORY)
 
 1. **RED**: Write a failing test that describes the desired behavior
