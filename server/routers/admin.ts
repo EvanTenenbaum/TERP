@@ -566,5 +566,37 @@ export const adminRouter = router({
         throw error;
       }
     }),
+
+  /**
+   * Clear Permission Cache (BUG-001)
+   * 
+   * Clears the permission cache for a specific user or all users.
+   * This is intentionally a PUBLIC endpoint for emergency fixes.
+   */
+  clearPermissionCache: publicProcedure
+    .input(
+      z.object({
+        userId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      logger.info({ msg: "[Admin] clearPermissionCache called", input });
+
+      const { clearPermissionCache } = await import("../services/permissionService");
+
+      if (input.userId) {
+        clearPermissionCache(input.userId);
+        return {
+          success: true,
+          message: `Permission cache cleared for user "${input.userId}"`,
+        };
+      } else {
+        clearPermissionCache();
+        return {
+          success: true,
+          message: "Permission cache cleared for all users",
+        };
+      }
+    }),
 });
 
