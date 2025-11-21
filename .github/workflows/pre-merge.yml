@@ -1,0 +1,117 @@
+name: Pre-Merge Quality Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract Task ID
+        id: extract_task
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          if [[ $BRANCH_NAME =~ ^claude/([A-Z]+-([0-9]+|[0-9]{8}-[0-9]{3}))-[0-9]{8}- ]]; then
+            echo "task_id=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+          else
+            echo "task_id=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for Hotfix Bypass
+        id: check_hotfix
+        run: |
+          if [[ "${{ github.event.pull_request.title }}" == *"[HOTFIX]"* ]]; then
+            echo "is_hotfix=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_hotfix=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Test Status
+        id: check_status
+        run: |
+          TASK_ID="${{ steps.extract_task.outputs.task_id }}"
+          if [ -z "$TASK_ID" ]; then
+            echo "status=no_task_id" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          ROADMAP_FILE=""
+          if grep -q "${TASK_ID}" docs/roadmaps/MASTER_ROADMAP.md; then
+            ROADMAP_FILE="docs/roadmaps/MASTER_ROADMAP.md"
+          elif grep -q "${TASK_ID}" docs/roadmaps/TESTING_ROADMAP.md; then
+            echo "status=testing_task" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "status=not_found" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          TASK_LINE=$(grep "${TASK_ID}" "$ROADMAP_FILE")
+          if echo "$TASK_LINE" | grep -q "Test Status: ✅ Fully Tested"; then
+            echo "status=fully_tested" >> $GITHUB_OUTPUT
+          elif echo "$TASK_LINE" | grep -q "Test Status: ⚪ Untested"; then
+            echo "status=untested" >> $GITHUB_OUTPUT
+          else
+            echo "status=no_status_field" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post Status Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {
+              is_hotfix
+            } = ${{ steps.check_hotfix.outputs }};
+            const {
+              status
+            } = ${{ steps.check_status.outputs }};
+            const {
+              task_id
+            } = ${{ steps.extract_task.outputs }};
+
+            let conclusion = "success";
+            let summary = "";
+
+            if (is_hotfix === 'true') {
+              summary = "✅ **Hotfix Bypass:** Quality gate checks are bypassed.";
+            } else if (status === 'fully_tested' || status === 'testing_task') {
+              summary = "✅ **PASS:** Feature is fully tested or is a testing task.";
+            } else {
+              conclusion = "failure";
+              if (status === 'untested') {
+                summary = "❌ **FAIL:** Feature is untested. Merge blocked.";
+              } else if (status === 'no_task_id') {
+                summary = "❌ **FAIL:** Could not extract Task ID from branch name. Merge blocked.";
+              } else if (status === 'not_found') {
+                summary = `❌ **FAIL:** Task ${task_id} not found in any roadmap. Merge blocked.`;
+              } else {
+                summary = `❌ **FAIL:** Test status is not '✅ Fully Tested'. Merge blocked.`;
+              }
+            }
+
+            const body = `## Pre-Merge Quality Gate\n\n${summary}`;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: body
+            });
+
+            if (conclusion === 'failure') {
+              core.setFailed(summary);
+            }
