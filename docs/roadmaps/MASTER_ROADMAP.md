@@ -130,6 +130,27 @@
     2. Permission cache can hide permission changes - always clear cache
     3. Multiple root causes can appear similar - systematic debugging required
 
+- [ ] **BUG-002: Duplicate Navigation Bar on Dashboard** (Created: 2025-11-21) 🔴 CRITICAL
+  - Task ID: BUG-002
+  - Priority: P0 (CRITICAL - UI BLOCKER)
+  - Session: Current session (Nov 21)
+  - **Problem:** Incorrect duplicate navigation bar appearing in the middle of the dashboard page
+  - **Symptoms:**
+    - Second navigation menu visible in dashboard content area
+    - Shows duplicate menu items (Dashboard, Todo Lists, Calendar, Orders, etc.)
+    - May be interfering with sidebar navigation functionality
+    - Could be causing login/logout sidebar link to not display
+  - **Impact:**
+    - Confusing user experience
+    - Potentially blocking other navigation features
+    - May be related to FEATURE-001 (login/logout link) not being visible
+  - **Investigation Needed:**
+    - Identify source component rendering duplicate nav
+    - Check if it's in Dashboard.tsx or DashboardLayout.tsx
+    - Determine if it's a leftover from refactoring
+  - **Status:** 🔍 INVESTIGATING
+  - **Estimate:** 1-2 hours
+
 ### 🎉 NEW FEATURES (Nov 20, 2025)
 
 - [x] **Login/Logout Sidebar Link** (Completed: 2025-11-20) 🟢 ENHANCEMENT
