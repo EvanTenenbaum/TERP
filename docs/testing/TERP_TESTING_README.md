@@ -18,16 +18,23 @@ This is the master index for all TERP testing documentation. Use this as your st
 
 3. **[AI Agent Integration Guide](TERP_AI_AGENT_INTEGRATION_GUIDE.md)** - Mandatory workflow for all AI agents working on TERP
 
+### For Manual QA Testing
+
+4. **[Live QA Prompt](../agent_prompts/live_qa/live_qa_prompt.md)** - Comprehensive manual QA protocol for production testing
+   - **Command:** Say "live qa" to initiate
+   - **Process:** 7-layer systematic testing (smoke, functional, UI/UX, data, performance, security, regression)
+   - **Output:** Detailed QA report with all findings logged in QA_TASKS_BACKLOG.md
+
 ### For Strategic Planning
 
-4. **[Testing Master Plan](TERP_TESTING_MASTER_PLAN.md)** - Comprehensive 8-10 week testing strategy
-5. **[Testing Roadmap](TERP_TESTING_ROADMAP.md)** - Week-by-week implementation guide
-6. **[Testing Best Practices](TERP_TESTING_BEST_PRACTICES.md)** - Practical patterns and anti-patterns
-7. **[Product-Led Testing Strategy](TERP_PRODUCT_LED_TESTING_STRATEGY.md)** - Product-focused testing approach
+5. **[Testing Master Plan](TERP_TESTING_MASTER_PLAN.md)** - Comprehensive 8-10 week testing strategy
+6. **[Testing Roadmap](TERP_TESTING_ROADMAP.md)** - Week-by-week implementation guide
+7. **[Testing Best Practices](TERP_TESTING_BEST_PRACTICES.md)** - Practical patterns and anti-patterns
+8. **[Product-Led Testing Strategy](TERP_PRODUCT_LED_TESTING_STRATEGY.md)** - Product-focused testing approach
 
 ### For Troubleshooting
 
-8. **[Infrastructure Status Report](TESTING_INFRASTRUCTURE_STATUS.md)** - Current status, known issues, and fixes applied
+9. **[Infrastructure Status Report](TESTING_INFRASTRUCTURE_STATUS.md)** - Current status, known issues, and fixes applied
 
 ---
 

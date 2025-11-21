@@ -30,6 +30,7 @@
     "seed:live": "tsx scripts/seed-live-database.ts",
     "seed:realistic": "tsx scripts/seed-realistic-main.ts full",
     "prepare": "husky install || true",
+    "start-task": "bash scripts/start-task.sh",
     "reseed:prod": "tsx scripts/reseed-production-safe.ts",
     "roadmap": "tsx scripts/roadmap.ts",
     "roadmap:validate": "tsx scripts/roadmap.ts validate",

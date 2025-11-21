@@ -1,8 +1,21 @@
-# QA-Identified Tasks Backlog
+# QA Tasks Backlog
 
-**Source:** Comprehensive QA Report (November 14, 2025)  
+**Source:** Comprehensive QA Reports (Latest: November 14, 2025)  
 **Total Issues:** 50+  
 **Priority Distribution:** 4 P0, 7 P1, 10 P2, 5 P3
+
+## 🔬 How This Backlog is Populated
+
+This backlog is automatically updated when QA agents perform **"live qa"** testing sessions. Each QA session:
+
+1. Tests the live production site systematically across 7 layers
+2. Identifies and documents all bugs, UI/UX issues, and performance problems
+3. Creates new tasks in this backlog with unique QA-XXX IDs
+4. Provides detailed reproduction steps, screenshots, and impact analysis
+
+**To initiate a QA session:** Say "live qa" to trigger the comprehensive testing protocol.
+
+**QA Template Location:** `docs/agent_prompts/live_qa/live_qa_prompt.md`
 
 ---
 
