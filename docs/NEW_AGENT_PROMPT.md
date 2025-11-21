@@ -1,129 +1,134 @@
-# 🚨 MANDATORY PROMPT FOR ALL TERP AGENTS (v4.0)
+# Agent Prompt v5.0 (Ironclad Edition)
 
-**Objective:** To ensure every agent strictly follows the TERP workflow system for every task, including integrated testing protocols.
-
----
-
-## 📋 PHASE 1: PRE-FLIGHT CHECK (MANDATORY)
-
-**Before you start, you MUST complete this checklist.**
-
-1.  **Repo & Workflow Check:**
-    - `[ ]` I am inside the TERP repository.
-    - `[ ]` I have read `docs/QUICK_REFERENCE.md`.
-
-2.  **Task Identification:**
-    - **Option A: User provided a specific task ID**
-      - `[ ]` I have reviewed the roadmap and identified the task.
-      - `[ ]` I will use: `pnpm start-task "TASK_ID"`
-    
-    - **Option B: User gave an ad-hoc instruction**
-      - `[ ]` The user said something like "Fix X" or "Add Y" without a task ID.
-      - `[ ]` I will use: `pnpm start-task --adhoc "User's instruction"`
-      - `[ ]` I will optionally add `--category bug|feature|performance|refactor|test|docs`
-
-3.  **Conflict Check:**
-    - `[ ]` I have read `docs/ACTIVE_SESSIONS.md` and verified my task does not conflict with active sessions.
-
-4.  **Task Declaration:**
-    - `[ ]` I have declared my task: "I will now work on [TASK_ID]: [Task Name]"
-
-**You may not proceed until all checklist items are complete.**
+**Objective:** To ensure all development work is tracked, tested, and follows established protocols.
 
 ---
 
-## 🚀 PHASE 2: SESSION STARTUP & AUTOMATION
+## 🚨 CRITICAL: YOU MUST FOLLOW THIS WORKFLOW 🚨
 
-**Verify the following automated actions complete successfully.**
+This system uses **technical enforcement**, not just instructions. If you do not follow this workflow, your commits and pull requests will be **BLOCKED**.
 
-1.  **Session & Branch Creation:**
-    - `[ ]` Session file created in `docs/sessions/active/`.
-    - `[ ]` New Git branch created and checked out.
+### The Golden Rule: Always Start with `pnpm start-task`
 
-2.  **Roadmap Updates:**
-    - `[ ]` `MASTER_ROADMAP.md` or `TESTING_ROADMAP.md` updated with your session ID.
-    - `[ ]` `ACTIVE_SESSIONS.md` updated with your new session.
-    - `[ ]` All changes have been committed and pushed to GitHub.
-
-**Report any failures immediately.**
+This is the **only** way to begin work. Do not use `git checkout -b` manually.
 
 ---
 
-## 💻 PHASE 3: DEVELOPMENT & TESTING
+## Workflow
 
-**Follow these protocols strictly.**
+### Step 1: Analyze User Request
 
-### If Your Task is FEATURE DEVELOPMENT (from MASTER_ROADMAP):
+- **Is it a planned task with an ID?** (e.g., "Work on FEAT-001")
+- **Is it an ad-hoc task without an ID?** (e.g., "Fix the login bug")
 
-1.  **Write Code (TDD):**
-    - Follow Test-Driven Development: Write a failing test, then write code to make it pass.
+### Step 2: Start the Task
 
-2.  **Create Test Task:**
-    - **MANDATORY:** After writing the feature code, you MUST create a corresponding test task.
-    - **Action:** Add a new task to `docs/roadmaps/TESTING_ROADMAP.md`.
-    - **Link:** Link the test task to your feature ID.
-    - **Status:** Set test task status to `Not Started`.
+#### Option A: Planned Task
 
-3.  **Update Feature Test Status:**
-    - **Action:** In `MASTER_ROADMAP.md`, update your feature's `Test Status` to `⚪ Untested`.
+```bash
+# Example: User says "Work on FEAT-001"
+pnpm start-task "FEAT-001"
+```
 
-4.  **Commit & Deploy for Review:**
-    - Commit all changes (code, tests, and roadmap updates) to your feature branch.
-    - Push to GitHub to trigger deployment for review.
+#### Option B: Ad-Hoc Task
 
-### If Your Task is TEST DEVELOPMENT (from TESTING_ROADMAP):
+```bash
+# Example: User says "Fix the login bug"
+pnpm start-task --adhoc "Fix login bug" --category bug
+```
 
-1.  **Write Tests:**
-    - Write the tests as defined in the test task scope.
+**What this script does:**
+- Auto-generates a task ID (for ad-hoc tasks)
+- Adds the task to the roadmap
+- Creates a Git branch with the correct name
+- Creates a session file
+- Commits and pushes everything to GitHub
 
-2.  **Run Tests & Check Coverage:**
-    - Run `pnpm test` and verify all tests pass.
-    - Check code coverage. If below 80%, add more tests.
+### Step 3: Write Code
 
-3.  **Update Test & Feature Status:**
-    - **Action:** In `TESTING_ROADMAP.md`, update your test task's status to `✅ Tested`.
-    - **Action:** In `MASTER_ROADMAP.md`, find the linked feature and update its `Test Status` to `✅ Fully Tested`.
+- Implement the feature or fix the bug.
+- Write tests for your code.
 
-4.  **Update Coverage Map:**
-    - **Action:** Run the coverage update script to refresh `docs/roadmaps/TEST_COVERAGE_MAP.md`.
+### Step 4: Commit Your Work
 
-5.  **Commit & Push:**
-    - Commit all roadmap and coverage map updates.
+```bash
+git add .
+git commit -m "feat: add login functionality"
+```
 
-### If Your Task is LIVE QA (User Command: "live qa"):
+**What happens:** The `pre-commit` hook runs automatically and checks:
+- Branch name format
+- For new `any` types
+- For large files
+- For hardcoded credentials
 
-1.  **Load QA Prompt:** Read `docs/agent_prompts/live_qa/live_qa_prompt.md`.
-2.  **Follow QA Workflow:** Execute the 4-phase QA process defined in the template.
-3.  **Deliver Report:** Provide a comprehensive QA report and update `QA_TASKS_BACKLOG.md`.
+If any check fails, your commit will be **BLOCKED**. Read the error message to fix it.
+
+### Step 5: Push Your Work
+
+```bash
+git push
+```
+
+**What happens:** The `pre-push` hook runs automatically and checks:
+- You are not pushing to `main`
+- Your branch name is valid
+
+If any check fails, your push will be **BLOCKED**.
+
+### Step 6: Create a Pull Request
+
+- Go to GitHub and create a pull request to merge your branch into `main`.
+
+**What happens:** The `pre-merge.yml` GitHub Action runs automatically and checks:
+- The `Test Status` of your task in the roadmap
+
+If the status is not `✅ Fully Tested`, your merge will be **BLOCKED**.
 
 ---
 
-## ✅ PHASE 4: COMPLETION & MERGE
+## Troubleshooting
 
-**Before merging, you MUST complete this final checklist.**
+### "Commit blocked: Invalid branch name" (pre-commit)
+- **Cause:** You created your branch manually.
+- **Fix:** Use `pnpm start-task` to create a proper branch.
 
-1.  **User Approval:**
-    - `[ ]` User has approved the changes on the preview URL.
+### "Push blocked: Direct push to main is not allowed" (pre-push)
+- **Cause:** You are trying to push directly to `main`.
+- **Fix:** Create a feature branch with `pnpm start-task` and use a PR.
 
-2.  **Final Checks:**
-    - `[ ]` All tests pass (`pnpm test`).
-    - `[ ]` No linting or type errors (`pnpm check`).
+### "Merge blocked: Feature is untested" (GitHub Action)
+- **Cause:** The `Test Status` for your task in `MASTER_ROADMAP.md` is not `✅ Fully Tested`.
+- **Fix:** 
+  1. Complete all required tests.
+  2. Update the `Test Status` in `MASTER_ROADMAP.md` to `✅ Fully Tested`.
+  3. Commit and push the change.
 
-3.  **Test Status Check (Pre-Merge Gate):**
-    - `[ ]` I have verified the feature's `Test Status` in `MASTER_ROADMAP.md`.
-    - **If `⚪ Untested` or `🟡 Partially Tested`:** WARN the user before merging.
-    - **If `🔴 Tests Failing`:** BLOCK the merge.
-    - **If `✅ Fully Tested`:** Proceed with merge.
+### "Merge blocked: Could not extract Task ID" (GitHub Action)
+- **Cause:** Your branch name is incorrect.
+- **Fix:** Re-create your branch using `pnpm start-task`.
 
-4.  **Merge to Main:**
-    - `[ ]` I have merged my branch into `main`.
+---
 
-5.  **Final Roadmap & Session Updates:**
-    - `[ ]` `MASTER_ROADMAP.md` or `TESTING_ROADMAP.md` task marked as `[x] Completed`.
-    - `[ ]` Session file moved to `docs/sessions/completed/`.
-    - `[ ]` All changes committed and pushed to GitHub.
+## Ad-Hoc Task Categories
 
-6.  **Final Report:**
-    - `[ ]` I have provided a final summary report to the user.
+When using `pnpm start-task --adhoc`, use the `--category` flag to classify your work:
 
-**Your task is not complete until all items in this checklist are done.**
+| Category      | Use Case                     |
+|---------------|------------------------------|
+| `bug`         | Fixing a bug                 |
+| `feature`     | Adding new functionality     |
+| `performance` | Optimizing code              |
+| `refactor`    | Improving code structure     |
+| `docs`        | Writing documentation        |
+| `test`        | Adding or fixing tests       |
+| `chore`       | Maintenance tasks (e.g., CI) |
+
+---
+
+## Conclusion
+
+This system is designed to be **self-enforcing**. The easiest way to work is to follow the protocol. The system will guide you through the process.
+
+**Your primary command is `pnpm start-task`. Use it for everything.**
+e it for everything.**
