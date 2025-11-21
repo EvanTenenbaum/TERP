@@ -151,6 +151,51 @@
   - **Status:** 🔍 INVESTIGATING
   - **Estimate:** 1-2 hours
 
+- [ ] **DATA-002: Augment Seeded Data for Realistic Relationships** (Created: 2025-11-21) 🟡 HIGH PRIORITY
+  - Task ID: DATA-002-AUGMENT
+  - Priority: P1 (HIGH - DATA QUALITY)
+  - Session: Current session (Nov 21)
+  - **Problem:** Seeded data exists in all 107 tables but lacks realistic relationships and operational coherence
+  - **Current State:**
+    - ✅ All 107 tables have data (100% coverage)
+    - ✅ Basic data structure is correct
+    - ❌ Data may not be properly linked across tables
+    - ❌ Foreign key relationships may be incomplete
+    - ❌ Business logic relationships may be missing
+  - **Examples of Issues:**
+    - Orders may not have proper order_items
+    - Inventory movements may not link to actual inventory records
+    - Financial transactions may not have corresponding ledger entries
+    - Client relationships may not reflect realistic business patterns
+  - **Objectives:**
+    1. Audit all foreign key relationships for completeness
+    2. Ensure orders have realistic line items with actual products
+    3. Link inventory movements to real inventory records
+    4. Create realistic financial transaction chains (orders → invoices → payments → ledger)
+    5. Establish realistic client-product purchase patterns
+    6. Add temporal coherence (dates make sense chronologically)
+    7. Validate referential integrity across all tables
+  - **Approach:**
+    1. Run referential integrity checks on all tables
+    2. Identify orphaned records (records with invalid foreign keys)
+    3. Create missing relationship records
+    4. Update existing records to establish proper links
+    5. Add realistic business logic (e.g., order totals match line items)
+    6. Validate data coherence with automated tests
+  - **Deliverables:**
+    - Referential integrity audit report
+    - Data augmentation scripts for each major domain
+    - Updated seed data with proper relationships
+    - Validation test suite for data quality
+    - Documentation of data model relationships
+  - **Impact:**
+    - Enables realistic end-to-end testing
+    - Improves demo quality for stakeholders
+    - Reveals hidden bugs in business logic
+    - Makes development more efficient with realistic data
+  - **Estimate:** 6-8 hours
+  - **Status:** 📋 PLANNED
+
 ### 🎉 NEW FEATURES (Nov 20, 2025)
 
 - [x] **Login/Logout Sidebar Link** (Completed: 2025-11-20) 🟢 ENHANCEMENT
