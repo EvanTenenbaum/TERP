@@ -50,6 +50,7 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useState } from "react";
+import { VersionChecker } from "@/components/VersionChecker";
 
 function Router() {
   return (
@@ -168,6 +169,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
+          <VersionChecker />
           <Router />
           <QuickAddTaskModal
             isOpen={showQuickAddTask}
