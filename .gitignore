@@ -121,3 +121,4 @@ deployment_details.json
 !.do/app.spec.yaml
 !.do/app.yaml
 !.do/*.template.yaml
+docs/WORKFLOW_SECRET_VALUES.md
