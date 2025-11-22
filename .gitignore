@@ -110,3 +110,11 @@ temp/
 *.sqlite
 *.sqlite3
 docs/DEPLOYMENT_CREDENTIALS.md
+
+# Deployment configuration files with secrets
+current_spec.json
+current_spec.yaml
+new_spec.yaml
+deployment_details.json
+*.spec.json
+*.spec.yaml
