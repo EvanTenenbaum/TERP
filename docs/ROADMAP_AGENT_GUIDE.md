@@ -288,6 +288,31 @@ pnpm roadmap validate --incremental
 pnpm validate:sessions
 ```
 
+#### AI-Powered Code Review
+
+**NEW:** Before every commit, the system automatically runs three AI-powered code reviews:
+
+1. **Senior Engineer Review** - Code quality, bugs, edge cases
+2. **Security/Red Team Review** - Security vulnerabilities, race conditions
+3. **Edge Case Stress Test** - Edge cases, boundary conditions
+
+**Self-Healing:** The system automatically applies fixes when possible and stages them for commit.
+
+**How It Works:**
+- Runs automatically on every `git commit`
+- Reviews staged TypeScript files (max 5 files per commit for efficiency)
+- Auto-applies fixes and stages them
+- Blocks commit only for critical security issues
+- Reports non-critical issues but doesn't block
+
+**Manual Review:**
+```bash
+# Run review manually before committing:
+pnpm pre-commit:review
+```
+
+**See:** `docs/PRE_COMMIT_AI_REVIEW_SYSTEM.md` for complete documentation.
+
 ### What Gets Validated
 
 1. **Task Structure:**

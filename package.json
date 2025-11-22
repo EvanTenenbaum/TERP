@@ -39,6 +39,7 @@
     "roadmap:list": "tsx scripts/roadmap.ts list",
     "validate:sessions": "tsx scripts/validate-session-cleanup.ts",
     "swarm": "tsx scripts/manager.ts",
+    "pre-commit:review": "tsx scripts/pre-commit-review.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
