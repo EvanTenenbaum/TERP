@@ -1,28 +1,34 @@
-# Swarm Auto-Start & Status Monitoring Guide
+# Swarm Manual Start & Status Monitoring Guide
 
-**Purpose:** Automatic swarm agent execution and status monitoring  
+**Purpose:** Manual swarm agent execution with "work until" capability and status monitoring  
 **Last Updated:** November 21, 2025
 
 ---
 
-## 🚀 Auto-Start Configuration
+## 🚀 Manual Start Configuration
 
-### GitHub Actions (Recommended)
+### GitHub Actions Workflow
 
-The swarm will automatically start every 2 hours via GitHub Actions workflow.
+The swarm can be started manually via GitHub Actions workflow with different execution modes.
 
-**Workflow:** `.github/workflows/swarm-auto-start.yml`
+**Workflow:** `.github/workflows/swarm-auto-start.yml` (renamed to "Swarm Manual Start")
 
-**Schedule:**
-- Runs every 2 hours (cron: `0 */2 * * *`)
-- Also triggers on:
-  - Manual workflow dispatch
-  - Roadmap changes (when `MASTER_ROADMAP.md` is updated)
-  - New prompts added
+**Execution Modes:**
+1. **Auto** - Executes recommended high-priority tasks
+2. **Batch** - Executes specific comma-separated task IDs
+3. **Until Phase** - Works through all tasks until a specific phase is complete
+4. **Until Task** - Works through all tasks until a specific task is complete
+
+**How to trigger:**
+1. Go to: https://github.com/EvanTenenbaum/TERP/actions
+2. Select "Swarm Manual Start" workflow
+3. Click "Run workflow"
+4. Choose execution mode and provide required inputs
+5. Click "Run workflow" button
 
 **What it does:**
-1. Checks swarm status for recommended tasks
-2. Auto-executes high-priority pending tasks
+1. Checks swarm status for recommended tasks (if auto mode)
+2. Executes tasks based on selected mode
 3. Creates status report
 4. Updates GitHub Actions summary
 
