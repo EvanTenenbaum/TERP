@@ -1,0 +1,203 @@
+---
+description: TERP Swarm Manager V2 - Tool Protocol for Agent Orchestration
+globs: 
+alwaysApply: true
+---
+
+# TERP Swarm Manager V2 - Agent Tool Protocol
+
+**Purpose:** This rule defines how agents should interact with the swarm manager script (`scripts/manager.ts`) for parallel agent execution.
+
+---
+
+## 🛠️ Tool: Swarm Manager Script
+
+### Location
+- **Script:** `scripts/manager.ts`
+- **Command:** `npm run swarm` or `pnpm swarm`
+- **Alternative:** `npx tsx scripts/manager.ts`
+
+---
+
+## 📋 Available Commands
+
+### 1. Status Command
+
+**Usage:**
+```bash
+npm run swarm status
+```
+
+**Output Format:**
+Returns JSON with the following structure:
+```json
+{
+  "phase": "Current Sprint Phase Name",
+  "pending": ["ST-001", "BUG-002", "FEATURE-003"],
+  "recommended": ["ST-001", "BUG-002"]
+}
+```
+
+**Agent Protocol:**
+- **Error Handling:** If the script fails with "Module not found" or "Cannot find module", the Agent MUST:
+  1. Run `npm install` (or `pnpm install` if using pnpm)
+  2. Wait for installation to complete
+  3. Retry the command
+  
+- **Output Parsing:** 
+  - The script outputs JSON to stdout
+  - Parse the JSON and convert into a friendly message
+  - Example: "✅ Found 12 pending tasks. Recommended: ST-001, BUG-002, FEATURE-003"
+
+---
+
+### 2. Execute Command
+
+**Usage:**
+```bash
+# Execute specific tasks
+npm run swarm execute --batch=ST-001,BUG-002
+
+# Auto-select recommended tasks
+npm run swarm execute --auto
+```
+
+**Output Format:**
+The script outputs execution results in a human-readable format:
+```
+📊 Execution Results:
+==================================================
+
+ST-001: SUCCESS
+  Message: [truncated AI response]
+  Branch: agent/ST-001
+
+BUG-002: TIMEOUT
+  Message: Agent execution exceeded 90 second timeout
+```
+
+**Agent Protocol:**
+- **Error Handling:** 
+  - If "Module not found" error occurs, run `npm install` and retry
+  - If "GOOGLE_GEMINI_API_KEY not set", inform user to set environment variable
+  - If git lock errors occur, the script will auto-retry (up to 3 times)
+  
+- **Output Parsing:**
+  - Parse the execution results
+  - Convert to a friendly Slack-style message
+  - Example: "✅ Started 3 agents. Results: 2 successful, 1 timeout"
+  
+- **Branch Information:**
+  - Each successful execution creates a branch: `agent/[task-id]`
+  - The branch is automatically pushed to origin
+  - Agent should report branch names for user reference
+
+---
+
+## 🔧 Self-Bootstrapping Behavior
+
+The script automatically:
+1. Checks if `node_modules` exists
+2. If missing, installs required dependencies:
+   - `commander`
+   - `simple-git`
+   - `dotenv`
+   - `@google/generative-ai`
+   - `ora`
+   - `chalk`
+3. Proceeds with execution after dependencies are available
+
+**Agent Action:** No manual intervention needed. The script handles this automatically.
+
+---
+
+## 🔒 Git Safety Features
+
+The script includes a "Safe Git" wrapper that:
+- Retries git operations up to 3 times on lock errors
+- Automatically removes stale `index.lock` files
+- Handles force push scenarios gracefully
+
+**Agent Action:** No manual intervention needed. The script handles git errors automatically.
+
+---
+
+## ⚡ Timeout Safety
+
+Each AI agent call is wrapped in a 90-second timeout:
+- If timeout occurs, the task is marked as "TIMEOUT"
+- Other tasks continue execution (Promise.allSettled pattern)
+- One failure doesn't crash the entire batch
+
+**Agent Action:** Report timeout results to user, suggest retrying the specific task.
+
+---
+
+## 📝 Example Agent Workflow
+
+```typescript
+// 1. Check status
+const statusOutput = execSync('npm run swarm status', { encoding: 'utf-8' });
+const status = JSON.parse(statusOutput);
+console.log(`Found ${status.pending.length} pending tasks`);
+
+// 2. Execute recommended tasks
+execSync('npm run swarm execute --auto', { stdio: 'inherit' });
+
+// 3. Parse and report results
+// (Results are printed to console in human-readable format)
+```
+
+---
+
+## 🚨 Error Recovery Protocol
+
+If the script fails:
+
+1. **Module Not Found:**
+   ```bash
+   npm install
+   # Retry command
+   ```
+
+2. **API Key Missing:**
+   - Check for `GOOGLE_GEMINI_API_KEY` or `GEMINI_API_KEY` in environment
+   - Inform user to set the variable
+
+3. **Git Lock Errors:**
+   - Script auto-retries (no action needed)
+   - If persistent, manually remove `.git/index.lock` and retry
+
+4. **Roadmap File Not Found:**
+   - Verify `docs/roadmaps/MASTER_ROADMAP.md` exists
+   - Check current working directory
+
+---
+
+## 📊 Integration with Roadmap System
+
+The swarm manager integrates with:
+- `docs/roadmaps/MASTER_ROADMAP.md` - Reads task definitions
+- `docs/ROADMAP_AGENT_GUIDE.md` - Uses for agent instructions
+- Git workflow - Creates branches, commits, pushes
+
+**Agent Responsibility:** Ensure roadmap is up-to-date before executing agents.
+
+---
+
+## ✅ Validation
+
+Before using the swarm manager, agents should:
+1. Run `pnpm roadmap:validate` to ensure roadmap is valid
+2. Check `pnpm roadmap:capacity` to verify safe agent count
+3. Use `pnpm roadmap:next-batch` to get recommended tasks
+
+---
+
+## 🔗 Related Commands
+
+- `pnpm roadmap:validate` - Validate roadmap structure
+- `pnpm roadmap:capacity` - Check safe agent capacity
+- `pnpm roadmap:next-batch` - Get next batch of tasks
+- `pnpm swarm status` - Get current status
+- `pnpm swarm execute --auto` - Execute recommended tasks
