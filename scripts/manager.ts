@@ -250,6 +250,45 @@ async function safeGit<T>(
 }
 
 // ============================================================================
+// DEPLOYMENT VERIFICATION (with Cloud Agent support)
+// ============================================================================
+
+/**
+ * Check if doctl CLI tool is available
+ */
+function hasDoctl(): boolean {
+  try {
+    execSync('command -v doctl', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Verify deployment status using doctl (if available)
+ * Gracefully degrades in Cloud Agent environments where doctl is not available
+ */
+async function verifyDeployment(): Promise<void> {
+  if (!hasDoctl()) {
+    console.log(chalk.yellow('⚠️  Running in Cloud Mode: doctl not found. Deployment triggered via Git, but cannot verify success. Check Slack for DO notifications.'));
+    return;
+  }
+  
+  // If doctl is available, run deployment verification
+  // This would typically check deployment status using doctl commands
+  // For now, we'll just log that verification would happen here
+  // In a full implementation, this would call watch-deploy.sh or similar
+  try {
+    // Example: execSync('./scripts/watch-deploy.sh', { stdio: 'inherit' });
+    console.log(chalk.blue('🔍 Deployment verification would run here (doctl available)'));
+  } catch (error) {
+    console.log(chalk.yellow(`⚠️  Deployment verification failed: ${error instanceof Error ? error.message : String(error)}`));
+    // Don't crash - just log the warning
+  }
+}
+
+// ============================================================================
 // GIT WORKFLOW
 // ============================================================================
 
@@ -304,6 +343,9 @@ async function executeGitWorkflow(taskId: string, files: string[]): Promise<stri
       }
     }
   });
+  
+  // Attempt deployment verification (gracefully degrades if doctl unavailable)
+  await verifyDeployment();
   
   return branchName;
 }
