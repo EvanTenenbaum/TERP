@@ -29,6 +29,12 @@ export const inventoryRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       try {
+        // Check if storage is configured
+        const { isStorageConfigured } = await import("../storage");
+        if (!isStorageConfigured()) {
+          throw ErrorCatalog.STORAGE_NOT_CONFIGURED;
+        }
+
         // Decode base64 file
         const fileBuffer = Buffer.from(input.fileData, "base64");
         
