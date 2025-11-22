@@ -2395,6 +2395,7 @@ Seed price alert configurations for clients monitoring specific batches.
 **Impact:**  
 Completes pricing feature set, enables price monitoring.
 
+<<<<<<< ours
 - [ ] **BUG-005: Command Palette (Cmd+K) Not Responding** (Created: 2025-11-22) 🟡 MEDIUM
   - Task ID: BUG-005
   - Priority: P2 (MEDIUM - UX ENHANCEMENT)
@@ -2409,123 +2410,76 @@ Completes pricing feature set, enables price monitoring.
     2. Check if keyboard event listeners are properly registered
     3. Verify if shortcut conflicts with browser defaults
     4. Test on different browsers and operating systems
-  - **Estimate:** 2-3 hours
-  - **Status:** 📋 IDENTIFIED
+### BUG-005: Command Palette (Cmd+K) Not Responding
 
-- [ ] **BUG-006: Debug Dashboard Visible in Production (Orders Page)** (Created: 2025-11-22) 🟢 LOW
-  - Task ID: BUG-006
-  - Priority: P3 (LOW - COSMETIC)
-  - Session: E2E Testing Session (Nov 22)
-  - Test Protocol: TS-5.1 (Orders Management)
-  - **Problem:** Orders page shows debug information in red box at top of page
-  - **Location:** /orders
-  - **Debug Content Displayed:**
-    - Confirmed Query - isDraft Value
-    - Confirmed Query - Status
-    - Confirmed Query - Is Loading
-    - Confirmed Query - Data
-    - Draft Query information
-    - Test endpoint response
-  - **Expected Behavior:** Debug dashboard should not be visible in production environment
-  - **Actual Behavior:** Red debug box prominently displayed above order list
-  - **Impact:** Unprofessional appearance, exposes internal implementation details
-  - **Solution:** Add environment check to hide debug dashboard in production
-  - **Files to Check:**
-    - client/src/pages/OrdersPage.tsx or similar
-    - Look for debug/development mode conditionals
-  - **Estimate:** 30 minutes
-  - **Status:** 📋 IDENTIFIED
+**Status:** Ready
+**Priority:** MEDIUM
+**Estimate:** 2-3h
+**Module:** Navigation
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-005.md`](../prompts/BUG-005.md)
 
-- [ ] **BUG-007: Analytics Data Not Populated** (Created: 2025-11-22) 🟡 MEDIUM
-  - Task ID: BUG-007
-  - Priority: P2 (MEDIUM - FEATURE INCOMPLETE)
-  - Session: E2E Testing Session (Nov 22)
-  - Test Protocol: TS-2.2 (Analytics Reporting)
-  - **Problem:** Analytics page shows all metrics as $0.00 or 0 with "Analytics data coming soon" message
-  - **Location:** /analytics
-  - **Metrics Affected:**
-    - Total Revenue: $0.00 (should show actual revenue)
-    - Total Orders: 0 (should show 26 orders)
-    - Active Clients: 0 (should show 68 clients)
-    - Inventory Items: 0 (should show 6731 items)
-  - **Expected Behavior:** Analytics should show actual business data from database
-  - **Actual Behavior:** All metrics show placeholder values with "Analytics data coming soon"
-  - **Note:** Message states "The Analytics module is now accessible. Advanced analytics features including strain preferences, sales trends, and client insights are available through the backend API."
-  - **Impact:** Analytics module is non-functional, users cannot access business intelligence features
-  - **Investigation Needed:**
-    1. Verify if backend API endpoints are implemented
-    2. Check if frontend is calling the correct endpoints
-    3. Verify data aggregation queries are working
-    4. Test if data is being returned but not displayed
-  - **Estimate:** 4-6 hours
-  - **Status:** 📋 IDENTIFIED
+**Objectives:**
+- Fix keyboard shortcut event listener
+- Ensure palette opens reliably
 
+---
 
-- [ ] **BUG-008: Purchase Orders Page Crashes with Application Error** (Created: 2025-11-22) 🔴 CRITICAL
-  - Task ID: BUG-008
-  - Priority: P0 (CRITICAL - APPLICATION CRASH)
-  - Session: E2E Testing Session (Nov 22)
-  - Test Protocol: TS-7.2 (Purchase Orders)
-  - **Problem:** Navigating to /purchase-orders causes unhandled application error, complete feature failure
-  - **Location:** /purchase-orders
-  - **Error ID:** f7826da2e91648ebb82ddbbec10f2bc6
-  - **Expected Behavior:** Purchase order management interface should display with list of purchase orders
-  - **Actual Behavior:** White screen with error message "An unexpected error occurred. This error has been automatically reported to our team." with Try Again and Reload Page buttons
-  - **Impact:** Purchase order functionality is completely broken - users cannot:
-    - View existing purchase orders
-    - Create new purchase orders
-    - Manage vendor orders
-    - Track incoming inventory
-    - This is a critical supply chain management feature
-  - **Investigation Completed:** ✅
-    - Routing: ✅ Verified correct (`/purchase-orders` route exists in App.tsx)
-    - Frontend Component: ✅ Verified correct (`PurchaseOrdersPage.tsx` properly structured)
-    - Backend Router: ✅ Verified correct (`purchaseOrders` router properly configured)
-    - tRPC Procedures: ✅ All procedures properly defined with error handling
-  - **Root Cause (Most Likely):** Database Schema Issue
-    - Hypothesis 1: `purchaseOrders` table may not exist in production database
-    - Hypothesis 2: Table schema may not match Drizzle schema definition
-    - Hypothesis 3: Database migrations may not have been run
-    - Evidence: Error occurs on page load when `getAll` query executes
-    - Pattern: Similar to vendors (0 records) and locations (0 records) - missing seed data
-  - **Files Investigated:**
-    - ✅ client/src/pages/PurchaseOrdersPage.tsx (Lines 1-542)
-    - ✅ server/routers/purchaseOrders.ts (Lines 1-354)
-    - ✅ client/src/App.tsx (Line 117)
-    - ✅ client/src/components/DashboardLayout.tsx (Line 60)
-  - **Investigation Report:** docs/testing/BUG_INVESTIGATION_REPORT.md
-  - **Recommended Fix:**
-    1. Check if `purchaseOrders` table exists: `SHOW TABLES LIKE 'purchaseOrders';`
-    2. Run database migrations: `pnpm db:push` or `pnpm db:migrate`
-    3. Add error boundary to component for graceful error handling
-    4. Add seed data for purchase orders testing
-  - **Estimate:** 2-4 hours (depends on database access and migration complexity)
-  - **Status:** 🔍 INVESTIGATED - Awaiting Database Verification
+### BUG-006: Debug Dashboard Visible in Production
 
+**Status:** Ready
+**Priority:** LOW
+**Estimate:** 0.5h
+**Module:** Orders
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-006.md`](../prompts/BUG-006.md)
 
-- [x] **BUG-009: Create Order Route Returns 404** (Completed: 2025-11-22) ✅ FIXED
-  - Task ID: BUG-009
-  - Priority: P1 (MEDIUM-HIGH - FEATURE ACCESSIBILITY)
-  - Session: E2E Testing Session (Nov 22)
-  - Test Protocol: TS-5.3 (Unified Order Flow)
-  - **Problem:** Navigating to /create-order returns 404 Page Not Found error
-  - **Location:** /create-order
-  - **Expected Behavior:** Order creation interface should display
-  - **Actual Behavior:** 404 error page with message "Sorry, the page you are looking for doesn't exist. It may have been moved or deleted."
-  - **Impact:** Users cannot create orders via direct route
-    - "Create Order" link in sidebar may be broken
-    - Alternative order creation path may exist but is not discoverable
-    - Affects user workflow and efficiency
-  - **Root Cause Identified:** ✅
-    - Sidebar link in `DashboardLayout.tsx` pointed to `/create-order`
-    - Actual route in `App.tsx` is `/orders/create`
-    - Simple routing mismatch between sidebar and router configuration
-  - **Fix Applied:** ✅
-    - Changed sidebar link from `/create-order` to `/orders/create`
-    - File: `client/src/components/DashboardLayout.tsx` (Line 53)
-    - Commit: c779b2c9 - "Fix BUG-009: Correct Create Order sidebar link"
-  - **Investigation Report:** docs/testing/BUG_INVESTIGATION_REPORT.md
-  - **Actual Time:** 30 minutes (investigation + fix)
-  - **Status:** ✅ FIXED - Awaiting Deployment
-  - **Verification:** Requires deployment to production to verify fix
+**Objectives:**
+- Hide debug info in production environment
 
+---
+
+### BUG-007: Analytics Data Not Populated
+
+**Status:** Ready
+**Priority:** MEDIUM
+**Estimate:** 4-6h
+**Module:** Analytics
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-007.md`](../prompts/BUG-007.md)
+
+**Objectives:**
+- Connect analytics page to real backend data
+
+---
+
+### BUG-008: Purchase Orders Page Crashes
+
+**Status:** ✅ Complete (2025-11-22)
+**Priority:** HIGH
+**Estimate:** 2-4h
+**Module:** Purchase Orders
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-008.md`](../prompts/BUG-008.md)
+**Actual Time:** 1h
+
+**Objectives:**
+- Fix application crash on /purchase-orders
+- Resolution: Added safe date parsing and null checks to PurchaseOrdersPage.tsx.
+- Root Cause: Likely invalid date strings or missing data in production database causing render crash.
+
+---
+
+### BUG-009: Create Order Route Returns 404
+
+**Status:** ✅ Complete (2025-11-22)
+**Priority:** HIGH
+**Estimate:** 1-2h
+**Module:** Orders
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-009.md`](../prompts/BUG-009.md)
+**Actual Time:** 0.5h
+
+**Objectives:**
+- Restore /create-order route
+- Resolution: Fixed sidebar link in `DashboardLayout.tsx` to point to correct route `/orders/create`.
