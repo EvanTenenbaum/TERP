@@ -1,0 +1,115 @@
+name: Swarm Auto-Start
+
+on:
+  schedule:
+    # Run every 2 hours
+    - cron: '0 */2 * * *'
+  workflow_dispatch: # Allow manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/roadmaps/MASTER_ROADMAP.md'
+      - 'docs/prompts/**'
+
+jobs:
+  swarm-execution:
+    name: Auto-Start Swarm Agents
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check swarm status
+        id: status
+        run: |
+          STATUS=$(pnpm swarm status 2>&1 || echo '{"pending":[],"recommended":[]}')
+          echo "status<<EOF" >> $GITHUB_OUTPUT
+          echo "$STATUS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Parse status
+        id: parse
+        run: |
+          STATUS='${{ steps.status.outputs.status }}'
+          if echo "$STATUS" | jq -e '.recommended | length > 0' > /dev/null 2>&1; then
+            RECOMMENDED=$(echo "$STATUS" | jq -r '.recommended[]' | tr '\n' ',' | sed 's/,$//')
+            echo "has_tasks=true" >> $GITHUB_OUTPUT
+            echo "tasks=$RECOMMENDED" >> $GITHUB_OUTPUT
+          else
+            echo "has_tasks=false" >> $GITHUB_OUTPUT
+            echo "tasks=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Execute swarm agents
+        if: steps.parse.outputs.has_tasks == 'true'
+        env:
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+        run: |
+          echo "🚀 Auto-starting swarm with tasks: ${{ steps.parse.outputs.tasks }}"
+          pnpm swarm execute --batch="${{ steps.parse.outputs.tasks }}" || true
+
+      - name: Generate status report
+        id: report
+        run: |
+          cat > swarm-status-report.md << 'EOF'
+          # Swarm Status Report
+          
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Workflow Run:** ${{ github.run_id }}
+          
+          ## Status
+          
+          EOF
+          
+          if [ "${{ steps.parse.outputs.has_tasks }}" == "true" ]; then
+            echo "✅ Swarm executed with tasks: ${{ steps.parse.outputs.tasks }}" >> swarm-status-report.md
+          else
+            echo "ℹ️  No recommended tasks found. All caught up!" >> swarm-status-report.md
+          fi
+          
+          echo "" >> swarm-status-report.md
+          echo "## Active Sessions" >> swarm-status-report.md
+          echo "" >> swarm-status-report.md
+          if [ -f "docs/ACTIVE_SESSIONS.md" ]; then
+            cat docs/ACTIVE_SESSIONS.md >> swarm-status-report.md
+          else
+            echo "No active sessions found." >> swarm-status-report.md
+          fi
+          
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          cat swarm-status-report.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create status summary
+        run: |
+          echo "## 🤖 Swarm Auto-Start Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.parse.outputs.has_tasks }}" == "true" ]; then
+            echo "✅ **Executed tasks:** ${{ steps.parse.outputs.tasks }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️  **No tasks to execute** - All caught up!" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Full Report:** See workflow logs" >> $GITHUB_STEP_SUMMARY
+
