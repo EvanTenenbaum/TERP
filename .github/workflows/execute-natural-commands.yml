@@ -1,0 +1,166 @@
+name: Execute Natural Language Commands
+
+on:
+  push:
+    paths:
+      - '.github/AGENT_COMMANDS.md'
+  workflow_dispatch: # Manual trigger
+  schedule:
+    # Check every 5 minutes for new commands
+    - cron: '*/5 * * * *'
+
+jobs:
+  parse-and-execute:
+    name: Parse and Execute Commands
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Parse natural language commands
+        id: parse
+        run: |
+          PARSED=$(pnpm tsx scripts/parse-natural-commands.ts 2>&1 || echo '{"commands":[]}')
+          echo "parsed<<EOF" >> $GITHUB_OUTPUT
+          echo "$PARSED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Execute commands
+        id: execute
+        env:
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
+        run: |
+          PARSED='${{ steps.parse.outputs.parsed }}'
+          
+          # Check if there are commands
+          COMMAND_COUNT=$(echo "$PARSED" | jq '.commands | length' 2>/dev/null || echo "0")
+          
+          if [ "$COMMAND_COUNT" == "0" ]; then
+            echo "ℹ️  No pending commands found"
+            echo "result=no_commands" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "📋 Found $COMMAND_COUNT command(s) to execute"
+          
+          # Process each command (use array to avoid subshell issues)
+          COMMANDS_JSON=$(echo "$PARSED" | jq -c '.commands[]')
+          
+          while IFS= read -r cmd; do
+            TYPE=$(echo "$cmd" | jq -r '.type')
+            LINE=$(echo "$cmd" | jq -r '.lineNumber')
+            ORIGINAL=$(echo "$cmd" | jq -r '.original')
+            
+            echo ""
+            echo "🚀 Executing: $ORIGINAL"
+            echo "   Type: $TYPE"
+            
+            RESULT=""
+            
+            if [ "$TYPE" == "until-phase" ]; then
+              TARGET=$(echo "$cmd" | jq -r '.target')
+              echo "   Target: $TARGET"
+              if pnpm swarm execute --until-phase="$TARGET" 2>&1; then
+                RESULT="Success"
+              else
+                RESULT="Failed"
+              fi
+              
+            elif [ "$TYPE" == "until-task" ]; then
+              TARGET=$(echo "$cmd" | jq -r '.target')
+              echo "   Target: $TARGET"
+              if pnpm swarm execute --until-task="$TARGET" 2>&1; then
+                RESULT="Success"
+              else
+                RESULT="Failed"
+              fi
+              
+            elif [ "$TYPE" == "batch" ]; then
+              TASKS=$(echo "$cmd" | jq -r '.tasks | join(",")')
+              echo "   Tasks: $TASKS"
+              if pnpm swarm execute --batch="$TASKS" 2>&1; then
+                RESULT="Success"
+              else
+                RESULT="Failed"
+              fi
+              
+            elif [ "$TYPE" == "auto" ]; then
+              echo "   Mode: Auto"
+              if pnpm swarm execute --auto 2>&1; then
+                RESULT="Success"
+              else
+                RESULT="Failed"
+              fi
+              
+            else
+              echo "   ⚠️  Unknown command type: $TYPE"
+              RESULT="Unknown command type"
+            fi
+            
+            # Mark command as complete using Node.js script
+            node -e "
+              const fs = require('fs');
+              const path = require('path');
+              const filePath = path.join(process.cwd(), '.github/AGENT_COMMANDS.md');
+              let content = fs.readFileSync(filePath, 'utf-8');
+              const lines = content.split('\\n');
+              
+              // Find and update the command at line $LINE
+              for (let i = 0; i < lines.length; i++) {
+                if (i === $LINE - 1) {
+                  lines[i] = lines[i].replace(/^-\\s+\\[\\s+\\]/, '- [x]');
+                  // Update status on next few lines
+                  for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+                    if (lines[j].includes('**Status:**')) {
+                      lines[j] = '  - **Status:** ✅ Complete - $RESULT (' + new Date().toISOString().split('T')[0] + ')';
+                      break;
+                    }
+                  }
+                  break;
+                }
+              }
+              
+              fs.writeFileSync(filePath, lines.join('\\n'), 'utf-8');
+            " || true
+            
+            echo "   ✅ Command completed: $RESULT"
+          done <<< "$COMMANDS_JSON"
+          
+          echo "result=executed" >> $GITHUB_OUTPUT
+
+      - name: Commit command updates
+        if: steps.execute.outputs.result == 'executed'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/AGENT_COMMANDS.md
+          git commit -m "Execute natural language commands [skip ci]" || true
+          git push origin main || true
+
+      - name: Create summary
+        run: |
+          echo "## 🤖 Natural Language Command Execution" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.execute.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See workflow logs for details." >> $GITHUB_STEP_SUMMARY
+
