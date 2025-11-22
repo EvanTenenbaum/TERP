@@ -286,3 +286,36 @@ export async function getStatusChangesByUser(
     .orderBy(desc(batchStatusHistory.createdAt))
     .limit(limit);
 }
+
+/**
+ * Get batches not in workflow queue (statusId is null)
+ */
+export async function getBatchesNotInQueue(
+  limit: number = 50,
+  query?: string
+): Promise<Array<typeof batches.$inferSelect>> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let batchQuery = db
+    .select()
+    .from(batches)
+    .where(sql`${batches.statusId} IS NULL`)
+    .orderBy(desc(batches.createdAt))
+    .limit(limit);
+
+  // If query provided, filter by SKU or product name
+  if (query) {
+    const searchTerm = `%${query}%`;
+    batchQuery = db
+      .select()
+      .from(batches)
+      .where(
+        sql`${batches.statusId} IS NULL AND (${batches.sku} LIKE ${searchTerm} OR ${batches.productName} LIKE ${searchTerm})`
+      )
+      .orderBy(desc(batches.createdAt))
+      .limit(limit) as typeof batchQuery;
+  }
+  
+  return batchQuery;
+}

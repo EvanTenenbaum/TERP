@@ -930,14 +930,26 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - **Actual Time:** 1.5 hours
   - **Impact:** Returns workflow now uses authenticated user, realistic UX with order item selection, inventory restocking verified
 
-- [ ] **BUG-006: Workflow Queue Missing Entry Point** (Created: 2025-11-21) 🔴 CRITICAL
+- [x] **BUG-006: Workflow Queue Missing Entry Point** (Completed: 2025-11-22) 🔴 CRITICAL
   - Task ID: BUG-006
   - Priority: P0 (CRITICAL - WORKFLOW BLOCKER)
+  - Session: Session-20251122-BUG-006-c404dd39
   - **Problem:** WorkflowQueuePage displays Kanban board but no way to add items to queue
-  - **Impact:** Workflow queue is display-only, new inventory may be invisible
-  - **Estimate:** 4-6 hours
-  - **Status:** 📋 PLANNED
-  - **Prompt:** `docs/prompts/BUG-006.md`
+  - **Solution:**
+    - Added `getBatchesNotInQueue` endpoint to fetch batches without statusId
+    - Added `addBatchesToQueue` endpoint to add multiple batches at once
+    - Added "Add to Queue" button in WorkflowQueuePage header
+    - Created batch selection dialog with search and multi-select
+    - Users can now select batches and choose initial workflow status
+  - **Files Modified:**
+    - `server/routers/workflow-queue.ts` - Added endpoints
+    - `server/db/queries/workflow-queue.ts` - Added getBatchesNotInQueue query
+    - `client/src/pages/WorkflowQueuePage.tsx` - Added UI for batch selection
+  - **Key Commits:**
+    - `bug-006-workflow-queue-entry` - Fix BUG-006: Add entry point to workflow queue
+  - **Status:** ✅ COMPLETE
+  - **Actual Time:** 1 hour
+  - **Impact:** Workflow queue now has entry point, new inventory can be added to queue
 
 - [ ] **BUG-007: Missing Permissions & Safety Checks** (Created: 2025-11-21) 🔴 CRITICAL
   - Task ID: BUG-007
