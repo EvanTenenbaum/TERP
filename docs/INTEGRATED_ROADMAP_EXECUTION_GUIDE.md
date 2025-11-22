@@ -140,7 +140,7 @@ pnpm swarm:status:json
 ### Automated Monitoring
 
 The system automatically:
-- Generates status reports every 30 minutes (via GitHub Actions)
+- Generates status reports every 4 minutes (via GitHub Actions)
 - Saves reports to `docs/swarm-status-latest.md`
 - Identifies stale agents (no activity for 4+ hours)
 
