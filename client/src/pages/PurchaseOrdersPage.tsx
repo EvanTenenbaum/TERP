@@ -38,7 +38,7 @@ export default function PurchaseOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedPO, setSelectedPO] = useState<unknown>(null);
+  const [selectedPO, setSelectedPO] = useState<any>(null);
 
   // Fetch data
   const { data: pos = [], refetch } = trpc.purchaseOrders.getAll.useQuery();
@@ -115,11 +115,23 @@ export default function PurchaseOrdersPage() {
     });
   };
 
+  const formatDate = (dateString: string | Date | null | undefined) => {
+    if (!dateString) return "-";
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return "Invalid Date";
+      return d.toLocaleDateString();
+    } catch (e) {
+      return "Error";
+    }
+  };
+
   // Filter and search
   const filteredPOs = useMemo(() => {
+    if (!pos) return [];
     return pos.filter(po => {
       const matchesSearch =
-        po.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (po.poNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         vendors
           .find(v => v.id === po.vendorId)
           ?.name.toLowerCase()
@@ -280,12 +292,10 @@ export default function PurchaseOrdersPage() {
                   <TableCell className="font-medium">{po.poNumber}</TableCell>
                   <TableCell>{getVendorName(po.vendorId)}</TableCell>
                   <TableCell>
-                    {new Date(po.orderDate).toLocaleDateString()}
+                    {formatDate(po.orderDate)}
                   </TableCell>
                   <TableCell>
-                    {po.expectedDeliveryDate
-                      ? new Date(po.expectedDeliveryDate).toLocaleDateString()
-                      : "-"}
+                    {formatDate(po.expectedDeliveryDate)}
                   </TableCell>
                   <TableCell>{getStatusBadge(po.status)}</TableCell>
                   <TableCell>${parseFloat(po.total).toFixed(2)}</TableCell>
