@@ -10,9 +10,10 @@ RUN curl -sL https://github.com/digitalocean/doctl/releases/download/v1.98.0/doc
 
 WORKDIR /app
 
-# 3. Install Node Deps
-COPY package*.json ./
-RUN npm install
+# 3. Install pnpm and Node Deps
+RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --no-frozen-lockfile
 
 # 4. Copy Source Code
 COPY . .
