@@ -910,14 +910,25 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - **Status:** 📋 PLANNED
   - **Prompt:** `docs/prompts/BUG-004.md`
 
-- [ ] **BUG-005: Returns Workflow Logic Gap** (Created: 2025-11-21) 🔴 CRITICAL
+- [x] **BUG-005: Returns Workflow Logic Gap** (Completed: 2025-11-22) 🔴 CRITICAL
   - Task ID: BUG-005
   - Priority: P0 (CRITICAL - WORKFLOW BLOCKER)
+  - Session: Session-20251122-BUG-005-2f5fd174
   - **Problem:** Hardcoded user ID, unrealistic UX requiring Batch IDs, inventory restocking may not work
-  - **Impact:** Returns workflow unusable, breaks audit trails, inventory may not restock correctly
-  - **Estimate:** 6-8 hours
-  - **Status:** 📋 PLANNED
-  - **Prompt:** `docs/prompts/BUG-005.md`
+  - **Solution:**
+    - Changed `returns.create` to `protectedProcedure` to get authenticated user from context
+    - Removed `processedBy` from input, now uses `ctx.user?.id`
+    - Added order lookup by ID functionality
+    - Replaced manual Batch ID input with order line item selection
+    - Users can now select items from actual orders instead of entering Batch IDs
+  - **Files Modified:**
+    - `server/routers/returns.ts` - Use protectedProcedure and ctx.user
+    - `client/src/pages/ReturnsPage.tsx` - Order lookup and item selection
+  - **Key Commits:**
+    - `bug-005-returns-workflow-fix` - Fix BUG-005: Returns workflow logic gap
+  - **Status:** ✅ COMPLETE
+  - **Actual Time:** 1.5 hours
+  - **Impact:** Returns workflow now uses authenticated user, realistic UX with order item selection, inventory restocking verified
 
 - [ ] **BUG-006: Workflow Queue Missing Entry Point** (Created: 2025-11-21) 🔴 CRITICAL
   - Task ID: BUG-006

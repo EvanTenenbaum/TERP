@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { returns, batches, inventoryMovements } from "../../drizzle/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -61,7 +61,8 @@ export const returnsRouter = router({
   }),
 
   // Process a return
-  create: publicProcedure
+  create: protectedProcedure
+    .use(requirePermission("orders:update"))
     .input(
       z.object({
         orderId: z.number(),
@@ -74,23 +75,28 @@ export const returnsRouter = router({
         ),
         reason: z.enum(["DEFECTIVE", "WRONG_ITEM", "NOT_AS_DESCRIBED", "CUSTOMER_CHANGED_MIND", "OTHER"]),
         notes: z.string().optional(),
-        processedBy: z.number(),
         restockInventory: z.boolean().default(true),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
       // Wrap in transaction to ensure atomicity
       const result = await db.transaction(async (tx) => {
+        // Get authenticated user ID
+        const userId = ctx.user?.id;
+        if (!userId) {
+          throw new Error("User not authenticated");
+        }
+
         // Create return record
         const [returnRecord] = await tx.insert(returns).values({
           orderId: input.orderId,
           items: input.items as any,
           reason: input.reason,
           notes: input.notes,
-          processedBy: input.processedBy,
+          processedBy: userId,
         });
 
         // If restocking inventory, create inventory movements
@@ -127,7 +133,7 @@ export const returnsRouter = router({
               referenceType: "RETURN",
               referenceId: returnRecord.insertId,
               notes: item.reason || input.notes,
-              performedBy: input.processedBy,
+              performedBy: userId,
             });
           }
         }
