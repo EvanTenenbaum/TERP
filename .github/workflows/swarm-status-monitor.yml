@@ -1,0 +1,66 @@
+name: Swarm Status Monitor
+
+on:
+  schedule:
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  monitor:
+    name: Monitor Swarm Status
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run status monitor
+        id: monitor
+        run: |
+          pnpm tsx scripts/swarm-status-monitor.ts > status-report.txt 2>&1 || true
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          cat status-report.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create status summary
+        run: |
+          echo "## 🤖 Swarm Status Monitor" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat status-report.txt >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit status report
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/swarm-status-latest.md || true
+          git commit -m "Update swarm status report [skip ci]" || true
+          git push origin main || true
+
+      - name: Send notification (if configured)
+        if: failure() || contains(github.event.head_commit.message, 'stale')
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            pnpm tsx scripts/swarm-status-monitor.ts --notify --webhook "$SLACK_WEBHOOK_URL" || true
+          fi
+
