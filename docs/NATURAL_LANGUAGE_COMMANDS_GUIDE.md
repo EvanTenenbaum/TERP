@@ -24,34 +24,62 @@ You can now give natural language instructions that any agent can execute by sim
 
 ## 📝 How to Use
 
-### Step 1: Edit the Commands File
+### Method 1: Via GitHub Web UI (Easiest)
 
-Edit `.github/AGENT_COMMANDS.md` and add your command:
+1. **Go to the file:**
+   - Navigate to: https://github.com/EvanTenenbaum/TERP/blob/main/.github/AGENT_COMMANDS.md
+   - Click the pencil icon (✏️) to edit
 
-```markdown
-## 🎯 Pending Commands
+2. **Add your command:**
+   ```markdown
+   ## 🎯 Pending Commands
+   
+   - [ ] **Command:** Work through Phase 2.5
+     - **Status:** Pending
+     - **Added:** 2025-11-21
+   ```
 
-- [ ] **Command:** Work through Phase 2.5
-  - **Status:** Pending
-  - **Added:** 2025-11-21
-```
+3. **Commit directly:**
+   - Scroll down
+   - Click "Commit changes"
+   - The workflow will automatically execute within 5 minutes
 
-### Step 2: Commit and Push
+### Method 2: Via Git (Any Agent/Interface)
 
 ```bash
+# Edit the file
+nano .github/AGENT_COMMANDS.md
+# or
+vim .github/AGENT_COMMANDS.md
+
+# Add your command, then:
 git add .github/AGENT_COMMANDS.md
 git commit -m "Add command: Work through Phase 2.5"
 git push origin main
 ```
 
-### Step 3: Automatic Execution
+### Method 3: Via GitHub API
+
+```bash
+# Create a command via API
+curl -X PUT \
+  -H "Authorization: token YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Add command",
+    "content": "'$(base64 -i .github/AGENT_COMMANDS.md)'"
+  }' \
+  https://api.github.com/repos/EvanTenenbaum/TERP/contents/.github/AGENT_COMMANDS.md
+```
+
+### Automatic Execution
 
 The GitHub Actions workflow will:
-- Detect the change (within 5 minutes or immediately on push)
-- Parse your command
-- Execute the swarm agents
-- Mark command as complete
-- Update the file
+- **Detect changes** immediately on push (or every 5 minutes via schedule)
+- **Parse your command** using natural language processing
+- **Execute the swarm agents** automatically
+- **Mark command as complete** and move to completed section
+- **Update the file** with results
 
 ---
 

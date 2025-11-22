@@ -21,11 +21,18 @@ Add commands below in natural language. The system will automatically parse and 
 
 ## 🎯 Pending Commands
 
-<!-- Add your commands here in this format: -->
 <!-- 
+Add your commands here in this format:
+
 - [ ] **Command:** Work through Phase 2.5
   - **Status:** Pending
   - **Added:** 2025-11-21
+
+The system will automatically:
+1. Parse your command
+2. Execute the swarm agents
+3. Mark as complete
+4. Move to completed section
 -->
 
 ---
