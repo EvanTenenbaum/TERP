@@ -19,6 +19,14 @@ The strategy follows a four-phase implementation approach, building from a solid
 
 ---
 
+## Exhaustive Interaction Protocols
+
+The single source of truth for all Quality Assurance (QA) testing protocols is now maintained in the `EXHAUSTIVE_INTERACTION_PROTOCOLS.md` document. This document contains the definitive list of test specifications (TS-001 to TS-15) that cover every critical interaction, edge case, and user flow in the TERP system.
+
+**Reference**: [EXHAUSTIVE_INTERACTION_PROTOCOLS.md](./EXHAUSTIVE_INTERACTION_PROTOCOLS.md)
+
+---
+
 ## Testing Philosophy: The Testing Trophy
 
 We adopt the **Testing Trophy** model (not the traditional pyramid) because it better aligns with modern full-stack applications like TERP.
