@@ -901,14 +901,28 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - **Actual Time:** 1.5 hours
   - **Impact:** Order Creator now fully functional - users can browse inventory, add items, and see credit limit warnings
 
-- [ ] **BUG-004: Purchase/Intake Modal Data Loss** (Created: 2025-11-21) 🔴 CRITICAL
+- [x] **BUG-004: Purchase/Intake Modal Data Loss** (Completed: 2025-11-22) 🔴 CRITICAL
   - Task ID: BUG-004
   - Priority: P0 (CRITICAL - DATA LOSS)
+  - Session: Session-20251122-BUG-004-6aa15aac
   - **Problem:** Media files (photos/COAs) uploaded but never saved to server
-  - **Impact:** Critical data loss - breaks audit trail and compliance requirements
-  - **Estimate:** 6-8 hours
-  - **Status:** 📋 PLANNED
-  - **Prompt:** `docs/prompts/BUG-004.md`
+  - **Solution:**
+    - Created `uploadMedia` endpoint in inventory router to handle file uploads
+    - Files uploaded to storage using existing storagePut infrastructure
+    - Updated intake schema to accept mediaUrls array
+    - Updated processIntake to store media URLs in batch metadata
+    - Updated PurchaseModal to upload files before creating purchase
+    - Media files now saved and linked to batches
+  - **Files Modified:**
+    - `server/routers/inventory.ts` - Added uploadMedia endpoint
+    - `server/_core/validation.ts` - Added mediaUrls to intakeSchema
+    - `server/inventoryIntakeService.ts` - Store media URLs in batch metadata
+    - `client/src/components/inventory/PurchaseModal.tsx` - Upload files and pass URLs
+  - **Key Commits:**
+    - `bug-004-media-file-upload` - Fix BUG-004: Implement media file upload
+  - **Status:** ✅ COMPLETE
+  - **Actual Time:** 2 hours
+  - **Impact:** Media files now saved to server and linked to batches, prevents data loss
 
 - [x] **BUG-005: Returns Workflow Logic Gap** (Completed: 2025-11-22) 🔴 CRITICAL
   - Task ID: BUG-005
