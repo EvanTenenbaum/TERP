@@ -50,7 +50,7 @@ const menuItems = [
   { icon: CalendarDays, label: "Calendar", path: "/calendar" },
   { icon: ShoppingCart, label: "Orders", path: "/orders" },
   { icon: FileText, label: "Sales Sheets", path: "/sales-sheets" },
-  { icon: Package, label: "Create Order", path: "/create-order" },
+  { icon: Package, label: "Create Order", path: "/orders/create" },
   { icon: Package, label: "Inventory", path: "/inventory" },
   { icon: Workflow, label: "Workflow Queue", path: "/workflow-queue" },
   { icon: TrendingUp, label: "Matchmaking", path: "/matchmaking" },
