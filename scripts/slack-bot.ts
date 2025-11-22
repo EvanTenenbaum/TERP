@@ -157,8 +157,9 @@ app.message(async ({ message, say, client }) => {
     
     if (commandText.includes('status')) {
       result = executeManagerCommand('status');
-    } else if (commandText.includes('execute')) {
-      result = executeManagerCommand('execute --auto');
+    } else if (commandText.includes('execute') || commandText.includes('fix')) {
+      // Default to recursive mode for execute/fix commands (zero-interruption)
+      result = executeManagerCommand('execute --recursive');
     } else {
       // Default: show status
       result = executeManagerCommand('status');

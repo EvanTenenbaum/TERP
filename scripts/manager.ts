@@ -485,8 +485,83 @@ async function statusCommand(): Promise<void> {
   }
 }
 
-async function executeCommand(batch?: string, auto?: boolean, untilPhase?: string, untilTask?: string): Promise<void> {
+async function executeCommand(batch?: string, auto?: boolean, recursive?: boolean, untilPhase?: string, untilTask?: string): Promise<void> {
   try {
+    // If recursive mode is enabled (or default), loop until all tasks are complete
+    if (recursive || (!batch && !auto && !untilPhase && !untilTask)) {
+      console.log(chalk.blue('🔄 Recursive mode: Running until all pending tasks are complete...'));
+      
+      let iteration = 0;
+      const maxIterations = 100; // Safety limit
+      
+      while (iteration < maxIterations) {
+        iteration++;
+        console.log(chalk.blue(`\n📊 Iteration ${iteration}: Checking for pending tasks...`));
+        
+        // Re-parse roadmap to get latest status
+        const { tasks, phase } = parseRoadmap();
+        const taskMap = new Map(tasks.map(t => [t.id, t]));
+        
+        // Get pending tasks
+        const pending = tasks
+          .filter(t => !t.status.includes('COMPLETE') && !t.status.includes('Complete'))
+          .map(t => t.id);
+        
+        if (pending.length === 0) {
+          console.log(chalk.green('\n✅ Phase Complete! No pending tasks remaining.'));
+          return;
+        }
+        
+        // Select batch (high priority first, then others)
+        const highPriority = tasks
+          .filter(t => 
+            pending.includes(t.id) &&
+            (t.priority.includes('HIGH') || t.priority.includes('CRITICAL') || t.priority.includes('P0'))
+          )
+          .slice(0, 3)
+          .map(t => t.id);
+        
+        const taskIds = highPriority.length > 0 
+          ? highPriority 
+          : pending.slice(0, 3);
+        
+        console.log(chalk.blue(`📦 Executing batch: ${taskIds.join(', ')} (${pending.length} total pending)`));
+        
+        // Execute batch
+        const results = await Promise.allSettled(
+          taskIds.map(taskId => {
+            const task = taskMap.get(taskId)!;
+            return executeAgent(taskId, task);
+          })
+        );
+        
+        // Report batch results
+        results.forEach((result, index) => {
+          const taskId = taskIds[index];
+          if (result.status === 'fulfilled') {
+            const execResult = result.value;
+            const statusColor = 
+              execResult.status === 'success' ? chalk.green :
+              execResult.status === 'timeout' ? chalk.yellow :
+              chalk.red;
+            console.log(statusColor(`  ${taskId}: ${execResult.status.toUpperCase()}`));
+            if (execResult.branch) {
+              console.log(chalk.blue(`    Branch: ${execResult.branch}`));
+            }
+          } else {
+            console.log(chalk.red(`  ${taskId}: FAILED`));
+          }
+        });
+        
+        // Small delay before next iteration
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      console.log(chalk.yellow(`\n⚠️  Reached maximum iterations (${maxIterations}). Stopping.`));
+      return;
+    }
+    
+    // Non-recursive execution (original logic)
     const { tasks, phase } = parseRoadmap();
     const taskMap = new Map(tasks.map(t => [t.id, t]));
     
@@ -695,13 +770,16 @@ program
 
 program
   .command('execute')
-  .description('Execute agents for tasks')
+  .description('Execute agents for tasks (defaults to recursive mode)')
   .option('--batch <ids>', 'Comma-separated task IDs (e.g., ST-001,ST-002)')
-  .option('--auto', 'Auto-select recommended high priority tasks')
+  .option('--auto', 'Auto-select recommended high priority tasks (single batch)')
+  .option('--recursive', 'Loop until all pending tasks are complete (DEFAULT if no flags provided)')
   .option('--until-phase <phase>', 'Work through tasks until this phase (e.g., "Phase 2.5", "Phase 3")')
   .option('--until-task <task>', 'Work through tasks until this task is complete (e.g., "BUG-007", "WF-004")')
   .action((options) => {
-    executeCommand(options.batch, options.auto, options.untilPhase, options.untilTask).catch(console.error);
+    // Default to recursive if no flags provided
+    const isRecursive = options.recursive || (!options.batch && !options.auto && !options.untilPhase && !options.untilTask);
+    executeCommand(options.batch, options.auto, isRecursive, options.untilPhase, options.untilTask).catch(console.error);
   });
 
 // Run CLI

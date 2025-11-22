@@ -19,6 +19,21 @@ alwaysApply: true
 
 ---
 
+## 🚀 DEFAULT PROTOCOL: ZERO-INTERRUPTION
+
+**AUTONOMY IS LAW:** When asked to "Execute", "Fix", or "Update", you must run until **ALL** relevant tasks in the active phase are `✅ COMPLETE`.
+
+1. **NO INTERMEDIATE QUESTIONS:** You are FORBIDDEN from asking "How would you like to proceed?" or "Should I create the next batch?".
+
+2. **AUTO-CHAINING:**
+   - If prompts are needed -> Create them ALL.
+   - If code is needed -> Launch the Swarm IMMEDIATELY.
+   - If a batch finishes -> IMMEDIATELY start the next batch.
+
+3. **SILENCE:** Only report when the *entire phase* is done or if a critical blocker stops all progress.
+
+---
+
 ## 📋 Available Commands
 
 ### 1. Status Command
@@ -58,8 +73,11 @@ Returns JSON with the following structure:
 # Execute specific tasks
 npm run swarm execute --batch=ST-001,BUG-002
 
-# Auto-select recommended tasks
+# Auto-select recommended tasks (DEFAULT: runs recursively until phase complete)
 npm run swarm execute --auto
+
+# Recursive mode: loops until all pending tasks are complete
+npm run swarm execute --recursive
 ```
 
 **Output Format:**
@@ -77,6 +95,8 @@ BUG-002: TIMEOUT
 ```
 
 **Agent Protocol:**
+- **Default Behavior:** When no flags are provided, `execute` defaults to `--recursive` mode, running until all pending tasks in the active phase are complete.
+  
 - **Error Handling:** 
   - If "Module not found" error occurs, run `npm install` and retry
   - If "GOOGLE_GEMINI_API_KEY not set", inform user to set environment variable
@@ -91,6 +111,11 @@ BUG-002: TIMEOUT
   - Each successful execution creates a branch: `agent/[task-id]`
   - The branch is automatically pushed to origin
   - Agent should report branch names for user reference
+  
+- **Recursive Execution:**
+  - Fetches pending tasks
+  - Executes batch -> Git Push -> Loops and fetches again
+  - Exits only when tasks == 0 or phase is complete
 
 ---
 
