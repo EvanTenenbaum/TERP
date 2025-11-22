@@ -12,8 +12,48 @@ import * as inventoryDb from "../inventoryDb";
 import * as inventoryUtils from "../inventoryUtils";
 import type { BatchStatus } from "../inventoryUtils";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { storagePut } from "../storage";
 
 export const inventoryRouter = router({
+  // Upload media file for batch/purchase
+  // BUG-004: File upload endpoint for media files
+  uploadMedia: protectedProcedure
+    .use(requirePermission("inventory:update"))
+    .input(
+      z.object({
+        fileData: z.string(), // Base64 encoded file
+        fileName: z.string(),
+        fileType: z.string(), // MIME type
+        batchId: z.number().optional(), // Optional: link to existing batch
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        // Decode base64 file
+        const fileBuffer = Buffer.from(input.fileData, "base64");
+        
+        // Generate storage key
+        const timestamp = Date.now();
+        const sanitizedFileName = input.fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const storageKey = `batch-media/${input.batchId || "temp"}/${timestamp}-${sanitizedFileName}`;
+        
+        // Upload to storage
+        const { url } = await storagePut(storageKey, fileBuffer, input.fileType);
+        
+        return {
+          success: true,
+          url,
+          fileName: input.fileName,
+          fileType: input.fileType,
+          fileSize: fileBuffer.length,
+        };
+      } catch (error) {
+        inventoryLogger.operationFailure("uploadMedia", error as Error, { fileName: input.fileName });
+        handleError(error, "inventory.uploadMedia");
+        throw error;
+      }
+    }),
+
   // Get all batches with details
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
   // ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cursor-based pagination

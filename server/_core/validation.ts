@@ -231,6 +231,12 @@ export const intakeSchema = z
     paymentTerms: validators.paymentTerms,
     location: locationSchema,
     metadata: validators.metadata,
+    mediaUrls: z.array(z.object({
+      url: z.string().url(),
+      fileName: z.string(),
+      fileType: z.string(),
+      fileSize: z.number(),
+    })).optional(), // BUG-004: Media file URLs
   })
   .merge(cogsSchema.omit({ cogsMode: true })); // Merge COGS validation
 

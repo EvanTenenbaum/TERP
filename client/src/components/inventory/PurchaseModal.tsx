@@ -76,6 +76,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   const { data: grades } = trpc.settings.grades.list.useQuery();
   const { data: locations } = trpc.settings.locations.list.useQuery();
 
+  const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
   const createPurchaseMutation = trpc.inventory.intake.useMutation({
     onSuccess: () => {
       toast.success("Product purchase created successfully!");
@@ -112,7 +113,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     setMediaFiles([]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -160,6 +161,46 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
       return;
     }
 
+    // BUG-004: Upload media files first
+    let mediaUrls: Array<{ url: string; fileName: string; fileType: string; fileSize: number }> = [];
+    if (mediaFiles.length > 0) {
+      try {
+        toast.info("Uploading media files...");
+        const uploadPromises = mediaFiles.map(async (file) => {
+          return new Promise<{ url: string; fileName: string; fileType: string; fileSize: number }>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async () => {
+              try {
+                const base64 = (reader.result as string).split(",")[1]; // Remove data:type;base64, prefix
+                const result = await uploadMediaMutation.mutateAsync({
+                  fileData: base64,
+                  fileName: file.name,
+                  fileType: file.type,
+                });
+                resolve({
+                  url: result.url,
+                  fileName: result.fileName,
+                  fileType: result.fileType,
+                  fileSize: result.fileSize,
+                });
+              } catch (error) {
+                reject(error);
+              }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        });
+
+        mediaUrls = await Promise.all(uploadPromises);
+        toast.success(`Uploaded ${mediaUrls.length} file(s)`);
+      } catch (error) {
+        toast.error(`Failed to upload media files: ${error instanceof Error ? error.message : "Unknown error"}`);
+        return;
+      }
+    }
+
+    // Create purchase with media URLs
     createPurchaseMutation.mutate({
       vendorName: formData.vendorName,
       brandName: formData.brandName,
@@ -177,6 +218,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
       location: {
         site: formData.locationSite || "Default",
       },
+      mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
     });
   };
 

@@ -56,6 +56,12 @@ export interface IntakeInput {
     bin?: string;
   };
   metadata?: Record<string, unknown>;
+  mediaUrls?: Array<{
+    url: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+  }>;
   userId: number;
 }
 
@@ -192,9 +198,15 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           unitCogsMin: input.unitCogsMin,
           unitCogsMax: input.unitCogsMax,
           paymentTerms: input.paymentTerms,
-          metadata: input.metadata
-            ? inventoryUtils.stringifyMetadata(input.metadata)
-            : null,
+          metadata: (() => {
+            const metadata = input.metadata || {};
+            if (input.mediaUrls && input.mediaUrls.length > 0) {
+              metadata.mediaFiles = input.mediaUrls;
+            }
+            return Object.keys(metadata).length > 0
+              ? inventoryUtils.stringifyMetadata(metadata)
+              : null;
+          })(),
           onHandQty: inventoryUtils.formatQty(input.quantity),
           sampleQty: "0",
           reservedQty: "0",
