@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.2
+**Version:** 2.3
 **Last Updated:** November 21, 2025
 **Status:** Active
 
@@ -150,164 +150,6 @@
     - Determine if it's a leftover from refactoring
   - **Status:** 🔍 INVESTIGATING
   - **Estimate:** 1-2 hours
-
-- [ ] **BUG-003: Order Creator Connectivity** (Created: 2025-11-21) 🔴 CRITICAL
-  - Task ID: BUG-003
-  - Priority: P0 (CRITICAL BLOCKER)
-  - Session: TBD
-  - **Problem:** The "Order Creator" is the heart of the revenue workflow, but it is currently disconnected from Inventory. Users cannot add items to an order.
-  - **File:** `client/src/pages/OrderCreatorPage.tsx`
-  - **Current State:**
-    - The `handleAddItem` function is a stub that only shows a toast: `toast.info("Inventory browser integration coming soon")`
-    - The page functions as a "Customer Selector" and nothing else
-    - `client/src/components/sales/InventoryBrowser.tsx` exists but is not imported or used
-    - Credit Limit Banner is missing - OrderCreatorPage calculates totals but does not render `CreditLimitBanner` component
-    - PROJECT_CONTEXT.md explicitly details a "Credit Limit Banner" with 5 alert states
-    - Sales can proceed regardless of credit standing (incorrect behavior)
-  - **Objectives:**
-    1. Import and integrate `InventoryBrowser` component into `OrderCreatorPage`
-    2. Replace the stub `handleAddItem` function with actual inventory browser integration
-    3. Import and render `CreditLimitBanner` component in the order totals area
-    4. Ensure credit limit checks prevent order finalization when credit is exceeded
-    5. Test the complete order creation workflow with inventory selection
-  - **Deliverables:**
-    - [ ] InventoryBrowser component imported and integrated into OrderCreatorPage
-    - [ ] handleAddItem function implemented with actual inventory selection logic
-    - [ ] CreditLimitBanner component imported and rendered in OrderTotalsPanel area
-    - [ ] Credit limit validation prevents order finalization when exceeded
-    - [ ] Order creation workflow tested end-to-end
-    - [ ] All tests passing (no regressions)
-    - [ ] Zero TypeScript errors
-    - [ ] Session archived
-  - **Impact:** Order Creator is currently non-functional for its primary purpose (adding items to orders). This blocks all revenue workflow.
-  - **Estimate:** 4-6 hours
-  - **Status:** 📋 PLANNED
-
-- [ ] **BUG-004: Purchase/Intake Modal Data Loss** (Created: 2025-11-21) 🔴 CRITICAL
-  - Task ID: BUG-004
-  - Priority: P0 (CRITICAL - DATA LOSS)
-  - Session: TBD
-  - **Problem:** The Purchase/Intake Modal invites users to upload media (images/COAs) but fails to send them to the server, causing data loss.
-  - **File:** `client/src/components/inventory/PurchaseModal.tsx`
-  - **Current State:**
-    - `mediaFiles` state collects file objects from the input
-    - Files are excluded from the `createPurchaseMutation.mutate` payload
-    - Warehouse staff will upload photos, see "Success" message, but photos are never saved
-    - Backend endpoint may not support multipart/form-data (tRPC JSON mutations don't handle files natively)
-  - **Objectives:**
-    1. Implement file upload mechanism (multipart/form-data or pre-signed URL workflow with S3)
-    2. Include mediaFiles in the mutation payload or use separate upload endpoint
-    3. Add backend endpoint capable of handling file uploads
-    4. Store uploaded files with proper references in database
-    5. Verify files are saved and retrievable after purchase creation
-  - **Deliverables:**
-    - [ ] File upload endpoint created (multipart/form-data or S3 pre-signed URLs)
-    - [ ] PurchaseModal updated to upload files before or during purchase creation
-    - [ ] Media files properly linked to purchase records in database
-    - [ ] File retrieval functionality verified
-    - [ ] Error handling for failed uploads implemented
-    - [ ] All tests passing (no regressions)
-    - [ ] Zero TypeScript errors
-    - [ ] Session archived
-  - **Impact:** Critical data loss - warehouse staff will lose uploaded photos and COAs, breaking audit trail and compliance requirements.
-  - **Estimate:** 6-8 hours
-  - **Status:** 📋 PLANNED
-
-- [ ] **BUG-005: Returns Workflow Logic Gap** (Created: 2025-11-21) 🔴 CRITICAL
-  - Task ID: BUG-005
-  - Priority: P0 (CRITICAL - WORKFLOW BLOCKER)
-  - Session: TBD
-  - **Problem:** The returns process has hardcoded values and unrealistic UX that breaks audit trails and is unusable for end users.
-  - **File:** `client/src/pages/ReturnsPage.tsx`
-  - **Current State:**
-    - User ID is hardcoded: `processedBy: 1` (breaks audit trails and permission checks)
-    - Users must manually type a Batch ID to return an item
-    - Customers know Order Numbers or Product Names, not internal Batch IDs
-    - `restockInventory` checkbox exists but backend logic may not properly increment batch quantity
-    - If batch was "Sold" (0 qty), it may not resurrect batch status to "In Stock"
-  - **Objectives:**
-    1. Remove hardcoded `processedBy: 1` and use `ctx.user.id` from backend context
-    2. Change UI from "Batch ID" input to "Order Lookup" → "Select Items" workflow
-    3. Allow users to select an Order ID, then present list of items from that order
-    4. Use LineItem data to populate returnable items
-    5. Verify backend returns.create endpoint properly handles inventory restocking
-    6. Ensure batch status transitions correctly (Sold → In Stock when restocked)
-  - **Deliverables:**
-    - [ ] Hardcoded user ID removed, using authenticated user context
-    - [ ] Order lookup interface implemented
-    - [ ] Item selection from order line items implemented
-    - [ ] Backend inventory restocking logic verified and fixed if needed
-    - [ ] Batch status transition logic verified (Sold → In Stock)
-    - [ ] Audit trail properly records actual user who processed return
-    - [ ] All tests passing (no regressions)
-    - [ ] Zero TypeScript errors
-    - [ ] Session archived
-  - **Impact:** Returns workflow is unusable for end users and breaks audit trails. Inventory restocking may not work correctly.
-  - **Estimate:** 6-8 hours
-  - **Status:** 📋 PLANNED
-
-- [ ] **BUG-006: Workflow Queue Missing Entry Point** (Created: 2025-11-21) 🔴 CRITICAL
-  - Task ID: BUG-006
-  - Priority: P0 (CRITICAL - WORKFLOW BLOCKER)
-  - Session: TBD
-  - **Problem:** The WorkflowQueuePage displays a Kanban board but lacks the mechanism to put things on the board.
-  - **File:** `client/src/pages/WorkflowQueuePage.tsx`
-  - **Current State:**
-    - Page displays Kanban board for batch processing (packaging/labeling)
-    - No "Add to Queue" or "Start Job" button exists
-    - PurchaseModal creates batches with status "Awaiting Intake"
-    - Unclear if "Awaiting Intake" automatically maps to first column of Workflow Board
-    - New inventory may be invisible in workflow until manually transitioned elsewhere
-  - **Objectives:**
-    1. Add "Add to Queue" or "Start Job" button to WorkflowQueuePage
-    2. Verify batch status "Awaiting Intake" automatically appears in workflow board
-    3. Implement workflow entry point for manual job creation if needed
-    4. Ensure new inventory batches are visible in workflow queue
-    5. Test complete workflow from purchase intake to workflow queue
-  - **Deliverables:**
-    - [ ] "Add to Queue" or "Start Job" button added to WorkflowQueuePage
-    - [ ] Batch status mapping verified (Awaiting Intake → Workflow Board)
-    - [ ] Manual job creation functionality implemented if needed
-    - [ ] New inventory batches automatically visible in workflow queue
-    - [ ] Workflow transition logic tested end-to-end
-    - [ ] All tests passing (no regressions)
-    - [ ] Zero TypeScript errors
-    - [ ] Session archived
-  - **Impact:** Workflow queue is display-only and cannot be used to manage batch processing jobs. New inventory may be invisible.
-  - **Estimate:** 4-6 hours
-  - **Status:** 📋 PLANNED
-
-- [ ] **BUG-007: Missing Permissions & Safety Checks** (Created: 2025-11-21) 🔴 CRITICAL
-  - Task ID: BUG-007
-  - Priority: P0 (CRITICAL - SAFETY)
-  - Session: TBD
-  - **Problem:** Critical user actions lack proper confirmation dialogs and use unprofessional browser-native popups.
-  - **Files:**
-    - `client/src/pages/OrderCreatorPage.tsx`
-    - `client/src/components/sales/OrderPreview.tsx`
-  - **Current State:**
-    - OrderCreatorPage uses `window.confirm` for order finalization (unprofessional, can be suppressed by browser)
-    - OrderPreview.tsx allows `onClearAll` (clearing entire cart) with no confirmation dialog
-    - Accidental clicks will wipe complex orders with no recovery
-    - Should use ManusDialog or AlertDialog component used elsewhere in app
-  - **Objectives:**
-    1. Replace `window.confirm` with Shadcn AlertDialog component in OrderCreatorPage
-    2. Add confirmation dialog to OrderPreview `onClearAll` function
-    3. Ensure all critical actions have proper confirmation dialogs
-    4. Maintain consistent UI/UX with rest of application
-    5. Test confirmation dialogs prevent accidental data loss
-  - **Deliverables:**
-    - [ ] window.confirm replaced with AlertDialog in OrderCreatorPage
-    - [ ] Confirmation dialog added to OrderPreview onClearAll
-    - [ ] All critical actions have proper confirmation dialogs
-    - [ ] Consistent dialog styling with rest of application
-    - [ ] Accidental action prevention tested
-    - [ ] All tests passing (no regressions)
-    - [ ] Zero TypeScript errors
-    - [ ] Session archived
-  - **Impact:** Users can accidentally lose work (clear entire cart) and unprofessional UI breaks user trust. Missing safety checks risk data loss.
-  - **Estimate:** 2-4 hours
-  - **Status:** 📋 PLANNED
 
 - [ ] **DATA-002: Augment Seeded Data for Realistic Relationships** (Created: 2025-11-21) 🟡 HIGH PRIORITY
   - Task ID: DATA-002-AUGMENT
@@ -650,38 +492,6 @@
   - Impact: Prevent API abuse and DDoS attacks
   - Estimate: 1-2 days
   - Note: Addresses Kimi AI's finding about missing rate limiting
-
-- [ ] **ST-019: Fix "Happy Path" Only Testing Assumptions** (Created: 2025-11-21) 🟡 MEDIUM
-  - Task ID: ST-019
-  - Priority: P1 (HIGH - DATA QUALITY)
-  - Session: TBD
-  - **Problem:** The code assumes ideal data states and doesn't handle edge cases or empty data scenarios properly.
-  - **Current State:**
-    - PurchaseModal: `vendorSearch` relies on `trpc.inventory.vendors` - if vendor list is empty (fresh install), user is stuck
-    - UI implies autocomplete selection is preferred/required, though it technically accepts text
-    - Calculations: `useOrderCalculations` implementation not verified - if it relies on client-side math for LineItem totals, risks floating-point errors (e.g., $10.99 * 3 = 32.969999...)
-    - Missing currency library or integer math for financial calculations
-  - **Objectives:**
-    1. Add proper empty state handling for vendor search in PurchaseModal
-    2. Verify and fix useOrderCalculations to use proper currency math (integer math or currency library)
-    3. Add validation for edge cases (empty lists, null values, zero quantities)
-    4. Test all forms with empty/fresh database state
-    5. Add error boundaries for calculation failures
-    6. Document expected data states and validation requirements
-  - **Deliverables:**
-    - [ ] Empty state handling added to PurchaseModal vendor search
-    - [ ] useOrderCalculations verified and fixed to use proper currency math
-    - [ ] Edge case validation added to all critical forms
-    - [ ] Tests for empty database state (fresh install scenario)
-    - [ ] Floating-point error prevention in financial calculations
-    - [ ] Error boundaries for calculation failures
-    - [ ] Documentation of data state requirements
-    - [ ] All tests passing (no regressions)
-    - [ ] Zero TypeScript errors
-    - [ ] Session archived
-  - **Impact:** System may fail or produce incorrect results when database is empty or contains edge case data. Financial calculations may have rounding errors.
-  - **Estimate:** 4-6 hours
-  - **Status:** 📋 PLANNED
 
 - [x] **ST-014: Fix Broken Test Infrastructure** (Completed: 2025-11-13) 🟡 MEDIUM
   - Task ID: ST-014
@@ -1064,7 +874,150 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ## 🔜 Next Sprint (Nov 19-Dec 2, 2025)
 
-### Phase 3: Refactoring (2-3 Weeks)
+### Phase 2.5: Critical Workflow Fixes (1 Week)
+
+**Objective:** Fix critical bugs that block core revenue and inventory workflows. These issues prevent users from completing essential business operations.
+
+**Priority:** 🔴 CRITICAL - These bugs block core functionality
+
+- [ ] **BUG-002: Duplicate Navigation Bar on Dashboard** (Created: 2025-11-21) 🔴 CRITICAL
+  - Task ID: BUG-002
+  - Priority: P0 (CRITICAL - UI BLOCKER)
+  - **Problem:** Incorrect duplicate navigation bar appearing in the middle of the dashboard page
+  - **Impact:** Confusing user experience, potentially blocking other navigation features
+  - **Estimate:** 1-2 hours
+  - **Status:** 📋 PLANNED
+  - **Prompt:** `docs/prompts/BUG-002.md`
+
+- [ ] **BUG-003: Order Creator Connectivity** (Created: 2025-11-21) 🔴 CRITICAL
+  - Task ID: BUG-003
+  - Priority: P0 (CRITICAL BLOCKER)
+  - **Problem:** Order Creator cannot add items to orders - InventoryBrowser not integrated, CreditLimitBanner missing
+  - **Impact:** Blocks all revenue workflow - users cannot create orders with items
+  - **Estimate:** 4-6 hours
+  - **Status:** 📋 PLANNED
+  - **Prompt:** `docs/prompts/BUG-003.md`
+
+- [ ] **BUG-004: Purchase/Intake Modal Data Loss** (Created: 2025-11-21) 🔴 CRITICAL
+  - Task ID: BUG-004
+  - Priority: P0 (CRITICAL - DATA LOSS)
+  - **Problem:** Media files (photos/COAs) uploaded but never saved to server
+  - **Impact:** Critical data loss - breaks audit trail and compliance requirements
+  - **Estimate:** 6-8 hours
+  - **Status:** 📋 PLANNED
+  - **Prompt:** `docs/prompts/BUG-004.md`
+
+- [ ] **BUG-005: Returns Workflow Logic Gap** (Created: 2025-11-21) 🔴 CRITICAL
+  - Task ID: BUG-005
+  - Priority: P0 (CRITICAL - WORKFLOW BLOCKER)
+  - **Problem:** Hardcoded user ID, unrealistic UX requiring Batch IDs, inventory restocking may not work
+  - **Impact:** Returns workflow unusable, breaks audit trails, inventory may not restock correctly
+  - **Estimate:** 6-8 hours
+  - **Status:** 📋 PLANNED
+  - **Prompt:** `docs/prompts/BUG-005.md`
+
+- [ ] **BUG-006: Workflow Queue Missing Entry Point** (Created: 2025-11-21) 🔴 CRITICAL
+  - Task ID: BUG-006
+  - Priority: P0 (CRITICAL - WORKFLOW BLOCKER)
+  - **Problem:** WorkflowQueuePage displays Kanban board but no way to add items to queue
+  - **Impact:** Workflow queue is display-only, new inventory may be invisible
+  - **Estimate:** 4-6 hours
+  - **Status:** 📋 PLANNED
+  - **Prompt:** `docs/prompts/BUG-006.md`
+
+- [ ] **BUG-007: Missing Permissions & Safety Checks** (Created: 2025-11-21) 🔴 CRITICAL
+  - Task ID: BUG-007
+  - Priority: P0 (CRITICAL - SAFETY)
+  - **Problem:** window.confirm used instead of proper dialogs, no confirmation for clearing cart
+  - **Impact:** Unprofessional UI, users can accidentally lose work
+  - **Estimate:** 2-4 hours
+  - **Status:** 📋 PLANNED
+  - **Prompt:** `docs/prompts/BUG-007.md`
+
+- [ ] **ST-019: Fix "Happy Path" Only Testing Assumptions** (Created: 2025-11-21) 🟡 MEDIUM
+  - Task ID: ST-019
+  - Priority: P1 (HIGH - DATA QUALITY)
+  - **Problem:** Code assumes ideal data states - breaks on empty database, floating-point errors in calculations
+  - **Impact:** System may fail or produce incorrect results with edge case data
+  - **Estimate:** 4-6 hours
+  - **Status:** 📋 PLANNED
+  - **Prompt:** `docs/prompts/ST-019.md`
+
+**Total Estimated Time:** 27-40 hours (3-5 days with parallel execution)
+
+---
+
+### Phase 3: Workflow Integration & Completion (1-2 Weeks)
+
+**Objective:** Ensure all workflows are complete end-to-end and properly integrated. Verify data flows correctly through the entire system.
+
+**Priority:** 🔴 HIGH - Completes core business functionality
+
+- [ ] **WF-001: End-to-End Order Creation Workflow** (Created: 2025-11-21) 🔴 HIGH
+  - Task ID: WF-001
+  - Priority: P1 (HIGH - WORKFLOW COMPLETION)
+  - **Problem:** Order creation workflow needs verification from customer selection through order finalization
+  - **Objectives:**
+    1. Verify customer selection works correctly
+    2. Verify inventory browser integration (after BUG-003)
+    3. Verify credit limit checks prevent invalid orders
+    4. Verify order totals calculate correctly
+    5. Verify order submission creates all required records
+  - **Estimate:** 4-6 hours
+  - **Status:** 📋 PLANNED
+  - **Dependencies:** BUG-003 (Order Creator Connectivity)
+  - **Prompt:** `docs/prompts/WF-001.md`
+
+- [ ] **WF-002: End-to-End Inventory Intake Workflow** (Created: 2025-11-21) 🔴 HIGH
+  - Task ID: WF-002
+  - Priority: P1 (HIGH - WORKFLOW COMPLETION)
+  - **Problem:** Inventory intake workflow needs verification from purchase creation through batch creation to workflow queue
+  - **Objectives:**
+    1. Verify purchase modal creates purchase records correctly
+    2. Verify media files are saved and linked (after BUG-004)
+    3. Verify batch creation from purchases
+    4. Verify batches appear in workflow queue (after BUG-006)
+    5. Verify batch status transitions work correctly
+  - **Estimate:** 6-8 hours
+  - **Status:** 📋 PLANNED
+  - **Dependencies:** BUG-004 (Purchase Modal Data Loss), BUG-006 (Workflow Queue Entry Point)
+  - **Prompt:** `docs/prompts/WF-002.md`
+
+- [ ] **WF-003: End-to-End Returns Workflow** (Created: 2025-11-21) 🔴 HIGH
+  - Task ID: WF-003
+  - Priority: P1 (HIGH - WORKFLOW COMPLETION)
+  - **Problem:** Returns workflow needs verification from order lookup through inventory restocking
+  - **Objectives:**
+    1. Verify order lookup and item selection (after BUG-005)
+    2. Verify return record creation with correct user context
+    3. Verify inventory restocking logic works correctly
+    4. Verify batch status transitions (Sold → In Stock)
+    5. Verify audit trail records correct user
+  - **Estimate:** 4-6 hours
+  - **Status:** 📋 PLANNED
+  - **Dependencies:** BUG-005 (Returns Workflow Logic Gap)
+  - **Prompt:** `docs/prompts/WF-003.md`
+
+- [ ] **WF-004: Data Integrity Verification** (Created: 2025-11-21) 🟡 MEDIUM
+  - Task ID: WF-004
+  - Priority: P1 (HIGH - DATA QUALITY)
+  - **Problem:** Need to verify all workflows create correct data relationships and maintain referential integrity
+  - **Objectives:**
+    1. Create test suite for data integrity across all workflows
+    2. Verify foreign key relationships are maintained
+    3. Verify financial calculations are accurate (no floating-point errors)
+    4. Verify audit trails are complete
+    5. Verify soft deletes work correctly
+  - **Estimate:** 6-8 hours
+  - **Status:** 📋 PLANNED
+  - **Dependencies:** ST-019 (Happy Path Testing), All workflow fixes
+  - **Prompt:** `docs/prompts/WF-004.md`
+
+**Total Estimated Time:** 20-28 hours (2.5-3.5 days with parallel execution)
+
+---
+
+### Phase 3.5: Refactoring (2-3 Weeks)
 
 **Objective:** Refactor the codebase for better performance, maintainability, and type safety.
 
