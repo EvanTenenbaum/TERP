@@ -1,0 +1,99 @@
+# DigitalOcean App Platform Spec Template
+# This is a reference template showing the structure without secrets
+# Actual secrets should be configured in DigitalOcean Control Panel
+
+name: terp-app
+region: nyc
+
+databases:
+  - cluster_name: terp-mysql-db
+    db_name: defaultdb
+    db_user: doadmin
+    engine: MYSQL
+    name: terp-mysql-db
+    production: true
+    version: "8"
+
+services:
+  - name: terp-production
+    github:
+      repo: EvanTenenbaum/TERP
+      branch: main
+      deploy_on_push: true
+    
+    build_command: pnpm install && pnpm run build
+    run_command: node scripts/migrate.js && node dist/index.js
+    environment_slug: node-js
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
+    source_dir: /
+    
+    # Environment variables - Use DigitalOcean Secret Manager for sensitive values
+    envs:
+      # Non-sensitive values (safe to commit)
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: production
+      
+      - key: VITE_APP_TITLE
+        scope: RUN_AND_BUILD_TIME
+        value: TERP
+      
+      - key: VITE_APP_ID
+        scope: RUN_AND_BUILD_TIME
+        value: terp-app
+      
+      # Sensitive values - Configure in DigitalOcean Control Panel
+      # Go to: App > Settings > App-Level Environment Variables
+      # Or use type: SECRET in app.yaml
+      
+      # Database (use type: SECRET in app.yaml or set in control panel)
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${terp-mysql-db.DATABASE_URL}  # Reference to database component
+      
+      # Auth secrets (configure in control panel)
+      - key: JWT_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      
+      - key: CLERK_SECRET_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      
+      - key: CLERK_PUBLISHABLE_KEY
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      
+      # Monitoring (optional - configure in control panel)
+      - key: SOLARWINDS_TOKEN
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      
+      - key: SENTRY_DSN
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      
+      - key: VITE_SENTRY_DSN
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      
+      # Webhooks (configure in control panel)
+      - key: GITHUB_WEBHOOK_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      
+      # Other settings
+      - key: QA_MODE
+        scope: RUN_AND_BUILD_TIME
+        value: "true"
+
+ingress:
+  rules:
+    - component:
+        name: terp-production
+      match:
+        path:
+          prefix: /
+

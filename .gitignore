@@ -116,5 +116,6 @@ current_spec.json
 current_spec.yaml
 new_spec.yaml
 deployment_details.json
-*.spec.json
-*.spec.yaml
+# Allow template files (without secrets)
+!*.template.yaml
+!*.template.json
