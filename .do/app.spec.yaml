@@ -1,0 +1,103 @@
+# DigitalOcean App Platform Configuration
+# This file is safe to commit - uses placeholders and references
+# Actual secrets are stored in DigitalOcean Control Panel or GitHub Secrets
+# Agents can read this structure and fetch secrets from secure storage
+
+name: terp-app
+region: nyc
+
+databases:
+  - cluster_name: terp-mysql-db
+    db_name: defaultdb
+    db_user: doadmin
+    engine: MYSQL
+    name: terp-mysql-db
+    production: true
+    version: "8"
+
+services:
+  - name: terp-production
+    github:
+      repo: EvanTenenbaum/TERP
+      branch: main
+      deploy_on_push: true
+    
+    build_command: pnpm install && pnpm run build
+    run_command: node scripts/migrate.js && node dist/index.js
+    environment_slug: node-js
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
+    source_dir: /
+    
+    # Environment variables
+    # Non-sensitive values can be committed
+    # Sensitive values use references to DigitalOcean Secret Manager
+    envs:
+      # Non-sensitive (safe to commit)
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: production
+      
+      - key: VITE_APP_TITLE
+        scope: RUN_AND_BUILD_TIME
+        value: TERP
+      
+      - key: VITE_APP_ID
+        scope: RUN_AND_BUILD_TIME
+        value: terp-app
+      
+      - key: QA_MODE
+        scope: RUN_AND_BUILD_TIME
+        value: "true"
+      
+      # Database URL - Reference to database component (automatic)
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${terp-mysql-db.DATABASE_URL}
+      
+      # Sensitive values - Configure in DigitalOcean Control Panel
+      # Or use GitHub Secrets API to fetch and set programmatically
+      # See: scripts/fetch-and-set-secrets.ts
+      
+      # IMPORTANT: These values should be set in DigitalOcean Control Panel
+      # Or fetched from GitHub Secrets by agents using the API
+      # Format: {{SECRET:JWT_SECRET}} indicates this should be fetched from GitHub Secrets
+      
+      - key: JWT_SECRET
+        scope: RUN_AND_BUILD_TIME
+        # Set in DO Control Panel or fetch from GitHub Secrets
+        value: "{{SECRET:JWT_SECRET}}"
+      
+      - key: CLERK_SECRET_KEY
+        scope: RUN_AND_BUILD_TIME
+        value: "{{SECRET:CLERK_SECRET_KEY}}"
+      
+      - key: CLERK_PUBLISHABLE_KEY
+        scope: RUN_AND_BUILD_TIME
+        value: "{{SECRET:CLERK_PUBLISHABLE_KEY}}"
+      
+      - key: SOLARWINDS_TOKEN
+        scope: RUN_AND_BUILD_TIME
+        value: "{{SECRET:SOLARWINDS_TOKEN}}"
+      
+      - key: SENTRY_DSN
+        scope: RUN_AND_BUILD_TIME
+        value: "{{SECRET:SENTRY_DSN}}"
+      
+      - key: VITE_SENTRY_DSN
+        scope: RUN_AND_BUILD_TIME
+        value: "{{SECRET:VITE_SENTRY_DSN}}"
+      
+      - key: GITHUB_WEBHOOK_SECRET
+        scope: RUN_AND_BUILD_TIME
+        value: "{{SECRET:GITHUB_WEBHOOK_SECRET}}"
+
+ingress:
+  rules:
+    - component:
+        name: terp-production
+      match:
+        path:
+          prefix: /
+

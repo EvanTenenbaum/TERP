@@ -111,11 +111,13 @@ temp/
 *.sqlite3
 docs/DEPLOYMENT_CREDENTIALS.md
 
-# Deployment configuration files with secrets
+# Deployment configuration files with actual secrets (local backups only)
 current_spec.json
 current_spec.yaml
 new_spec.yaml
 deployment_details.json
-# Allow template files (without secrets)
-!*.template.yaml
-!*.template.json
+
+# Allow safe configuration files (with placeholders, no actual secrets)
+!.do/app.spec.yaml
+!.do/app.yaml
+!.do/*.template.yaml
