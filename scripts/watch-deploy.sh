@@ -1,5 +1,5 @@
 #!/bin/bash
-APP_ID="1fd40be5-b9af-4e71-ab1d-3af0864a7da4 
+APP_ID="1fd40be5-b9af-4e71-ab1d-3af0864a7da4"
 
 echo "🔍 Finding latest deployment..."
 DEP_ID=$(doctl apps list-deployments $APP_ID --format ID --no-header | head -n 1)
