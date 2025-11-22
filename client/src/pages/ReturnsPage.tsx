@@ -31,11 +31,14 @@ import { useToast } from "../hooks/use-toast";
 import { PackageX, Plus, TrendingDown } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { Checkbox } from "../components/ui/checkbox";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ReturnsPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [orderId, setOrderId] = useState("");
+  const [orderIdInput, setOrderIdInput] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [returnReason, setReturnReason] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [returnItems, setReturnItems] = useState<Array<{ batchId: number; quantity: string; reason?: string }>>([]);
@@ -43,6 +46,13 @@ export default function ReturnsPage() {
 
   const { data: returns, isLoading, refetch } = trpc.returns.getAll.useQuery({ limit: 100 });
   const { data: stats } = trpc.returns.getStats.useQuery();
+
+  // Get order details when order ID is entered
+  const { data: orderDetails } = trpc.orders.getOrderWithLineItems.useQuery(
+    { orderId: selectedOrderId! },
+    { enabled: !!selectedOrderId }
+  );
+
   const createReturn = trpc.returns.create.useMutation({
     onSuccess: () => {
       toast({ title: "Return processed successfully" });
@@ -56,7 +66,8 @@ export default function ReturnsPage() {
   });
 
   const resetForm = () => {
-    setOrderId("");
+    setOrderIdInput("");
+    setSelectedOrderId(null);
     setReturnReason("");
     setNotes("");
     setReturnItems([]);
@@ -64,23 +75,51 @@ export default function ReturnsPage() {
   };
 
   const handleCreateReturn = () => {
-    if (!orderId || !returnReason || returnItems.length === 0) {
+    if (!selectedOrderId || !returnReason || returnItems.length === 0) {
       toast({ title: "Please fill in all required fields", variant: "destructive" });
       return;
     }
 
+    if (!user?.id) {
+      toast({ title: "User not authenticated", variant: "destructive" });
+      return;
+    }
+
     createReturn.mutate({
-      orderId: parseInt(orderId),
+      orderId: selectedOrderId,
       items: returnItems,
       reason: returnReason as any,
       notes,
-      processedBy: 1, // TODO: Get from auth context
       restockInventory,
     });
   };
 
-  const addReturnItem = () => {
-    setReturnItems([...returnItems, { batchId: 0, quantity: "0", reason: "" }]);
+  // Handle order ID input
+  const handleOrderIdChange = (value: string) => {
+    setOrderIdInput(value);
+    const orderId = parseInt(value);
+    if (!isNaN(orderId) && orderId > 0) {
+      setSelectedOrderId(orderId);
+      setReturnItems([]); // Clear previous items
+    } else {
+      setSelectedOrderId(null);
+    }
+  };
+
+  // Add order line item to return items
+  const addOrderItemToReturn = (lineItem: any) => {
+    // Check if item already added
+    const exists = returnItems.some(item => item.batchId === lineItem.batchId);
+    if (exists) {
+      toast({ title: "Item already added to return", variant: "default" });
+      return;
+    }
+
+    setReturnItems([...returnItems, {
+      batchId: lineItem.batchId,
+      quantity: lineItem.quantity.toString(),
+      reason: "",
+    }]);
   };
 
   const updateReturnItem = (index: number, field: string, value: string | number) => {
@@ -196,11 +235,57 @@ export default function ReturnsPage() {
               <Input
                 id="orderId"
                 type="number"
-                value={orderId}
-                onChange={(e) => setOrderId(e.target.value)}
+                value={orderIdInput}
+                onChange={(e) => handleOrderIdChange(e.target.value)}
                 placeholder="Enter order ID"
               />
+              {selectedOrderId && orderDetails && (
+                <div className="mt-2 p-3 bg-accent rounded-lg">
+                  <div className="font-medium">Order #{orderDetails.order.orderNumber || orderDetails.order.id}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Client: {orderDetails.order.clientName || "N/A"} - Total: ${orderDetails.order.totalAmount?.toFixed(2) || "0.00"}
+                  </div>
+                </div>
+              )}
+              {selectedOrderId && !orderDetails && (
+                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="text-sm text-yellow-800">Loading order details...</div>
+                </div>
+              )}
             </div>
+
+            {/* Order Line Items Selection */}
+            {orderDetails && orderDetails.lineItems && orderDetails.lineItems.length > 0 && (
+              <div>
+                <Label>Select Items to Return</Label>
+                <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-lg p-2">
+                  {orderDetails.lineItems.map((lineItem: any) => {
+                    const isSelected = returnItems.some(item => item.batchId === lineItem.batchId);
+                    return (
+                      <div
+                        key={lineItem.id}
+                        className={`p-2 border rounded cursor-pointer ${
+                          isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"
+                        }`}
+                        onClick={() => !isSelected && addOrderItemToReturn(lineItem)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{lineItem.productDisplayName || `Batch #${lineItem.batchId}`}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Qty: {lineItem.quantity} × ${lineItem.unitPrice?.toFixed(2) || "0.00"}
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <div className="text-sm text-primary font-medium">Added</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div>
               <Label htmlFor="returnReason">Return Reason *</Label>
@@ -240,48 +325,45 @@ export default function ReturnsPage() {
               </Label>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label>Return Items *</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addReturnItem}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Item
-                </Button>
-              </div>
-
-              {returnItems.map((item, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <Input
-                    type="number"
-                    placeholder="Batch ID"
-                    value={item.batchId || ""}
-                    onChange={(e) => updateReturnItem(index, "batchId", parseInt(e.target.value) || 0)}
-                    className="flex-1"
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Quantity"
-                    value={item.quantity}
-                    onChange={(e) => updateReturnItem(index, "quantity", e.target.value)}
-                    className="flex-1"
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Item reason (optional)"
-                    value={item.reason || ""}
-                    onChange={(e) => updateReturnItem(index, "reason", e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removeReturnItem(index)}>
-                    Remove
-                  </Button>
+            {/* Return Items List */}
+            {returnItems.length > 0 && (
+              <div>
+                <Label>Return Items ({returnItems.length})</Label>
+                <div className="mt-2 space-y-2">
+                  {returnItems.map((item, index) => {
+                    const lineItem = orderDetails?.lineItems?.find((li: any) => li.batchId === item.batchId);
+                    return (
+                      <div key={index} className="flex gap-2 items-center p-2 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="font-medium">
+                            {lineItem?.productDisplayName || `Batch #${item.batchId}`}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Quantity: {item.quantity}
+                          </div>
+                        </div>
+                        <Input
+                          type="text"
+                          placeholder="Item reason (optional)"
+                          value={item.reason || ""}
+                          onChange={(e) => updateReturnItem(index, "reason", e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button type="button" variant="destructive" size="sm" onClick={() => removeReturnItem(index)}>
+                          Remove
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              </div>
+            )}
 
-              {returnItems.length === 0 && (
-                <p className="text-sm text-muted-foreground">No items added. Click "Add Item" to start.</p>
-              )}
-            </div>
+            {returnItems.length === 0 && selectedOrderId && (
+              <p className="text-sm text-muted-foreground">
+                Select items from the order above to add them to the return.
+              </p>
+            )}
           </div>
 
           <DialogFooter>
