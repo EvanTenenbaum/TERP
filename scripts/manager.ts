@@ -579,7 +579,9 @@ async function executeCommand(batch?: string, auto?: boolean, untilPhase?: strin
         
         // Check if target task is reached
         if (untilTask) {
-          const targetTask = tasks.find(t => t.id === untilTask);
+          // Re-parse roadmap to get updated status
+          const { tasks: updatedTasks } = parseRoadmap();
+          const targetTask = updatedTasks.find(t => t.id === untilTask);
           if (targetTask && (targetTask.status.includes('COMPLETE') || targetTask.status.includes('Complete'))) {
             console.log(chalk.green(`\n✅ Target task ${untilTask} completed!`));
             return;
