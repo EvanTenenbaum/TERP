@@ -11,11 +11,20 @@ function getStorageConfig(): StorageConfig {
 
   if (!baseUrl || !apiKey) {
     throw new Error(
-      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
+      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY. " +
+      "Storage features will not work until these are configured."
     );
   }
 
   return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
+}
+
+/**
+ * Check if storage is configured (doesn't throw, returns boolean)
+ * Useful for checking availability without triggering errors
+ */
+export function isStorageConfigured(): boolean {
+  return !!(ENV.forgeApiUrl && ENV.forgeApiKey);
 }
 
 function buildUploadUrl(baseUrl: string, relKey: string): URL {

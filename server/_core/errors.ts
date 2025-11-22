@@ -59,6 +59,13 @@ export const ErrorCatalog = {
       ),
   },
 
+  // Storage Errors
+  STORAGE_NOT_CONFIGURED: new AppError(
+    "Storage service is not configured. Please set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY environment variables.",
+    "STORAGE_NOT_CONFIGURED",
+    503
+  ),
+
   // Entity Not Found Errors
   NOT_FOUND: {
     VENDOR: (vendorId: number) =>
