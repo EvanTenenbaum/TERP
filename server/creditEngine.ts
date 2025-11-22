@@ -484,8 +484,10 @@ export async function calculateCreditLimit(
   const totalOwed = Number(client[0].totalOwed || 0);
   const currentExposure = totalOwed;
 
-  // Calculate utilization
-  const utilizationPercent = creditLimit > 0 ? (currentExposure / creditLimit) * 100 : 0;
+  // Calculate utilization (with division by zero check)
+  const utilizationPercent = creditLimit > 0 && Math.abs(creditLimit) > 0.01 
+    ? (currentExposure / creditLimit) * 100 
+    : 0;
 
   // Determine mode and confidence
   const createdAt = client[0].createdAt ? new Date(client[0].createdAt) : new Date();

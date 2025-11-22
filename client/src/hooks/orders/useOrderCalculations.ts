@@ -99,9 +99,9 @@ export function calculateOrderTotals(
   // Calculate total margin
   const totalMargin = round(subtotal - totalCogs);
 
-  // Calculate average margin percent
+  // Calculate average margin percent (with division by zero check)
   const avgMarginPercent =
-    subtotal > 0 ? round((totalMargin / subtotal) * 100) : 0;
+    subtotal > 0 && Math.abs(subtotal) > 0.01 ? round((totalMargin / subtotal) * 100) : 0;
 
   // Calculate adjustment amount
   let adjustmentAmount = 0;
