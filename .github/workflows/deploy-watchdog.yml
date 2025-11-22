@@ -1,0 +1,71 @@
+name: Deploy Watchdog
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  monitor-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Wait for Deployment to Start
+        run: sleep 30  # Give DO a moment to register the git push
+
+      - name: Watch Deployment Status
+        id: watch
+        env:
+          APP_NAME: ${{ secrets.DO_APP_NAME }}
+        run: |
+          # 1. Get App ID
+          APP_ID=$(doctl apps list --format ID,Spec.Name --no-header | grep "$APP_NAME" | awk '{print $1}')
+          echo "App ID: $APP_ID"
+          
+          # 2. Get the latest Deployment ID
+          DEPLOY_ID=$(doctl apps list-deployments $APP_ID --format ID --no-header | head -n 1)
+          echo "Tracking Deployment: $DEPLOY_ID"
+          
+          # 3. Loop until finish
+          while true; do
+            STATUS=$(doctl apps get-deployment $APP_ID $DEPLOY_ID --format Phase --no-header)
+            echo "Current Status: $STATUS"
+            
+            if [ "$STATUS" == "ACTIVE" ]; then
+              echo "result=success" >> $GITHUB_OUTPUT
+              exit 0
+            elif [ "$STATUS" == "FAILED" ] || [ "$STATUS" == "CANCELED" ]; then
+              echo "result=failure" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+            sleep 30
+          done
+
+      - name: Notify Slack (Success)
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "✅ **Deployment Successful**\nApp: ${{ secrets.DO_APP_NAME }}\nVersion: ${{ github.sha }} is now live.",
+              "attachments": [{ "color": "#36a64f" }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack (Failure)
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              "text": "❌ **Deployment FAILED**\nApp: ${{ secrets.DO_APP_NAME }}\nCommit: ${{ github.event.head_commit.message }}",
+              "attachments": [{ "color": "#ff0000", "text": "Check DigitalOcean console for build logs." }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
