@@ -19,7 +19,9 @@ Copy the values from your local `current_spec.yaml` or `deployment_details.json`
 - Name: `CLERK_SECRET_KEY` → Value: (from your files)
 - Name: `CLERK_PUBLISHABLE_KEY` → Value: (from your files)
 - Name: `DATABASE_URL` → Value: (from your files)
-- Name: `GITHUB_WEBHOOK_SECRET` → Value: (from your files)
+- Name: `WEBHOOK_SECRET` → Value: (from your files, was GITHUB_WEBHOOK_SECRET)
+  
+  **Note:** GitHub Secrets can't start with "github", so use `WEBHOOK_SECRET` instead of `GITHUB_WEBHOOK_SECRET`
 
 **Monitoring Secrets (3):**
 - Name: `SOLARWINDS_TOKEN` → Value: (from your files)
