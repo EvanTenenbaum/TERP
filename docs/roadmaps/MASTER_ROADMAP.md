@@ -883,14 +883,23 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - **Status:** 📋 PLANNED
   - **Prompt:** `docs/prompts/BUG-002.md`
 
-- [ ] **BUG-003: Order Creator Connectivity** (Created: 2025-11-21) 🔴 CRITICAL
+- [x] **BUG-003: Order Creator Connectivity** (Completed: 2025-11-22) 🔴 CRITICAL
   - Task ID: BUG-003
   - Priority: P0 (CRITICAL BLOCKER)
+  - Session: Session-20251122-BUG-003-a9371575
   - **Problem:** Order Creator cannot add items to orders - InventoryBrowser not integrated, CreditLimitBanner missing
-  - **Impact:** Blocks all revenue workflow - users cannot create orders with items
-  - **Estimate:** 4-6 hours
-  - **Status:** 📋 PLANNED
-  - **Prompt:** `docs/prompts/BUG-003.md`
+  - **Solution:** 
+    - Integrated `InventoryBrowser` component using `trpc.salesSheets.getInventory`
+    - Implemented `handleAddItem` to convert inventory items to LineItem format
+    - Added `CreditLimitBanner` component near OrderTotalsPanel
+    - Added credit limit validation in `handlePreviewAndFinalize` for SALE orders
+  - **Files Modified:**
+    - `client/src/pages/OrderCreatorPage.tsx` - Full integration of InventoryBrowser and CreditLimitBanner
+  - **Key Commits:**
+    - `bug-003-order-creator-connectivity` - Fix BUG-003: Integrate InventoryBrowser and CreditLimitBanner
+  - **Status:** ✅ COMPLETE
+  - **Actual Time:** 1.5 hours
+  - **Impact:** Order Creator now fully functional - users can browse inventory, add items, and see credit limit warnings
 
 - [ ] **BUG-004: Purchase/Intake Modal Data Loss** (Created: 2025-11-21) 🔴 CRITICAL
   - Task ID: BUG-004
