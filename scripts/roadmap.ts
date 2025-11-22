@@ -86,12 +86,12 @@ function parseRoadmap(): RoadmapData {
     const line = lines[i];
     
     // Detect task start
-    if (line.match(/^### ST-\d+:/)) {
+    if (line.match(/^### (ST|BUG|QA|DATA|CL)-\d+/)) {
       currentLineNum = i + 1;
       
       // Extract section until next task or end
       let sectionEnd = i + 1;
-      while (sectionEnd < lines.length && !lines[sectionEnd].match(/^### ST-\d+:/)) {
+      while (sectionEnd < lines.length && !lines[sectionEnd].match(/^### (ST|BUG|QA|DATA|CL)-\d+/)) {
         sectionEnd++;
       }
       
@@ -122,12 +122,12 @@ function parseRoadmap(): RoadmapData {
 
 function parseTask(section: string, lineNumber: number): Task {
   // Extract task ID
-  const idMatch = section.match(/^### (ST-\d+):/);
-  if (!idMatch) throw new Error('Invalid task ID format (expected ST-XXX)');
+  const idMatch = section.match(/^### ((?:ST|BUG|QA|DATA|CL)(?:-\d+)+(?:-[A-Z]+)?)/);
+  if (!idMatch) throw new Error('Invalid task ID format (expected PREFIX-XXX)');
   const id = idMatch[1];
 
   // Extract title
-  const titleMatch = section.match(/^### ST-\d+: (.+)$/m);
+  const titleMatch = section.match(/^### (?:ST|BUG|QA|DATA|CL)(?:-\d+)+(?:-[A-Z]+)?: (.+)$/m);
   if (!titleMatch) throw new Error('Missing title');
   const title = titleMatch[1].trim();
 
@@ -142,8 +142,9 @@ function parseTask(section: string, lineNumber: number): Task {
   const promptPath = extractField(section, 'Prompt');
 
   // FIX #20: Validate prompt path format
-  if (!promptPath.match(/^docs\/prompts\/ST-\d+\.md$/)) {
-    throw new Error(`Invalid prompt path format: ${promptPath} (expected docs/prompts/ST-XXX.md)`);
+  // Relaxed validation to allow various prefixes
+  if (!promptPath.match(/^docs\/prompts\/[A-Z]+-\d+(?:-[A-Z]+)?\.md$/)) {
+    throw new Error(`Invalid prompt path format: ${promptPath} (expected docs/prompts/PREFIX-XXX.md)`);
   }
 
   // Extract objectives (flexible - handles blank lines)

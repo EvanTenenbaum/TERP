@@ -161,7 +161,8 @@ function parseRoadmap(): { tasks: Task[]; phase: string } {
   }
 
   // Parse tasks - look for task patterns like "ST-XXX:", "BUG-XXX:", "FEATURE-XXX:", "CL-XXX:", "DATA-XXX:"
-  const taskPattern = /^###?\s*([A-Z]+-\d+):\s*(.+)$/;
+  // Also handle task headers with or without colon, and with extended formats like "DATA-002-AUGMENT"
+  const taskPattern = /^###?\s*([A-Z]+-\d+(?:-[A-Z]+)?):?\s*(.+)$/;
   const statusPattern = /^\*\*Status:\*\*\s*(.+)$/;
   const priorityPattern = /^\*\*Priority:\*\*\s*(.+)$/;
 

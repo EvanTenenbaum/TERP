@@ -158,6 +158,7 @@ Find the DATA-002-AUGMENT task and update status from `📋 PLANNED` to `⏳ IN 
 ```typescript
 import { db } from '../server/db/index.js';
 import { orders, orderItems, products, batches, inventoryMovements } from '../drizzle/schema.js';
+import { eq, isNull } from "drizzle-orm";
 
 async function auditRelationships() {
   // Check orders without items
@@ -460,4 +461,3 @@ pnpm exec tsx scripts/validate-data-quality.ts
 ---
 
 **Last Updated:** November 21, 2025
-
