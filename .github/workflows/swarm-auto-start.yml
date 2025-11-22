@@ -1,16 +1,30 @@
-name: Swarm Auto-Start
+name: Swarm Manual Start
 
 on:
-  schedule:
-    # Run every 2 hours
-    - cron: '0 */2 * * *'
-  workflow_dispatch: # Allow manual trigger
-  push:
-    branches:
-      - main
-    paths:
-      - 'docs/roadmaps/MASTER_ROADMAP.md'
-      - 'docs/prompts/**'
+  workflow_dispatch: # Manual trigger only
+    inputs:
+      mode:
+        description: 'Execution mode'
+        required: true
+        type: choice
+        options:
+          - 'auto'
+          - 'batch'
+          - 'until-phase'
+          - 'until-task'
+        default: 'auto'
+      target_phase:
+        description: 'Work until this phase (e.g., "Phase 2.5", "Phase 3") - Required if mode is until-phase'
+        required: false
+        type: string
+      target_task:
+        description: 'Work until this task (e.g., "BUG-007", "WF-004") - Required if mode is until-task'
+        required: false
+        type: string
+      batch_tasks:
+        description: 'Comma-separated task IDs (e.g., "BUG-002,BUG-003") - Required if mode is batch'
+        required: false
+        type: string
 
 jobs:
   swarm-execution:
@@ -62,12 +76,44 @@ jobs:
           fi
 
       - name: Execute swarm agents
-        if: steps.parse.outputs.has_tasks == 'true'
         env:
           GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
         run: |
-          echo "🚀 Auto-starting swarm with tasks: ${{ steps.parse.outputs.tasks }}"
-          pnpm swarm execute --batch="${{ steps.parse.outputs.tasks }}" || true
+          MODE="${{ github.event.inputs.mode }}"
+          
+          if [ "$MODE" == "until-phase" ]; then
+            if [ -z "${{ github.event.inputs.target_phase }}" ]; then
+              echo "❌ Error: target_phase is required when mode is until-phase"
+              exit 1
+            fi
+            echo "🚀 Working until phase: ${{ github.event.inputs.target_phase }}"
+            pnpm swarm execute --until-phase="${{ github.event.inputs.target_phase }}" || true
+            
+          elif [ "$MODE" == "until-task" ]; then
+            if [ -z "${{ github.event.inputs.target_task }}" ]; then
+              echo "❌ Error: target_task is required when mode is until-task"
+              exit 1
+            fi
+            echo "🚀 Working until task: ${{ github.event.inputs.target_task }}"
+            pnpm swarm execute --until-task="${{ github.event.inputs.target_task }}" || true
+            
+          elif [ "$MODE" == "batch" ]; then
+            if [ -z "${{ github.event.inputs.batch_tasks }}" ]; then
+              echo "❌ Error: batch_tasks is required when mode is batch"
+              exit 1
+            fi
+            echo "🚀 Executing batch: ${{ github.event.inputs.batch_tasks }}"
+            pnpm swarm execute --batch="${{ github.event.inputs.batch_tasks }}" || true
+            
+          else
+            # Auto mode - use recommended tasks
+            if [ "${{ steps.parse.outputs.has_tasks }}" == "true" ]; then
+              echo "🚀 Auto-executing: ${{ steps.parse.outputs.tasks }}"
+              pnpm swarm execute --batch="${{ steps.parse.outputs.tasks }}" || true
+            else
+              echo "ℹ️  No recommended tasks found"
+            fi
+          fi
 
       - name: Generate status report
         id: report

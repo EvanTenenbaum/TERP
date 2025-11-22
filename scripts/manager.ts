@@ -485,14 +485,117 @@ async function statusCommand(): Promise<void> {
   }
 }
 
-async function executeCommand(batch?: string, auto?: boolean): Promise<void> {
+async function executeCommand(batch?: string, auto?: boolean, untilPhase?: string, untilTask?: string): Promise<void> {
   try {
-    const { tasks } = parseRoadmap();
+    const { tasks, phase } = parseRoadmap();
     const taskMap = new Map(tasks.map(t => [t.id, t]));
     
     let taskIds: string[] = [];
     
-    if (auto) {
+    if (untilPhase || untilTask) {
+      // Work until target phase or task
+      const content = readFileSync(ROADMAP_PATH, 'utf-8');
+      const lines = content.split('\n');
+      
+      let targetReached = false;
+      let inTargetPhase = false;
+      const pendingTasks: Task[] = [];
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Check if we've reached target phase
+        if (untilPhase && line.includes(untilPhase)) {
+          inTargetPhase = true;
+        }
+        
+        // Check if we've reached target task
+        if (untilTask && line.includes(untilTask)) {
+          targetReached = true;
+          break;
+        }
+        
+        // If in target phase or before target task, collect pending tasks
+        if (inTargetPhase || untilTask) {
+          const taskMatch = line.match(/^###?\s*([A-Z]+-\d+):/);
+          if (taskMatch) {
+            const taskId = taskMatch[1];
+            const task = tasks.find(t => t.id === taskId);
+            if (task && !task.status.includes('COMPLETE') && !task.status.includes('Complete')) {
+              pendingTasks.push(task);
+            }
+          }
+        }
+        
+        // Stop if we've passed target phase (for phase targeting)
+        if (untilPhase && inTargetPhase && line.match(/^### Phase \d+/) && !line.includes(untilPhase)) {
+          break;
+        }
+      }
+      
+      if (untilTask && !targetReached) {
+        console.log(chalk.yellow(`⚠️  Target task ${untilTask} not found in roadmap`));
+        process.exit(1);
+      }
+      
+      if (untilPhase && !inTargetPhase) {
+        console.log(chalk.yellow(`⚠️  Target phase "${untilPhase}" not found in roadmap`));
+        process.exit(1);
+      }
+      
+      // Execute tasks in batches until target is reached
+      console.log(chalk.blue(`🚀 Working until ${untilPhase || untilTask}...`));
+      console.log(chalk.blue(`📋 Found ${pendingTasks.length} pending tasks`));
+      
+      const batchSize = 3;
+      let completed = 0;
+      
+      for (let i = 0; i < pendingTasks.length; i += batchSize) {
+        const batch = pendingTasks.slice(i, i + batchSize);
+        const batchIds = batch.map(t => t.id);
+        
+        console.log(chalk.blue(`\n📦 Executing batch ${Math.floor(i / batchSize) + 1}: ${batchIds.join(', ')}`));
+        
+        const results = await Promise.allSettled(
+          batchIds.map(taskId => {
+            const task = taskMap.get(taskId)!;
+            return executeAgent(taskId, task);
+          })
+        );
+        
+        // Report batch results
+        results.forEach((result, index) => {
+          const taskId = batchIds[index];
+          if (result.status === 'fulfilled') {
+            const execResult = result.value;
+            const statusColor = 
+              execResult.status === 'success' ? chalk.green :
+              execResult.status === 'timeout' ? chalk.yellow :
+              chalk.red;
+            console.log(statusColor(`  ${taskId}: ${execResult.status.toUpperCase()}`));
+            if (execResult.status === 'success') completed++;
+          }
+        });
+        
+        // Check if target task is reached
+        if (untilTask) {
+          const targetTask = tasks.find(t => t.id === untilTask);
+          if (targetTask && (targetTask.status.includes('COMPLETE') || targetTask.status.includes('Complete'))) {
+            console.log(chalk.green(`\n✅ Target task ${untilTask} completed!`));
+            return;
+          }
+        }
+        
+        // Small delay between batches
+        if (i + batchSize < pendingTasks.length) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      console.log(chalk.green(`\n✅ Completed ${completed} of ${pendingTasks.length} tasks`));
+      return;
+      
+    } else if (auto) {
       // Auto-select recommended high priority tasks
       taskIds = tasks
         .filter(t => 
@@ -512,7 +615,7 @@ async function executeCommand(batch?: string, auto?: boolean): Promise<void> {
     } else if (batch) {
       taskIds = batch.split(',').map(id => id.trim());
     } else {
-      console.error('Error: Either --batch or --auto must be specified');
+      console.error('Error: Must specify --batch, --auto, --until-phase, or --until-task');
       process.exit(1);
     }
     
@@ -593,8 +696,10 @@ program
   .description('Execute agents for tasks')
   .option('--batch <ids>', 'Comma-separated task IDs (e.g., ST-001,ST-002)')
   .option('--auto', 'Auto-select recommended high priority tasks')
+  .option('--until-phase <phase>', 'Work through tasks until this phase (e.g., "Phase 2.5", "Phase 3")')
+  .option('--until-task <task>', 'Work through tasks until this task is complete (e.g., "BUG-007", "WF-004")')
   .action((options) => {
-    executeCommand(options.batch, options.auto).catch(console.error);
+    executeCommand(options.batch, options.auto, options.untilPhase, options.untilTask).catch(console.error);
   });
 
 // Run CLI
