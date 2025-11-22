@@ -2266,7 +2266,24 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
 
 ## Data Seeding Tasks
 
-### ✅ DATA-004: Seed Orders & Line Items
+### DATA-002-AUGMENT: Augment Seeded Data for Realistic Relationships
+
+**Status:** Ready
+**Priority:** HIGH
+**Estimate:** 6-8h
+**Module:** `scripts/seed-*.ts`
+**Dependencies:** None
+**Prompt:** [`docs/prompts/DATA-002-AUGMENT.md`](../prompts/DATA-002-AUGMENT.md)
+
+**Objectives:**
+- Audit all foreign key relationships
+- Ensure orders have realistic line items
+- Link inventory movements to real inventory records
+- Complete financial transaction chains
+
+---
+
+### DATA-004: Seed Orders & Line Items
 
 **Status:** In Progress (2025-11-18)  
 **Priority:** P1 (High)  
