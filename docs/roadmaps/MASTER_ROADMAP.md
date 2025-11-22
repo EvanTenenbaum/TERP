@@ -2395,127 +2395,72 @@ Seed price alert configurations for clients monitoring specific batches.
 **Impact:**  
 Completes pricing feature set, enables price monitoring.
 
-- [ ] **BUG-005: Command Palette (Cmd+K) Not Responding** (Created: 2025-11-22) 🟡 MEDIUM
-  - Task ID: BUG-005
-  - Priority: P2 (MEDIUM - UX ENHANCEMENT)
-  - Session: E2E Testing Session (Nov 22)
-  - Test Protocol: TS-001 (Global Shortcuts)
-  - **Problem:** Pressing Cmd+K keyboard shortcut does not open command palette
-  - **Expected Behavior:** Command palette should open for quick navigation when user presses Cmd+K
-  - **Actual Behavior:** No response to keyboard shortcut
-  - **Impact:** Users cannot use keyboard shortcut for quick navigation, must use mouse for all navigation
-  - **Investigation Needed:**
-    1. Verify if command palette component exists in codebase
-    2. Check if keyboard event listeners are properly registered
-    3. Verify if shortcut conflicts with browser defaults
-    4. Test on different browsers and operating systems
-  - **Estimate:** 2-3 hours
-  - **Status:** 📋 IDENTIFIED
+### BUG-005: Command Palette (Cmd+K) Not Responding
 
-- [ ] **BUG-006: Debug Dashboard Visible in Production (Orders Page)** (Created: 2025-11-22) 🟢 LOW
-  - Task ID: BUG-006
-  - Priority: P3 (LOW - COSMETIC)
-  - Session: E2E Testing Session (Nov 22)
-  - Test Protocol: TS-5.1 (Orders Management)
-  - **Problem:** Orders page shows debug information in red box at top of page
-  - **Location:** /orders
-  - **Debug Content Displayed:**
-    - Confirmed Query - isDraft Value
-    - Confirmed Query - Status
-    - Confirmed Query - Is Loading
-    - Confirmed Query - Data
-    - Draft Query information
-    - Test endpoint response
-  - **Expected Behavior:** Debug dashboard should not be visible in production environment
-  - **Actual Behavior:** Red debug box prominently displayed above order list
-  - **Impact:** Unprofessional appearance, exposes internal implementation details
-  - **Solution:** Add environment check to hide debug dashboard in production
-  - **Files to Check:**
-    - client/src/pages/OrdersPage.tsx or similar
-    - Look for debug/development mode conditionals
-  - **Estimate:** 30 minutes
-  - **Status:** 📋 IDENTIFIED
+**Status:** Ready
+**Priority:** MEDIUM
+**Estimate:** 2-3h
+**Module:** Navigation
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-005.md`](../prompts/BUG-005.md)
 
-- [ ] **BUG-007: Analytics Data Not Populated** (Created: 2025-11-22) 🟡 MEDIUM
-  - Task ID: BUG-007
-  - Priority: P2 (MEDIUM - FEATURE INCOMPLETE)
-  - Session: E2E Testing Session (Nov 22)
-  - Test Protocol: TS-2.2 (Analytics Reporting)
-  - **Problem:** Analytics page shows all metrics as $0.00 or 0 with "Analytics data coming soon" message
-  - **Location:** /analytics
-  - **Metrics Affected:**
-    - Total Revenue: $0.00 (should show actual revenue)
-    - Total Orders: 0 (should show 26 orders)
-    - Active Clients: 0 (should show 68 clients)
-    - Inventory Items: 0 (should show 6731 items)
-  - **Expected Behavior:** Analytics should show actual business data from database
-  - **Actual Behavior:** All metrics show placeholder values with "Analytics data coming soon"
-  - **Note:** Message states "The Analytics module is now accessible. Advanced analytics features including strain preferences, sales trends, and client insights are available through the backend API."
-  - **Impact:** Analytics module is non-functional, users cannot access business intelligence features
-  - **Investigation Needed:**
-    1. Verify if backend API endpoints are implemented
-    2. Check if frontend is calling the correct endpoints
-    3. Verify data aggregation queries are working
-    4. Test if data is being returned but not displayed
-  - **Estimate:** 4-6 hours
-  - **Status:** 📋 IDENTIFIED
+**Objectives:**
+- Fix keyboard shortcut event listener
+- Ensure palette opens reliably
 
+---
 
-- [ ] **BUG-008: Purchase Orders Page Crashes with Application Error** (Created: 2025-11-22) 🔴 CRITICAL
-  - Task ID: BUG-008
-  - Priority: P0 (CRITICAL - APPLICATION CRASH)
-  - Session: E2E Testing Session (Nov 22)
-  - Test Protocol: TS-7.2 (Purchase Orders)
-  - **Problem:** Navigating to /purchase-orders causes unhandled application error, complete feature failure
-  - **Location:** /purchase-orders
-  - **Error ID:** f7826da2e91648ebb82ddbbec10f2bc6
-  - **Expected Behavior:** Purchase order management interface should display with list of purchase orders
-  - **Actual Behavior:** White screen with error message "An unexpected error occurred. This error has been automatically reported to our team." with Try Again and Reload Page buttons
-  - **Impact:** Purchase order functionality is completely broken - users cannot:
-    - View existing purchase orders
-    - Create new purchase orders
-    - Manage vendor orders
-    - Track incoming inventory
-    - This is a critical supply chain management feature
-  - **Investigation Needed:**
-    1. Check browser console for detailed error stack trace
-    2. Review server logs for backend errors
-    3. Verify purchase orders router is properly configured
-    4. Check if database schema for purchase orders is correct
-    5. Verify tRPC procedure definitions
-    6. Test if error occurs for all users or specific permissions
-  - **Related Files to Check:**
-    - client/src/pages/PurchaseOrdersPage.tsx (or similar)
-    - server/routers/purchaseOrders.ts (if exists)
-    - drizzle/schema.ts (purchaseOrders table definition)
-    - Error boundary components
-  - **Estimate:** 2-4 hours (depends on root cause)
-  - **Status:** 📋 IDENTIFIED - REQUIRES IMMEDIATE ATTENTION
+### BUG-006: Debug Dashboard Visible in Production
 
+**Status:** Ready
+**Priority:** LOW
+**Estimate:** 0.5h
+**Module:** Orders
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-006.md`](../prompts/BUG-006.md)
 
-- [ ] **BUG-009: Create Order Route Returns 404** (Created: 2025-11-22) 🟡 MEDIUM-HIGH
-  - Task ID: BUG-009
-  - Priority: P1 (MEDIUM-HIGH - FEATURE ACCESSIBILITY)
-  - Session: E2E Testing Session (Nov 22)
-  - Test Protocol: TS-5.3 (Unified Order Flow)
-  - **Problem:** Navigating to /create-order returns 404 Page Not Found error
-  - **Location:** /create-order
-  - **Expected Behavior:** Order creation interface should display
-  - **Actual Behavior:** 404 error page with message "Sorry, the page you are looking for doesn't exist. It may have been moved or deleted."
-  - **Impact:** Users cannot create orders via direct route
-    - "Create Order" link in sidebar may be broken
-    - Alternative order creation path may exist but is not discoverable
-    - Affects user workflow and efficiency
-  - **Investigation Needed:**
-    1. Check if route is defined in React Router configuration
-    2. Verify if component file exists (e.g., CreateOrderPage.tsx)
-    3. Check if route was renamed or moved
-    4. Test if alternative order creation paths exist (e.g., from Orders page)
-    5. Verify if this is a permissions issue vs routing issue
-  - **Related Files to Check:**
-    - client/src/App.tsx or router configuration
-    - client/src/pages/CreateOrderPage.tsx (if exists)
-    - Sidebar navigation links
-  - **Estimate:** 1-2 hours
-  - **Status:** 📋 IDENTIFIED
+**Objectives:**
+- Hide debug info in production environment
+
+---
+
+### BUG-007: Analytics Data Not Populated
+
+**Status:** Ready
+**Priority:** MEDIUM
+**Estimate:** 4-6h
+**Module:** Analytics
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-007.md`](../prompts/BUG-007.md)
+
+**Objectives:**
+- Connect analytics page to real backend data
+
+---
+
+### BUG-008: Purchase Orders Page Crashes
+
+**Status:** Ready
+**Priority:** HIGH
+**Estimate:** 2-4h
+**Module:** Purchase Orders
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-008.md`](../prompts/BUG-008.md)
+
+**Objectives:**
+- Fix application crash on /purchase-orders
+
+---
+
+### BUG-009: Create Order Route Returns 404
+
+**Status:** Ready
+**Priority:** HIGH
+**Estimate:** 1-2h
+**Module:** Orders
+**Dependencies:** None
+**Prompt:** [`docs/prompts/BUG-009.md`](../prompts/BUG-009.md)
+
+**Objectives:**
+- Restore /create-order route
 
