@@ -214,6 +214,36 @@
   - **Actual Time:** 30 minutes
   - **Documentation:** /home/ubuntu/LOGIN-LOGOUT-SIDEBAR-FEATURE.md
 
+- [ ] **FEATURE-002: Change Header Color** (Created: 2025-11-21) 🟢 ENHANCEMENT
+  - Task ID: FEATURE-002
+  - Priority: P2 (MEDIUM - UI Enhancement)
+  - Session: TBD
+  - **Problem:** The application header color needs to be updated to match design requirements or improve visual consistency
+  - **Current State:**
+    - Header component located in `client/src/components/layout/AppHeader.tsx`
+    - Currently uses `bg-card` class for background color
+    - Header appears at the top of all pages in the application
+  - **Objectives:**
+    1. Update header background color to the desired color scheme
+    2. Ensure color change is consistent across all pages using the header component
+    3. Maintain proper contrast for text and UI elements within the header
+    4. Verify the change works in both light and dark themes (if applicable)
+    5. Ensure accessibility standards are met with the new color choice
+  - **Deliverables:**
+    - [ ] Identify target color (hex code, CSS variable, or theme color)
+    - [ ] Update AppHeader component styling with new background color
+    - [ ] Test header appearance across all major pages (Dashboard, Orders, Inventory, etc.)
+    - [ ] Verify color contrast ratios meet WCAG accessibility guidelines
+    - [ ] Check responsive design - ensure color looks good on mobile devices
+    - [ ] Update any related CSS variables or theme tokens if needed
+    - [ ] All tests passing (no regressions)
+    - [ ] Zero TypeScript errors
+    - [ ] Session archived
+  - **Estimate:** 1-2 hours
+  - **Status:** 📋 PLANNED
+  - **Files Affected:**
+    - `client/src/components/layout/AppHeader.tsx` (primary component)
+
 ### 🔴 HIGH PRIORITY
 
 - [x] **Complete Codebase Analysis** (Claude-Session-011CV4V)
