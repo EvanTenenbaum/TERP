@@ -2,8 +2,8 @@ name: Swarm Status Monitor
 
 on:
   schedule:
-    # Run every 30 minutes
-    - cron: '*/30 * * * *'
+    # Run every 4 minutes for active agent monitoring
+    - cron: '*/4 * * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
