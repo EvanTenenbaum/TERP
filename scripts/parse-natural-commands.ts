@@ -16,7 +16,7 @@ import { join } from 'path';
 
 interface ParsedCommand {
   original: string;
-  type: 'until-phase' | 'until-task' | 'batch' | 'auto' | 'unknown';
+  type: 'until-phase' | 'until-task' | 'batch' | 'auto' | 'go' | 'generate-prompts' | 'execute-phases' | 'unknown';
   target?: string;
   tasks?: string[];
   confidence: number;
@@ -105,6 +105,62 @@ function parseCommand(text: string): ParsedCommand {
         original: text,
         type: 'auto',
         confidence: 0.8
+      };
+    }
+  }
+  
+  // "Go" command - execute existing plan
+  const goPatterns = [
+    /^(?:go|execute|start|run)$/i,
+    /^(?:go|execute|start|run)\s+(?:now|plan|execution)$/i,
+  ];
+  
+  for (const pattern of goPatterns) {
+    if (pattern.test(lower)) {
+      return {
+        original: text,
+        type: 'go',
+        confidence: 0.95
+      };
+    }
+  }
+  
+  // Generate prompts and plan patterns
+  const generatePatterns = [
+    /generate\s+prompts?\s+(?:for\s+)?(?:phase\s+)?([\d.]+(?:\s*,\s*[\d.]+)*)/i,
+    /create\s+prompts?\s+(?:for\s+)?(?:phase\s+)?([\d.]+(?:\s*,\s*[\d.]+)*)/i,
+  ];
+  
+  for (const pattern of generatePatterns) {
+    const match = lower.match(pattern);
+    if (match) {
+      const phases = match[1].split(',').map(p => p.trim());
+      return {
+        original: text,
+        type: 'generate-prompts',
+        target: phases.join(','),
+        confidence: 0.9
+      };
+    }
+  }
+  
+  // Execute phases pattern - also match "execute X phases" or "execute 2 phases"
+  const executePhasesPatterns = [
+    /execute\s+(?:phase\s+)?([\d.]+(?:\s*,\s*[\d.]+)*)/i,
+    /execute\s+(\d+)\s+phases?/i,
+    /run\s+(?:phase\s+)?([\d.]+(?:\s*,\s*[\d.]+)*)/i,
+    /work\s+through\s+(?:phase\s+)?([\d.]+(?:\s*,\s*[\d.]+)*)/i,
+  ];
+  
+  for (const pattern of executePhasesPatterns) {
+    const match = lower.match(pattern);
+    if (match) {
+      const phases = match[1].split(',').map(p => p.trim());
+      return {
+        original: text,
+        type: 'execute-phases',
+        target: phases.join(','),
+        confidence: 0.9
       };
     }
   }

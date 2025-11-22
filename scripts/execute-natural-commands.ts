@@ -14,7 +14,7 @@ import { markCommandComplete, parseCommand } from './parse-natural-commands';
 
 interface ParsedCommand {
   original: string;
-  type: 'until-phase' | 'until-task' | 'batch' | 'auto' | 'unknown';
+  type: 'until-phase' | 'until-task' | 'batch' | 'auto' | 'go' | 'generate-prompts' | 'execute-phases' | 'unknown';
   target?: string;
   tasks?: string[];
   confidence: number;
@@ -56,6 +56,45 @@ function executeCommand(cmd: ParsedCommand): string {
     } else if (type === 'auto') {
       console.log(`   Mode: Auto`);
       execSync(`pnpm swarm execute --auto`, { 
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+      return 'Success';
+      
+    } else if (type === 'go') {
+      console.log(`   Mode: Execute existing plan`);
+      execSync(`pnpm tsx scripts/roadmap-strategic-executor.ts go`, { 
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+      return 'Success';
+      
+    } else if (type === 'generate-prompts') {
+      console.log(`   Phases: ${target || 'all'}`);
+      execSync(`pnpm tsx scripts/roadmap-strategic-executor.ts generate-prompts --phases="${target || ''}"`, { 
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+      return 'Success';
+      
+    } else if (type === 'execute-phases') {
+      console.log(`   Phases: ${target || 'all'}`);
+      // First generate prompts, then create plan, then execute
+      try {
+        execSync(`pnpm tsx scripts/roadmap-strategic-executor.ts generate-prompts --phases="${target || ''}"`, { 
+          stdio: 'inherit',
+          cwd: process.cwd()
+        });
+      } catch (e) {
+        console.log(`   ⚠️  Some prompts may already exist, continuing...`);
+      }
+      
+      execSync(`pnpm tsx scripts/roadmap-strategic-executor.ts plan --phases="${target || ''}"`, { 
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+      
+      execSync(`pnpm tsx scripts/roadmap-strategic-executor.ts execute --phases="${target || ''}"`, { 
         stdio: 'inherit',
         cwd: process.cwd()
       });
