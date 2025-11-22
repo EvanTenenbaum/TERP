@@ -39,7 +39,9 @@ import {
 } from "@/components/orders/OrderAdjustmentPanel";
 import { OrderTotalsPanel } from "@/components/orders/OrderTotalsPanel";
 import { ClientPreview } from "@/components/orders/ClientPreview";
-import { useOrderCalculations } from "@/hooks/orders/useOrderCalculations";
+import { CreditLimitBanner } from "@/components/orders/CreditLimitBanner";
+import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
+import { useOrderCalculations, calculateLineItem } from "@/hooks/orders/useOrderCalculations";
 
 export default function OrderCreatorPageV2() {
   // State
@@ -54,6 +56,12 @@ export default function OrderCreatorPageV2() {
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
   const { data: clientDetails } = trpc.clients.getById.useQuery(
     { clientId: clientId || 0 },
+    { enabled: !!clientId }
+  );
+  
+  // Fetch inventory with pricing when client is selected
+  const { data: inventory, isLoading: inventoryLoading } = trpc.salesSheets.getInventory.useQuery(
+    { clientId: clientId! },
     { enabled: !!clientId }
   );
 
@@ -121,6 +129,25 @@ export default function OrderCreatorPageV2() {
       return;
     }
 
+    if (!clientId) {
+      toast.error("Please select a client");
+      return;
+    }
+
+    // Check credit limit for SALE orders
+    if (orderType === "SALE" && clientDetails) {
+      const creditLimit = parseFloat(clientDetails.creditLimit || "0");
+      const currentExposure = parseFloat(clientDetails.totalOwed || "0");
+      const availableCredit = creditLimit - currentExposure;
+      
+      if (creditLimit > 0 && totals.total > availableCredit) {
+        toast.error(
+          `Order total ($${totals.total.toFixed(2)}) exceeds available credit ($${availableCredit.toFixed(2)})`
+        );
+        return;
+      }
+    }
+
     // Show confirmation dialog for finalize
     const confirmed = window.confirm(
       `Are you sure you want to finalize this ${orderType.toLowerCase()}?\n\n` +
@@ -129,8 +156,6 @@ export default function OrderCreatorPageV2() {
     );
 
     if (!confirmed) return;
-
-    if (!clientId) return;
 
     finalizeMutation.mutate({
       orderType,
@@ -150,10 +175,57 @@ export default function OrderCreatorPageV2() {
     });
   };
 
-  const handleAddItem = () => {
-    // This would open an inventory browser modal
-    // For now, just show a toast
-    toast.info("Inventory browser integration coming soon");
+  // Convert inventory items to LineItem format
+  const convertInventoryToLineItems = (inventoryItems: any[]): LineItem[] => {
+    return inventoryItems.map(item => {
+      // Calculate margin percent from basePrice and retailPrice
+      const cogsPerUnit = item.basePrice || 0;
+      const retailPrice = item.retailPrice || item.basePrice || 0;
+      const marginPercent = cogsPerUnit > 0 
+        ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 
+        : 0;
+      
+      // Use calculateLineItem to ensure proper structure
+      const calculated = calculateLineItem(
+        item.id, // batchId
+        1, // default quantity
+        cogsPerUnit,
+        marginPercent
+      );
+      
+      return {
+        ...calculated,
+        productDisplayName: item.name,
+        originalCogsPerUnit: cogsPerUnit,
+        isCogsOverridden: false,
+        isMarginOverridden: false,
+        marginSource: "CUSTOMER_PROFILE" as const,
+        isSample: false,
+      };
+    });
+  };
+
+  const handleAddItem = (inventoryItems: any[]) => {
+    if (!inventoryItems || inventoryItems.length === 0) {
+      toast.error("No items selected");
+      return;
+    }
+
+    // Convert inventory items to LineItem format
+    const newLineItems = convertInventoryToLineItems(inventoryItems);
+    
+    // Filter out items that are already in the order (by batchId)
+    const existingBatchIds = new Set(items.map(item => item.batchId));
+    const uniqueItems = newLineItems.filter(item => !existingBatchIds.has(item.batchId));
+    
+    if (uniqueItems.length === 0) {
+      toast.warning("Selected items are already in the order");
+      return;
+    }
+    
+    // Add new items to the order
+    setItems([...items, ...uniqueItems]);
+    toast.success(`Added ${uniqueItems.length} item(s) to order`);
   };
 
   return (
@@ -220,8 +292,20 @@ export default function OrderCreatorPageV2() {
       {/* Main Content */}
       {clientId ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column: Line Items & Adjustment (2/3) */}
+          {/* Left Column: Inventory Browser & Line Items & Adjustment (2/3) */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Inventory Browser */}
+            <Card>
+              <CardContent className="pt-6">
+                <InventoryBrowser
+                  inventory={inventory || []}
+                  isLoading={inventoryLoading}
+                  onAddItems={handleAddItem}
+                  selectedItems={items.map(item => ({ id: item.batchId }))}
+                />
+              </CardContent>
+            </Card>
+
             {/* Line Items */}
             <Card>
               <CardContent className="pt-6">
@@ -229,7 +313,7 @@ export default function OrderCreatorPageV2() {
                   items={items}
                   clientId={clientId}
                   onChange={setItems}
-                  onAddItem={handleAddItem}
+                  onAddItem={() => {}} // Not used anymore, InventoryBrowser handles it
                 />
               </CardContent>
             </Card>
@@ -246,6 +330,14 @@ export default function OrderCreatorPageV2() {
 
           {/* Right Column: Totals & Preview (1/3) */}
           <div className="space-y-6">
+            {/* Credit Limit Banner */}
+            {clientDetails && orderType === "SALE" && (
+              <CreditLimitBanner
+                client={clientDetails}
+                orderTotal={totals.total}
+              />
+            )}
+
             {/* Totals */}
             <OrderTotalsPanel
               totals={totals}
