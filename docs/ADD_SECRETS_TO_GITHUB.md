@@ -1,16 +1,51 @@
-# How to Add Secrets to GitHub Secrets
+# How to Add Secrets to GitHub Secrets (From Anywhere)
 
-I've created scripts and instructions to add your deployment secrets to GitHub Secrets. Here are your options:
+You can add secrets to GitHub Secrets from anywhere, not just your local machine. Here are your options:
 
-## Quick Method (If you have GitHub CLI)
+## Method 1: GitHub Actions Workflow (Recommended - Works from Anywhere)
 
-If you have `gh` CLI installed and authenticated, just run:
+**Best for:** Adding secrets from any device, browser, or remote location
+
+1. Go to: https://github.com/EvanTenenbaum/TERP/actions/workflows/add-secrets.yml
+2. Click **"Run workflow"**
+3. Fill in the secret values in the form (they're masked in logs)
+4. Click **"Run workflow"** button
+
+**Or via GitHub CLI from anywhere:**
+```bash
+gh workflow run "Add Secrets to GitHub Secrets" \
+  -f jwt_secret="your-jwt-secret" \
+  -f clerk_secret_key="your-clerk-key" \
+  -f database_url="your-db-url"
+  # ... add other secrets as needed
+```
+
+## Method 2: Environment Variables + Script (Any Machine)
+
+**Best for:** Running from a remote server or CI/CD pipeline
+
+```bash
+# Set environment variables (can be done from anywhere)
+export JWT_SECRET="your-secret"
+export CLERK_SECRET_KEY="your-key"
+export DATABASE_URL="your-db-url"
+# ... set other secrets
+
+# Run the script
+./scripts/add-secrets-remote.sh
+```
+
+The script reads from environment variables and adds them to GitHub Secrets.
+
+## Method 3: From Local Machine (Original Method)
+
+If you're on your local machine with the deployment files:
 
 ```bash
 ./scripts/add-secrets-to-github.sh
 ```
 
-This will automatically add all 13 secrets to GitHub Secrets.
+This reads from your local `current_spec.yaml` and `deployment_details.json` files.
 
 ## Manual Method (Via GitHub Web Interface)
 
