@@ -1,0 +1,560 @@
+#!/usr/bin/env tsx
+
+/**
+ * TERP Swarm Manager V2
+ * 
+ * Self-contained orchestrator for parallel agent execution.
+ * Resilient to ephemeral terminal sessions and git lock errors.
+ */
+
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { execSync } from 'child_process';
+import { join } from 'path';
+
+// ============================================================================
+// SELF-BOOTSTRAPPING: Dependency Check & Installation
+// ============================================================================
+
+const REQUIRED_DEPS = [
+  'commander',
+  'simple-git',
+  'dotenv',
+  '@google/generative-ai',
+  'ora',
+  'chalk'
+];
+
+function ensureDependencies(): void {
+  const nodeModulesPath = join(process.cwd(), 'node_modules');
+  
+  // Detect package manager (prefer pnpm, fallback to npm)
+  let packageManager = 'npm';
+  try {
+    execSync('which pnpm', { stdio: 'ignore', cwd: process.cwd() });
+    packageManager = 'pnpm';
+  } catch {
+    try {
+      execSync('which npm', { stdio: 'ignore', cwd: process.cwd() });
+    } catch {
+      console.error('❌ Neither npm nor pnpm found in PATH');
+      process.exit(1);
+    }
+  }
+  
+  if (!existsSync(nodeModulesPath)) {
+    console.log('⚠️  node_modules not found. Installing dependencies...');
+    try {
+      const installCmd = packageManager === 'pnpm' 
+        ? `pnpm add ${REQUIRED_DEPS.join(' ')}`
+        : `npm install ${REQUIRED_DEPS.join(' ')}`;
+      execSync(installCmd, {
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+      console.log('✅ Dependencies installed successfully');
+    } catch (error) {
+      console.error('❌ Failed to install dependencies:', error);
+      process.exit(1);
+    }
+  } else {
+    // Check if all required packages exist
+    const missingDeps = REQUIRED_DEPS.filter(dep => {
+      // Handle scoped packages (e.g., @google/generative-ai)
+      const depParts = dep.split('/');
+      const depPath = depParts.length > 1
+        ? join(nodeModulesPath, depParts[0], depParts[1])
+        : join(nodeModulesPath, dep);
+      return !existsSync(depPath);
+    });
+    
+    if (missingDeps.length > 0) {
+      console.log(`⚠️  Missing dependencies: ${missingDeps.join(', ')}. Installing...`);
+      try {
+        const installCmd = packageManager === 'pnpm'
+          ? `pnpm add ${missingDeps.join(' ')}`
+          : `npm install ${missingDeps.join(' ')}`;
+        execSync(installCmd, {
+          stdio: 'inherit',
+          cwd: process.cwd()
+        });
+        console.log('✅ Missing dependencies installed');
+      } catch (error) {
+        console.error('❌ Failed to install missing dependencies:', error);
+        process.exit(1);
+      }
+    }
+  }
+}
+
+// Bootstrap dependencies before importing
+ensureDependencies();
+
+// Now safe to import
+import { Command } from 'commander';
+import simpleGit, { SimpleGit } from 'simple-git';
+import dotenv from 'dotenv';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import ora from 'ora';
+import chalk from 'chalk';
+
+// Load environment variables
+dotenv.config();
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+const ROADMAP_PATH = 'docs/roadmaps/MASTER_ROADMAP.md';
+const GIT_RETRY_ATTEMPTS = 3;
+const GIT_RETRY_DELAY = 2000; // 2 seconds
+const AI_TIMEOUT_MS = 90000; // 90 seconds
+const GEMINI_MODEL = 'gemini-2.0-flash-exp';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface Task {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  lineNumber: number;
+}
+
+interface StatusResult {
+  phase: string;
+  pending: string[];
+  recommended: string[];
+}
+
+interface ExecuteResult {
+  taskId: string;
+  status: 'success' | 'timeout' | 'error';
+  message: string;
+  branch?: string;
+}
+
+// ============================================================================
+// ROADMAP PARSING
+// ============================================================================
+
+function parseRoadmap(): { tasks: Task[]; phase: string } {
+  if (!existsSync(ROADMAP_PATH)) {
+    throw new Error(`Roadmap file not found: ${ROADMAP_PATH}`);
+  }
+
+  const content = readFileSync(ROADMAP_PATH, 'utf-8');
+  const lines = content.split('\n');
+  const tasks: Task[] = [];
+  
+  let currentPhase = 'Unknown';
+  let lineNumber = 0;
+
+  // Extract current phase from sprint section
+  const sprintMatch = content.match(/## 🎯 Current Sprint.*?\n\n(.*?)(?=\n##|\n---|$)/s);
+  if (sprintMatch) {
+    const phaseMatch = sprintMatch[1].match(/### (.*?)\n/);
+    if (phaseMatch) {
+      currentPhase = phaseMatch[1].trim();
+    }
+  }
+
+  // Parse tasks - look for task patterns like "ST-XXX:", "BUG-XXX:", "FEATURE-XXX:", "CL-XXX:", "DATA-XXX:"
+  const taskPattern = /^###?\s*([A-Z]+-\d+):\s*(.+)$/;
+  const statusPattern = /^\*\*Status:\*\*\s*(.+)$/;
+  const priorityPattern = /^\*\*Priority:\*\*\s*(.+)$/;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const taskMatch = line.match(taskPattern);
+    
+    if (taskMatch) {
+      const taskId = taskMatch[1];
+      const title = taskMatch[2].trim();
+      
+      // Look ahead for status and priority
+      let status = 'Unknown';
+      let priority = 'Unknown';
+      
+      for (let j = i + 1; j < Math.min(i + 20, lines.length); j++) {
+        const statusMatch = lines[j].match(statusPattern);
+        const priorityMatch = lines[j].match(priorityPattern);
+        
+        if (statusMatch) {
+          status = statusMatch[1].trim();
+        }
+        if (priorityMatch) {
+          priority = priorityMatch[1].trim();
+        }
+        
+        if (status !== 'Unknown' && priority !== 'Unknown') {
+          break;
+        }
+      }
+      
+      tasks.push({
+        id: taskId,
+        title,
+        status,
+        priority,
+        lineNumber: i + 1
+      });
+    }
+  }
+
+  return { tasks, phase: currentPhase };
+}
+
+// ============================================================================
+// SAFE GIT WRAPPER
+// ============================================================================
+
+async function safeGit<T>(
+  operation: (git: SimpleGit) => Promise<T>,
+  retries: number = GIT_RETRY_ATTEMPTS
+): Promise<T> {
+  const git = simpleGit(process.cwd());
+  
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await operation(git);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorMessage.includes('index.lock') || errorMessage.includes('locked')) {
+        if (attempt < retries) {
+          console.log(chalk.yellow(`⚠️  Git lock detected (attempt ${attempt}/${retries}). Retrying in ${GIT_RETRY_DELAY}ms...`));
+          await new Promise(resolve => setTimeout(resolve, GIT_RETRY_DELAY));
+          continue;
+        } else {
+          // Last attempt - try to remove lock file
+          try {
+            const lockPath = join(process.cwd(), '.git', 'index.lock');
+            if (existsSync(lockPath)) {
+              execSync(`rm -f "${lockPath}"`, { cwd: process.cwd() });
+              console.log(chalk.yellow('🔓 Removed stale lock file. Retrying...'));
+              return await operation(git);
+            }
+          } catch (lockError) {
+            // Ignore lock removal errors
+          }
+        }
+      }
+      
+      throw error;
+    }
+  }
+  
+  throw new Error('Git operation failed after all retries');
+}
+
+// ============================================================================
+// GIT WORKFLOW
+// ============================================================================
+
+async function executeGitWorkflow(taskId: string, files: string[]): Promise<string> {
+  const branchName = `agent/${taskId}`;
+  
+  await safeGit(async (git) => {
+    // Fetch latest
+    await git.fetch(['origin']);
+    
+    // Checkout main and pull
+    await git.checkout('main');
+    await git.pull('origin', 'main');
+    
+    // Create or checkout branch
+    const branches = await git.branchLocal();
+    if (branches.all.includes(branchName)) {
+      await git.checkout(branchName);
+      await git.pull('origin', branchName).catch(() => {
+        // Branch might not exist on remote yet
+      });
+    } else {
+      await git.checkoutLocalBranch(branchName);
+    }
+  });
+  
+  // Stage all changes
+  await safeGit(async (git) => {
+    await git.add('.');
+  });
+  
+  // Commit
+  await safeGit(async (git) => {
+    const status = await git.status();
+    if (status.files.length > 0) {
+      await git.commit(`feat: ${taskId} autonomous implementation`);
+    }
+  });
+  
+  // Push (with force if needed)
+  await safeGit(async (git) => {
+    try {
+      await git.push('origin', branchName);
+    } catch (error) {
+      // If branch exists on remote, force push
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('failed to push') || errorMessage.includes('rejected')) {
+        console.log(chalk.yellow(`⚠️  Branch exists on remote. Force pushing...`));
+        await git.push(['origin', branchName, '--force']);
+      } else {
+        throw error;
+      }
+    }
+  });
+  
+  return branchName;
+}
+
+// ============================================================================
+// AI AGENT EXECUTION
+// ============================================================================
+
+async function executeAgent(taskId: string, task: Task): Promise<ExecuteResult> {
+  const spinner = ora(`Executing agent for ${taskId}`).start();
+  
+  try {
+    // Get API key
+    const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GOOGLE_GEMINI_API_KEY or GEMINI_API_KEY environment variable not set');
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    
+    // Build prompt from roadmap task
+    const prompt = buildAgentPrompt(task);
+    
+    // Execute with timeout
+    const result = await Promise.race([
+      model.generateContent(prompt).then(response => response.response),
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), AI_TIMEOUT_MS)
+      )
+    ]);
+    
+    const text = result.text();
+    spinner.succeed(`Agent completed for ${taskId}`);
+    
+    // Parse result and execute git workflow
+    const branchName = await executeGitWorkflow(taskId, []);
+    
+    return {
+      taskId,
+      status: 'success',
+      message: text.substring(0, 200) + '...',
+      branch: branchName
+    };
+    
+  } catch (error: unknown) {
+    spinner.fail(`Agent failed for ${taskId}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage === 'Timeout') {
+      return {
+        taskId,
+        status: 'timeout',
+        message: 'Agent execution exceeded 90 second timeout'
+      };
+    }
+    
+    return {
+      taskId,
+      status: 'error',
+      message: errorMessage
+    };
+  }
+}
+
+function buildAgentPrompt(task: Task): string {
+  // Read the full task context from roadmap
+  const content = readFileSync(ROADMAP_PATH, 'utf-8');
+  const lines = content.split('\n');
+  
+  // Extract task section
+  let taskStart = task.lineNumber - 1;
+  let taskEnd = taskStart + 1;
+  
+  // Find the end of this task (next task or section)
+  const taskPattern = /^###?\s*[A-Z]+-\d+:/;
+  for (let i = taskStart + 1; i < lines.length; i++) {
+    if (taskPattern.test(lines[i])) {
+      taskEnd = i;
+      break;
+    }
+  }
+  
+  const taskContent = lines.slice(taskStart, taskEnd).join('\n');
+  
+  return `You are an autonomous development agent working on task ${task.id}: ${task.title}
+
+TASK CONTEXT:
+${taskContent}
+
+YOUR MISSION:
+1. Read the task requirements carefully
+2. Implement the solution following TERP coding standards
+3. Write tests if applicable
+4. Update documentation
+5. Commit your work to branch agent/${task.id}
+
+Follow the TERP Roadmap Agent Guide at docs/ROADMAP_AGENT_GUIDE.md for complete instructions.
+
+Begin implementation now.`;
+}
+
+// ============================================================================
+// COMMANDS
+// ============================================================================
+
+async function statusCommand(): Promise<void> {
+  try {
+    const { tasks, phase } = parseRoadmap();
+    
+    // Filter pending tasks (not complete)
+    const pending = tasks
+      .filter(t => !t.status.includes('COMPLETE') && !t.status.includes('Complete'))
+      .map(t => t.id);
+    
+    // Recommend high priority pending tasks
+    const recommended = tasks
+      .filter(t => 
+        !t.status.includes('COMPLETE') && 
+        !t.status.includes('Complete') &&
+        (t.priority.includes('HIGH') || t.priority.includes('CRITICAL') || t.priority.includes('P0'))
+      )
+      .slice(0, 5)
+      .map(t => t.id);
+    
+    const result: StatusResult = {
+      phase,
+      pending,
+      recommended
+    };
+    
+    console.log(JSON.stringify(result, null, 2));
+    
+  } catch (error) {
+    console.error('Error reading roadmap:', error);
+    process.exit(1);
+  }
+}
+
+async function executeCommand(batch?: string, auto?: boolean): Promise<void> {
+  try {
+    const { tasks } = parseRoadmap();
+    const taskMap = new Map(tasks.map(t => [t.id, t]));
+    
+    let taskIds: string[] = [];
+    
+    if (auto) {
+      // Auto-select recommended high priority tasks
+      taskIds = tasks
+        .filter(t => 
+          !t.status.includes('COMPLETE') && 
+          !t.status.includes('Complete') &&
+          (t.priority.includes('HIGH') || t.priority.includes('CRITICAL') || t.priority.includes('P0'))
+        )
+        .slice(0, 3)
+        .map(t => t.id);
+      
+      if (taskIds.length === 0) {
+        console.log(chalk.yellow('⚠️  No recommended tasks found'));
+        return;
+      }
+      
+      console.log(chalk.blue(`🤖 Auto-selected tasks: ${taskIds.join(', ')}`));
+    } else if (batch) {
+      taskIds = batch.split(',').map(id => id.trim());
+    } else {
+      console.error('Error: Either --batch or --auto must be specified');
+      process.exit(1);
+    }
+    
+    // Validate all task IDs exist
+    const invalidIds = taskIds.filter(id => !taskMap.has(id));
+    if (invalidIds.length > 0) {
+      console.error(`Error: Invalid task IDs: ${invalidIds.join(', ')}`);
+      process.exit(1);
+    }
+    
+    // Execute all tasks in parallel with Promise.allSettled
+    console.log(chalk.blue(`🚀 Executing ${taskIds.length} agent(s) in parallel...`));
+    
+    const results = await Promise.allSettled(
+      taskIds.map(taskId => {
+        const task = taskMap.get(taskId)!;
+        return executeAgent(taskId, task);
+      })
+    );
+    
+    // Report results
+    console.log('\n' + chalk.bold('📊 Execution Results:'));
+    console.log('='.repeat(50));
+    
+    results.forEach((result, index) => {
+      const taskId = taskIds[index];
+      
+      if (result.status === 'fulfilled') {
+        const execResult = result.value;
+        const statusColor = 
+          execResult.status === 'success' ? chalk.green :
+          execResult.status === 'timeout' ? chalk.yellow :
+          chalk.red;
+        
+        console.log(statusColor(`\n${taskId}: ${execResult.status.toUpperCase()}`));
+        console.log(`  Message: ${execResult.message}`);
+        if (execResult.branch) {
+          console.log(chalk.blue(`  Branch: ${execResult.branch}`));
+        }
+      } else {
+        console.log(chalk.red(`\n${taskId}: FAILED`));
+        console.log(`  Error: ${result.reason}`);
+      }
+    });
+    
+    const successCount = results.filter(
+      r => r.status === 'fulfilled' && r.value.status === 'success'
+    ).length;
+    
+    console.log('\n' + chalk.bold(`✅ Completed: ${successCount}/${taskIds.length} successful`));
+    
+  } catch (error) {
+    console.error('Error executing agents:', error);
+    process.exit(1);
+  }
+}
+
+// ============================================================================
+// CLI SETUP
+// ============================================================================
+
+const program = new Command();
+
+program
+  .name('swarm-manager')
+  .description('TERP Swarm Manager V2 - Orchestrates parallel agent execution')
+  .version('2.0.0');
+
+program
+  .command('status')
+  .description('Get roadmap status summary')
+  .action(() => {
+    statusCommand().catch(console.error);
+  });
+
+program
+  .command('execute')
+  .description('Execute agents for tasks')
+  .option('--batch <ids>', 'Comma-separated task IDs (e.g., ST-001,ST-002)')
+  .option('--auto', 'Auto-select recommended high priority tasks')
+  .action((options) => {
+    executeCommand(options.batch, options.auto).catch(console.error);
+  });
+
+// Run CLI
+program.parse();
+
