@@ -1,5 +1,9 @@
 # Adding Secrets to GitHub Secrets Remotely
 
+## Important: Secrets Are Permanent!
+
+**Once you add secrets to GitHub Secrets, they're stored permanently!** You only need to add them **once**, and then they're available forever to all agents and workflows.
+
 ## Problem
 
 You need to add secrets to GitHub Secrets, but:
