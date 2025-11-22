@@ -58,9 +58,10 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
   try {
     console.log("[WEBHOOK] Received webhook request");
     // Get webhook secret from environment
-    const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
+    // Note: GitHub Secrets can't start with "github", so we use WEBHOOK_SECRET
+    const webhookSecret = process.env.WEBHOOK_SECRET || process.env.GITHUB_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      console.error("GITHUB_WEBHOOK_SECRET not configured");
+      console.error("WEBHOOK_SECRET not configured");
       return res.status(500).json({ error: "Webhook secret not configured" });
     }
 

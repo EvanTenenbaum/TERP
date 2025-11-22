@@ -89,9 +89,14 @@ services:
         scope: RUN_AND_BUILD_TIME
         value: "{{SECRET:VITE_SENTRY_DSN}}"
       
+      - key: WEBHOOK_SECRET
+        scope: RUN_AND_BUILD_TIME
+        value: "{{SECRET:WEBHOOK_SECRET}}"
+        
+      # Note: Also accepts old GITHUB_WEBHOOK_SECRET for backwards compatibility
       - key: GITHUB_WEBHOOK_SECRET
         scope: RUN_AND_BUILD_TIME
-        value: "{{SECRET:GITHUB_WEBHOOK_SECRET}}"
+        value: "{{SECRET:WEBHOOK_SECRET}}"
 
 ingress:
   rules:
