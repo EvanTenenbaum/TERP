@@ -2477,23 +2477,33 @@ Completes pricing feature set, enables price monitoring.
     - Manage vendor orders
     - Track incoming inventory
     - This is a critical supply chain management feature
-  - **Investigation Needed:**
-    1. Check browser console for detailed error stack trace
-    2. Review server logs for backend errors
-    3. Verify purchase orders router is properly configured
-    4. Check if database schema for purchase orders is correct
-    5. Verify tRPC procedure definitions
-    6. Test if error occurs for all users or specific permissions
-  - **Related Files to Check:**
-    - client/src/pages/PurchaseOrdersPage.tsx (or similar)
-    - server/routers/purchaseOrders.ts (if exists)
-    - drizzle/schema.ts (purchaseOrders table definition)
-    - Error boundary components
-  - **Estimate:** 2-4 hours (depends on root cause)
-  - **Status:** 📋 IDENTIFIED - REQUIRES IMMEDIATE ATTENTION
+  - **Investigation Completed:** ✅
+    - Routing: ✅ Verified correct (`/purchase-orders` route exists in App.tsx)
+    - Frontend Component: ✅ Verified correct (`PurchaseOrdersPage.tsx` properly structured)
+    - Backend Router: ✅ Verified correct (`purchaseOrders` router properly configured)
+    - tRPC Procedures: ✅ All procedures properly defined with error handling
+  - **Root Cause (Most Likely):** Database Schema Issue
+    - Hypothesis 1: `purchaseOrders` table may not exist in production database
+    - Hypothesis 2: Table schema may not match Drizzle schema definition
+    - Hypothesis 3: Database migrations may not have been run
+    - Evidence: Error occurs on page load when `getAll` query executes
+    - Pattern: Similar to vendors (0 records) and locations (0 records) - missing seed data
+  - **Files Investigated:**
+    - ✅ client/src/pages/PurchaseOrdersPage.tsx (Lines 1-542)
+    - ✅ server/routers/purchaseOrders.ts (Lines 1-354)
+    - ✅ client/src/App.tsx (Line 117)
+    - ✅ client/src/components/DashboardLayout.tsx (Line 60)
+  - **Investigation Report:** docs/testing/BUG_INVESTIGATION_REPORT.md
+  - **Recommended Fix:**
+    1. Check if `purchaseOrders` table exists: `SHOW TABLES LIKE 'purchaseOrders';`
+    2. Run database migrations: `pnpm db:push` or `pnpm db:migrate`
+    3. Add error boundary to component for graceful error handling
+    4. Add seed data for purchase orders testing
+  - **Estimate:** 2-4 hours (depends on database access and migration complexity)
+  - **Status:** 🔍 INVESTIGATED - Awaiting Database Verification
 
 
-- [ ] **BUG-009: Create Order Route Returns 404** (Created: 2025-11-22) 🟡 MEDIUM-HIGH
+- [x] **BUG-009: Create Order Route Returns 404** (Completed: 2025-11-22) ✅ FIXED
   - Task ID: BUG-009
   - Priority: P1 (MEDIUM-HIGH - FEATURE ACCESSIBILITY)
   - Session: E2E Testing Session (Nov 22)
@@ -2506,16 +2516,16 @@ Completes pricing feature set, enables price monitoring.
     - "Create Order" link in sidebar may be broken
     - Alternative order creation path may exist but is not discoverable
     - Affects user workflow and efficiency
-  - **Investigation Needed:**
-    1. Check if route is defined in React Router configuration
-    2. Verify if component file exists (e.g., CreateOrderPage.tsx)
-    3. Check if route was renamed or moved
-    4. Test if alternative order creation paths exist (e.g., from Orders page)
-    5. Verify if this is a permissions issue vs routing issue
-  - **Related Files to Check:**
-    - client/src/App.tsx or router configuration
-    - client/src/pages/CreateOrderPage.tsx (if exists)
-    - Sidebar navigation links
-  - **Estimate:** 1-2 hours
-  - **Status:** 📋 IDENTIFIED
+  - **Root Cause Identified:** ✅
+    - Sidebar link in `DashboardLayout.tsx` pointed to `/create-order`
+    - Actual route in `App.tsx` is `/orders/create`
+    - Simple routing mismatch between sidebar and router configuration
+  - **Fix Applied:** ✅
+    - Changed sidebar link from `/create-order` to `/orders/create`
+    - File: `client/src/components/DashboardLayout.tsx` (Line 53)
+    - Commit: c779b2c9 - "Fix BUG-009: Correct Create Order sidebar link"
+  - **Investigation Report:** docs/testing/BUG_INVESTIGATION_REPORT.md
+  - **Actual Time:** 30 minutes (investigation + fix)
+  - **Status:** ✅ FIXED - Awaiting Deployment
+  - **Verification:** Requires deployment to production to verify fix
 
