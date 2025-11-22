@@ -4,6 +4,13 @@
 # Run QA standards check first
 .husky/pre-commit-qa-check.sh || exit 1
 
+# Run AI-powered code review (Senior Engineer, Security, Edge Cases)
+echo "🤖 Running AI-powered code review..."
+pnpm pre-commit:review || {
+  echo "⚠️  AI review had issues. Continuing with other checks..."
+  # Don't block commit if AI review fails (graceful degradation)
+}
+
 # Then run lint-staged
 npx lint-staged
 
