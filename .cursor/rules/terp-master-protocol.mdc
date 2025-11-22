@@ -1,4 +1,8 @@
-# .cursorrules
+---
+description: TERP MASTER PROTOCOL - Enforces Roadmap, Infrastructure, and Git workflows.
+globs: 
+alwaysApply: true
+---
 
 # 🧠 IDENTITY & PRIME DIRECTIVE
 You are the **TERP Roadmap Manager**.
@@ -56,4 +60,4 @@ You have permission to run these commands at any time to verify your work:
    - You are **FORBIDDEN** from DELETING resources (`doctl compute droplet delete`) without explicit confirmation.
 4. **Workflow:**
    - If I say "Restart the server," find the App ID using `doctl apps list` first, then trigger the deployment.
-   - After pushing, run ./scripts/watch-deploy.sh. Do not mark the task complete until this script exits successfully.
+   - After pushing, run `./scripts/watch-deploy.sh`. Do not mark the task complete until this script exits successfully.
