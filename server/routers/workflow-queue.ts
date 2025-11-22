@@ -155,6 +155,22 @@ export const workflowQueueRouter = router({
     }),
 
   /**
+   * Get batches not in workflow queue (statusId is null)
+   * Permission: workflow:read
+   */
+  getBatchesNotInQueue: protectedProcedure
+    .use(requirePermission("workflow:read"))
+    .input(
+      z.object({
+        limit: z.number().int().positive().max(100).default(50),
+        query: z.string().optional(),
+      }).optional()
+    )
+    .query(async ({ input }) => {
+      return workflowQueries.getBatchesNotInQueue(input?.limit || 50, input?.query);
+    }),
+
+  /**
    * Update a batch's workflow status
    * Permission: workflow:update
    */
@@ -179,6 +195,42 @@ export const workflowQueueRouter = router({
       );
 
       return { success: true };
+    }),
+
+  /**
+   * Add multiple batches to workflow queue
+   * Permission: workflow:update
+   */
+  addBatchesToQueue: protectedProcedure
+    .use(requirePermission("workflow:update"))
+    .input(
+      z.object({
+        batchIds: z.array(z.number().int().positive()),
+        toStatusId: z.number().int().positive(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+
+      if (!userId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User ID not found in context",
+        });
+      }
+
+      // Add each batch to the queue
+      for (const batchId of input.batchIds) {
+        await workflowQueries.updateBatchStatus(
+          batchId,
+          input.toStatusId,
+          userId,
+          input.notes
+        );
+      }
+
+      return { success: true, added: input.batchIds.length };
     }),
 
   // ============================================================================
