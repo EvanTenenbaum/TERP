@@ -130,26 +130,20 @@
     2. Permission cache can hide permission changes - always clear cache
     3. Multiple root causes can appear similar - systematic debugging required
 
-- [ ] **BUG-002: Duplicate Navigation Bar on Dashboard** (Created: 2025-11-21) 🔴 CRITICAL
+- [x] **BUG-002: Duplicate Navigation Bar on Dashboard** (Completed: 2025-11-22) 🔴 CRITICAL
   - Task ID: BUG-002
   - Priority: P0 (CRITICAL - UI BLOCKER)
-  - Session: Current session (Nov 21)
+  - Session: Session-20251122-BUG-002-d1e8e99f
   - **Problem:** Incorrect duplicate navigation bar appearing in the middle of the dashboard page
-  - **Symptoms:**
-    - Second navigation menu visible in dashboard content area
-    - Shows duplicate menu items (Dashboard, Todo Lists, Calendar, Orders, etc.)
-    - May be interfering with sidebar navigation functionality
-    - Could be causing login/logout sidebar link to not display
-  - **Impact:**
-    - Confusing user experience
-    - Potentially blocking other navigation features
-    - May be related to FEATURE-001 (login/logout link) not being visible
-  - **Investigation Needed:**
-    - Identify source component rendering duplicate nav
-    - Check if it's in Dashboard.tsx or DashboardLayout.tsx
-    - Determine if it's a leftover from refactoring
-  - **Status:** 🔍 INVESTIGATING
-  - **Estimate:** 1-2 hours
+  - **Root Cause:** `AppShell` component was rendering `AppSidebar` (old navigation) while `DashboardV3` also uses `DashboardLayout` (new sidebar navigation), causing both to appear simultaneously
+  - **Solution:** Modified `AppShell` to conditionally render `AppSidebar` and `AppHeader` only for non-dashboard routes. Dashboard routes now exclusively use `DashboardLayout`'s sidebar navigation.
+  - **Files Modified:**
+    - `client/src/components/layout/AppShell.tsx` - Added conditional rendering logic
+  - **Key Commits:**
+    - `bug-002-duplicate-nav` - Fix BUG-002: Remove duplicate navigation bar from dashboard
+  - **Status:** ✅ COMPLETE
+  - **Actual Time:** 30 minutes
+  - **Impact:** Removed duplicate navigation, improved user experience, sidebar navigation now works correctly
 
 - [ ] **DATA-002: Augment Seeded Data for Realistic Relationships** (Created: 2025-11-21) 🟡 HIGH PRIORITY
   - Task ID: DATA-002-AUGMENT
