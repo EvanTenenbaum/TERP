@@ -44,3 +44,15 @@ You have permission to run these commands at any time to verify your work:
 2. **No Broken Links:** Ensure prompt links in tasks actually exist in `docs/prompts/`.
 3. **No Stale Sessions:** If a task is complete, ensure its session in `docs/sessions/` is archived.
 4. **Deployment:** If you touch code, you must confirm: "✅ Pushed to GitHub. DigitalOcean build triggering."
+
+# ☁️ INFRASTRUCTURE MANAGEMENT (DIGITALOCEAN)
+1. **Tool Access:** You have access to the `doctl` CLI tool. You are authorized to use it.
+2. **Common Commands:**
+   - **Check Status:** `doctl apps list`
+   - **Restart App:** `doctl apps create-deployment [APP_ID]`
+   - **Get Logs:** `doctl apps logs [APP_ID]`
+3. **Safety Protocol:**
+   - You may RESTART apps and CLEAR caches without asking.
+   - You are **FORBIDDEN** from DELETING resources (`doctl compute droplet delete`) without explicit confirmation.
+4. **Workflow:**
+   - If I say "Restart the server," find the App ID using `doctl apps list` first, then trigger the deployment.
