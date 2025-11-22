@@ -10,12 +10,16 @@ RUN curl -sL https://github.com/digitalocean/doctl/releases/download/v1.98.0/doc
 
 WORKDIR /app
 
-# 3. Install pnpm and Node Deps
-RUN npm install -g pnpm
+# 3. Enable corepack (pnpm comes with Node 20+)
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# 4. Copy package files first for better layer caching
 COPY package.json pnpm-lock.yaml ./
+
+# 5. Install dependencies (allow lockfile to be regenerated if needed)
 RUN pnpm install --no-frozen-lockfile
 
-# 4. Copy Source Code
+# 6. Copy Source Code
 COPY . .
 
 # 5. Start the Bot
