@@ -5,9 +5,21 @@ import { trpc } from "@/lib/trpc";
 import { TodoListCard } from "@/components/todos/TodoListCard";
 import { TodoListForm } from "@/components/todos/TodoListForm";
 import { useLocation } from "wouter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function TodoListsPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [listToDelete, setListToDelete] = useState<number | null>(null);
   const [, setLocation] = useLocation();
 
   const { data: lists = [], isLoading } = trpc.todoLists.getMyLists.useQuery();
@@ -17,16 +29,19 @@ export function TodoListsPage() {
   const deleteList = trpc.todoLists.delete.useMutation({
     onSuccess: () => {
       utils.todoLists.getMyLists.invalidate();
+      setDeleteDialogOpen(false);
+      setListToDelete(null);
     },
   });
 
   const handleDeleteList = (listId: number) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this list? All tasks will be deleted."
-      )
-    ) {
-      deleteList.mutate({ listId });
+    setListToDelete(listId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (listToDelete) {
+      deleteList.mutate({ listId: listToDelete });
     }
   };
 
@@ -84,6 +99,24 @@ export function TodoListsPage() {
         isOpen={isCreateFormOpen}
         onClose={() => setIsCreateFormOpen(false)}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete List?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this list? All tasks will be deleted. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
