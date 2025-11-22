@@ -67,8 +67,18 @@ try {
   const outputPath = path.join(__dirname, '../client/version.json');
   fs.writeFileSync(outputPath, JSON.stringify(versionInfo, null, 2) + '\n');
 
+  // Also write to client/public/version.json for runtime version checking
+  const publicOutputPath = path.join(__dirname, '../client/public/version.json');
+  // Ensure public directory exists
+  const publicDir = path.dirname(publicOutputPath);
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+  fs.writeFileSync(publicOutputPath, JSON.stringify(versionInfo, null, 2) + '\n');
+
   console.log('✅ Generated version.json:');
   console.log(JSON.stringify(versionInfo, null, 2));
+  console.log('✅ Also generated public/version.json for version checking');
   
   process.exit(0);
 } catch (error) {
@@ -87,6 +97,14 @@ try {
   const outputPath = path.join(__dirname, '../client/version.json');
   fs.writeFileSync(outputPath, JSON.stringify(fallbackVersion, null, 2) + '\n');
   
-  console.log('⚠️  Created fallback version.json');
+  // Also write to client/public/version.json
+  const publicOutputPath = path.join(__dirname, '../client/public/version.json');
+  const publicDir = path.dirname(publicOutputPath);
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+  fs.writeFileSync(publicOutputPath, JSON.stringify(fallbackVersion, null, 2) + '\n');
+  
+  console.log('⚠️  Created fallback version.json (both locations)');
   process.exit(0);
 }
