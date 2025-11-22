@@ -13,8 +13,9 @@ WORKDIR /app
 # 3. Enable corepack (pnpm comes with Node 20+)
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# 4. Copy package files first for better layer caching
+# 4. Copy package files and patches directory (needed for pnpm install)
 COPY package.json pnpm-lock.yaml ./
+COPY patches/ ./patches/
 
 # 5. Install dependencies with memory optimizations
 # Limit Node.js memory to fit in 0.5GB instance
