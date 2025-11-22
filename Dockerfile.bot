@@ -1,0 +1,22 @@
+FROM node:20-slim
+
+# 1. Install System Deps (Git + Curl)
+RUN apt-get update && apt-get install -y git curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# 2. Install Doctl (DigitalOcean CLI) for deployment checks
+RUN curl -sL https://github.com/digitalocean/doctl/releases/download/v1.98.0/doctl-1.98.0-linux-amd64.tar.gz | tar -xzv -C /usr/local/bin && \
+    chmod +x /usr/local/bin/doctl
+
+WORKDIR /app
+
+# 3. Install Node Deps
+COPY package*.json ./
+RUN npm install
+
+# 4. Copy Source Code
+COPY . .
+
+# 5. Start the Bot
+CMD ["npx", "tsx", "scripts/slack-bot.ts"]
+
