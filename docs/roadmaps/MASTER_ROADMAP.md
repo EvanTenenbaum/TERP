@@ -2488,3 +2488,112 @@ Completes pricing feature set, enables price monitoring.
 **Objectives:**
 - Restore /create-order route
 - Resolution: Fixed sidebar link in `DashboardLayout.tsx` to point to correct route `/orders/create`.
+
+
+- [ ] **BUG-010: Global Search Bar Returns 404 Error** (Created: 2025-11-22) 🔴 HIGH PRIORITY
+  - Task ID: BUG-010
+  - Priority: P1 (HIGH - BROKEN FEATURE)
+  - Session: TBD
+  - **Problem:** Global search bar in header navigates to `/search?q=<query>` which returns 404 error
+  - **Current State:**
+    - Search bar present in header on all pages
+    - Placeholder text: "Search quotes, customers, products..."
+    - On search submission (Enter key), navigates to `/search?q=<query>`
+    - Route `/search` does not exist in application
+    - Returns 404 "Page not found" error
+  - **Root Cause:** Search route not implemented in client routing
+  - **Expected Behavior:**
+    - Search should open results panel or navigate to search results page
+    - Should search across quotes, customers, and products as indicated
+  - **Investigation Steps:**
+    1. Check if `/search` route exists in `client/src/App.tsx`
+    2. Identify if search functionality was planned but not implemented
+    3. Determine if search should be modal/panel or full page
+    4. Check if backend search endpoints exist
+  - **Solution Options:**
+    1. Implement `/search` route with results page
+    2. Convert to modal/panel search (no navigation)
+    3. Temporarily disable search until implemented
+  - **Files to Check:**
+    - `client/src/App.tsx` (routing)
+    - `client/src/components/layout/AppHeader.tsx` (search bar component)
+    - `server/routers/*.ts` (search endpoints)
+  - **Impact:** Core navigation feature broken - users cannot search for records
+  - **Estimate:** 4-6 hours (depending on implementation approach)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** E2E Testing Session 2025-11-22
+
+- [ ] **BUG-011: Debug Dashboard Visible in Production** (Created: 2025-11-22) 🔴 HIGH PRIORITY
+  - Task ID: BUG-011
+  - Priority: P1 (HIGH - PRODUCTION ISSUE)
+  - Session: TBD
+  - **Problem:** Development debug dashboard visible on Orders page in production environment
+  - **Current State:**
+    - Red "DEBUG DASHBOARD" panel visible at top of Orders page
+    - Shows internal component state, query status, data arrays
+    - Displays test endpoint results
+    - Exposes implementation details to users
+  - **Root Cause:** Debug component not wrapped in development-only conditional
+  - **Location:** `/orders` page
+  - **Debug Info Exposed:**
+    - Component mounted status
+    - Active tab state
+    - Status filter values and types
+    - Query status (isDraft, isLoading, data)
+    - First order object with full data structure
+    - Test endpoint responses with timestamps
+  - **Solution:**
+    - Wrap debug dashboard in `process.env.NODE_ENV === 'development'` check
+    - Or remove debug dashboard entirely if no longer needed
+  - **Files to Modify:**
+    - `client/src/pages/OrdersPage.tsx` (or similar)
+  - **Security Impact:** MEDIUM - Exposes internal implementation details
+  - **User Experience Impact:** HIGH - Unprofessional appearance, confusing for users
+  - **Estimate:** 15-30 minutes
+  - **Status:** 📋 PLANNED
+  - **Discovered:** E2E Testing Session 2025-11-22
+
+- [ ] **BUG-012: Add Item Button Not Responding on Create Order Page** (Created: 2025-11-22) 🔴 CRITICAL
+  - Task ID: BUG-012
+  - Priority: P0 (CRITICAL - BLOCKING FEATURE)
+  - Session: TBD
+  - **Problem:** "Add Item" button on Create Order page has no response when clicked
+  - **Current State:**
+    - Button visible and clickable on `/orders/create` page
+    - Button appears after customer is selected
+    - No modal, panel, or interface opens when clicked
+    - No visible error messages
+    - Console shows 400 errors: "Failed to load resource: the server responded with a status of 400"
+  - **Root Cause:** Unknown - requires investigation
+    - Possible causes:
+      1. API endpoint returning 400 Bad Request
+      2. Missing or invalid request parameters
+      3. Backend validation failing
+      4. Product/inventory API not responding correctly
+      5. Frontend event handler not attached
+  - **Impact:** BLOCKING - Users cannot add items to orders, making order creation impossible
+  - **Location:** `/orders/create` page, "Add Item" button in "Line Items" section
+  - **Console Errors:**
+    - Multiple "Failed to load resource: the server responded with a status of 400" errors
+    - No specific error details visible in browser console
+  - **Investigation Steps:**
+    1. Check browser console for detailed error messages
+    2. Check network tab for failed API requests
+    3. Verify button onClick handler is attached
+    4. Check if product/inventory API endpoints exist and are accessible
+    5. Test with different customers to rule out customer-specific issues
+    6. Check if backend validation is rejecting requests
+  - **Files to Check:**
+    - `client/src/pages/CreateOrderPage.tsx` (or similar)
+    - `server/routers/products.ts` or `server/routers/inventory.ts`
+    - Button component implementation
+  - **Expected Behavior:**
+    - Click "Add Item" button
+    - Product selection modal/panel opens
+    - User can search and select products
+    - Selected products added to order line items
+  - **Estimate:** 4-8 hours (requires investigation and fix)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** E2E Testing Session 2025-11-22
+  - **Note:** This is a critical blocker for order creation workflow
+
