@@ -90,12 +90,26 @@ interface ReviewResponse {
 
 function getStagedFiles(): string[] {
   try {
-    const output = execSync('git diff --cached --name-only --diff-filter=ACM', { encoding: 'utf-8' });
+    const repoRoot = process.cwd();
+    const output = execSync('git', ['diff', '--cached', '--name-only', '--diff-filter=ACM'], { encoding: 'utf-8' });
+    const { resolve, relative } = require('path');
+    
     return output
       .split('\n')
       .filter(f => f.trim())
       .filter(f => /\.(ts|tsx|js|jsx)$/.test(f))
       .filter(f => !f.includes('.test.') && !f.includes('.spec.')) // Exclude test files
+      .filter(f => {
+        // Prevent path traversal - ensure file is within repo root
+        try {
+          const fullPath = resolve(repoRoot, f);
+          const relativePath = relative(repoRoot, fullPath);
+          // Ensure no path traversal (..) and path is valid
+          return !relativePath.startsWith('..') && !relativePath.includes('..');
+        } catch {
+          return false;
+        }
+      })
       .slice(0, MAX_REVIEW_FILES);
   } catch (error) {
     return [];
@@ -104,7 +118,8 @@ function getStagedFiles(): string[] {
 
 function getFileDiff(file: string): string {
   try {
-    const diff = execSync(`git diff --cached "${file}"`, { encoding: 'utf-8' });
+    // Use array format to prevent command injection
+    const diff = execSync('git', ['diff', '--cached', file], { encoding: 'utf-8' });
     return diff || '';
   } catch (error) {
     return '';
@@ -171,6 +186,11 @@ Be specific and actionable. If issues can be auto-fixed, provide the fix code bl
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
+    // Validate structure
+    if (!Array.isArray(parsed.issues)) {
+      console.warn(`Invalid response structure for ${file}: issues must be array`);
+      return { issues: [], fixes: [], critical: false, needsManualFix: false };
+    }
     return {
       issues: parsed.issues || [],
       fixes: parsed.fixes || [],
@@ -178,6 +198,7 @@ Be specific and actionable. If issues can be auto-fixed, provide the fix code bl
       needsManualFix: parsed.needsManualFix || false
     };
   } catch (error) {
+    console.warn(`Review failed for ${file}: ${error instanceof Error ? error.message : String(error)}`);
     return { issues: [], fixes: [], critical: false, needsManualFix: false };
   }
 }
@@ -236,6 +257,11 @@ Focus on security vulnerabilities. Be specific about attack vectors.`;
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
+    // Validate structure
+    if (!Array.isArray(parsed.issues)) {
+      console.warn(`Invalid response structure for ${file}: issues must be array`);
+      return { issues: [], fixes: [], critical: false, needsManualFix: false };
+    }
     return {
       issues: parsed.issues || [],
       fixes: parsed.fixes || [],
@@ -243,6 +269,7 @@ Focus on security vulnerabilities. Be specific about attack vectors.`;
       needsManualFix: parsed.needsManualFix || false
     };
   } catch (error) {
+    console.warn(`Review failed for ${file}: ${error instanceof Error ? error.message : String(error)}`);
     return { issues: [], fixes: [], critical: false, needsManualFix: false };
   }
 }
@@ -295,6 +322,11 @@ Focus on: null/undefined, empty arrays, boundary conditions, type mismatches, as
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
+    // Validate structure
+    if (!Array.isArray(parsed.issues)) {
+      console.warn(`Invalid response structure for ${file}: issues must be array`);
+      return { issues: [], fixes: [], critical: false, needsManualFix: false };
+    }
     return {
       issues: parsed.issues || [],
       fixes: parsed.fixes || [],
@@ -302,6 +334,7 @@ Focus on: null/undefined, empty arrays, boundary conditions, type mismatches, as
       needsManualFix: parsed.needsManualFix || false
     };
   } catch (error) {
+    console.warn(`Review failed for ${file}: ${error instanceof Error ? error.message : String(error)}`);
     return { issues: [], fixes: [], critical: false, needsManualFix: false };
   }
 }
@@ -371,27 +404,47 @@ If the fix cannot be safely applied automatically, return the original code unch
       }
 
       // Validate TypeScript syntax before applying
+      const tempFile = file + '.pre-commit-fix.tmp';
       try {
         // Write to temp file and check syntax
-        const tempFile = file + '.pre-commit-fix.tmp';
         writeFileSync(tempFile, fixedContent, 'utf-8');
         
-        // Try to compile (quick syntax check)
-        execSync(`npx tsc --noEmit --skipLibCheck "${tempFile}" 2>&1`, {
-          stdio: 'pipe',
-          encoding: 'utf-8'
-        });
-        
-        // Clean up temp file
-        execSync(`rm -f "${tempFile}"`, { stdio: 'ignore' });
-      } catch (syntaxError) {
-        // Syntax error in fix - don't apply
+        // Try to compile (quick syntax check) - use array format to prevent command injection
+        try {
+          execSync('npx', ['tsc', '--noEmit', '--skipLibCheck', tempFile], {
+            stdio: 'pipe',
+            encoding: 'utf-8'
+          });
+        } catch (syntaxError) {
+          // Syntax error in fix - don't apply
+          return { applied: false, remainingIssues: issues };
+        } finally {
+          // Always clean up temp file
+          if (existsSync(tempFile)) {
+            execSync('rm', ['-f', tempFile], { stdio: 'ignore' });
+          }
+        }
+      } catch (error) {
+        // Clean up temp file on error
+        if (existsSync(tempFile)) {
+          try {
+            execSync('rm', ['-f', tempFile], { stdio: 'ignore' });
+          } catch {
+            // Ignore cleanup errors
+          }
+        }
         return { applied: false, remainingIssues: issues };
       }
 
       // Apply the fix
       writeFileSync(file, fixedContent, 'utf-8');
-      execSync(`git add "${file}"`, { stdio: 'ignore' });
+      // Use array format to prevent command injection
+      try {
+        execSync('git', ['add', file], { stdio: 'ignore' });
+      } catch (error) {
+        console.warn(`Failed to stage ${file}: ${error instanceof Error ? error.message : String(error)}`);
+        // Don't fail the whole process
+      }
 
       // Ask AI which issues were fixed
       const verifyPrompt = `Compare these two code versions and list which issues were fixed.
