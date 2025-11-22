@@ -87,9 +87,9 @@ export function calculateCogs(input: CogsCalculationInput): CogsCalculationResul
   // 4. Ensure non-negative
   finalCogs = Math.max(0, finalCogs);
   
-  // 5. Calculate margin
+  // 5. Calculate margin (with division by zero check)
   const unitMargin = context.salePrice - finalCogs;
-  const marginPercent = context.salePrice > 0 
+  const marginPercent = context.salePrice > 0 && Math.abs(context.salePrice) > 0.01
     ? (unitMargin / context.salePrice) * 100 
     : 0;
   

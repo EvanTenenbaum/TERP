@@ -26,7 +26,12 @@ export const marginCalculationService = {
       throw new Error("Margin percent must be greater than -100%");
     }
 
-    const price = cogsPerUnit / (1 - marginPercent / 100);
+    const denominator = 1 - marginPercent / 100;
+    if (Math.abs(denominator) < 0.0001) {
+      throw new Error("Division by zero: margin percent too close to 100%");
+    }
+
+    const price = cogsPerUnit / denominator;
     return Math.round(price * 100) / 100; // Round to 2 decimals
   },
 
