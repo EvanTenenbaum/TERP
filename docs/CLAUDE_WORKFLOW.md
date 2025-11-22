@@ -97,3 +97,13 @@ This ensures the Testing Roadmap System is **self-maintaining** and requires **z
 - **Scalability:** The system can handle any number of features and tests.
 
 This integrated testing roadmap is the cornerstone of our commitment to quality and reliability in the TERP project.
+
+---
+
+## Mandatory QA Gate for Master Test Suite
+
+**A new, mandatory QA gate is now in effect for all features covered by the Master Test Suite (TS-001 to TS-15).**
+
+No feature from the Master Test Suite can be marked 'Done' or considered complete without passing its specific verification steps as defined in the `EXHAUSTIVE_INTERACTION_PROTOCOLS.md` document.
+
+**Reference**: [EXHAUSTIVE_INTERACTION_PROTOCOLS.md](./testing/EXHAUSTIVE_INTERACTION_PROTOCOLS.md)
