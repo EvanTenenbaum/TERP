@@ -2597,3 +2597,100 @@ Completes pricing feature set, enables price monitoring.
   - **Discovered:** E2E Testing Session 2025-11-22
   - **Note:** This is a critical blocker for order creation workflow
 
+
+- [ ] **BUG-013: Inventory Table Not Displaying Data** (Created: 2025-11-22) 🔴 CRITICAL
+  - Task ID: BUG-013
+  - Priority: P0 (CRITICAL - BLOCKING FEATURE)
+  - Session: TBD
+  - **Problem:** Inventory table shows "No inventory found" despite metrics showing $161,095.72 (6,731 units)
+  - **Current State:**
+    - Inventory page at `/inventory` loads successfully
+    - Metrics cards show correct data:
+      - Total Inventory Value: $161,095.72 (6,731 total units)
+      - Avg Value per Unit: $24.53
+      - Low Stock: 1 item
+    - Stock Levels by Category chart shows: Flower 6,731 units $161,096
+    - Stock Levels by Subcategory chart shows:
+      - Greenhouse: 2,126 units $61,797
+      - Indoor: 2,642 units $53,733
+      - Outdoor: 1,963 units $45,566
+    - Inventory table below shows "No inventory found" with "Create First Batch" button
+    - Table headers visible: SKU, Product, Brand, Vendor, Grade, Status, On Hand, Reserved, Available, Actions
+  - **Root Cause:** Unknown - data exists but table is not rendering rows
+    - Possible causes:
+      1. API endpoint returning empty array for table data
+      2. Frontend filtering logic incorrectly filtering out all rows
+      3. Database query issue in table data fetch
+      4. Data transformation error between metrics and table views
+      5. Different API endpoints for metrics vs table
+  - **Impact:** BLOCKING - Users cannot view, edit, or manage individual inventory items
+    - Cannot export inventory data
+    - Cannot use advanced filters
+    - Cannot sort or search inventory
+    - Cannot click on inventory rows for details
+    - Core inventory management workflows completely blocked
+  - **Location:** `/inventory` page, inventory table section
+  - **Investigation Steps:**
+    1. Check network tab for inventory API requests
+    2. Compare API endpoints used for metrics vs table
+    3. Verify table data API response (should contain 6,731+ items)
+    4. Check frontend data transformation logic
+    5. Verify table component is receiving data correctly
+    6. Check for filtering logic that might be excluding all rows
+    7. Test with browser console to inspect data flow
+  - **Files to Check:**
+    - `client/src/pages/InventoryPage.tsx` (or similar)
+    - `server/routers/inventory.ts` (API endpoints)
+    - `client/src/components/inventory/InventoryTable.tsx` (table component)
+  - **Expected Behavior:**
+    - Table should display all 6,731 inventory items
+    - Each row should show SKU, Product, Brand, Vendor, Grade, Status, quantities
+    - Users should be able to click rows for details
+    - Search, filter, and sort should work
+  - **Estimate:** 4-8 hours (requires investigation and fix)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** E2E Testing Session 2025-11-22
+  - **Note:** This is a critical blocker for inventory management workflow
+
+- [ ] **BUG-014: Todo Lists Page Returns 404** (Created: 2025-11-22) 🔴 HIGH PRIORITY
+  - Task ID: BUG-014
+  - Priority: P1 (HIGH - MISSING FEATURE)
+  - Session: TBD
+  - **Problem:** Navigating to Todo Lists page returns 404 error
+  - **Current State:**
+    - Sidebar link "Todo Lists" exists and is clickable
+    - Link navigates to `/todo-lists`
+    - Route `/todo-lists` returns 404 "Page Not Found" error
+    - Error message: "Sorry, the page you are looking for doesn't exist. It may have been moved or deleted."
+  - **Root Cause:** Route not implemented in client routing
+    - Possible reasons:
+      1. Feature planned but not yet developed
+      2. Route was removed but sidebar link remains
+      3. Route path mismatch (sidebar vs actual route)
+  - **Impact:** Task management features completely inaccessible
+    - Users cannot create or manage todo lists
+    - Users cannot track tasks
+    - Feature advertised in sidebar but not available
+  - **Location:** `/todo-lists` route
+  - **Investigation Steps:**
+    1. Check if `/todo-lists` route exists in `client/src/App.tsx`
+    2. Search codebase for TodoListsPage or similar component
+    3. Determine if feature was planned but not implemented
+    4. Check if backend API endpoints exist for todo lists
+    5. Decide if feature should be implemented or sidebar link removed
+  - **Solution Options:**
+    1. Implement `/todo-lists` route and page if feature is planned
+    2. Remove sidebar link if feature is not yet ready
+    3. Add "Coming Soon" placeholder page if feature is in development
+  - **Files to Check:**
+    - `client/src/App.tsx` (routing)
+    - `client/src/components/DashboardLayout.tsx` (sidebar links)
+    - `server/routers/*.ts` (todo list endpoints)
+  - **Expected Behavior:**
+    - Clicking "Todo Lists" in sidebar should navigate to functional todo lists page
+    - Or sidebar link should be hidden if feature not ready
+  - **Estimate:** 1-2 hours (if removing link) or 8-16 hours (if implementing feature)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** E2E Testing Session 2025-11-22
+  - **Note:** Decision needed: implement feature or remove link
+
