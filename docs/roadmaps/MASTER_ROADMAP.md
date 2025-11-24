@@ -2694,3 +2694,80 @@ Completes pricing feature set, enables price monitoring.
   - **Discovered:** E2E Testing Session 2025-11-22
   - **Note:** Decision needed: implement feature or remove link
 
+
+- [ ] **BUG-015: Cmd+K Command Palette Shortcut Not Working** (Created: 2025-11-22) 🟡 MEDIUM PRIORITY
+  - Task ID: BUG-015
+  - Priority: P2 (MEDIUM - BROKEN FEATURE)
+  - Session: TBD
+  - **Problem:** Cmd+K keyboard shortcut does not open command palette modal
+  - **Current State:**
+    - Pressing Cmd+K (Meta+K) has no effect
+    - No command palette modal appears
+    - No visible error messages
+    - Page remains unchanged
+  - **Expected Behavior:**
+    - Pressing Cmd+K should open command palette modal
+    - Modal should provide quick navigation to different pages/features
+    - Should work from any page in the application
+  - **Root Cause:** Unknown - requires investigation
+    - Possible causes:
+      1. Keyboard event listener not attached
+      2. Command palette component not implemented
+      3. Keyboard shortcut handler not registered
+      4. Event handler attached but not functioning
+  - **Impact:** Keyboard power users cannot use quick navigation feature
+  - **Location:** Global keyboard shortcut (should work on all pages)
+  - **Investigation Steps:**
+    1. Check if command palette component exists in codebase
+    2. Verify keyboard event listeners are registered
+    3. Check browser console for errors when pressing Cmd+K
+    4. Test if other keyboard shortcuts work (Ctrl+Shift+T works)
+    5. Verify if feature was planned but not implemented
+  - **Files to Check:**
+    - `client/src/components/layout/CommandPalette.tsx` (if exists)
+    - `client/src/hooks/useKeyboardShortcuts.ts` (if exists)
+    - `client/src/App.tsx` (global keyboard handlers)
+  - **Note:** Ctrl+Shift+T (Quick Add Task) works correctly, so keyboard shortcut infrastructure exists
+  - **Estimate:** 2-4 hours
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Gap Testing Session 2025-11-22 (TS-001)
+
+- [ ] **BUG-016: Theme Toggle Not Implemented** (Created: 2025-11-22) 🟡 MEDIUM PRIORITY
+  - Task ID: BUG-016
+  - Priority: P2 (MEDIUM - MISSING FEATURE)
+  - Session: TBD
+  - **Problem:** Light/dark mode theme toggle not found in application
+  - **Current State:**
+    - No theme toggle in Settings page
+    - No theme toggle in User Profile menu
+    - No theme toggle in header area
+    - Application appears to be in light mode only
+  - **Expected Behavior (per TS-002):**
+    - Theme toggle should exist in Settings or User Profile
+    - Users should be able to switch between light and dark modes
+    - Theme preference should persist across sessions
+  - **Root Cause:** Feature not implemented
+  - **Impact:** Users cannot customize UI appearance, no dark mode available
+  - **Locations Checked:**
+    - Settings page (`/settings`) - No toggle found
+    - User Profile button (header) - No menu appeared
+    - Header area - No visible toggle
+  - **Investigation Steps:**
+    1. Check if theme system is implemented in codebase
+    2. Verify if dark mode CSS/styles exist
+    3. Determine if feature was planned but not implemented
+    4. Check if theme provider exists in React component tree
+  - **Implementation Options:**
+    1. Add theme toggle to Settings page (recommended)
+    2. Add theme toggle to User Profile dropdown menu
+    3. Add theme toggle icon to header
+  - **Files to Check:**
+    - `client/src/contexts/ThemeContext.tsx` (if exists)
+    - `client/src/components/layout/ThemeToggle.tsx` (if exists)
+    - `client/src/pages/SettingsPage.tsx`
+    - CSS/styling files for dark mode definitions
+  - **Estimate:** 4-8 hours (if implementing from scratch)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Gap Testing Session 2025-11-22 (TS-002)
+  - **Note:** Decision needed: implement feature or remove from test suite if not planned
+
