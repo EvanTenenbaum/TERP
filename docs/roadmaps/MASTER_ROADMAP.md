@@ -428,7 +428,7 @@
 
 ### REL-001: Deploy Multiple Instances
 
-**Status:** 📋 PLANNED  
+**Status:** ✅ COMPLETE (2025-01-27)  
 **Priority:** 🔴 P0 (CRITICAL)  
 **Estimate:** 4 hours  
 **Module:** `.do/app.yaml`  
@@ -1903,7 +1903,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### INFRA-011: Update Deployment Configuration
 
-**Status:** 📋 PLANNED  
+**Status:** ✅ COMPLETE (2025-01-27)  
 **Priority:** 🔴 P0 (CRITICAL)  
 **Estimate:** 2-3 hours  
 **Module:** `.do/app.yaml`, `server/_core/healthCheck.ts`  
