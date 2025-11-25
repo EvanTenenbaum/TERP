@@ -122,8 +122,8 @@ The Digital Ocean App Platform is already configured:
 - **Config file**: `.do/app.yaml`
 - **App name**: "terp"
 - **Auto-deploy**: Enabled on push to `main`
-- **Logs**: Forwarded to Papertrail (see `.do/app.yaml`)
-- **Build**: Configured for Node.js deployment
+- **Logs**: Forwarded to Papertrail (via `PAPERTRAIL_ENDPOINT`)
+- **Build**: Uses the root `Dockerfile` (no Heroku buildpack)
 
 ### How Auto-Deploy Works
 
@@ -185,7 +185,7 @@ The monitoring script polls every 5 seconds. If it seems stuck:
 
 ## What You Should NOT Do
 
-❌ **Don't modify `.do/app.yaml`** - This is the Digital Ocean config and should match their setup exactly
+❌ **Don't change `.do/app.yaml` accidentally** - Only edit it when intentionally updating the Docker spec, then run `doctl apps update <APP_ID> --spec .do/app.yaml`
 
 ❌ **Don't commit `DIGITALOCEAN_TOKEN`** - It should only be in shell config, never in git
 
