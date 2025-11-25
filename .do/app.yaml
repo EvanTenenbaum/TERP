@@ -17,7 +17,7 @@ services:
       deploy_on_push: true
     
     # Build configuration
-    build_command: pnpm install && pnpm run build:production
+    build_command: pnpm install --no-frozen-lockfile && pnpm run build:production
     run_command: pnpm start
     
     # Environment
