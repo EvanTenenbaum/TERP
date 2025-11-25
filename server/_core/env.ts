@@ -1,6 +1,18 @@
+// JWT_SECRET is required - no fallback allowed
+const getJwtSecret = (): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret === "terp-secret-key-change-in-production" || secret === "your-secret-key-change-in-production") {
+    throw new Error("JWT_SECRET environment variable is required and must be set to a secure value (minimum 32 characters). Application cannot start without it.");
+  }
+  if (secret.length < 32) {
+    throw new Error("JWT_SECRET must be at least 32 characters for security. Current length: " + secret.length);
+  }
+  return secret;
+};
+
 export const env = {
   appId: process.env.VITE_APP_ID ?? "",
-  JWT_SECRET: process.env.JWT_SECRET ?? "terp-secret-key-change-in-production",
+  JWT_SECRET: getJwtSecret(),
   databaseUrl: process.env.DATABASE_URL ?? "",
   ownerId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",

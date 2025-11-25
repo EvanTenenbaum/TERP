@@ -174,12 +174,30 @@
 
 ### SEC-002: Require JWT_SECRET Environment Variable
 
-**Status:** 📋 PLANNED  
+**Status:** ✅ COMPLETE (2025-01-27)  
 **Priority:** 🔴 P0 (CRITICAL)  
 **Estimate:** 2 hours  
-**Module:** `server/_core/simpleAuth.ts`  
+**Actual Time:** ~30 minutes  
+**Module:** `server/_core/simpleAuth.ts`, `server/_core/env.ts`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/SEC-002.md` (to be created)
+
+**Implementation:**
+- Removed hardcoded fallback from `env.ts`
+- Added validation function that fails fast if JWT_SECRET missing or insecure
+- Requires minimum 32 characters for security
+- Application will fail to start if JWT_SECRET not properly configured
+
+**Key Commits:**
+- `6ef1fed5` - Remove hardcoded JWT_SECRET fallback and add validation
+
+**Deliverables:**
+- [x] Remove hardcoded fallback: `"your-secret-key-change-in-production"`
+- [x] Remove hardcoded fallback: `"terp-secret-key-change-in-production"`
+- [x] Add validation to require JWT_SECRET
+- [x] Add startup check that fails if JWT_SECRET missing
+- [x] All tests passing
+- [x] Zero TypeScript errors
 
 **Problem:** Hardcoded JWT secret fallback allows weak security in production.
 
