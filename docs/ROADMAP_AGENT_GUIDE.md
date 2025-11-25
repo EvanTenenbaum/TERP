@@ -657,7 +657,56 @@ ls docs/sessions/active/
 ls docs/sessions/archive/
 ```
 
-### Git Operations
+### Git Operations & Conflict Resolution
+
+**Standard Merge-then-Push Workflow:**
+
+After completing work on a branch:
+```bash
+git checkout main
+git pull origin main
+git merge your-branch-name --no-ff -m "Merge your-branch-name: Task description"
+git push origin main
+```
+
+**Handling Push Conflicts:**
+
+If push is rejected (another agent pushed first):
+
+1. **Auto-resolution (recommended):**
+   ```bash
+   git pull --rebase origin main
+   # If conflicts occur:
+   bash scripts/auto-resolve-conflicts.sh
+   git add .
+   git rebase --continue
+   git push origin main
+   ```
+
+2. **Manual resolution:**
+   - Edit conflicting files (remove `<<<<<<<`, `=======`, `>>>>>>>` markers)
+   - For `MASTER_ROADMAP.md` and `ACTIVE_SESSIONS.md`, prefer additive merges
+   - `git add <resolved-files>`
+   - `git rebase --continue` or `git commit`
+
+3. **Push conflict handler:**
+   ```bash
+   bash scripts/handle-push-conflict.sh
+   ```
+
+**Conflict Resolution Scripts:**
+
+- **scripts/auto-resolve-conflicts.sh** - Intelligent conflict resolution
+  - Handles roadmap and session file conflicts automatically
+  - Prefers additive merges (keeps both changes when possible)
+
+- **scripts/handle-push-conflict.sh** - Push retry with exponential backoff
+  - Automatically pulls, resolves, and retries push
+  - Retries up to 3 times with exponential backoff
+
+See `docs/DEPLOYMENT_CONFLICT_INTEGRATION_PLAN_FINAL.md` for complete guide.
+
+### Git Operations (Legacy)
 ```bash
 # Check recent roadmap changes
 git log --oneline -- docs/roadmaps/MASTER_ROADMAP.md

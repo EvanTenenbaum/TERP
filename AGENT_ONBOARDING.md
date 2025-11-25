@@ -35,24 +35,33 @@ TERP is a [brief description of project]. This project is configured with:
 
 ### How It Works
 
-The `scripts/` directory contains the deployment monitoring system:
+**Automatic Deployment Monitoring (Post-Push Hook):**
 
-- **scripts/do-auto-discover.ts** - Auto-discovers your Digital Ocean app by name from `.do/app.yaml`
-  - Queries the Digital Ocean API
-  - Caches the app ID in `.git/config` for speed
-  - First run: ~2 seconds, subsequent runs: instant
-  - Requires: `DIGITALOCEAN_TOKEN` environment variable
+When you push to `main`, deployment monitoring starts automatically via the `.husky/post-push` hook:
 
-- **scripts/deploy-and-monitor.ts** - Monitors deployments after pushing to main
-  - Uses auto-discovery to find the app
-  - Polls Digital Ocean for deployment status every 5 seconds
-  - Shows real-time progress (building, deploying, etc.)
-  - Detects and reports failures with error details
+- **Automatic:** No manual action required - monitoring starts in the background
+- **Non-blocking:** Push completes immediately, monitoring runs in background
+- **Status tracking:** Results written to `.deployment-status-{commit}.log` and `.deployment-status-{commit}.result`
 
-- **scripts/validate-deployment-setup.ts** - Validates the setup is ready
-  - Checks `DIGITALOCEAN_TOKEN` is set
-  - Verifies auto-discovery works
-  - Helpful error messages if something is missing
+**Monitoring Scripts:**
+
+- **scripts/monitor-deployment-auto.sh** - Unified deployment monitoring script
+  - Discovers DigitalOcean app ID automatically
+  - Polls DigitalOcean API for deployment status
+  - Falls back to database and health checks if API unavailable
+  - Implements smart polling (5s initially, 15s after 2 minutes)
+  - Writes status to local files for quick checks
+  - Runs in background via `nohup`
+
+- **scripts/check-deployment-status.sh** - Quick status check
+  - Reads local status file for a specific commit
+  - Returns: success, failed, timeout, or in progress
+  - Fast on-demand check without API calls
+
+- **scripts/manage-deployment-monitors.sh** - Monitor management
+  - View active monitors: `bash scripts/manage-deployment-monitors.sh status`
+  - Stop specific monitor: `bash scripts/manage-deployment-monitors.sh stop [commit-sha]`
+  - Cleanup stale monitors: `bash scripts/manage-deployment-monitors.sh cleanup`
 
 ### Configuration
 
@@ -79,14 +88,22 @@ You:
 3. Commit: git commit -m "feat: add dark mode toggle to settings"
 4. Push to main: git push origin main
    ↓
-5. System automatically:
-   - Discovers app ID from Digital Ocean API
-   - Waits for deployment to start
-   - Shows: 🔨 Building... (3/10 steps)
-   - Shows: 🚀 Deploying... (8/10 steps)
-   - Shows: ✅ Deployment successful!
+5. Post-push hook automatically:
+   - Starts deployment monitoring in background
+   - Monitors DigitalOcean API, database, and health checks
+   - Writes status to `.deployment-status-{commit}.log`
+   
+6. Check deployment status:
+   ```bash
+   bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
+   ```
+   
+7. If deployment fails:
+   - Review logs: `cat .deployment-status-*.log`
+   - Fix the issue and push again
+   - **DO NOT mark task complete until deployment succeeds**
 
-User sees the feature live on production immediately.
+User sees the feature live on production once deployment completes.
 ```
 
 ## Environment Variables
@@ -288,17 +305,58 @@ or
 ❌ Deployment failed: [error details]
 ```
 
-## Git Operations
+## Git Operations & Conflict Resolution
 
-### Push to main (standard)
+### Standard Workflow
+
+**Merge-then-push workflow:**
 ```bash
+# After completing work on your branch
+git checkout main
+git pull origin main
+git merge your-branch-name --no-ff -m "Merge your-branch-name: Task description"
 git push origin main
 ```
 
-### Push to feature branch (for exploration)
-```bash
-git push -u origin feature/my-feature
-```
+### Handling Push Conflicts
+
+**If push is rejected (another agent pushed first):**
+
+1. **Auto-resolution (recommended):**
+   ```bash
+   git pull --rebase origin main
+   # If conflicts occur, use auto-resolution:
+   bash scripts/auto-resolve-conflicts.sh
+   git add .
+   git rebase --continue
+   git push origin main
+   ```
+
+2. **Manual resolution:**
+   - Edit conflicting files (remove `<<<<<<<`, `=======`, `>>>>>>>` markers)
+   - For `MASTER_ROADMAP.md` and `ACTIVE_SESSIONS.md`, prefer additive merges (keep both changes)
+   - `git add <resolved-files>`
+   - `git rebase --continue` or `git commit` (if in merge state)
+
+3. **Push conflict handler:**
+   ```bash
+   # If push keeps failing, use the handler script
+   bash scripts/handle-push-conflict.sh
+   ```
+
+**Conflict Resolution Scripts:**
+
+- **scripts/auto-resolve-conflicts.sh** - Intelligent conflict resolution
+  - Handles roadmap and session file conflicts automatically
+  - Prefers additive merges (keeps both changes when possible)
+  - Only runs when Git is in rebase/merge state
+
+- **scripts/handle-push-conflict.sh** - Push retry with exponential backoff
+  - Automatically pulls, resolves, and retries push
+  - Retries up to 3 times with exponential backoff
+  - Provides clear instructions if auto-resolution fails
+
+See `docs/DEPLOYMENT_CONFLICT_INTEGRATION_PLAN_FINAL.md` for complete conflict resolution guide.
 
 ### Check status
 ```bash
