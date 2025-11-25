@@ -28,15 +28,18 @@ RUN pnpm store prune && rm -rf /tmp/* /var/lib/apt/lists/*
 # 7. Create startup script that clones repo at runtime
 RUN echo '#!/bin/sh\n\
 set -e\n\
+cd /app\n\
 echo "📦 Cloning repository..."\n\
-if [ -z "$GITHUB_TOKEN" ]; then\n\
-  echo "⚠️  GITHUB_TOKEN not set, using public clone"\n\
-  git clone --depth 1 --branch main https://github.com/EvanTenenbaum/TERP.git /app/repo || true\n\
-else\n\
-  echo "✅ Using authenticated clone"\n\
-  git clone --depth 1 --branch main https://x-access-token:${GITHUB_TOKEN}@github.com/EvanTenenbaum/TERP.git /app/repo || true\n\
+if [ ! -d "TERP" ]; then\n\
+  if [ -z "$GITHUB_TOKEN" ]; then\n\
+    echo "⚠️  GITHUB_TOKEN not set, using public clone"\n\
+    git clone --depth 1 --branch main https://github.com/EvanTenenbaum/TERP.git TERP\n\
+  else\n\
+    echo "✅ Using authenticated clone"\n\
+    git clone --depth 1 --branch main https://x-access-token:${GITHUB_TOKEN}@github.com/EvanTenenbaum/TERP.git TERP\n\
+  fi\n\
 fi\n\
-cd /app/repo\n\
+cd TERP\n\
 echo "📦 Installing dependencies in cloned repo..."\n\
 pnpm install --no-frozen-lockfile || pnpm install\n\
 echo "🚀 Starting bot..."\n\
