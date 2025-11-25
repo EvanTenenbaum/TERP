@@ -158,11 +158,12 @@ async function startServer() {
       // Ignore errors reading build version
     }
     res.json({
-      version: "2025-11-25-v2",
+      version: "2025-11-25-v3",
       build: buildVersion,
       hasContextLogging: true,
       hasDebugEndpoint: true,
       hasDefensiveMiddleware: true,
+      hasPublicUserProvisioning: true,
       commit: process.env.GIT_COMMIT || "unknown",
       timestamp: new Date().toISOString(),
     });

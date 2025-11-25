@@ -1,5 +1,9 @@
 FROM node:20-slim AS base
 
+# Force rebuild: 2025-11-25-v3
+LABEL build.version="2025-11-25-v3" \
+      build.description="Public dashboard access fix"
+
 # Install corepack/pnpm and system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 build-essential ca-certificates git openssl pkg-config \
