@@ -19,10 +19,12 @@ RUN pnpm install --no-frozen-lockfile
 # Copy ONLY what the bot actually needs (not everything)
 COPY scripts/ ./scripts/
 COPY docs/roadmaps/ ./docs/roadmaps/
-COPY docs/prompts/ ./docs/prompts/ 2>/dev/null || mkdir -p ./docs/prompts
-COPY docs/templates/ ./docs/templates/ 2>/dev/null || mkdir -p ./docs/templates
-COPY shared/ ./shared/ 2>/dev/null || mkdir -p ./shared
-COPY tsconfig.json tsconfig.node.json ./
+# Copy optional directories if they exist (COPY will fail if they don't, so we handle gracefully)
+COPY docs/prompts/ ./docs/prompts/ || true
+COPY docs/templates/ ./docs/templates/ || true
+COPY shared/ ./shared/ || true
+# Copy tsconfig files (destination must end with / for multiple sources)
+COPY tsconfig*.json ./
 
 # Start bot
 CMD ["npx", "tsx", "scripts/slack-bot.ts"]
