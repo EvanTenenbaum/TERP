@@ -7,6 +7,8 @@ on:
       - 'package.json'
     branches:
       - main
+    paths-ignore:
+      - '.github/workflows/**'  # Don't trigger on workflow file changes
   schedule:
     # Run daily at 2 AM UTC to catch any drift
     - cron: '0 2 * * *'
