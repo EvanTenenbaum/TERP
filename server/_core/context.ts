@@ -69,7 +69,42 @@ export async function createContext(
   }
 
   if (!user) {
-    user = await getOrCreatePublicUser();
+    try {
+      user = await getOrCreatePublicUser();
+    } catch (error) {
+      logger.warn({ error }, "[Public Access] Failed to get/create public user, using synthetic fallback");
+      // Fallback to synthetic user if everything fails
+      const now = new Date();
+      user = {
+        id: -1,
+        openId: PUBLIC_USER_ID,
+        email: PUBLIC_USER_EMAIL,
+        name: "Public Demo User",
+        role: "user",
+        loginMethod: null,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+        lastSignedIn: now,
+      };
+    }
+  }
+
+  // Ensure user is never null
+  if (!user) {
+    const now = new Date();
+    user = {
+      id: -1,
+      openId: PUBLIC_USER_ID,
+      email: PUBLIC_USER_EMAIL,
+      name: "Public Demo User",
+      role: "user",
+      loginMethod: null,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      lastSignedIn: now,
+    };
   }
 
   return {
