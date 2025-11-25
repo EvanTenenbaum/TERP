@@ -136,9 +136,7 @@ export function RoleManagement() {
       return;
     }
 
-    if (confirm(`Are you sure you want to delete the role "${roleName}"? This action cannot be undone.`)) {
-      deleteRoleMutation.mutate({ roleId });
-    }
+    setRoleToDelete({ roleId, roleName });
   };
 
   const roles = rolesData?.roles || [];
