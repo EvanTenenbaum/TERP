@@ -46,7 +46,7 @@ import { useLocation } from "wouter";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: ClipboardList, label: "Todo Lists", path: "/todo" },
+  { icon: ClipboardList, label: "Todo Lists", path: "/todos" },
   { icon: CalendarDays, label: "Calendar", path: "/calendar" },
   { icon: ShoppingCart, label: "Orders", path: "/orders" },
   { icon: FileText, label: "Sales Sheets", path: "/sales-sheets" },
