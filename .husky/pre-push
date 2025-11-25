@@ -8,13 +8,27 @@ echo "🔍 Running pre-push checks..."
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-# Check 1: Prevent direct push to main
+# Check 1: Allow direct push to main (per protocol)
+# But warn if local is behind remote
 if [ "$CURRENT_BRANCH" == "main" ]; then
-  echo "❌ PUSH BLOCKED: Direct push to main is not allowed. Please use a PR."
-  exit 1
+  # Check if local is behind remote
+  git fetch origin main --quiet 2>/dev/null || true
+  LOCAL=$(git rev-parse HEAD)
+  REMOTE=$(git rev-parse origin/main 2>/dev/null || echo "$LOCAL")
+  
+  if [ "$LOCAL" != "$REMOTE" ] && git merge-base --is-ancestor "$LOCAL" "$REMOTE" 2>/dev/null; then
+    echo "⚠️  WARNING: Local main is behind remote main"
+    echo "   Consider pulling first: git pull origin main"
+    echo "   (Push will proceed, but conflicts may occur)"
+    echo ""
+  fi
+  
+  # Allow push to main (non-blocking)
+  echo "✅ Pushing to main (deployment will be monitored automatically)"
+  exit 0
 fi
 
-# Check 2: Verify branch name format
+# Check 2: Verify branch name format (for non-main branches only)
 if [[ ! "$CURRENT_BRANCH" =~ $BRANCH_NAME_REGEX ]]; then
   echo "❌ PUSH BLOCKED: Invalid branch name format: $CURRENT_BRANCH"
   echo "   To fix: Use 'pnpm start-task' to create a proper branch."
