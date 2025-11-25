@@ -16,15 +16,9 @@ COPY patches/ ./patches/
 # Install dependencies
 RUN pnpm install --no-frozen-lockfile
 
-# Copy ONLY what the bot actually needs (not everything)
+# Copy ONLY essential files (what manager.ts actually needs)
 COPY scripts/ ./scripts/
-COPY docs/roadmaps/ ./docs/roadmaps/
-# Create optional directories and copy if they exist
-RUN mkdir -p ./docs/prompts ./docs/templates ./shared
-COPY docs/prompts/ ./docs/prompts/ 2>&1 || echo "prompts directory not found, skipping"
-COPY docs/templates/ ./docs/templates/ 2>&1 || echo "templates directory not found, skipping"  
-COPY shared/ ./shared/ 2>&1 || echo "shared directory not found, skipping"
-# Copy tsconfig files
+COPY docs/roadmaps/MASTER_ROADMAP.md ./docs/roadmaps/MASTER_ROADMAP.md
 COPY tsconfig.json ./
 COPY tsconfig.node.json ./
 
