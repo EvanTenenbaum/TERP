@@ -361,7 +361,6 @@ async function executeGitWorkflow(taskId: string, files: string[]): Promise<stri
         console.log(chalk.yellow(`⚠️  Merge conflict detected. Attempting auto-resolution...`));
         // Try auto-resolution
         try {
-          const { execSync } = await import('child_process');
           execSync('bash scripts/auto-resolve-conflicts.sh', { stdio: 'inherit' });
           await git.add('.');
           await git.commit(`Merge ${branchName}: ${taskId} (auto-resolved conflicts)`);
@@ -381,7 +380,6 @@ async function executeGitWorkflow(taskId: string, files: string[]): Promise<stri
   // INFRA-004: Enforce deployment monitoring
   console.log(chalk.blue(`📊 Monitoring deployment...`));
   try {
-    const { execSync } = await import('child_process');
     const commitSha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
     execSync(`bash scripts/monitor-deployment-auto.sh ${commitSha}`, { 
       stdio: 'inherit',
