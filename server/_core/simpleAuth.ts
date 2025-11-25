@@ -228,11 +228,18 @@ export function registerSimpleAuthRoutes(app: Express) {
       const { seedAllDefaults } = await import("../services/seedDefaults");
       await seedAllDefaults();
 
-      // Create admin user
-      const { getUserByEmail } = await import("../db");
-      const adminExists = await getUserByEmail("Evan");
-      if (!adminExists) {
-        await simpleAuth.createUser("Evan", "oliver", "Evan (Admin)");
+      // Create admin user only if environment variables are provided
+      const { env } = await import("./env");
+      if (env.initialAdminUsername && env.initialAdminPassword) {
+        const { getUserByEmail } = await import("../db");
+        const adminExists = await getUserByEmail(env.initialAdminUsername);
+        if (!adminExists) {
+          await simpleAuth.createUser(
+            env.initialAdminUsername, 
+            env.initialAdminPassword, 
+            `${env.initialAdminUsername} (Admin)`
+          );
+        }
       }
 
       res.json({ success: true, message: "Seeding completed successfully" });

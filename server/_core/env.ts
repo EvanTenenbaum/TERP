@@ -18,6 +18,9 @@ export const env = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  // Initial admin credentials (optional - only used on first startup if user doesn't exist)
+  initialAdminUsername: process.env.INITIAL_ADMIN_USERNAME ?? "",
+  initialAdminPassword: process.env.INITIAL_ADMIN_PASSWORD ?? "",
 };
 
 // Legacy export for compatibility
