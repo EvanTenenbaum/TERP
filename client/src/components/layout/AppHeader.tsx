@@ -1,5 +1,6 @@
 import React from "react";
-import { Inbox, Search, Settings, User, Menu, CheckCheck } from "lucide-react";
+import { Inbox, Search, Settings, User, Menu, CheckCheck, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ interface AppHeaderProps {
 export function AppHeader({ onMenuClick }: AppHeaderProps) {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const { theme, toggleTheme, switchable } = useTheme();
 
   // Fetch inbox stats for unread count
   const { data: inboxStats } = trpc.inbox.getStats.useQuery();
@@ -225,6 +227,22 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Theme Toggle */}
+        {switchable && toggleTheme && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden sm:flex"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            {theme === "light" ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
