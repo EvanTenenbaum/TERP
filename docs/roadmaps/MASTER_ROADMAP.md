@@ -3266,3 +3266,173 @@ Completes pricing feature set, enables price monitoring.
 
 **Recommendation:** Fix BUG-M001, BUG-M002, and BUG-M003 before re-running full mobile test suite.
 
+
+
+- [ ] **BUG-M004: Customer Name Inconsistency Between Dashboard and Create Order** (Created: 2025-11-24) 🟡 MEDIUM PRIORITY
+  - Task ID: BUG-M004
+  - Priority: P2 (MEDIUM - UX ISSUE)
+  - Session: TBD
+  - **Problem:** Customer names displayed differently on Dashboard vs Create Order page
+  - **Current State:**
+    - Dashboard shows: "Customer 1371"
+    - Create Order dropdown shows: "Organic Leaf LLC"
+    - Same customer, different display names
+    - Confusing for Sales Managers trying to find customers
+  - **Root Cause:** Inconsistent data source or display logic
+    - Dashboard may be using customer ID or placeholder
+    - Create Order using actual customer name from database
+  - **Impact:** User confusion, inefficient workflow for Sales Managers
+  - **Location:** Dashboard sales table vs `/orders/create` customer dropdown
+  - **Expected Behavior:**
+    - Customer names should be consistent across all pages
+    - Should use actual customer name (e.g., "Organic Leaf LLC") everywhere
+    - Customer ID can be shown as secondary info if needed
+  - **Files to Check:**
+    - Dashboard sales table component
+    - Create Order customer selector component
+    - Customer data fetch/display logic
+  - **Estimate:** 1-2 hours
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Persona Testing Session 2025-11-24 (Sales Manager persona)
+
+- [ ] **BUG-M005: All Orders Show "0 items" Despite Having Dollar Amounts** (Created: 2025-11-24) 🔴 HIGH PRIORITY
+  - Task ID: BUG-M005
+  - Priority: P1 (HIGH - DATA INTEGRITY ISSUE)
+  - Session: TBD
+  - **Problem:** All 26 orders display "0 items" despite showing dollar amounts (e.g., $1,234.56)
+  - **Current State:**
+    - Orders page shows 26 orders
+    - Each order has a dollar amount (e.g., $1,234.56, $987.65)
+    - All orders show "0 items" in order card
+    - Cannot see what products are in orders
+  - **Root Cause:** Unknown - requires investigation
+    - Possible causes:
+      1. Line items not being counted correctly
+      2. Order items data not being fetched
+      3. Display logic showing wrong field
+      4. Database relationship issue between orders and line items
+      5. Data integrity issue - orders exist but line items missing
+  - **Impact:** HIGH - Sales Managers cannot see order contents
+    - Cannot fulfill orders
+    - Cannot answer customer questions about orders
+    - Cannot verify order accuracy
+    - Appears as data integrity issue
+  - **Location:** `/orders` page, order cards
+  - **Investigation Steps:**
+    1. Check database for order line items
+    2. Verify API response includes line items count
+    3. Check frontend display logic for item count
+    4. Test with specific order to see if line items exist
+    5. Verify order creation workflow saves line items correctly
+  - **Files to Check:**
+    - `client/src/pages/OrdersPage.tsx` (order card display)
+    - `server/routers/orders.ts` (API endpoint)
+    - Database schema for orders and line items relationship
+  - **Expected Behavior:**
+    - Order cards should show actual number of items (e.g., "3 items")
+    - Item count should match line items in order
+    - Should be consistent with order total amount
+  - **Estimate:** 6-12 hours (requires investigation + potential data fix)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Persona Testing Session 2025-11-24 (Sales Manager persona)
+  - **Note:** May indicate broader data integrity issue with order line items
+
+- [ ] **BUG-M006: Chart of Accounts Not Accessible** (Created: 2025-11-24) 🟡 MEDIUM PRIORITY
+  - Task ID: BUG-M006
+  - Priority: P2 (MEDIUM - MISSING FEATURE)
+  - Session: TBD
+  - **Problem:** No link or navigation to Chart of Accounts page
+  - **Current State:**
+    - Accounting dashboard exists at `/accounting`
+    - Shows AR/AP aging, cash balance, transactions
+    - No "Chart of Accounts" link or button visible
+    - No navigation to view account structure
+  - **Root Cause:** Feature not implemented or link missing
+  - **Impact:** Accountants cannot view account structure
+    - Cannot see GL account hierarchy
+    - Cannot manage account categories
+    - Limited accounting functionality
+  - **Location:** `/accounting` page
+  - **Expected Behavior:**
+    - Link to "Chart of Accounts" should exist on accounting dashboard
+    - Should navigate to page showing GL account structure
+    - Should allow viewing and managing accounts
+  - **Solution Options:**
+    1. Implement Chart of Accounts page and add link
+    2. Add to future roadmap if not yet planned
+  - **Files to Check:**
+    - `client/src/pages/AccountingPage.tsx`
+    - `client/src/App.tsx` (routing)
+    - `server/routers/accounting.ts` (API endpoints)
+  - **Estimate:** 16-24 hours (full feature implementation)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Persona Testing Session 2025-11-24 (Accountant persona)
+
+- [ ] **BUG-M007: General Ledger Not Accessible** (Created: 2025-11-24) 🟡 MEDIUM PRIORITY
+  - Task ID: BUG-M007
+  - Priority: P2 (MEDIUM - MISSING FEATURE)
+  - Session: TBD
+  - **Problem:** No link or navigation to General Ledger page
+  - **Current State:**
+    - Accounting dashboard exists at `/accounting`
+    - Shows AR/AP aging, cash balance, recent transactions
+    - No "General Ledger" link or button visible
+    - No navigation to view detailed transaction history
+  - **Root Cause:** Feature not implemented or link missing
+  - **Impact:** Accountants cannot view detailed transaction history
+    - Cannot see complete GL entries
+    - Cannot drill down into account details
+    - Limited accounting audit capabilities
+  - **Location:** `/accounting` page
+  - **Expected Behavior:**
+    - Link to "General Ledger" should exist on accounting dashboard
+    - Should navigate to page showing all GL transactions
+    - Should allow filtering by account, date range, etc.
+  - **Solution Options:**
+    1. Implement General Ledger page and add link
+    2. Add to future roadmap if not yet planned
+  - **Files to Check:**
+    - `client/src/pages/AccountingPage.tsx`
+    - `client/src/App.tsx` (routing)
+    - `server/routers/accounting.ts` (API endpoints)
+  - **Estimate:** 16-24 hours (full feature implementation)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Persona Testing Session 2025-11-24 (Accountant persona)
+
+- [ ] **BUG-M008: VIP Portal Not Implemented** (Created: 2025-11-24) 🔴 HIGH PRIORITY
+  - Task ID: BUG-M008
+  - Priority: P1 (HIGH - MISSING FEATURE)
+  - Session: TBD
+  - **Problem:** VIP Portal route returns 404 error
+  - **Current State:**
+    - Navigating to `/vip` returns 404 "Page Not Found" error
+    - VIP Portal features completely inaccessible
+    - No VIP client interface available
+  - **Root Cause:** Feature not implemented
+  - **Impact:** VIP Clients cannot access portal
+    - Cannot browse catalog
+    - Cannot place self-service orders
+    - Cannot view pricing or availability
+    - Major feature gap for B2B cannabis ERP
+  - **Location:** `/vip` route
+  - **Expected Behavior:**
+    - `/vip` route should load VIP Portal interface
+    - VIP clients should be able to:
+      - Browse product catalog
+      - View pricing (based on their pricing profile)
+      - Place self-service orders
+      - View order history
+      - Track order status
+  - **Decision Required:**
+    - Is VIP Portal planned for future implementation?
+    - Should it be prioritized for current sprint?
+    - Or should it be added to long-term roadmap?
+  - **Files to Check:**
+    - `client/src/App.tsx` (routing)
+    - `server/routers/vipPortal*.ts` (API endpoints - may exist)
+    - Existing VIP Portal components (if any)
+  - **Estimate:** 40-80 hours (full feature implementation)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Persona Testing Session 2025-11-24 (VIP Client persona)
+  - **Note:** Major feature - requires product decision on priority
+
