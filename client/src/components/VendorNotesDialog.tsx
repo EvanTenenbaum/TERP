@@ -9,16 +9,6 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
 import { Textarea } from "./ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Plus, Pencil, Trash2, History, FileText } from "lucide-react";
@@ -66,7 +56,6 @@ export function VendorNotesDialog({
   const [newNote, setNewNote] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
-  const [noteToDelete, setNoteToDelete] = useState<number | null>(null);
 
   // Fetch notes
   const { data: notesData } = useQuery({
@@ -171,13 +160,8 @@ export function VendorNotesDialog({
   };
 
   const handleDeleteNote = (id: number) => {
-    setNoteToDelete(id);
-  };
-
-  const handleConfirmDeleteNote = () => {
-    if (noteToDelete !== null) {
-      deleteNoteMutation.mutate(noteToDelete);
-      setNoteToDelete(null);
+    if (window.confirm("Are you sure you want to delete this note?")) {
+      deleteNoteMutation.mutate(id);
     }
   };
 
@@ -360,28 +344,7 @@ export function VendorNotesDialog({
             )}
           </TabsContent>
         </Tabs>
-    </DialogContent>
-
-    {/* Delete Note Confirmation Dialog */}
-    <AlertDialog open={noteToDelete !== null} onOpenChange={(open) => !open && setNoteToDelete(null)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Note?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete this note? This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirmDeleteNote}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  </Dialog>
+      </DialogContent>
+    </Dialog>
   );
 }

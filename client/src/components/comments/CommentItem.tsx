@@ -13,16 +13,6 @@ import { trpc } from "@/lib/trpc";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { MentionRenderer } from "./MentionRenderer";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface CommentItemProps {
   comment: {
@@ -48,7 +38,6 @@ export function CommentItem({
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const utils = trpc.useContext();
   const { data: currentUser } = trpc.auth.me.useQuery();
@@ -96,12 +85,9 @@ export function CommentItem({
   };
 
   const handleDelete = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = () => {
-    deleteComment.mutate({ commentId: comment.id });
-    setShowDeleteConfirm(false);
+    if (window.confirm("Are you sure you want to delete this comment?")) {
+      deleteComment.mutate({ commentId: comment.id });
+    }
   };
 
   const handleToggleResolve = () => {
@@ -201,26 +187,5 @@ export function CommentItem({
         <MentionRenderer content={comment.content} />
       )}
     </div>
-
-    {/* Delete Comment Confirmation Dialog */}
-    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Comment?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete this comment? This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirmDelete}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }

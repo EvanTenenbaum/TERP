@@ -1,16 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -22,7 +12,6 @@ export function UserManagement() {
   const [newName, setNewName] = useState("");
   const [resetUsername, setResetUsername] = useState("");
   const [resetPassword, setResetPassword] = useState("");
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
   const { data: users, isLoading } = trpc.userManagement.listUsers.useQuery();
@@ -75,13 +64,8 @@ export function UserManagement() {
   };
 
   const handleDeleteUser = (username: string) => {
-    setUserToDelete(username);
-  };
-
-  const handleConfirmDeleteUser = () => {
-    if (userToDelete) {
-      deleteUser.mutate({ username: userToDelete });
-      setUserToDelete(null);
+    if (confirm(`Are you sure you want to delete user "${username}"?`)) {
+      deleteUser.mutate({ username });
     }
   };
 
@@ -241,27 +225,6 @@ export function UserManagement() {
         </CardContent>
       </Card>
     </div>
-
-    {/* Delete User Confirmation Dialog */}
-    <AlertDialog open={userToDelete !== null} onOpenChange={(open) => !open && setUserToDelete(null)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete User?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete user "{userToDelete}"? This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirmDeleteUser}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
 

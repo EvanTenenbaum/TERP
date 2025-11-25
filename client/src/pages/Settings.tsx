@@ -12,16 +12,6 @@ import { UserManagement } from "@/components/UserManagement";
 import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagement";
 import { RoleManagement } from "@/components/settings/rbac/RoleManagement";
 import { PermissionAssignment } from "@/components/settings/rbac/PermissionAssignment";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 export default function Settings() {
   return (
@@ -303,7 +293,6 @@ function CategoriesManager() {
   const [newSubcategory, setNewSubcategory] = useState({ categoryId: 0, name: "" });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
-  const [categoryToUpdate, setCategoryToUpdate] = useState<number | null>(null);
 
   const { data: categories, refetch } = trpc.settings.categories.list.useQuery();
   
@@ -339,13 +328,10 @@ function CategoriesManager() {
   });
 
   const handleUpdateCategory = (id: number) => {
-    setCategoryToUpdate(id);
-  };
-
-  const handleConfirmUpdateCategory = (updateProducts: boolean) => {
-    if (categoryToUpdate !== null) {
-      updateCategoryMutation.mutate({ id: categoryToUpdate, name: editName, updateProducts });
-      setCategoryToUpdate(null);
+    if (window.confirm("Do you want to update this category for all existing products?")) {
+      updateCategoryMutation.mutate({ id, name: editName, updateProducts: true });
+    } else {
+      updateCategoryMutation.mutate({ id, name: editName, updateProducts: false });
     }
   };
 
@@ -458,26 +444,6 @@ function CategoriesManager() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Update Grade Confirmation Dialog */}
-      <AlertDialog open={gradeToUpdate !== null} onOpenChange={(open) => !open && setGradeToUpdate(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Update Grade?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Do you want to update this grade for all existing products?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => handleConfirmUpdateGrade(false)}>
-              No, Update Name Only
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleConfirmUpdateGrade(true)}>
-              Yes, Update All Products
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
@@ -513,13 +479,10 @@ function GradesManager() {
   });
 
   const handleUpdate = (id: number) => {
-    setGradeToUpdate(id);
-  };
-
-  const handleConfirmUpdateGrade = (updateProducts: boolean) => {
-    if (gradeToUpdate !== null) {
-      updateMutation.mutate({ id: gradeToUpdate, name: editName, updateProducts });
-      setGradeToUpdate(null);
+    if (window.confirm("Do you want to update this grade for all existing products?")) {
+      updateMutation.mutate({ id, name: editName, updateProducts: true });
+    } else {
+      updateMutation.mutate({ id, name: editName, updateProducts: false });
     }
   };
 

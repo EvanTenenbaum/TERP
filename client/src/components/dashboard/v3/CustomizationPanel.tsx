@@ -14,16 +14,6 @@ import {
 } from '@/components/ui/sheet';
 import { useDashboardPreferences } from '@/contexts/DashboardPreferencesContext';
 import { LAYOUT_PRESETS, WIDGET_METADATA } from '@/lib/constants/dashboardPresets';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 export function CustomizationPanel() {
   const {
@@ -38,15 +28,10 @@ export function CustomizationPanel() {
     resetToDefault,
   } = useDashboardPreferences();
 
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-
   const handleReset = () => {
-    setShowResetConfirm(true);
-  };
-
-  const handleConfirmReset = () => {
-    resetToDefault();
-    setShowResetConfirm(false);
+    if (confirm('Reset dashboard to default layout? This will undo all customizations.')) {
+      resetToDefault();
+    }
   };
 
   return (
@@ -150,27 +135,6 @@ export function CustomizationPanel() {
           </div>
         </ScrollArea>
       </SheetContent>
-
-      {/* Reset Confirmation Dialog */}
-      <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset Dashboard?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Reset dashboard to default layout? This will undo all customizations. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmReset}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Reset
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Sheet>
   );
 }

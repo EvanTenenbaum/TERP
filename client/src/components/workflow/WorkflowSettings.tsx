@@ -20,16 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface WorkflowSettingsProps {
   statuses: Array<{
@@ -49,7 +39,6 @@ export function WorkflowSettings({ statuses }: WorkflowSettingsProps) {
     slug: "",
     color: "#3B82F6",
   });
-  const [statusToDelete, setStatusToDelete] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -130,13 +119,8 @@ export function WorkflowSettings({ statuses }: WorkflowSettingsProps) {
   };
 
   const handleDelete = (id: number) => {
-    setStatusToDelete(id);
-  };
-
-  const handleConfirmDelete = () => {
-    if (statusToDelete !== null) {
-      deleteStatus.mutate({ id: statusToDelete });
-      setStatusToDelete(null);
+    if (confirm("Are you sure you want to delete this workflow status?")) {
+      deleteStatus.mutate({ id });
     }
   };
 
@@ -290,27 +274,6 @@ export function WorkflowSettings({ statuses }: WorkflowSettingsProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Status Confirmation Dialog */}
-      <AlertDialog open={statusToDelete !== null} onOpenChange={(open) => !open && setStatusToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Workflow Status?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this workflow status? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

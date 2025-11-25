@@ -349,30 +349,6 @@ export function OrderPreview({
           }}
         />
       )}
-
-      {/* Clear All Confirmation Dialog */}
-      <AlertDialog open={showClearAllConfirm} onOpenChange={setShowClearAllConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear All Items?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to clear all items from this order? This action cannot be undone and you will lose all current selections.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                onClearAll();
-                setShowClearAllConfirm(false);
-              }}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Clear All
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 }

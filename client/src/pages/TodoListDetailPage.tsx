@@ -15,16 +15,6 @@ import { trpc } from "@/lib/trpc";
 import { TaskCard } from "@/components/todos/TaskCard";
 import { TaskForm } from "@/components/todos/TaskForm";
 import { TodoListForm } from "@/components/todos/TodoListForm";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 export function TodoListDetailPage() {
   const { listId } = useParams<{ listId: string }>();
@@ -32,8 +22,6 @@ export function TodoListDetailPage() {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isEditListOpen, setIsEditListOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<unknown>(null);
-  const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
-  const [showDeleteListConfirm, setShowDeleteListConfirm] = useState(false);
 
   const utils = trpc.useContext();
 
@@ -90,23 +78,19 @@ export function TodoListDetailPage() {
   };
 
   const handleDeleteTask = (taskId: number) => {
-    setTaskToDelete(taskId);
-  };
-
-  const handleConfirmDeleteTask = () => {
-    if (taskToDelete !== null) {
-      deleteTask.mutate({ taskId: taskToDelete });
-      setTaskToDelete(null);
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      deleteTask.mutate({ taskId });
     }
   };
 
   const handleDeleteList = () => {
-    setShowDeleteListConfirm(true);
-  };
-
-  const handleConfirmDeleteList = () => {
-    deleteList.mutate({ listId: Number(listId) });
-    setShowDeleteListConfirm(false);
+    if (
+      window.confirm(
+        "Are you sure you want to delete this list? All tasks will be deleted."
+      )
+    ) {
+      deleteList.mutate({ listId: Number(listId) });
+    }
   };
 
   if (listLoading) {
@@ -244,48 +228,6 @@ export function TodoListDetailPage() {
         isOpen={isEditListOpen}
         onClose={() => setIsEditListOpen(false)}
       />
-
-      {/* Delete Task Confirmation Dialog */}
-      <AlertDialog open={taskToDelete !== null} onOpenChange={(open) => !open && setTaskToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Task?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this task? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDeleteTask}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete List Confirmation Dialog */}
-      <AlertDialog open={showDeleteListConfirm} onOpenChange={setShowDeleteListConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete List?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this list? All tasks will be deleted. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDeleteList}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
