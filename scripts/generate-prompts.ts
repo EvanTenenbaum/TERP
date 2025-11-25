@@ -226,40 +226,50 @@ EOF
 - Session archived"
    \`\`\`
 
-5. **Push directly to main (with merge conflict handling):**
+5. **Merge branch to main and push (with conflict handling):**
    \`\`\`bash
+   # Switch to main and merge your branch
+   git checkout main
+   git pull origin main
+   git merge ${task.id.toLowerCase()}-fix --no-ff -m "Merge ${task.id.toLowerCase()}-fix: ${task.title}"
+   
    # Attempt to push
-   git push origin ${task.id.toLowerCase()}-fix:main
+   git push origin main
    \`\`\`
    
    **If push fails (another agent pushed first):**
    \`\`\`bash
-   # Pull with rebase to integrate their changes
+   # Pull latest changes
    git pull --rebase origin main
    
-   # If conflicts occur, resolve them:
+   # If conflicts occur during rebase, use auto-resolution:
+   bash scripts/auto-resolve-conflicts.sh
+   git add .
+   git rebase --continue
+   
+   # If auto-resolution fails, manually resolve:
    # 1. git status (see conflicting files)
    # 2. Edit files to resolve conflicts (remove <<<<<<<, =======, >>>>>>> markers)
    # 3. git add <resolved-files>
    # 4. git rebase --continue
    
    # Push again
-   git push origin ${task.id.toLowerCase()}-fix:main
+   git push origin main
    
-   # If still fails, repeat pull-resolve-push up to 3 times
-   # If rebase is too complex, create merge commit instead:
-   git rebase --abort
-   git pull origin main
-   # Resolve conflicts
-   git commit -m "Merge main into ${task.id.toLowerCase()}-fix"
-   git push origin ${task.id.toLowerCase()}-fix:main
+   # If still fails, use conflict handler script:
+   bash scripts/handle-push-conflict.sh
    \`\`\`
    
    **DO NOT create a pull request.** Push directly to main.
 
-6. **Verify deployment:**
+6. **Monitor deployment:**
    
-   Check that your changes are live on main and deployment succeeded.
+   Deployment monitoring starts automatically via post-push hook. Check status:
+   \`\`\`bash
+   bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
+   \`\`\`
+   
+   If deployment fails, review logs and fix before marking task complete.
 
 ---
 
@@ -273,7 +283,53 @@ EOF
 - [ ] Session archived
 - [ ] Changes pushed to main
 - [ ] Merge conflicts resolved (if any)
-- [ ] Deployment successful
+- [ ] Deployment successful (verified via monitoring)
+
+## 🚀 Deployment Monitoring
+
+**Automatic Monitoring:** After pushing to main, deployment monitoring starts automatically via the post-push hook.
+
+**Check Deployment Status:**
+\`\`\`bash
+# Check status of latest deployment
+bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
+
+# View deployment logs
+cat .deployment-status-*.log | tail -50
+\`\`\`
+
+**If Deployment Fails:**
+1. Review deployment logs: \`cat .deployment-status-*.log\`
+2. Check DigitalOcean app logs: \`doctl apps logs [APP_ID]\`
+3. Fix the issue and push again
+4. **DO NOT mark task complete until deployment succeeds**
+
+See \`docs/DEPLOYMENT_FAILURE_GUIDE.md\` for detailed troubleshooting.
+
+## 🔧 Conflict Resolution
+
+**If you encounter merge conflicts:**
+
+1. **Auto-resolution (recommended):**
+   \`\`\`bash
+   bash scripts/auto-resolve-conflicts.sh
+   git add .
+   git rebase --continue  # or git commit if in merge state
+   \`\`\`
+
+2. **Manual resolution:**
+   - Edit conflicting files (remove \`<<<<<<<\`, \`=======\`, \`>>>>>>>\` markers)
+   - For roadmap/session conflicts, prefer additive merges (keep both changes)
+   - \`git add <resolved-files>\`
+   - \`git rebase --continue\` or \`git commit\`
+
+3. **Push conflict handler:**
+   \`\`\`bash
+   # If push is rejected, use the handler script
+   bash scripts/handle-push-conflict.sh
+   \`\`\`
+
+See \`docs/DEPLOYMENT_CONFLICT_INTEGRATION_PLAN_FINAL.md\` for complete conflict resolution guide.
 
 ---
 
