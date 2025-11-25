@@ -1,0 +1,4 @@
+# Disable frozen-lockfile for DigitalOcean builds
+# The lockfile may be slightly out of sync, but this allows builds to proceed
+frozen-lockfile=false
+

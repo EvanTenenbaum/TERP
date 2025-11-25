@@ -46,6 +46,10 @@ services:
     
     # Environment variables (sensitive values should be set in DO control panel)
     envs:
+      # Build-time: Disable frozen-lockfile to allow lockfile updates during build
+      - key: PNPM_CONFIG_FROZEN_LOCKFILE
+        value: "false"
+        scope: BUILD_TIME
       - key: NODE_ENV
         value: production
       - key: RATE_LIMIT_GET
