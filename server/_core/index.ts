@@ -145,12 +145,26 @@ async function startServer() {
   });
 
   // Version check endpoint to verify deployed code
-  app.get("/api/version-check", (req, res) => {
+  app.get("/api/version-check", async (req, res) => {
+    let buildVersion = "unknown";
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const buildVersionPath = path.resolve(process.cwd(), ".build-version");
+      if (fs.existsSync(buildVersionPath)) {
+        buildVersion = fs.readFileSync(buildVersionPath, "utf-8").trim();
+      }
+    } catch (e) {
+      // Ignore errors reading build version
+    }
     res.json({
-      version: "2025-11-25-22:00",
+      version: "2025-11-25-v2",
+      build: buildVersion,
       hasContextLogging: true,
       hasDebugEndpoint: true,
+      hasDefensiveMiddleware: true,
       commit: process.env.GIT_COMMIT || "unknown",
+      timestamp: new Date().toISOString(),
     });
   });
 
