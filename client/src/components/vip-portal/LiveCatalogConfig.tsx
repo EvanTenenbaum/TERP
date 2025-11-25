@@ -29,6 +29,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +50,7 @@ interface LiveCatalogConfigProps {
 export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("configuration");
+  const [alertToDeactivate, setAlertToDeactivate] = useState<number | null>(null);
   
   // Fetch configuration
   const {
@@ -838,8 +849,13 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
   });
 
   const handleDeactivateAlert = (alertId: number) => {
-    if (confirm("Are you sure you want to deactivate this price alert?")) {
-      deactivateAlertMutation.mutate({ alertId });
+    setAlertToDeactivate(alertId);
+  };
+
+  const handleConfirmDeactivateAlert = () => {
+    if (alertToDeactivate !== null) {
+      deactivateAlertMutation.mutate({ alertId: alertToDeactivate });
+      setAlertToDeactivate(null);
     }
   };
 
