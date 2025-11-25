@@ -72,48 +72,60 @@ export function CustomizationPanel() {
             <div>
               <h3 className="text-sm font-semibold mb-3">Widget Visibility</h3>
               <div className="space-y-3">
-                {widgets.map((widget, index) => {
-                  const metadata = WIDGET_METADATA[widget.id as keyof typeof WIDGET_METADATA];
-                  const isFirst = index === 0;
-                  const isLast = index === widgets.length - 1;
+                {/* Show all available widgets from metadata, not just current widgets array */}
+                {/* This ensures Widget Visibility section is always visible, even when custom layout has empty widgets */}
+                {Object.keys(WIDGET_METADATA).map((widgetId) => {
+                  const metadata = WIDGET_METADATA[widgetId as keyof typeof WIDGET_METADATA];
+                  // Find widget in current widgets array, or create default
+                  const widget = widgets.find(w => w.id === widgetId) || {
+                    id: widgetId,
+                    isVisible: false,
+                    isExpanded: false,
+                  };
+                  const widgetIndex = widgets.findIndex(w => w.id === widgetId);
+                  const isFirst = widgetIndex === 0;
+                  const isLast = widgetIndex === widgets.length - 1 || widgetIndex === -1;
                   
                   return (
-                    <div key={widget.id} className="flex items-start space-x-3 group">
+                    <div key={widgetId} className="flex items-start space-x-3 group">
                       <Checkbox
-                        id={widget.id}
+                        id={widgetId}
                         checked={widget.isVisible}
-                        onCheckedChange={() => toggleWidgetVisibility(widget.id)}
+                        onCheckedChange={() => toggleWidgetVisibility(widgetId)}
                       />
                       <div className="flex-1">
-                        <Label htmlFor={widget.id} className="cursor-pointer">
-                          <div className="font-medium">{metadata?.name || widget.id}</div>
+                        <Label htmlFor={widgetId} className="cursor-pointer">
+                          <div className="font-medium">{metadata?.name || widgetId}</div>
                           <div className="text-sm text-muted-foreground">
                             {metadata?.description || ''}
                           </div>
                         </Label>
                       </div>
-                      <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={() => moveWidgetUp(widget.id)}
-                          disabled={isFirst}
-                          title="Move up"
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={() => moveWidgetDown(widget.id)}
-                          disabled={isLast}
-                          title="Move down"
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {/* Only show move buttons if widget is in current widgets array */}
+                      {widgetIndex >= 0 && (
+                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => moveWidgetUp(widgetId)}
+                            disabled={isFirst}
+                            title="Move up"
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => moveWidgetDown(widgetId)}
+                            disabled={isLast}
+                            title="Move down"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
