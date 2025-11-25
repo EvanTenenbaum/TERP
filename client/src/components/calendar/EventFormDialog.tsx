@@ -7,6 +7,7 @@ interface EventFormDialogProps {
   onClose: () => void;
   eventId: number | null;
   initialDate?: Date | null;
+  initialClientId?: number | null;
   onSaved: () => void;
 }
 
@@ -15,6 +16,7 @@ export default function EventFormDialog({
   onClose,
   eventId,
   initialDate,
+  initialClientId,
   onSaved,
 }: EventFormDialogProps) {
   // Form state
@@ -33,6 +35,7 @@ export default function EventFormDialog({
   const [visibility, setVisibility] = useState("COMPANY");
   const [isRecurring, setIsRecurring] = useState(false);
   const [attendees, setAttendees] = useState<number[]>([]);
+  const [clientId, setClientId] = useState<number | null>(initialClientId || null);
 
   // Recurrence state
   const [recurrenceFrequency, setRecurrenceFrequency] = useState("WEEKLY");
@@ -41,6 +44,7 @@ export default function EventFormDialog({
 
   // Queries
   const { data: users } = trpc.userManagement.listUsers.useQuery();
+  const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
 
   // Mutations
   const createEvent = trpc.calendar.createEvent.useMutation();
@@ -81,6 +85,9 @@ export default function EventFormDialog({
       if (eventData.participants && eventData.participants.length > 0) {
         setAttendees(eventData.participants.map((p: any) => p.userId));
       }
+      if (eventData.clientId) {
+        setClientId(eventData.clientId);
+      }
     } else {
       // Reset form for new event
       const dateToUse = initialDate || new Date();
@@ -103,8 +110,9 @@ export default function EventFormDialog({
       setRecurrenceInterval(1);
       setAttendees([]);
       setRecurrenceEndDate("");
+      setClientId(initialClientId || null);
     }
-  }, [eventData, initialDate]);
+  }, [eventData, initialDate, initialClientId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +134,7 @@ export default function EventFormDialog({
       visibility,
       isRecurring,
       participants: attendees.length > 0 ? attendees : undefined,
+      clientId: clientId || undefined,
     };
 
     if (isRecurring) {
@@ -288,6 +297,25 @@ export default function EventFormDialog({
                 </div>
               </div>
             )}
+
+            {/* Client */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Client
+              </label>
+              <select
+                value={clientId || ""}
+                onChange={(e) => setClientId(e.target.value ? parseInt(e.target.value, 10) : null)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">None</option>
+                {clients?.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name || `Client #${client.id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {/* Meeting Type and Event Type */}
             <div className="grid grid-cols-2 gap-4">
