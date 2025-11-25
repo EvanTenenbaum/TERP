@@ -12,7 +12,7 @@
 
 | Session ID | Task | Branch | Module | Status | Started | ETA |
 | ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| Session-20251124-BUG-007-78a29f8b | BUG-007 | bug-007-permissions-safety-checks | UI Components | ⏳ IN PROGRESS | 2025-11-24 | 2-4h |
+| Session-20251124-BUG-010-e7378438 | BUG-010 | bug-010-global-search-fix | Navigation/Search | ⏳ IN PROGRESS | 2025-11-24 | 2-4h |
 
 ## ⏸️ Paused / Waiting
 
