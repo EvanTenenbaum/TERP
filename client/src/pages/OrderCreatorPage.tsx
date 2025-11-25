@@ -27,6 +27,16 @@ import {
 import { toast } from "sonner";
 import { ShoppingCart, Save, CheckCircle, AlertCircle } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Import new v2 components
 import {
@@ -51,6 +61,7 @@ export default function OrderCreatorPageV2() {
   const [showAdjustmentOnDocument, setShowAdjustmentOnDocument] =
     useState(true);
   const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
   // Queries
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -149,14 +160,11 @@ export default function OrderCreatorPageV2() {
     }
 
     // Show confirmation dialog for finalize
-    const confirmed = window.confirm(
-      `Are you sure you want to finalize this ${orderType.toLowerCase()}?\n\n` +
-        `Total: $${totals.total.toFixed(2)}\n` +
-        `This will create the order and cannot be undone.`
-    );
+    setShowFinalizeConfirm(true);
+  };
 
-    if (!confirmed) return;
-
+  const handleConfirmFinalize = () => {
+    setShowFinalizeConfirm(false);
     finalizeMutation.mutate({
       orderType,
       clientId,
@@ -407,6 +415,33 @@ export default function OrderCreatorPageV2() {
           </CardContent>
         </Card>
       )}
+
+      {/* Finalize Order Confirmation Dialog */}
+      <AlertDialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalize {orderType === "QUOTE" ? "Quote" : "Sale Order"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to finalize this {orderType.toLowerCase()}?
+              <br />
+              <br />
+              <strong>Total: ${totals.total.toFixed(2)}</strong>
+              <br />
+              <br />
+              This will create the order and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmFinalize}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Finalize Order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

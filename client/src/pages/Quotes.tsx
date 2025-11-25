@@ -18,6 +18,16 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   Search, 
   FileText, 
@@ -47,6 +57,7 @@ export default function Quotes() {
     }
   }, []);
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
+  const [quoteToConvert, setQuoteToConvert] = useState<number | null>(null);
 
   // Fetch clients for name lookup
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -89,14 +100,17 @@ export default function Quotes() {
   };
 
   const handleConvertToSale = async (quoteId: number) => {
-    if (!confirm('Convert this quote to a sale order? This will create a new sales order and mark the quote as ACCEPTED.')) {
-      return;
-    }
+    setQuoteToConvert(quoteId);
+  };
 
+  const handleConfirmConvertToSale = async () => {
+    if (quoteToConvert === null) return;
+    
     try {
-      await convertToSale.mutateAsync({ quoteId });
+      await convertToSale.mutateAsync({ quoteId: quoteToConvert });
       toast.success('Quote converted to sale successfully');
       refetch();
+      setQuoteToConvert(null);
       setSelectedQuote(null);
     } catch (error: any) {
       toast.error(error.message || 'Failed to convert quote');
@@ -353,6 +367,27 @@ export default function Quotes() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Convert Quote to Sale Confirmation Dialog */}
+      <AlertDialog open={quoteToConvert !== null} onOpenChange={(open) => !open && setQuoteToConvert(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert Quote to Sale Order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a new sales order and mark the quote as ACCEPTED. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmConvertToSale}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Convert to Sale
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

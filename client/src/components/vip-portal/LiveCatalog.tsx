@@ -33,6 +33,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -80,6 +90,9 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   const [priceAlertDialogOpen, setPriceAlertDialogOpen] = useState(false);
   const [selectedProductForAlert, setSelectedProductForAlert] = useState<any>(null);
   const [targetPrice, setTargetPrice] = useState<string>("");
+  const [showClearDraftConfirm, setShowClearDraftConfirm] = useState(false);
+  const [viewToDelete, setViewToDelete] = useState<number | null>(null);
+  const [alertToRemove, setAlertToRemove] = useState<number | null>(null);
 
   // Fetch catalog
   const {
@@ -257,9 +270,12 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   };
 
   const handleClearDraft = () => {
-    if (confirm("Are you sure you want to clear all items from your interest list?")) {
-      clearDraftMutation.mutate();
-    }
+    setShowClearDraftConfirm(true);
+  };
+
+  const handleConfirmClearDraft = () => {
+    clearDraftMutation.mutate();
+    setShowClearDraftConfirm(false);
   };
 
   const handleSubmitInterestList = () => {
@@ -597,11 +613,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                                 size="icon"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (confirm("Delete this view?")) {
-                                    deleteViewMutation.mutate({
-                                      viewId: view.id,
-                                    });
-                                  }
+                                  setViewToDelete(view.id);
                                 }}
                               >
                                 <X className="h-4 w-4" />
@@ -1153,8 +1165,13 @@ function MyPriceAlerts() {
   });
 
   const handleRemoveAlert = (alertId: number) => {
-    if (confirm("Are you sure you want to remove this price alert?")) {
-      deactivateAlertMutation.mutate({ alertId });
+    setAlertToRemove(alertId);
+  };
+
+  const handleConfirmRemoveAlert = () => {
+    if (alertToRemove !== null) {
+      deactivateAlertMutation.mutate({ alertId: alertToRemove });
+      setAlertToRemove(null);
     }
   };
 
@@ -1236,6 +1253,74 @@ function MyPriceAlerts() {
           </div>
         );
       })}
+      
+      {/* Clear Draft Confirmation Dialog */}
+      <AlertDialog open={showClearDraftConfirm} onOpenChange={setShowClearDraftConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Interest List?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to clear all items from your interest list? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmClearDraft}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Clear All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete View Confirmation Dialog */}
+      <AlertDialog open={viewToDelete !== null} onOpenChange={(open) => !open && setViewToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete View?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this view? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (viewToDelete !== null) {
+                  deleteViewMutation.mutate({ viewId: viewToDelete });
+                  setViewToDelete(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Price Alert Confirmation Dialog */}
+      <AlertDialog open={alertToRemove !== null} onOpenChange={(open) => !open && setAlertToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Price Alert?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this price alert? You will no longer receive notifications for this product.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmRemoveAlert}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
