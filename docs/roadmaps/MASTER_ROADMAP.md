@@ -3993,6 +3993,285 @@ Completes pricing feature set, enables price monitoring.
   - **Discovered:** Gap Testing Session 2025-11-22 (TS-002)
   - **Note:** Decision needed: implement feature or remove from test suite if not planned
 
+---
+
+## 🔴 NEWLY DISCOVERED SECURITY VULNERABILITIES (2025-11-25)
+
+### SEC-005: Admin Router Critical Endpoints Using publicProcedure
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Codebase Audit)
+**Estimate:** 2-4 hours
+
+**Problem:** Five sensitive admin endpoints in `server/routers/admin.ts` use `publicProcedure` instead of protected/admin procedures, allowing ANY unauthenticated user to:
+- Grant admin privileges to any user
+- View all users in the database
+- Grant any permission to any user
+- Clear permission caches (enabling privilege escalation)
+- Assign Super Admin role to any user
+
+**Affected Endpoints:**
+- Line 327: `fixUserPermissions` - publicProcedure
+- Line 434: `listUsers` - publicProcedure
+- Line 463: `grantPermission` - publicProcedure
+- Line 577: `clearPermissionCache` - publicProcedure
+- Line 610: `assignSuperAdminRole` - publicProcedure
+
+**Security Impact:** CRITICAL - Complete authentication/authorization bypass for admin functions
+
+**Fix Required:**
+```typescript
+// Change from:
+fixUserPermissions: publicProcedure
+// To:
+fixUserPermissions: protectedProcedure.use(requirePermission("system:manage"))
+```
+
+**Files to Modify:**
+- `server/routers/admin.ts` (lines 327, 434, 463, 577, 610)
+
+**Verification:**
+```bash
+grep -n "publicProcedure" server/routers/admin.ts
+# Should return ONLY the import statement after fix
+```
+
+---
+
+### SEC-006: RBAC Routers Dangerous Import Alias Exposing All Endpoints
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Codebase Audit)
+**Estimate:** 1-2 hours
+
+**Problem:** Three RBAC routers use a dangerous import alias that makes ALL endpoints publicly accessible:
+```typescript
+import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+```
+
+This means every endpoint in these files that uses `protectedProcedure` is actually `publicProcedure`, completely bypassing authentication.
+
+**Affected Files:**
+- `server/routers/rbac-users.ts` (line 2)
+- `server/routers/rbac-roles.ts` (line 2)
+- `server/routers/rbac-permissions.ts` (line 2)
+
+**Security Impact:** CRITICAL - ALL RBAC endpoints are publicly accessible, allowing anyone to:
+- View all users and their roles
+- Modify user roles
+- Create/delete roles
+- View/modify permissions
+
+**Fix Required:**
+```typescript
+// Change from:
+import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+// To:
+import { protectedProcedure, router } from "../_core/trpc";
+```
+
+**Verification:**
+```bash
+grep -r "publicProcedure as protectedProcedure" server/routers/
+# Should return 0 results after fix
+```
+
+---
+
+### SEC-007: Missing Sanitization Middleware on Public Procedures
+
+**Status:** 🚨 NEW - HIGH
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Codebase Audit)
+**Estimate:** 1-2 hours
+
+**Problem:** The `publicProcedure` in `server/_core/trpc.ts` only includes error handling middleware but NOT sanitization middleware, making all public endpoints vulnerable to XSS attacks.
+
+**Current Code (line 19):**
+```typescript
+export const publicProcedure = t.procedure.use(errorHandlingMiddleware);
+```
+
+**Comparison with protectedProcedure (lines 143-146):**
+```typescript
+export const protectedProcedure = t.procedure
+  .use(errorHandlingMiddleware)
+  .use(sanitizationMiddleware)  // HAS sanitization
+  .use(requireUser);
+```
+
+**Security Impact:** HIGH - All public endpoints accepting string input are vulnerable to XSS
+
+**Fix Required:**
+```typescript
+export const publicProcedure = t.procedure
+  .use(errorHandlingMiddleware)
+  .use(sanitizationMiddleware);  // ADD sanitization
+```
+
+**Files to Modify:**
+- `server/_core/trpc.ts` (line 19)
+
+---
+
+### SEC-008: Unprotected Database Schema and Seeding Endpoints
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Codebase Audit)
+**Estimate:** 2-4 hours
+
+**Problem:** Three dangerous database management endpoints in `server/_core/simpleAuth.ts` are publicly accessible without authentication:
+
+**Affected Endpoints:**
+- Line 204: `/api/auth/push-schema` - Anyone can push database schema changes
+- Line 223: `/api/auth/seed` - Anyone can seed/reset the database
+- Line 253: `/api/auth/create-first-user` - Anyone can create unlimited user accounts
+
+**Security Impact:** CRITICAL - Attackers can:
+- Modify database schema (potentially dropping tables)
+- Wipe or corrupt database data
+- Create admin accounts without authentication
+
+**Fix Required:**
+- Add authentication check requiring admin/super-admin role
+- Add IP whitelist for these sensitive operations
+- Consider removing these endpoints from production entirely
+
+**Files to Modify:**
+- `server/_core/simpleAuth.ts` (lines 204, 223, 253)
+
+---
+
+### SEC-009: Multiple Business Routers Using publicProcedure for Mutations
+
+**Status:** 🚨 NEW - HIGH
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Codebase Audit)
+**Estimate:** 4-8 hours
+
+**Problem:** Multiple business routers use `publicProcedure` for mutation operations that should require authentication:
+
+**Affected Routers:**
+1. `server/routers/purchaseOrders.ts` - create, update, delete operations
+2. `server/routers/locations.ts` - create, update, delete, assignBatchToLocation
+3. `server/routers/salesSheetEnhancements.ts` - all mutation operations
+4. `server/routers/userManagement.ts` - user management operations
+5. `server/routers/warehouseTransfers.ts` - transfer operations
+6. `server/routers/poReceiving.ts` - receiving operations
+7. `server/routers/samples.ts` - sample operations
+
+**Security Impact:** HIGH - Unauthorized users can:
+- Create/modify/delete purchase orders
+- Modify warehouse locations
+- Manage users
+- Transfer inventory
+
+**Fix Required:** Change all mutation endpoints from `publicProcedure` to `protectedProcedure` with appropriate permission middleware.
+
+---
+
+## 🐛 NEWLY DISCOVERED CLIENT-SIDE BUGS (2025-11-25)
+
+### BUG-017: VIP Portal Storing Session Tokens in localStorage
+
+**Status:** 🚨 NEW - HIGH
+**Priority:** 🔴 P1 (HIGH - SECURITY)
+**Discovered:** 2025-11-25 (Codebase Audit)
+**Estimate:** 4-6 hours
+
+**Problem:** VIP Portal authentication stores sensitive session tokens in `localStorage`:
+```typescript
+// client/src/hooks/useVIPPortalAuth.ts (lines 13-15)
+const token = localStorage.getItem("vip_session_token");
+const id = localStorage.getItem("vip_client_id");
+```
+
+**Security Impact:** HIGH - Session tokens in localStorage can be:
+- Stolen via XSS attacks
+- Accessed by malicious browser extensions
+- Exposed to third-party scripts
+
+**Fix Required:** Use httpOnly secure cookies for session management instead of localStorage.
+
+**Files to Modify:**
+- `client/src/hooks/useVIPPortalAuth.ts`
+- Server-side session handling
+
+---
+
+### BUG-018: Missing React Keys in List Components
+
+**Status:** 🚨 NEW - HIGH
+**Priority:** 🔴 P1 (HIGH - UI BUGS)
+**Discovered:** 2025-11-25 (Codebase Audit)
+**Estimate:** 2-3 hours
+
+**Problem:** Multiple components use array index as React key, causing potential UI bugs when items are reordered or removed:
+
+**Affected Components:**
+1. `client/src/components/orders/LineItemTable.tsx` (line 118) - Using index as key for line items
+2. `client/src/components/calendar/WeekView.tsx` (lines 56, 101) - Using index for day elements
+3. `client/src/components/calendar/MonthView.tsx` (line 105) - Using index for calendar grid
+
+**Impact:** UI may display stale data when list items are reordered, causing:
+- Wrong item being updated when editing
+- Visual glitches during reorder operations
+- Incorrect data display after deletions
+
+**Fix Required:** Use stable unique identifiers (item.id, date.getTime(), etc.) instead of array index.
+
+---
+
+### BUG-019: useEffect Dependency Issues in Multiple Hooks
+
+**Status:** 🚨 NEW - MEDIUM
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Codebase Audit)
+**Estimate:** 2-3 hours
+
+**Problem:** Multiple hooks have missing or incorrect useEffect dependencies:
+
+**Affected Files:**
+1. `client/src/hooks/useKeyboardShortcuts.ts` (line 50) - shortcuts array causes constant re-subscription
+2. `client/src/hooks/useVIPPortalAuth.ts` (lines 32-37) - logout function missing from dependency array
+
+**Impact:**
+- Event listeners being constantly added/removed
+- Stale closure bugs causing unexpected behavior
+- Potential memory leaks
+
+**Fix Required:** Add missing dependencies or use useCallback to memoize handlers.
+
+---
+
+### BUG-020: Type Safety Issues - Widespread 'any' Type Usage
+
+**Status:** 🚨 NEW - MEDIUM
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Codebase Audit)
+**Estimate:** 8-16 hours (ongoing effort)
+
+**Problem:** Widespread use of `any` type bypasses TypeScript safety:
+
+**Affected Files (partial list):**
+- `client/src/pages/Orders.tsx` - selectedOrder: any, items as any[]
+- `client/src/pages/MatchmakingServicePage.tsx` - status as any
+- `client/src/components/workflow/WorkflowColumn.tsx` - batches: Array<any>
+- `client/src/components/sales/InventoryBrowser.tsx` - inventory: any[], items: any[]
+- `client/src/components/data-cards/DataCardGrid.tsx` - metricIds as any
+- `server/_core/dbTransaction.ts` - callback: (tx: any)
+- `server/routers/admin.ts` - openthcStrains as any
+
+**Impact:**
+- Runtime type errors not caught at compile time
+- Reduced code maintainability
+- Potential null/undefined errors
+
+**Fix Required:** Replace `any` types with proper TypeScript interfaces.
+
 
 
 ---
