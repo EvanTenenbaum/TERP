@@ -73,11 +73,6 @@ async function getOrCreatePublicUser(): Promise<User> {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  // Multiple logging methods to ensure visibility
-  process.stdout.write(`[CONTEXT] CALLED: ${opts.req.method} ${opts.req.url}\n`);
-  process.stderr.write(`[CONTEXT-STDERR] CALLED: ${opts.req.method} ${opts.req.url}\n`);
-  logger.info({ msg: "[CONTEXT-LOGGER] CALLED", method: opts.req.method, url: opts.req.url });
-  
   // Create synthetic public user as ultimate fallback
   const createSyntheticUser = (): User => {
     const now = new Date();
@@ -96,49 +91,44 @@ export async function createContext(
   };
 
   // Try to get authenticated user (completely optional - never throw)
-  let user: User | null = null; // Will be set to non-null before return
+  let user: User | null = null;
   
   try {
     // Check if there's a session token first (avoid calling authenticateRequest if no token)
-    // Verify cookies exist and token is present
     const cookies = opts.req.cookies || {};
     const token = cookies["terp_session"];
     if (token && typeof token === "string") {
       try {
         user = await simpleAuth.authenticateRequest(opts.req);
-        process.stdout.write(`[CONTEXT] Authenticated user: id=${user.id}\n`);
+        logger.debug({ userId: user.id }, "Authenticated user in context");
       } catch (authError) {
         // Authentication failed - this is expected for anonymous users
-        // Don't log as error, just continue to public user provisioning
-        process.stdout.write(`[CONTEXT] No valid auth token, using public user\n`);
+        // Continue to public user provisioning
+        logger.debug("No valid auth token, using public user");
       }
-    } else {
-      process.stdout.write(`[CONTEXT] No auth token in cookies, using public user\n`);
     }
   } catch (error) {
     // Any error in auth check - continue to public user
-    process.stdout.write(`[CONTEXT] Auth check error (non-fatal): ${error}\n`);
+    logger.debug({ error }, "Auth check error (non-fatal), using public user");
   }
 
   // If no authenticated user, provision public user
   if (!user) {
     try {
       user = await getOrCreatePublicUser();
-      process.stdout.write(`[CONTEXT] Public user provisioned: id=${user.id}\n`);
+      logger.debug({ userId: user.id }, "Public user provisioned");
     } catch (error) {
       // Database error - use synthetic user
-      process.stdout.write(`[CONTEXT] DB error, using synthetic user\n`);
+      logger.warn({ error }, "Failed to provision public user from DB, using synthetic");
       user = createSyntheticUser();
     }
   }
 
   // Final safety check - should never be null at this point
   if (!user) {
-    process.stdout.write(`[CONTEXT] WARNING: User was null, creating synthetic\n`);
+    logger.warn("User was null after all fallbacks, creating synthetic user");
     user = createSyntheticUser();
   }
-
-  process.stdout.write(`[CONTEXT] RETURNING: user id=${user.id}, email=${user.email}\n`);
 
   // ALWAYS return a valid context - never throw
   return {
