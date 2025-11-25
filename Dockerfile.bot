@@ -13,7 +13,11 @@ WORKDIR /app
 # 3. Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+<<<<<<< HEAD
 # 4. Copy package files and patches first for better layer caching
+=======
+# 4. Copy package files and patches first
+>>>>>>> bug-007-permissions-safety-checks
 COPY package.json pnpm-lock.yaml ./
 COPY patches/ ./patches/
 
