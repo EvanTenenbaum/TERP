@@ -114,6 +114,25 @@ export function requireAllPermissions(permissionNames: string[]) {
       });
     }
 
+    // Public demo user (id: -1) gets read permissions automatically
+    if (ctx.user.id === -1) {
+      // Check if ALL required permissions are read permissions
+      const allReadPermissions = permissionNames.every(p => p.endsWith(':read'));
+      if (allReadPermissions) {
+        logger.debug({ 
+          msg: "Permission granted to public user for read operations", 
+          permissions: permissionNames 
+        });
+        return next({ ctx });
+      } else {
+        // Public user can't perform write operations
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Public users can only perform read operations",
+        });
+      }
+    }
+
     const userId = ctx.user.openId;
 
     // Super Admins bypass all permission checks
@@ -176,6 +195,25 @@ export function requireAnyPermission(permissionNames: string[]) {
         code: "UNAUTHORIZED",
         message: "Authentication required to perform this action",
       });
+    }
+
+    // Public demo user (id: -1) gets read permissions automatically
+    if (ctx.user.id === -1) {
+      // Check if ANY required permission is a read permission
+      const hasReadPermission = permissionNames.some(p => p.endsWith(':read'));
+      if (hasReadPermission) {
+        logger.debug({ 
+          msg: "Permission granted to public user for read operation", 
+          permissions: permissionNames 
+        });
+        return next({ ctx });
+      } else {
+        // Public user can't perform write operations
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Public users can only perform read operations",
+        });
+      }
     }
 
     const userId = ctx.user.openId;
