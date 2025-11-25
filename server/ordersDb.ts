@@ -104,19 +104,36 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     }
     
     // 2. Process each item and calculate COGS
+    // IMPORTANT: Lock batches with FOR UPDATE to prevent race conditions
     const processedItems: OrderItem[] = [];
     
     for (const item of input.items) {
-      // Get batch details
+      // Get batch details with row-level lock to prevent concurrent modifications
       const batch = await tx
         .select()
         .from(batches)
         .where(eq(batches.id, item.batchId))
         .limit(1)
+        .for("update") // Row-level lock - prevents race conditions
         .then(rows => rows[0]);
       
       if (!batch) {
         throw new Error(`Batch ${item.batchId} not found`);
+      }
+      
+      // Verify sufficient inventory BEFORE processing order
+      // This check happens AFTER locking, ensuring accuracy
+      const requestedQty = item.quantity;
+      const availableQty = item.isSample 
+        ? parseFloat(batch.sampleQty || "0")
+        : parseFloat(batch.onHandQty || "0");
+      
+      if (availableQty < requestedQty) {
+        const qtyType = item.isSample ? "sample" : "on-hand";
+        throw new Error(
+          `Insufficient ${qtyType} inventory for batch ${batch.sku || batch.id}. ` +
+          `Available: ${availableQty}, Requested: ${requestedQty}`
+        );
       }
       
       // Calculate COGS (unless overridden)
@@ -238,8 +255,36 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       .then(rows => rows[0]);
     
     // 8. If confirmed order (not draft), reduce inventory
+    // Batches are already locked from step 2, so updates are safe
     if (!isDraft) {
       for (const item of processedItems) {
+        // Re-fetch with lock to ensure we have latest quantity
+        // (though we already locked earlier, this ensures consistency)
+        const lockedBatch = await tx
+          .select()
+          .from(batches)
+          .where(eq(batches.id, item.batchId))
+          .limit(1)
+          .for("update")
+          .then(rows => rows[0]);
+        
+        if (!lockedBatch) {
+          throw new Error(`Batch ${item.batchId} not found during inventory update`);
+        }
+        
+        // Final inventory verification (defensive check)
+        const currentQty = item.isSample 
+          ? parseFloat(lockedBatch.sampleQty || "0")
+          : parseFloat(lockedBatch.onHandQty || "0");
+        
+        if (currentQty < item.quantity) {
+          const qtyType = item.isSample ? "sample" : "on-hand";
+          throw new Error(
+            `Insufficient ${qtyType} inventory detected during update for batch ${lockedBatch.sku || lockedBatch.id}. ` +
+            `Current: ${currentQty}, Requested: ${item.quantity}`
+          );
+        }
+        
         if (item.isSample) {
           // Reduce sample_qty
           await tx.update(batches)
@@ -587,8 +632,35 @@ export async function convertQuoteToSale(
       .limit(1)
       .then(rows => rows[0]);
     
-    // 6. Reduce inventory
+    // 6. Reduce inventory with row-level locking to prevent race conditions
     for (const item of quoteItems) {
+      // Lock batch row to prevent concurrent modifications
+      const batch = await tx
+        .select()
+        .from(batches)
+        .where(eq(batches.id, item.batchId))
+        .limit(1)
+        .for("update") // Row-level lock
+        .then(rows => rows[0]);
+      
+      if (!batch) {
+        throw new Error(`Batch ${item.batchId} not found`);
+      }
+      
+      // Verify sufficient inventory
+      const requestedQty = item.quantity;
+      const availableQty = item.isSample 
+        ? parseFloat(batch.sampleQty || "0")
+        : parseFloat(batch.onHandQty || "0");
+      
+      if (availableQty < requestedQty) {
+        const qtyType = item.isSample ? "sample" : "on-hand";
+        throw new Error(
+          `Insufficient ${qtyType} inventory for batch ${batch.sku || batch.id}. ` +
+          `Available: ${availableQty}, Requested: ${requestedQty}`
+        );
+      }
+      
       if (item.isSample) {
         await tx.update(batches)
           .set({ 
