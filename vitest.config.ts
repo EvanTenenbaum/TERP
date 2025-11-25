@@ -14,6 +14,7 @@ export default defineConfig({
       "server/**/*.spec.ts",
       "client/**/*.test.{ts,tsx}",
       "client/**/*.spec.{ts,tsx}",
+      "scripts/**/*.test.ts",
     ],
     environmentMatchGlobs: [
       ['server/**/*.test.ts', 'node'],
