@@ -5,21 +5,10 @@ import { trpc } from "@/lib/trpc";
 import { TodoListCard } from "@/components/todos/TodoListCard";
 import { TodoListForm } from "@/components/todos/TodoListForm";
 import { useLocation } from "wouter";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 export function TodoListsPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [, setLocation] = useLocation();
-  const [listToDelete, setListToDelete] = useState<number | null>(null);
 
   const { data: lists = [], isLoading } = trpc.todoLists.getMyLists.useQuery();
 
@@ -32,13 +21,12 @@ export function TodoListsPage() {
   });
 
   const handleDeleteList = (listId: number) => {
-    setListToDelete(listId);
-  };
-
-  const handleConfirmDeleteList = () => {
-    if (listToDelete !== null) {
-      deleteList.mutate({ listId: listToDelete });
-      setListToDelete(null);
+    if (
+      window.confirm(
+        "Are you sure you want to delete this list? All tasks will be deleted."
+      )
+    ) {
+      deleteList.mutate({ listId });
     }
   };
 
@@ -96,27 +84,6 @@ export function TodoListsPage() {
         isOpen={isCreateFormOpen}
         onClose={() => setIsCreateFormOpen(false)}
       />
-
-      {/* Delete List Confirmation Dialog */}
-      <AlertDialog open={listToDelete !== null} onOpenChange={(open) => !open && setListToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete List?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this list? All tasks will be deleted. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDeleteList}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

@@ -986,19 +986,14 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - **Actual Time:** 1 hour
   - **Impact:** Workflow queue now has entry point, new inventory can be added to queue
 
-- [x] **BUG-007: Missing Permissions & Safety Checks** (Completed: 2025-11-24) 🔴 CRITICAL
+- [ ] **BUG-007: Missing Permissions & Safety Checks** (Created: 2025-11-21) 🔴 CRITICAL
   - Task ID: BUG-007
   - Priority: P0 (CRITICAL - SAFETY)
   - **Problem:** window.confirm used instead of proper dialogs, no confirmation for clearing cart
   - **Impact:** Unprofessional UI, users can accidentally lose work
   - **Estimate:** 2-4 hours
-  - **Status:** ✅ COMPLETE
+  - **Status:** 📋 PLANNED
   - **Prompt:** `docs/prompts/BUG-007.md`
-  - **Key Commits:**
-    - Replaced all 25 instances of window.confirm with AlertDialog components
-    - Fixed 25 files across the codebase
-    - Improved UX for all critical actions (delete, clear, cancel, etc.)
-  - **Actual Time:** ~6 hours (larger scope than estimated)
 
 - [x] **ST-019: Fix "Happy Path" Only Testing Assumptions** (Completed: 2025-11-22) 🟡 MEDIUM
   - Task ID: ST-019
@@ -2516,10 +2511,10 @@ Completes pricing feature set, enables price monitoring.
 - Resolution: Fixed sidebar link in `DashboardLayout.tsx` to point to correct route `/orders/create`.
 
 
-- [x] **BUG-010: Global Search Bar Returns 404 Error** (Completed: 2025-11-24) 🔴 HIGH PRIORITY
+- [ ] **BUG-010: Global Search Bar Returns 404 Error** (Created: 2025-11-22) 🔴 HIGH PRIORITY
   - Task ID: BUG-010
   - Priority: P1 (HIGH - BROKEN FEATURE)
-  - Session: Session-20251124-BUG-010-e7378438
+  - Session: TBD
   - **Problem:** Global search bar in header navigates to `/search?q=<query>` which returns 404 error
   - **Current State:**
     - Search bar present in header on all pages

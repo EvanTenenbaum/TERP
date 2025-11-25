@@ -18,16 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface InboxItemProps {
   item: {
@@ -60,7 +50,6 @@ const STATUS_COLORS = {
 
 export function InboxItem({ item }: InboxItemProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const utils = trpc.useContext();
 
@@ -115,12 +104,9 @@ export function InboxItem({ item }: InboxItemProps) {
   };
 
   const handleDelete = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = () => {
-    deleteItem.mutate({ itemId: item.id });
-    setShowDeleteConfirm(false);
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      deleteItem.mutate({ itemId: item.id });
+    }
   };
 
   return (
@@ -221,27 +207,6 @@ export function InboxItem({ item }: InboxItemProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Item?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this item? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

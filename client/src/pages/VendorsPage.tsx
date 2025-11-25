@@ -10,16 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../components/ui/alert-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
@@ -104,7 +94,6 @@ export default function VendorsPage() {
     "name"
   );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [vendorToDelete, setVendorToDelete] = useState<number | null>(null);
 
   const [formData, setFormData] = useState<VendorFormData>({
     name: "",
@@ -292,13 +281,8 @@ export default function VendorsPage() {
   };
 
   const handleDelete = (id: number) => {
-    setVendorToDelete(id);
-  };
-
-  const handleConfirmDelete = () => {
-    if (vendorToDelete !== null) {
-      deleteMutation.mutate(vendorToDelete);
-      setVendorToDelete(null);
+    if (window.confirm("Are you sure you want to delete this vendor?")) {
+      deleteMutation.mutate(id);
     }
   };
 
@@ -736,27 +720,6 @@ export default function VendorsPage() {
           onOpenChange={setNotesDialogOpen}
         />
       )}
-
-      {/* Delete Vendor Confirmation Dialog */}
-      <AlertDialog open={vendorToDelete !== null} onOpenChange={(open) => !open && setVendorToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Vendor?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this vendor? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

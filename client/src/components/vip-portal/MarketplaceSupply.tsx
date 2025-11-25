@@ -21,16 +21,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Plus, Package, Edit, XCircle, Calendar, DollarSign } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -42,7 +32,6 @@ interface MarketplaceSupplyProps {
 export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingSupply, setEditingSupply] = useState<any>(null);
-  const [supplyToCancel, setSupplyToCancel] = useState<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -130,13 +119,8 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
   };
 
   const handleCancel = (id: number) => {
-    setSupplyToCancel(id);
-  };
-
-  const handleConfirmCancel = () => {
-    if (supplyToCancel !== null) {
-      cancelSupply.mutate({ id: supplyToCancel, clientId });
-      setSupplyToCancel(null);
+    if (window.confirm("Are you sure you want to cancel this listing?")) {
+      cancelSupply.mutate({ id, clientId });
     }
   };
 
@@ -545,27 +529,6 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
           </Card>
         )}
       </div>
-
-      {/* Cancel Listing Confirmation Dialog */}
-      <AlertDialog open={supplyToCancel !== null} onOpenChange={(open) => !open && setSupplyToCancel(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Listing?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel this listing? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmCancel}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Cancel Listing
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

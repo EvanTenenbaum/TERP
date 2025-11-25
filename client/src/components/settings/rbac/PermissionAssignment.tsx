@@ -23,16 +23,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -58,7 +48,6 @@ export function PermissionAssignment() {
   const [selectedPermissionId, setSelectedPermissionId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedModule, setSelectedModule] = useState<string>("all");
-  const [permissionToRemove, setPermissionToRemove] = useState<{ roleId: number; roleName: string; permissionId: number } | null>(null);
   const [viewingPermissionId, setViewingPermissionId] = useState<number | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<Set<number>>(new Set());
@@ -476,11 +465,12 @@ export function PermissionAssignment() {
                                                   size="sm"
                                                   variant="ghost"
                                                   onClick={() => {
-                                                    setPermissionToRemove({
-                                                      roleId: role.roleId,
-                                                      roleName: role.roleName,
-                                                      permissionId: permission.id,
-                                                    });
+                                                    if (confirm(`Remove this permission from "${role.roleName}"?`)) {
+                                                      removePermissionMutation.mutate({
+                                                        roleId: role.roleId,
+                                                        permissionId: permission.id,
+                                                      });
+                                                    }
                                                   }}
                                                   disabled={removePermissionMutation.isPending}
                                                 >
@@ -507,35 +497,6 @@ export function PermissionAssignment() {
           )}
         </CardContent>
       </Card>
-
-      {/* Remove Permission Confirmation Dialog */}
-      <AlertDialog open={permissionToRemove !== null} onOpenChange={(open) => !open && setPermissionToRemove(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Permission?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Remove this permission from "{permissionToRemove?.roleName}"?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (permissionToRemove) {
-                  removePermissionMutation.mutate({
-                    roleId: permissionToRemove.roleId,
-                    permissionId: permissionToRemove.permissionId,
-                  });
-                  setPermissionToRemove(null);
-                }
-              }}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

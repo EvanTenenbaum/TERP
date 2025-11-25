@@ -19,16 +19,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { X, UserPlus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface ShareListModalProps {
   listId: number;
@@ -43,7 +33,6 @@ export function ShareListModal({
 }: ShareListModalProps) {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [role, setRole] = useState<"viewer" | "editor" | "owner">("editor");
-  const [memberToRemove, setMemberToRemove] = useState<number | null>(null);
 
   const utils = trpc.useContext();
 
@@ -90,13 +79,8 @@ export function ShareListModal({
   };
 
   const handleRemoveMember = (userId: number) => {
-    setMemberToRemove(userId);
-  };
-
-  const handleConfirmRemoveMember = () => {
-    if (memberToRemove !== null) {
-      removeMember.mutate({ listId, userId: memberToRemove });
-      setMemberToRemove(null);
+    if (window.confirm("Remove this member from the list?")) {
+      removeMember.mutate({ listId, userId });
     }
   };
 
@@ -220,28 +204,7 @@ export function ShareListModal({
             Close
           </Button>
         </DialogFooter>
-    </DialogContent>
-
-    {/* Remove Member Confirmation Dialog */}
-    <AlertDialog open={memberToRemove !== null} onOpenChange={(open) => !open && setMemberToRemove(null)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Remove Member?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to remove this member from the list?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirmRemoveMember}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            Remove
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  </Dialog>
+      </DialogContent>
+    </Dialog>
   );
 }

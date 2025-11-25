@@ -19,16 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, X, Calendar, Package } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -43,7 +33,6 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedNeed, setSelectedNeed] = useState<any>(null);
-  const [needToCancel, setNeedToCancel] = useState<number | null>(null);
 
   const { data: needs, refetch } = trpc.vipPortal.marketplace.getNeeds.useQuery({
     clientId,
@@ -97,13 +86,8 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   };
 
   const handleCancel = (needId: number) => {
-    setNeedToCancel(needId);
-  };
-
-  const handleConfirmCancel = () => {
-    if (needToCancel !== null) {
-      cancelMutation.mutate({ id: needToCancel, clientId });
-      setNeedToCancel(null);
+    if (window.confirm("Are you sure you want to cancel this need?")) {
+      cancelMutation.mutate({ id: needId, clientId });
     }
   };
 
@@ -571,26 +555,5 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
         </form>
       </DialogContent>
     </Dialog>
-
-    {/* Cancel Need Confirmation Dialog */}
-    <AlertDialog open={needToCancel !== null} onOpenChange={(open) => !open && setNeedToCancel(null)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Cancel Need?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to cancel this need? This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirmCancel}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            Cancel Need
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
