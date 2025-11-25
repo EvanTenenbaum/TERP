@@ -302,7 +302,7 @@ export default function OrderCreatorPageV2() {
           {/* Left Column: Inventory Browser & Line Items & Adjustment (2/3) */}
           <div className="lg:col-span-2 space-y-6">
             {/* Inventory Browser */}
-            <Card>
+            <Card id="inventory-browser-section">
               <CardContent className="pt-6">
                 {inventoryError ? (
                   <div className="text-center py-8">
@@ -335,7 +335,22 @@ export default function OrderCreatorPageV2() {
                   items={items}
                   clientId={clientId}
                   onChange={setItems}
-                  onAddItem={() => {}} // Not used anymore, InventoryBrowser handles it
+                  onAddItem={() => {
+                    // Scroll to InventoryBrowser section
+                    const inventoryBrowser = document.getElementById('inventory-browser-section');
+                    if (inventoryBrowser) {
+                      inventoryBrowser.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      // Focus on search input for better UX
+                      setTimeout(() => {
+                        const searchInput = inventoryBrowser.querySelector('input[type="text"]') as HTMLInputElement;
+                        if (searchInput) {
+                          searchInput.focus();
+                        }
+                      }, 300);
+                    } else {
+                      toast.info('Please use the inventory browser above to add items');
+                    }
+                  }}
                 />
               </CardContent>
             </Card>
