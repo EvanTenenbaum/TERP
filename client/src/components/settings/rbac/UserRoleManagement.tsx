@@ -23,6 +23,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -47,6 +57,7 @@ export function UserRoleManagement() {
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [roleToRemove, setRoleToRemove] = useState<{ userId: string; roleId: number; roleName: string } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -107,8 +118,13 @@ export function UserRoleManagement() {
   };
 
   const handleRemoveRole = (userId: string, roleId: number, roleName: string) => {
-    if (confirm(`Are you sure you want to remove the "${roleName}" role from this user?`)) {
-      removeRoleMutation.mutate({ userId, roleId });
+    setRoleToRemove({ userId, roleId, roleName });
+  };
+
+  const handleConfirmRemoveRole = () => {
+    if (roleToRemove) {
+      removeRoleMutation.mutate({ userId: roleToRemove.userId, roleId: roleToRemove.roleId });
+      setRoleToRemove(null);
     }
   };
 

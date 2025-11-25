@@ -571,5 +571,26 @@ function EditNeedDialog({ open, onOpenChange, need, onSubmit }: any) {
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Cancel Need Confirmation Dialog */}
+    <AlertDialog open={needToCancel !== null} onOpenChange={(open) => !open && setNeedToCancel(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel Need?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to cancel this need? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmCancel}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Cancel Need
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

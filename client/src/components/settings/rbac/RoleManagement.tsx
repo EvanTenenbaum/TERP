@@ -23,6 +23,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Shield, Plus, Edit2, Trash2, Eye, Save, X, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +52,7 @@ export function RoleManagement() {
   const [editingRole, setEditingRole] = useState<any | null>(null);
   const [viewingRoleId, setViewingRoleId] = useState<number | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<{ roleId: number; roleName: string } | null>(null);
 
   const utils = trpc.useUtils();
 
