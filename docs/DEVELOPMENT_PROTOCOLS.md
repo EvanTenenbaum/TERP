@@ -99,14 +99,22 @@ All AI agents MUST:
 
 **If you push code to main and don't verify the deployment, you have failed the task.**
 
-**PRIMARY METHOD: Use Method 1 (Database)** - This is the most reliable and doesn't require external tools.
+**PRIMARY METHOD: Use Method 1 (Build Status File)** - This is the fastest and most reliable.
 
 #### Method 1: Check Build Status File (Fastest, Most Reliable)
 
+**⚠️ IMPORTANT: Build status is on the `build-status` branch to prevent deployment conflicts.**
+
 ```bash
-# Check latest build status
-cat .github/BUILD_STATUS.md
+# Check latest build status from the build-status branch
+git fetch origin build-status 2>/dev/null || true
+git show origin/build-status:.github/BUILD_STATUS.md 2>/dev/null || echo "Build status branch not available yet"
+
+# Alternative: Checkout the branch temporarily
+git checkout build-status 2>/dev/null && git show origin/build-status:.github/BUILD_STATUS.md && git checkout main || echo "Build status branch not available"
 ```
+
+**Why build-status branch?** Build status updates are pushed to a separate branch (`build-status`) instead of `main` to prevent them from triggering DigitalOcean deployments. This avoids deployment conflicts where build status commits would cancel active deployments.
 
 #### Method 2: Check Deployment Database (Secondary)
 
@@ -447,7 +455,12 @@ When you deliver your work, you **MUST** explicitly confirm that you have met th
 
 ### 🚨 **Core Requirement: Check Test Status Before and After Every Push**
 
-Test results are **automatically written to `.github/BUILD_STATUS.md`** on every push to main. You **MUST** check this file using `cat .github/BUILD_STATUS.md` to verify build status.
+Test results are **automatically written to `.github/BUILD_STATUS.md` on the `build-status` branch** after every push to main. You **MUST** check this file to verify build status.
+
+**⚠️ Build Status Location:** Build status is on the `build-status` branch (not `main`) to prevent deployment conflicts. Use:
+```bash
+git show origin/build-status:.github/BUILD_STATUS.md
+```
 
 ---
 
@@ -457,7 +470,7 @@ Test results are **automatically written to `.github/BUILD_STATUS.md`** on every
 | ------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
 | **Before starting work**  | `gh run list --limit 5`                                                  | Is the main branch healthy?   |
 | **After creating a PR**   | `gh pr view <PR#> --comments`                                            | Did my PR pass all checks?    |
-| **After pushing to main** | `cat .github/BUILD_STATUS.md` | Did my commit pass all tests? |
+| **After pushing to main** | `git show origin/build-status:.github/BUILD_STATUS.md` | Did my commit pass all tests? |
 | **If build fails**        | `gh run view <RUN_ID>`                                                   | What exactly failed?          |
 
 ---
@@ -501,7 +514,7 @@ gh pr view <PR_NUMBER> --comments
 gh api repos/EvanTenenbaum/TERP/commits/$(git rev-parse HEAD)/status
 
 # View build status file (test results are written here)
-cat .github/BUILD_STATUS.md
+git show origin/build-status:.github/BUILD_STATUS.md
 ```
 
 **Expected Output:**
@@ -1237,7 +1250,12 @@ Fixes #123
 
 ### 🚨 **Core Requirement: Check Test Status Before and After Every Push**
 
-Test results are **automatically written to `.github/BUILD_STATUS.md`** on every push to main. You **MUST** check this file using `cat .github/BUILD_STATUS.md` to verify build status.
+Test results are **automatically written to `.github/BUILD_STATUS.md` on the `build-status` branch** after every push to main. You **MUST** check this file to verify build status.
+
+**⚠️ Build Status Location:** Build status is on the `build-status` branch (not `main`) to prevent deployment conflicts. Use:
+```bash
+git show origin/build-status:.github/BUILD_STATUS.md
+```
 
 ---
 
@@ -1247,7 +1265,7 @@ Test results are **automatically written to `.github/BUILD_STATUS.md`** on every
 | ------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
 | **Before starting work**  | `gh run list --limit 5`                                                  | Is the main branch healthy?   |
 | **After creating a PR**   | `gh pr view <PR#> --comments`                                            | Did my PR pass all checks?    |
-| **After pushing to main** | `cat .github/BUILD_STATUS.md` | Did my commit pass all tests? |
+| **After pushing to main** | `git show origin/build-status:.github/BUILD_STATUS.md` | Did my commit pass all tests? |
 | **If build fails**        | `gh run view <RUN_ID>`                                                   | What exactly failed?          |
 
 ---
@@ -1294,7 +1312,7 @@ gh pr view 42 --comments
 
 ```bash
 # Get the latest build status
-cat .github/BUILD_STATUS.md
+git show origin/build-status:.github/BUILD_STATUS.md
 
 # Or check workflow runs
 gh run list --limit 1
@@ -1334,7 +1352,7 @@ gh run list --limit 1
 1. **Check the build status file:**
 
    ```bash
-   cat .github/BUILD_STATUS.md
+   git show origin/build-status:.github/BUILD_STATUS.md
    ```
 
 2. **The comment will show:**
@@ -1371,7 +1389,7 @@ gh run list --limit 1
 | Location            | How to Access                                            | What You'll See                                       |
 | ------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
 | **PR Comments**     | `gh pr view <PR#> --comments`                            | Lint, Type Check, and Unit Test results               |
-| **Build Status**    | `cat .github/BUILD_STATUS.md`                            | Integration, E2E, Schema, and Seed results            |
+| **Build Status**    | `git show origin/build-status:.github/BUILD_STATUS.md`                            | Integration, E2E, Schema, and Seed results            |
 | **Workflow Runs**   | `gh run view <RUN_ID>`                                   | Full logs (only if comments don't have enough detail) |
 
 ---
@@ -1380,7 +1398,7 @@ gh run list --limit 1
 
 - [ ] Before starting work: Check if main branch is healthy (`gh run list`)
 - [ ] After creating a PR: Check PR comments (`gh pr view <PR#> --comments`)
-- [ ] After pushing to main: Check build status (`cat .github/BUILD_STATUS.md`)
+- [ ] After pushing to main: Check build status (`git show origin/build-status:.github/BUILD_STATUS.md`)
 - [ ] If tests fail: Read the error details in the comments
 - [ ] If tests fail: Fix immediately and re-push
 
