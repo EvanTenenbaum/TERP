@@ -222,12 +222,30 @@
 
 ### SEC-003: Remove Hardcoded Admin Credentials
 
-**Status:** 📋 PLANNED  
+**Status:** ✅ COMPLETE (2025-01-27)  
 **Priority:** 🔴 P0 (CRITICAL)  
 **Estimate:** 1 day (8 hours)  
-**Module:** `server/_core/index.ts`  
+**Actual Time:** ~1 hour  
+**Module:** `server/_core/index.ts`, `server/_core/simpleAuth.ts`, `server/_core/env.ts`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/SEC-003.md` (to be created)
+
+**Implementation:**
+- Removed hardcoded `createUser("Evan", "oliver", ...)` from index.ts and simpleAuth.ts
+- Added environment variables: `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_PASSWORD`
+- Admin user creation now requires environment variables (optional)
+- Added security warning log when default credentials detected
+- If env vars not provided, users must use `/api/auth/create-first-user` endpoint
+
+**Key Commits:**
+- `492ca652` - Remove hardcoded admin credentials, use environment variables
+
+**Deliverables:**
+- [x] Remove hardcoded `createUser("Evan", "oliver", ...)`
+- [x] Add environment variables: `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_PASSWORD`
+- [x] Add security warning if default credentials detected
+- [x] All tests passing
+- [x] Zero TypeScript errors
 
 **Problem:** Hardcoded admin user creation with default credentials is a security risk.
 
