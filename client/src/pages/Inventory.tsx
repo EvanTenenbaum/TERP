@@ -259,10 +259,13 @@ export default function Inventory() {
   const debouncedSearch = useDebounce(searchQuery, 150);
 
   // Fetch inventory data
-  const { data: inventoryData, isLoading } = trpc.inventory.list.useQuery({
+  const { data: inventoryResponse, isLoading } = trpc.inventory.list.useQuery({
     query: debouncedSearch || undefined,
-    limit: 100,
+    limit: 1000, // Increased limit to show all inventory
   });
+  
+  // Extract items from response (API returns { items, nextCursor, hasMore })
+  const inventoryData = inventoryResponse?.items || [];
 
   // Fetch dashboard statistics
   const { data: dashboardStats } = trpc.inventory.dashboardStats.useQuery();
