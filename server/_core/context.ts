@@ -8,14 +8,18 @@ import { logger } from "./logger";
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
-  user: User | null;
+  user: User; // Always non-null - public user is provisioned if no authenticated user
 };
 
 const PUBLIC_USER_EMAIL =
   env.PUBLIC_DEMO_USER_EMAIL || "demo+public@terp-app.local";
 const PUBLIC_USER_ID = env.PUBLIC_DEMO_USER_ID || "public-demo-user";
 
-async function getOrCreatePublicUser(): Promise<User | null> {
+/**
+ * Get or create public demo user
+ * NEVER returns null - always returns a valid User object
+ */
+async function getOrCreatePublicUser(): Promise<User> {
   try {
     const existing = await getUserByEmail(PUBLIC_USER_EMAIL);
     if (existing) {
@@ -37,10 +41,11 @@ async function getOrCreatePublicUser(): Promise<User | null> {
   } catch (error) {
     logger.warn(
       { error },
-      "[Public Access] Failed to provision public demo user"
+      "[Public Access] Failed to provision public demo user, using synthetic"
     );
   }
 
+  // Always return synthetic user if DB operations fail
   const now = new Date();
   return {
     id: -1,
@@ -93,8 +98,10 @@ export async function createContext(
   
   try {
     // Check if there's a session token first (avoid calling authenticateRequest if no token)
-    const token = opts.req.cookies?.["terp_session"];
-    if (token) {
+    // Verify cookies exist and token is present
+    const cookies = opts.req.cookies || {};
+    const token = cookies["terp_session"];
+    if (token && typeof token === "string") {
       try {
         user = await simpleAuth.authenticateRequest(opts.req);
         process.stdout.write(`[CONTEXT] Authenticated user: id=${user.id}\n`);

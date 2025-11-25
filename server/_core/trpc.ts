@@ -110,6 +110,15 @@ export const adminProcedure = t.procedure
       if (!ctx.user) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
       }
+      
+      // Public users cannot access admin procedures
+      if (ctx.user.id === -1) {
+        throw new TRPCError({ 
+          code: "FORBIDDEN", 
+          message: "Admin access required. Please log in with an admin account." 
+        });
+      }
+      
       if (ctx.user.role !== 'admin') {
         throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
       }
