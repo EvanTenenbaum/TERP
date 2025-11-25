@@ -29,15 +29,15 @@ import { logger } from "./logger";
  */
 export function requirePermission(permissionName: string) {
   return middleware(async ({ ctx, next }) => {
+    // PUBLIC ACCESS MODE: Allow all permissions when no user is present
+    // User explicitly requested public access for production site verification
+    // TODO: Re-enable permission checks when ready for secure access
     if (!ctx.user) {
-      logger.warn({ 
-        msg: "Permission check failed: no user in context", 
+      logger.debug({ 
+        msg: "Permission check bypassed: public access mode (no user)", 
         permission: permissionName 
       });
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "You must be logged in to perform this action",
-      });
+      return next({ ctx });
     }
 
     const userId = ctx.user.openId; // Use Clerk user ID
@@ -92,15 +92,15 @@ export function requirePermission(permissionName: string) {
  */
 export function requireAllPermissions(permissionNames: string[]) {
   return middleware(async ({ ctx, next }) => {
+    // PUBLIC ACCESS MODE: Allow all permissions when no user is present
+    // User explicitly requested public access for production site verification
+    // TODO: Re-enable permission checks when ready for secure access
     if (!ctx.user) {
-      logger.warn({ 
-        msg: "Permission check failed: no user in context", 
+      logger.debug({ 
+        msg: "Permission check bypassed: public access mode (no user)", 
         permissions: permissionNames 
       });
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "You must be logged in to perform this action",
-      });
+      return next({ ctx });
     }
 
     const userId = ctx.user.openId;
@@ -155,15 +155,15 @@ export function requireAllPermissions(permissionNames: string[]) {
  */
 export function requireAnyPermission(permissionNames: string[]) {
   return middleware(async ({ ctx, next }) => {
+    // PUBLIC ACCESS MODE: Allow all permissions when no user is present
+    // User explicitly requested public access for production site verification
+    // TODO: Re-enable permission checks when ready for secure access
     if (!ctx.user) {
-      logger.warn({ 
-        msg: "Permission check failed: no user in context", 
+      logger.debug({ 
+        msg: "Permission check bypassed: public access mode (no user)", 
         permissions: permissionNames 
       });
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "You must be logged in to perform this action",
-      });
+      return next({ ctx });
     }
 
     const userId = ctx.user.openId;
