@@ -1,50 +1,22 @@
 FROM node:20-slim
 
-# 1. Install System Deps (Git + Curl)
-RUN apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates && \
-    rm -rf /var/lib/apt/lists/* && apt-get clean
-
-# 2. Install Doctl (DigitalOcean CLI)
-RUN curl -sL https://github.com/digitalocean/doctl/releases/download/v1.98.0/doctl-1.98.0-linux-amd64.tar.gz | tar -xzv -C /usr/local/bin && \
-    chmod +x /usr/local/bin/doctl
+# Install git (needed for bot operations)
+RUN apt-get update && apt-get install -y --no-install-recommends git curl && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# 3. Enable corepack for pnpm
+# Enable pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# 4. Copy ONLY package files (minimal for dependency installation)
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
-COPY patches/ ./patches/
 
-# 5. Install dependencies with memory optimizations
-ENV NODE_OPTIONS="--max-old-space-size=768"
-RUN pnpm config set shamefully-hoist true && \
-    pnpm install --no-frozen-lockfile
+# Install dependencies (minimal - no optimizations that might fail)
+RUN pnpm install --no-frozen-lockfile
 
-# 6. Clean up
-RUN pnpm store prune && rm -rf /tmp/* /var/lib/apt/lists/*
+# Copy everything else
+COPY . .
 
-# 7. Create startup script that clones repo at runtime
-RUN echo '#!/bin/sh\n\
-set -e\n\
-cd /app\n\
-echo "📦 Cloning repository..."\n\
-if [ ! -d "TERP" ]; then\n\
-  if [ -z "$GITHUB_TOKEN" ]; then\n\
-    echo "⚠️  GITHUB_TOKEN not set, using public clone"\n\
-    git clone --depth 1 --branch main https://github.com/EvanTenenbaum/TERP.git TERP\n\
-  else\n\
-    echo "✅ Using authenticated clone"\n\
-    git clone --depth 1 --branch main https://x-access-token:${GITHUB_TOKEN}@github.com/EvanTenenbaum/TERP.git TERP\n\
-  fi\n\
-fi\n\
-cd TERP\n\
-echo "📦 Installing dependencies in cloned repo..."\n\
-pnpm install --no-frozen-lockfile || pnpm install\n\
-echo "🚀 Starting bot..."\n\
-exec npx tsx scripts/slack-bot.ts\n\
-' > /app/start.sh && chmod +x /app/start.sh
-
-# 8. Start the Bot (clones repo at runtime)
-CMD ["/app/start.sh"]
+# Start bot
+CMD ["npx", "tsx", "scripts/slack-bot.ts"]
