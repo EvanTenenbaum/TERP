@@ -45,6 +45,7 @@ import { ClientNeedsTab } from "@/components/needs/ClientNeedsTab";
 import { CommunicationTimeline } from "@/components/clients/CommunicationTimeline";
 import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
 import { PurchasePatternsWidget } from "@/components/clients/PurchasePatternsWidget";
+import { ClientCalendarTab } from "@/components/clients/ClientCalendarTab";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
 import { BackButton } from "@/components/common/BackButton";
@@ -358,13 +359,14 @@ export default function ClientProfilePage() {
 
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="needs">Needs & History</TabsTrigger>
           <TabsTrigger value="communications">Communications</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
           <TabsTrigger value="live-catalog">Live Catalog</TabsTrigger>
         </TabsList>
@@ -701,6 +703,10 @@ export default function ClientProfilePage() {
             clientId={clientId}
             onAddClick={() => setCommunicationModalOpen(true)}
           />
+        </TabsContent>
+
+        <TabsContent value="calendar" className="space-y-4">
+          <ClientCalendarTab clientId={clientId} />
         </TabsContent>
 
         <TabsContent value="notes" className="space-y-4">
