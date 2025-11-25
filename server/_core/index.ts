@@ -50,17 +50,36 @@ async function startServer() {
     logger.info("Checking for default data and admin user...");
     await seedAllDefaults();
     
-    // Create admin user if it doesn't exist
-    const adminExists = await getUserByEmail("Evan");
-    if (!adminExists) {
-      const newAdmin = await simpleAuth.createUser("Evan", "oliver", "Evan (Admin)");
-      logger.info("Admin user created: Evan / oliver");
-      
-      // Assign Super Admin role to the default admin user
-      if (newAdmin && newAdmin.openId) {
-        await assignRoleToUser(newAdmin.openId, "Super Admin");
-        logger.info("Super Admin role assigned to Evan");
+    // Create initial admin user if environment variables are provided
+    const { env } = await import("./env");
+    if (env.initialAdminUsername && env.initialAdminPassword) {
+      const adminExists = await getUserByEmail(env.initialAdminUsername);
+      if (!adminExists) {
+        const newAdmin = await simpleAuth.createUser(
+          env.initialAdminUsername, 
+          env.initialAdminPassword, 
+          `${env.initialAdminUsername} (Admin)`
+        );
+        logger.info(`Admin user created: ${env.initialAdminUsername}`);
+        
+        // Assign Super Admin role to the initial admin user
+        if (newAdmin && newAdmin.openId) {
+          await assignRoleToUser(newAdmin.openId, "Super Admin");
+          logger.info(`Super Admin role assigned to ${env.initialAdminUsername}`);
+        }
+        
+        // Security warning for default credentials
+        logger.warn({
+          msg: "SECURITY WARNING: Default admin credentials detected",
+          username: env.initialAdminUsername,
+          action: "Please change the admin password immediately after first login"
+        });
+      } else {
+        logger.info(`Admin user already exists: ${env.initialAdminUsername}`);
       }
+    } else {
+      logger.info("No INITIAL_ADMIN_USERNAME/INITIAL_ADMIN_PASSWORD provided - skipping admin user creation");
+      logger.info("Use /api/auth/create-first-user endpoint to create the first admin user");
     }
   } catch (error) {
     logger.warn({ msg: "Failed to seed defaults or create admin user", error });
