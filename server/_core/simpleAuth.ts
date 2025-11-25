@@ -58,11 +58,8 @@ class SimpleAuthService {
    */
   async authenticateRequest(req: Request): Promise<User> {
     try {
-      console.log("[Simple Auth] Cookies:", req.cookies);
-      console.log("[Simple Auth] Cookie name:", COOKIE_NAME);
       // Get session token from cookie
       const token = req.cookies[COOKIE_NAME];
-      console.log("[Simple Auth] Token:", token ? "found" : "not found");
 
       if (!token) {
         throw ForbiddenError("Not authenticated - no session token");
@@ -83,7 +80,7 @@ class SimpleAuthService {
 
       return user;
     } catch (error) {
-      console.error("[Simple Auth] Authentication failed:", error);
+      // Error logging handled by error handling middleware
       throw ForbiddenError("Authentication failed");
     }
   }
@@ -182,7 +179,7 @@ export function registerSimpleAuthRoutes(app: Express) {
 
       res.json({ success: true, user: { name: user.name, email: user.email } });
     } catch (error) {
-      console.error("[Auth] Login failed", error);
+      // Error logging handled by error handling middleware
       res.status(401).json({ error: "Invalid username or password" });
     }
   });
@@ -266,7 +263,7 @@ export function registerSimpleAuthRoutes(app: Express) {
       const user = await simpleAuth.createUser(username, password, name);
       res.json({ success: true, user: { name: user.name, email: user.email } });
     } catch (error) {
-      console.error("[Auth] Create first user failed", error);
+      // Error logging handled by error handling middleware
       res
         .status(400)
         .json({

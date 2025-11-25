@@ -76,8 +76,7 @@ export default function Orders() {
     return client?.name || 'Unknown';
   };
 
-  // DIAGNOSTIC: Test endpoint to verify tRPC is working
-  const { data: testData } = trpc.orders.testEndpoint.useQuery();
+  // Test endpoint removed - use browser DevTools for API debugging
 
   // Fetch draft orders
   const { data: draftOrders, isLoading: loadingDrafts, refetch: refetchDrafts } = trpc.orders.getAll.useQuery({
@@ -94,15 +93,7 @@ export default function Orders() {
     cacheTime: 0,
   });
 
-  // DEBUG: Log the raw data from API
-  useEffect(() => {
-    console.log('=== ORDERS DEBUG ===');
-    console.log('confirmedOrders:', confirmedOrders);
-    console.log('confirmedOrders length:', confirmedOrders?.length);
-    console.log('loadingConfirmed:', loadingConfirmed);
-    console.log('First 3 orders:', confirmedOrders?.slice(0, 3));
-    console.log('==================');
-  }, [confirmedOrders, loadingConfirmed]);
+  // Debug logging removed - use browser DevTools Network tab for API debugging
 
   // Filter orders by search query
   const filteredDrafts = draftOrders?.filter((order) => {
@@ -229,25 +220,6 @@ export default function Orders() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
-      {/* 🚨 DEBUG DASHBOARD - Development Only 🚨 */}
-      {import.meta.env.DEV && (
-        <div style={{ border: '5px solid red', padding: '20px', background: '#fff', zIndex: 9999, marginBottom: '20px' }}>
-          <h3 style={{ color: 'red', fontWeight: 'bold', marginBottom: '10px' }}>🚨 DEBUG DASHBOARD 🚨</h3>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            <li><strong>Component Mounted:</strong> YES</li>
-            <li><strong>Active Tab:</strong> {activeTab}</li>
-            <li><strong>Status Filter:</strong> {JSON.stringify(statusFilter)} (Type: {typeof statusFilter})</li>
-            <li><strong>Confirmed Query - isDraft Value:</strong> {JSON.stringify(false)} (Type: {typeof false})</li>
-            <li><strong>Confirmed Query - Status:</strong> {loadingConfirmed ? 'LOADING' : 'LOADED'}</li>
-            <li><strong>Confirmed Query - Is Loading:</strong> {loadingConfirmed ? 'YES' : 'NO'}</li>
-            <li><strong>Confirmed Query - Data:</strong> {confirmedOrders ? `Array(${confirmedOrders.length})` : 'NULL/UNDEFINED'}</li>
-            <li><strong>Confirmed Query - First Order:</strong> {JSON.stringify(confirmedOrders?.[0])}</li>
-            <li><strong>Draft Query - isDraft Value:</strong> {JSON.stringify(true)} (Type: {typeof true})</li>
-            <li><strong>Draft Query - Data:</strong> {draftOrders ? `Array(${draftOrders.length})` : 'NULL/UNDEFINED'}</li>
-            <li style={{ marginTop: '10px', borderTop: '2px solid red', paddingTop: '10px' }}><strong>🧪 TEST ENDPOINT:</strong> {testData ? JSON.stringify(testData) : 'NULL/UNDEFINED'}</li>
-          </ul>
-        </div>
-      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
