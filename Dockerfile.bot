@@ -13,7 +13,7 @@ WORKDIR /app
 # 3. Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# 4. Copy package files and patches first for better layer caching
+# 4. Copy ONLY package files (minimal for dependency installation)
 COPY package.json pnpm-lock.yaml ./
 COPY patches/ ./patches/
 
@@ -22,12 +22,26 @@ ENV NODE_OPTIONS="--max-old-space-size=768"
 RUN pnpm config set shamefully-hoist true && \
     pnpm install --no-frozen-lockfile
 
-# 6. Copy all remaining files (manager.ts needs full codebase)
-COPY . .
-
-# 7. Clean up
+# 6. Clean up
 RUN pnpm store prune && rm -rf /tmp/* /var/lib/apt/lists/*
 
-# 8. Start the Bot
-CMD ["npx", "tsx", "scripts/slack-bot.ts"]
+# 7. Create startup script that clones repo at runtime
+RUN echo '#!/bin/sh\n\
+set -e\n\
+echo "📦 Cloning repository..."\n\
+if [ -z "$GITHUB_TOKEN" ]; then\n\
+  echo "⚠️  GITHUB_TOKEN not set, using public clone"\n\
+  git clone --depth 1 --branch main https://github.com/EvanTenenbaum/TERP.git /app/repo || true\n\
+else\n\
+  echo "✅ Using authenticated clone"\n\
+  git clone --depth 1 --branch main https://x-access-token:${GITHUB_TOKEN}@github.com/EvanTenenbaum/TERP.git /app/repo || true\n\
+fi\n\
+cd /app/repo\n\
+echo "📦 Installing dependencies in cloned repo..."\n\
+pnpm install --no-frozen-lockfile || pnpm install\n\
+echo "🚀 Starting bot..."\n\
+exec npx tsx scripts/slack-bot.ts\n\
+' > /app/start.sh && chmod +x /app/start.sh
 
+# 8. Start the Bot (clones repo at runtime)
+CMD ["/app/start.sh"]
