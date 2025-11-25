@@ -1,14 +1,6 @@
 name: terp
 region: nyc
 
-# Log forwarding configuration
-# Papertrail log forwarding using Digital Ocean's native integration
-# Add PAPERTRAIL_ENDPOINT environment variable in Digital Ocean console
-log_destinations:
-  - name: papertrail
-    papertrail:
-      endpoint: ${PAPERTRAIL_ENDPOINT}
-
 services:
   - name: web
     github:

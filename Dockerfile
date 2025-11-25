@@ -14,6 +14,7 @@ WORKDIR /app
 
 # Copy dependency manifests first for better caching
 COPY package.json pnpm-lock.yaml* ./
+COPY patches ./patches
 
 # Install dependencies (prefer frozen lockfile, fall back to update)
 RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
