@@ -2516,10 +2516,10 @@ Completes pricing feature set, enables price monitoring.
 - Resolution: Fixed sidebar link in `DashboardLayout.tsx` to point to correct route `/orders/create`.
 
 
-- [ ] **BUG-010: Global Search Bar Returns 404 Error** (Created: 2025-11-22) 🔴 HIGH PRIORITY
+- [x] **BUG-010: Global Search Bar Returns 404 Error** (Completed: 2025-11-24) 🔴 HIGH PRIORITY
   - Task ID: BUG-010
   - Priority: P1 (HIGH - BROKEN FEATURE)
-  - Session: TBD
+  - Session: Session-20251124-BUG-010-e7378438
   - **Problem:** Global search bar in header navigates to `/search?q=<query>` which returns 404 error
   - **Current State:**
     - Search bar present in header on all pages
