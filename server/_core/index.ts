@@ -163,7 +163,7 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    logger.warn(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
   // Sentry error handler (must be after all routes)
@@ -178,4 +178,7 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((error) => {
+  logger.error({ error }, "Failed to start server");
+  process.exit(1);
+});
