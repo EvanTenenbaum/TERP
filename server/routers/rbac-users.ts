@@ -566,8 +566,17 @@ export const rbacUsersRouter = router({
     .query(async ({ ctx }) => {
       try {
         const db = await getDb();
+        
+        // PUBLIC ACCESS MODE: Return empty permissions when no user is present
+        // User explicitly requested public access for production site verification
+        // TODO: Re-enable authentication check when ready for secure access
         if (!ctx.user) {
-          throw new Error("Not authenticated");
+          return {
+            userId: null,
+            isSuperAdmin: false,
+            permissions: [],
+            roles: [],
+          };
         }
 
         const userId = ctx.user.id;

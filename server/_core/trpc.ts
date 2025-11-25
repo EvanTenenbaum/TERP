@@ -74,9 +74,12 @@ export const sanitizationMiddleware = t.middleware(async ({ next, input }) => {
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
 
-  if (!ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
-  }
+  // PUBLIC ACCESS MODE: Allow null users (authentication optional)
+  // User explicitly requested public access for production site verification
+  // TODO: Re-enable authentication when ready for secure access
+  // if (!ctx.user) {
+  //   throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+  // }
 
   return next({
     ctx: {
@@ -98,9 +101,12 @@ export const adminProcedure = t.procedure
     t.middleware(async opts => {
       const { ctx, next } = opts;
 
-      if (!ctx.user || ctx.user.role !== 'admin') {
-        throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
-      }
+      // PUBLIC ACCESS MODE: Allow admin operations without authentication
+      // User explicitly requested public access for production site verification
+      // TODO: Re-enable admin checks when ready for secure access
+      // if (!ctx.user || ctx.user.role !== 'admin') {
+      //   throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+      // }
 
       return next({
         ctx: {
