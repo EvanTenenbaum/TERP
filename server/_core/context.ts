@@ -63,17 +63,17 @@ export async function createContext(
 
   try {
     user = await simpleAuth.authenticateRequest(opts.req);
-    logger.debug({ userId: user?.id }, "[Context] Authenticated user found");
+    logger.info({ userId: user?.id }, "[Context] Authenticated user found");
   } catch (error) {
     // Authentication is optional - this is expected for public access
-    logger.debug("[Context] No authenticated user, provisioning public user");
+    logger.info("[Context] No authenticated user, provisioning public user");
     user = null;
   }
 
   if (!user) {
     try {
       user = await getOrCreatePublicUser();
-      logger.debug({ userId: user?.id, email: user?.email }, "[Context] Public user provisioned");
+      logger.info({ userId: user?.id, email: user?.email }, "[Context] Public user provisioned");
     } catch (error) {
       logger.warn({ error }, "[Public Access] Failed to get/create public user, using synthetic fallback");
       // Fallback to synthetic user if everything fails
@@ -90,7 +90,7 @@ export async function createContext(
         updatedAt: now,
         lastSignedIn: now,
       };
-      logger.debug("[Context] Using synthetic public user fallback");
+      logger.info("[Context] Using synthetic public user fallback");
     }
   }
 
@@ -112,7 +112,7 @@ export async function createContext(
     logger.warn("[Context] Final fallback: created synthetic user");
   }
 
-  logger.debug({ userId: user.id, email: user.email }, "[Context] Context created with user");
+  logger.info({ userId: user.id, email: user.email, openId: user.openId }, "[Context] Context created with user");
 
   return {
     req: opts.req,
