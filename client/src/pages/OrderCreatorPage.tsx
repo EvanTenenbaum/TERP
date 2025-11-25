@@ -60,9 +60,16 @@ export default function OrderCreatorPageV2() {
   );
   
   // Fetch inventory with pricing when client is selected
-  const { data: inventory, isLoading: inventoryLoading } = trpc.salesSheets.getInventory.useQuery(
+  const { data: inventory, isLoading: inventoryLoading, error: inventoryError } = trpc.salesSheets.getInventory.useQuery(
     { clientId: clientId! },
-    { enabled: !!clientId }
+    { 
+      enabled: !!clientId && clientId > 0,
+      retry: false,
+      onError: (error) => {
+        console.error("Failed to load inventory:", error);
+        toast.error(`Failed to load inventory: ${error.message || "Unknown error"}`);
+      }
+    }
   );
 
   // Calculations
@@ -297,12 +304,27 @@ export default function OrderCreatorPageV2() {
             {/* Inventory Browser */}
             <Card>
               <CardContent className="pt-6">
-                <InventoryBrowser
-                  inventory={inventory || []}
-                  isLoading={inventoryLoading}
-                  onAddItems={handleAddItem}
-                  selectedItems={items.map(item => ({ id: item.batchId }))}
-                />
+                {inventoryError ? (
+                  <div className="text-center py-8">
+                    <p className="text-destructive mb-2">Failed to load inventory</p>
+                    <p className="text-sm text-muted-foreground">{inventoryError.message}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => window.location.reload()}
+                      className="mt-4"
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : (
+                  <InventoryBrowser
+                    inventory={inventory || []}
+                    isLoading={inventoryLoading}
+                    onAddItems={handleAddItem}
+                    selectedItems={items.map(item => ({ id: item.batchId }))}
+                  />
+                )}
               </CardContent>
             </Card>
 
