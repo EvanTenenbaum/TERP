@@ -13,18 +13,16 @@ WORKDIR /app
 # 3. Enable corepack (pnpm comes with Node 20+)
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# 4. Copy package files first for better caching
-COPY package.json pnpm-lock.yaml ./
-COPY patches/ ./patches/
+# 4. Copy all source files (patches needed for pnpm install)
+COPY . .
 
 # 5. Install dependencies with memory optimizations
 # Limit Node.js memory to fit in 1GB instance (leaving room for system)
 ENV NODE_OPTIONS="--max-old-space-size=768"
-# Try frozen lockfile first, fallback to updating if needed
-RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
-
-# 6. Copy remaining source files (after install for better caching)
-COPY . .
+# Install dependencies (allow lockfile to be regenerated if needed)
+# Use --shamefully-hoist to reduce memory usage
+RUN pnpm config set shamefully-hoist true && \
+    pnpm install --no-frozen-lockfile
 
 # 7. Clean up to reduce image size
 RUN pnpm store prune && rm -rf /tmp/* /var/lib/apt/lists/*
