@@ -545,6 +545,27 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
           </Card>
         )}
       </div>
+
+      {/* Cancel Listing Confirmation Dialog */}
+      <AlertDialog open={supplyToCancel !== null} onOpenChange={(open) => !open && setSupplyToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Listing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this listing? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancel}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Cancel Listing
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -956,5 +956,26 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
         })}
       </TableBody>
     </Table>
+
+    {/* Deactivate Alert Confirmation Dialog */}
+    <AlertDialog open={alertToDeactivate !== null} onOpenChange={(open) => !open && setAlertToDeactivate(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Deactivate Price Alert?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to deactivate this price alert? You will no longer receive notifications for this product.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmDeactivateAlert}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Deactivate
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
