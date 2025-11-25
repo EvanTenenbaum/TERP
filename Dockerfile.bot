@@ -28,6 +28,6 @@ COPY . .
 # 7. Clean up
 RUN pnpm store prune && rm -rf /tmp/* /var/lib/apt/lists/*
 
-# 7. Start the Bot
+# 8. Start the Bot
 CMD ["npx", "tsx", "scripts/slack-bot.ts"]
 
