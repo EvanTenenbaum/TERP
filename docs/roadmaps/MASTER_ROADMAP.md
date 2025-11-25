@@ -4793,3 +4793,820 @@ const id = localStorage.getItem("vip_client_id");
 - [ ] Zero TypeScript errors
 - [ ] Session archived
 
+---
+
+## 🔴 WORKFLOW SIMULATION BUGS (2025-11-25)
+
+**Source:** User Persona Workflow Simulation (10 personas × 2 weeks)
+**Discovery Method:** Comprehensive code audit tracing actual user workflows
+**Total New Issues Found:** 35+ (after deduplication with existing roadmap)
+
+---
+
+### PERMISSION CHECK BUGS (P0/P1)
+
+#### PERM-001: Incorrect Permission Check - Pricing Rules Delete
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Persona Workflow: Marcus - Sales Manager)
+**Estimate:** 30 minutes
+
+**Problem:** `deleteRule` mutation in pricing router requires `"pricing:read"` instead of `"pricing:delete"`, allowing any user with read-only access to delete pricing rules.
+
+**File:** `server/routers/pricing.ts` (Line 51)
+```typescript
+deleteRule: protectedProcedure.use(requirePermission("pricing:read"))  // WRONG!
+  .input(z.object({ ruleId: z.number() }))
+  .mutation(async ({ input }) => { ... })
+```
+
+**Fix Required:**
+```typescript
+deleteRule: protectedProcedure.use(requirePermission("pricing:delete"))
+```
+
+---
+
+#### PERM-002: Incorrect Permission Check - Pricing Profiles Delete
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Persona Workflow: Marcus - Sales Manager)
+**Estimate:** 30 minutes
+
+**Problem:** `deleteProfile` mutation requires `"pricing:read"` instead of `"pricing:delete"`.
+
+**File:** `server/routers/pricing.ts` (Line 96)
+
+**Fix Required:** Change permission to `"pricing:delete"`
+
+---
+
+#### PERM-003: Incorrect Permission Check - Pricing Profile Assignment
+
+**Status:** 🚨 NEW - HIGH
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Marcus - Sales Manager)
+**Estimate:** 30 minutes
+
+**Problem:** `applyProfileToClient` mutation requires `"pricing:read"` instead of `"pricing:update"`.
+
+**File:** `server/routers/pricing.ts` (Line 103)
+
+**Fix Required:** Change permission to `"pricing:update"`
+
+---
+
+#### PERM-004: Incorrect Permissions for Sales Sheet Operations
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Persona Workflow: Marcus - Sales Manager)
+**Estimate:** 30 minutes
+
+**Problem:** Multiple sales sheet mutations use `"orders:read"` for write operations:
+- Line 52: `save` - uses read permission for mutation
+- Line 97: `delete` - uses read permission for delete
+- Line 142: `deleteTemplate` - uses read permission for delete
+
+**File:** `server/routers/salesSheets.ts`
+
+**Fix Required:** Change to appropriate `"orders:create"`, `"orders:delete"` permissions
+
+---
+
+#### PERM-005: Incorrect Permissions for Dashboard Operations
+
+**Status:** 🚨 NEW - HIGH
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Sarah - Super Admin)
+**Estimate:** 30 minutes
+
+**Problem:** Dashboard mutations use `"dashboard:read"` for write operations:
+- Line 80: `saveLayout` - uses read permission for mutation
+- Line 97: `resetLayout` - uses read permission for mutation
+
+**File:** `server/routers/dashboard.ts`
+
+**Fix Required:** Change to `"dashboard:update"`
+
+---
+
+#### PERM-006: Incorrect Permission on Journal Entry Mutation
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant)
+**Estimate:** 30 minutes
+
+**Problem:** `postJournalEntry` mutation uses `"accounting:read"` permission for a write operation.
+
+**File:** `server/routers/accounting.ts` (Line 120)
+
+**Fix Required:** Change to `"accounting:create"` or `"accounting:write"`
+
+---
+
+#### PERM-007: Incorrect Permission on Inventory Intake
+
+**Status:** 🚨 NEW - HIGH
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Chris - Inventory Manager)
+**Estimate:** 30 minutes
+
+**Problem:** `intake` mutation uses `"inventory:read"` permission for batch creation.
+
+**File:** `server/routers/inventory.ts` (Line 150)
+
+**Fix Required:** Change to `"inventory:create"`
+
+---
+
+#### PERM-008: Incorrect Permission on Credit Calculation
+
+**Status:** 🚨 NEW - HIGH
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant)
+**Estimate:** 30 minutes
+
+**Problem:** `calculate` mutation uses `"credits:read"` permission for write operation.
+
+**File:** `server/routers/credit.ts` (Line 8)
+
+**Fix Required:** Change to `"credits:create"` or `"credits:write"`
+
+---
+
+### VIP PORTAL SECURITY BUGS (P0)
+
+#### VIP-002: Session Verification Race Condition
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Persona Workflow: Alex - VIP Portal Client)
+**Estimate:** 2-4 hours
+
+**Problem:** Authentication check executes before token is loaded from localStorage, causing unreliable session verification.
+
+**File:** `client/src/hooks/useVIPPortalAuth.ts` (Lines 11-37)
+
+**Issue:**
+```typescript
+// Line 27-30: Query runs BEFORE token loads from localStorage
+const { data: session, isError } = trpc.vipPortal.auth.verifySession.useQuery(
+  { sessionToken: sessionToken || "" }, // sessionToken still null on first render!
+  { enabled: !!sessionToken }
+);
+```
+
+**Impact:** Session verification sends empty token on first render, causing incorrect redirects to login.
+
+**Fix Required:** Move token loading to synchronous initialization or use proper loading state.
+
+---
+
+#### VIP-003: Missing vipPortalClientId in TRPC Context
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Persona Workflow: Alex - VIP Portal Client)
+**Estimate:** 4-8 hours
+
+**Problem:** 13+ references to `ctx.vipPortalClientId` in vipPortal router but property never defined in TrpcContext type.
+
+**File:** `server/routers/vipPortal.ts` (Lines 898, 936, 954, 1015, 1082, 1110)
+**File:** `server/_core/context.ts` (Missing vipPortalClientId property)
+
+**Affected Endpoints:**
+- liveCatalog.get (line 898)
+- liveCatalog.getFilterOptions (line 936)
+- liveCatalog.getDraftInterests (line 954)
+- addToDraft (line 1015)
+- removeFromDraft (line 1082)
+- submitDrafts (line 1110)
+
+**Impact:** All liveCatalog endpoints will fail with "cannot read property 'vipPortalClientId' of undefined".
+
+**Fix Required:** Add `vipPortalClientId?: number` to TrpcContext type and set it during VIP Portal authentication.
+
+---
+
+#### VIP-004: Missing Authorization on VIP Portal Data Endpoints
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Persona Workflow: Alex - VIP Portal Client)
+**Estimate:** 8-16 hours
+
+**Problem:** Multiple VIP Portal endpoints use publicProcedure without verifying client ownership, allowing any client to view other clients' confidential data.
+
+**File:** `server/routers/vipPortal.ts`
+
+**Vulnerable Endpoints:**
+- `config.get` (line 220-246) - Access any client's config
+- `dashboard.getKPIs` (line 255-305) - View any client's KPIs
+- `ar.getInvoices` (line 313-363) - View any client's invoices
+- `ap.getBills` (line 371-421) - View any client's bills
+- `transactions.getHistory` (line 429-472) - View any client's transactions
+- `marketplaceNeeds` (lines 491-577) - Create needs for any client
+- `leaderboard.getLeaderboard` (line 669-871) - View competitive data
+
+**Steps to Reproduce:**
+1. Login as client A
+2. Call API with clientId of client B
+3. Successfully view client B's confidential data
+
+**Fix Required:** Add session token validation and verify calling client owns the requested data.
+
+---
+
+#### VIP-005: VIP Portal Dashboard Publicly Accessible Route
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Persona Workflow: Alex - VIP Portal Client)
+**Estimate:** 2-4 hours
+
+**Problem:** VIP Portal dashboard route is not protected by authentication in App.tsx routing.
+
+**File:** `client/src/App.tsx` (Line 63)
+
+**Current Routing:**
+```typescript
+// Line 62-63: VIP routes are PUBLIC (no AppShell, no auth required)
+<Route path="/vip-portal/login" component={VIPLogin} />
+<Route path="/vip-portal/dashboard" component={VIPDashboard} />
+```
+
+**Impact:** Navigating directly to `/vip-portal/dashboard` loads the page without authentication. While useVIPPortalAuth hook redirects, there's a brief window of exposure.
+
+**Fix Required:** Add route guard or protected route wrapper for VIP Portal dashboard.
+
+---
+
+### NON-FUNCTIONAL BUTTONS (P1/P2)
+
+#### BUG-021: New Invoice Button - No Handler
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant, Day 4)
+**Estimate:** 2-4 hours
+
+**Problem:** "New Invoice" button has no onClick handler - clicking does nothing.
+
+**File:** `client/src/pages/accounting/Invoices.tsx` (Lines 103-105)
+
+**Workflow Impact:** Day 4 - Cannot create new invoices
+
+---
+
+#### BUG-022: New Bill Button - No Handler
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant, Day 5)
+**Estimate:** 2-4 hours
+
+**Problem:** "New Bill" button has no onClick handler.
+
+**File:** `client/src/pages/accounting/Bills.tsx` (Lines 89-91)
+
+**Workflow Impact:** Day 5 - Cannot create bills
+
+---
+
+#### BUG-023: New Bank Transaction Button - No Handler
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant, Day 6)
+**Estimate:** 2-4 hours
+
+**Problem:** "New Transaction" button has no onClick handler.
+
+**File:** `client/src/pages/accounting/BankTransactions.tsx` (Lines 103-105)
+
+**Workflow Impact:** Day 6 - Cannot reconcile bank transactions
+
+---
+
+#### BUG-024: New Bank Account Button - No Handler
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant)
+**Estimate:** 2-4 hours
+
+**Problem:** "New Account" button has no onClick handler.
+
+**File:** `client/src/pages/accounting/BankAccounts.tsx` (Lines 60-62)
+
+---
+
+#### BUG-025: New Expense Button - No Handler
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant)
+**Estimate:** 2-4 hours
+
+**Problem:** "New Expense" button has no onClick handler.
+
+**File:** `client/src/pages/accounting/Expenses.tsx` (Lines 98-101)
+
+---
+
+#### BUG-026: Vendor Supply Action Buttons - No Handlers
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Jessica - Buyer, Day 8)
+**Estimate:** 4-6 hours
+
+**Problem:** "Find Matching Clients" and "Edit" buttons have no onClick handlers.
+
+**File:** `client/src/pages/VendorSupplyPage.tsx` (Lines 188-193)
+
+**Workflow Impact:** Day 8 - Cannot perform actions on vendor supply items
+
+---
+
+### MISSING PAGES & FEATURES (P0/P1)
+
+#### BUG-027: AnalyticsPage Completely Non-Functional
+
+**Status:** 🚨 NEW - CRITICAL
+**Priority:** 🔴 P0 (CRITICAL)
+**Discovered:** 2025-11-25 (Persona Workflow: Tanya - Owner/Executive, Days 2-10)
+**Estimate:** 16-24 hours
+
+**Problem:** AnalyticsPage renders only hardcoded placeholder values without any API calls:
+- Lines 43-93: All metrics show `$0.00` or `0`
+- Lines 119-175: All tabs display "Analytics data coming soon"
+- No `trpc.useQuery()` calls anywhere
+- No data fetching logic implemented
+
+**File:** `client/src/pages/AnalyticsPage.tsx`
+
+**Symptoms:**
+- Total Revenue: $0.00
+- Total Orders: 0
+- Active Clients: 0
+- Inventory Items: 0
+- Sales Tab: "coming soon"
+- Inventory Tab: "coming soon"
+- Clients Tab: "coming soon"
+
+**Workflow Impact:** Executive persona cannot perform Days 2, 3, 4, 7, 10 of workflow
+
+**Fix Required:** Implement actual data queries:
+```typescript
+const { data: salesData } = trpc.dashboard.getSalesByClient.useQuery();
+const { data: inventoryData } = trpc.dashboard.getInventorySnapshot.useQuery();
+```
+
+---
+
+#### BUG-028: COGS Features Not Implemented
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant, Day 9)
+**Estimate:** 8-16 hours
+
+**Problem:** COGS router throws "not yet implemented" errors for all operations:
+- Line 14-16: `calculateImpact` - "COGS impact calculation not yet implemented"
+- Line 27-29: `updateBatchCogs` - "Batch COGS update not yet implemented"
+- Line 36: `getHistory` - "COGS history not yet implemented"
+
+**File:** `server/routers/cogs.ts`
+
+**Workflow Impact:** Day 9 - Cannot configure COGS settings (entire workflow fails)
+
+---
+
+#### BUG-029: Product Intake Page Missing
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Mike - Warehouse, Day 9)
+**Estimate:** 8-16 hours
+
+**Problem:** Server has `productIntake.ts` router but no corresponding client page component.
+
+**Files:**
+- Server: `server/routers/productIntake.ts` (exists)
+- Client: No ProductIntakePage in `client/src/pages/`
+
+**Workflow Impact:** Cannot access intake workflow to create batches from product intake
+
+---
+
+#### BUG-030: Workflow Queue Page Missing
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Mike - Warehouse, Day 10)
+**Estimate:** 8-16 hours
+
+**Problem:** Dashboard widget references `/workflow-queue` route but page component doesn't exist.
+
+**Files:**
+- Server: `server/routers/workflow-queue.ts` (exists)
+- Client: WorkflowQueueWidget references route (line 43, 64)
+- Missing: WorkflowQueuePage component
+
+**Workflow Impact:** Clicking "View Board" results in 404 or blank page
+
+---
+
+#### BUG-031: Audit Logs Page Missing
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Tanya - Owner/Executive, Day 9)
+**Estimate:** 8-16 hours
+
+**Problem:** Server has `auditLogs.ts` router but no client page for viewing audit logs.
+
+**Files:**
+- Server: `server/routers/auditLogs.ts` (exists)
+- Client: No AuditLogsPage in `client/src/pages/`
+
+**Workflow Impact:** Cannot view system audit trail (compliance issue)
+
+---
+
+#### BUG-032: Sample Conversion Page Missing
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Tanya - Owner/Executive, Day 7)
+**Estimate:** 8-16 hours
+
+**Problem:** Server has `samples.ts` router but no client page for sample analytics.
+
+**Files:**
+- Server: `server/routers/samples.ts` (exists)
+- Client: No SamplesPage in `client/src/pages/`
+
+**Workflow Impact:** Cannot review sample conversion rates or track sample ROI
+
+---
+
+#### BUG-033: Accounting Summary Page Missing
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Tanya - Owner/Executive, Day 6)
+**Estimate:** 16-24 hours
+
+**Problem:** No dedicated accounting summary page for executives. Router has detailed endpoints but lacks:
+- `getSummary()` - consolidated financial position
+- `getProfitAndLoss()` - P&L statement
+- `getBalanceSheet()` - balance sheet
+- `getCashFlow()` - cash flow analysis
+
+**Files:**
+- Server: `server/routers/accounting.ts` (exists but missing summary endpoints)
+- Client: No AccountingSummaryPage
+
+**Workflow Impact:** Cannot view financial data in executive-friendly format
+
+---
+
+#### BUG-034: Missing Inventory Transfer Page
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Mike - Warehouse, Day 4)
+**Estimate:** 8-16 hours
+
+**Problem:** Server has `warehouseTransfers.ts` router but no client page for executing transfers.
+
+**Files:**
+- Server: `server/routers/warehouseTransfers.ts` (exists)
+- Client: No WarehouseTransfersPage
+
+**Workflow Impact:** Cannot transfer inventory between locations from UI
+
+---
+
+### WAREHOUSE WORKFLOW BUGS (P1/P2)
+
+#### BUG-035: No PO Receiving Status Transition Workflow
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Mike - Warehouse, Day 2)
+**Estimate:** 16-24 hours
+
+**Problem:** PurchaseOrdersPage shows RECEIVING status option but lacks actual receiving dialog to:
+- Confirm receipt of specific quantities
+- Check items for damage
+- Create batch records
+- Track receiving date/time
+
+**File:** `client/src/pages/PurchaseOrdersPage.tsx`
+
+**Workflow Impact:** Cannot properly receive shipments, inventory not created from received items
+
+---
+
+#### BUG-036: No Inventory Damage/Adjustment Dialog
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Mike - Warehouse, Day 3)
+**Estimate:** 8-16 hours
+
+**Problem:** Inventory page has no UI for adjusting quantities for:
+- Damaged items during receipt
+- Loss adjustments
+- Cycle count discrepancies
+- Quarantine reasons
+
+**File:** `client/src/pages/Inventory.tsx`
+
+**Workflow Impact:** Cannot mark items as damaged/quarantined - data accuracy compromised
+
+---
+
+#### BUG-037: Inventory Movement History Not Displayed
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Mike - Warehouse, Day 6)
+**Estimate:** 4-8 hours
+
+**Problem:** No visible inventory movement history/audit trail in Inventory detail view:
+- Cannot see who adjusted quantities
+- Cannot track reason for adjustments
+- No timestamp information
+
+**File:** `client/src/pages/Inventory.tsx`
+
+**Workflow Impact:** Cannot audit inventory changes (compliance issue)
+
+---
+
+### DASHBOARD DATA BUGS (P1/P2)
+
+#### BUG-038: Dashboard Low Stock Hardcoded to Zero
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Mike - Warehouse)
+**Estimate:** 4-8 hours
+
+**Problem:** Dashboard KPIs hardcode lowStockCount to 0:
+```typescript
+const lowStockCount = 0; // TODO: Add low stock threshold logic
+```
+
+**File:** `server/routers/dashboard.ts` (Line 60)
+
+**Workflow Impact:** Warehouse staff doesn't get inventory alerts
+
+---
+
+#### BUG-039: Dashboard KPI Change Calculations Incomplete
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Tanya - Owner/Executive, Day 1)
+**Estimate:** 4-8 hours
+
+**Problem:** All KPI change percentages hardcoded to 0:
+```typescript
+revenueChange: 0, // TODO: Calculate from previous period
+ordersChange: 0, // TODO: Calculate from previous period
+inventoryChange: 0, // TODO: Calculate from previous period
+```
+
+**File:** `server/routers/dashboard.ts` (Lines 64-68)
+
+**Workflow Impact:** Cannot see trends or performance indicators
+
+---
+
+#### BUG-040: Customer Names Not Populated in Dashboard
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Tanya - Owner/Executive)
+**Estimate:** 2-4 hours
+
+**Problem:** `getSalesByClient` returns placeholder customer names:
+```typescript
+customerName: `Customer ${customerId}`, // TODO: Join with customers table
+```
+
+**File:** `server/routers/dashboard.ts` (Line 199)
+
+**Workflow Impact:** Dashboard metrics not actionable without real customer names
+
+---
+
+### CODE QUALITY BUGS (P2/P3)
+
+#### BUG-041: Console Logging Left in Production Code
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Diana - Operations Manager)
+**Estimate:** 30 minutes
+
+**Problem:** Multiple `console.log()` statements left in production query function:
+```typescript
+console.log('=== getAllOrders DEBUG ===');
+console.log('Filters:', filters);
+console.log('Raw results count:', results.length);
+console.log('Transformed count:', transformed.length);
+console.log('First 3 orders:', transformed.slice(0, 3).map(...));
+console.log('========================');
+```
+
+**File:** `server/ordersDb.ts` (Lines 455-465)
+
+**Impact:** Leaks sensitive debug information to logs, performance overhead
+
+---
+
+#### BUG-042: Using alert() Instead of Toast Notifications
+
+**Status:** 🚨 NEW
+**Priority:** 🟢 P3 (LOW)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant)
+**Estimate:** 1-2 hours
+
+**Problem:** Uses browser `alert()` instead of proper toast notifications (app uses 'sonner'):
+- Line 29: `alert("Settings saved successfully!")`
+- Line 34: `alert(\`Error: ${error.message...}`
+- Line 66: `alert("Invalid Weights: Signal weights must sum...")`
+
+**File:** `client/src/pages/CreditSettingsPage.tsx`
+
+**Impact:** Inconsistent UX, blocks user interaction during alert
+
+---
+
+#### BUG-043: Hard Navigation Using window.location.href
+
+**Status:** 🚨 NEW
+**Priority:** 🟢 P3 (LOW)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant)
+**Estimate:** 2-4 hours
+
+**Problem:** Uses `window.location.href` for navigation instead of React Router, causing full page reloads:
+```typescript
+onClick={() => window.location.href = "/accounting/..."}
+```
+
+**File:** `client/src/pages/accounting/AccountingDashboard.tsx` (Lines 133, 161, 169, 177, 185, 200, 231, 262)
+
+**Impact:** Poor UX, unnecessary network requests, loss of scroll position
+
+---
+
+#### BUG-044: Trial Balance Query Race Condition
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: David - Accountant)
+**Estimate:** 1-2 hours
+
+**Problem:** Non-null assertion conflicts with enabled condition:
+```typescript
+const { data: trialBalance } = trpc.accounting.ledger.getTrialBalance.useQuery(
+  { fiscalPeriodId: selectedPeriod! },  // Non-null assertion
+  { enabled: showTrialBalance && !!selectedPeriod }  // But checks for selectedPeriod
+);
+```
+
+**File:** `client/src/pages/accounting/GeneralLedger.tsx` (Lines 79-81)
+
+**Impact:** May send undefined to API if selectedPeriod is undefined but showTrialBalance is true
+
+---
+
+#### BUG-045: Todo Task Field Mismatch
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Rachel - Customer Service)
+**Estimate:** 1-2 hours
+
+**Problem:** Property name mismatch between interface and usage:
+- TaskCard expects `isCompleted` property
+- TodoListDetailPage accesses `task.isCompleted` but toggle uses `completed`
+
+**File:** `client/src/pages/TodoListDetailPage.tsx` (Line 73)
+
+**Impact:** Undefined behavior when toggling task completion
+
+---
+
+#### BUG-046: Inbox UI Race Condition on Tab Change
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Rachel - Customer Service)
+**Estimate:** 2-4 hours
+
+**Problem:** Query state mismatch when switching tabs:
+- `allItems` query includes archived based on selectedTab
+- `unreadItems` query always fetches unread regardless of tab
+- Archived items incorrectly show in "unread" count
+
+**File:** `client/src/components/inbox/InboxPanel.tsx` (Lines 16-20)
+
+**Impact:** Badge counts don't update properly, stats show wrong unread count
+
+---
+
+### DATA INTEGRITY BUGS (P2)
+
+#### BUG-047: PO Missing User Context (Hardcoded createdBy)
+
+**Status:** 🚨 NEW
+**Priority:** 🔴 P1 (HIGH)
+**Discovered:** 2025-11-25 (Persona Workflow: Mike - Warehouse)
+**Estimate:** 2-4 hours
+
+**Problem:** `createdBy` is hardcoded to `1` instead of using authenticated user ID:
+```tsx
+createdBy: 1, // TODO: Get from auth context
+```
+
+**File:** `client/src/pages/PurchaseOrdersPage.tsx` (Line 171)
+
+**Impact:** All POs show user ID 1 as creator, losing audit trail and attribution
+
+---
+
+#### BUG-048: Returns May Create Duplicate Inventory Movements
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Mike - Warehouse)
+**Estimate:** 4-8 hours
+
+**Problem:** If `createReturn.mutate()` is called twice with same data:
+- No idempotency check
+- Could create duplicate inventory movements
+- Quantities doubled
+
+**File:** `server/routers/returns.ts` (Line 103)
+
+**Fix Required:** Add request deduplication or unique constraint
+
+---
+
+#### BUG-049: Purchase Order Totals May Be Miscalculated
+
+**Status:** 🚨 NEW
+**Priority:** 🟡 P2 (MEDIUM)
+**Discovered:** 2025-11-25 (Persona Workflow: Jessica - Buyer)
+**Estimate:** 4-8 hours
+
+**Problem:** `recalculatePOTotals()` sums only item totals, missing:
+- Tax calculations
+- Shipping costs
+- Discounts
+
+**File:** `server/routers/purchaseOrders.ts` (Lines 339-350)
+
+**Impact:** PO total may not reflect actual cost
+
+---
+
+### WORKFLOW SIMULATION SUMMARY
+
+**10 Personas Tested:**
+1. Sarah - Super Admin (RBAC, Admin Tools, Monitoring)
+2. Marcus - Sales Manager (Orders, Pricing, Sales Sheets)
+3. Diana - Operations Manager (Inventory, POs, Returns)
+4. David - Accountant (Accounting, Credits, COGS)
+5. Jessica - Buyer/Procurement (POs, Vendors, Matchmaking)
+6. Chris - Inventory Manager (Batches, Locations, Movements)
+7. Rachel - Customer Service (Clients, Calendar, Tasks, Inbox)
+8. Alex - VIP Portal Client (External Portal)
+9. Mike - Warehouse Staff (PO Receiving, Transfers, Returns)
+10. Tanya - Owner/Executive (Dashboard, Analytics, Reports)
+
+**Workflows Blocked by Bugs:**
+- David (Accountant): Days 4, 5, 6, 9 blocked (accounting buttons, COGS)
+- Jessica (Buyer): Day 8 blocked (vendor supply buttons)
+- Mike (Warehouse): Days 2, 4, 9 blocked (receiving, transfers, intake pages missing)
+- Tanya (Executive): Days 2-10 mostly blocked (analytics non-functional)
+- Alex (VIP Portal): Multiple security vulnerabilities exposing confidential data
+
+**Priority Distribution (35 New Bugs):**
+- P0 Critical: 12 bugs (8 permission, 4 VIP security)
+- P1 High: 14 bugs (buttons, missing pages, workflows)
+- P2 Medium: 8 bugs (data issues, race conditions)
+- P3 Low: 1 bug (code quality)
+
