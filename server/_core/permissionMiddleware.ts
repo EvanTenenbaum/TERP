@@ -41,6 +41,15 @@ export function requirePermission(permissionName: string) {
       });
     }
 
+    // Public demo user (id: -1) gets read permissions automatically
+    if (ctx.user.id === -1 && permissionName.endsWith(':read')) {
+      logger.debug({ 
+        msg: "Permission granted to public user for read operation", 
+        permission: permissionName 
+      });
+      return next({ ctx });
+    }
+
     const userId = ctx.user.openId; // Use Clerk user ID
 
     // Super Admins bypass all permission checks
