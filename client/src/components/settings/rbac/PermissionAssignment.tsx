@@ -23,6 +23,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -48,6 +58,7 @@ export function PermissionAssignment() {
   const [selectedPermissionId, setSelectedPermissionId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedModule, setSelectedModule] = useState<string>("all");
+  const [permissionToRemove, setPermissionToRemove] = useState<{ roleId: number; roleName: string; permissionId: number } | null>(null);
   const [viewingPermissionId, setViewingPermissionId] = useState<number | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<Set<number>>(new Set());
@@ -465,12 +476,11 @@ export function PermissionAssignment() {
                                                   size="sm"
                                                   variant="ghost"
                                                   onClick={() => {
-                                                    if (confirm(`Remove this permission from "${role.roleName}"?`)) {
-                                                      removePermissionMutation.mutate({
-                                                        roleId: role.roleId,
-                                                        permissionId: permission.id,
-                                                      });
-                                                    }
+                                                    setPermissionToRemove({
+                                                      roleId: role.roleId,
+                                                      roleName: role.roleName,
+                                                      permissionId: permission.id,
+                                                    });
                                                   }}
                                                   disabled={removePermissionMutation.isPending}
                                                 >
