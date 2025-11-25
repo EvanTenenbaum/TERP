@@ -73,8 +73,10 @@ async function getOrCreatePublicUser(): Promise<User> {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  // Direct stdout logging to verify function is called (bypasses logger)
+  // Multiple logging methods to ensure visibility
   process.stdout.write(`[CONTEXT] CALLED: ${opts.req.method} ${opts.req.url}\n`);
+  process.stderr.write(`[CONTEXT-STDERR] CALLED: ${opts.req.method} ${opts.req.url}\n`);
+  logger.info({ msg: "[CONTEXT-LOGGER] CALLED", method: opts.req.method, url: opts.req.url });
   
   // Create synthetic public user as ultimate fallback
   const createSyntheticUser = (): User => {
