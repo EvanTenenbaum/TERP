@@ -2420,8 +2420,19 @@ mysql -h terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 
 ### QA-045: Link Events to Clients
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 8-16h
+**Priority:** P2 | **Status:** ✅ Complete (2025-01-27) | **Effort:** 8-16h
 Events should be linkable to specific clients to track interactions and history.
+
+**Implementation:**
+- Added `clientId` field to `createEvent` and `updateEvent` API procedures in `server/routers/calendar.ts`
+- Added `getEventsByClient` procedure to calendar router
+- Added client selector dropdown to `EventFormDialog` component
+- Created `ClientCalendarTab` component to display linked events on client profile page
+- Added Calendar tab to `ClientProfilePage` with full event listing and management
+- Events can now be linked to clients when creating/editing
+- Client profile page shows all linked calendar events in a dedicated tab
+
+**Key Commits:** dc67c2d7
 
 ---
 
