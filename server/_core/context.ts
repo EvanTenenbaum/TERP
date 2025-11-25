@@ -56,82 +56,25 @@ async function getOrCreatePublicUser(): Promise<User | null> {
   };
 }
 
+/**
+ * Create tRPC context for each request
+ * 
+ * CRITICAL: This function MUST NEVER throw - it must always return a valid context.
+ * Based on tRPC best practices: https://trpc.io/docs/server/context
+ * 
+ * Pattern: Always return context, even if authentication fails.
+ * Public users are automatically provisioned for anonymous access.
+ */
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  // Direct console output (bypasses logger replacement) to verify function is called
-  process.stdout.write(`[CONTEXT-DIRECT] createContext CALLED for ${opts.req.url}\n`);
+  // Direct stdout logging to verify function is called (bypasses logger)
+  process.stdout.write(`[CONTEXT] CALLED: ${opts.req.method} ${opts.req.url}\n`);
   
-  try {
-    logger.info({ path: opts.req.url }, "[Context] createContext called");
-    let user: User | null = null;
-
-    try {
-      user = await simpleAuth.authenticateRequest(opts.req);
-      logger.info({ userId: user?.id }, "[Context] Authenticated user found");
-    } catch (error) {
-      // Authentication is optional - this is expected for public access
-      logger.info("[Context] No authenticated user, provisioning public user");
-      user = null;
-    }
-
-    if (!user) {
-      try {
-        user = await getOrCreatePublicUser();
-        logger.info({ userId: user?.id, email: user?.email }, "[Context] Public user provisioned");
-      } catch (error) {
-        logger.warn({ error }, "[Public Access] Failed to get/create public user, using synthetic fallback");
-        // Fallback to synthetic user if everything fails
-        const now = new Date();
-        user = {
-          id: -1,
-          openId: PUBLIC_USER_ID,
-          email: PUBLIC_USER_EMAIL,
-          name: "Public Demo User",
-          role: "user",
-          loginMethod: null,
-          deletedAt: null,
-          createdAt: now,
-          updatedAt: now,
-          lastSignedIn: now,
-        };
-        logger.info("[Context] Using synthetic public user fallback");
-      }
-    }
-
-    // Ensure user is never null
-    if (!user) {
-      logger.error("[Context] CRITICAL: User is still null after all attempts!");
-      const now = new Date();
-      user = {
-        id: -1,
-        openId: PUBLIC_USER_ID,
-        email: PUBLIC_USER_EMAIL,
-        name: "Public Demo User",
-        role: "user",
-        loginMethod: null,
-        deletedAt: null,
-        createdAt: now,
-        updatedAt: now,
-        lastSignedIn: now,
-      };
-      logger.warn("[Context] Final fallback: created synthetic user");
-    }
-
-    logger.info({ userId: user.id, email: user.email, openId: user.openId }, "[Context] Context created with user");
-    process.stdout.write(`[CONTEXT-DIRECT] Returning context with user: id=${user.id}, email=${user.email}\n`);
-
-    return {
-      req: opts.req,
-      res: opts.res,
-      user, // This should NEVER be null at this point
-    };
-  } catch (error) {
-    process.stdout.write(`[CONTEXT-DIRECT] ERROR in createContext: ${error}\n`);
-    logger.error({ error }, "[Context] Fatal error in createContext");
-    // Even on error, return a public user
+  // Create synthetic public user as ultimate fallback
+  const createSyntheticUser = (): User => {
     const now = new Date();
-    const fallbackUser = {
+    return {
       id: -1,
       openId: PUBLIC_USER_ID,
       email: PUBLIC_USER_EMAIL,
@@ -143,12 +86,56 @@ export async function createContext(
       updatedAt: now,
       lastSignedIn: now,
     };
-    process.stdout.write(`[CONTEXT-DIRECT] Returning fallback user: id=${fallbackUser.id}\n`);
-    return {
-      req: opts.req,
-      res: opts.res,
-      user: fallbackUser,
-    };
+  };
+
+  // Try to get authenticated user (completely optional - never throw)
+  let user: User | null = null;
+  
+  try {
+    // Check if there's a session token first (avoid calling authenticateRequest if no token)
+    const token = opts.req.cookies?.["terp_session"];
+    if (token) {
+      try {
+        user = await simpleAuth.authenticateRequest(opts.req);
+        process.stdout.write(`[CONTEXT] Authenticated user: id=${user.id}\n`);
+      } catch (authError) {
+        // Authentication failed - this is expected for anonymous users
+        // Don't log as error, just continue to public user provisioning
+        process.stdout.write(`[CONTEXT] No valid auth token, using public user\n`);
+      }
+    } else {
+      process.stdout.write(`[CONTEXT] No auth token in cookies, using public user\n`);
+    }
+  } catch (error) {
+    // Any error in auth check - continue to public user
+    process.stdout.write(`[CONTEXT] Auth check error (non-fatal): ${error}\n`);
   }
+
+  // If no authenticated user, provision public user
+  if (!user) {
+    try {
+      user = await getOrCreatePublicUser();
+      process.stdout.write(`[CONTEXT] Public user provisioned: id=${user.id}\n`);
+    } catch (error) {
+      // Database error - use synthetic user
+      process.stdout.write(`[CONTEXT] DB error, using synthetic user\n`);
+      user = createSyntheticUser();
+    }
+  }
+
+  // Final safety check - should never be null at this point
+  if (!user) {
+    process.stdout.write(`[CONTEXT] WARNING: User was null, creating synthetic\n`);
+    user = createSyntheticUser();
+  }
+
+  process.stdout.write(`[CONTEXT] RETURNING: user id=${user.id}, email=${user.email}\n`);
+
+  // ALWAYS return a valid context - never throw
+  return {
+    req: opts.req,
+    res: opts.res,
+    user, // Guaranteed to be non-null
+  };
 }
 
