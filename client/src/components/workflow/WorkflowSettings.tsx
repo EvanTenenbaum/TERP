@@ -20,6 +20,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface WorkflowSettingsProps {
   statuses: Array<{
@@ -39,6 +49,7 @@ export function WorkflowSettings({ statuses }: WorkflowSettingsProps) {
     slug: "",
     color: "#3B82F6",
   });
+  const [statusToDelete, setStatusToDelete] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -119,8 +130,13 @@ export function WorkflowSettings({ statuses }: WorkflowSettingsProps) {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this workflow status?")) {
-      deleteStatus.mutate({ id });
+    setStatusToDelete(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (statusToDelete !== null) {
+      deleteStatus.mutate({ id: statusToDelete });
+      setStatusToDelete(null);
     }
   };
 
