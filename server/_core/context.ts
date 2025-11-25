@@ -94,7 +94,7 @@ export async function createContext(
   };
 
   // Try to get authenticated user (completely optional - never throw)
-  let user: User | null = null;
+  let user: User | null = null; // Will be set to non-null before return
   
   try {
     // Check if there's a session token first (avoid calling authenticateRequest if no token)
