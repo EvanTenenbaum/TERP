@@ -13,13 +13,17 @@ WORKDIR /app
 # 3. Enable corepack for pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# 4. Copy all files (simplest approach - ensures everything is available)
-COPY . .
+# 4. Copy package files and patches first for better layer caching
+COPY package.json pnpm-lock.yaml ./
+COPY patches/ ./patches/
 
 # 5. Install dependencies with memory optimizations
 ENV NODE_OPTIONS="--max-old-space-size=768"
 RUN pnpm config set shamefully-hoist true && \
     pnpm install --no-frozen-lockfile
+
+# 6. Copy all remaining files (manager.ts needs full codebase)
+COPY . .
 
 # 6. Clean up
 RUN pnpm store prune && rm -rf /tmp/* /var/lib/apt/lists/*
