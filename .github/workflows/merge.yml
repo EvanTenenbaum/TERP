@@ -249,14 +249,17 @@ jobs:
       - name: Commit build status file
         if: always()
         run: |
+          # Don't push build status updates - they trigger unwanted DigitalOcean deployments
+          # Build status is still updated in the file for local reference
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add .github/BUILD_STATUS.md || true
           if git diff --staged --quiet; then
             echo "No changes to BUILD_STATUS.md"
           else
-            git commit -m "Update build status [skip ci]"
-            git push || echo "Failed to push build status"
+            echo "Build status updated locally (not pushed to avoid triggering deployments)"
+            # git commit -m "Update build status [skip ci] [skip deploy]"
+            # git push || echo "Failed to push build status"
           fi
       
       - name: Create fallback issue if comment failed
