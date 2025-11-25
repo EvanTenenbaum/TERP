@@ -59,6 +59,9 @@ async function getOrCreatePublicUser(): Promise<User | null> {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
+  // Direct console output (bypasses logger replacement) to verify function is called
+  process.stdout.write(`[CONTEXT-DIRECT] createContext CALLED for ${opts.req.url}\n`);
+  
   try {
     logger.info({ path: opts.req.url }, "[Context] createContext called");
     let user: User | null = null;
@@ -116,31 +119,35 @@ export async function createContext(
     }
 
     logger.info({ userId: user.id, email: user.email, openId: user.openId }, "[Context] Context created with user");
+    process.stdout.write(`[CONTEXT-DIRECT] Returning context with user: id=${user.id}, email=${user.email}\n`);
 
     return {
       req: opts.req,
       res: opts.res,
-      user,
+      user, // This should NEVER be null at this point
     };
   } catch (error) {
+    process.stdout.write(`[CONTEXT-DIRECT] ERROR in createContext: ${error}\n`);
     logger.error({ error }, "[Context] Fatal error in createContext");
     // Even on error, return a public user
     const now = new Date();
+    const fallbackUser = {
+      id: -1,
+      openId: PUBLIC_USER_ID,
+      email: PUBLIC_USER_EMAIL,
+      name: "Public Demo User",
+      role: "user",
+      loginMethod: null,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      lastSignedIn: now,
+    };
+    process.stdout.write(`[CONTEXT-DIRECT] Returning fallback user: id=${fallbackUser.id}\n`);
     return {
       req: opts.req,
       res: opts.res,
-      user: {
-        id: -1,
-        openId: PUBLIC_USER_ID,
-        email: PUBLIC_USER_EMAIL,
-        name: "Public Demo User",
-        role: "user",
-        loginMethod: null,
-        deletedAt: null,
-        createdAt: now,
-        updatedAt: now,
-        lastSignedIn: now,
-      },
+      user: fallbackUser,
     };
   }
 }
