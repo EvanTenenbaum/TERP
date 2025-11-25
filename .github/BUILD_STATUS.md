@@ -1,12 +1,12 @@
 # Latest Build Status
 
-**Last Updated:** 2025-11-25T21:27:46.143Z
-**Commit:** `f5003f6ec6c75b97a1952f14f56184b7c2243c11`
+**Last Updated:** 2025-11-25T21:42:11.510Z
+**Commit:** `f92ed2ada05d0175c23e98acb211f90603725e54`
 **Status:** ❌ FAILED
 
 ## ❌ Tests Failed
 
-**Commit:** `f5003f6`
+**Commit:** `f92ed2a`
 **Branch:** `main`
 
 ---
@@ -24,10 +24,10 @@ The main branch build has failed. **All agents must stop work immediately** and 
 **How to check this via GitHub CLI:**
 ```bash
 # View this commit's status
-gh api repos/EvanTenenbaum/TERP/commits/f5003f6ec6c75b97a1952f14f56184b7c2243c11/comments
+gh api repos/EvanTenenbaum/TERP/commits/f92ed2ada05d0175c23e98acb211f90603725e54/comments
 
 # View the workflow run
-gh run view 19684605816
+gh run view 19684942209
 
 # View recent workflow runs
 gh run list --limit 5
