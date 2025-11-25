@@ -345,8 +345,53 @@ async function executeGitWorkflow(taskId: string, files: string[]): Promise<stri
     }
   });
   
-  // Attempt deployment verification (gracefully degrades if doctl unavailable)
-  await verifyDeployment();
+  // INFRA-007: Merge branch to main after successful push
+  await safeGit(async (git) => {
+    console.log(chalk.blue(`🔄 Merging ${branchName} to main...`));
+    await git.checkout('main');
+    await git.pull('origin', 'main');
+    
+    try {
+      await git.merge([branchName, '--no-ff', '-m', `Merge ${branchName}: ${taskId} autonomous implementation`]);
+      await git.push('origin', 'main');
+      console.log(chalk.green(`✅ Successfully merged ${branchName} to main`));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('conflict') || errorMessage.includes('CONFLICT')) {
+        console.log(chalk.yellow(`⚠️  Merge conflict detected. Attempting auto-resolution...`));
+        // Try auto-resolution
+        try {
+          const { execSync } = await import('child_process');
+          execSync('bash scripts/auto-resolve-conflicts.sh', { stdio: 'inherit' });
+          await git.add('.');
+          await git.commit(`Merge ${branchName}: ${taskId} (auto-resolved conflicts)`);
+          await git.push('origin', 'main');
+          console.log(chalk.green(`✅ Auto-resolved conflicts and merged to main`));
+        } catch (resolveError) {
+          console.log(chalk.red(`❌ Auto-resolution failed. Manual intervention required.`));
+          console.log(chalk.yellow(`   Branch ${branchName} pushed but not merged to main.`));
+          throw resolveError;
+        }
+      } else {
+        throw error;
+      }
+    }
+  });
+  
+  // INFRA-004: Enforce deployment monitoring
+  console.log(chalk.blue(`📊 Monitoring deployment...`));
+  try {
+    const { execSync } = await import('child_process');
+    const commitSha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
+    execSync(`bash scripts/monitor-deployment-auto.sh ${commitSha}`, { 
+      stdio: 'inherit',
+      timeout: 30000 // 30 second timeout for monitoring start
+    });
+    console.log(chalk.green(`✅ Deployment monitoring started`));
+  } catch (error) {
+    // Don't fail the workflow if monitoring script fails
+    console.log(chalk.yellow(`⚠️  Deployment monitoring failed (non-blocking): ${error instanceof Error ? error.message : String(error)}`));
+  }
   
   return branchName;
 }
