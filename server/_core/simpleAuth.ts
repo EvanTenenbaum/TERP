@@ -6,7 +6,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "./env";
 
-const JWT_SECRET = env.JWT_SECRET || "your-secret-key-change-in-production";
+// JWT_SECRET is now validated in env.ts at module load time
+// No fallback - application will fail to start if JWT_SECRET is missing or insecure
+const JWT_SECRET = env.JWT_SECRET;
 const COOKIE_NAME = "terp_session";
 
 interface SessionPayload {
