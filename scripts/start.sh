@@ -14,17 +14,14 @@ else
   echo "✅ DATABASE_URL detected (Length: ${#DATABASE_URL})"
 fi
 
-# 2. MIGRATIONS (Fail Fast)
-echo "--- 🛠 RUNNING MIGRATIONS ---"
-# We run this in a subshell to ensure it doesn't pollute the main process
-node scripts/migrate.js
-MIGRATION_EXIT_CODE=$?
-
-if [ $MIGRATION_EXIT_CODE -ne 0 ]; then
-  echo "❌ MIGRATION FAILED (Exit Code: $MIGRATION_EXIT_CODE). Aborting deployment."
-  exit 1
-fi
-echo "✅ Migrations Complete."
+# 2. MIGRATIONS (Handled by autoMigrate.ts on server startup)
+# Migrations are now handled automatically by server/autoMigrate.ts
+# which runs when the server starts. This includes:
+# - Creating client_needs, vendor_supply, match_records tables
+# - Adding columns and indexes as needed
+# - All migrations are idempotent (safe to run multiple times)
+echo "--- 🛠 MIGRATIONS ---"
+echo "✅ Migrations will run automatically on server startup (via autoMigrate.ts)"
 
 # 3. START MAIN APPLICATION
 echo "--- 🟢 STARTING SERVER ---"
