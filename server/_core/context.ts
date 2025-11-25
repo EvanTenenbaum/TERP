@@ -1,12 +1,45 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { simpleAuth } from "./simpleAuth";
+import { getUserByEmail, getUser, upsertUser } from "../db";
+import { env } from "./env";
+import { logger } from "./logger";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: User | null;
 };
+
+const PUBLIC_USER_EMAIL =
+  env.PUBLIC_DEMO_USER_EMAIL || "demo+public@terp-app.local";
+const PUBLIC_USER_ID = env.PUBLIC_DEMO_USER_ID || "public-demo-user";
+
+async function getOrCreatePublicUser(): Promise<User | null> {
+  try {
+    const existing = await getUserByEmail(PUBLIC_USER_EMAIL);
+    if (existing) {
+      return existing;
+    }
+
+    await upsertUser({
+      openId: PUBLIC_USER_ID,
+      email: PUBLIC_USER_EMAIL,
+      name: "Public Demo User",
+      role: "user",
+      lastSignedIn: new Date(),
+    });
+
+    const created = await getUser(PUBLIC_USER_ID);
+    return created ?? null;
+  } catch (error) {
+    logger.warn(
+      { error },
+      "[Public Access] Failed to provision public demo user"
+    );
+    return null;
+  }
+}
 
 export async function createContext(
   opts: CreateExpressContextOptions
@@ -16,8 +49,12 @@ export async function createContext(
   try {
     user = await simpleAuth.authenticateRequest(opts.req);
   } catch (error) {
-    // Authentication is optional for public procedures.
+    // Authentication is optional.
     user = null;
+  }
+
+  if (!user) {
+    user = await getOrCreatePublicUser();
   }
 
   return {
