@@ -25,14 +25,26 @@ describe("Environment Variable Validator", () => {
       expect(result.errors).toContain("DATABASE_URL is required");
     });
 
-    it("should fail validation when JWT_SECRET is missing", () => {
+    it("should fail validation when JWT_SECRET and NEXTAUTH_SECRET are both missing", () => {
       process.env.DATABASE_URL = "mysql://user:pass@localhost:3306/db";
       delete process.env.JWT_SECRET;
+      delete process.env.NEXTAUTH_SECRET;
 
       const result = validateEnv();
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain("JWT_SECRET is required");
+      expect(result.errors).toContain("JWT_SECRET (or NEXTAUTH_SECRET as fallback) is required");
+    });
+    
+    it("should pass validation when NEXTAUTH_SECRET is provided as fallback", () => {
+      process.env.DATABASE_URL = "mysql://user:pass@localhost:3306/db";
+      delete process.env.JWT_SECRET;
+      process.env.NEXTAUTH_SECRET = "test-secret-key-minimum-32-chars";
+
+      const result = validateEnv();
+
+      expect(result.isValid).toBe(true);
+      expect(result.warnings).toContain("Using NEXTAUTH_SECRET as fallback - consider setting JWT_SECRET directly");
     });
 
     it("should pass validation when all required variables are present", () => {
@@ -87,7 +99,7 @@ describe("Environment Variable Validator", () => {
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain(
-        "JWT_SECRET must be at least 32 characters for security"
+        "JWT_SECRET (or NEXTAUTH_SECRET) must be at least 32 characters for security"
       );
     });
 
@@ -218,13 +230,14 @@ describe("Environment Variable Validator", () => {
     it("should collect all validation errors", () => {
       delete process.env.DATABASE_URL;
       delete process.env.JWT_SECRET;
+      delete process.env.NEXTAUTH_SECRET;
 
       const result = validateEnv();
 
       expect(result.isValid).toBe(false);
       expect(result.errors.length).toBeGreaterThanOrEqual(2);
       expect(result.errors).toContain("DATABASE_URL is required");
-      expect(result.errors).toContain("JWT_SECRET is required");
+      expect(result.errors).toContain("JWT_SECRET (or NEXTAUTH_SECRET as fallback) is required");
     });
 
     it("should collect both errors and warnings", () => {
