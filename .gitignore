@@ -124,3 +124,9 @@ deployment_details.json
 docs/WORKFLOW_SECRET_VALUES.md
 docs/SECRETS_LIST_FOR_GITHUB.md
 latest_deployment.json
+
+# Deployment status files
+.deployment-status-*.log
+.deployment-status-*.result
+.deployment-monitor-*.pid
+.deployment-monitor-*.lock

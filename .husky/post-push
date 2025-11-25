@@ -1,0 +1,100 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Only monitor deployments for main branch
+if [ "$CURRENT_BRANCH" != "main" ]; then
+  exit 0
+fi
+
+# Source shell config for environment variables
+if [ -f "$HOME/.zshrc" ]; then
+  . "$HOME/.zshrc" 2>/dev/null || true
+elif [ -f "$HOME/.bashrc" ]; then
+  . "$HOME/.bashrc" 2>/dev/null || true
+fi
+
+echo ""
+echo "🚀 Post-push: Starting deployment monitoring (non-blocking)..."
+echo ""
+
+# Get the commit SHA that was just pushed
+COMMIT_SHA=$(git rev-parse HEAD)
+STATUS_FILE=".deployment-status-${COMMIT_SHA:0:7}.log"
+PID_FILE=".deployment-monitor-${COMMIT_SHA:0:7}.pid"
+LOCK_FILE=".deployment-monitor-${COMMIT_SHA:0:7}.lock"
+
+# Check if monitoring already running for this commit
+if [ -f "$PID_FILE" ]; then
+  OLD_PID=$(cat "$PID_FILE" 2>/dev/null)
+  if ps -p "$OLD_PID" > /dev/null 2>&1; then
+    echo "⚠️  Monitoring already running (PID: $OLD_PID)"
+    echo "   Status file: $STATUS_FILE"
+    exit 0
+  else
+    # Stale PID file, remove it
+    rm -f "$PID_FILE"
+  fi
+fi
+
+# Check for lock file (another process starting)
+if [ -f "$LOCK_FILE" ]; then
+  echo "⚠️  Another monitoring process is starting..."
+  sleep 1
+  if [ -f "$PID_FILE" ]; then
+    echo "✅ Monitoring started by another process"
+    exit 0
+  fi
+fi
+
+# Create lock file
+touch "$LOCK_FILE"
+
+# Quick check: Is deployment already in database? (optional, graceful)
+if command -v mysql &> /dev/null && [ -n "$DB_HOST" ] && [ -n "$DB_PASS" ]; then
+  QUICK_CHECK=$(mysql --host="${DB_HOST}" --port="${DB_PORT:-25060}" \
+    --user="${DB_USER:-doadmin}" --password="${DB_PASS}" \
+    --database="${DB_NAME:-defaultdb}" --ssl-mode=REQUIRED \
+    --silent --skip-column-names \
+    -e "SELECT status FROM deployments WHERE commitSha='$COMMIT_SHA' ORDER BY createdAt DESC LIMIT 1;" 2>/dev/null || echo "")
+  
+  if [ "$QUICK_CHECK" == "success" ]; then
+    echo "✅ Deployment already succeeded (from previous push)"
+    rm -f "$LOCK_FILE"
+    exit 0
+  elif [ "$QUICK_CHECK" == "failed" ]; then
+    echo "⚠️  Previous deployment failed - monitoring new deployment..."
+  fi
+else
+  echo "ℹ️  Database check skipped (credentials not available)"
+fi
+
+# Start background monitoring (non-blocking)
+if [ -f "scripts/monitor-deployment-auto.sh" ]; then
+  # Run in background, write status to file
+  nohup bash scripts/monitor-deployment-auto.sh "$COMMIT_SHA" > "$STATUS_FILE" 2>&1 &
+  MONITOR_PID=$!
+  
+  # Save PID
+  echo "$MONITOR_PID" > "$PID_FILE"
+  
+  # Remove lock file
+  rm -f "$LOCK_FILE"
+  
+  echo "📊 Monitoring deployment in background (PID: $MONITOR_PID)"
+  echo "   Status file: $STATUS_FILE"
+  echo "   Check status: tail -f $STATUS_FILE"
+  echo "   Stop monitoring: kill $MONITOR_PID"
+  echo ""
+  echo "💡 Tip: Deployment typically takes 3-5 minutes"
+  echo "   You can continue working - check status when ready"
+  echo ""
+else
+  rm -f "$LOCK_FILE"
+  echo "⚠️  Warning: Deployment monitoring script not found"
+  echo "   Run manually: bash scripts/monitor-deployment-auto.sh $COMMIT_SHA"
+fi
+
+exit 0  # Never block push
+
