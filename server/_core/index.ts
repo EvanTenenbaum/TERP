@@ -144,6 +144,16 @@ async function startServer() {
     res.status(statusCode).json(ready);
   });
 
+  // Version check endpoint to verify deployed code
+  app.get("/api/version-check", (req, res) => {
+    res.json({
+      version: "2025-11-25-22:00",
+      hasContextLogging: true,
+      hasDebugEndpoint: true,
+      commit: process.env.GIT_COMMIT || "unknown",
+    });
+  });
+
   // Debug endpoint to test createContext directly
   app.get("/api/debug/context", async (req, res) => {
     try {
