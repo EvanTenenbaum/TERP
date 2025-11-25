@@ -31,14 +31,29 @@ async function getOrCreatePublicUser(): Promise<User | null> {
     });
 
     const created = await getUser(PUBLIC_USER_ID);
-    return created ?? null;
+    if (created) {
+      return created;
+    }
   } catch (error) {
     logger.warn(
       { error },
       "[Public Access] Failed to provision public demo user"
     );
-    return null;
   }
+
+  const now = new Date();
+  return {
+    id: -1,
+    openId: PUBLIC_USER_ID,
+    email: PUBLIC_USER_EMAIL,
+    name: "Public Demo User",
+    role: "user",
+    loginMethod: null,
+    deletedAt: null,
+    createdAt: now,
+    updatedAt: now,
+    lastSignedIn: now,
+  };
 }
 
 export async function createContext(
