@@ -1,26 +1,17 @@
 FROM node:20-slim
 
-# Install git (needed for bot operations)
+# Install git (required for bot operations)
 RUN apt-get update && apt-get install -y --no-install-recommends git curl && \
     rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
 
 # Enable pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy package files and patches (patches needed for pnpm install)
-COPY package.json pnpm-lock.yaml ./
-COPY patches/ ./patches/
+WORKDIR /app
 
-# Install dependencies
-RUN pnpm install --no-frozen-lockfile
+# Copy only the startup script (minimal, no code)
+COPY scripts/bot-start.sh /app/bot-start.sh
+RUN chmod +x /app/bot-start.sh
 
-# Copy ONLY essential files (what manager.ts actually needs)
-COPY scripts/ ./scripts/
-COPY docs/roadmaps/MASTER_ROADMAP.md ./docs/roadmaps/MASTER_ROADMAP.md
-COPY tsconfig.json ./
-COPY tsconfig.node.json ./
-
-# Start bot
-CMD ["npx", "tsx", "scripts/slack-bot.ts"]
+# Start the bot (script handles cloning, install, run)
+CMD ["/app/bot-start.sh"]
