@@ -166,7 +166,28 @@ export const dashboardRouter = router({
         offset: z.number().min(0).default(0),
       }))
       .query(async ({ input }) => {
-        const invoices = await arApDb.getInvoices({});
+        // Calculate date range based on timePeriod
+        let startDate: Date | undefined;
+        let endDate: Date | undefined;
+        
+        if (input.timePeriod !== "LIFETIME") {
+          const now = new Date();
+          endDate = new Date(); // End date is always today
+          
+          if (input.timePeriod === "YEAR") {
+            startDate = new Date(now.getFullYear(), 0, 1); // January 1st of current year
+          } else if (input.timePeriod === "QUARTER") {
+            const currentQuarter = Math.floor(now.getMonth() / 3);
+            startDate = new Date(now.getFullYear(), currentQuarter * 3, 1); // First day of current quarter
+          } else if (input.timePeriod === "MONTH") {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of current month
+          }
+        }
+        
+        const invoices = await arApDb.getInvoices({
+          startDate,
+          endDate,
+        });
         const allInvoices = invoices.invoices || [];
         
         // Group by customer and sum total sales
@@ -430,8 +451,34 @@ export const dashboardRouter = router({
         timePeriod: z.enum(["LIFETIME", "YEAR", "QUARTER", "MONTH"]).default("LIFETIME"),
       }))
       .query(async ({ input }) => {
-        const receivedPaymentsResult = await arApDb.getPayments({ paymentType: 'RECEIVED' });
-        const sentPaymentsResult = await arApDb.getPayments({ paymentType: 'SENT' });
+        // Calculate date range based on timePeriod
+        let startDate: Date | undefined;
+        let endDate: Date | undefined;
+        
+        if (input.timePeriod !== "LIFETIME") {
+          const now = new Date();
+          endDate = new Date(); // End date is always today
+          
+          if (input.timePeriod === "YEAR") {
+            startDate = new Date(now.getFullYear(), 0, 1); // January 1st of current year
+          } else if (input.timePeriod === "QUARTER") {
+            const currentQuarter = Math.floor(now.getMonth() / 3);
+            startDate = new Date(now.getFullYear(), currentQuarter * 3, 1); // First day of current quarter
+          } else if (input.timePeriod === "MONTH") {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of current month
+          }
+        }
+        
+        const receivedPaymentsResult = await arApDb.getPayments({ 
+          paymentType: 'RECEIVED',
+          startDate,
+          endDate,
+        });
+        const sentPaymentsResult = await arApDb.getPayments({ 
+          paymentType: 'SENT',
+          startDate,
+          endDate,
+        });
         
         const cashCollected = (receivedPaymentsResult.payments || []).reduce((sum: number, p: Payment) => sum + Number(p.amount || 0), 0);
         const cashSpent = (sentPaymentsResult.payments || []).reduce((sum: number, p: Payment) => sum + Number(p.amount || 0), 0);
