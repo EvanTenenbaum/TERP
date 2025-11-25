@@ -212,6 +212,40 @@ When significant features are deployed, verify they're actually live:
    - Create bug tasks for issues found
    - Update status accurately
 
+#### TERP Deployment Procedure (Docker Workflow)
+
+1. **Confirm Docker assets**
+   - Root `Dockerfile` exists
+   - `.do/app.yaml` includes `dockerfile_path: Dockerfile`
+
+2. **Push code to `main`**
+   ```bash
+   git status
+   git add <files>
+   git commit -m "feat: …"
+   git push origin main
+   ```
+
+3. **When `.do/app.yaml` changes, apply the spec**
+   ```bash
+   TERP_APP_ID="1fd40be5-b9af-4e71-ab1d-3af0864a7da4"
+   doctl apps update $TERP_APP_ID --spec .do/app.yaml
+   ```
+
+4. **Monitor deployment**
+   ```bash
+   doctl apps list-deployments $TERP_APP_ID --format ID,Phase,Created --no-header | head -1
+   ```
+   Deployments are complete when the latest ID shows `ACTIVE`. Also verify
+   https://terp-app-b9s35.ondigitalocean.app loads.
+
+5. **Lockfile maintenance**
+   - Preferred: trigger `sync-lockfile` or `fix-lockfile-now` workflows
+   - Manual: run `pnpm install` locally and commit `pnpm-lock.yaml`
+
+This replaces the old “disable frozen lockfile” instructions; Docker now owns
+the entire build.
+
 5. **Create verification report:**
    ```markdown
    # Production Verification Report

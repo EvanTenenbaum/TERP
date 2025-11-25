@@ -44,49 +44,29 @@ Heroku buildpack (used by DigitalOcean) automatically:
 - ❌ `nixpacks.toml` - Not used (DigitalOcean uses Heroku buildpack)
 - ❌ `build_command` - Runs AFTER buildpack's install, too late
 
-### ✅ The ONLY Reliable Solution
+### ✅ Final Resolution (Implemented)
 
-**Update `pnpm-lock.yaml` to match `package.json`**
+**Switch TERP to a Docker-based deployment.**
 
-This is the only way to fix the buildpack's automatic install step.
+- Root-level `Dockerfile` now builds the app (installs pnpm, installs deps with a
+  fallback, runs `pnpm run build:production`).
+- `.do/app.yaml` references the Dockerfile via `dockerfile_path`, so App Platform
+  bypasses the Heroku buildpack entirely.
+- Lockfile sync is still recommended, but it no longer hard-blocks deploys.
 
 ## 🚀 Implementation Options
 
-### Option 1: Manual Update (Immediate Fix)
+### Option Breakdown (Current + Legacy)
 
-```bash
-# Run locally:
-pnpm install
+1. **Docker Deploy (CURRENT – preferred)**
+   - Keep `Dockerfile` + `.do/app.yaml` in sync
+   - After changes, run `doctl apps update <APP_ID> --spec .do/app.yaml`
 
-# Commit and push:
-git add pnpm-lock.yaml
-git commit -m "fix: Update pnpm-lock.yaml to sync with package.json"
-git push origin main
-```
-
-### Option 2: Use Update Script
-
-```bash
-./scripts/update-lockfile-and-deploy.sh
-```
-
-### Option 3: GitHub Action (Automatic)
-
-Created `.github/workflows/update-lockfile.yml` that:
-- Detects when `package.json` changes
-- Automatically updates `pnpm-lock.yaml`
-- Commits and pushes the update
-
-**Note:** This requires the workflow to have write permissions.
-
-### Option 4: Use Docker for Main App (Bypass Buildpack)
-
-Convert main app to use Docker (like bot worker):
-- Create `Dockerfile` for main app
-- Update `.do/app.yaml` to use `dockerfile_path` instead of `environment_slug`
-- This bypasses the buildpack entirely
-
-**Trade-off:** More complex setup, but full control.
+2. **Lockfile Sync (still useful)**
+   - `pnpm install` locally **or**
+   - `./scripts/update-lockfile-and-deploy.sh` **or**
+   - Trigger `sync-lockfile` / `fix-lockfile-now` GitHub workflows
+   - Ensures deterministic builds even under Docker
 
 ## 📋 Work Preserved
 

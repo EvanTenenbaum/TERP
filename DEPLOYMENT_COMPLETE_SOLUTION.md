@@ -21,42 +21,35 @@ pnpm-lock.yaml is not up to date with package.json
 - ❌ `nixpacks.toml` - Not used (DigitalOcean uses Heroku buildpack)
 - ❌ `build_command` - Runs AFTER buildpack's install, too late
 
-## ✅ The ONLY Reliable Solution
+## ✅ Final Solution (Implemented)
 
-**Update the lockfile to match package.json.**
+We moved the TERP app to a Docker-based deployment:
 
-### Option 1: Run Script (Recommended)
+- Root-level `Dockerfile` installs pnpm, installs dependencies (with a fallback
+  to `--no-frozen-lockfile`), and runs `pnpm run build:production`.
+- `.do/app.yaml` now references the Dockerfile via `dockerfile_path`, so
+  DigitalOcean builds our container image directly instead of using the Heroku
+  buildpack.
+- Lockfile sync is still recommended for deterministic builds, but it no longer
+  hard-blocks deploys.
 
-```bash
-./scripts/update-lockfile-and-deploy.sh
-```
+### Docker Deployment Steps
 
-This script:
-1. Runs `pnpm install` to sync lockfile
-2. Commits the updated `pnpm-lock.yaml`
-3. Pushes to main (triggers deployment)
+1. Ensure `Dockerfile` + `.do/app.yaml` are committed.
+2. Push to `main`.
+3. If `.do/app.yaml` changed, run  
+   `doctl apps update 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --spec .do/app.yaml`.
+4. Monitor with `doctl apps list-deployments …` until the latest deployment is
+   `ACTIVE`.
 
-### Option 2: Manual Update
+### Lockfile Maintenance (Still useful)
 
-```bash
-# In your local environment:
-pnpm install
+- Run `./scripts/update-lockfile-and-deploy.sh`, or
+- Trigger `sync-lockfile` / `fix-lockfile-now` workflows, or
+- Run `pnpm install`, commit `pnpm-lock.yaml`, and push.
 
-# Commit and push:
-git add pnpm-lock.yaml
-git commit -m "fix: Update pnpm-lock.yaml to sync with package.json"
-git push origin main
-```
-
-## 🔧 Alternative: Use Docker Build (If Lockfile Can't Be Updated)
-
-If updating the lockfile isn't possible, we can configure the main app to use Docker instead of the buildpack:
-
-1. Create a `Dockerfile` for the main app
-2. Update `.do/app.yaml` to use Docker build
-3. This bypasses the buildpack entirely
-
-**Trade-off:** More complex, but gives full control.
+These keep the Docker build reproducible even though the platform no longer
+forces `--frozen-lockfile`.
 
 ## 📋 Protocol Analysis Results
 
@@ -85,20 +78,12 @@ If updating the lockfile isn't possible, we can configure the main app to use Do
 
 ### Immediate (To Fix Deployment)
 
-1. **Run lockfile update script:**
-   ```bash
-   ./scripts/update-lockfile-and-deploy.sh
-   ```
+1. **Use Docker workflow (current default)**
+   - Update code + Dockerfile/spec if needed
+   - `git push origin main`
+   - If spec changed: `doctl apps update <APP_ID> --spec .do/app.yaml`
 
-2. **OR manually update:**
-   ```bash
-   pnpm install
-   git add pnpm-lock.yaml
-   git commit -m "fix: Update pnpm-lock.yaml"
-   git push origin main
-   ```
-
-3. **Monitor deployment:**
+2. **Monitor deployment:**
    ```bash
    doctl apps list-deployments [APP_ID] --format ID,Phase,Created
    ```
@@ -128,9 +113,9 @@ If updating the lockfile isn't possible, we can configure the main app to use Do
 
 ## 🚀 Next Steps
 
-1. Update lockfile (run script or manual)
-2. Wait for deployment to complete
-3. Verify both services are ACTIVE
+1. Push code + Dockerfile/spec changes
+2. Apply spec if needed via `doctl apps update … --spec .do/app.yaml`
+3. Wait for deployment to complete (should be `ACTIVE`)
 4. Test Slack bot functionality
-5. Mark all goals complete
+5. Mark roadmap tasks complete once production is verified
 
