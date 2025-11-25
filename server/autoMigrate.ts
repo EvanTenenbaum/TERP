@@ -28,6 +28,108 @@ export async function runAutoMigrations() {
   }
 
   try {
+    // Create client_needs table if it doesn't exist
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS client_needs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          clientId INT NOT NULL,
+          strain VARCHAR(100) DEFAULT NULL,
+          category VARCHAR(100) DEFAULT NULL,
+          subcategory VARCHAR(100) DEFAULT NULL,
+          grade VARCHAR(20) DEFAULT NULL,
+          quantityMin VARCHAR(20) DEFAULT NULL,
+          quantityMax VARCHAR(20) DEFAULT NULL,
+          priceMax VARCHAR(20) DEFAULT NULL,
+          neededBy TIMESTAMP NULL DEFAULT NULL,
+          priority ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') NOT NULL DEFAULT 'MEDIUM',
+          status ENUM('ACTIVE', 'FULFILLED', 'EXPIRED', 'CANCELLED') NOT NULL DEFAULT 'ACTIVE',
+          notes TEXT DEFAULT NULL,
+          createdBy INT NOT NULL,
+          createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_client (clientId),
+          INDEX idx_status (status),
+          INDEX idx_priority (priority),
+          INDEX idx_needed_by (neededBy)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created client_needs table");
+    } catch (error) {
+      if (error instanceof Error ? error.message : String(error).includes('already exists')) {
+        console.log("  ℹ️  client_needs table already exists");
+      } else {
+        console.log("  ⚠️  client_needs table:", error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    // Create vendor_supply table if it doesn't exist
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS vendor_supply (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          vendorId INT NOT NULL,
+          strain VARCHAR(100) DEFAULT NULL,
+          category VARCHAR(100) DEFAULT NULL,
+          subcategory VARCHAR(100) DEFAULT NULL,
+          grade VARCHAR(20) DEFAULT NULL,
+          quantityAvailable VARCHAR(20) DEFAULT NULL,
+          pricePerUnit VARCHAR(20) DEFAULT NULL,
+          availableUntil TIMESTAMP NULL DEFAULT NULL,
+          status ENUM('AVAILABLE', 'RESERVED', 'SOLD', 'EXPIRED') NOT NULL DEFAULT 'AVAILABLE',
+          notes TEXT DEFAULT NULL,
+          createdBy INT NOT NULL,
+          createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_vendor (vendorId),
+          INDEX idx_status (status),
+          INDEX idx_available_until (availableUntil)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created vendor_supply table");
+    } catch (error) {
+      if (error instanceof Error ? error.message : String(error).includes('already exists')) {
+        console.log("  ℹ️  vendor_supply table already exists");
+      } else {
+        console.log("  ⚠️  vendor_supply table:", error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    // Create match_records table if it doesn't exist
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS match_records (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          clientId INT NOT NULL,
+          clientNeedId INT DEFAULT NULL,
+          inventoryBatchId INT DEFAULT NULL,
+          vendorSupplyId INT DEFAULT NULL,
+          matchType ENUM('EXACT', 'CLOSE', 'HISTORICAL') NOT NULL,
+          confidenceScore VARCHAR(10) DEFAULT NULL,
+          matchReasons JSON DEFAULT NULL,
+          userAction ENUM('CREATED_QUOTE', 'CONTACTED_VENDOR', 'DISMISSED') DEFAULT NULL,
+          actionAt TIMESTAMP NULL DEFAULT NULL,
+          actionBy INT DEFAULT NULL,
+          resultedInSale BOOLEAN NOT NULL DEFAULT FALSE,
+          saleOrderId INT DEFAULT NULL,
+          createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_client (clientId),
+          INDEX idx_need (clientNeedId),
+          INDEX idx_batch (inventoryBatchId),
+          INDEX idx_vendor_supply (vendorSupplyId),
+          INDEX idx_match_type (matchType),
+          INDEX idx_user_action (userAction)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created match_records table");
+    } catch (error) {
+      if (error instanceof Error ? error.message : String(error).includes('already exists')) {
+        console.log("  ℹ️  match_records table already exists");
+      } else {
+        console.log("  ⚠️  match_records table:", error instanceof Error ? error.message : String(error));
+      }
+    }
+
     // Add openthcId column
     try {
       await db.execute(sql`ALTER TABLE strains ADD COLUMN openthcId VARCHAR(255) NULL`);
