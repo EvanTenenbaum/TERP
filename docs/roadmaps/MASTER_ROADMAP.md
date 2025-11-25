@@ -3809,9 +3809,15 @@ Completes pricing feature set, enables price monitoring.
     - User can search and select products
     - Selected products added to order line items
   - **Estimate:** 4-8 hours (requires investigation and fix)
-  - **Status:** 📋 PLANNED
+  - **Actual Time:** ~15 minutes
+  - **Status:** ✅ COMPLETE (2025-01-27)
   - **Discovered:** E2E Testing Session 2025-11-22
-  - **Note:** This is a critical blocker for order creation workflow
+  - **Implementation:** 
+    - Fixed empty `onAddItem` handler that did nothing
+    - Added smooth scroll to InventoryBrowser section when button clicked
+    - Auto-focuses search input after scroll for better UX
+    - Added id='inventory-browser-section' to InventoryBrowser Card
+  - **Key Commits:** TBD (pending merge)
 
 
 - [ ] **BUG-013: Inventory Table Not Displaying Data** (Created: 2025-11-22) 🔴 CRITICAL
