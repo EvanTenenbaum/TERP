@@ -15,15 +15,7 @@ services:
       repo: EvanTenenbaum/TERP
       branch: main
       deploy_on_push: true
-    
-    # Build configuration
-    build_command: pnpm install --no-frozen-lockfile && pnpm run build:production
-    run_command: pnpm start
-    
-    # Environment
-    environment_slug: node-js
-    
-    # Instance configuration
+    dockerfile_path: Dockerfile
     instance_count: 1
     instance_size_slug: basic-xs
     
@@ -46,15 +38,6 @@ services:
     
     # Environment variables (sensitive values should be set in DO control panel)
     envs:
-      # Build-time: Disable CI mode to allow lockfile updates during build
-      # CI mode automatically enables frozen-lockfile
-      - key: CI
-        value: "false"
-        scope: BUILD_TIME
-      # Also set pnpm config as backup
-      - key: PNPM_CONFIG_FROZEN_LOCKFILE
-        value: "false"
-        scope: BUILD_TIME
       - key: NODE_ENV
         value: production
       - key: RATE_LIMIT_GET
