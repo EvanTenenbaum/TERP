@@ -36,6 +36,85 @@ echo "Found conflicts in:"
 echo "$CONFLICTED_FILES"
 echo ""
 
+# Function to resolve roadmap conflicts
+resolve_roadmap_conflict() {
+    local file=$1
+    if [[ "$file" != *"MASTER_ROADMAP.md"* ]]; then
+        return 1
+    fi
+    
+    echo -e "${YELLOW}🗺️  Resolving roadmap conflict: $file${NC}"
+    
+    # Get both versions
+    git show :2:"$file" > /tmp/ours_roadmap.txt 2>/dev/null || return 1
+    git show :3:"$file" > /tmp/theirs_roadmap.txt 2>/dev/null || return 1
+    
+    # Strategy: Merge task sections intelligently
+    # 1. Extract task sections from both versions
+    # 2. Combine unique tasks (by task ID)
+    # 3. Preserve completion status from both
+    
+    # Use a simple merge strategy: take ours, but preserve their completed tasks
+    # This is a simplified approach - in production, you might want more sophisticated merging
+    
+    # For now, use theirs if it has more content (likely more up-to-date)
+    # Or use ours if we have newer tasks
+    
+    # Check which version has more task entries
+    OUR_TASKS=$(grep -c "^###.*:" /tmp/ours_roadmap.txt || echo "0")
+    THEIR_TASKS=$(grep -c "^###.*:" /tmp/theirs_roadmap.txt || echo "0")
+    
+    if [ "$THEIR_TASKS" -gt "$OUR_TASKS" ]; then
+        git checkout --theirs "$file"
+        git add "$file"
+        echo -e "${GREEN}✅ Using their version (more tasks: $THEIR_TASKS vs $OUR_TASKS)${NC}"
+        ((RESOLVED_COUNT++))
+        return 0
+    else
+        git checkout --ours "$file"
+        git add "$file"
+        echo -e "${GREEN}✅ Using our version (more tasks: $OUR_TASKS vs $THEIR_TASKS)${NC}"
+        ((RESOLVED_COUNT++))
+        return 0
+    fi
+}
+
+# Function to resolve session registry conflicts
+resolve_session_conflict() {
+    local file=$1
+    if [[ "$file" != *"ACTIVE_SESSIONS.md"* ]]; then
+        return 1
+    fi
+    
+    echo -e "${YELLOW}📋 Resolving session registry conflict: $file${NC}"
+    
+    # Get both versions
+    git show :2:"$file" > /tmp/ours_sessions.txt 2>/dev/null || return 1
+    git show :3:"$file" > /tmp/theirs_sessions.txt 2>/dev/null || return 1
+    
+    # Strategy: Merge session lists
+    # Sessions are typically listed with task IDs, so we want to combine unique sessions
+    
+    # Extract session entries (lines with task IDs or session markers)
+    OUR_SESSIONS=$(grep -c "Session\|TASK\|BUG\|QA\|INFRA\|ST-" /tmp/ours_sessions.txt || echo "0")
+    THEIR_SESSIONS=$(grep -c "Session\|TASK\|BUG\|QA\|INFRA\|ST-" /tmp/theirs_sessions.txt || echo "0")
+    
+    # Use the version with more sessions (more complete)
+    if [ "$THEIR_SESSIONS" -gt "$OUR_SESSIONS" ]; then
+        git checkout --theirs "$file"
+        git add "$file"
+        echo -e "${GREEN}✅ Using their version (more sessions: $THEIR_SESSIONS vs $OUR_SESSIONS)${NC}"
+        ((RESOLVED_COUNT++))
+        return 0
+    else
+        git checkout --ours "$file"
+        git add "$file"
+        echo -e "${GREEN}✅ Using our version (more sessions: $OUR_SESSIONS vs $THEIR_SESSIONS)${NC}"
+        ((RESOLVED_COUNT++))
+        return 0
+    fi
+}
+
 # Function to resolve documentation merge conflicts
 resolve_doc_conflict() {
     local file=$1
@@ -144,7 +223,12 @@ while IFS= read -r file; do
     [ -z "$file" ] && continue
 
     # Try different resolution strategies
-    if resolve_doc_conflict "$file"; then
+    # Order matters: roadmap and sessions first (most common conflicts)
+    if resolve_roadmap_conflict "$file"; then
+        continue
+    elif resolve_session_conflict "$file"; then
+        continue
+    elif resolve_doc_conflict "$file"; then
         continue
     elif resolve_config_conflict "$file"; then
         continue
