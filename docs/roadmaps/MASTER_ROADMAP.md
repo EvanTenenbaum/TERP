@@ -1206,6 +1206,50 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 - [ ] Zero TypeScript errors
 - [ ] Session archived
 
+### INFRA-012: Deploy TERP Commander Slack Bot
+
+**Status:** ⏳ IN PROGRESS  
+**Priority:** 🟡 P1 (HIGH)  
+**Estimate:** 4-6 hours  
+**Module:** `terp-commander/` (separate repository)  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/INFRA-012.md` (to be created)
+
+**Problem:** TERP Commander Slack bot needs to be deployed as a separate service to avoid lockfile conflicts with main TERP app.
+
+**Current Status:**
+- ✅ Repository created: `EvanTenenbaum/terp-commander` (private)
+- ✅ Code pushed to GitHub
+- ✅ DigitalOcean app created: `2df472a8-2f48-49c7-8de2-16a68d5842d0`
+- ⏳ Deployment in progress (fixing lockfile issue)
+- ❌ Environment variables need to be set
+- ❌ Bot not yet responding in Slack
+
+**Objectives:**
+
+1. Fix Dockerfile to handle missing lockfile gracefully
+2. Set all required environment variables in DigitalOcean
+3. Verify bot deployment succeeds
+4. Test bot responds to Slack commands ("status", "execute")
+5. Document deployment process
+
+**Deliverables:**
+
+- [ ] Dockerfile updated (uses --no-frozen-lockfile for initial deployment)
+- [ ] Environment variables set (SLACK_BOT_TOKEN, SLACK_APP_TOKEN, GITHUB_TOKEN, GEMINI_API_KEY)
+- [ ] Bot deployment successful (ACTIVE status)
+- [ ] Bot responds to "status" command in Slack
+- [ ] Bot responds to "execute" command in Slack
+- [ ] Deployment documentation complete
+- [ ] All tests passing
+- [ ] Session archived
+
+**Technical Details:**
+- Repository: https://github.com/EvanTenenbaum/terp-commander
+- App ID: `2df472a8-2f48-49c7-8de2-16a68d5842d0`
+- Architecture: Separate repo, clones TERP at runtime for roadmap access
+- Dependencies: Minimal (~10 packages vs 1000+ in TERP)
+
 ---
 
 ## 🔜 Next Sprint (Nov 19-Dec 2, 2025)
