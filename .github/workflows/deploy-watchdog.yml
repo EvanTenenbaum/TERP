@@ -2,6 +2,10 @@ name: Deploy Watchdog
 
 on:
   push:
+    paths-ignore:
+      - '.github/workflows/**'  # Don't trigger on workflow file changes
+      - 'docs/**'
+      - '*.md'
     branches: [ main ]
 
 jobs:

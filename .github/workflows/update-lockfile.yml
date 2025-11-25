@@ -6,6 +6,8 @@ on:
     paths:
       - 'package.json'
       - 'pnpm-lock.yaml'
+    paths-ignore:
+      - '.github/workflows/**'  # Don't trigger on workflow file changes
 
 jobs:
   update-lockfile:
