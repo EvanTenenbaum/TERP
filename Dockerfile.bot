@@ -13,12 +13,16 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY package.json pnpm-lock.yaml ./
 COPY patches/ ./patches/
 
-# Install dependencies with fallback strategies
-RUN pnpm install --no-frozen-lockfile || \
-    (echo "First install failed, retrying..." && pnpm install --no-frozen-lockfile)
+# Install dependencies
+RUN pnpm install --no-frozen-lockfile
 
-# Copy everything else
-COPY . .
+# Copy ONLY what the bot actually needs (not everything)
+COPY scripts/ ./scripts/
+COPY docs/roadmaps/ ./docs/roadmaps/
+COPY docs/prompts/ ./docs/prompts/ 2>/dev/null || mkdir -p ./docs/prompts
+COPY docs/templates/ ./docs/templates/ 2>/dev/null || mkdir -p ./docs/templates
+COPY shared/ ./shared/ 2>/dev/null || mkdir -p ./shared
+COPY tsconfig.json tsconfig.node.json ./
 
 # Start bot
 CMD ["npx", "tsx", "scripts/slack-bot.ts"]
