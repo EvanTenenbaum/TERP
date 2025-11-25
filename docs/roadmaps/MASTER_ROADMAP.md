@@ -1250,6 +1250,54 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 - Architecture: Separate repo, clones TERP at runtime for roadmap access
 - Dependencies: Minimal (~10 packages vs 1000+ in TERP)
 
+### ROADMAP-001: Process Consolidated Roadmap Update Report
+
+**Status:** 📋 PLANNED  
+**Priority:** 🔴 P0 (CRITICAL)  
+**Estimate:** 8-12 hours  
+**Module:** `docs/roadmaps/MASTER_ROADMAP.md`, `CONSOLIDATED_ROADMAP_UPDATE_REPORT.md`  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/ROADMAP-001.md` (to be created)
+
+**Problem:** Consolidated roadmap update report contains 35 new tasks and 3 status updates that need to be processed and added to the roadmap following protocol.
+
+**Source Document:** `CONSOLIDATED_ROADMAP_UPDATE_REPORT.md` (1635 lines)
+
+**Contents:**
+- ✅ 1 task already complete (QA-045) - no action needed
+- ❌ 3 tasks with code complete, need commit and roadmap update (QA-036, INFRA-009, INFRA-010)
+- 📋 35 new tasks from audit and testing (15 P0, 13 P1, 7 P2)
+- **Estimated total effort:** 53 days (424 hours) ≈ 10.6 weeks
+
+**Objectives:**
+
+1. Review consolidated roadmap update report completely
+2. Process 3 uncommitted tasks (QA-036, INFRA-009, INFRA-010):
+   - Commit code changes
+   - Update roadmap status to complete
+3. Add 35 new tasks to roadmap following protocol:
+   - Generate task IDs (next available for each category)
+   - Create task entries with all required fields
+   - Add to appropriate roadmap section
+   - Generate prompts for each task
+4. Validate all roadmap changes
+5. Ensure no duplicate tasks
+6. Verify all task IDs are unique
+
+**Deliverables:**
+
+- [ ] Consolidated report reviewed and understood
+- [ ] 3 uncommitted tasks committed and marked complete in roadmap
+- [ ] 35 new tasks added to roadmap with proper IDs
+- [ ] All tasks have required fields (Status, Priority, Estimate, Module, Dependencies, Objectives, Deliverables)
+- [ ] Prompts generated for all new tasks
+- [ ] Roadmap validated (pnpm roadmap:validate passes)
+- [ ] No duplicate task IDs
+- [ ] All changes committed and pushed
+- [ ] Session archived
+
+**Reference:** See `CONSOLIDATED_ROADMAP_UPDATE_REPORT.md` for complete details.
+
 ---
 
 ## 🔜 Next Sprint (Nov 19-Dec 2, 2025)
