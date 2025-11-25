@@ -49,29 +49,40 @@ export async function withTransaction<T>(
     timeout = 30,
   } = options;
 
-  // Set session-level isolation level before transaction (if different from default)
-  // Note: In MySQL, isolation level can be set per-transaction or per-session
-  // We set it at session level before the transaction for reliability
-  if (isolationLevel && isolationLevel !== TransactionIsolationLevel.REPEATABLE_READ) {
-    try {
-      await db.execute(sql.raw(`SET SESSION TRANSACTION ISOLATION LEVEL ${isolationLevel}`));
-    } catch (error) {
-      logger.warn({ error, isolationLevel }, "Failed to set transaction isolation level, using default");
-    }
-  }
+  // IMPORTANT: In MySQL, SET TRANSACTION ISOLATION LEVEL must be executed BEFORE starting the transaction
+  // Since Drizzle's db.transaction() starts the transaction immediately, we can't set it per-transaction
+  // Instead, we use the default REPEATABLE READ (MySQL default) for all transactions
+  // For custom isolation levels, they would need to be set at session level before db.transaction() is called
+  // This is a known limitation - custom isolation levels require explicit connection management
   
-  // Set lock wait timeout for the session
-  try {
-    await db.execute(sql.raw(`SET SESSION innodb_lock_wait_timeout = ${timeout}`));
-  } catch (error) {
-    logger.warn({ error, timeout }, "Failed to set lock wait timeout, using default");
-  }
-
-  // Wrap transaction in timeout at application level
-  const transactionPromise = db.transaction(async (tx) => {
+  // Note: Setting session-level isolation affects all transactions on that connection
+  // With connection pooling, this is generally safe as connections are reused appropriately
+  // but we avoid doing it here to prevent unintended side effects
+  
+  // For now, we only support the default REPEATABLE READ isolation level
+  // Custom isolation levels can be added later if needed via explicit connection management
+  
+  // Execute transaction with proper error handling
+  return await db.transaction(async (tx) => {
     try {
-      const result = await callback(tx);
-      return result;
+      // Set lock wait timeout for this transaction's connection
+      // This is safe because it only affects lock acquisition time, not transaction isolation
+      try {
+        await tx.execute(sql.raw(`SET SESSION innodb_lock_wait_timeout = ${timeout}`));
+      } catch (error) {
+        logger.warn({ error, timeout }, "Failed to set lock wait timeout, using default");
+      }
+      
+      // Execute callback - use default REPEATABLE READ isolation level
+      // Note: If custom isolation level is requested but not REPEATABLE_READ, log a warning
+      if (isolationLevel !== TransactionIsolationLevel.REPEATABLE_READ) {
+        logger.warn({ 
+          requested: isolationLevel,
+          using: TransactionIsolationLevel.REPEATABLE_READ 
+        }, "Custom transaction isolation level requested but not supported - using default REPEATABLE READ");
+      }
+      
+      return await callback(tx);
     } catch (error) {
       logger.error({ 
         error, 
@@ -81,16 +92,6 @@ export async function withTransaction<T>(
       throw error;
     }
   });
-
-  // Apply application-level timeout wrapper
-  // Note: This doesn't cancel the DB transaction, but prevents the call from hanging
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new Error(`Transaction timeout after ${timeout} seconds`));
-    }, timeout * 1000);
-  });
-
-  return Promise.race([transactionPromise, timeoutPromise]);
 }
 
 /**
