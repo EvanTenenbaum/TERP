@@ -1,12 +1,42 @@
-// JWT_SECRET is required - no fallback allowed
+// JWT_SECRET with fallback to NEXTAUTH_SECRET for backward compatibility
+// Production environments may have NEXTAUTH_SECRET configured (from previous auth system)
 const getJwtSecret = (): string => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret === "terp-secret-key-change-in-production" || secret === "your-secret-key-change-in-production") {
-    throw new Error("JWT_SECRET environment variable is required and must be set to a secure value (minimum 32 characters). Application cannot start without it.");
+  // Try JWT_SECRET first, fall back to NEXTAUTH_SECRET
+  const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
+  
+  const defaultSecrets = [
+    "terp-secret-key-change-in-production",
+    "your-secret-key-change-in-production"
+  ];
+  
+  if (!secret) {
+    throw new Error(
+      "JWT_SECRET (or NEXTAUTH_SECRET) environment variable is required. " +
+      "Set JWT_SECRET to a secure value (minimum 32 characters). " +
+      "NEXTAUTH_SECRET is accepted as a fallback for backward compatibility."
+    );
   }
+  
+  if (defaultSecrets.includes(secret)) {
+    throw new Error(
+      "JWT_SECRET must be set to a secure value, not a default placeholder. " +
+      "Current value appears to be a default that should be changed."
+    );
+  }
+  
   if (secret.length < 32) {
-    throw new Error("JWT_SECRET must be at least 32 characters for security. Current length: " + secret.length);
+    throw new Error(
+      `JWT_SECRET must be at least 32 characters for security. Current length: ${secret.length}`
+    );
   }
+  
+  // Log which variable is being used (helpful for debugging)
+  if (process.env.JWT_SECRET) {
+    console.log("✅ Using JWT_SECRET for authentication");
+  } else if (process.env.NEXTAUTH_SECRET) {
+    console.log("✅ Using NEXTAUTH_SECRET as fallback for authentication (consider setting JWT_SECRET)");
+  }
+  
   return secret;
 };
 

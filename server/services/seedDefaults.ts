@@ -276,6 +276,9 @@ export async function seedDefaultChartOfAccounts() {
 /**
  * Master function to seed all defaults
  * This is idempotent and safe to call multiple times
+ * 
+ * IMPORTANT: This function is NON-FATAL - it will not crash the server if seeding fails.
+ * This ensures the health check endpoints are always available during deployment.
  */
 export async function seedAllDefaults() {
   console.log("🌱 Starting default data seeding...");
@@ -292,8 +295,10 @@ export async function seedAllDefaults() {
 
     console.log("✅ All defaults seeded successfully!");
   } catch (error) {
-    console.error("❌ Error seeding defaults:", error);
-    throw error;
+    // Log the error but DON'T throw - seeding failure should not crash the server
+    // This is critical for deployment health checks to succeed
+    console.error("❌ Error seeding defaults (non-fatal, server will continue):", error);
+    console.warn("⚠️ Some default data may be missing - the app will still function but some features may be unavailable");
   }
 }
 

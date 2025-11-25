@@ -158,7 +158,7 @@ async function startServer() {
       // Ignore errors reading build version
     }
     res.json({
-      version: "2025-11-25-v3",
+      version: "2025-11-25-v4",
       build: buildVersion,
       hasContextLogging: true,
       hasDebugEndpoint: true,

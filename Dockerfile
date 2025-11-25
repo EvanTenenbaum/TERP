@@ -1,8 +1,8 @@
 FROM node:20-slim AS base
 
-# Force rebuild: 2025-11-25-v3
-LABEL build.version="2025-11-25-v3" \
-      build.description="Public dashboard access fix"
+# Force rebuild: 2025-11-25-v4
+LABEL build.version="2025-11-25-v4" \
+      build.description="JWT_SECRET fallback + non-fatal seeding fix"
 
 # Install corepack/pnpm and system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \

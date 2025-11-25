@@ -43,14 +43,17 @@ export function validateEnv(): EnvValidationResult {
 
 /**
  * Validates that all required environment variables are present.
+ * JWT_SECRET accepts NEXTAUTH_SECRET as a fallback for backward compatibility.
  */
 function validateRequired(errors: string[]): void {
-  const required = ["DATABASE_URL", "JWT_SECRET"];
-
-  for (const varName of required) {
-    if (!process.env[varName]) {
-      errors.push(`${varName} is required`);
-    }
+  // DATABASE_URL is always required
+  if (!process.env.DATABASE_URL) {
+    errors.push("DATABASE_URL is required");
+  }
+  
+  // JWT_SECRET or NEXTAUTH_SECRET (fallback) is required
+  if (!process.env.JWT_SECRET && !process.env.NEXTAUTH_SECRET) {
+    errors.push("JWT_SECRET (or NEXTAUTH_SECRET as fallback) is required");
   }
 }
 
@@ -79,18 +82,24 @@ function validateDatabaseUrl(errors: string[]): void {
 const DEFAULT_JWT_SECRET = "terp-secret-key-change-in-production";
 
 /**
- * Validates JWT_SECRET security requirements.
+ * Validates JWT_SECRET (or NEXTAUTH_SECRET fallback) security requirements.
  */
-function validateJwtSecret(errors: string[], _warnings: string[]): void {
-  const jwtSecret = process.env.JWT_SECRET;
+function validateJwtSecret(errors: string[], warnings: string[]): void {
+  // Use JWT_SECRET, fall back to NEXTAUTH_SECRET
+  const jwtSecret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
 
   if (!jwtSecret) {
     return; // Already caught by validateRequired
   }
 
+  // Warn if using fallback
+  if (!process.env.JWT_SECRET && process.env.NEXTAUTH_SECRET) {
+    warnings.push("Using NEXTAUTH_SECRET as fallback - consider setting JWT_SECRET directly");
+  }
+
   // Check minimum length for security
   if (jwtSecret.length < 32) {
-    errors.push("JWT_SECRET must be at least 32 characters for security");
+    errors.push("JWT_SECRET (or NEXTAUTH_SECRET) must be at least 32 characters for security");
   }
 
   // Check for default value in production
