@@ -19,6 +19,10 @@ COPY patches ./patches
 # Install dependencies (prefer frozen lockfile, fall back to update)
 RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 
+# Add build timestamp to bust cache and ensure fresh builds
+ARG BUILD_TIMESTAMP
+ENV BUILD_TIMESTAMP=${BUILD_TIMESTAMP:-$(date -u +%Y%m%d-%H%M%S)}
+
 # Copy application source
 COPY . .
 
