@@ -1,6 +1,16 @@
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -18,6 +28,7 @@ interface SavedViewsDropdownProps {
 export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
   const { data: views, isLoading, refetch } = trpc.inventory.views.list.useQuery();
   const deleteView = trpc.inventory.views.delete.useMutation();
+  const [viewToDelete, setViewToDelete] = useState<{ id: number; name: string } | null>(null);
 
   const handleApplyView = (view: any) => {
     onApplyView(view.filters);
@@ -26,15 +37,17 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
 
   const handleDeleteView = async (e: React.MouseEvent, viewId: number, viewName: string) => {
     e.stopPropagation(); // Prevent dropdown from closing
+    setViewToDelete({ id: viewId, name: viewName });
+  };
 
-    if (!confirm(`Delete view "${viewName}"?`)) {
-      return;
-    }
-
+  const handleConfirmDeleteView = async () => {
+    if (!viewToDelete) return;
+    
     try {
-      await deleteView.mutateAsync(viewId);
+      await deleteView.mutateAsync(viewToDelete.id);
       toast.success('View deleted');
       refetch();
+      setViewToDelete(null);
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete view');
       console.error(error);
@@ -106,6 +119,27 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+
+    {/* Delete View Confirmation Dialog */}
+    <AlertDialog open={viewToDelete !== null} onOpenChange={(open) => !open && setViewToDelete(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete View?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete view "{viewToDelete?.name}"? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmDeleteView}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
