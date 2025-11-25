@@ -27,14 +27,15 @@ services:
     instance_count: 1
     instance_size_slug: basic-xs
     
-    # Health check
+    # Health check (optimized for deployment stability)
+    # Uses /health/live for liveness (no DB dependency, prevents premature restarts)
     health_check:
-      http_path: /health
-      initial_delay_seconds: 60
+      http_path: /health/live
+      initial_delay_seconds: 90
       period_seconds: 10
       timeout_seconds: 5
       success_threshold: 1
-      failure_threshold: 3
+      failure_threshold: 5
     
     # HTTP configuration
     http_port: 3000
