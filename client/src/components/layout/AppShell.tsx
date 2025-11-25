@@ -15,7 +15,8 @@ export function AppShell({ children }: AppShellProps) {
 
   // DashboardV3 uses DashboardLayout which has its own sidebar navigation
   // Don't render AppSidebar for dashboard routes to avoid duplicate navigation
-  const isDashboardRoute = location === "/" || location === "/dashboard";
+  // QA-028: Fix old sidebar appearing on dashboard (especially mobile)
+  const isDashboardRoute = location === "/" || location === "/dashboard" || location.startsWith("/dashboard");
   const shouldShowAppSidebar = !isDashboardRoute;
 
   return (
