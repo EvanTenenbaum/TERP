@@ -74,11 +74,18 @@ export const sanitizationMiddleware = t.middleware(async ({ next, input }) => {
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
 
-  // Require authentication - no public access
+  // Context should always provide a user (authenticated or public demo)
+  // If user is null, context creation failed
   if (!ctx.user) {
+    logger.error({ 
+      msg: "requireUser: ctx.user is null - context creation may have failed",
+      url: ctx.req.url 
+    });
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
+  // Public demo user (id: -1) is allowed - they are provisioned by createContext
+  // Authenticated users are also allowed
   return next({
     ctx: {
       ...ctx,
