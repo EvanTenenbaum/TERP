@@ -4210,3 +4210,201 @@ Completes pricing feature set, enables price monitoring.
   - **Discovered:** Persona Testing Session 2025-11-24 (VIP Client persona)
   - **Note:** Major feature - requires product decision on priority
 
+---
+
+## 🟢 MEDIUM PRIORITY (P2) - Improvements & UI/UX
+
+### Medium Priority UI/UX Bugs
+
+### BUG-015: Cmd+K Command Palette Shortcut Not Working
+
+**Status:** 📋 PLANNED  
+**Priority:** 🟢 P2 (MEDIUM)  
+**Estimate:** 1 day (8 hours)  
+**Module:** `client/src/components/CommandPalette.tsx`  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/BUG-015.md` (to be created)
+
+**Problem:** Cmd+K keyboard shortcut doesn't open Command Palette.
+
+**Objectives:**
+
+1. Fix Cmd+K keyboard shortcut
+2. Ensure Command Palette opens on shortcut
+3. Test on Mac and Windows keyboards
+4. Add keyboard shortcut documentation
+
+**Deliverables:**
+
+- [ ] Fix Cmd+K event listener
+- [ ] Ensure Command Palette component receives keyboard events
+- [ ] Test on Mac (Cmd+K) and Windows (Ctrl+K)
+- [ ] Add keyboard shortcut help text
+- [ ] Document keyboard shortcuts
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+---
+
+### BUG-016: Theme Toggle Not Implemented
+
+**Status:** 📋 PLANNED  
+**Priority:** 🟢 P2 (MEDIUM)  
+**Estimate:** 1 day (8 hours)  
+**Module:** Settings, User Profile  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/BUG-016.md` (to be created)
+
+**Problem:** No theme toggle functionality available.
+
+**Objectives:**
+
+1. Implement theme toggle functionality
+2. Add theme toggle to Settings or User Profile
+3. Support light/dark mode switching
+4. Persist theme preference
+
+**Deliverables:**
+
+- [ ] Add theme toggle component
+- [ ] Implement theme switching logic
+- [ ] Add to Settings page or User Profile
+- [ ] Persist theme preference (localStorage)
+- [ ] Test theme switching
+- [ ] Verify theme persists across sessions
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+---
+
+### Medium Priority Improvements
+
+### IMPROVE-001: Fix Backup Script Security
+
+**Status:** 📋 PLANNED  
+**Priority:** 🟢 P2 (MEDIUM)  
+**Estimate:** 4 hours  
+**Module:** `scripts/backup-database.sh`  
+**Dependencies:** REL-002  
+**Prompt:** `docs/prompts/IMPROVE-001.md` (to be created)
+
+**Problem:** Backup script uses command line password, which is insecure.
+
+**Objectives:**
+
+1. Use .my.cnf file instead of command line password
+2. Add error handling
+3. Add backup verification
+4. Document secure backup procedures
+
+**Deliverables:**
+
+- [ ] Create .my.cnf file for credentials
+- [ ] Update backup script to use .my.cnf
+- [ ] Add error handling
+- [ ] Add backup verification (gunzip -t)
+- [ ] Document secure backup procedures
+- [ ] Update file permissions (600)
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+---
+
+### IMPROVE-002: Enhance Health Check Endpoints
+
+**Status:** 📋 PLANNED  
+**Priority:** 🟢 P2 (MEDIUM)  
+**Estimate:** 1 day (8 hours)  
+**Module:** `server/_core/healthCheck.ts`  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/IMPROVE-002.md` (to be created)
+
+**Problem:** Health check endpoints are basic and don't check all critical systems.
+
+**Objectives:**
+
+1. Add transaction health check
+2. Add connection pool health check
+3. Add external service checks (optional)
+4. Add detailed health status
+5. Improve monitoring integration
+
+**Deliverables:**
+
+- [ ] Add transaction health check
+- [ ] Add connection pool health check
+- [ ] Add external service checks (Sentry, storage)
+- [ ] Add detailed health status response
+- [ ] Improve monitoring integration
+- [ ] Add health check metrics
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+---
+
+### IMPROVE-003: Add Composite Database Indexes
+
+**Status:** 📋 PLANNED  
+**Priority:** 🟢 P2 (MEDIUM)  
+**Estimate:** 1 day (8 hours)  
+**Module:** `drizzle/schema.ts`  
+**Dependencies:** PERF-001  
+**Prompt:** `docs/prompts/IMPROVE-003.md` (to be created)
+
+**Problem:** Missing composite indexes for common multi-column query patterns.
+
+**Objectives:**
+
+1. Analyze common query patterns
+2. Add composite indexes for multi-column filters
+3. Benchmark performance improvements
+4. Document index strategy
+
+**Deliverables:**
+
+- [ ] Analyze query patterns (userId + status, clientId + orderType)
+- [ ] Add composite index: (userId, status) on inbox_items
+- [ ] Add composite index: (clientId, orderType) on orders
+- [ ] Add composite index: (batchId, status) on batches
+- [ ] Benchmark performance improvements
+- [ ] Document composite index strategy
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+---
+
+### IMPROVE-004: Reduce Rate Limiting Thresholds
+
+**Status:** 📋 PLANNED  
+**Priority:** 🟢 P2 (MEDIUM)  
+**Estimate:** 2 hours  
+**Module:** `server/_core/rateLimiter.ts`  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/IMPROVE-004.md` (to be created)
+
+**Problem:** Rate limiting thresholds are too high, allowing abuse.
+
+**Objectives:**
+
+1. Reduce general API limit to 100 requests/15min
+2. Reduce strict limit to 10 requests/minute
+3. Implement per-user rate limiting
+4. Add endpoint-specific limits
+
+**Deliverables:**
+
+- [ ] Reduce `apiLimiter` to 100 requests/15min
+- [ ] Reduce `strictLimiter` to 10 requests/minute
+- [ ] Implement per-user rate limiting (by user ID)
+- [ ] Add endpoint-specific limits (expensive operations: 5/min)
+- [ ] Add rate limit monitoring
+- [ ] Document rate limiting strategy
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
