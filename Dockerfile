@@ -19,12 +19,13 @@ COPY patches ./patches
 # Install dependencies (prefer frozen lockfile, fall back to update)
 RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 
-# Add build timestamp to bust cache and ensure fresh builds
-ARG BUILD_TIMESTAMP
-ENV BUILD_TIMESTAMP=${BUILD_TIMESTAMP:-$(date -u +%Y%m%d-%H%M%S)}
-
 # Copy application source
 COPY . .
+
+# Create build timestamp file to bust cache and verify deployed version
+# This RUN command always produces a different output, forcing Docker to rebuild subsequent layers
+RUN echo "BUILD_VERSION=v$(date -u +%Y%m%d-%H%M%S)-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)" > /app/.build-version && \
+    cat /app/.build-version
 
 # Build production assets
 RUN pnpm run build:production
