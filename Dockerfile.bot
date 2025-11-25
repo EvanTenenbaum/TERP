@@ -9,14 +9,13 @@ WORKDIR /app
 # Enable pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy package files only
+# Copy package files and patches (patches needed for pnpm install)
 COPY package.json pnpm-lock.yaml ./
+COPY patches/ ./patches/
 
-# Install dependencies - skip patches if they cause issues
-RUN pnpm install --no-frozen-lockfile --ignore-scripts || \
-    (echo "First install failed, trying without patches..." && \
-     pnpm install --no-frozen-lockfile --ignore-scripts --no-optional || \
-     pnpm install --no-frozen-lockfile)
+# Install dependencies with fallback strategies
+RUN pnpm install --no-frozen-lockfile || \
+    (echo "First install failed, retrying..." && pnpm install --no-frozen-lockfile)
 
 # Copy everything else
 COPY . .
