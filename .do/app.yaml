@@ -46,7 +46,12 @@ services:
     
     # Environment variables (sensitive values should be set in DO control panel)
     envs:
-      # Build-time: Disable frozen-lockfile to allow lockfile updates during build
+      # Build-time: Disable CI mode to allow lockfile updates during build
+      # CI mode automatically enables frozen-lockfile
+      - key: CI
+        value: "false"
+        scope: BUILD_TIME
+      # Also set pnpm config as backup
       - key: PNPM_CONFIG_FROZEN_LOCKFILE
         value: "false"
         scope: BUILD_TIME
