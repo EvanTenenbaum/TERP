@@ -47,20 +47,19 @@ app.message(/execute|fix/i, async ({ say }) => {
 });
 
 (async () => {
-  // 5. Git Auth Setup on Boot
+  // 5. Git Remote Setup (user config already done by startup script)
   try {
-    console.log("🔧 Configuring Git...");
+    console.log("🔧 Verifying Git Remote...");
     const git = simpleGit();
-    await git.addConfig('user.email', 'bot@terp.ai');
-    await git.addConfig('user.name', 'TERP Commander');
-    // Safe remote update
+    // Ensure remote is set correctly (startup script cloned with token, but ensure it's configured)
     try {
       await git.removeRemote('origin');
     } catch (e) { /* ignore if missing */ }
     await git.addRemote('origin', `https://x-access-token:${process.env.GITHUB_TOKEN}@github.com/EvanTenenbaum/TERP.git`);
-    console.log("✅ Git configured.");
+    console.log("✅ Git remote configured.");
   } catch (e) {
-    console.error("⚠️ Git Config Error:", e);
+    console.error("⚠️ Git Remote Config Error:", e);
+    // Non-fatal, bot can still function
   }
 
   // 6. Start the App
