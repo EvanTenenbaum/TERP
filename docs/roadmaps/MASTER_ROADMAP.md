@@ -2792,3 +2792,156 @@ Completes pricing feature set, enables price monitoring.
   - **Discovered:** Gap Testing Session 2025-11-22 (TS-002)
   - **Note:** Decision needed: implement feature or remove from test suite if not planned
 
+
+
+---
+
+## 📱 Mobile-Specific Bugs
+
+- [ ] **BUG-M001: Sidebar Not Responsive on Mobile** (Created: 2025-11-24) 🔴 CRITICAL
+  - Task ID: BUG-M001
+  - Priority: P0 (CRITICAL - BLOCKS ALL MOBILE USE)
+  - Category: Mobile Responsive Design
+  - Session: TBD
+  - **Problem:** Desktop sidebar (~200px) remains visible on mobile viewport (390px), leaving only ~190px (~49%) for content
+  - **Current State:**
+    - Full desktop sidebar always visible (~200px wide)
+    - Sidebar takes ~51% of viewport width on mobile
+    - Content compressed into ~49% of screen (~190px)
+    - No hamburger menu present
+    - No mobile-optimized layout
+  - **Expected Behavior:**
+    - Hamburger menu icon in header
+    - Sidebar hidden by default on mobile
+    - Sidebar slides in as overlay when hamburger clicked
+    - Full viewport width available for content (~390px)
+  - **Root Cause:** Responsive design not implemented for sidebar
+  - **Impact:** CRITICAL - Makes entire app nearly unusable on mobile
+    - **Severity:** P0 - Blocks all mobile usage
+    - **Scope:** 100% of pages affected (20+ pages)
+    - **User Experience:** Severe - content unreadable, tables truncated, forms cramped
+    - **Business Impact:** HIGH - Mobile users cannot effectively use the application
+  - **Affected Pages:** Dashboard, Orders, Clients, Inventory, Calendar, Settings, Analytics, Accounting, Matchmaking, Workflow Queue, Sales Sheets, Pricing, Vendors, Purchase Orders, Returns, Locations, and all other pages with sidebar
+  - **Test Protocols Blocked:** ALL 47 mobile protocols affected by this issue
+  - **Evidence:**
+    - Dashboard: Sidebar 200px, content 190px on 390px viewport
+    - Orders: Same layout issue, plus debug dashboard overlay
+    - Clients: Same layout issue, plus table truncation
+  - **Implementation Steps:**
+    1. Add responsive breakpoint at 768px (tablet) or 640px (mobile)
+    2. Hide sidebar by default on mobile
+    3. Add hamburger menu icon to header
+    4. Implement slide-in overlay sidebar for mobile
+    5. Ensure full viewport width for content on mobile
+  - **Files to Check:**
+    - `client/src/components/DashboardLayout.tsx` (or similar layout component)
+    - `client/src/components/Sidebar.tsx` (if exists)
+    - CSS/Tailwind responsive breakpoints
+  - **Testing:**
+    - Test on iPhone 12 (390x844px)
+    - Test on iPhone SE (375x667px)
+    - Test on iPad Mini (768x1024px)
+    - Verify sidebar hidden by default on mobile
+    - Verify hamburger menu works
+    - Verify full viewport width for content
+  - **Estimate:** 8-16 hours
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Mobile E2E Testing Session 2025-11-24
+  - **Documentation:** `docs/testing/MOBILE_E2E_FINAL_REPORT.md`
+  - **Note:** This is the #1 blocker for mobile deployment - fix before continuing mobile testing
+
+- [ ] **BUG-M002: Debug Dashboard Overlays Content on Mobile** (Created: 2025-11-24) 🔴 CRITICAL
+  - Task ID: BUG-M002
+  - Priority: P0 (CRITICAL)
+  - Category: Mobile UX / Production Issue
+  - Related: BUG-011 (desktop)
+  - Session: TBD
+  - **Problem:** Red debug dashboard visible in production on Orders page takes significant vertical space on mobile, pushing content below fold
+  - **Current State:**
+    - Debug dashboard visible in production
+    - Takes significant vertical space on mobile
+    - Pushes page controls below fold
+    - Blocks access to order controls
+  - **Expected Behavior:**
+    - No debug dashboard in production
+    - Full screen space for actual content
+  - **Root Cause:** Debug code not removed from production build
+  - **Impact:** CRITICAL on mobile (worse than desktop)
+    - **Severity:** P0 - Blocks access to page controls
+    - **User Experience:** Severe - content pushed below fold
+    - **Mobile-Specific Impact:** Limited screen height makes this much worse on mobile
+  - **Affected Pages:** Orders page (possibly others)
+  - **Implementation:**
+    - Remove debug dashboard from production build
+    - Same fix as BUG-011 (desktop)
+  - **Files to Check:**
+    - `client/src/pages/OrdersPage.tsx` (or similar)
+    - Debug component implementation
+  - **Estimate:** 15-30 minutes (same as BUG-011)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Mobile E2E Testing Session 2025-11-24
+  - **Documentation:** `docs/testing/MOBILE_E2E_FINAL_REPORT.md`
+  - **Note:** Can be fixed together with BUG-011
+
+- [ ] **BUG-M003: Data Tables Not Optimized for Mobile** (Created: 2025-11-24) 🟠 HIGH PRIORITY
+  - Task ID: BUG-M003
+  - Priority: P1 (HIGH)
+  - Category: Mobile UX
+  - Session: TBD
+  - **Problem:** Data tables (Clients, Orders, Inventory) display full desktop table layout on mobile with many columns, causing horizontal scrolling and unreadable text
+  - **Current State:**
+    - Full desktop table with 10+ columns
+    - Tiny text due to cramped space (~190px with sidebar)
+    - Horizontal scrolling required
+    - Poor touch targets
+  - **Expected Behavior:**
+    - Mobile-optimized table view (cards or simplified columns)
+    - Touch-friendly row selection
+    - Readable text without horizontal scroll
+    - Priority columns visible, secondary columns hidden or accessible via expand
+  - **Root Cause:** Tables not responsive, no mobile-specific layout
+  - **Impact:** HIGH - Tables unreadable on mobile
+    - **Severity:** P1 - Core workflows blocked
+    - **User Experience:** Cannot effectively browse clients, orders, or inventory
+    - **Business Impact:** Client management, order management, inventory management all blocked
+  - **Affected Pages:** Clients, Orders, Inventory, and other pages with data tables
+  - **Implementation Options:**
+    1. Implement card view for mobile (< 768px) - RECOMMENDED
+    2. Show priority columns only (e.g., Name, Total, Status)
+    3. Add expand/collapse for additional details
+    4. Ensure touch-friendly tap targets (≥ 48px)
+  - **Implementation Steps:**
+    1. Create mobile card component for each table type
+    2. Add responsive breakpoint logic
+    3. Show priority data in card view
+    4. Add expand/collapse for full details
+    5. Ensure touch targets ≥ 48px
+  - **Files to Check:**
+    - `client/src/components/tables/ClientsTable.tsx` (or similar)
+    - `client/src/components/tables/OrdersTable.tsx`
+    - `client/src/components/tables/InventoryTable.tsx`
+    - Table component implementations
+  - **Testing:**
+    - Test on iPhone 12 (390x844px)
+    - Verify card view on mobile
+    - Verify touch targets ≥ 48px
+    - Verify no horizontal scrolling
+    - Test expand/collapse functionality
+  - **Estimate:** 16-24 hours (3 table types × 5-8 hours each)
+  - **Status:** 📋 PLANNED
+  - **Discovered:** Mobile E2E Testing Session 2025-11-24
+  - **Documentation:** `docs/testing/MOBILE_E2E_FINAL_REPORT.md`
+  - **Note:** Fix BUG-M001 first to get full viewport width, then optimize tables
+
+---
+
+## 📝 Mobile Testing Status
+
+**Mobile E2E Testing:** COMPLETE (Rapid Sampling)  
+**Mobile Readiness:** NOT READY (Blocked by BUG-M001)  
+**Protocols Tested:** 5 of 47 (11%)  
+**Mobile Bugs Found:** 3 (2 P0, 1 P1)  
+**Documentation:** `docs/testing/MOBILE_E2E_FINAL_REPORT.md`
+
+**Recommendation:** Fix BUG-M001, BUG-M002, and BUG-M003 before re-running full mobile test suite.
+
