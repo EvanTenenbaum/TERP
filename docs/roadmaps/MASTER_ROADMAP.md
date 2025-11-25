@@ -622,6 +622,51 @@
 
 ---
 
+## 🔧 PREREQUISITES & INFRASTRUCTURE
+
+### PREREQ-001: Apply Database Migration for QA-044
+
+**Status:** 📋 PLANNED  
+**Priority:** 🔴 P1 (HIGH - BLOCKS QA-044)  
+**Estimate:** 1-2 hours  
+**Module:** Database migrations  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/PREREQ-001.md` (to be created)
+
+**Objectives:**
+
+1. Connect to production database securely
+2. Apply migration file `drizzle/0036_add_event_invitations.sql`
+3. Verify all three tables created successfully (calendar_event_invitations, calendar_invitation_settings, calendar_invitation_history)
+4. Test invitation endpoints to ensure functionality
+5. Update QA-044 status to complete after verification
+
+**Deliverables:**
+
+- [ ] Production database connection verified
+- [ ] Migration file `drizzle/0036_add_event_invitations.sql` applied successfully
+- [ ] All three tables verified: `calendar_event_invitations`, `calendar_invitation_settings`, `calendar_invitation_history`
+- [ ] Invitation endpoints tested and functional
+- [ ] QA-044 status updated to ✅ Complete
+- [ ] Rollback plan documented (if needed)
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+**Context:**
+
+QA-044 (Event Invitation Workflow) has all code complete and deployed, but the database migration has NOT been applied to production. The feature is non-functional until this migration is run. This is a critical blocker for QA-044 completion.
+
+**Required Actions:**
+
+1. Connect to production MySQL database
+2. Run migration: `source drizzle/0036_add_event_invitations.sql;`
+3. Verify tables: `SHOW TABLES LIKE 'calendar_%invitation%';`
+4. Test endpoints
+5. Update QA-044 status
+
+---
+
 ## 🚀 Active Tasks (Structured Format for Agent Deployment)
 
 > **Note:** Tasks in this section use the new structured format for automated agent deployment.
