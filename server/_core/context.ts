@@ -59,25 +59,55 @@ async function getOrCreatePublicUser(): Promise<User | null> {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  logger.info({ path: opts.req.url }, "[Context] createContext called");
-  let user: User | null = null;
-
+  // Use console.log as fallback (bypasses logger issues)
+  console.log("[CONTEXT] createContext CALLED", opts.req.url);
+  
   try {
-    user = await simpleAuth.authenticateRequest(opts.req);
-    logger.info({ userId: user?.id }, "[Context] Authenticated user found");
-  } catch (error) {
-    // Authentication is optional - this is expected for public access
-    logger.info("[Context] No authenticated user, provisioning public user");
-    user = null;
-  }
+    logger.info({ path: opts.req.url }, "[Context] createContext called");
+    let user: User | null = null;
 
-  if (!user) {
     try {
-      user = await getOrCreatePublicUser();
-      logger.info({ userId: user?.id, email: user?.email }, "[Context] Public user provisioned");
+      user = await simpleAuth.authenticateRequest(opts.req);
+      console.log("[CONTEXT] Authenticated user found:", user?.id);
+      logger.info({ userId: user?.id }, "[Context] Authenticated user found");
     } catch (error) {
-      logger.warn({ error }, "[Public Access] Failed to get/create public user, using synthetic fallback");
-      // Fallback to synthetic user if everything fails
+      // Authentication is optional - this is expected for public access
+      console.log("[CONTEXT] No authenticated user, provisioning public user");
+      logger.info("[Context] No authenticated user, provisioning public user");
+      user = null;
+    }
+
+    if (!user) {
+      console.log("[CONTEXT] No user, provisioning public user");
+      try {
+        user = await getOrCreatePublicUser();
+        console.log("[CONTEXT] Public user created:", user?.id, user?.email);
+        logger.info({ userId: user?.id, email: user?.email }, "[Context] Public user provisioned");
+      } catch (error) {
+        console.error("[CONTEXT] Failed to create public user:", error);
+        logger.warn({ error }, "[Public Access] Failed to get/create public user, using synthetic fallback");
+        // Fallback to synthetic user if everything fails
+        const now = new Date();
+        user = {
+          id: -1,
+          openId: PUBLIC_USER_ID,
+          email: PUBLIC_USER_EMAIL,
+          name: "Public Demo User",
+          role: "user",
+          loginMethod: null,
+          deletedAt: null,
+          createdAt: now,
+          updatedAt: now,
+          lastSignedIn: now,
+        };
+        console.log("[CONTEXT] Using synthetic public user fallback");
+        logger.info("[Context] Using synthetic public user fallback");
+      }
+    }
+
+    // Ensure user is never null
+    if (!user) {
+      console.error("[CONTEXT] CRITICAL: User is still null after all attempts!");
       const now = new Date();
       user = {
         id: -1,
@@ -91,34 +121,38 @@ export async function createContext(
         updatedAt: now,
         lastSignedIn: now,
       };
-      logger.info("[Context] Using synthetic public user fallback");
+      logger.warn("[Context] Final fallback: created synthetic user");
     }
-  }
 
-  // Ensure user is never null
-  if (!user) {
-    const now = new Date();
-    user = {
-      id: -1,
-      openId: PUBLIC_USER_ID,
-      email: PUBLIC_USER_EMAIL,
-      name: "Public Demo User",
-      role: "user",
-      loginMethod: null,
-      deletedAt: null,
-      createdAt: now,
-      updatedAt: now,
-      lastSignedIn: now,
+    console.log("[CONTEXT] Returning context with user:", user.id, user.email, user.openId);
+    logger.info({ userId: user.id, email: user.email, openId: user.openId }, "[Context] Context created with user");
+
+    return {
+      req: opts.req,
+      res: opts.res,
+      user,
     };
-    logger.warn("[Context] Final fallback: created synthetic user");
+  } catch (error) {
+    console.error("[CONTEXT] FATAL ERROR in createContext:", error);
+    logger.error({ error }, "[Context] Fatal error in createContext");
+    // Even on error, return a public user
+    const now = new Date();
+    return {
+      req: opts.req,
+      res: opts.res,
+      user: {
+        id: -1,
+        openId: PUBLIC_USER_ID,
+        email: PUBLIC_USER_EMAIL,
+        name: "Public Demo User",
+        role: "user",
+        loginMethod: null,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+        lastSignedIn: now,
+      },
+    };
   }
-
-  logger.info({ userId: user.id, email: user.email, openId: user.openId }, "[Context] Context created with user");
-
-  return {
-    req: opts.req,
-    res: opts.res,
-    user,
-  };
 }
 
