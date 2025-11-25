@@ -143,6 +143,27 @@ async function startServer() {
     const statusCode = ready.status === "ok" ? 200 : 503;
     res.status(statusCode).json(ready);
   });
+
+  // Debug endpoint to test createContext directly
+  app.get("/api/debug/context", async (req, res) => {
+    try {
+      const context = await createContext({ req, res });
+      res.json({
+        success: true,
+        user: {
+          id: context.user.id,
+          email: context.user.email,
+          role: context.user.role,
+        },
+        message: "createContext called successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
   
   // tRPC API
   app.use(
