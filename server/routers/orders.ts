@@ -170,15 +170,6 @@ export const ordersRouter = router({
     }),
 
   /**
-   * DIAGNOSTIC TEST ENDPOINT - No permissions required
-   */
-  testEndpoint: publicProcedure
-    .query(async () => {
-      console.log('🧪 [orders.testEndpoint] TEST ENDPOINT CALLED!');
-      return { success: true, message: 'Test endpoint is working!', timestamp: new Date().toISOString() };
-    }),
-
-  /**
    * Get all orders with filtering
    */
   getAll: protectedProcedure
@@ -197,19 +188,9 @@ export const ordersRouter = router({
         })
         .optional()
     )
-    .query(async ({ input, ctx }) => {
-      console.log('🔍 [orders.getAll] Endpoint called');
-      console.log('🔍 [orders.getAll] Input:', JSON.stringify(input));
-      console.log('🔍 [orders.getAll] User:', ctx.user?.id, ctx.user?.username);
-      
-      const result = await ordersDb.getAllOrders(input);
-      
-      console.log('🔍 [orders.getAll] Result type:', typeof result);
-      console.log('🔍 [orders.getAll] Result is array:', Array.isArray(result));
-      console.log('🔍 [orders.getAll] Result length:', result?.length);
-      console.log('🔍 [orders.getAll] First order:', result?.[0]);
-      
-      return result;
+    .query(async ({ input }) => {
+      // Debug logging removed - use structured logging middleware for API debugging
+      return await ordersDb.getAllOrders(input);
     }),
 
   /**
