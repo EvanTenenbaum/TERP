@@ -507,6 +507,35 @@ export function PermissionAssignment() {
           )}
         </CardContent>
       </Card>
+
+      {/* Remove Permission Confirmation Dialog */}
+      <AlertDialog open={permissionToRemove !== null} onOpenChange={(open) => !open && setPermissionToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Permission?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove this permission from "{permissionToRemove?.roleName}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (permissionToRemove) {
+                  removePermissionMutation.mutate({
+                    roleId: permissionToRemove.roleId,
+                    permissionId: permissionToRemove.permissionId,
+                  });
+                  setPermissionToRemove(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
