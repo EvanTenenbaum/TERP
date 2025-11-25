@@ -19,6 +19,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -65,6 +75,7 @@ export function OrderPreview({
   const [notes, setNotes] = useState<string>("");
   const [selectedItemForCogs, setSelectedItemForCogs] = useState<any | null>(null);
   const [showTotalsBreakdown, setShowTotalsBreakdown] = useState(false);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
 
   const createOrderMutation = trpc.orders.create.useMutation({
     onSuccess: (data) => {
@@ -313,7 +324,7 @@ export function OrderPreview({
               </Button>
 
               <Button
-                onClick={onClearAll}
+                onClick={() => setShowClearAllConfirm(true)}
                 variant="outline"
                 className="w-full"
                 disabled={createOrderMutation.isPending}
@@ -338,6 +349,30 @@ export function OrderPreview({
           }}
         />
       )}
+
+      {/* Clear All Confirmation Dialog */}
+      <AlertDialog open={showClearAllConfirm} onOpenChange={setShowClearAllConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear All Items?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to clear all items from this order? This action cannot be undone and you will lose all current selections.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onClearAll();
+                setShowClearAllConfirm(false);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Clear All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
