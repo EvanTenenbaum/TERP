@@ -50,6 +50,7 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { CommandPalette } from "@/components/CommandPalette";
 import { useState } from "react";
 import { VersionChecker } from "@/components/VersionChecker";
 
@@ -151,9 +152,16 @@ function Router() {
 
 function App() {
   const [showQuickAddTask, setShowQuickAddTask] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   // Global keyboard shortcuts
   useKeyboardShortcuts([
+    {
+      key: "k",
+      ctrl: true,
+      callback: () => setShowCommandPalette(true),
+      description: "Open command palette",
+    },
     {
       key: "t",
       ctrl: true,
@@ -173,6 +181,10 @@ function App() {
           <Toaster />
           <VersionChecker />
           <Router />
+          <CommandPalette
+            open={showCommandPalette}
+            onOpenChange={setShowCommandPalette}
+          />
           <QuickAddTaskModal
             isOpen={showQuickAddTask}
             onClose={() => setShowQuickAddTask(false)}
