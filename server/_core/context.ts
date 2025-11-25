@@ -59,6 +59,7 @@ async function getOrCreatePublicUser(): Promise<User | null> {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
+  logger.info({ path: opts.req.url }, "[Context] createContext called");
   let user: User | null = null;
 
   try {
