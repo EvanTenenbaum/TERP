@@ -1,5 +1,14 @@
 import React from "react";
-import { Inbox, Search, Settings, User, Menu, CheckCheck, Sun, Moon } from "lucide-react";
+import {
+  Inbox,
+  Search,
+  Settings,
+  User,
+  Menu,
+  CheckCheck,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +77,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   };
 
   return (
-    <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b border-border bg-card">
+    <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b border-border bg-background">
       {/* Mobile menu button */}
       <Button
         variant="ghost"

@@ -10,6 +10,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { AppHeader } from "./AppHeader";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // Mock wouter
 const mockSetLocation = vi.fn();
@@ -94,7 +95,11 @@ describe("AppHeader - Inbox Dropdown", () => {
   });
 
   it("should render the Inbox button with unread badge", () => {
-    render(<AppHeader />);
+    render(
+      <ThemeProvider>
+        <AppHeader />
+      </ThemeProvider>
+    );
 
     const inboxButton = screen.getByTitle("Inbox");
     expect(inboxButton).toBeInTheDocument();
@@ -105,7 +110,11 @@ describe("AppHeader - Inbox Dropdown", () => {
   });
 
   it("should render Inbox button as a dropdown trigger, not a direct link", () => {
-    render(<AppHeader />);
+    render(
+      <ThemeProvider>
+        <AppHeader />
+      </ThemeProvider>
+    );
 
     const inboxButton = screen.getByTitle("Inbox");
 
@@ -120,7 +129,11 @@ describe("AppHeader - Inbox Dropdown", () => {
   });
 
   it("should display correct unread count in badge", () => {
-    render(<AppHeader />);
+    render(
+      <ThemeProvider>
+        <AppHeader />
+      </ThemeProvider>
+    );
 
     // Should show "3" based on mock data
     const badge = screen.getByText("3");
