@@ -10,9 +10,10 @@
 
 ## 🟢 Currently Working
 
-| Session ID | Task | Branch | Module | Status | Started | ETA |
-| ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| Session-20251124-BUG-007-78a29f8b | BUG-007 | bug-007-permissions-safety-checks | UI Components | ⏳ IN PROGRESS | 2025-11-24 | 2-4h |
+| Session ID                            | Task        | Branch                            | Module        | Status         | Started    | ETA  |
+| ------------------------------------- | ----------- | --------------------------------- | ------------- | -------------- | ---------- | ---- |
+| Session-20250127-FEATURE-002-d68fd74b | FEATURE-002 | feature-002-header-color          | Layout/UI     | ⏳ IN PROGRESS | 2025-01-27 | 1-2h |
+| Session-20251124-BUG-007-78a29f8b     | BUG-007     | bug-007-permissions-safety-checks | UI Components | ⏳ IN PROGRESS | 2025-11-24 | 2-4h |
 
 ## ⏸️ Paused / Waiting
 
@@ -79,5 +80,6 @@
 **To manually regenerate:** `./scripts/aggregate-sessions.sh`
 
 ## 🟢 Currently Working (Updated 2025-11-18)
+
 - Session-20251119-BUG-001-ca579e66: BUG-001 - Fix all list views returning zero results
 - SEC-001: Session-20251125-SEC-001-7aa9b79d (2025-11-25)
