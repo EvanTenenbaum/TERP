@@ -33,29 +33,29 @@ warn() {
 # 1. Check branch name format
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [[ ! "$CURRENT_BRANCH" =~ $BRANCH_NAME_REGEX ]] && [[ "$CURRENT_BRANCH" != "main" ]]; then
-  block_commit "Invalid branch name format: $CURRENT_BRANCH" "Use \'pnpm start-task\' to create a proper branch."
+  block_commit "Invalid branch name format: $CURRENT_BRANCH" "Use 'pnpm start-task' to create a proper branch."
 fi
 
 # 2. Check for new \'any\' types
-if git diff --cached --diff-filter=ACM | grep "^+" | grep -q ": ""any"; then
-  block_commit "Found new \'any\' types" "Define proper TypeScript interfaces."
+if git diff --cached --diff-filter=ACM | grep "^+" | grep -q ': "any"'; then
+  block_commit "Found new 'any' types" "Define proper TypeScript interfaces."
 fi
 
 # 3. Check for large files
-for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E \'\.(ts|tsx)$\'); do
+for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$'); do
   if [ -f "$file" ] && [ $(wc -l < "$file") -gt 500 ]; then
     block_commit "$file has more than 500 lines" "Split into smaller modules."
   fi
 done
 
 # 4. Check for hardcoded credentials
-if git diff --cached --diff-filter=ACM --name-only | grep -vE "\.(test|spec)\.ts$" | xargs -I {} git diff --cached {} | grep "^+" | grep -qiE "(password|secret|api_key|token).*=.*["\']"; then
+if git diff --cached --diff-filter=ACM --name-only | grep -vE "\.(test|spec)\.ts$" | xargs -I {} git diff --cached {} | grep "^+" | grep -qiE "(password|secret|api_key|token).*=.*[\"']"; then
   block_commit "Possible hardcoded credentials detected" "Use environment variables instead."
 fi
 
 # 5. Check if roadmap is updated when code changes
-CODE_FILES_CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E \'\.(ts|tsx)$\' | wc -l)
-ROADMAP_CHANGED=$(git diff --cached --name-only | grep -E \'MASTER_ROADMAP\.md|TESTING_ROADMAP\.md\' | wc -l)
+CODE_FILES_CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' | wc -l)
+ROADMAP_CHANGED=$(git diff --cached --name-only | grep -E 'MASTER_ROADMAP\.md|TESTING_ROADMAP\.md' | wc -l)
 if [ "$CODE_FILES_CHANGED" -gt 0 ] && [ "$ROADMAP_CHANGED" -eq 0 ]; then
   warn "Code files changed but roadmap not updated" "Please update MASTER_ROADMAP.md or TESTING_ROADMAP.md"
 fi

@@ -4189,31 +4189,21 @@ Completes pricing feature set, enables price monitoring.
 
 **Recommendation:** Fix BUG-M001, BUG-M002, and BUG-M003 before re-running full mobile test suite.
 
-- [ ] **BUG-M004: Customer Name Inconsistency Between Dashboard and Create Order** (Created: 2025-11-24) 🟡 MEDIUM PRIORITY
+- [x] **BUG-M004: Customer Name Inconsistency Between Dashboard and Create Order** (Completed: 2025-01-27) 🟡 MEDIUM PRIORITY
   - Task ID: BUG-M004
   - Priority: P2 (MEDIUM - UX ISSUE)
-  - Session: TBD
+  - Session: Session-20250127-BUG-M004-d0feee19
+  - Status: ✅ COMPLETE
   - **Problem:** Customer names displayed differently on Dashboard vs Create Order page
-  - **Current State:**
-    - Dashboard shows: "Customer 1371"
-    - Create Order dropdown shows: "Organic Leaf LLC"
-    - Same customer, different display names
-    - Confusing for Sales Managers trying to find customers
-  - **Root Cause:** Inconsistent data source or display logic
-    - Dashboard may be using customer ID or placeholder
-    - Create Order using actual customer name from database
-  - **Impact:** User confusion, inefficient workflow for Sales Managers
-  - **Location:** Dashboard sales table vs `/orders/create` customer dropdown
-  - **Expected Behavior:**
-    - Customer names should be consistent across all pages
-    - Should use actual customer name (e.g., "Organic Leaf LLC") everywhere
-    - Customer ID can be shown as secondary info if needed
-  - **Files to Check:**
-    - Dashboard sales table component
-    - Create Order customer selector component
-    - Customer data fetch/display logic
+  - **Solution:** Updated dashboard router to fetch actual client names from database instead of using placeholder "Customer {id}". Fixed in getSalesByClient, getCashCollected, getClientDebt, and getClientProfitMargin endpoints.
+  - **Files Modified:**
+    - `server/routers/dashboard.ts` - Added clientsDb import, fetch actual client names for all customer IDs in parallel, update customerName fields with real names
+  - **Key Commits:**
+    - `[pending]` - BUG-M004: Fix customer name inconsistency - fetch actual names from database
+    - `[pending]` - BUG-M004: Fix customer name inconsistency and test setup
+  - **Actual Time:** ~45 minutes
+  - **Impact:** Customer names now consistent across all pages - Dashboard and Create Order both show actual customer names (e.g., "Organic Leaf LLC")
   - **Estimate:** 1-2 hours
-  - **Status:** 📋 PLANNED
   - **Discovered:** Persona Testing Session 2025-11-24 (Sales Manager persona)
 
 - [ ] **BUG-M005: All Orders Show "0 items" Despite Having Dollar Amounts** (Created: 2025-11-24) 🔴 HIGH PRIORITY

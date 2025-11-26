@@ -9,6 +9,12 @@ afterEach(() => {
 
 // Mock environment variables for tests
 process.env.NODE_ENV = 'test';
+// Set JWT_SECRET for tests (test-only value, not a real secret)
+// Using a test value that meets minimum length requirement
+const testJwtValue = 'test-jwt-value-for-testing-minimum-32-chars';
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = testJwtValue;
+}
 
 // Global test utilities
 global.testUtils = {
