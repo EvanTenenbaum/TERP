@@ -129,6 +129,7 @@
 **Session:** Session-20251125-SEC-001-7aa9b79d
 
 **Implementation:**
+
 - Removed public access bypass from `requirePermission()`, `requireAllPermissions()`, `requireAnyPermission()`
 - Removed bypass logic from `protectedProcedure` in `trpc.ts`
 - Removed bypass logic from `adminProcedure` in `trpc.ts`
@@ -137,11 +138,13 @@
 - All procedures now require proper authentication
 
 **Key Commits:**
+
 - `95439f5a` - Remove public access bypasses from permission middleware
 - `5ca32c8c` - Add comprehensive permission middleware tests
 - `96eda599` - Merge SEC-001 to main
 
 **Deliverables:**
+
 - [x] Remove bypass logic from `requirePermission()`, `requireAllPermissions()`, `requireAnyPermission()`
 - [x] Remove bypass logic from `protectedProcedure` in `trpc.ts`
 - [x] Remove bypass logic from `adminProcedure` in `trpc.ts`
@@ -183,15 +186,18 @@
 **Prompt:** `docs/prompts/SEC-002.md` (to be created)
 
 **Implementation:**
+
 - Removed hardcoded fallback from `env.ts`
 - Added validation function that fails fast if JWT_SECRET missing or insecure
 - Requires minimum 32 characters for security
 - Application will fail to start if JWT_SECRET not properly configured
 
 **Key Commits:**
+
 - `6ef1fed5` - Remove hardcoded JWT_SECRET fallback and add validation
 
 **Deliverables:**
+
 - [x] Remove hardcoded fallback: `"your-secret-key-change-in-production"`
 - [x] Remove hardcoded fallback: `"terp-secret-key-change-in-production"`
 - [x] Add validation to require JWT_SECRET
@@ -231,6 +237,7 @@
 **Prompt:** `docs/prompts/SEC-003.md` (to be created)
 
 **Implementation:**
+
 - Removed hardcoded `createUser("Evan", "oliver", ...)` from index.ts and simpleAuth.ts
 - Added environment variables: `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_PASSWORD`
 - Admin user creation now requires environment variables (optional)
@@ -238,9 +245,11 @@
 - If env vars not provided, users must use `/api/auth/create-first-user` endpoint
 
 **Key Commits:**
+
 - `492ca652` - Remove hardcoded admin credentials, use environment variables
 
 **Deliverables:**
+
 - [x] Remove hardcoded `createUser("Evan", "oliver", ...)`
 - [x] Add environment variables: `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_PASSWORD`
 - [x] Add security warning if default credentials detected
@@ -279,6 +288,7 @@
 **Prompt:** `docs/prompts/SEC-004.md` (to be created)
 
 **Implementation:**
+
 - Removed debug dashboard (red border panel) from Orders.tsx
 - Removed all console.log statements from Orders.tsx and orders router
 - Removed testEndpoint debug-only endpoint from orders router
@@ -286,9 +296,11 @@
 - Replaced with structured logging via error handling middleware
 
 **Key Commits:**
+
 - `d28004dd` - Remove debug code from production
 
 **Deliverables:**
+
 - [x] Remove debug dashboard from `Orders.tsx` (lines 232-250) - fixes BUG-011
 - [x] Remove all `console.log` statements
 - [x] Remove testEndpoint debug endpoint
@@ -334,6 +346,7 @@
 **Prompt:** `docs/prompts/DATA-003.md` (to be created)
 
 **Implementation:**
+
 - Added row-level locking (`.for("update")`) to batch queries in `createOrder()`
 - Added row-level locking to batch queries in `convertQuoteToSale()`
 - Added inventory availability verification BEFORE processing orders
@@ -342,9 +355,11 @@
 - Clear error messages with available vs requested quantities
 
 **Key Commits:**
+
 - TBD (pending merge)
 
 **Deliverables:**
+
 - [x] Add `SELECT ... FOR UPDATE` to batch queries
 - [x] Verify inventory quantity before update
 - [x] Throw error if insufficient inventory
@@ -416,6 +431,7 @@
 **Prompt:** `docs/prompts/DATA-006.md` (to be created)
 
 **Implementation:**
+
 - Enhanced existing transaction implementation with isolation level configuration
 - Added TransactionIsolationLevel enum (READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE)
 - Added TransactionOptions interface with configurable isolation level and timeout
@@ -427,9 +443,11 @@
 - Backward compatible - all options are optional
 
 **Key Commits:**
+
 - `5a0f54ec` - Enhance transaction implementation with isolation levels and timeout
 
 **Deliverables:**
+
 - [x] Real transaction support already implemented (using `db.transaction()`)
 - [x] Proper rollback on errors (already working)
 - [x] Add transaction isolation level config
@@ -953,7 +971,8 @@
 - [ ] **FEATURE-002: Change Header Color** (Created: 2025-11-21) 🟢 ENHANCEMENT
   - Task ID: FEATURE-002
   - Priority: P2 (MEDIUM - UI Enhancement)
-  - Session: TBD
+  - Session: Session-20250127-FEATURE-002-d68fd74b
+  - Status: ⏳ IN PROGRESS
   - **Problem:** The application header color needs to be updated to match design requirements or improve visual consistency
   - **Current State:**
     - Header component located in `client/src/components/layout/AppHeader.tsx`
@@ -1380,9 +1399,11 @@
 - [ ] Session archived
 
 **Key Commits:**
+
 - `scripts/apply-qa-044-migration.js` - Migration application script with verification
 
 **Next Steps:**
+
 1. Run migration script: `node scripts/apply-qa-044-migration.js`
 2. Verify tables created in production database
 3. Test invitation endpoints
@@ -1847,6 +1868,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 **Prompt:** `docs/prompts/INFRA-009.md` (to be created)
 
 **Implementation:**
+
 - Fixed incorrect git syntax in prompt generation (changed from `git push origin branch:main` to proper merge-then-push workflow)
 - Added deployment monitoring section to generated prompts with status check commands
 - Added conflict resolution section with auto-resolution and manual steps
@@ -1868,8 +1890,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 - [x] `scripts/generate-prompts.ts` updated (fixes git push syntax)
 - [x] `scripts/generate-prompts.ts` updated (adds deployment monitoring section)
 - [x] `scripts/generate-prompts.ts` updated (adds conflict resolution section)
-- [ ] All existing prompts regenerated (fixes git syntax) - *Note: Can be done later*
-- [ ] Prompt generation tested (verifies correct syntax) - *Note: Can be tested on next prompt generation*
+- [ ] All existing prompts regenerated (fixes git syntax) - _Note: Can be done later_
+- [ ] Prompt generation tested (verifies correct syntax) - _Note: Can be tested on next prompt generation_
 - [x] All tests passing
 - [x] Zero TypeScript errors
 - [x] Session archived
@@ -1886,6 +1908,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 **Prompt:** `docs/prompts/INFRA-010.md` (to be created)
 
 **Implementation:**
+
 - Updated `AGENT_ONBOARDING.md` with deployment monitoring section (automatic post-push hook system)
 - Updated `AGENT_ONBOARDING.md` with conflict resolution section
 - Updated `docs/ROADMAP_AGENT_GUIDE.md` with Git Operations & Conflict Resolution section
@@ -1907,7 +1930,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 **Deliverables:**
 
 - [x] `AGENT_ONBOARDING.md` updated (adds "Deployment Monitoring (Automatic)" section)
-- [ ] `docs/QUICK_REFERENCE.md` updated (adds conflict resolution quick ref) - *Note: File may not exist or handled separately*
+- [ ] `docs/QUICK_REFERENCE.md` updated (adds conflict resolution quick ref) - _Note: File may not exist or handled separately_
 - [x] `docs/ROADMAP_AGENT_GUIDE.md` updated (adds conflict resolution to Git Operations)
 - [x] Deployment monitoring documented (comprehensive section in AGENT_ONBOARDING.md)
 - [x] Conflict resolution documented (comprehensive sections in both files)
@@ -1958,6 +1981,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 **Problem:** TERP Commander Slack bot needs to be deployed as a separate service to avoid lockfile conflicts with main TERP app.
 
 **Current Status:**
+
 - ✅ Repository created: `EvanTenenbaum/terp-commander` (private)
 - ✅ Code pushed to GitHub
 - ✅ DigitalOcean app created: `2df472a8-2f48-49c7-8de2-16a68d5842d0`
@@ -1985,6 +2009,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 - [ ] Session archived
 
 **Technical Details:**
+
 - Repository: https://github.com/EvanTenenbaum/terp-commander
 - App ID: `2df472a8-2f48-49c7-8de2-16a68d5842d0`
 - Architecture: Separate repo, clones TERP at runtime for roadmap access
@@ -2004,6 +2029,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 **Source Document:** `CONSOLIDATED_ROADMAP_UPDATE_REPORT.md` (1635 lines)
 
 **Contents:**
+
 - ✅ 1 task already complete (QA-045) - no action needed
 - ❌ 3 tasks with code complete, need commit and roadmap update (QA-036, INFRA-009, INFRA-010)
 - 📋 35 new tasks from audit and testing (15 P0, 13 P1, 7 P2)
@@ -2062,7 +2088,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - Priority: P0 (CRITICAL BLOCKER)
   - Session: Session-20251122-BUG-003-a9371575
   - **Problem:** Order Creator cannot add items to orders - InventoryBrowser not integrated, CreditLimitBanner missing
-  - **Solution:** 
+  - **Solution:**
     - Integrated `InventoryBrowser` component using `trpc.salesSheets.getInventory`
     - Implemented `handleAddItem` to convert inventory items to LineItem format
     - Added `CreditLimitBanner` component near OrderTotalsPanel
@@ -3093,6 +3119,7 @@ The widgets correctly display "No data available" when the database hasn't been 
 **Dependencies:** None
 
 **Implementation:**
+
 - Re-implemented date range calculation for time period filtering in `server/routers/dashboard.ts`
 - Added date filtering to `getSalesByClient` endpoint (supports LIFETIME, YEAR, QUARTER, MONTH)
 - Added date filtering to `getCashFlow` endpoint (supports LIFETIME, YEAR, QUARTER, MONTH)
@@ -3287,6 +3314,7 @@ mysql -h terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 Events should be linkable to specific clients to track interactions and history.
 
 **Implementation:**
+
 - Added `clientId` field to `createEvent` and `updateEvent` API procedures in `server/routers/calendar.ts`
 - Added `getEventsByClient` procedure to calendar router
 - Added client selector dropdown to `EventFormDialog` component
@@ -3492,6 +3520,7 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
 **Prompt:** [`docs/prompts/DATA-002-AUGMENT.md`](../prompts/DATA-002-AUGMENT.md)
 
 **Objectives:**
+
 - Audit all foreign key relationships
 - Ensure orders have realistic line items
 - Link inventory movements to real inventory records
@@ -3628,7 +3657,6 @@ Seed price alert configurations for clients monitoring specific batches.
 **Impact:**  
 Completes pricing feature set, enables price monitoring.
 
-
 ---
 
 ### BUG-005: Command Palette (Cmd+K) Not Responding
@@ -3641,6 +3669,7 @@ Completes pricing feature set, enables price monitoring.
 **Prompt:** [`docs/prompts/BUG-005.md`](../prompts/BUG-005.md)
 
 **Objectives:**
+
 - Fix keyboard shortcut event listener
 - Ensure palette opens reliably
 
@@ -3656,6 +3685,7 @@ Completes pricing feature set, enables price monitoring.
 **Prompt:** [`docs/prompts/BUG-006.md`](../prompts/BUG-006.md)
 
 **Objectives:**
+
 - Hide debug info in production environment
 
 ---
@@ -3670,6 +3700,7 @@ Completes pricing feature set, enables price monitoring.
 **Prompt:** [`docs/prompts/BUG-007.md`](../prompts/BUG-007.md)
 
 **Objectives:**
+
 - Connect analytics page to real backend data
 
 ---
@@ -3685,6 +3716,7 @@ Completes pricing feature set, enables price monitoring.
 **Actual Time:** 1h
 
 **Objectives:**
+
 - Fix application crash on /purchase-orders
 - Resolution: Added safe date parsing and null checks to PurchaseOrdersPage.tsx.
 - Root Cause: Likely invalid date strings or missing data in production database causing render crash.
@@ -3702,9 +3734,9 @@ Completes pricing feature set, enables price monitoring.
 **Actual Time:** 0.5h
 
 **Objectives:**
+
 - Restore /create-order route
 - Resolution: Fixed sidebar link in `DashboardLayout.tsx` to point to correct route `/orders/create`.
-
 
 - [ ] **BUG-010: Global Search Bar Returns 404 Error** (Created: 2025-11-22) 🔴 HIGH PRIORITY
   - Task ID: BUG-010
@@ -3812,13 +3844,12 @@ Completes pricing feature set, enables price monitoring.
   - **Actual Time:** ~15 minutes
   - **Status:** ✅ COMPLETE (2025-01-27)
   - **Discovered:** E2E Testing Session 2025-11-22
-  - **Implementation:** 
+  - **Implementation:**
     - Fixed empty `onAddItem` handler that did nothing
     - Added smooth scroll to InventoryBrowser section when button clicked
     - Auto-focuses search input after scroll for better UX
     - Added id='inventory-browser-section' to InventoryBrowser Card
   - **Key Commits:** TBD (pending merge)
-
 
 - [ ] **BUG-013: Inventory Table Not Displaying Data** (Created: 2025-11-22) 🔴 CRITICAL
   - Task ID: BUG-013
@@ -3916,7 +3947,6 @@ Completes pricing feature set, enables price monitoring.
   - **Discovered:** E2E Testing Session 2025-11-22
   - **Note:** Decision needed: implement feature or remove link
 
-
 - [ ] **BUG-015: Cmd+K Command Palette Shortcut Not Working** (Created: 2025-11-22) 🟡 MEDIUM PRIORITY
   - Task ID: BUG-015
   - Priority: P2 (MEDIUM - BROKEN FEATURE)
@@ -3992,8 +4022,6 @@ Completes pricing feature set, enables price monitoring.
   - **Status:** 📋 PLANNED
   - **Discovered:** Gap Testing Session 2025-11-22 (TS-002)
   - **Note:** Decision needed: implement feature or remove from test suite if not planned
-
-
 
 ---
 
@@ -4145,8 +4173,6 @@ Completes pricing feature set, enables price monitoring.
 **Documentation:** `docs/testing/MOBILE_E2E_FINAL_REPORT.md`
 
 **Recommendation:** Fix BUG-M001, BUG-M002, and BUG-M003 before re-running full mobile test suite.
-
-
 
 - [ ] **BUG-M004: Customer Name Inconsistency Between Dashboard and Create Order** (Created: 2025-11-24) 🟡 MEDIUM PRIORITY
   - Task ID: BUG-M004
@@ -4513,4 +4539,3 @@ Completes pricing feature set, enables price monitoring.
 - [ ] All tests passing
 - [ ] Zero TypeScript errors
 - [ ] Session archived
-
