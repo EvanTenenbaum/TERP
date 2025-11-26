@@ -2082,13 +2082,20 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 **Priority:** 🔴 CRITICAL - These bugs block core functionality
 
-- [ ] **BUG-002: Duplicate Navigation Bar on Dashboard** (Created: 2025-11-21) 🔴 CRITICAL
+- [x] **BUG-002: Duplicate Navigation Bar on Dashboard** (Completed: 2025-01-27) 🔴 CRITICAL
   - Task ID: BUG-002
   - Priority: P0 (CRITICAL - UI BLOCKER)
+  - Session: Session-20250127-BUG-002-501a6334
+  - Status: ✅ COMPLETE
   - **Problem:** Incorrect duplicate navigation bar appearing in the middle of the dashboard page
-  - **Impact:** Confusing user experience, potentially blocking other navigation features
+  - **Solution:** Ensured AppSidebar is not rendered for dashboard routes by improving route matching logic and removing unused imports
+  - **Files Modified:**
+    - `client/src/components/layout/AppShell.tsx` - Improved dashboard route detection, removed unused useEffect import, added BUG-002 comment
+  - **Key Commits:**
+    - `2874ee01` - BUG-002: Ensure AppSidebar is not rendered for dashboard routes
+  - **Actual Time:** ~30 minutes
+  - **Impact:** Prevents duplicate navigation - AppSidebar now properly hidden for dashboard routes, only DashboardLayout sidebar shows
   - **Estimate:** 1-2 hours
-  - **Status:** 📋 PLANNED
   - **Prompt:** `docs/prompts/BUG-002.md`
 
 - [x] **BUG-003: Order Creator Connectivity** (Completed: 2025-11-22) 🔴 CRITICAL
