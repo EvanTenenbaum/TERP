@@ -119,9 +119,9 @@
 
 ### SEC-001: Fix Permission System Bypass
 
-**Status:** ✅ COMPLETE (2025-01-27)  
-**Priority:** 🔴 P0 (CRITICAL)  
-**Estimate:** 2 days (16 hours)  
+**Status:** complete  
+**Priority:** HIGH  
+**Estimate:** 16h  
 **Actual Time:** ~2 hours  
 **Module:** `server/_core/permissionMiddleware.ts`  
 **Dependencies:** None  
@@ -177,8 +177,8 @@
 
 ### SEC-002: Require JWT_SECRET Environment Variable
 
-**Status:** ✅ COMPLETE (2025-01-27)  
-**Priority:** 🔴 P0 (CRITICAL)  
+**Status:** complete  
+**Priority:** HIGH  
 **Estimate:** 2 hours  
 **Actual Time:** ~30 minutes  
 **Module:** `server/_core/simpleAuth.ts`, `server/_core/env.ts`  
@@ -228,9 +228,9 @@
 
 ### SEC-003: Remove Hardcoded Admin Credentials
 
-**Status:** ✅ COMPLETE (2025-01-27)  
-**Priority:** 🔴 P0 (CRITICAL)  
-**Estimate:** 1 day (8 hours)  
+**Status:** complete  
+**Priority:** HIGH  
+**Estimate:** 8h  
 **Actual Time:** ~1 hour  
 **Module:** `server/_core/index.ts`, `server/_core/simpleAuth.ts`, `server/_core/env.ts`  
 **Dependencies:** None  
@@ -279,9 +279,9 @@
 
 ### SEC-004: Remove Debug Code from Production
 
-**Status:** ✅ COMPLETE (2025-01-27)  
-**Priority:** 🔴 P0 (CRITICAL) - Upgraded from P1  
-**Estimate:** 1 day (8 hours)  
+**Status:** complete  
+**Priority:** HIGH - Upgraded from P1  
+**Estimate:** 8h  
 **Actual Time:** ~1 hour  
 **Module:** `client/src/pages/Orders.tsx`, `server/routers/orders.ts`, `server/_core/simpleAuth.ts`  
 **Dependencies:** None  
@@ -335,15 +335,15 @@
 
 ### Data Integrity Fixes
 
-### DATA-003: Add Row-Level Locking to Order Creation
+#### DATA-003: Add Row-Level Locking to Order Creation
 
-**Status:** ✅ COMPLETE (2025-01-27)  
-**Priority:** 🔴 P0 (CRITICAL)  
-**Estimate:** 3 days (24 hours)  
+**Status:** complete  
+**Priority:** HIGH  
+**Estimate:** 24h  
 **Actual Time:** ~1 hour  
 **Module:** `server/ordersDb.ts`  
 **Dependencies:** DATA-006 (COMPLETE)  
-**Prompt:** `docs/prompts/DATA-003.md` (to be created)
+**Prompt:** `docs/prompts/DATA-003.md`
 
 **Implementation:**
 
@@ -386,14 +386,14 @@
 
 ---
 
-### DATA-005: Implement Optimistic Locking
+#### DATA-005: Implement Optimistic Locking
 
-**Status:** 📋 PLANNED  
-**Priority:** 🔴 P0 (CRITICAL)  
-**Estimate:** 4 days (32 hours)  
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 32h  
 **Module:** Multiple files  
 **Dependencies:** Database migration  
-**Prompt:** `docs/prompts/DATA-005.md` (to be created)
+**Prompt:** `docs/prompts/DATA-005.md`
 
 **Problem:** Concurrent updates can overwrite each other without detection.
 
@@ -420,15 +420,15 @@
 
 ---
 
-### DATA-006: Fix Transaction Implementation
+#### DATA-006: Fix Transaction Implementation
 
-**Status:** ✅ COMPLETE (2025-01-27)  
-**Priority:** 🔴 P0 (CRITICAL)  
-**Estimate:** 2 days (16 hours)  
+**Status:** complete  
+**Priority:** HIGH  
+**Estimate:** 16h  
 **Actual Time:** ~1 hour  
 **Module:** `server/_core/dbTransaction.ts`  
 **Dependencies:** None  
-**Prompt:** `docs/prompts/DATA-006.md` (to be created)
+**Prompt:** `docs/prompts/DATA-006.md`
 
 **Implementation:**
 
@@ -463,8 +463,8 @@
 
 ### REL-001: Deploy Multiple Instances
 
-**Status:** ✅ COMPLETE (2025-01-27)  
-**Priority:** 🔴 P0 (CRITICAL)  
+**Status:** complete  
+**Priority:** HIGH  
 **Estimate:** 4 hours  
 **Module:** `.do/app.yaml`  
 **Dependencies:** None  
@@ -494,9 +494,9 @@
 
 ### REL-002: Implement Automated Database Backups
 
-**Status:** 📋 PLANNED  
-**Priority:** 🔴 P0 (CRITICAL)  
-**Estimate:** 1 day (8 hours)  
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 8h  
 **Module:** `scripts/backup-database.sh`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/REL-002.md` (to be created)
@@ -532,9 +532,9 @@
 
 ### PERF-001: Add Missing Database Indexes
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
-**Estimate:** 2 days (16 hours)  
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 16h  
 **Module:** `drizzle/schema.ts`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/PERF-001.md` (to be created)
@@ -563,9 +563,9 @@
 
 ### PERF-002: Add React.memo to Components
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
-**Estimate:** 3 days (24 hours)  
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 24h  
 **Module:** `client/src/components/`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/PERF-002.md` (to be created)
@@ -594,9 +594,9 @@
 
 ### PERF-003: Add Pagination to All List Endpoints
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
-**Estimate:** 3 days (24 hours)  
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 24h  
 **Module:** Multiple routers  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/PERF-003.md` (to be created)
@@ -628,9 +628,9 @@
 
 ### QUAL-001: Standardize Error Handling
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
-**Estimate:** 3 days (24 hours)  
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 24h  
 **Module:** Multiple files  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/QUAL-001.md` (to be created)
@@ -659,9 +659,9 @@
 
 ### QUAL-002: Add Comprehensive Input Validation
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
-**Estimate:** 4 days (32 hours)  
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 32h  
 **Module:** Multiple routers  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/QUAL-002.md` (to be created)
@@ -691,8 +691,8 @@
 
 ### QUAL-003: Complete Critical TODOs
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
+**Status:** ready  
+**Priority:** HIGH  
 **Estimate:** 2 weeks (80 hours)  
 **Module:** Multiple files  
 **Dependencies:** None  
@@ -723,9 +723,9 @@
 
 ### QUAL-004: Review Referential Integrity (CASCADE Deletes)
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
-**Estimate:** 2 days (16 hours)  
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 16h  
 **Module:** `drizzle/schema.ts`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/QUAL-004.md` (to be created)
@@ -757,9 +757,9 @@
 
 ### REL-003: Fix Memory Leak in Connection Pool
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
-**Estimate:** 1 day (8 hours)  
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 8h  
 **Module:** `server/_core/connectionPool.ts`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/REL-003.md` (to be created)
@@ -788,8 +788,8 @@
 
 ### REL-004: Increase Connection Pool Size
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
+**Status:** ready  
+**Priority:** HIGH  
 **Estimate:** 4 hours  
 **Module:** `server/_core/connectionPool.ts`  
 **Dependencies:** None  
@@ -819,14 +819,14 @@
 
 ### High Priority Data Fixes
 
-### DATA-004: Fix N+1 Queries in Order Creation
+#### DATA-004: Fix N+1 Queries in Order Creation
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH) - Downgraded from P0  
-**Estimate:** 5 days (40 hours)  
+**Status:** ready  
+**Priority:** HIGH - Downgraded from P0  
+**Estimate:** 40h  
 **Module:** `server/ordersDb.ts`, `server/routers/orders.ts`  
 **Dependencies:** None  
-**Prompt:** `docs/prompts/DATA-004.md` (to be created)
+**Prompt:** `docs/prompts/DATA-004.md`
 
 **Problem:** N+1 queries in order creation cause slow performance (1-5s).
 
@@ -948,7 +948,7 @@
     - Reveals hidden bugs in business logic
     - Makes development more efficient with realistic data
   - **Estimate:** 6-8 hours
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
 
 ### 🎉 NEW FEATURES (Nov 20, 2025)
 
@@ -1003,7 +1003,7 @@
     - [ ] Zero TypeScript errors
     - [ ] Session archived
   - **Estimate:** 1-2 hours
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Files Affected:**
     - `client/src/components/layout/AppHeader.tsx` (primary component)
 
@@ -1374,8 +1374,8 @@
 
 ### PREREQ-001: Apply Database Migration for QA-044
 
-**Status:** ✅ COMPLETE (2025-01-27)  
-**Priority:** 🔴 P1 (HIGH - BLOCKS QA-044)  
+**Status:** complete  
+**Priority:** HIGH  
 **Estimate:** 1-2 hours  
 **Actual Time:** ~30 minutes  
 **Module:** Database migrations  
@@ -1440,10 +1440,10 @@ QA-044 (Event Invitation Workflow) has all code complete and deployed, but the d
 
 ---
 
-### DATA-001: Comprehensive Production Data Seeding with Operational Coherence
+#### DATA-001: Comprehensive Production Data Seeding with Operational Coherence
 
-**Status:** ✅ COMPLETE (2025-11-14)
-**Priority:** P0 (CRITICAL)
+**Status:** complete
+**Priority:** HIGH
 **Actual Time:** ~10 hours (automated)
 **Module:** `scripts/generators/`, `scripts/seed-*.ts`
 **Dependencies:** None
@@ -1481,8 +1481,8 @@ Currently only 9 tables have seed data (clients, orders, invoices, strains, prod
 
 ### INFRA-001: Remove Obsolete GitHub Workflows
 
-**Status:** ✅ Complete (2025-11-18)  
-**Priority:** P2 (Infrastructure)  
+**Status:** complete  
+**Priority:** MEDIUM  
 **Estimate:** 1-2h  
 **Module:** `.github/workflows/`  
 **Dependencies:** None  
@@ -1511,8 +1511,8 @@ Three workflows are designed for PR-based development but the project now pushes
 
 ### INFRA-002: Add Session Cleanup Validation
 
-**Status:** ✅ Complete (2025-11-18)  
-**Priority:** P2 (Infrastructure)  
+**Status:** complete  
+**Priority:** MEDIUM  
 **Estimate:** 2-4h  
 **Module:** `.husky/`, `scripts/`  
 **Dependencies:** None  
@@ -1543,7 +1543,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### ST-005: Add Missing Database Indexes
 
-**Status:** ✅ Complete (2025-11-18)  
+**Status:** complete  
 **Priority:** HIGH  
 **Estimate:** 4-6h  
 **Module:** `server/db/schema/`  
@@ -1572,7 +1572,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### ST-007: Implement System-Wide Pagination
 
-**Status:** ✅ Complete (2025-11-18)  
+**Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 3-4d  
 **Module:** `server/routers/*` (all list endpoints)  
@@ -1602,7 +1602,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### ST-008: Implement Error Tracking (Sentry)
 
-**Status:** ✅ Complete (2025-11-18)  
+**Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 1-2d  
 **Module:** Root config, `src/_app.tsx`, `server/`  
@@ -1633,7 +1633,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### ST-009: Implement API Monitoring (Datadog)
 
-**Status:** ✅ Complete (2025-11-18)  
+**Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 2-3d  
 **Module:** `server/_core/`, tRPC middleware  
@@ -1703,8 +1703,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### INFRA-004: Implement Deployment Monitoring Enforcement
 
-**Status:** 📋 PLANNED  
-**Priority:** 🔴 P0 (CRITICAL)  
+**Status:** ready  
+**Priority:** HIGH  
 **Estimate:** 8-12 hours  
 **Module:** `.husky/post-push`, `scripts/monitor-deployment-auto.sh`, `scripts/check-deployment-status.sh`, `scripts/cleanup-deployment-status.sh`, `scripts/manage-deployment-monitors.sh`  
 **Dependencies:** None  
@@ -1740,8 +1740,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### INFRA-005: Fix Pre-Push Hook Protocol Conflict
 
-**Status:** 📋 PLANNED  
-**Priority:** 🔴 P0 (CRITICAL)  
+**Status:** ready  
+**Priority:** HIGH  
 **Estimate:** 1-2 hours  
 **Module:** `.husky/pre-push`  
 **Dependencies:** None  
@@ -1770,8 +1770,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### INFRA-006: Enhance Conflict Resolution
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
+**Status:** ready  
+**Priority:** HIGH  
 **Estimate:** 4-6 hours  
 **Module:** `scripts/handle-push-conflict.sh`, `scripts/auto-resolve-conflicts.sh`  
 **Dependencies:** INFRA-005  
@@ -1803,8 +1803,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### INFRA-007: Update Swarm Manager
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟡 P1 (HIGH)  
+**Status:** ready  
+**Priority:** HIGH  
 **Estimate:** 4-6 hours  
 **Module:** `scripts/manager.ts`  
 **Dependencies:** INFRA-004  
@@ -1835,8 +1835,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### INFRA-008: Fix Migration Consolidation
 
-**Status:** 📋 PLANNED  
-**Priority:** 🔴 P0 (CRITICAL)  
+**Status:** ready  
+**Priority:** HIGH  
 **Estimate:** 3-4 hours  
 **Module:** `server/autoMigrate.ts`, `scripts/start.sh`  
 **Dependencies:** None  
@@ -1868,8 +1868,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### INFRA-009: Update All Prompts
 
-**Status:** ✅ COMPLETE (2025-11-25)  
-**Priority:** 🟡 P1 (HIGH)  
+**Status:** complete  
+**Priority:** HIGH  
 **Estimate:** 2-3 hours (Actual: ~1h)  
 **Module:** `scripts/generate-prompts.ts`, `docs/prompts/*.md`  
 **Dependencies:** INFRA-004, INFRA-006  
@@ -1908,8 +1908,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### INFRA-010: Update Documentation
 
-**Status:** ✅ COMPLETE (2025-11-25)  
-**Priority:** 🟢 P2 (MEDIUM)  
+**Status:** complete  
+**Priority:** MEDIUM  
 **Estimate:** 4-6 hours (Actual: ~2h)  
 **Module:** `AGENT_ONBOARDING.md`, `docs/ROADMAP_AGENT_GUIDE.md`  
 **Dependencies:** INFRA-004, INFRA-006  
@@ -1951,8 +1951,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### INFRA-011: Update Deployment Configuration
 
-**Status:** ✅ COMPLETE (2025-01-27)  
-**Priority:** 🔴 P0 (CRITICAL)  
+**Status:** complete  
+**Priority:** HIGH  
 **Estimate:** 2-3 hours  
 **Module:** `.do/app.yaml`, `server/_core/healthCheck.ts`  
 **Dependencies:** None  
@@ -1980,7 +1980,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 ### INFRA-012: Deploy TERP Commander Slack Bot
 
 **Status:** ⏳ IN PROGRESS  
-**Priority:** 🟡 P1 (HIGH)  
+**Priority:** HIGH  
 **Estimate:** 4-6 hours  
 **Module:** `terp-commander/` (separate repository)  
 **Dependencies:** None  
@@ -2025,8 +2025,8 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 
 ### ROADMAP-001: Process Consolidated Roadmap Update Report
 
-**Status:** 📋 PLANNED  
-**Priority:** 🔴 P0 (CRITICAL)  
+**Status:** ready  
+**Priority:** HIGH  
 **Estimate:** 8-12 hours  
 **Module:** `docs/roadmaps/MASTER_ROADMAP.md`, `CONSOLIDATED_ROADMAP_UPDATE_REPORT.md`  
 **Dependencies:** None  
@@ -2186,7 +2186,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - **Problem:** window.confirm used instead of proper dialogs, no confirmation for clearing cart
   - **Impact:** Unprofessional UI, users can accidentally lose work
   - **Estimate:** 2-4 hours
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Prompt:** `docs/prompts/BUG-007.md`
 
 - [x] **ST-019: Fix "Happy Path" Only Testing Assumptions** (Completed: 2025-11-22) 🟡 MEDIUM
@@ -2231,7 +2231,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
     4. Verify order totals calculate correctly
     5. Verify order submission creates all required records
   - **Estimate:** 4-6 hours
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Dependencies:** BUG-003 (Order Creator Connectivity)
   - **Prompt:** `docs/prompts/WF-001.md`
 
@@ -2246,7 +2246,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
     4. Verify batches appear in workflow queue (after BUG-006)
     5. Verify batch status transitions work correctly
   - **Estimate:** 6-8 hours
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Dependencies:** BUG-004 (Purchase Modal Data Loss), BUG-006 (Workflow Queue Entry Point)
   - **Prompt:** `docs/prompts/WF-002.md`
 
@@ -2261,7 +2261,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
     4. Verify batch status transitions (Sold → In Stock)
     5. Verify audit trail records correct user
   - **Estimate:** 4-6 hours
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Dependencies:** BUG-005 (Returns Workflow Logic Gap)
   - **Prompt:** `docs/prompts/WF-003.md`
 
@@ -2276,7 +2276,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
     4. Verify audit trails are complete
     5. Verify soft deletes work correctly
   - **Estimate:** 6-8 hours
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Dependencies:** ST-019 (Happy Path Testing), All workflow fixes
   - **Prompt:** `docs/prompts/WF-004.md`
 
@@ -2700,9 +2700,9 @@ These should **NOT** be built:
 **Total Issues:** 27 tasks (5 P0, 7 P1, 10 P2, 5 P3)  
 **Full Details:** See `docs/roadmaps/QA_TASKS_BACKLOG.md`
 
-### QA-001: Fix 404 Error - Todo Lists Module
+#### QA-001: Fix 404 Error - Todo Lists Module
 
-**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-8h
+**Priority:** P0 | **Status:** complete | **Effort:** 4-8h
 
 Module `/todo` returns 404. Users cannot access task management functionality.
 
@@ -2710,9 +2710,9 @@ Module `/todo` returns 404. Users cannot access task management functionality.
 
 ---
 
-### QA-002: Fix 404 Error - Accounting Module
+#### QA-002: Fix 404 Error - Accounting Module
 
-**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
+**Priority:** P0 | **Status:** complete | **Effort:** 8-16h
 
 Module `/accounting` returns 404. Critical business function unavailable.
 
@@ -2721,17 +2721,17 @@ See docs/sessions/completed/Session-20251114-QA-002-07bc42d1.md for details.
 
 ---
 
-### QA-003: Fix 404 Error - COGS Settings Module
+#### QA-003: Fix 404 Error - COGS Settings Module
 
-**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-8h
+**Priority:** P0 | **Status:** complete | **Effort:** 4-8h
 
 **Resolution:** Fixed routing mismatch between sidebar menu and App.tsx. See docs/QA-003-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-004: Fix 404 Error - Analytics Module
+#### QA-004: Fix 404 Error - Analytics Module
 
-**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
+**Priority:** P0 | **Status:** complete | **Effort:** 8-16h
 
 **Resolution:** Created AnalyticsPage component and added /analytics route to fix 404 error. Backend analytics router was already functional. See docs/QA-004-COMPLETION-REPORT.md for details.
 
@@ -2739,9 +2739,9 @@ Module `/analytics` now accessible. Business intelligence features available thr
 
 ---
 
-### QA-005: Investigate and Fix Systemic Data Access Issues
+#### QA-005: Investigate and Fix Systemic Data Access Issues
 
-**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 16-24h
+**Priority:** P0 | **Status:** complete | **Effort:** 16-24h
 
 **Resolution:** Integrated RBAC seeding system to fix data access issues. See docs/QA-005-COMPLETION-REPORT.md for details.
 
@@ -2769,59 +2769,59 @@ Module `/analytics` now accessible. Business intelligence features available thr
 
 ## 🔴 QA-IDENTIFIED HIGH PRIORITY BUGS
 
-### QA-006: Fix Dashboard - Vendors Button 404
+#### QA-006: Fix Dashboard - Vendors Button 404
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) - No Action Required | **Effort:** 2-4h
+**Priority:** P1 | **Status:** complete | **Effort:** 2-4h
 
 Dashboard Vendors button returns 404.
 
 ---
 
-### QA-007: Fix Dashboard - Purchase Orders Button 404
+#### QA-007: Fix Dashboard - Purchase Orders Button 404
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) - No Action Required | **Effort:** 2-4h
+**Priority:** P1 | **Status:** complete | **Effort:** 2-4h
 
 Dashboard Purchase Orders button returns 404.
 
 ---
 
-### QA-008: Fix Dashboard - Returns Button 404
+#### QA-008: Fix Dashboard - Returns Button 404
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) - No Action Required | **Effort:** 2-4h
+**Priority:** P1 | **Status:** complete | **Effort:** 2-4h
 
 Dashboard Returns button returns 404.
 
 ---
 
-### QA-009: Fix Dashboard - Locations Button 404
+#### QA-009: Fix Dashboard - Locations Button 404
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 2-4h
+**Priority:** P1 | **Status:** complete | **Effort:** 2-4h
 
 Dashboard Locations button returns 404.
 
 ---
 
-### QA-010: Fix Inventory - Export CSV Button
+#### QA-010: Fix Inventory - Export CSV Button
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+**Priority:** P1 | **Status:** complete | **Effort:** 4-6h
 Export CSV button in Inventory module is unresponsive.
 
 **Resolution:** Fixed data mapping issue in export handler. Added transformation logic to map nested inventory data (batch, product, brand, vendor) to flat objects before export.
 
 ## See docs/QA-010-COMPLETION-REPORT.md for details.
 
-### QA-011: Fix Orders - Export CSV Button
+#### QA-011: Fix Orders - Export CSV Button
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+**Priority:** P1 | **Status:** complete | **Effort:** 4-6h
 Export CSV button in Orders module is unresponsive.
 
 **Resolution:** Fixed race condition in export handler. Added validation to ensure client data is loaded before export, preventing silent failures and providing user feedback.
 
 ## See docs/QA-011-COMPLETION-REPORT.md for details.
 
-### QA-012: Fix Global Search Functionality
+#### QA-012: Fix Global Search Functionality
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-12h
+**Priority:** P1 | **Status:** complete | **Effort:** 8-12h
 Global search bar accepts input but doesn't trigger search on Enter.
 
 **Resolution:** Implemented complete search functionality in AppHeader component. Added state management, event handlers for Enter key and form submission, and navigation to search results page.
@@ -2830,72 +2830,72 @@ Global search bar accepts input but doesn't trigger search on Enter.
 
 ## 🟡 QA-IDENTIFIED MEDIUM PRIORITY BUGS
 
-### QA-013: Fix Workflow Queue - Analytics Button 404
+#### QA-013: Fix Workflow Queue - Analytics Button 404
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+**Priority:** P2 | **Status:** complete | **Effort:** 4-6h
 
 **Resolution:** Investigation complete - Analytics and History buttons work correctly as view mode switchers. No actual 404 errors exist. Created test suite and documentation.
 See docs/QA-013-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-014: Fix Workflow Queue - History Button 404
+#### QA-014: Fix Workflow Queue - History Button 404
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+**Priority:** P2 | **Status:** complete | **Effort:** 4-6h
 
 **Resolution:** Investigation complete - History button works correctly as a view mode switcher. No actual 404 errors exist. Test coverage provided by QA-013.
 See docs/QA-014-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-015: Fix Matchmaking - Add Need Button 404
+#### QA-015: Fix Matchmaking - Add Need Button 404
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+**Priority:** P2 | **Status:** complete | **Effort:** 4-6h
 
 **Resolution:** Fixed 404 errors for both "Add Need" and "Add Supply" buttons by correcting navigation routes. Add Need now navigates to /clients (where needs are created in client context), and Add Supply navigates to /vendor-supply (existing page). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
 See docs/QA-015-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-016: Fix Matchmaking - Add Supply Button 404
+#### QA-016: Fix Matchmaking - Add Supply Button 404
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+**Priority:** P2 | **Status:** complete | **Effort:** 4-6h
 
 **Resolution:** Fixed together with QA-015 by updating button navigation routes. Changed Add Need button to navigate to /clients and Add Supply button to navigate to /vendor-supply (existing routes). Both buttons were navigating to non-existent routes (/needs/new and /supply/new). Also fixed pre-existing syntax error in WorkflowQueuePage.tsx.
 See docs/QA-015-COMPLETION-REPORT.md and docs/QA-016-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-017: Fix Clients - Save Button (Customize Metrics)
+#### QA-017: Fix Clients - Save Button (Customize Metrics)
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 2-4h
+**Priority:** P2 | **Status:** complete | **Effort:** 2-4h
 
 **Resolution:** Fixed by adding event.preventDefault() and event.stopPropagation() to button handlers to prevent dropdown from closing before save operation completes. Also fixed drizzle-orm import issue and improved test infrastructure.
 See docs/QA-017-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-018: Fix Credit Settings - Save Changes Button
+#### QA-018: Fix Credit Settings - Save Changes Button
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 2-4h
+**Priority:** P2 | **Status:** complete | **Effort:** 2-4h
 
 **Resolution:** Fixed by adding event.preventDefault() and event.stopPropagation() to button handlers. Applied consistent event handling to all three button functions (Save, Reset, Reset to Defaults).
 See docs/QA-018-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-019: Fix Credit Settings - Reset to Defaults Button
+#### QA-019: Fix Credit Settings - Reset to Defaults Button
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 2-4h
+**Priority:** P2 | **Status:** complete | **Effort:** 2-4h
 
 **Resolution:** Completed as part of QA-018. The handleResetToDefaults function received the same event handling fix (event.preventDefault() and event.stopPropagation()) applied to all button handlers in Credit Settings.
 See docs/QA-019-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-020: Test and Fix Calendar - Create Event Form
+#### QA-020: Test and Fix Calendar - Create Event Form
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-17) | **Effort:** 2.5h | **Session:** Session-20251114-calendar-events-428937
+**Priority:** P2 | **Status:** complete | **Effort:** 2.5h | **Session:** Session-20251114-calendar-events-428937
 
 **Resolution:** Verified and enhanced calendar event form functionality:
 
@@ -2912,9 +2912,9 @@ See docs/QA-019-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-021: Test and Fix Pricing Rules - Create Rule Form
+#### QA-021: Test and Fix Pricing Rules - Create Rule Form
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+**Priority:** P2 | **Status:** complete | **Effort:** 4-6h
 
 **Resolution:** Verified form implementation through comprehensive code review. No bugs found:
 
@@ -2927,9 +2927,9 @@ See docs/QA-021-COMPLETION-REPORT.md for details.
 
 ---
 
-### QA-022: Test and Fix Pricing Profiles - Create Profile Form
+#### QA-022: Test and Fix Pricing Profiles - Create Profile Form
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-6h
+**Priority:** P2 | **Status:** complete | **Effort:** 4-6h
 
 **Resolution:** Verified form implementation through comprehensive code review. No bugs found:
 
@@ -2945,39 +2945,39 @@ See docs/QA-022-COMPLETION-REPORT.md for details.
 
 ## 🟢 QA-IDENTIFIED LOW PRIORITY TASKS
 
-### QA-023: Conduct Mobile Responsiveness Testing
+#### QA-023: Conduct Mobile Responsiveness Testing
 
-**Priority:** P3 | **Status:** Not Started | **Effort:** 16-24h
+**Priority:** P3 | **Status:** ready | **Effort:** 16-24h
 
 Mobile responsiveness not properly tested. May have responsive design issues.
 
 ---
 
-### QA-024: Test Settings - Form Submissions
+#### QA-024: Test Settings - Form Submissions
 
-**Priority:** P3 | **Status:** Not Started | **Effort:** 6-8h
+**Priority:** P3 | **Status:** ready | **Effort:** 6-8h
 
 Multiple forms in Settings not tested (Create User, Reset Password, Assign Role, Create Role).
 
 ---
 
-### QA-025: Test User Profile Functionality
+#### QA-025: Test User Profile Functionality
 
-**Priority:** P3 | **Status:** Not Started | **Effort:** 4-6h
+**Priority:** P3 | **Status:** ready | **Effort:** 4-6h
 
 ---
 
-### QA-026: Conduct Performance Testing
+#### QA-026: Conduct Performance Testing
 
-**Priority:** P3 | **Status:** Not Started | **Effort:** 16-24h
+**Priority:** P3 | **Status:** ready | **Effort:** 16-24h
 
 Page load times and API response times not measured.
 
 ---
 
-### QA-027: Conduct Security Audit
+#### QA-027: Conduct Security Audit
 
-**Priority:** P3 | **Status:** Not Started | **Effort:** 16-24h
+**Priority:** P3 | **Status:** ready | **Effort:** 16-24h
 
 Security audit not performed. Need to verify authentication, authorization, and vulnerability testing.
 
@@ -3022,7 +3022,7 @@ This roadmap now includes a comprehensive 4-phase plan to address all technical 
 ### TEST-001: End-to-End System Verification
 
 **Type:** Testing  
-**Priority:** P0  
+**Priority:** HIGH  
 **Status:** Not Started  
 **Prompt:** [TEST-001.md](../prompts/TEST-001.md)
 
@@ -3042,52 +3042,52 @@ Test task to verify the roadmap management system is working correctly end-to-en
 
 ## 📋 New Tasks from Video Walkthrough (Nov 14, 2025)
 
-### QA-028: Fix Old Sidebar Navigation
+#### QA-028: Fix Old Sidebar Navigation
 
-**Priority:** P1 | **Status:** Not Started | **Effort:** 4-8h
+**Priority:** P1 | **Status:** ready | **Effort:** 4-8h
 An old, out-of-place sidebar navigation menu appears on the dashboard, most prominently on mobile.
 
 ---
 
-### QA-029: Fix Inbox Dropdown Navigation
+#### QA-029: Fix Inbox Dropdown Navigation
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 2-4h
+**Priority:** P2 | **Status:** complete | **Effort:** 2-4h
 The "Inbox" button in the main navigation acts as a direct link instead of a dropdown menu.
 
 **Resolution:** Converted Inbox button to dropdown menu with preview of recent unread items, "Mark all read" and "View all" buttons. All tests passing.
 
 ---
 
-### QA-030: Add In-App Back Buttons
+#### QA-030: Add In-App Back Buttons
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
+**Priority:** P2 | **Status:** complete | **Effort:** 8-16h
 The application lacks in-app back buttons, forcing reliance on the browser's back button for navigation.
 
 **Resolution:** Created reusable BackButton component and added back buttons to 26 pages across the application. All tests passing (9/9). See docs/QA-030-SUMMARY.md for details.
 
 ---
 
-### QA-031: Fix Settings Icon Responsiveness
+#### QA-031: Fix Settings Icon Responsiveness
 
-**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 1-2h
+**Priority:** P0 | **Status:** complete | **Effort:** 1-2h
 The "Settings" icon in the main navigation is unresponsive and does not trigger any action.
 
 **Resolution:** Added onClick handler to Settings button in AppHeader.tsx to navigate to /settings route. Also added title attribute for accessibility. The settings route already existed in App.tsx, so only the button handler was needed.
 
 ---
 
-### QA-032: Fix User Profile Icon Responsiveness
+#### QA-032: Fix User Profile Icon Responsiveness
 
-**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 1-2h
+**Priority:** P0 | **Status:** complete | **Effort:** 1-2h
 The user profile icon in the main navigation is also unresponsive.
 
 **Resolution:** Fixed alongside QA-031. Added onClick handler to User Profile button in AppHeader.tsx to navigate to /settings route. Also added title attribute for accessibility. Both Settings and User Profile icons now navigate to the same settings page, which includes user management features.
 
 ---
 
-### QA-033: Fix Custom Layout Blank Dashboard
+#### QA-033: Fix Custom Layout Blank Dashboard
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h | **Actual:** 2h
+**Priority:** P1 | **Status:** complete | **Effort:** 8-16h | **Actual:** 2h
 
 **Issue:** Selecting the "Custom" layout preset from the "Customize" panel resulted in a blank dashboard.
 
@@ -3102,16 +3102,16 @@ The user profile icon in the main navigation is also unresponsive.
 
 ---
 
-### QA-034: Fix Widget Visibility Disappearing
+#### QA-034: Fix Widget Visibility Disappearing
 
-**Priority:** P1 | **Status:** Not Started | **Effort:** 4-8h
+**Priority:** P1 | **Status:** ready | **Effort:** 4-8h
 The "Widget Visibility" options disappear when the "Custom" layout is selected.
 
 ---
 
-### QA-035: Fix Dashboard Widgets Showing No Data
+#### QA-035: Fix Dashboard Widgets Showing No Data
 
-**Priority:** P0 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 16-24h
+**Priority:** P0 | **Status:** complete | **Effort:** 16-24h
 All dashboard widgets show "No data available," even though seed data is expected to be present.
 
 **Resolution:** Root cause identified - this is not a bug but expected behavior when the database is empty. Enhanced user experience by:
@@ -3125,10 +3125,10 @@ The widgets correctly display "No data available" when the database hasn't been 
 
 ---
 
-### QA-036: Fix Time Period Filters on Widgets
+#### QA-036: Fix Time Period Filters on Widgets
 
-**Status:** ✅ COMPLETE (2025-11-25)  
-**Priority:** 🟢 P2 (MEDIUM)  
+**Status:** complete  
+**Priority:** MEDIUM  
 **Estimate:** 4-8h (Actual: ~2h)  
 **Module:** `server/routers/dashboard.ts`  
 **Dependencies:** None
@@ -3164,52 +3164,52 @@ The widgets correctly display "No data available" when the database hasn't been 
 
 ---
 
-### QA-037: Fix Comments Submission
+#### QA-037: Fix Comments Submission
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h (Actual: ~3h)
+**Priority:** P1 | **Status:** complete | **Effort:** 8-16h (Actual: ~3h)
 The "Comments" feature is non-functional; users cannot submit comments.
 
 **Resolution:** Created 31 comprehensive tests verifying full functionality. Database tables exist and all CRUD operations work correctly. Comments system is production-ready. See `docs/QA-037-COMPLETION-REPORT.md` for details.
 
 ---
 
-### QA-038: Fix @ Tagging in Comments
+#### QA-038: Fix @ Tagging in Comments
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 4-8h (Actual: ~2h)
+**Priority:** P2 | **Status:** complete | **Effort:** 4-8h (Actual: ~2h)
 The functionality for tagging users with `@` in comments is untested and likely broken.
 
 **Resolution:** Implemented complete @ tagging UI with autocomplete, keyboard navigation, and visual highlighting. Created MentionInput component with user filtering, MentionRenderer for display, and integrated with existing comment system. 17 tests passing. See `docs/QA-038-COMPLETION-REPORT.md` for details.
 
 ---
 
-### QA-039: Add User Selection for Shared Lists
+#### QA-039: Add User Selection for Shared Lists
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
+**Priority:** P1 | **Status:** complete | **Effort:** 8-16h
 When creating a shared list, there is no option to select which users to share the list with.
 
 **Resolution:** Created users API router and UserSelector component for multi-user selection. Updated TodoListForm to include user selection when shared list is enabled. All tests passing (7/7). See docs/QA-039-SUMMARY.md for details.
 
 ---
 
-### QA-040: Mark List Name Field as Required
+#### QA-040: Mark List Name Field as Required
 
-**Priority:** P3 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 1-2h (Actual: 30min)
+**Priority:** P3 | **Status:** complete | **Effort:** 1-2h (Actual: 30min)
 The "List Name" field in the "Create New List" modal is required but not visually indicated as such.
 
 **Resolution:** Upon investigation, the List Name field was already properly implemented as required with multi-layer validation: HTML5 `required` attribute, client-side JavaScript validation, disabled submit button, and server-side Zod validation. Enhanced server-side validation by making the name field required in the update mutation (previously optional) to ensure consistency across all CRUD operations. Full completion report at `docs/QA-040-COMPLETION-REPORT.md`.
 
 ---
 
-### QA-041: Merge Inbox and To-Do List Modules
+#### QA-041: Merge Inbox and To-Do List Modules
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 24-40h
+**Priority:** P2 | **Status:** ready | **Effort:** 24-40h
 The current "Inbox" and "To-Do List" features should be consolidated into a single, unified system for managing tasks and notifications.
 
 ---
 
-### QA-042: Redesign Event Creation Form
+#### QA-042: Redesign Event Creation Form
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 16-24h
+**Priority:** P1 | **Status:** complete | **Effort:** 16-24h
 
 The "Create Event" form has been redesigned with the following changes:
 
@@ -3223,9 +3223,9 @@ The "Create Event" form has been redesigned with the following changes:
 
 ---
 
-### QA-043: Add Event Attendees Functionality
+#### QA-043: Add Event Attendees Functionality
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
+**Priority:** P1 | **Status:** complete | **Effort:** 8-16h
 
 Event attendees functionality has been implemented:
 
@@ -3241,9 +3241,9 @@ Note: External contacts functionality not implemented as no contacts table exist
 
 ---
 
-### QA-044: Implement Event Invitation Workflow
+#### QA-044: Implement Event Invitation Workflow
 
-**Priority:** P1 | **Status:** ⚠️ INCOMPLETE - Code Complete, Database Migration NOT Applied | **Effort:** 16-24h | **Started:** 2025-11-14
+**Priority:** P1 | **Status:** blocked | **Effort:** 16-24h | **Started:** 2025-11-14
 
 A workflow for sending and managing event invitations needs to be designed. This should include options for auto-accepting invitations and admin-level controls.
 
@@ -3323,9 +3323,9 @@ mysql -h terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
 
 ---
 
-### QA-045: Link Events to Clients
+#### QA-045: Link Events to Clients
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-01-27) | **Effort:** 8-16h
+**Priority:** P2 | **Status:** complete | **Effort:** 8-16h
 Events should be linkable to specific clients to track interactions and history.
 
 **Implementation:**
@@ -3342,9 +3342,9 @@ Events should be linkable to specific clients to track interactions and history.
 
 ---
 
-### QA-046: Add Click-to-Create Event on Calendar
+#### QA-046: Add Click-to-Create Event on Calendar
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-17) | **Effort:** 2.5h | **Session:** Session-20251114-calendar-events-428937
+**Priority:** P2 | **Status:** complete | **Effort:** 2.5h | **Session:** Session-20251114-calendar-events-428937
 
 Click-to-create functionality verified and production-ready:
 
@@ -3362,9 +3362,9 @@ Click-to-create functionality verified and production-ready:
 
 ---
 
-### QA-047: Set Default Calendar View to Business Hours
+#### QA-047: Set Default Calendar View to Business Hours
 
-**Priority:** P3 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 1-2h
+**Priority:** P3 | **Status:** complete | **Effort:** 1-2h
 
 Business hours view has been implemented:
 
@@ -3375,33 +3375,33 @@ Business hours view has been implemented:
 
 ---
 
-### QA-048: Design @ Mention Workflow
+#### QA-048: Design @ Mention Workflow
 
-**Priority:** P2 | **Status:** Not Started | **Effort:** 8-16h
+**Priority:** P2 | **Status:** ready | **Effort:** 8-16h
 A clear workflow needs to be defined and implemented for how `@` mentions in comments create tasks or notifications in the user's unified inbox.
 
 ---
 
-### QA-049: Conduct Mobile Responsiveness Review
+#### QA-049: Conduct Mobile Responsiveness Review
 
-**Priority:** P2 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 8-16h
+**Priority:** P2 | **Status:** complete | **Effort:** 8-16h
 The current review is focused on the desktop experience. A separate review should be conducted to assess and address issues on mobile devices.
 
 **Resolution:** Comprehensive mobile responsiveness review completed. Analyzed 245 React components and identified 38 issues across 3 priority levels. Full report available at `docs/QA-049-MOBILE-RESPONSIVENESS-REVIEW.md`. Key findings: sidebar navigation, data tables, dashboard widgets, modals, and forms require mobile optimization. Recommended fixes documented in QA-050.
 
 ---
 
-### QA-050: Implement Mobile Responsiveness Fixes
+#### QA-050: Implement Mobile Responsiveness Fixes
 
-**Priority:** P1 | **Status:** ✅ Complete (2025-11-14) | **Effort:** 16-24h (Actual: 2h)
+**Priority:** P1 | **Status:** complete | **Effort:** 16-24h (Actual: 2h)
 Implement the fixes identified in the mobile responsiveness review (QA-049).
 
 **Resolution:** Upon detailed code analysis, discovered that most critical mobile responsiveness features were already implemented: mobile sidebar navigation with hamburger menu, data table horizontal scrolling, responsive layouts, mobile detection hook, and proper touch targets. Created comprehensive documentation of responsive patterns (`docs/MOBILE_RESPONSIVE_PATTERNS.md`) and verified all implementations. Full completion report at `docs/QA-050-COMPLETION-REPORT.md`. Actual effort significantly less than estimated due to existing robust mobile infrastructure.
 
 ### ✅ DATA-002: Seed Comments and Dashboard Tables
 
-**Status:** ✅ Complete (2025-11-18)  
-**Priority:** P2 (Medium)  
+**Status:** complete  
+**Priority:** MEDIUM  
 **Estimate:** 2-4 hours  
 **Prompt:** `docs/prompts/DATA-002.md`
 
@@ -3428,8 +3428,8 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 
 ### ✅ DATA-003: Seed Pricing Tables
 
-**Status:** ✅ Complete (2025-11-18)  
-**Priority:** P2 (Medium)  
+**Status:** complete  
+**Priority:** MEDIUM  
 **Estimate:** 2-3 hours  
 **Prompt:** `docs/prompts/DATA-003.md`
 
@@ -3453,8 +3453,8 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 
 ### INFRA-003: Fix Database Schema Sync
 
-**Status:** ✅ Complete (2025-11-18)  
-**Priority:** P2 (Infrastructure)  
+**Status:** complete  
+**Priority:** MEDIUM  
 **Estimate:** 2-4 hours  
 **Prompt:** `docs/prompts/INFRA-003.md`
 
@@ -3484,7 +3484,7 @@ Implement the fixes identified in the mobile responsiveness review (QA-049).
 ### TASK: Create Agent Prompts for Parallel Execution (INFRA-003, DATA-002, DATA-003)
 
 **Status:** ✅ COMPLETE (2025-11-17)  
-**Priority:** P1 (High)  
+**Priority:** HIGH  
 **Actual Time:** 1 hour  
 **Module:** `docs/prompts/`  
 **Dependencies:** None
@@ -3525,9 +3525,9 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
 
 ## Data Seeding Tasks
 
-### DATA-002-AUGMENT: Augment Seeded Data for Realistic Relationships
+#### DATA-002-AUGMENT: Augment Seeded Data for Realistic Relationships
 
-**Status:** Ready
+**Status:** ready
 **Priority:** HIGH
 **Estimate:** 6-8h
 **Module:** `scripts/seed-*.ts`
@@ -3543,11 +3543,11 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
 
 ---
 
-### DATA-004: Seed Orders & Line Items
+#### DATA-004: Seed Orders & Line Items
 
-**Status:** In Progress (2025-11-18)  
-**Priority:** P1 (High)  
-**Estimate:** 1.5-2 hours  
+**Status:** in-progress  
+**Priority:** HIGH  
+**Estimate:** 1-2h  
 **Depends On:** DATA-002, DATA-003
 
 **Prompt:** `docs/prompts/DATA-004.md`
@@ -3567,11 +3567,11 @@ Enables order management, invoicing, sales reporting, and revenue analytics test
 
 ---
 
-### DATA-005: Seed Order Fulfillment
+#### DATA-005: Seed Order Fulfillment
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟢 P2 (MEDIUM)  
-**Estimate:** 1-1.5 hours  
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 1-2h  
 **Depends On:** DATA-004
 
 **Objective:**  
@@ -3591,7 +3591,7 @@ Completes order lifecycle, enables fulfillment workflow and shipping tracking te
 ### ✅ DATA-006: Seed Batches
 
 **Status:** Planned  
-**Priority:** P2 (Medium)  
+**Priority:** MEDIUM  
 **Estimate:** 2-2.5 hours  
 **Depends On:** Products, Lots (need verification)
 
@@ -3611,11 +3611,11 @@ Enables inventory management, batch tracking, and price alerts.
 
 ---
 
-### DATA-009: Seed Inventory Movements
+#### DATA-009: Seed Inventory Movements
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟢 P2 (MEDIUM)  
-**Estimate:** 1.5-2 hours  
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 1-2h  
 **Depends On:** DATA-006
 
 **Objective:**  
@@ -3635,8 +3635,8 @@ Enables inventory tracking, audit trail, and inventory reporting.
 ### ✅ DATA-008: Seed Client Contacts & Interactions
 
 **Status:** Planned  
-**Priority:** P3 (Low)  
-**Estimate:** 1-1.5 hours  
+**Priority:** LOW  
+**Estimate:** 1-2h  
 **Depends On:** Clients (already exist)
 
 **Objective:**  
@@ -3656,7 +3656,7 @@ Enhances CRM functionality, enables contact and interaction tracking.
 ### ✅ DATA-009: Seed Client Price Alerts
 
 **Status:** Planned  
-**Priority:** P3 (Low)  
+**Priority:** LOW  
 **Estimate:** 0.5-1 hour  
 **Depends On:** DATA-006 (batches)
 
@@ -3674,9 +3674,9 @@ Completes pricing feature set, enables price monitoring.
 
 ---
 
-### BUG-005: Command Palette (Cmd+K) Not Responding
+#### BUG-005: Command Palette (Cmd+K) Not Responding
 
-**Status:** Ready
+**Status:** ready
 **Priority:** MEDIUM
 **Estimate:** 2-3h
 **Module:** Navigation
@@ -3690,11 +3690,11 @@ Completes pricing feature set, enables price monitoring.
 
 ---
 
-### BUG-006: Debug Dashboard Visible in Production
+#### BUG-006: Debug Dashboard Visible in Production
 
-**Status:** Ready
+**Status:** ready
 **Priority:** LOW
-**Estimate:** 0.5h
+**Estimate:** 1h
 **Module:** Orders
 **Dependencies:** None
 **Prompt:** [`docs/prompts/BUG-006.md`](../prompts/BUG-006.md)
@@ -3705,9 +3705,9 @@ Completes pricing feature set, enables price monitoring.
 
 ---
 
-### BUG-007: Analytics Data Not Populated
+#### BUG-007: Analytics Data Not Populated
 
-**Status:** Ready
+**Status:** ready
 **Priority:** MEDIUM
 **Estimate:** 4-6h
 **Module:** Analytics
@@ -3720,9 +3720,9 @@ Completes pricing feature set, enables price monitoring.
 
 ---
 
-### BUG-008: Purchase Orders Page Crashes
+#### BUG-008: Purchase Orders Page Crashes
 
-**Status:** ✅ Complete (2025-11-22)
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 2-4h
 **Module:** Purchase Orders
@@ -3738,9 +3738,9 @@ Completes pricing feature set, enables price monitoring.
 
 ---
 
-### BUG-009: Create Order Route Returns 404
+#### BUG-009: Create Order Route Returns 404
 
-**Status:** ✅ Complete (2025-11-22)
+**Status:** complete
 **Priority:** HIGH
 **Estimate:** 1-2h
 **Module:** Orders
@@ -3783,7 +3783,7 @@ Completes pricing feature set, enables price monitoring.
     - `server/routers/*.ts` (search endpoints)
   - **Impact:** Core navigation feature broken - users cannot search for records
   - **Estimate:** 4-6 hours (depending on implementation approach)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** E2E Testing Session 2025-11-22
 
 - [ ] **BUG-011: Debug Dashboard Visible in Production** (Created: 2025-11-22) 🔴 HIGH PRIORITY
@@ -3813,7 +3813,7 @@ Completes pricing feature set, enables price monitoring.
   - **Security Impact:** MEDIUM - Exposes internal implementation details
   - **User Experience Impact:** HIGH - Unprofessional appearance, confusing for users
   - **Estimate:** 15-30 minutes
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** E2E Testing Session 2025-11-22
 
 - [ ] **BUG-012: Add Item Button Not Responding on Create Order Page** (Created: 2025-11-22) 🔴 CRITICAL
@@ -3857,7 +3857,7 @@ Completes pricing feature set, enables price monitoring.
     - Selected products added to order line items
   - **Estimate:** 4-8 hours (requires investigation and fix)
   - **Actual Time:** ~15 minutes
-  - **Status:** ✅ COMPLETE (2025-01-27)
+  - **Status:** complete
   - **Discovered:** E2E Testing Session 2025-11-22
   - **Implementation:**
     - Fixed empty `onAddItem` handler that did nothing
@@ -3916,7 +3916,7 @@ Completes pricing feature set, enables price monitoring.
     - Users should be able to click rows for details
     - Search, filter, and sort should work
   - **Estimate:** 4-8 hours (requires investigation and fix)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** E2E Testing Session 2025-11-22
   - **Note:** This is a critical blocker for inventory management workflow
 
@@ -3958,7 +3958,7 @@ Completes pricing feature set, enables price monitoring.
     - Clicking "Todo Lists" in sidebar should navigate to functional todo lists page
     - Or sidebar link should be hidden if feature not ready
   - **Estimate:** 1-2 hours (if removing link) or 8-16 hours (if implementing feature)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** E2E Testing Session 2025-11-22
   - **Note:** Decision needed: implement feature or remove link
 
@@ -3996,7 +3996,7 @@ Completes pricing feature set, enables price monitoring.
     - `client/src/App.tsx` (global keyboard handlers)
   - **Note:** Ctrl+Shift+T (Quick Add Task) works correctly, so keyboard shortcut infrastructure exists
   - **Estimate:** 2-4 hours
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** Gap Testing Session 2025-11-22 (TS-001)
 
 - [ ] **BUG-016: Theme Toggle Not Implemented** (Created: 2025-11-22) 🟡 MEDIUM PRIORITY
@@ -4034,9 +4034,46 @@ Completes pricing feature set, enables price monitoring.
     - `client/src/pages/SettingsPage.tsx`
     - CSS/styling files for dark mode definitions
   - **Estimate:** 4-8 hours (if implementing from scratch)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** Gap Testing Session 2025-11-22 (TS-002)
   - **Note:** Decision needed: implement feature or remove from test suite if not planned
+
+- [ ] **BUG-017: Inconsistent Layout Between Dashboard and Module Pages** (Created: 2025-11-26) 🔴 HIGH PRIORITY
+  - Task ID: BUG-017
+  - Priority: P1 (HIGH - INCONSISTENT UX)
+  - Session: TBD
+  - **Problem:** Dashboard page and other module pages use different layout configurations, causing inconsistent navigation experience
+  - **Current State:**
+    - Dashboard page: Uses updated/complete sidebar navigation BUT has NO header
+    - Other module pages (Orders, Inventory, Clients, etc.): Have header BUT use older/incomplete sidebar navigation
+    - This creates a jarring UX where the sidebar menu items change as users navigate between sections
+  - **Root Cause:** BUG-002 fix modified `AppShell` to conditionally render `AppSidebar` and `AppHeader` only for non-dashboard routes. Dashboard uses `DashboardLayout` which has its own sidebar but no header implementation.
+  - **Expected Behavior:**
+    - ALL pages should have consistent header presence
+    - ALL pages should use the same updated sidebar navigation with all modules included
+    - Unified layout across the entire application
+  - **Affected Areas:**
+    - Dashboard page: Missing header component
+    - All other modules: Using outdated `AppSidebar` instead of newer `DashboardLayout` sidebar
+  - **Investigation Steps:**
+    1. Review `AppShell` conditional rendering logic
+    2. Compare `DashboardLayout` sidebar with `AppSidebar` - identify missing modules
+    3. Determine if header should be added to `DashboardLayout` or if all pages should use same layout
+    4. Audit all sidebar navigation items for consistency
+  - **Solution Options:**
+    1. Add header to `DashboardLayout` and use it for ALL pages (recommended - unified layout)
+    2. Update `AppSidebar` to match `DashboardLayout` sidebar and ensure header shows on dashboard
+    3. Merge layouts into single unified layout component
+  - **Files to Check:**
+    - `client/src/components/DashboardLayout.tsx` (dashboard layout with updated sidebar)
+    - `client/src/components/layout/AppShell.tsx` (conditional rendering logic)
+    - `client/src/components/layout/AppSidebar.tsx` (older sidebar for modules)
+    - `client/src/components/layout/AppHeader.tsx` (header component)
+  - **Impact:** HIGH - Inconsistent UX across application, missing navigation features on dashboard, outdated nav on modules
+  - **Estimate:** 4-8 hours
+  - **Status:** ready
+  - **Discovered:** Manual Testing Session 2025-11-26
+  - **Related:** BUG-002 (Duplicate Navigation Bar - completed, caused this issue as side effect)
 
 ---
 
@@ -4089,7 +4126,7 @@ Completes pricing feature set, enables price monitoring.
     - Verify hamburger menu works
     - Verify full viewport width for content
   - **Estimate:** 8-16 hours
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** Mobile E2E Testing Session 2025-11-24
   - **Documentation:** `docs/testing/MOBILE_E2E_FINAL_REPORT.md`
   - **Note:** This is the #1 blocker for mobile deployment - fix before continuing mobile testing
@@ -4122,7 +4159,7 @@ Completes pricing feature set, enables price monitoring.
     - `client/src/pages/OrdersPage.tsx` (or similar)
     - Debug component implementation
   - **Estimate:** 15-30 minutes (same as BUG-011)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** Mobile E2E Testing Session 2025-11-24
   - **Documentation:** `docs/testing/MOBILE_E2E_FINAL_REPORT.md`
   - **Note:** Can be fixed together with BUG-011
@@ -4172,7 +4209,7 @@ Completes pricing feature set, enables price monitoring.
     - Verify no horizontal scrolling
     - Test expand/collapse functionality
   - **Estimate:** 16-24 hours (3 table types × 5-8 hours each)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** Mobile E2E Testing Session 2025-11-24
   - **Documentation:** `docs/testing/MOBILE_E2E_FINAL_REPORT.md`
   - **Note:** Fix BUG-M001 first to get full viewport width, then optimize tables
@@ -4244,7 +4281,7 @@ Completes pricing feature set, enables price monitoring.
     - Item count should match line items in order
     - Should be consistent with order total amount
   - **Estimate:** 6-12 hours (requires investigation + potential data fix)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** Persona Testing Session 2025-11-24 (Sales Manager persona)
   - **Note:** May indicate broader data integrity issue with order line items
 
@@ -4276,7 +4313,7 @@ Completes pricing feature set, enables price monitoring.
     - `client/src/App.tsx` (routing)
     - `server/routers/accounting.ts` (API endpoints)
   - **Estimate:** 16-24 hours (full feature implementation)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** Persona Testing Session 2025-11-24 (Accountant persona)
 
 - [ ] **BUG-M007: General Ledger Not Accessible** (Created: 2025-11-24) 🟡 MEDIUM PRIORITY
@@ -4307,7 +4344,7 @@ Completes pricing feature set, enables price monitoring.
     - `client/src/App.tsx` (routing)
     - `server/routers/accounting.ts` (API endpoints)
   - **Estimate:** 16-24 hours (full feature implementation)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** Persona Testing Session 2025-11-24 (Accountant persona)
 
 - [ ] **BUG-M008: VIP Portal Not Implemented** (Created: 2025-11-24) 🔴 HIGH PRIORITY
@@ -4343,7 +4380,7 @@ Completes pricing feature set, enables price monitoring.
     - `server/routers/vipPortal*.ts` (API endpoints - may exist)
     - Existing VIP Portal components (if any)
   - **Estimate:** 40-80 hours (full feature implementation)
-  - **Status:** 📋 PLANNED
+  - **Status:** ready
   - **Discovered:** Persona Testing Session 2025-11-24 (VIP Client persona)
   - **Note:** Major feature - requires product decision on priority
 
@@ -4353,14 +4390,14 @@ Completes pricing feature set, enables price monitoring.
 
 ### Medium Priority UI/UX Bugs
 
-### BUG-015: Cmd+K Command Palette Shortcut Not Working
+#### BUG-015: Cmd+K Command Palette Shortcut Not Working
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟢 P2 (MEDIUM)  
-**Estimate:** 1 day (8 hours)  
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 8h  
 **Module:** `client/src/components/CommandPalette.tsx`  
 **Dependencies:** None  
-**Prompt:** `docs/prompts/BUG-015.md` (to be created)
+**Prompt:** `docs/prompts/BUG-015.md`
 
 **Problem:** Cmd+K keyboard shortcut doesn't open Command Palette.
 
@@ -4384,14 +4421,14 @@ Completes pricing feature set, enables price monitoring.
 
 ---
 
-### BUG-016: Theme Toggle Not Implemented
+#### BUG-016: Theme Toggle Not Implemented
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟢 P2 (MEDIUM)  
-**Estimate:** 1 day (8 hours)  
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 8h  
 **Module:** Settings, User Profile  
 **Dependencies:** None  
-**Prompt:** `docs/prompts/BUG-016.md` (to be created)
+**Prompt:** `docs/prompts/BUG-016.md`
 
 **Problem:** No theme toggle functionality available.
 
@@ -4420,8 +4457,8 @@ Completes pricing feature set, enables price monitoring.
 
 ### IMPROVE-001: Fix Backup Script Security
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟢 P2 (MEDIUM)  
+**Status:** ready  
+**Priority:** MEDIUM  
 **Estimate:** 4 hours  
 **Module:** `scripts/backup-database.sh`  
 **Dependencies:** REL-002  
@@ -4452,9 +4489,9 @@ Completes pricing feature set, enables price monitoring.
 
 ### IMPROVE-002: Enhance Health Check Endpoints
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟢 P2 (MEDIUM)  
-**Estimate:** 1 day (8 hours)  
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 8h  
 **Module:** `server/_core/healthCheck.ts`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/IMPROVE-002.md` (to be created)
@@ -4485,9 +4522,9 @@ Completes pricing feature set, enables price monitoring.
 
 ### IMPROVE-003: Add Composite Database Indexes
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟢 P2 (MEDIUM)  
-**Estimate:** 1 day (8 hours)  
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 8h  
 **Module:** `drizzle/schema.ts`  
 **Dependencies:** PERF-001  
 **Prompt:** `docs/prompts/IMPROVE-003.md` (to be created)
@@ -4517,8 +4554,8 @@ Completes pricing feature set, enables price monitoring.
 
 ### IMPROVE-004: Reduce Rate Limiting Thresholds
 
-**Status:** 📋 PLANNED  
-**Priority:** 🟢 P2 (MEDIUM)  
+**Status:** ready  
+**Priority:** MEDIUM  
 **Estimate:** 2 hours  
 **Module:** `server/_core/rateLimiter.ts`  
 **Dependencies:** None  
