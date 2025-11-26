@@ -1,7 +1,7 @@
-import { ReactNode, useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
-import { AppSidebar } from './AppSidebar';
-import { AppHeader } from './AppHeader';
+import { ReactNode, useState } from "react";
+import { useLocation } from "wouter";
+import { AppSidebar } from "./AppSidebar";
+import { AppHeader } from "./AppHeader";
 
 interface AppShellProps {
   children: ReactNode;
@@ -15,8 +15,12 @@ export function AppShell({ children }: AppShellProps) {
 
   // DashboardV3 uses DashboardLayout which has its own sidebar navigation
   // Don't render AppSidebar for dashboard routes to avoid duplicate navigation
+  // BUG-002: Fix duplicate navigation bar on dashboard
   // QA-028: Fix old sidebar appearing on dashboard (especially mobile)
-  const isDashboardRoute = location === "/" || location === "/dashboard" || location.startsWith("/dashboard");
+  const isDashboardRoute =
+    location === "/" ||
+    location === "/dashboard" ||
+    location.startsWith("/dashboard/");
   const shouldShowAppSidebar = !isDashboardRoute;
 
   return (
@@ -28,11 +32,8 @@ export function AppShell({ children }: AppShellProps) {
         {shouldShowAppSidebar && (
           <AppHeader onMenuClick={() => setSidebarOpen(true)} />
         )}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
 }
-
