@@ -4,6 +4,7 @@ import * as arApDb from "../arApDb";
 import * as dashboardDb from "../dashboardDb";
 import * as inventoryDb from "../inventoryDb";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { fetchClientNamesMap, calculateDateRange, calculateSalesComparison } from "../dashboardHelpers";
 import type { Invoice, Payment } from "../../drizzle/schema";
 
 // Dashboard data types
@@ -167,22 +168,7 @@ export const dashboardRouter = router({
       }))
       .query(async ({ input }) => {
         // Calculate date range based on timePeriod
-        let startDate: Date | undefined;
-        let endDate: Date | undefined;
-        
-        if (input.timePeriod !== "LIFETIME") {
-          const now = new Date();
-          endDate = new Date(); // End date is always today
-          
-          if (input.timePeriod === "YEAR") {
-            startDate = new Date(now.getFullYear(), 0, 1); // January 1st of current year
-          } else if (input.timePeriod === "QUARTER") {
-            const currentQuarter = Math.floor(now.getMonth() / 3);
-            startDate = new Date(now.getFullYear(), currentQuarter * 3, 1); // First day of current quarter
-          } else if (input.timePeriod === "MONTH") {
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of current month
-          }
-        }
+        const { startDate, endDate } = calculateDateRange(input.timePeriod);
         
         const invoices = await arApDb.getInvoices({
           startDate,
@@ -196,13 +182,25 @@ export const dashboardRouter = router({
           if (!acc[customerId]) {
             acc[customerId] = {
               customerId,
-              customerName: `Customer ${customerId}`, // TODO: Join with customers table
+              customerName: `Customer ${customerId}`, // Will be updated with actual name below
               totalSales: 0,
             };
           }
           acc[customerId].totalSales += Number(inv.totalAmount || 0);
           return acc;
         }, {});
+        
+        // Fetch actual client names for all customer IDs
+        const customerIds = Object.keys(salesByClient).map(Number);
+        const clientMap = await fetchClientNamesMap(customerIds);
+        
+        // Update customer names with actual names from database
+        Object.values(salesByClient).forEach((item) => {
+          const actualName = clientMap.get(item.customerId);
+          if (actualName) {
+            item.customerName = actualName;
+          }
+        });
         
         const sortedData = Object.values(salesByClient).sort((a: SalesByClient, b: SalesByClient) => b.totalSales - a.totalSales);
         const total = sortedData.length;
@@ -235,7 +233,7 @@ export const dashboardRouter = router({
             if (!acc[customerId]) {
               acc[customerId] = {
                 customerId,
-                customerName: `Customer ${customerId}`,
+                customerName: `Customer ${customerId}`, // Will be updated with actual name below
                 cashCollected: 0,
               };
             }
@@ -243,6 +241,18 @@ export const dashboardRouter = router({
           }
           return acc;
         }, {});
+        
+        // Fetch actual client names for all customer IDs
+        const customerIds = Object.keys(cashByClient).map(Number);
+        const clientMap = await fetchClientNamesMap(customerIds);
+        
+        // Update customer names with actual names from database
+        Object.values(cashByClient).forEach((item) => {
+          const actualName = clientMap.get(item.customerId);
+          if (actualName) {
+            item.customerName = actualName;
+          }
+        });
         
         const sortedData = Object.values(cashByClient).sort((a: CashByClient, b: CashByClient) => b.cashCollected - a.cashCollected);
         const total = sortedData.length;
@@ -272,10 +282,22 @@ export const dashboardRouter = router({
         // Combine debt and aging data
         const allData: ClientDebt[] = receivables.map((r: { customerId: number; amountDue: string | number }) => ({
           customerId: r.customerId,
-          customerName: `Customer ${r.customerId}`,
+          customerName: `Customer ${r.customerId}`, // Will be updated with actual name below
           currentDebt: Number(r.amountDue || 0),
           oldestDebt: 0, // TODO: Calculate oldest invoice age from invoice dates
         }));
+        
+        // Fetch actual client names for all customer IDs
+        const customerIds = allData.map(d => d.customerId);
+        const clientMap = await fetchClientNamesMap(customerIds);
+        
+        // Update customer names with actual names from database
+        allData.forEach((item) => {
+          const actualName = clientMap.get(item.customerId);
+          if (actualName) {
+            item.customerName = actualName;
+          }
+        });
         
         const total = allData.length;
         const paginatedData = allData.slice(input.offset, input.offset + input.limit);
@@ -305,7 +327,7 @@ export const dashboardRouter = router({
           if (!acc[customerId]) {
             acc[customerId] = {
               customerId,
-              customerName: `Customer ${customerId}`,
+              customerName: `Customer ${customerId}`, // Will be updated with actual name below
               revenue: 0,
               cost: 0,
             };
@@ -315,6 +337,18 @@ export const dashboardRouter = router({
           acc[customerId].cost += Number(inv.totalAmount || 0) * 0.4;
           return acc;
         }, {});
+        
+        // Fetch actual client names for all customer IDs
+        const customerIds = Object.keys(marginByClient).map(Number);
+        const clientMap = await fetchClientNamesMap(customerIds);
+        
+        // Update customer names with actual names from database
+        Object.values(marginByClient).forEach((item) => {
+          const actualName = clientMap.get(item.customerId);
+          if (actualName) {
+            item.customerName = actualName;
+          }
+        });
         
         const sortedData: ClientMargin[] = Object.values(marginByClient).map((c: Omit<ClientMargin, 'profitMargin'>) => ({
           ...c,
@@ -394,55 +428,8 @@ export const dashboardRouter = router({
       .query(async () => {
         const invoices = await arApDb.getInvoices({});
         const allInvoices = invoices.invoices || [];
-        
         const now = new Date();
-        const last7Days = new Date(now);
-        last7Days.setDate(last7Days.getDate() - 7);
-        const prior7Days = new Date(last7Days);
-        prior7Days.setDate(prior7Days.getDate() - 7);
-        
-        const last30Days = new Date(now);
-        last30Days.setDate(last30Days.getDate() - 30);
-        const prior30Days = new Date(last30Days);
-        prior30Days.setDate(prior30Days.getDate() - 30);
-        
-        const last6Months = new Date(now);
-        last6Months.setMonth(last6Months.getMonth() - 6);
-        const prior6Months = new Date(last6Months);
-        prior6Months.setMonth(prior6Months.getMonth() - 6);
-        
-        const last365 = new Date(now);
-        last365.setDate(last365.getDate() - 365);
-        const prior365 = new Date(last365);
-        prior365.setDate(prior365.getDate() - 365);
-        
-        const calculateSales = (start: Date, end: Date) => {
-          return allInvoices
-            .filter((i: Invoice) => {
-              const date = new Date(i.invoiceDate);
-              return date >= start && date < end;
-            })
-            .reduce((sum: number, i: Invoice) => sum + Number(i.totalAmount || 0), 0);
-        };
-        
-        return {
-          weekly: {
-            last7Days: calculateSales(last7Days, now),
-            prior7Days: calculateSales(prior7Days, last7Days),
-          },
-          monthly: {
-            last30Days: calculateSales(last30Days, now),
-            prior30Days: calculateSales(prior30Days, last30Days),
-          },
-          sixMonth: {
-            last6Months: calculateSales(last6Months, now),
-            prior6Months: calculateSales(prior6Months, last6Months),
-          },
-          yearly: {
-            last365: calculateSales(last365, now),
-            prior365: calculateSales(prior365, last365),
-          },
-        };
+        return calculateSalesComparison(allInvoices, now);
       }),
 
     // Cash Flow (with time period filter)
@@ -452,22 +439,7 @@ export const dashboardRouter = router({
       }))
       .query(async ({ input }) => {
         // Calculate date range based on timePeriod
-        let startDate: Date | undefined;
-        let endDate: Date | undefined;
-        
-        if (input.timePeriod !== "LIFETIME") {
-          const now = new Date();
-          endDate = new Date(); // End date is always today
-          
-          if (input.timePeriod === "YEAR") {
-            startDate = new Date(now.getFullYear(), 0, 1); // January 1st of current year
-          } else if (input.timePeriod === "QUARTER") {
-            const currentQuarter = Math.floor(now.getMonth() / 3);
-            startDate = new Date(now.getFullYear(), currentQuarter * 3, 1); // First day of current quarter
-          } else if (input.timePeriod === "MONTH") {
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of current month
-          }
-        }
+        const { startDate, endDate } = calculateDateRange(input.timePeriod);
         
         const receivedPaymentsResult = await arApDb.getPayments({ 
           paymentType: 'RECEIVED',
