@@ -4199,8 +4199,8 @@ Completes pricing feature set, enables price monitoring.
   - **Files Modified:**
     - `server/routers/dashboard.ts` - Added clientsDb import, fetch actual client names for all customer IDs in parallel, update customerName fields with real names
   - **Key Commits:**
-    - `[pending]` - BUG-M004: Fix customer name inconsistency - fetch actual names from database
-    - `[pending]` - BUG-M004: Fix customer name inconsistency and test setup
+    - `eb087368` - Refactor dashboard helpers and fix bugs (includes BUG-M004 fix)
+    - `e0687b7c` - Complete BUG-M004: Add session file
   - **Actual Time:** ~45 minutes
   - **Impact:** Customer names now consistent across all pages - Dashboard and Create Order both show actual customer names (e.g., "Organic Leaf LLC")
   - **Estimate:** 1-2 hours
