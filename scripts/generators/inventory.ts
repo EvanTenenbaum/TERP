@@ -65,7 +65,6 @@ export function generateLots(vendorIds: number[]): LotData[] {
       vendorId,
       date: lotDate,
       notes: faker.lorem.sentence(),
-      expirationDate: new Date(lotDate.getTime() + 365 * 24 * 60 * 60 * 1000), // 1 year expiration
       createdAt: lotDate,
     });
   }

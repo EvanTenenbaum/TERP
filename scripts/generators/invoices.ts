@@ -23,6 +23,8 @@ export interface InvoiceData {
   status: string;
   paymentTerms: string;
   notes: string | null;
+  referenceType: string;
+  referenceId: number;
   createdBy: number;
   createdAt: Date;
 }
@@ -56,6 +58,9 @@ export function generateInvoices(orders: OrderData[]): InvoiceData[] {
   
   for (let i = 0; i < saleOrders.length; i++) {
     const order = saleOrders[i];
+    // Get the original order index for linking (DB IDs start at 1)
+    const originalOrderIndex = orders.indexOf(order);
+    const orderId = originalOrderIndex + 1;
     const invoiceDate = order.createdAt;
     // Always create a new Date object to avoid mutation
     const dueDate = order.dueDate 
@@ -111,6 +116,8 @@ export function generateInvoices(orders: OrderData[]): InvoiceData[] {
       status,
       paymentTerms: order.paymentTerms || 'NET_30',
       notes: null,
+      referenceType: 'ORDER',
+      referenceId: orderId,
       createdBy: 1, // Default admin user
       createdAt: invoiceDate,
     });

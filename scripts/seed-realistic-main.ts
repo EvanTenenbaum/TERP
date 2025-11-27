@@ -26,6 +26,7 @@ import {
   brands,
   users,
   returns,
+  vendors,
 } from "../drizzle/schema.js";
 import { CONFIG, applyScenario } from "./generators/config.js";
 import { getScenario } from "./generators/scenarios.js";
@@ -147,17 +148,31 @@ async function seedRealisticData() {
 
     await db.insert(products).values(productsData);
 
-    // Step 5: Generate Lots
+    // Step 5: Create Vendors (for lots FK relationship)
+    console.log("🏭 Creating vendors...");
+    const vendorData = [
+      { name: "NorCal Farms", contactName: "Mike Johnson", contactEmail: "mike@norcalfarms.com", contactPhone: "530-555-0101", notes: "Premium flower supplier" },
+      { name: "Emerald Triangle Growers", contactName: "Sarah Chen", contactEmail: "sarah@emeraldtriangle.com", contactPhone: "707-555-0102", notes: "Outdoor specialist" },
+      { name: "Humboldt Harvest Co", contactName: "Dave Wilson", contactEmail: "dave@humboldtharvest.com", contactPhone: "707-555-0103", notes: "Legacy cultivator" },
+      { name: "Mendocino Gardens", contactName: "Lisa Park", contactEmail: "lisa@mendogardens.com", contactPhone: "707-555-0104", notes: "Organic certified" },
+      { name: "Trinity Alps Cultivation", contactName: "Tom Brown", contactEmail: "tom@trinityalps.com", contactPhone: "530-555-0105", notes: "Mountain grown" },
+      { name: "Sacramento Valley Farms", contactName: "Amy Lee", contactEmail: "amy@sacvalleyfarms.com", contactPhone: "916-555-0106", notes: "Large scale greenhouse" },
+      { name: "Central Coast Growers", contactName: "Chris Martinez", contactEmail: "chris@centralcoast.com", contactPhone: "805-555-0107", notes: "SLO county specialist" },
+      { name: "SoCal Premium Supply", contactName: "Jordan Taylor", contactEmail: "jordan@socalpremium.com", contactPhone: "619-555-0108", notes: "San Diego distributor" },
+    ];
+    await db.insert(vendors).values(vendorData);
+    // Get actual vendor IDs after insert (auto-increment)
+    const vendorIds = Array.from({ length: vendorData.length }, (_, i) => i + 1);
+    console.log(`   ✓ ${vendorData.length} vendors created\n`);
+
+    // Step 6: Generate Lots
     console.log("📊 Generating lots...");
-    const vendorIds = vendorClients.map(
-      (_, index) => CONFIG.whaleClients + CONFIG.regularClients + index + 1
-    );
     const lotsData = generateLots(vendorIds);
     console.log(`   ✓ ${lotsData.length} lots created\n`);
 
     await db.insert(lots).values(lotsData);
 
-    // Step 6: Generate Batches
+    // Step 7: Generate Batches
     console.log("📦 Generating batches...");
     const productIds = Array.from(
       { length: productsData.length },
@@ -248,12 +263,12 @@ async function seedRealisticData() {
     console.log(`💸 Refunds: ${refundsData.length}`);
     console.log("\n💰 AR Aging Summary:");
     console.log(`   Current: ${formatCurrency(arSummary.current)}`);
-    console.log(`   1-30 days: ${formatCurrency(arSummary.days30)}`);
-    console.log(`   31-60 days: ${formatCurrency(arSummary.days60)}`);
-    console.log(`   61-90 days: ${formatCurrency(arSummary.days90)}`);
-    console.log(`   91-120 days: ${formatCurrency(arSummary.days120)}`);
-    console.log(`   120+ days: ${formatCurrency(arSummary.days120Plus)}`);
-    console.log(`   Total: ${formatCurrency(arSummary.total)}`);
+    console.log(`   1-30 days: ${formatCurrency(arSummary.overdue1_30)}`);
+    console.log(`   31-60 days: ${formatCurrency(arSummary.overdue31_60)}`);
+    console.log(`   61-90 days: ${formatCurrency(arSummary.overdue61_90)}`);
+    console.log(`   91-120 days: ${formatCurrency(arSummary.overdue91_120)}`);
+    console.log(`   120+ days: ${formatCurrency(arSummary.overdue120Plus)}`);
+    console.log(`   Total: ${formatCurrency(arSummary.totalAR)}`);
     console.log("=".repeat(50) + "\n");
   } catch (error) {
     console.error("❌ Error during seeding:", error);
