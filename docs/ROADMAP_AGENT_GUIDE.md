@@ -2,8 +2,8 @@
 
 **Role:** Roadmap & Task Management Specialist  
 **Project:** TERP (Cannabis ERP System)  
-**Version:** 2.1  
-**Last Updated:** November 21, 2025
+**Version:** 2.2  
+**Last Updated:** November 26, 2025
 
 ---
 
@@ -51,29 +51,36 @@ When the user requests a new task be added to the roadmap:
    - `INFRA-XXX` - Infrastructure tasks
    - `CL-XXX` - Critical lockdown tasks
 
-4. **Include all required fields:**
+4. **Include all required fields (using validator-expected formats):**
    ```markdown
-   - [ ] **TASK-ID: Task Title** (Created: YYYY-MM-DD) 🔴 PRIORITY
-     - Task ID: TASK-ID
-     - Priority: P0/P1/P2 (CRITICAL/HIGH/MEDIUM)
-     - Session: TBD
-     - **Problem:** Clear description of the issue or need
-     - **Objectives:**
-       1. First objective (minimum 3)
-       2. Second objective
-       3. Third objective
-     - **Deliverables:**
-       - [ ] First deliverable (minimum 5)
-       - [ ] Second deliverable
-       - [ ] Third deliverable
-       - [ ] Fourth deliverable
-       - [ ] Fifth deliverable
-       - [ ] All tests passing
-       - [ ] Zero TypeScript errors
-       - [ ] Session archived
-     - **Estimate:** X-Y hours
-     - **Status:** 📋 PLANNED / 🔍 INVESTIGATING / ⏳ IN PROGRESS / ✅ COMPLETE
+   ### TASK-ID: Task Title
+   
+   **Status:** ready
+   **Priority:** HIGH
+   **Estimate:** 4-8h
+   **Module:** `path/to/module`
+   **Dependencies:** None
+   **Prompt:** `docs/prompts/TASK-ID.md`
+   
+   **Problem:** Clear description of the issue or need
+   
+   **Objectives:**
+   
+   1. First objective (minimum 3)
+   2. Second objective
+   3. Third objective
+   
+   **Deliverables:**
+   
+   - [ ] First deliverable (minimum 5)
+   - [ ] Second deliverable
+   - [ ] Third deliverable
+   - [ ] Fourth deliverable
+   - [ ] Fifth deliverable
    ```
+   
+   ⚠️ **Note:** Use lowercase `ready`, `in-progress`, `complete`, `blocked` for Status.
+   Use `HIGH`, `MEDIUM`, `LOW` for Priority. Use `4-8h` format for Estimate.
 
 5. **Place in the correct section:**
    - Critical bugs go in "🔴 CRITICAL BUG FIXES"
@@ -97,25 +104,48 @@ When the user requests a new task be added to the roadmap:
 
 When a task is completed or status changes:
 
-1. **Update the checkbox:** `- [ ]` → `- [x]`
-2. **Update the status:** `📋 PLANNED` → `✅ COMPLETE`
-3. **Add completion date:** `(Completed: YYYY-MM-DD)`
-4. **Add key commits:** List the main commits if significant
-5. **Add actual time:** `**Actual Time:** X hours`
-6. **Add documentation:** Link to any completion reports or documentation
+1. **Update the status field:** `**Status:** ready` → `**Status:** complete`
+2. **Use validator-expected values:** `ready`, `in-progress`, `complete`, `blocked`
+3. **Add key commits:** List the main commits if significant
+4. **Add actual time:** `**Actual Time:** Xh` (use hour notation)
+5. **Add documentation:** Link to any completion reports
 
-Example:
+⚠️ **IMPORTANT:** Do NOT use emoji status values like `✅ COMPLETE` or `📋 PLANNED` - these will fail validation!
+
+Example (validated format):
 ```markdown
-- [x] **BUG-001: Orders Page Showing Zero Results** (Completed: 2025-11-20) 🔴 CRITICAL
-  - Task ID: BUG-001
-  - Priority: P0 (CRITICAL BLOCKER)
-  - **Root Cause:** User "Evan" lacked "orders:read" permission
-  - **Solution:** Assigned "Super Admin" role to user
-  - **Key Commits:**
-    - `1a7e5a9` - Fix BUG-001: Add admin endpoints
-    - `cd7dd4e` - Add assignSuperAdminRole endpoint
-  - **Actual Time:** 3 days (extensive debugging)
-  - **Documentation:** docs/BUG-001-FIX-REPORT.md
+### BUG-001: Orders Page Showing Zero Results
+
+**Status:** complete
+**Priority:** HIGH
+**Estimate:** 8-16h
+**Module:** `server/routers/orders.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/BUG-001.md`
+
+**Root Cause:** User "Evan" lacked "orders:read" permission
+
+**Solution:** Assigned "Super Admin" role to user
+
+**Key Commits:**
+- `1a7e5a9` - Fix BUG-001: Add admin endpoints
+- `cd7dd4e` - Add assignSuperAdminRole endpoint
+
+**Actual Time:** 24h
+
+**Documentation:** docs/BUG-001-FIX-REPORT.md
+
+**Objectives:**
+1. Identify permission issue
+2. Create admin endpoint for role assignment
+3. Document root cause and fix
+
+**Deliverables:**
+- [x] Root cause identified
+- [x] Admin endpoint created
+- [x] Role assigned to user
+- [x] Documentation created
+- [x] All tests passing
 ```
 
 ### 2. Roadmap Auditing
@@ -438,17 +468,100 @@ The roadmap is organized into sections:
 
 ### Priority Levels
 
-- **P0 (CRITICAL)** - Blocking issues, security vulnerabilities, data integrity
-- **P1 (HIGH)** - Important features, significant bugs, performance issues
-- **P2 (MEDIUM)** - Nice-to-have features, minor improvements, refactoring
+The validator expects these **exact lowercase values** for Priority:
+
+| Validator Value | Description | Legacy Format (DO NOT USE) |
+|-----------------|-------------|---------------------------|
+| `HIGH` | Blocking issues, security, critical bugs | ~~P0 (CRITICAL)~~, ~~🔴 P0~~ |
+| `HIGH` | Important features, significant bugs | ~~P1 (HIGH)~~, ~~🟡 P1~~ |
+| `MEDIUM` | Nice-to-have, minor improvements | ~~P2 (MEDIUM)~~, ~~🟢 P2~~ |
+| `LOW` | Non-urgent, backlog items | ~~P3 (LOW)~~ |
 
 ### Status Values
 
-- **📋 PLANNED** - Task defined, not started
-- **🔍 INVESTIGATING** - Researching the issue
-- **⏳ IN PROGRESS** - Active development
-- **✅ COMPLETE** - Finished and verified
-- **🚫 BLOCKED** - Cannot proceed due to dependencies
+The validator expects these **exact lowercase values** for Status:
+
+| Validator Value | Description | Legacy Format (DO NOT USE) |
+|-----------------|-------------|---------------------------|
+| `ready` | Task defined, ready to start | ~~📋 PLANNED~~, ~~Not Started~~ |
+| `in-progress` | Active development | ~~⏳ IN PROGRESS~~, ~~In Progress~~ |
+| `complete` | Finished and verified | ~~✅ COMPLETE~~, ~~Complete (date)~~ |
+| `blocked` | Cannot proceed due to dependencies | ~~🚫 BLOCKED~~ |
+
+### Estimate Format
+
+The validator expects estimates in this format:
+
+| Valid Format | Description | Invalid Format (DO NOT USE) |
+|--------------|-------------|---------------------------|
+| `4-8h` | Hour range | ~~4-8 hours~~, ~~4 days~~ |
+| `8h` | Single hour value | ~~8 hours~~, ~~1 day~~ |
+| `2d` | Days | ~~2 days~~, ~~2 days (16 hours)~~ |
+| `1w` | Weeks | ~~1 week~~, ~~7 days~~ |
+
+---
+
+## ⚠️ CRITICAL: Validator-Required Formatting Rules
+
+**The roadmap validator (`pnpm roadmap:validate`) will REJECT entries that don't follow these exact formats.**
+
+### Common Formatting Mistakes (AVOID THESE)
+
+```markdown
+# ❌ WRONG - These will FAIL validation:
+
+**Status:** ✅ COMPLETE (2025-11-14)     # Wrong: emoji + date
+**Status:** 📋 PLANNED                   # Wrong: emoji
+**Status:** Complete (2025-11-14)        # Wrong: capitalized + date
+**Status:** Not Started                  # Wrong: should be "ready"
+**Status:** In Progress                  # Wrong: should be "in-progress"
+
+**Priority:** P0 (CRITICAL)              # Wrong: P0 format
+**Priority:** 🔴 P1 (HIGH)               # Wrong: emoji + P1
+**Priority:** P2 (MEDIUM)                # Wrong: P2 format
+
+**Estimate:** 3 days (24 hours)          # Wrong: verbose format
+**Estimate:** 1.5-2 hours                # Wrong: decimal + "hours"
+**Estimate:** 0.5h                       # Wrong: decimal hours
+
+**Prompt:** `docs/prompts/BUG-001.md` (to be created)  # Wrong: extra text
+```
+
+```markdown
+# ✅ CORRECT - These will PASS validation:
+
+**Status:** ready
+**Status:** in-progress
+**Status:** complete
+**Status:** blocked
+
+**Priority:** HIGH
+**Priority:** MEDIUM
+**Priority:** LOW
+
+**Estimate:** 4-8h
+**Estimate:** 24h
+**Estimate:** 2d
+**Estimate:** 1w
+
+**Prompt:** `docs/prompts/BUG-001.md`
+```
+
+### Validated Task Format (### Heading)
+
+Tasks that use the `### TASK-ID:` heading format ARE validated. These require:
+
+1. **All fields present:** Status, Priority, Estimate, Module, Dependencies, Prompt
+2. **Minimum 3 objectives**
+3. **Minimum 5 deliverables** (using `- [ ]` format)
+4. **Prompt file must exist** and contain `## Implementation Guide` section
+
+### Non-Validated Task Format (#### Heading)
+
+Tasks that use `####` (4 hashes) are NOT validated. Use this for:
+- Legacy entries that don't follow structured format
+- Quick notes or summary entries
+- Compact QA task summaries
 
 ---
 
@@ -462,31 +575,42 @@ The roadmap is organized into sections:
 
 1. **Create a bug task:**
    - Assign ID: `BUG-002` (next available)
-   - Priority: P0 if critical, P1 if high impact
-   - Status: 🔍 INVESTIGATING
+   - Priority: `HIGH` (use validator-expected format)
+   - Status: `ready` (use validator-expected format)
 
-2. **Document the issue:**
+2. **Document the issue (using validated format):**
    ```markdown
-   - [ ] **BUG-002: Duplicate Navigation Bar on Dashboard** (Created: 2025-11-21) 🔴 CRITICAL
-     - Task ID: BUG-002
-     - Priority: P0 (CRITICAL - UI BLOCKER)
-     - **Problem:** Incorrect duplicate navigation bar appearing in dashboard
-     - **Symptoms:**
-       - Second navigation menu visible in content area
-       - Shows duplicate menu items
-       - May interfere with other navigation features
-     - **Investigation Needed:**
-       - Identify source component
-       - Check if leftover from refactoring
-     - **Status:** 🔍 INVESTIGATING
-     - **Estimate:** 1-2 hours
+   ### BUG-002: Duplicate Navigation Bar on Dashboard
+   
+   **Status:** ready
+   **Priority:** HIGH
+   **Estimate:** 1-2h
+   **Module:** `client/src/components/layout/`
+   **Dependencies:** None
+   **Prompt:** `docs/prompts/BUG-002.md`
+   
+   **Problem:** Incorrect duplicate navigation bar appearing in dashboard
+   
+   **Objectives:**
+   
+   1. Identify source of duplicate navigation component
+   2. Remove or conditionally render the duplicate
+   3. Verify fix across all viewport sizes
+   
+   **Deliverables:**
+   
+   - [ ] Identify duplicate component source
+   - [ ] Remove duplicate navigation rendering
+   - [ ] Test on desktop viewport
+   - [ ] Test on mobile viewport
+   - [ ] All tests passing
    ```
 
-3. **Add to roadmap** in the "🔴 CRITICAL BUG FIXES" section
+3. **Add to roadmap** in the appropriate section
 
 4. **Validate and commit:**
    ```bash
-   pnpm roadmap:validate
+   pnpm roadmap:validate   # ALWAYS validate before committing!
    git add docs/roadmaps/MASTER_ROADMAP.md
    git commit -m "Add BUG-002: Duplicate navigation bar on dashboard"
    git push origin main
@@ -498,23 +622,43 @@ The roadmap is organized into sections:
 
 **Your Response:**
 
-1. **Create a data task:**
+1. **Create a data task (using validator-expected formats):**
    - Assign ID: `DATA-002-AUGMENT`
-   - Priority: P1 (HIGH - DATA QUALITY)
-   - Status: 📋 PLANNED
+   - Priority: `HIGH` (not ~~P1 (HIGH)~~)
+   - Status: `ready` (not ~~📋 PLANNED~~)
 
-2. **Document comprehensively:**
-   - Problem statement
-   - Current state
-   - Objectives (minimum 3)
-   - Deliverables (minimum 5)
-   - Approach
-   - Impact
-   - Estimate
+2. **Document comprehensively (following validated format):**
+   ```markdown
+   ### DATA-002-AUGMENT: Augment Seeded Data for Realistic Relationships
+   
+   **Status:** ready
+   **Priority:** HIGH
+   **Estimate:** 6-8h
+   **Module:** `scripts/seed-*.ts`
+   **Dependencies:** None
+   **Prompt:** `docs/prompts/DATA-002-AUGMENT.md`
+   
+   **Problem:** Seeded data lacks realistic relationships between entities.
+   
+   **Objectives:**
+   1. Audit all foreign key relationships
+   2. Ensure orders have realistic line items
+   3. Link inventory movements to real inventory records
+   
+   **Deliverables:**
+   - [ ] Audit foreign key relationships
+   - [ ] Update order seed data
+   - [ ] Update inventory movement data
+   - [ ] Verify data integrity
+   - [ ] All tests passing
+   ```
 
 3. **Place in correct section** (Data Seeding Tasks or High Priority)
 
-4. **Validate and commit**
+4. **Validate and commit:**
+   ```bash
+   pnpm roadmap:validate   # ALWAYS validate before committing!
+   ```
 
 ### Scenario 3: Audit Request
 

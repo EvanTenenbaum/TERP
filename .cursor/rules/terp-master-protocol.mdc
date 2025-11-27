@@ -27,15 +27,24 @@ Before answering any request regarding tasks, roadmap, or status, you MUST read:
   4. If valid -> `git push`.
 
 ## 2. When Completing Tasks
-- Change `[ ]` to `[x]`.
-- Update status to `✅ COMPLETE`.
-- Add `(Completed: YYYY-MM-DD)`.
-- **CRITICAL:** You must list the **Key Commits** and **Actual Time** spent.
+- Update `**Status:**` field to `complete` (lowercase, no emojis).
+- Add **Key Commits** and **Actual Time** spent.
+- **CRITICAL:** Status must use validator-expected values: `ready`, `in-progress`, `complete`, `blocked`.
 
-## 3. When Auditing
+## 3. Validator-Required Formats (CRITICAL)
+When editing the roadmap, you MUST use these exact formats:
+- **Status:** `ready` | `in-progress` | `complete` | `blocked` (lowercase, NO emojis)
+- **Priority:** `HIGH` | `MEDIUM` | `LOW` (uppercase, NOT P0/P1/P2)
+- **Estimate:** `4-8h` | `16h` | `2d` | `1w` (NO "hours" or "days" spelled out)
+
+❌ WRONG: `**Status:** ✅ COMPLETE`, `**Priority:** P0 (CRITICAL)`, `**Estimate:** 3 days`
+✅ CORRECT: `**Status:** complete`, `**Priority:** HIGH`, `**Estimate:** 24h`
+
+## 4. When Auditing
 - You must cross-reference `git log` against the roadmap.
 - If code exists but no task exists, create a retroactive task.
 - Run `pnpm validate:sessions`.
+- **Verify all entries use correct formats** (see section 3 above).
 
 # 🛡️ SAFETY & VALIDATION COMMANDS
 You have permission to run these commands at any time to verify your work:
