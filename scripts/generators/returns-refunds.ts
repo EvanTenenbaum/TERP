@@ -12,7 +12,7 @@ export interface ReturnData {
   id?: number;
   orderId: number;
   items: string; // JSON string
-  returnReason: string;
+  reason: string;
   notes: string | null;
   processedBy: number;
   processedAt: Date;
@@ -69,7 +69,7 @@ export function generateReturns(orders: OrderData[]): ReturnData[] {
     returns.push({
       orderId: order.id || 0,
       items: order.items, // Copy items from order
-      returnReason: ['DEFECTIVE', 'WRONG_ITEM', 'NOT_AS_DESCRIBED', 'CUSTOMER_CHANGED_MIND', 'OTHER'][randomInRange(0, 4)],
+      reason: ['DEFECTIVE', 'WRONG_ITEM', 'NOT_AS_DESCRIBED', 'CUSTOMER_CHANGED_MIND', 'OTHER'][randomInRange(0, 4)],
       notes: null,
       processedBy: 1, // Default admin user
       processedAt: returnDate,
