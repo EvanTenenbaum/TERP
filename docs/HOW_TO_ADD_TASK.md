@@ -1,11 +1,42 @@
-'''
 # How to Add a Task to the Roadmap
 
-**NEVER edit MASTER_ROADMAP.md directly on the main branch**
+**Version:** 2.0  
+**Last Updated:** November 26, 2025
+
+---
+
+## ⚠️ CRITICAL: Validator-Required Field Formats
+
+Before adding any task, you MUST understand the exact formats the validator expects:
+
+### Status (use exact lowercase values)
+| Valid | Invalid |
+|-------|---------|
+| `ready` | ~~📋 PLANNED~~, ~~Not Started~~ |
+| `in-progress` | ~~⏳ IN PROGRESS~~, ~~In Progress~~ |
+| `complete` | ~~✅ COMPLETE~~, ~~Complete (date)~~ |
+| `blocked` | ~~🚫 BLOCKED~~ |
+
+### Priority (use exact uppercase values)
+| Valid | Invalid |
+|-------|---------|
+| `HIGH` | ~~P0 (CRITICAL)~~, ~~🔴 P0~~ |
+| `MEDIUM` | ~~P2 (MEDIUM)~~, ~~🟢 P2~~ |
+| `LOW` | ~~P3 (LOW)~~ |
+
+### Estimate (use compact notation)
+| Valid | Invalid |
+|-------|---------|
+| `4-8h` | ~~4-8 hours~~ |
+| `16h` | ~~2 days (16 hours)~~ |
+| `2d` | ~~2 days~~ |
+| `1w` | ~~1 week~~ |
+
+---
 
 ## Process
 
-### Step 1: Create Branch
+### Step 1: Create Branch (optional for roadmap-only changes)
 
 ```bash
 git checkout main
@@ -15,27 +46,46 @@ git checkout -b add-task-ST-XXX
 
 ### Step 2: Use Template
 
+Copy the task template:
 ```bash
 cp docs/templates/TASK_TEMPLATE.md docs/tasks/ST-XXX-draft.md
 ```
 
-### Step 3: Fill Template
+### Step 3: Fill Template with Correct Formats
 
 **Edit:** `docs/tasks/ST-XXX-draft.md`
 
-**Required Fields:**
-- Task ID (get next number from roadmap)
-- Title (clear, concise)
-- Status (usually "ready")
-- Priority (HIGH/MEDIUM/LOW)
-- Estimate (hours)
-- Module (which files/folders)
-- Dependencies (task IDs or "None")
-- Objectives (3-5 bullet points)
-- Deliverables (checkbox list)
-- Tags (for searchability)
+**Required Fields (MUST use these exact formats):**
 
-### Step 4: Create Prompt
+```markdown
+### ST-XXX: Your Task Title
+
+**Status:** ready              # Use: ready, in-progress, complete, blocked
+**Priority:** HIGH             # Use: HIGH, MEDIUM, LOW
+**Estimate:** 4-8h             # Use: 4-8h, 16h, 2d, 1w
+**Module:** `path/to/module`
+**Dependencies:** None
+**Prompt:** `docs/prompts/ST-XXX.md`
+
+**Problem:**
+[Description of the problem]
+
+**Objectives:**
+
+1. First objective (MINIMUM 3 REQUIRED)
+2. Second objective
+3. Third objective
+
+**Deliverables:**
+
+- [ ] First deliverable (MINIMUM 5 REQUIRED)
+- [ ] Second deliverable
+- [ ] Third deliverable
+- [ ] Fourth deliverable
+- [ ] Fifth deliverable
+```
+
+### Step 4: Create Prompt File
 
 ```bash
 cp docs/templates/PROMPT_TEMPLATE.md docs/prompts/ST-XXX.md
@@ -43,51 +93,84 @@ cp docs/templates/PROMPT_TEMPLATE.md docs/prompts/ST-XXX.md
 
 **Edit:** `docs/prompts/ST-XXX.md`
 
-**Update metadata:**
-```markdown
-<!-- TASK_ID: ST-051 -->
-<!-- TASK_TITLE: Implement Email Notifications -->
-<!-- PROMPT_VERSION: 1.0 -->
-<!-- LAST_VALIDATED: 2025-11-13 -->
-```
-
-**Fill in all sections:**
-- Context
-- Phase 1: Pre-Flight Check
-- Phase 2: Session Startup
-- Phase 3: Development (specific steps)
-- Phase 4: Completion
-- Quick Reference
-- Troubleshooting
+**IMPORTANT:** The prompt file MUST contain a `## Implementation Guide` section for validation to pass.
 
 ### Step 5: Add to Roadmap
 
 **Edit:** `docs/roadmaps/MASTER_ROADMAP.md`
 
-Add the task to the "🚀 Ready for Deployment" section.
+Add the task to the appropriate section.
 
-### Step 6: Validate Locally (Optional)
+### Step 6: Validate BEFORE Committing
 
 ```bash
-node scripts/validate-roadmap.js
-node scripts/check-circular-deps.js
-node scripts/validate-prompts.js
-node scripts/check-secrets.js
+pnpm roadmap:validate
 ```
+
+**If validation fails, DO NOT COMMIT.** Fix the formatting issues first.
+
+Common validation errors:
+- `Invalid value for Status` → Use lowercase: ready, in-progress, complete, blocked
+- `Invalid value for Priority` → Use uppercase: HIGH, MEDIUM, LOW
+- `Invalid estimate format` → Use: 4-8h, 16h, 2d, 1w
+- `Must have at least 3 objectives` → Add more objectives
+- `Must have at least 5 deliverables` → Add more deliverables
+- `Prompt file not found` → Create the prompt file
+- `Missing "## Implementation Guide" section` → Add this section to the prompt
 
 ### Step 7: Commit and Push
 
 ```bash
-git add docs/roadmaps/MASTER_ROADMAP.md docs/prompts/ST-XXX.md docs/tasks/ST-XXX-draft.md
+git add docs/roadmaps/MASTER_ROADMAP.md docs/prompts/ST-XXX.md
 git commit -m "Add task: ST-XXX [TASK_TITLE]"
-git push origin add-task-ST-XXX
+git push origin main
 ```
 
-### Step 8: Create PR
+---
 
-Create a pull request on GitHub from your branch to `main`.
+## Quick Reference: Valid Field Values
 
-### Step 9: Announce
+| Field | Valid Values |
+|-------|-------------|
+| Status | `ready`, `in-progress`, `complete`, `blocked` |
+| Priority | `HIGH`, `MEDIUM`, `LOW` |
+| Estimate | `4-8h`, `16h`, `2d`, `1w` (no decimals, no "hours/days" text) |
 
-Notify the team that a new task has been added to the roadmap.
-'''
+---
+
+## Troubleshooting
+
+### "Invalid value for Status"
+```markdown
+# ❌ WRONG
+**Status:** ✅ COMPLETE
+**Status:** 📋 PLANNED
+**Status:** Complete (2025-11-14)
+
+# ✅ CORRECT
+**Status:** complete
+**Status:** ready
+```
+
+### "Invalid value for Priority"
+```markdown
+# ❌ WRONG
+**Priority:** P0 (CRITICAL)
+**Priority:** 🔴 P1 (HIGH)
+
+# ✅ CORRECT
+**Priority:** HIGH
+```
+
+### "Invalid estimate format"
+```markdown
+# ❌ WRONG
+**Estimate:** 3 days (24 hours)
+**Estimate:** 1.5-2 hours
+**Estimate:** 0.5h
+
+# ✅ CORRECT
+**Estimate:** 24h
+**Estimate:** 1-2h
+**Estimate:** 1h
+```
