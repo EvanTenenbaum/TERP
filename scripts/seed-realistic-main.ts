@@ -26,6 +26,7 @@ import {
   brands,
   users,
   returns,
+  vendors,
 } from "../drizzle/schema.js";
 import { CONFIG, applyScenario } from "./generators/config.js";
 import { getScenario } from "./generators/scenarios.js";
@@ -44,6 +45,19 @@ import {
 } from "./generators/returns-refunds.js";
 import { formatCurrency } from "./generators/utils.js";
 import { faker } from "@faker-js/faker";
+import { sql } from "drizzle-orm";
+
+// Vendor data pool - use slice based on CONFIG.totalVendors
+const ALL_VENDORS = [
+  { name: "NorCal Farms", contactName: "Mike Johnson", contactEmail: "mike@norcalfarms.com", contactPhone: "530-555-0101", notes: "Premium flower supplier" },
+  { name: "Emerald Triangle Growers", contactName: "Sarah Chen", contactEmail: "sarah@emeraldtriangle.com", contactPhone: "707-555-0102", notes: "Outdoor specialist" },
+  { name: "Humboldt Harvest Co", contactName: "Dave Wilson", contactEmail: "dave@humboldtharvest.com", contactPhone: "707-555-0103", notes: "Legacy cultivator" },
+  { name: "Mendocino Gardens", contactName: "Lisa Park", contactEmail: "lisa@mendogardens.com", contactPhone: "707-555-0104", notes: "Organic certified" },
+  { name: "Trinity Alps Cultivation", contactName: "Tom Brown", contactEmail: "tom@trinityalps.com", contactPhone: "530-555-0105", notes: "Mountain grown" },
+  { name: "Sacramento Valley Farms", contactName: "Amy Lee", contactEmail: "amy@sacvalleyfarms.com", contactPhone: "916-555-0106", notes: "Large scale greenhouse" },
+  { name: "Central Coast Growers", contactName: "Chris Martinez", contactEmail: "chris@centralcoast.com", contactPhone: "805-555-0107", notes: "SLO county specialist" },
+  { name: "SoCal Premium Supply", contactName: "Jordan Taylor", contactEmail: "jordan@socalpremium.com", contactPhone: "619-555-0108", notes: "San Diego distributor" },
+];
 
 async function seedRealisticData() {
   // Get scenario from command line args (default to "full")
@@ -85,7 +99,20 @@ async function seedRealisticData() {
   }
 
   try {
-    // Step 0: Create Default User
+    // Step 0: Clear existing data (ensures clean IDs)
+    console.log("🗑️  Clearing existing data...");
+    // Clear in reverse dependency order
+    const tablesToClear = [returns, invoices, orders, batches, lots, products, strains, clients, brands, vendors, users];
+    for (const table of tablesToClear) {
+      try {
+        await db.delete(table);
+      } catch {
+        // Table might not exist or be empty - continue
+      }
+    }
+    console.log("   ✓ Existing data cleared\n");
+
+    // Step 1: Create Default User
     console.log("👤 Creating default user...");
     await db.insert(users).values({
       openId: "admin-seed-user",
@@ -147,17 +174,23 @@ async function seedRealisticData() {
 
     await db.insert(products).values(productsData);
 
-    // Step 5: Generate Lots
+    // Step 5: Create Vendors (for lots FK relationship)
+    console.log("🏭 Creating vendors...");
+    // Use CONFIG.totalVendors to determine how many vendors to create
+    const vendorData = ALL_VENDORS.slice(0, CONFIG.totalVendors);
+    await db.insert(vendors).values(vendorData);
+    // Get actual vendor IDs after insert (auto-increment starts at 1 after clear)
+    const vendorIds = Array.from({ length: vendorData.length }, (_, i) => i + 1);
+    console.log(`   ✓ ${vendorData.length} vendors created\n`);
+
+    // Step 6: Generate Lots
     console.log("📊 Generating lots...");
-    const vendorIds = vendorClients.map(
-      (_, index) => CONFIG.whaleClients + CONFIG.regularClients + index + 1
-    );
     const lotsData = generateLots(vendorIds);
     console.log(`   ✓ ${lotsData.length} lots created\n`);
 
     await db.insert(lots).values(lotsData);
 
-    // Step 6: Generate Batches
+    // Step 7: Generate Batches
     console.log("📦 Generating batches...");
     const productIds = Array.from(
       { length: productsData.length },
@@ -233,6 +266,44 @@ async function seedRealisticData() {
     console.log("📊 Calculating summary statistics...");
     const arSummary = calculateARAgingSummary(invoicesData);
 
+    // Step 12: Validate FK integrity
+    console.log("🔍 Validating data integrity...");
+    const validationErrors: string[] = [];
+
+    // Check lots → vendors FK
+    const orphanedLots = await db.execute(sql`
+      SELECT COUNT(*) as count FROM lots l
+      LEFT JOIN vendors v ON l.vendorId = v.id
+      WHERE v.id IS NULL
+    `);
+    const orphanedLotsCount = (orphanedLots[0] as any)?.[0]?.count || 0;
+    if (orphanedLotsCount > 0) validationErrors.push(`${orphanedLotsCount} lots with invalid vendorId`);
+
+    // Check invoices → orders FK (via referenceId)
+    const orphanedInvoices = await db.execute(sql`
+      SELECT COUNT(*) as count FROM invoices i
+      LEFT JOIN orders o ON i.referenceId = o.id
+      WHERE i.referenceType = 'ORDER' AND o.id IS NULL
+    `);
+    const orphanedInvoicesCount = (orphanedInvoices[0] as any)?.[0]?.count || 0;
+    if (orphanedInvoicesCount > 0) validationErrors.push(`${orphanedInvoicesCount} invoices with invalid referenceId`);
+
+    // Check batches → products FK
+    const orphanedBatches = await db.execute(sql`
+      SELECT COUNT(*) as count FROM batches b
+      LEFT JOIN products p ON b.productId = p.id
+      WHERE p.id IS NULL
+    `);
+    const orphanedBatchesCount = (orphanedBatches[0] as any)?.[0]?.count || 0;
+    if (orphanedBatchesCount > 0) validationErrors.push(`${orphanedBatchesCount} batches with invalid productId`);
+
+    if (validationErrors.length > 0) {
+      console.error("   ❌ Validation FAILED:");
+      validationErrors.forEach(err => console.error(`      - ${err}`));
+    } else {
+      console.log("   ✓ All FK relationships valid\n");
+    }
+
     console.log("\n" + "=".repeat(50));
     console.log("✅ DATA GENERATION COMPLETE");
     console.log("=".repeat(50));
@@ -248,12 +319,12 @@ async function seedRealisticData() {
     console.log(`💸 Refunds: ${refundsData.length}`);
     console.log("\n💰 AR Aging Summary:");
     console.log(`   Current: ${formatCurrency(arSummary.current)}`);
-    console.log(`   1-30 days: ${formatCurrency(arSummary.days30)}`);
-    console.log(`   31-60 days: ${formatCurrency(arSummary.days60)}`);
-    console.log(`   61-90 days: ${formatCurrency(arSummary.days90)}`);
-    console.log(`   91-120 days: ${formatCurrency(arSummary.days120)}`);
-    console.log(`   120+ days: ${formatCurrency(arSummary.days120Plus)}`);
-    console.log(`   Total: ${formatCurrency(arSummary.total)}`);
+    console.log(`   1-30 days: ${formatCurrency(arSummary.overdue1_30)}`);
+    console.log(`   31-60 days: ${formatCurrency(arSummary.overdue31_60)}`);
+    console.log(`   61-90 days: ${formatCurrency(arSummary.overdue61_90)}`);
+    console.log(`   91-120 days: ${formatCurrency(arSummary.overdue91_120)}`);
+    console.log(`   120+ days: ${formatCurrency(arSummary.overdue120Plus)}`);
+    console.log(`   Total: ${formatCurrency(arSummary.totalAR)}`);
     console.log("=".repeat(50) + "\n");
   } catch (error) {
     console.error("❌ Error during seeding:", error);

@@ -23,6 +23,8 @@ export interface InvoiceData {
   status: string;
   paymentTerms: string;
   notes: string | null;
+  referenceType: string;
+  referenceId: number;
   createdBy: number;
   createdAt: Date;
 }
@@ -33,29 +35,36 @@ export interface InvoiceData {
 export function generateInvoices(orders: OrderData[]): InvoiceData[] {
   const invoices: InvoiceData[] = [];
   const today = CONFIG.endDate;
-  
+
+  // Pre-build order → index map for O(1) lookup instead of O(n) indexOf
+  const orderIndexMap = new Map<OrderData, number>();
+  orders.forEach((order, index) => orderIndexMap.set(order, index));
+
   // Only create invoices for SALE orders (not quotes)
   const saleOrders = orders.filter(o => o.orderType === 'SALE');
-  
+
   // Pre-calculate which invoices will be overdue and which will be 120+
   const overdueCount = Math.floor(saleOrders.length * CONFIG.overduePercent);
   const overdue120PlusCount = Math.floor(overdueCount * CONFIG.overdue120PlusPercent);
   const overdueIndices = new Set<number>();
   const overdue120PlusIndices = new Set<number>();
-  
+
   // Randomly select overdue invoices
   while (overdueIndices.size < overdueCount) {
     overdueIndices.add(Math.floor(Math.random() * saleOrders.length));
   }
-  
+
   // Randomly select 120+ invoices from overdue set
   const overdueArray = Array.from(overdueIndices);
   while (overdue120PlusIndices.size < overdue120PlusCount) {
     overdue120PlusIndices.add(overdueArray[Math.floor(Math.random() * overdueArray.length)]);
   }
-  
+
   for (let i = 0; i < saleOrders.length; i++) {
     const order = saleOrders[i];
+    // Get the original order index for linking (DB IDs start at 1)
+    const originalOrderIndex = orderIndexMap.get(order) ?? 0;
+    const orderId = originalOrderIndex + 1;
     const invoiceDate = order.createdAt;
     // Always create a new Date object to avoid mutation
     const dueDate = order.dueDate 
@@ -111,6 +120,8 @@ export function generateInvoices(orders: OrderData[]): InvoiceData[] {
       status,
       paymentTerms: order.paymentTerms || 'NET_30',
       notes: null,
+      referenceType: 'ORDER',
+      referenceId: orderId,
       createdBy: 1, // Default admin user
       createdAt: invoiceDate,
     });
