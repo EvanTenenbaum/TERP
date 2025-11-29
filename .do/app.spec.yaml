@@ -65,7 +65,7 @@ services:
       # See: scripts/fetch-and-set-secrets.ts
       
       # IMPORTANT: These secrets must be set in DigitalOcean Control Panel
-      # Go to: App Settings > Environment Variables > Edit
+      # Go to: Components > terp-production > Settings > Environment Variables
       # Add each secret variable with its actual value
 
       - key: JWT_SECRET
