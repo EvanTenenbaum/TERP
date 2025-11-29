@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
 import * as paymentMethodsDb from "../paymentMethodsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -197,8 +197,8 @@ export const settingsRouter = router({
         }),
     }),
 
-    // Database seeding
-    seedDatabase: protectedProcedure.use(requirePermission("system:manage"))
+    // Database seeding - Publicly accessible (no auth required)
+    seedDatabase: publicProcedure
       .input(z.object({
         scenario: z.enum(["light", "full", "edgeCases", "chaos"]).default("light"),
       }))
