@@ -42,7 +42,11 @@ services:
       - key: VITE_APP_TITLE
         scope: RUN_AND_BUILD_TIME
         value: TERP
-      
+
+      - key: VITE_APP_LOGO
+        scope: RUN_AND_BUILD_TIME
+        value: "/logo.svg"
+
       - key: VITE_APP_ID
         scope: RUN_AND_BUILD_TIME
         value: terp-app
@@ -60,43 +64,42 @@ services:
       # Or use GitHub Secrets API to fetch and set programmatically
       # See: scripts/fetch-and-set-secrets.ts
       
-      # IMPORTANT: These values should be set in DigitalOcean Control Panel
-      # Or fetched from GitHub Secrets by agents using the API
-      # Format: {{SECRET:JWT_SECRET}} indicates this should be fetched from GitHub Secrets
-      
+      # IMPORTANT: These secrets must be set in DigitalOcean Control Panel
+      # Go to: App Settings > Environment Variables > Edit
+      # Add each secret variable with its actual value
+
       - key: JWT_SECRET
         scope: RUN_AND_BUILD_TIME
-        # Set in DO Control Panel or fetch from GitHub Secrets
-        value: "{{SECRET:JWT_SECRET}}"
-      
+        type: SECRET
+
       - key: CLERK_SECRET_KEY
         scope: RUN_AND_BUILD_TIME
-        value: "{{SECRET:CLERK_SECRET_KEY}}"
-      
+        type: SECRET
+
       - key: CLERK_PUBLISHABLE_KEY
         scope: RUN_AND_BUILD_TIME
-        value: "{{SECRET:CLERK_PUBLISHABLE_KEY}}"
-      
+        type: SECRET
+
       - key: SOLARWINDS_TOKEN
         scope: RUN_AND_BUILD_TIME
-        value: "{{SECRET:SOLARWINDS_TOKEN}}"
-      
+        type: SECRET
+
       - key: SENTRY_DSN
         scope: RUN_AND_BUILD_TIME
-        value: "{{SECRET:SENTRY_DSN}}"
-      
+        type: SECRET
+
       - key: VITE_SENTRY_DSN
         scope: RUN_AND_BUILD_TIME
-        value: "{{SECRET:VITE_SENTRY_DSN}}"
-      
+        type: SECRET
+
       - key: WEBHOOK_SECRET
         scope: RUN_AND_BUILD_TIME
-        value: "{{SECRET:WEBHOOK_SECRET}}"
-        
+        type: SECRET
+
       # Note: Also accepts old GITHUB_WEBHOOK_SECRET for backwards compatibility
       - key: GITHUB_WEBHOOK_SECRET
         scope: RUN_AND_BUILD_TIME
-        value: "{{SECRET:WEBHOOK_SECRET}}"
+        type: SECRET
 
 ingress:
   rules:
