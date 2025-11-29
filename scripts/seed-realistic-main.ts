@@ -101,11 +101,14 @@ async function seedRealisticData() {
   try {
     // Step 0: Clear existing data (ensures clean IDs)
     console.log("🗑️  Clearing existing data...");
-    // Clear in reverse dependency order using raw SQL for reliability
+    // Disable foreign key checks to allow deletion in any order
+    await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
+    
+    // Clear in reverse dependency order using TRUNCATE for speed and ID reset
     const tablesToClear = ['returns', 'invoices', 'orders', 'batches', 'lots', 'products', 'strains', 'clients', 'brands', 'vendors', 'users'];
     for (const tableName of tablesToClear) {
       try {
-        await db.execute(sql.raw(`DELETE FROM \`${tableName}\``));
+        await db.execute(sql.raw(`TRUNCATE TABLE \`${tableName}\``));
       } catch (error: any) {
         // Table might not exist or be empty - continue
         if (error?.code !== 'ER_NO_SUCH_TABLE') {
@@ -113,6 +116,9 @@ async function seedRealisticData() {
         }
       }
     }
+    
+    // Re-enable foreign key checks
+    await db.execute(sql`SET FOREIGN_KEY_CHECKS = 1`);
     console.log("   ✓ Existing data cleared\n");
 
     // Step 1: Create Default User
@@ -157,6 +163,16 @@ async function seedRealisticData() {
       const batch = allClients.slice(i, i + batchSize);
       await db.insert(clients).values(batch);
     }
+    
+    // Fetch actual inserted client IDs (critical for FK relationships)
+    const insertedClients = await db.select({
+      id: clients.id,
+      name: clients.name
+    }).from(clients).orderBy(clients.id);
+    
+    if (insertedClients.length !== allClients.length) {
+      throw new Error(`Client insertion mismatch: expected ${allClients.length}, got ${insertedClients.length}`);
+    }
 
     // Step 2: Create Default Brand
     console.log("🏷️  Creating default brand...");
@@ -196,8 +212,18 @@ async function seedRealisticData() {
         VALUES (${vendor.name}, ${vendor.contactName}, ${vendor.contactEmail}, ${vendor.contactPhone}, ${vendor.notes})
       `);
     }
-    // Get actual vendor IDs after insert (auto-increment starts at 1 after clear)
-    const vendorIds = Array.from({ length: vendorData.length }, (_, i) => i + 1);
+    
+    // Fetch actual inserted vendor IDs (critical for FK relationships)
+    const insertedVendors = await db.select({
+      id: vendors.id,
+      name: vendors.name
+    }).from(vendors).orderBy(vendors.id);
+    
+    if (insertedVendors.length !== vendorData.length) {
+      throw new Error(`Vendor insertion mismatch: expected ${vendorData.length}, got ${insertedVendors.length}`);
+    }
+    
+    const vendorIds = insertedVendors.map(v => v.id);
     console.log(`   ✓ ${vendorData.length} vendors created\n`);
 
     // Step 6: Generate Lots
@@ -221,14 +247,20 @@ async function seedRealisticData() {
 
     // Step 7: Generate Orders
     console.log("🛍️ Generating orders...");
-    const whaleClientIds = Array.from(
-      { length: whaleClients.length },
-      (_, i) => i + 1
-    );
-    const regularClientIds = Array.from(
-      { length: regularClients.length },
-      (_, i) => whaleClients.length + i + 1
-    );
+    // Use actual inserted client IDs instead of assuming sequential IDs
+    const whaleClientIds = insertedClients.slice(0, CONFIG.whaleClients).map(c => c.id);
+    const regularClientIds = insertedClients.slice(
+      CONFIG.whaleClients,
+      CONFIG.whaleClients + CONFIG.regularClients
+    ).map(c => c.id);
+    
+    if (whaleClientIds.length !== CONFIG.whaleClients) {
+      throw new Error(`Whale client count mismatch: expected ${CONFIG.whaleClients}, got ${whaleClientIds.length}`);
+    }
+    if (regularClientIds.length !== CONFIG.regularClients) {
+      throw new Error(`Regular client count mismatch: expected ${CONFIG.regularClients}, got ${regularClientIds.length}`);
+    }
+    
     const ordersData = generateOrders(
       whaleClientIds,
       regularClientIds,
