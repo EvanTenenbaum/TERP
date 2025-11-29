@@ -4075,6 +4075,27 @@ Completes pricing feature set, enables price monitoring.
   - **Discovered:** Manual Testing Session 2025-11-26
   - **Related:** BUG-002 (Duplicate Navigation Bar - completed, caused this issue as side effect)
 
+- [x] **BUG-018: JWT_SECRET Validation Fails During Docker Build** (Completed: 2025-11-29) 🔴 CRITICAL
+  - Task ID: BUG-018
+  - Priority: P0 (CRITICAL - BLOCKS DEPLOYMENT)
+  - Session: claude/fix-jwt-secret-env-01FXgyBQK4ScuyokCeyhXkoR
+  - **Problem:** Deployment fails because JWT_SECRET environment variable is validated at build time when it's not available
+  - **Root Cause:** The `server/_core/env.ts` module was calling `getJwtSecret()` immediately when the module was loaded during esbuild bundling. Environment variables aren't available at Docker build time.
+  - **Solution:** Changed the `env` object to use JavaScript getters to defer environment variable access until runtime when the values are actually needed. Added caching for the JWT secret to avoid repeated validation logs.
+  - **Files Modified:**
+    - `server/_core/env.ts` - Changed from direct property assignment to getters for lazy evaluation
+  - **Key Commits:**
+    - `79b8bf1` - Fix JWT_SECRET validation to be runtime-only (not build time)
+    - `56e93ce` - Update auto-generated files from build verification
+  - **Testing:**
+    - ✅ Production build passes without JWT_SECRET set
+    - ✅ 20/20 envValidator tests pass
+    - ✅ TypeScript compilation passes
+  - **Status:** ✅ COMPLETE
+  - Test Status: ✅ Fully Tested
+  - **Actual Time:** 30 minutes
+  - **Impact:** Deployment now works - environment variables only validated at runtime when server starts
+
 ---
 
 ## 📱 Mobile-Specific Bugs
