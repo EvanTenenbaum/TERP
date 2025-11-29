@@ -211,6 +211,10 @@ export const settingsRouter = router({
           // Dynamically import and execute the seed function
           const { seedRealisticData } = await import("../../scripts/seed-realistic-main.js");
           
+          if (!seedRealisticData || typeof seedRealisticData !== "function") {
+            throw new Error("seedRealisticData function not found or invalid");
+          }
+          
           // Execute the seed function
           await seedRealisticData();
           
@@ -219,8 +223,22 @@ export const settingsRouter = router({
             message: `Database seeded successfully with ${input.scenario} scenario`,
           };
         } catch (error: any) {
-          throw new Error(`Seed failed: ${error.message || "Unknown error"}`);
+          // Preserve original error details for debugging
+          const errorMessage = error?.message || "Unknown error";
+          const errorCode = error?.code || "UNKNOWN_ERROR";
+          const errorDetails = error?.cause ? ` (${error.cause})` : "";
+          
+          // Log the full error for server-side debugging
+          console.error("[Seed API Error]", {
+            scenario: input.scenario,
+            error: errorMessage,
+            code: errorCode,
+            stack: error?.stack,
+          });
+          
+          throw new Error(`Seed failed: ${errorMessage}${errorDetails}`);
         } finally {
+          // Always restore original argv
           process.argv = originalArgv;
         }
       }),
