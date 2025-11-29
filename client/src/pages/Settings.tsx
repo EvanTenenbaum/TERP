@@ -36,16 +36,18 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8 lg:w-auto">
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="rbac">User Roles</TabsTrigger>
-          <TabsTrigger value="roles">Roles</TabsTrigger>
-          <TabsTrigger value="permissions">Permissions</TabsTrigger>
-          <TabsTrigger value="locations">Locations</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="grades">Grades</TabsTrigger>
-          <TabsTrigger value="database">Database</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-full min-w-max md:w-auto md:grid md:grid-cols-8 gap-1">
+            <TabsTrigger value="users" className="whitespace-nowrap">Users</TabsTrigger>
+            <TabsTrigger value="rbac" className="whitespace-nowrap">User Roles</TabsTrigger>
+            <TabsTrigger value="roles" className="whitespace-nowrap">Roles</TabsTrigger>
+            <TabsTrigger value="permissions" className="whitespace-nowrap">Permissions</TabsTrigger>
+            <TabsTrigger value="locations" className="whitespace-nowrap">Locations</TabsTrigger>
+            <TabsTrigger value="categories" className="whitespace-nowrap">Categories</TabsTrigger>
+            <TabsTrigger value="grades" className="whitespace-nowrap">Grades</TabsTrigger>
+            <TabsTrigger value="database" className="whitespace-nowrap">Database</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="users" className="space-y-4">
           <UserManagement />
