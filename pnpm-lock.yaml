@@ -422,9 +422,6 @@ importers:
       prettier:
         specifier: ^3.6.2
         version: 3.6.2
-      simple-git:
-        specifier: ^3.30.0
-        version: 3.30.0
       tailwindcss:
         specifier: ^4.1.14
         version: 4.1.16

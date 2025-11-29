@@ -101,27 +101,38 @@ async function seedRealisticData() {
   try {
     // Step 0: Clear existing data (ensures clean IDs)
     console.log("🗑️  Clearing existing data...");
-    // Clear in reverse dependency order
-    const tablesToClear = [returns, invoices, orders, batches, lots, products, strains, clients, brands, vendors, users];
-    for (const table of tablesToClear) {
+    // Clear in reverse dependency order using raw SQL for reliability
+    const tablesToClear = ['returns', 'invoices', 'orders', 'batches', 'lots', 'products', 'strains', 'clients', 'brands', 'vendors', 'users'];
+    for (const tableName of tablesToClear) {
       try {
-        await db.delete(table);
-      } catch {
+        await db.execute(sql.raw(`DELETE FROM \`${tableName}\``));
+      } catch (error: any) {
         // Table might not exist or be empty - continue
+        if (error?.code !== 'ER_NO_SUCH_TABLE') {
+          console.log(`   ⚠️  Warning clearing ${tableName}: ${error?.message || 'unknown error'}`);
+        }
       }
     }
     console.log("   ✓ Existing data cleared\n");
 
     // Step 1: Create Default User
     console.log("👤 Creating default user...");
-    await db.insert(users).values({
-      openId: "admin-seed-user",
-      name: "Seed Admin",
-      email: "admin@terp.local",
-      role: "admin",
-      lastSignedIn: new Date(2023, 10, 1),
-    });
-    console.log("   ✓ Default user created\n");
+    try {
+      await db.insert(users).values({
+        openId: "admin-seed-user",
+        name: "Seed Admin",
+        email: "admin@terp.local",
+        role: "admin",
+        lastSignedIn: new Date(2023, 10, 1),
+      });
+      console.log("   ✓ Default user created\n");
+    } catch (error: any) {
+      if (error?.cause?.code === 'ER_DUP_ENTRY') {
+        console.log("   ✓ Default user already exists, skipping\n");
+      } else {
+        throw error;
+      }
+    }
 
     // Step 1: Generate Clients
     console.log("👥 Generating clients...");
@@ -177,8 +188,14 @@ async function seedRealisticData() {
     // Step 5: Create Vendors (for lots FK relationship)
     console.log("🏭 Creating vendors...");
     // Use CONFIG.totalVendors to determine how many vendors to create
+    // Use raw SQL to avoid schema mismatch (paymentTerms column doesn't exist in production)
     const vendorData = ALL_VENDORS.slice(0, CONFIG.totalVendors);
-    await db.insert(vendors).values(vendorData);
+    for (const vendor of vendorData) {
+      await db.execute(sql`
+        INSERT INTO \`vendors\` (\`name\`, \`contactName\`, \`contactEmail\`, \`contactPhone\`, \`notes\`)
+        VALUES (${vendor.name}, ${vendor.contactName}, ${vendor.contactEmail}, ${vendor.contactPhone}, ${vendor.notes})
+      `);
+    }
     // Get actual vendor IDs after insert (auto-increment starts at 1 after clear)
     const vendorIds = Array.from({ length: vendorData.length }, (_, i) => i + 1);
     console.log(`   ✓ ${vendorData.length} vendors created\n`);
