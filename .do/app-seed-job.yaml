@@ -8,11 +8,9 @@ services:
       branch: main
       deploy_on_push: true
     dockerfile_path: Dockerfile
-    instance_count: 1
+    instance_count: 2
     instance_size_slug: basic-xs
     
-    # Health check (optimized for deployment stability)
-    # Uses /health/live for liveness (no DB dependency, prevents premature restarts)
     health_check:
       http_path: /health/live
       initial_delay_seconds: 90
@@ -21,14 +19,11 @@ services:
       success_threshold: 1
       failure_threshold: 5
     
-    # HTTP configuration
     http_port: 3000
     
-    # Routes
     routes:
       - path: /
     
-    # Environment variables (sensitive values should be set in DO control panel)
     envs:
       - key: NODE_ENV
         value: production
@@ -40,34 +35,7 @@ services:
         value: "true"
       - key: UPLOAD_DIR
         value: /tmp/uploads
-      
-      # Database connection (set actual value in DO control panel)
       - key: DATABASE_URL
-        scope: RUN_TIME
-        type: SECRET
-      
-      # Auth secrets (set actual values in DO control panel)
-      - key: NEXTAUTH_SECRET
-        scope: RUN_TIME
-        type: SECRET
-      
-      - key: NEXTAUTH_URL
-        scope: RUN_TIME
-        type: SECRET
-      
-      # Sentry (optional - set in DO control panel if using)
-      - key: SENTRY_DSN
-        scope: RUN_TIME
-        type: SECRET
-      
-      # Cron secret (set in DO control panel)
-      - key: CRON_SECRET
-        scope: RUN_TIME
-        type: SECRET
-      
-      # Papertrail endpoint (set in DO control panel)
-      # Format: logs.papertrailapp.com:XXXXX
-      - key: PAPERTRAIL_ENDPOINT
         scope: RUN_TIME
         type: SECRET
 
@@ -79,9 +47,8 @@ jobs:
     dockerfile_path: Dockerfile
     instance_count: 1
     instance_size_slug: basic-xs
-    run_command: pnpm install && pnpm seed:light
+    run_command: pnpm seed:light
     source_dir: /
-    kind: POST_DEPLOY
     envs:
       - key: NODE_ENV
         value: production
