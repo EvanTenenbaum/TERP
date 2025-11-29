@@ -196,4 +196,32 @@ export const settingsRouter = router({
           return { success: true };
         }),
     }),
+
+    // Database seeding
+    seedDatabase: protectedProcedure.use(requirePermission("system:manage"))
+      .input(z.object({
+        scenario: z.enum(["light", "full", "edgeCases", "chaos"]).default("light"),
+      }))
+      .mutation(async ({ input }) => {
+        // Set the scenario via process.argv to match the script's expected format
+        const originalArgv = process.argv;
+        process.argv = ["node", "script", input.scenario];
+        
+        try {
+          // Dynamically import and execute the seed function
+          const { seedRealisticData } = await import("../../scripts/seed-realistic-main.js");
+          
+          // Execute the seed function
+          await seedRealisticData();
+          
+          return {
+            success: true,
+            message: `Database seeded successfully with ${input.scenario} scenario`,
+          };
+        } catch (error: any) {
+          throw new Error(`Seed failed: ${error.message || "Unknown error"}`);
+        } finally {
+          process.argv = originalArgv;
+        }
+      }),
   })

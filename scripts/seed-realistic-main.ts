@@ -59,7 +59,7 @@ const ALL_VENDORS = [
   { name: "SoCal Premium Supply", contactName: "Jordan Taylor", contactEmail: "jordan@socalpremium.com", contactPhone: "619-555-0108", notes: "San Diego distributor" },
 ];
 
-async function seedRealisticData() {
+export async function seedRealisticData() {
   // Get scenario from command line args (default to "full")
   const scenarioName = process.argv[2] || "full";
 
@@ -381,13 +381,19 @@ async function seedRealisticData() {
   }
 }
 
-// Run the seed function
-seedRealisticData()
-  .then(() => {
-    console.log("✅ Seeding completed successfully");
-    process.exit(0);
-  })
-  .catch(error => {
-    console.error("❌ Seeding failed:", error);
-    process.exit(1);
-  });
+// Run the seed function only if called directly (not imported)
+// Check if this is the main module
+if (import.meta.url === `file://${process.argv[1]}` || 
+    process.argv[1]?.includes("seed-realistic-main") ||
+    process.argv[1]?.endsWith("seed-realistic-main.ts") ||
+    process.argv[1]?.endsWith("seed-realistic-main.js")) {
+  seedRealisticData()
+    .then(() => {
+      console.log("✅ Seeding completed successfully");
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error("❌ Seeding failed:", error);
+      process.exit(1);
+    });
+}
