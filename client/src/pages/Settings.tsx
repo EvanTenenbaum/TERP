@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Edit2, Save, X } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -12,6 +12,17 @@ import { UserManagement } from "@/components/UserManagement";
 import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagement";
 import { RoleManagement } from "@/components/settings/rbac/RoleManagement";
 import { PermissionAssignment } from "@/components/settings/rbac/PermissionAssignment";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Settings() {
   return (
@@ -25,7 +36,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7 lg:w-auto">
+        <TabsList className="grid w-full grid-cols-8 lg:w-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="rbac">User Roles</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
@@ -33,6 +44,7 @@ export default function Settings() {
           <TabsTrigger value="locations">Locations</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="grades">Grades</TabsTrigger>
+          <TabsTrigger value="database">Database</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
@@ -62,8 +74,118 @@ export default function Settings() {
         <TabsContent value="grades" className="space-y-4">
           <GradesManager />
         </TabsContent>
+
+        <TabsContent value="database" className="space-y-4">
+          <DatabaseManager />
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function DatabaseManager() {
+  const [scenario, setScenario] = useState<"light" | "full" | "edgeCases" | "chaos">("light");
+  const [isOpen, setIsOpen] = useState(false);
+
+  const seedMutation = trpc.settings.seedDatabase.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message || "Database seeded successfully");
+      setIsOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to seed database");
+    },
+  });
+
+  const handleSeed = () => {
+    seedMutation.mutate({ scenario });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Database className="h-5 w-5" />
+          Database Seeding
+        </CardTitle>
+        <CardDescription>
+          Seed the database with test data. This will clear all existing data and create fresh test data.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="scenario">Seed Scenario</Label>
+            <select
+              id="scenario"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={scenario}
+              onChange={(e) => setScenario(e.target.value as typeof scenario)}
+            >
+              <option value="light">Light (~30s) - Fast seed for integration tests</option>
+              <option value="full">Full (~2min) - Complete dataset for E2E tests</option>
+              <option value="edgeCases">Edge Cases (~45s) - Extreme scenarios for stress testing</option>
+              <option value="chaos">Chaos (~60s) - Random anomalies for chaos testing</option>
+            </select>
+          </div>
+
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+              <div className="space-y-2">
+                <p className="font-semibold text-destructive">Warning: Destructive Operation</p>
+                <p className="text-sm text-muted-foreground">
+                  This will permanently delete all existing data in the database and replace it with test data.
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="w-full sm:w-auto">
+                <Database className="h-4 w-4 mr-2" />
+                Seed Database
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Database Seeding</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <p>
+                    You are about to seed the database with the <strong>{scenario}</strong> scenario.
+                  </p>
+                  <p className="font-semibold text-destructive">
+                    This will permanently delete ALL existing data including:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    <li>All users (except system users)</li>
+                    <li>All clients and vendors</li>
+                    <li>All products, strains, and inventory</li>
+                    <li>All orders, invoices, and returns</li>
+                    <li>All other business data</li>
+                  </ul>
+                  <p className="pt-2">
+                    Are you absolutely sure you want to continue?
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleSeed}
+                  disabled={seedMutation.isPending}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {seedMutation.isPending ? "Seeding..." : "Yes, Seed Database"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
