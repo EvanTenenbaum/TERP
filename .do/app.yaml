@@ -71,20 +71,25 @@ services:
         scope: RUN_TIME
         type: SECRET
 
-jobs:
-  - name: seed-database
-    github:
-      repo: EvanTenenbaum/TERP
-      branch: main
-    dockerfile_path: Dockerfile
-    instance_count: 1
-    instance_size_slug: basic-xs
-    run_command: pnpm install && pnpm seed:light
-    source_dir: /
-    kind: POST_DEPLOY
-    envs:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        scope: RUN_TIME
-        type: SECRET
+# Seed job removed - run manually when needed via:
+# doctl apps create-job-run <app-id> <job-name>
+# Or use: DATABASE_URL="..." pnpm seed:light from a local/dev environment
+#
+# To re-enable automatic seeding (NOT RECOMMENDED for production):
+# jobs:
+#   - name: seed-database
+#     github:
+#       repo: EvanTenenbaum/TERP
+#       branch: main
+#     dockerfile_path: Dockerfile
+#     instance_count: 1
+#     instance_size_slug: basic-xs
+#     run_command: pnpm install && pnpm seed:light
+#     source_dir: /
+#     kind: POST_DEPLOY
+#     envs:
+#       - key: NODE_ENV
+#         value: production
+#       - key: DATABASE_URL
+#         scope: RUN_TIME
+#         type: SECRET
