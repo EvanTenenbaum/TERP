@@ -2,29 +2,33 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.3
-**Last Updated:** November 21, 2025
+**Version:** 2.4
+**Last Updated:** November 30, 2025
 **Status:** Active
 
 ---
 
-## 🎯 Current Sprint (Nov 22-29, 2025): Phase 2.5 Completion & Phase 3 Workflow Verification
+## 🎯 Current Sprint (Nov 30 - Dec 6, 2025): Phase 2.6 Non-Data-Dependent Bug Fixes
 
-**Strategic Focus:** Complete critical workflow fixes and verify end-to-end functionality  
-**Sprint Plan:** `docs/SPRINT_PLAN_2025-11-22.md`  
-**Execution Guide:** `docs/SWARM_EXECUTION_GUIDE_2025-11-22.md`  
-**Status:** Ready for Execution
+**Strategic Focus:** Fix UI/UX and routing bugs that do NOT require seeded data
+**Sprint Plan:** See Phase 2.6 section below
+**Status:** Active - Ready for Execution
 
 ### 📊 Sprint Overview
 
-**Total Tasks:** 8 tasks  
-**Estimated Time:** 30-44 hours  
-**Execution Strategy:** 4 waves with strategic parallelization  
-**Expected Completion:** 3-4 days
+**Total Tasks:** 5 tasks (Phase 2.6)
+**Estimated Time:** 22-44 hours
+**Execution Strategy:** 2 waves with strategic parallelization
+**Expected Completion:** 3-5 days
 
-**Wave 1 (Sequential):** BUG-007 - Complete Phase 2.5  
-**Wave 2 (Parallel - 3 agents):** WF-001, WF-002, BUG-010  
-**Wave 3 (Parallel - 2 agents):** WF-003, DATA-002-AUGMENT  
+**Wave 1 (Parallel - 3 agents):** BUG-019 (Search 404), BUG-020 (Todo 404), BUG-021 (Cmd+K)
+**Wave 2 (Parallel - 2 agents):** BUG-022 (Theme Toggle), BUG-023 (Layout Consistency)
+
+### Previous Sprint Focus (Nov 22-29, 2025)
+
+**Wave 1 (Sequential):** BUG-007 - Complete Phase 2.5
+**Wave 2 (Parallel - 3 agents):** WF-001, WF-002, BUG-010
+**Wave 3 (Parallel - 2 agents):** WF-003, DATA-002-AUGMENT
 **Wave 4 (Sequential):** WF-004 - Final verification
 
 ---
@@ -2211,6 +2215,180 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
   - **Impact:** System now handles edge cases gracefully, prevents division by zero errors
 
 **Total Estimated Time:** 27-40 hours (3-5 days with parallel execution)
+
+---
+
+### Phase 2.6: Non-Data-Dependent Bug Fixes (3-5 Days)
+
+**Objective:** Fix UI/UX and routing bugs that do NOT require seeded data. These are pure code fixes for navigation, keyboard shortcuts, and layout consistency issues.
+
+**Priority:** 🔴 HIGH - These bugs affect user experience and core navigation
+
+**Created:** 2025-11-30
+**Status:** Active
+
+### BUG-019: Global Search Bar Returns 404 Error
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4-8h
+**Module:** `client/src/components/`, `client/src/pages/`
+**Dependencies:** None
+**Prompt:** `docs/prompts/BUG-019.md`
+
+**Problem:** Global search bar in header navigates to `/search?q=<query>` which returns 404 error because no SearchPage component or route exists.
+
+**Objectives:**
+
+- Create SearchPage component to handle search queries
+- Add /search route to application router
+- Implement search functionality across all entities (orders, clients, inventory, etc.)
+
+**Deliverables:**
+
+- [ ] Create `client/src/pages/SearchPage.tsx` component
+- [ ] Add `/search` route in router configuration
+- [ ] Implement search API endpoint or use existing endpoints
+- [ ] Display categorized search results (Orders, Clients, Inventory, etc.)
+- [ ] Add "no results" and loading states
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+### BUG-020: Todo Lists Page Returns 404
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2-4h
+**Module:** `client/src/pages/`, `client/src/components/layout/`
+**Dependencies:** None
+**Prompt:** `docs/prompts/BUG-020.md`
+
+**Problem:** Navigating to Todo Lists page returns 404 error. Either the route doesn't exist or the component is missing.
+
+**Objectives:**
+
+- Investigate if Todo Lists feature should exist (check sidebar links)
+- Either implement TodoListsPage component OR remove the navigation link
+- Ensure consistent navigation experience
+
+**Deliverables:**
+
+- [ ] Investigate current todo backend support (check tRPC routers)
+- [ ] Decision: implement feature or remove navigation link
+- [ ] If implementing: create `client/src/pages/TodoListsPage.tsx`
+- [ ] If implementing: add `/todos` route
+- [ ] If removing: update sidebar navigation to remove dead link
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+### BUG-021: Command Palette (Cmd+K) Not Working
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4-8h
+**Module:** `client/src/components/CommandPalette.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/BUG-021.md`
+
+**Problem:** Cmd+K keyboard shortcut does not open command palette modal. The feature may be partially implemented or the keyboard listener is not working.
+
+**Objectives:**
+
+- Debug keyboard event listener for Cmd+K / Ctrl+K
+- Verify CommandPalette component renders and opens correctly
+- Ensure keyboard shortcut works across all pages
+
+**Deliverables:**
+
+- [ ] Fix keyboard event listener in CommandPalette component
+- [ ] Ensure modal opens/closes on keyboard shortcut
+- [ ] Add support for both Cmd+K (Mac) and Ctrl+K (Windows/Linux)
+- [ ] Test shortcut works from any page in application
+- [ ] Add keyboard shortcut hint in UI (optional)
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+### BUG-022: Theme Toggle Not Implemented
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4-8h
+**Module:** `client/src/components/`, Settings page
+**Dependencies:** None
+**Prompt:** `docs/prompts/BUG-022.md`
+
+**Problem:** No light/dark mode theme toggle functionality available in the application despite ThemeProvider likely being set up.
+
+**Objectives:**
+
+- Verify ThemeProvider is properly configured
+- Add theme toggle button to user profile dropdown or settings
+- Persist theme preference in localStorage
+
+**Deliverables:**
+
+- [ ] Verify theme infrastructure (ThemeProvider, CSS variables)
+- [ ] Add theme toggle button to user dropdown/settings
+- [ ] Implement theme switching logic (light/dark/system)
+- [ ] Persist theme preference in localStorage
+- [ ] Test theme toggle across all major pages
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+### BUG-023: Inconsistent Layout Between Dashboard and Module Pages
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8-16h
+**Module:** `client/src/components/layout/`
+**Dependencies:** None
+**Prompt:** `docs/prompts/BUG-023.md`
+
+**Problem:** Dashboard and module pages use different layouts causing inconsistent navigation. Dashboard has updated sidebar but no header, while module pages have header but older sidebar.
+
+**Objectives:**
+
+- Audit current layout architecture (AppShell vs DashboardLayout)
+- Unify layout to use single consistent navigation pattern
+- Ensure all pages have consistent header and sidebar navigation
+
+**Deliverables:**
+
+- [ ] Audit AppShell.tsx and DashboardLayout.tsx
+- [ ] Create unified layout strategy (single Layout component or consistent switching)
+- [ ] Ensure header appears on ALL pages (including Dashboard)
+- [ ] Ensure sidebar navigation is consistent across ALL pages
+- [ ] Test navigation flow between Dashboard and all module pages
+- [ ] Verify no duplicate navigation elements appear
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+**Phase 2.6 Summary:**
+
+| Task ID | Description                   | Priority | Estimate | Status |
+| ------- | ----------------------------- | -------- | -------- | ------ |
+| BUG-019 | Global Search Bar Returns 404 | HIGH     | 4-8h     | ready  |
+| BUG-020 | Todo Lists Page Returns 404   | HIGH     | 2-4h     | ready  |
+| BUG-021 | Command Palette Not Working   | MEDIUM   | 4-8h     | ready  |
+| BUG-022 | Theme Toggle Not Implemented  | MEDIUM   | 4-8h     | ready  |
+| BUG-023 | Inconsistent Layout           | HIGH     | 8-16h    | ready  |
+
+**Total Estimated Time:** 22-44 hours (3-5 days with parallel execution)
+
+**Execution Strategy:**
+
+- **Wave 1 (Parallel - 3 agents):** BUG-019, BUG-020, BUG-021
+- **Wave 2 (Parallel - 2 agents):** BUG-022, BUG-023
 
 ---
 
