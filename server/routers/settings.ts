@@ -1,7 +1,7 @@
 // server/routers/settings.ts
 import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
-import { seedDatabase } from "../services/databaseSeeder";
+import { seedRealisticData } from "../../scripts/seed-realistic-main.js";
 
 export const settingsRouter = router({
   hello: publicProcedure
@@ -23,19 +23,22 @@ export const settingsRouter = router({
         throw new Error("DATABASE_URL environment variable not set.");
       }
 
+      const originalArgv = process.argv;
       try {
-        const result = await seedDatabase(scenario);
-        if (result.success) {
-          return {
-            success: true,
-            message: `Database seeded successfully with ${scenario} scenario`,
-          };
-        } else {
-          throw new Error(result.message || "Database seeding failed.");
-        }
+        // Set scenario via process.argv (how the script expects it)
+        process.argv = ["node", "seed-realistic-main.ts", scenario];
+
+        await seedRealisticData();
+
+        return {
+          success: true,
+          message: `Database seeded successfully with ${scenario} scenario`,
+        };
       } catch (error: any) {
-        console.error("Failed to seed database:", error);
-        throw new Error(`Failed to seed database: ${error.message}`);
+        console.error("[Seed Error]", error);
+        throw new Error(`Seed failed: ${error.message}`);
+      } finally {
+        process.argv = originalArgv;
       }
     }),
 });
