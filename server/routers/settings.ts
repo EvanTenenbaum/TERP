@@ -200,14 +200,32 @@ export const settingsRouter = router({
     // Database seeding - Publicly accessible (no auth required)
     seedDatabase: publicProcedure
       .input(z.object({
-        scenario: z.enum(["light", "full", "edgeCases", "chaos"]).default("light"),
+        scenario: z.enum(["light", "full", "edgeCases", "chaos"]).optional().default("light"),
       }))
       .mutation(async ({ input }) => {
+        // Ensure DATABASE_URL is available (it should be from server environment)
+        if (!process.env.DATABASE_URL) {
+          throw new Error("DATABASE_URL environment variable is not configured on the server");
+        }
+        
+        // Validate scenario value
+        const validScenarios = ["light", "full", "edgeCases", "chaos"] as const;
+        const scenario = input.scenario || "light";
+        if (!validScenarios.includes(scenario as any)) {
+          throw new Error(`Invalid scenario: ${scenario}. Must be one of: ${validScenarios.join(", ")}`);
+        }
+        
         // Set the scenario via process.argv to match the script's expected format
         const originalArgv = process.argv;
-        process.argv = ["node", "script", input.scenario];
+        process.argv = ["node", "script", scenario];
         
         try {
+          // Ensure DATABASE_URL is available to the seed script
+          // The seed script uses db-sync.ts which checks process.env.DATABASE_URL
+          if (!process.env.DATABASE_URL) {
+            throw new Error("DATABASE_URL is not available in the server environment");
+          }
+          
           // Dynamically import and execute the seed function
           const { seedRealisticData } = await import("../../scripts/seed-realistic-main.js");
           
@@ -220,7 +238,7 @@ export const settingsRouter = router({
           
           return {
             success: true,
-            message: `Database seeded successfully with ${input.scenario} scenario`,
+            message: `Database seeded successfully with ${scenario} scenario`,
           };
         } catch (error: any) {
           // Preserve original error details for debugging
@@ -230,10 +248,11 @@ export const settingsRouter = router({
           
           // Log the full error for server-side debugging
           console.error("[Seed API Error]", {
-            scenario: input.scenario,
+            scenario: scenario,
             error: errorMessage,
             code: errorCode,
             stack: error?.stack,
+            hasDatabaseUrl: !!process.env.DATABASE_URL,
           });
           
           throw new Error(`Seed failed: ${errorMessage}${errorDetails}`);
