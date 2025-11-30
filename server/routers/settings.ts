@@ -1,7 +1,7 @@
-// server/routers/settings.ts
+import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
-import { publicProcedure, router } from "../trpc";
-import { seedRealisticData } from "../../scripts/seed-realistic-main.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 export const settingsRouter = router({
   hello: publicProcedure
@@ -18,21 +18,33 @@ export const settingsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const scenario = input.scenario;
-
-      if (!process.env.DATABASE_URL) {
-        throw new Error("DATABASE_URL environment variable not set.");
-      }
-
       const originalArgv = process.argv;
+      
       try {
-        // Set scenario via process.argv (how the script expects it)
         process.argv = ["node", "seed-realistic-main.ts", scenario];
 
-        await seedRealisticData();
+        // Resolve the absolute path to the seed script
+        // In dev: /app/scripts/seed-realistic-main.js
+        // In production (Docker): /app/scripts/seed-realistic-main.js  
+        // The scripts folder is always at project root
+        const projectRoot = process.cwd(); // /app in Docker, project root in dev
+        const seedScriptPath = path.join(projectRoot, "scripts", "seed-realistic-main.js");
+        
+        console.log(`[Seed] Loading seed script from: ${seedScriptPath}`);
+        
+        // Dynamic import using absolute path
+        const seedModule = await import(seedScriptPath);
+        const seedRealisticData = seedModule.seedRealisticData;
 
-        return {
-          success: true,
-          message: `Database seeded successfully with ${scenario} scenario`,
+        if (!seedRealisticData || typeof seedRealisticData !== "function") {
+          throw new Error("seedRealisticData function not found in seed script");
+        }
+
+        await seedRealisticData();
+        
+        return { 
+          success: true, 
+          message: `Database seeded successfully with ${scenario} scenario` 
         };
       } catch (error: any) {
         console.error("[Seed Error]", error);
