@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 . "$(dirname -- "$0")/_/husky.sh"
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
