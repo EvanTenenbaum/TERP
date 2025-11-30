@@ -1,4 +1,21 @@
-# TERP Quick Reference v3.0 (Ironclad Edition)
+# TERP Quick Reference v3.1 (Ironclad Edition)
+
+---
+
+## 🚨 MANDATORY: Use Gemini API
+
+**ALL AI agents on Manus platform MUST use Gemini API for:**
+- Code generation and refactoring
+- Complex reasoning and analysis
+- Bulk operations and batch processing
+
+```python
+from google import genai
+import os
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+```
+
+**Full docs:** `docs/GEMINI_API_USAGE.md`
 
 ---
 

@@ -1,0 +1,275 @@
+{
+  "cleanup_date": "2025-11-30T01:48:47.610567",
+  "dry_run": false,
+  "total_files_moved": 42,
+  "operations": [
+    {
+      "source": "CONSOLIDATED_ROADMAP_PROCESSING_COMPLETE.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/root/CONSOLIDATED_ROADMAP_PROCESSING_COMPLETE.md",
+      "category": "root",
+      "size_bytes": 0
+    },
+    {
+      "source": "CONSOLIDATED_ROADMAP_UPDATE_REPORT.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/root/CONSOLIDATED_ROADMAP_UPDATE_REPORT.md",
+      "category": "root",
+      "size_bytes": 0
+    },
+    {
+      "source": "DATA-001-ROADMAP-TASK-V2.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/root/DATA-001-ROADMAP-TASK-V2.md",
+      "category": "root",
+      "size_bytes": 0
+    },
+    {
+      "source": "DATA-001-ROADMAP-TASK.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/root/DATA-001-ROADMAP-TASK.md",
+      "category": "root",
+      "size_bytes": 0
+    },
+    {
+      "source": "ROADMAP_REVIEW_SUMMARY.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/root/ROADMAP_REVIEW_SUMMARY.md",
+      "category": "root",
+      "size_bytes": 0
+    },
+    {
+      "source": "ROADMAP_STATUS_REPORT.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/root/ROADMAP_STATUS_REPORT.md",
+      "category": "root",
+      "size_bytes": 0
+    },
+    {
+      "source": ".cursor/rules/roadmap-manager.mdc",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/cursor/roadmap-manager.mdc",
+      "category": "cursor",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/DATA_SEEDING_ROADMAP.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/DATA_SEEDING_ROADMAP.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/DEPLOYMENT_PLAN_ROADMAP_TASKS.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/DEPLOYMENT_PLAN_ROADMAP_TASKS.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/INTEGRATED_ROADMAP_EXECUTION_GUIDE.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/INTEGRATED_ROADMAP_EXECUTION_GUIDE.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_ADD_TASK_ADVERSARIAL_QA.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_ADD_TASK_ADVERSARIAL_QA.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_ADD_TASK_SYSTEM.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_ADD_TASK_SYSTEM.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_AGENT_GUIDE.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_AGENT_GUIDE.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_AUDIT_2025-11-14_UPDATED.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_AUDIT_2025-11-14_UPDATED.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_MIGRATION_PLAN.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_MIGRATION_PLAN.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_STATUS_REPORT.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_STATUS_REPORT.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_STATUS_UPDATE_2025-11-22.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_STATUS_UPDATE_2025-11-22.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_ADVERSARIAL_QA.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_ADVERSARIAL_QA.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_DESIGN.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_DESIGN.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_FINAL_QA.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_FINAL_QA.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_FINAL_REPORT.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_FINAL_REPORT.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.1.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.1.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.2_FINAL.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.2_FINAL.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_GITHUB_NATIVE_V3.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_GUIDE.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_GUIDE.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_IMPLEMENTATION_SUMMARY.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_IMPLEMENTATION_SUMMARY.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_OVERVIEW.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_OVERVIEW.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_REALITY_CHECK.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_REALITY_CHECK.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_REQUIREMENTS_VERIFICATION.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_REQUIREMENTS_VERIFICATION.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_V2_IMPROVED.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_V2_IMPROVED.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_V2_SECOND_QA.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_V2_SECOND_QA.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_V3.1_ADVERSARIAL_QA.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_V3.1_ADVERSARIAL_QA.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/ROADMAP_SYSTEM_V3_EXPERT_QA.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/ROADMAP_SYSTEM_V3_EXPERT_QA.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/testing_roadmap_implementation_guide.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/testing_roadmap_implementation_guide.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/testing_roadmap_system_design.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/testing_roadmap_system_design.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/testing_roadmap_system_summary.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/testing_roadmap_system_summary.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/features/FEATURE_ROADMAP.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/FEATURE_ROADMAP.md",
+      "category": "docs",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/roadmaps/MASTER_ROADMAP.backup-20251114-125534.md",
+      "destination": "docs/archive/2025-11/roadmap-backups/MASTER_ROADMAP.backup-20251114-125534.md",
+      "category": "backup",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/roadmaps/MASTER_ROADMAP.backup-20251114.md",
+      "destination": "docs/archive/2025-11/roadmap-backups/MASTER_ROADMAP.backup-20251114.md",
+      "category": "backup",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/roadmaps/MASTER_ROADMAP_QA_ADDITION.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/other/MASTER_ROADMAP_QA_ADDITION.md",
+      "category": "other",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/roadmaps/ROADMAP_UPDATE_2025-11-22.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/other/ROADMAP_UPDATE_2025-11-22.md",
+      "category": "other",
+      "size_bytes": 0
+    },
+    {
+      "source": "docs/sessions/completed/Session-20251112-roadmap-1cf97d3c.md",
+      "destination": "docs/archive/2025-11/deprecated-roadmaps/docs/Session-20251112-roadmap-1cf97d3c.md",
+      "category": "docs",
+      "size_bytes": 0
+    }
+  ],
+  "active_roadmap_files": [
+    "docs/roadmaps/MASTER_ROADMAP.md",
+    "docs/roadmaps/testing_roadmap_diagram.png",
+    "docs/roadmaps/TESTING_ROADMAP.md"
+  ],
+  "archive_locations": {
+    "deprecated_roadmaps": "/home/ubuntu/TERP/docs/archive/2025-11/deprecated-roadmaps",
+    "roadmap_backups": "/home/ubuntu/TERP/docs/archive/2025-11/roadmap-backups"
+  },
+  "categories": {
+    "root": 6,
+    "cursor": 1,
+    "docs": 31,
+    "backup": 2,
+    "other": 2
+  }
+}

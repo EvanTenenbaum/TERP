@@ -2,9 +2,26 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.4
+**Version:** 2.5
 **Last Updated:** November 30, 2025
 **Status:** Active
+
+---
+
+## 🚨 MANDATORY: Gemini API for Code Generation
+
+**ALL AI agents on Manus platform implementing tasks from this roadmap MUST use Google Gemini API for:**
+- Code generation and refactoring
+- Complex reasoning and analysis  
+- Bulk operations and batch processing
+
+```python
+from google import genai
+import os
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+```
+
+**Full instructions:** `docs/GEMINI_API_USAGE.md` | **This is non-negotiable.**
 
 ---
 
