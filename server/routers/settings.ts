@@ -203,16 +203,24 @@ export const settingsRouter = router({
         scenario: z.enum(["light", "full", "edgeCases", "chaos"]).optional().default("light"),
       }))
       .mutation(async ({ input }) => {
-        // Ensure DATABASE_URL is available (it should be from server environment)
-        if (!process.env.DATABASE_URL) {
-          throw new Error("DATABASE_URL environment variable is not configured on the server");
-        }
-        
-        // Validate scenario value
+        // Validate scenario value first
         const validScenarios = ["light", "full", "edgeCases", "chaos"] as const;
         const scenario = input.scenario || "light";
         if (!validScenarios.includes(scenario as any)) {
           throw new Error(`Invalid scenario: ${scenario}. Must be one of: ${validScenarios.join(", ")}`);
+        }
+        
+        // Check DATABASE_URL availability with helpful error message
+        const databaseUrl = process.env.DATABASE_URL;
+        if (!databaseUrl) {
+          console.error("[Seed API] DATABASE_URL check failed", {
+            availableEnvVars: Object.keys(process.env).filter(k => k.includes("DATABASE") || k.includes("DB")),
+            nodeEnv: process.env.NODE_ENV,
+          });
+          throw new Error(
+            "DATABASE_URL environment variable is not configured on the server. " +
+            "Please ensure DATABASE_URL is set in the DigitalOcean App Platform environment variables."
+          );
         }
         
         // Set the scenario via process.argv to match the script's expected format
@@ -220,10 +228,10 @@ export const settingsRouter = router({
         process.argv = ["node", "script", scenario];
         
         try {
-          // Ensure DATABASE_URL is available to the seed script
-          // The seed script uses db-sync.ts which checks process.env.DATABASE_URL
+          // The seed script uses db-sync.ts which will use process.env.DATABASE_URL
+          // We've already verified it exists above, but double-check for safety
           if (!process.env.DATABASE_URL) {
-            throw new Error("DATABASE_URL is not available in the server environment");
+            throw new Error("DATABASE_URL was lost between validation and execution");
           }
           
           // Dynamically import and execute the seed function
