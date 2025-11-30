@@ -1,0 +1,57 @@
+name: terp
+region: nyc
+
+services:
+  - name: web
+    github:
+      repo: EvanTenenbaum/TERP
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+    instance_count: 2
+    instance_size_slug: basic-xs
+    
+    health_check:
+      http_path: /health/live
+      initial_delay_seconds: 90
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 5
+    
+    http_port: 3000
+    
+    routes:
+      - path: /
+    
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: RATE_LIMIT_GET
+        value: "1000"
+      - key: ENABLE_RBAC
+        value: "true"
+      - key: ENABLE_QA_CRONS
+        value: "true"
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+
+jobs:
+  - name: seed-database
+    github:
+      repo: EvanTenenbaum/TERP
+      branch: main
+    dockerfile_path: Dockerfile
+    instance_count: 1
+    instance_size_slug: basic-xs
+    run_command: pnpm seed:light
+    source_dir: /
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
