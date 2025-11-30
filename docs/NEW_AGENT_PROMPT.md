@@ -8,6 +8,27 @@
 
 This system uses **technical enforcement**, not just instructions. If you do not follow this workflow, your commits and pull requests will be **BLOCKED**.
 
+### 🔴 MANDATORY: Use Gemini API for Code Generation
+
+**IF YOU ARE ON THE MANUS PLATFORM, YOU MUST USE GEMINI API FOR:**
+
+1. **All code generation** - Writing new code, refactoring, creating scripts
+2. **Complex reasoning** - Multi-step analysis, architectural decisions
+3. **Bulk operations** - Processing multiple files, generating tests
+
+```python
+import os
+from google import genai
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+MODEL_ID = "gemini-2.0-flash-exp"
+```
+
+**Full instructions:** `docs/GEMINI_API_USAGE.md`
+
+**This is non-negotiable.** Do not write code manually when Gemini can generate it.
+
+---
+
 ### The Golden Rule: Always Start with `pnpm start-task`
 
 This is the **only** way to begin work. Do not use `git checkout -b` manually.
