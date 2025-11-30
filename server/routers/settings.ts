@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import * as inventoryDb from "../inventoryDb";
 import * as paymentMethodsDb from "../paymentMethodsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -196,4 +196,50 @@ export const settingsRouter = router({
           return { success: true };
         }),
     }),
+
+    // Database seeding - Publicly accessible (no auth required)
+    seedDatabase: publicProcedure
+      .input(z.object({
+        scenario: z.enum(["light", "full", "edgeCases", "chaos"]).default("light"),
+      }))
+      .mutation(async ({ input }) => {
+        // Set the scenario via process.argv to match the script's expected format
+        const originalArgv = process.argv;
+        process.argv = ["node", "script", input.scenario];
+        
+        try {
+          // Dynamically import and execute the seed function
+          const { seedRealisticData } = await import("../../scripts/seed-realistic-main.js");
+          
+          if (!seedRealisticData || typeof seedRealisticData !== "function") {
+            throw new Error("seedRealisticData function not found or invalid");
+          }
+          
+          // Execute the seed function
+          await seedRealisticData();
+          
+          return {
+            success: true,
+            message: `Database seeded successfully with ${input.scenario} scenario`,
+          };
+        } catch (error: any) {
+          // Preserve original error details for debugging
+          const errorMessage = error?.message || "Unknown error";
+          const errorCode = error?.code || "UNKNOWN_ERROR";
+          const errorDetails = error?.cause ? ` (${error.cause})` : "";
+          
+          // Log the full error for server-side debugging
+          console.error("[Seed API Error]", {
+            scenario: input.scenario,
+            error: errorMessage,
+            code: errorCode,
+            stack: error?.stack,
+          });
+          
+          throw new Error(`Seed failed: ${errorMessage}${errorDetails}`);
+        } finally {
+          // Always restore original argv
+          process.argv = originalArgv;
+        }
+      }),
   })
