@@ -1,7 +1,9 @@
 import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
-import path from "path";
-import { fileURLToPath } from "url";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 
 export const settingsRouter = router({
   hello: publicProcedure
@@ -17,40 +19,41 @@ export const settingsRouter = router({
       scenario: z.enum(["light", "full", "edgeCases", "chaos"]).optional().default("light"),
     }))
     .mutation(async ({ input }) => {
-      const scenario = input.scenario;
-      const originalArgv = process.argv;
-      
+      const { scenario } = input;
+
       try {
-        process.argv = ["node", "seed-realistic-main.ts", scenario];
-
-        // Resolve the absolute path to the seed script
-        // In dev: /app/scripts/seed-realistic-main.js
-        // In production (Docker): /app/scripts/seed-realistic-main.js  
-        // The scripts folder is always at project root
-        const projectRoot = process.cwd(); // /app in Docker, project root in dev
-        const seedScriptPath = path.join(projectRoot, "scripts", "seed-realistic-main.js");
+        // Use child_process.exec to run the seed script as a separate process.
+        // This avoids issues with esbuild bundling and dynamic imports.
+        // `pnpm tsx` is used to execute the TypeScript file directly.
+        // The scenario is passed as a command-line argument.
+        console.log(`[Seed] Starting database seed with scenario: ${scenario}`);
         
-        console.log(`[Seed] Loading seed script from: ${seedScriptPath}`);
-        
-        // Dynamic import using absolute path
-        const seedModule = await import(seedScriptPath);
-        const seedRealisticData = seedModule.seedRealisticData;
+        const { stdout, stderr } = await execAsync(
+          `pnpm tsx scripts/seed-realistic-main.ts ${scenario}`,
+          { 
+            cwd: process.cwd(), 
+            env: process.env,
+            maxBuffer: 10 * 1024 * 1024 // 10MB buffer for large output
+          }
+        );
 
-        if (!seedRealisticData || typeof seedRealisticData !== "function") {
-          throw new Error("seedRealisticData function not found in seed script");
+        // Log the output and errors from the seed script
+        if (stdout) {
+          console.log('[Seed Output]:', stdout);
+        }
+        if (stderr) {
+          console.error('[Seed Stderr]:', stderr);
         }
 
-        await seedRealisticData();
-        
+        console.log(`[Seed] Database seeded successfully with ${scenario} scenario`);
         return { 
           success: true, 
           message: `Database seeded successfully with ${scenario} scenario` 
         };
       } catch (error: any) {
-        console.error("[Seed Error]", error);
+        // Handle errors from the execAsync call
+        console.error('[Seed Error]:', error);
         throw new Error(`Seed failed: ${error.message}`);
-      } finally {
-        process.argv = originalArgv;
       }
     }),
 });
