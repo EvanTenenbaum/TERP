@@ -43,7 +43,7 @@ services:
       
       # Database connection (set actual value in DO control panel)
       - key: DATABASE_URL
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
       
       # Auth secrets (set actual values in DO control panel)
