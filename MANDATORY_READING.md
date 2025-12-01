@@ -11,7 +11,7 @@ This document is your **complete index** of all required reading. Following thes
 
 ---
 
-## 📋 Reading Order (15 minutes total)
+## 📋 Reading Order (20 minutes total)
 
 ### Phase 1: Onboarding (5 minutes)
 
@@ -56,20 +56,51 @@ Read fourth: docs/DEVELOPMENT_PROTOCOLS.md (Section 16 only)
 
 ---
 
-### Phase 3: System Understanding (3 minutes)
+### Phase 3: Code Quality Standards (5 minutes) - **NEW**
 
-**5. QA System Overview (.claude/QA_SYSTEM_README.md)** - ⏱️ 2 min
+**5. Code Standards Protocol (docs/protocols/CODE_STANDARDS.md)** - ⏱️ 2 min
 ```
-Read fifth: .claude/QA_SYSTEM_README.md
+Read fifth: docs/protocols/CODE_STANDARDS.md
+```
+- TypeScript strictness (NO `any` types)
+- React component patterns (memo, useCallback, useMemo)
+- Error handling standards
+- Naming conventions
+
+**6. Testing Quality Protocol (docs/protocols/TESTING_QUALITY.md)** - ⏱️ 2 min
+```
+Read sixth: docs/protocols/TESTING_QUALITY.md
+```
+- Coverage requirements by tier
+- Test quality standards
+- Forbidden test patterns
+- Integration test requirements
+
+**7. All Protocols Index (docs/protocols/README.md)** - ⏱️ 1 min
+```
+Read seventh: docs/protocols/README.md
+```
+- Database standards
+- Performance standards
+- Accessibility standards
+- ADR (Architecture Decision Records) system
+
+---
+
+### Phase 4: System Understanding (3 minutes)
+
+**8. QA System Overview (.claude/QA_SYSTEM_README.md)** - ⏱️ 2 min
+```
+Read: .claude/QA_SYSTEM_README.md
 ```
 - Quality gates
 - Pre-commit hooks
 - QA tools
 - Common issues
 
-**6. Active Sessions (docs/ACTIVE_SESSIONS.md)** - ⏱️ 1 min
+**9. Active Sessions (docs/ACTIVE_SESSIONS.md)** - ⏱️ 1 min
 ```
-Read sixth: docs/ACTIVE_SESSIONS.md
+Read: docs/ACTIVE_SESSIONS.md
 ```
 - Who's working on what RIGHT NOW
 - Avoid conflicts
@@ -124,9 +155,12 @@ Read sixth: docs/ACTIVE_SESSIONS.md
 - [ ] I have read docs/QUICK_REFERENCE.md (2 min)
 - [ ] I have read docs/roadmaps/MASTER_ROADMAP.md (3 min)
 - [ ] I have read DEVELOPMENT_PROTOCOLS.md Section 16 (2 min)
+- [ ] I have read docs/protocols/CODE_STANDARDS.md (2 min)
+- [ ] I have read docs/protocols/TESTING_QUALITY.md (2 min)
 - [ ] I have checked docs/ACTIVE_SESSIONS.md (no conflicts)
 - [ ] I understand: NO placeholders, NO stubs, NO pseudocode
-- [ ] I understand: TDD is mandatory
+- [ ] I understand: NO `any` types, proper React.memo usage
+- [ ] I understand: TDD is mandatory with quality standards
 - [ ] I understand: Status updates every 30 minutes
 - [ ] I understand: 100% completion before reporting
 - [ ] I understand: All code must be production-ready
@@ -137,15 +171,28 @@ Read sixth: docs/ACTIVE_SESSIONS.md
 
 ## 📖 Reference Documentation (Read as Needed)
 
+### Code Quality Protocols (docs/protocols/)
+
+- **CODE_STANDARDS.md** - TypeScript, React, error handling patterns
+- **TESTING_QUALITY.md** - Test coverage requirements and quality standards
+- **DATABASE_STANDARDS.md** - Schema design, naming, migrations
+- **PERFORMANCE_STANDARDS.md** - React optimization, query performance
+- **ACCESSIBILITY_STANDARDS.md** - WCAG 2.1 AA compliance
+
+### Architecture Decisions (docs/adr/)
+
+- **README.md** - ADR system overview and index
+- **Individual ADRs** - Document significant architectural choices
+
 ### Workflow System
 
 - **CLAUDE_WORKFLOW.md** - Complete workflow guide (20 pages)
 - **CONFLICT_RESOLUTION.md** - Handling merge conflicts
 - **SESSION_TEMPLATE.md** - Template for session files
 
-### Protocols
+### Legacy Protocols
 
-- **DEVELOPMENT_PROTOCOLS.md** - The Bible (16 sections, all mandatory)
+- **DEVELOPMENT_PROTOCOLS.md** - The Bible (being migrated to docs/protocols/)
 - **QA_FINDINGS.md** - Latest QA analysis
 - **PROJECT_CONTEXT.md** - System architecture
 
