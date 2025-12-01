@@ -1,0 +1,144 @@
+{
+  "needs_pagination": [
+    {
+      "name": "accounting.accounts.list",
+      "has_pagination": false,
+      "returns": "An array of account objects, each containing id, accountNumber, accountName, and accountType.",
+      "file": "server/routers/accounting.test.ts"
+    },
+    {
+      "name": "accounts.list",
+      "has_pagination": false,
+      "returns": "An array of accounts, filtered by optional criteria (accountType, isActive, parentAccountId).",
+      "file": "server/routers/accounting.ts"
+    },
+    {
+      "name": "accounts.getChartOfAccounts",
+      "has_pagination": false,
+      "returns": "An array representing the chart of accounts.",
+      "file": "server/routers/accounting.ts"
+    },
+    {
+      "name": "calculateSaleCOGS",
+      "has_pagination": false,
+      "returns": "Likely an object containing COGS calculation results based on the provided line items and client ID. The exact structure is determined by the `cogsCalculation.calculateSaleCOGS` function.",
+      "file": "server/routers/accountingHooks.ts"
+    },
+    {
+      "name": "calculateWeightedAverageCOGS",
+      "has_pagination": false,
+      "returns": "Likely an object containing weighted average COGS calculation results based on the provided batch IDs. The exact structure is determined by the `cogsCalculation.calculateWeightedAverageCOGS` function.",
+      "file": "server/routers/accountingHooks.ts"
+    },
+    {
+      "name": "runAllMigrations",
+      "has_pagination": false,
+      "returns": "An array of objects, where each object represents the result of a migration. Each object has a `migration` field (string), a `status` field (string - 'success' or 'error'), and a `message` field (string).",
+      "file": "server/routers/adminMigrations.ts"
+    },
+    {
+      "name": "checkColumns",
+      "has_pagination": false,
+      "returns": "{ hasOpenthcId: boolean, hasOpenthcStub: boolean, hasParentStrainId: boolean, hasBaseStrainName: boolean, allColumns: string[] } or { error: string }",
+      "file": "server/routers/adminQuickFix.ts"
+    },
+    {
+      "name": "addMissingColumns",
+      "has_pagination": false,
+      "returns": "Array<{ column: string; status: string; message?: string }>",
+      "file": "server/routers/adminQuickFix.ts"
+    },
+    {
+      "name": "pushSchema",
+      "has_pagination": false,
+      "returns": "An array of objects, where each object represents a schema update step with its status and optional error message. The object has the following structure: `{ step: string; status: string; message?: string }`",
+      "file": "server/routers/adminSchemaPush.ts"
+    },
+    {
+      "name": "booleanSearch",
+      "has_pagination": false,
+      "returns": "An object containing an array of productIds: `{ productIds: number[] }`",
+      "file": "server/routers/advancedTagFeatures.ts"
+    },
+    {
+      "name": "getChildren",
+      "has_pagination": false,
+      "returns": "An array of tag children (type is unknown, but assumed to be tag objects or IDs).",
+      "file": "server/routers/advancedTagFeatures.ts"
+    },
+    {
+      "name": "getAncestors",
+      "has_pagination": false,
+      "returns": "An array of tag ancestors (type is unknown, but assumed to be tag objects or IDs).",
+      "file": "server/routers/advancedTagFeatures.ts"
+    },
+    {
+      "name": "getGroupTags",
+      "has_pagination": false,
+      "returns": "An array of tags that belong to the specified group (type is unknown, but assumed to be tag objects or IDs).",
+      "file": "server/routers/advancedTagFeatures.ts"
+    },
+    {
+      "name": "clientStrainPreferences",
+      "has_pagination": false,
+      "returns": "{ clientId: number, topFamilies: { familyId: number, familyName: string, orderCount: number, totalQuantity: number }[] }",
+      "file": "server/routers/analytics.test.ts"
+    }
+  ],
+  "has_pagination": [
+    {
+      "name": "ledger.list",
+      "has_pagination": true,
+      "returns": "An array of ledger entries, filtered by optional criteria (accountId, startDate, endDate, fiscalPeriodId, isPosted, referenceType, referenceId), with limit/offset pagination.",
+      "file": "server/routers/accounting.ts"
+    },
+    {
+      "name": "getUsers",
+      "has_pagination": true,
+      "returns": "An array of user objects, likely with admin-specific details. Pagination is highly probable due to the potential for a large number of users.",
+      "file": "server/routers/admin-security.test.ts"
+    },
+    {
+      "name": "getMigrations",
+      "has_pagination": true,
+      "returns": "An array of migration objects, representing database schema changes. Pagination is likely if the number of migrations is large.",
+      "file": "server/routers/admin-security.test.ts"
+    },
+    {
+      "name": "getSchemas",
+      "has_pagination": true,
+      "returns": "An array of schema objects. Pagination is likely if the number of schemas is large.",
+      "file": "server/routers/admin-security.test.ts"
+    },
+    {
+      "name": "getImports",
+      "has_pagination": true,
+      "returns": "An array of import objects. Pagination is likely if the number of imports is large.",
+      "file": "server/routers/admin-security.test.ts"
+    },
+    {
+      "name": "getVipPortalUsers",
+      "has_pagination": true,
+      "returns": "An array of VIP portal user objects. Pagination is highly probable due to the potential for a large number of users.",
+      "file": "server/routers/admin-security.test.ts"
+    },
+    {
+      "name": "getAllQuickFixes",
+      "has_pagination": true,
+      "returns": "An array of quick fix objects. Pagination is likely if the number of quick fixes is large.",
+      "file": "server/routers/admin-security.test.ts"
+    },
+    {
+      "name": "importStrainsBatch",
+      "has_pagination": true,
+      "returns": "An object containing import statistics (imported, skipped, offset, total, completed, message) after attempting to import a batch of strains.  It does *not* return the strains themselves.",
+      "file": "server/routers/adminImport.ts"
+    },
+    {
+      "name": "topStrainFamilies",
+      "has_pagination": true,
+      "returns": "{ familyId: number, familyName: string, totalSales: number, orderCount: number }[]",
+      "file": "server/routers/analytics.test.ts"
+    }
+  ]
+}
