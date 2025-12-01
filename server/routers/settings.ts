@@ -32,7 +32,7 @@ export const settingsRouter = router({
           `pnpm tsx scripts/seed-realistic-main.ts ${scenario}`,
           { 
             cwd: process.cwd(), 
-            env: process.env,
+            env: { ...process.env }, // Spread to ensure all env vars are passed
             maxBuffer: 10 * 1024 * 1024 // 10MB buffer for large output
           }
         );
