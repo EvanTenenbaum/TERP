@@ -1,5 +1,7 @@
 import { router, publicProcedure } from "../_core/trpc";
 import { z } from "zod";
+// Static import - esbuild bundles this at build time, solving path resolution and TypeScript compilation
+import { seedRealisticData } from "../../scripts/seed-realistic-main";
 
 // Track if seeding is in progress
 let isSeeding = false;
@@ -34,11 +36,10 @@ export const settingsRouter = router({
         try {
           // Set process.argv to pass scenario to the seed script
           process.argv = [process.argv[0], process.argv[1], scenario];
-          
-          // Dynamically import the seed script and call the function
-          const { seedRealisticData } = await import("../../scripts/seed-realistic-main.js");
+
+          // Call the bundled seed function directly
           await seedRealisticData();
-          
+
           console.log(`[Seed] ✅ Database seeded successfully with ${scenario} scenario`);
         } catch (error) {
           console.error('[Seed Error]:', error);
@@ -51,9 +52,9 @@ export const settingsRouter = router({
       })();
 
       // Return immediately
-      return { 
-        success: true, 
-        message: `Database seeding started in background with ${scenario} scenario. Check server logs for progress.` 
+      return {
+        success: true,
+        message: `Database seeding started in background with ${scenario} scenario. Check server logs for progress.`
       };
     }),
 });
