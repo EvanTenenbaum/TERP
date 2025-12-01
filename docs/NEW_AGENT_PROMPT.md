@@ -106,6 +106,36 @@ If any check fails, your push will be **BLOCKED**.
 
 If the status is not `✅ Fully Tested`, your merge will be **BLOCKED**.
 
+### Step 7: Monitor Deployment Logs (MANDATORY)
+
+**🚨 CRITICAL:** After your PR is merged and deployment starts, you MUST track logs.
+
+```bash
+# Monitor build logs
+./scripts/terp-logs.sh build --follow
+
+# Monitor deploy logs
+./scripts/terp-logs.sh deploy --follow
+
+# Check for runtime errors
+./scripts/terp-logs.sh run 100 | grep -i "error"
+```
+
+**Required Actions:**
+1. Watch deployment complete successfully
+2. Verify no errors in runtime logs
+3. Test the deployed feature in production
+4. Document any issues in session notes
+
+**If deployment fails:**
+- Investigate logs immediately
+- Fix the issue
+- Create a hotfix PR with `[HOTFIX]` in title
+
+**Never report task completion without verifying deployment succeeded.**
+
+**See:** `docs/LOGGING_ACCESS_GUIDE.md` for complete instructions.
+
 ---
 
 ## Troubleshooting

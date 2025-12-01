@@ -78,6 +78,20 @@ TERP operates on a **test-first** principle. Every feature, fix, and component i
   - **Tests Failing:** Blocks the merge.
   - **Fully Tested:** Proceeds with the merge.
 
+### Step 5: Deployment Log Tracking (MANDATORY)
+- **🚨 CRITICAL:** After every deployment, agents MUST track logs to verify success.
+- **If deployment fails:** Investigate logs immediately, fix issues, and redeploy.
+- **Never report completion** without verifying deployment succeeded via logs.
+
+**Required Actions:**
+1. Monitor build logs: `./scripts/terp-logs.sh build --follow`
+2. Monitor deploy logs: `./scripts/terp-logs.sh deploy --follow`
+3. Check runtime logs for errors: `./scripts/terp-logs.sh run 100 | grep -i "error"`
+4. Verify application is healthy (no crashes, no critical errors)
+5. Document any deployment issues in session notes
+
+**See:** `docs/LOGGING_ACCESS_GUIDE.md` for complete log access instructions.
+
 ---
 
 ## The Coverage Map: Visualizing Quality

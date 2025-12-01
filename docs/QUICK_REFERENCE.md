@@ -58,6 +58,16 @@ pnpm start-task --adhoc "Add dark mode" --category feature
 - **Cause:** You added `[HOTFIX]` to your PR title.
 - **Fix:** This is not an error. This is a bypass for emergencies.
 
+### "Deployment failed or not working"
+- **Cause:** Code deployed but application has errors.
+- **Fix:** Check logs immediately:
+  ```bash
+  ./scripts/terp-logs.sh build --follow  # Build logs
+  ./scripts/terp-logs.sh deploy --follow # Deploy logs
+  ./scripts/terp-logs.sh run 100 | grep -i "error"  # Runtime errors
+  ```
+- **See:** `docs/LOGGING_ACCESS_GUIDE.md` for complete log access.
+
 ---
 
 ## 🗺️ Roadmap System
