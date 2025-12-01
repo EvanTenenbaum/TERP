@@ -1,9 +1,5 @@
 import { router, publicProcedure } from "../_core/trpc";
 import { z } from "zod";
-import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
 
 export const settingsRouter = router({
   hello: publicProcedure
@@ -22,27 +18,19 @@ export const settingsRouter = router({
       const { scenario } = input;
 
       try {
-        // Use child_process.exec to run the seed script as a separate process.
-        // This avoids issues with esbuild bundling and dynamic imports.
-        // `pnpm tsx` is used to execute the TypeScript file directly.
-        // The scenario is passed as a command-line argument.
         console.log(`[Seed] Starting database seed with scenario: ${scenario}`);
         
-        const { stdout, stderr } = await execAsync(
-          `pnpm tsx scripts/seed-realistic-main.ts ${scenario}`,
-          { 
-            cwd: process.cwd(), 
-            env: { ...process.env }, // Spread to ensure all env vars are passed
-            maxBuffer: 10 * 1024 * 1024 // 10MB buffer for large output
-          }
-        );
-
-        // Log the output and errors from the seed script
-        if (stdout) {
-          console.log('[Seed Output]:', stdout);
-        }
-        if (stderr) {
-          console.error('[Seed Stderr]:', stderr);
+        // Set process.argv to pass scenario to the seed script
+        const originalArgv = process.argv;
+        process.argv = [process.argv[0], process.argv[1], scenario];
+        
+        try {
+          // Dynamically import the seed script and call the function
+          const { seedRealisticData } = await import("../../scripts/seed-realistic-main.js");
+          await seedRealisticData();
+        } finally {
+          // Restore original argv
+          process.argv = originalArgv;
         }
 
         console.log(`[Seed] Database seeded successfully with ${scenario} scenario`);
@@ -50,10 +38,9 @@ export const settingsRouter = router({
           success: true, 
           message: `Database seeded successfully with ${scenario} scenario` 
         };
-      } catch (error: any) {
-        // Handle errors from the execAsync call
+      } catch (error) {
         console.error('[Seed Error]:', error);
-        throw new Error(`Seed failed: ${error.message}`);
+        throw new Error(`Seed failed: ${error instanceof Error ? error.message : String(error)}`);
       }
     }),
 });
