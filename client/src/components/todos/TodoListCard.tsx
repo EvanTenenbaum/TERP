@@ -1,4 +1,5 @@
-import { useState } from "react";
+javascript
+import { useState, memo } from "react";
 import { MoreVertical, Users, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,7 @@ interface TodoListCardProps {
   onShare?: () => void;
 }
 
-export function TodoListCard({
+export const TodoListCard = memo(function TodoListCard({
   list,
   onClick,
   onEdit,
@@ -140,4 +141,4 @@ export function TodoListCard({
       )}
     </div>
   );
-}
+});

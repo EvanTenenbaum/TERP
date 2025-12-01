@@ -1,3 +1,5 @@
+javascript
+import { memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { 
@@ -55,7 +57,7 @@ const activityLabels = {
   TEMPLATE_APPLIED: "applied a template",
 };
 
-export function ActivityLogPanel({ noteId }: ActivityLogPanelProps) {
+export const ActivityLogPanel = memo(function ActivityLogPanel({ noteId }: ActivityLogPanelProps) {
   const { data: activities, isLoading } = trpc.freeformNotes.activity.list.useQuery(
     { noteId, limit: 50 },
     { refetchInterval: false } // Manual refresh only (performance optimization)
@@ -114,5 +116,4 @@ export function ActivityLogPanel({ noteId }: ActivityLogPanelProps) {
       })}
     </div>
   );
-}
-
+});

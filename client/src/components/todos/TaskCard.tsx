@@ -1,4 +1,5 @@
-import { useState } from "react";
+javascript
+import { useState, memo } from "react";
 import {
   CheckCircle2,
   Circle,
@@ -49,7 +50,7 @@ const STATUS_LABELS = {
   done: "Done",
 };
 
-export function TaskCard({
+export const TaskCard = memo(function TaskCard({
   task,
   onClick,
   onToggleComplete,
@@ -208,4 +209,4 @@ export function TaskCard({
       </div>
     </div>
   );
-}
+});

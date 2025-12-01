@@ -1,3 +1,5 @@
+jsx
+import { memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +17,7 @@ interface SmartOpportunitiesWidgetProps {
   limit?: number;
 }
 
-export function SmartOpportunitiesWidget({ limit = 5 }: SmartOpportunitiesWidgetProps) {
+export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({ limit = 5 }: SmartOpportunitiesWidgetProps) {
   const [, setLocation] = useLocation();
 
   const { data, isLoading } = trpc.clientNeeds.getSmartOpportunities.useQuery({
@@ -160,5 +162,4 @@ export function SmartOpportunitiesWidget({ limit = 5 }: SmartOpportunitiesWidget
       </CardContent>
     </Card>
   );
-}
-
+});

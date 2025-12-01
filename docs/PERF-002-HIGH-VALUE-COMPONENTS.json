@@ -1,0 +1,172 @@
+{
+  "total": 20,
+  "to_memoize": [
+    {
+      "file_path": "client/src/components/comments/CommentItem.tsx",
+      "component_name": "CommentItem",
+      "lines": 192,
+      "has_hooks": true,
+      "has_trpc": true,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/comments/CommentList.tsx",
+      "component_name": "CommentList",
+      "lines": 48,
+      "has_hooks": false,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/inbox/InboxItem.tsx",
+      "component_name": "InboxItem",
+      "lines": 213,
+      "has_hooks": true,
+      "has_trpc": true,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/orders/LineItemRow.tsx",
+      "component_name": "LineItemRow",
+      "lines": 216,
+      "has_hooks": true,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/orders/OrderItemCard.tsx",
+      "component_name": "OrderItemCard",
+      "lines": 216,
+      "has_hooks": true,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/todos/TaskCard.tsx",
+      "component_name": "TaskCard",
+      "lines": 212,
+      "has_hooks": true,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/todos/TodoListCard.tsx",
+      "component_name": "TodoListCard",
+      "lines": 144,
+      "has_hooks": true,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/workflow/WorkflowBatchCard.tsx",
+      "component_name": "WorkflowBatchCard",
+      "lines": 91,
+      "has_hooks": false,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/data-cards/DataCard.tsx",
+      "component_name": "DataCard",
+      "lines": 108,
+      "has_hooks": false,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/inventory/InventoryCard.tsx",
+      "component_name": "InventoryCard",
+      "lines": 130,
+      "has_hooks": false,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/needs/MatchCard.tsx",
+      "component_name": "MatchCard",
+      "lines": 210,
+      "has_hooks": true,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/dashboard/KpiSummaryRow.tsx",
+      "component_name": "KpiSummaryRow",
+      "lines": 117,
+      "has_hooks": false,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/dashboard/widgets-v2/ActivityLogPanel.tsx",
+      "component_name": "ActivityLogPanel",
+      "lines": 119,
+      "has_hooks": false,
+      "has_trpc": true,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/dashboard/widgets-v2/CommentsPanel.tsx",
+      "component_name": "CommentsPanel",
+      "lines": 222,
+      "has_hooks": true,
+      "has_trpc": true,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/dashboard/widgets-v2/FreeformNoteWidget.tsx",
+      "component_name": "FreeformNoteWidget",
+      "lines": 319,
+      "has_hooks": true,
+      "has_trpc": true,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/dashboard/widgets-v2/SmartOpportunitiesWidget.tsx",
+      "component_name": "SmartOpportunitiesWidget",
+      "lines": 165,
+      "has_hooks": false,
+      "has_trpc": true,
+      "should_memoize": true,
+      "already_memoized": false
+    },
+    {
+      "file_path": "client/src/components/dashboard/widgets-v2/TopStrainFamiliesWidget.tsx",
+      "component_name": "TopStrainFamiliesWidget",
+      "lines": 109,
+      "has_hooks": false,
+      "has_trpc": false,
+      "should_memoize": true,
+      "already_memoized": false
+    }
+  ],
+  "already_memoized": [
+    {
+      "already_memoized": true,
+      "file_path": "client/src/components/dashboard/widgets-v2/CashFlowWidget.tsx"
+    },
+    {
+      "already_memoized": true,
+      "file_path": "client/src/components/dashboard/widgets-v2/ProfitabilityWidget.tsx"
+    },
+    {
+      "already_memoized": true,
+      "file_path": "client/src/components/dashboard/widgets-v2/SalesByClientWidget.tsx"
+    }
+  ]
+}

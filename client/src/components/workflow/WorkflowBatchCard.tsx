@@ -1,23 +1,18 @@
-/**
- * Workflow Batch Card Component
- * 
- * Draggable card representing a batch in the workflow queue.
- * Displays batch information and provides drag handle.
- */
-
+javascript
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GripVertical, Package } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { memo } from "react";
 
 interface WorkflowBatchCardProps {
   batch: any;
   isDragging?: boolean;
 }
 
-export function WorkflowBatchCard({ batch, isDragging = false }: WorkflowBatchCardProps) {
+export const WorkflowBatchCard = memo(function WorkflowBatchCard({ batch, isDragging = false }: WorkflowBatchCardProps) {
   const {
     attributes,
     listeners,
@@ -87,4 +82,4 @@ export function WorkflowBatchCard({ batch, isDragging = false }: WorkflowBatchCa
       </div>
     </Card>
   );
-}
+});

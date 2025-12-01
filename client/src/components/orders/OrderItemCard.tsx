@@ -1,4 +1,5 @@
-import { useState } from "react";
+jsx
+import { useState, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ interface OrderItemCardProps {
   onAdjustCogs: () => void;
 }
 
-export function OrderItemCard({
+export const OrderItemCard = memo(function OrderItemCard({
   item,
   onRemove,
   onUpdate,
@@ -211,5 +212,4 @@ export function OrderItemCard({
       </div>
     </Card>
   );
-}
-
+});

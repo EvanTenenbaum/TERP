@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import {
   MessageSquare,
   CheckCircle2,
@@ -48,7 +48,7 @@ const STATUS_COLORS = {
   completed: "bg-green-500",
 };
 
-export function InboxItem({ item }: InboxItemProps) {
+export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const utils = trpc.useContext();
@@ -209,4 +209,4 @@ export function InboxItem({ item }: InboxItemProps) {
       </div>
     </div>
   );
-}
+});

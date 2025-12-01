@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+jsx
+import { useState, useEffect, memo } from "react";
 import "./tiptap-styles.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -39,7 +40,7 @@ const SIZE_HEIGHTS: Record<WidgetSize, string> = {
   expanded: "h-[600px]",
 };
 
-export function FreeformNoteWidget({ noteId, onNoteDeleted }: FreeformNoteWidgetProps) {
+export const FreeformNoteWidget = memo(function FreeformNoteWidget({ noteId, onNoteDeleted }: FreeformNoteWidgetProps) {
   const [currentNoteId, setCurrentNoteId] = useState<number | null>(noteId || null);
   const [title, setTitle] = useState("Quick Notes");
   const [isSaving, setIsSaving] = useState(false);
@@ -314,5 +315,4 @@ export function FreeformNoteWidget({ noteId, onNoteDeleted }: FreeformNoteWidget
       </CardContent>
     </Card>
   );
-}
-
+});

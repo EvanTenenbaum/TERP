@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CommentItem } from "./CommentItem";
 
 interface Comment {
@@ -19,7 +20,7 @@ interface CommentListProps {
   commentableId: number;
 }
 
-export function CommentList({
+export const CommentList = memo(function CommentList({
   comments,
   commentableType,
   commentableId,
@@ -44,4 +45,4 @@ export function CommentList({
       ))}
     </div>
   );
-}
+});
