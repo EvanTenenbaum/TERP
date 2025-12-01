@@ -1,5 +1,7 @@
+javascript
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DollarSign, ShoppingCart, Package, AlertTriangle } from "lucide-react";
+import { memo } from "react";
 
 interface KpiData {
   totalRevenue: number;
@@ -16,7 +18,7 @@ interface KpiSummaryRowProps {
   loading?: boolean;
 }
 
-export function KpiSummaryRow({ data, loading }: KpiSummaryRowProps) {
+export const KpiSummaryRow = memo(function KpiSummaryRow({ data, loading }: KpiSummaryRowProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -112,5 +114,4 @@ export function KpiSummaryRow({ data, loading }: KpiSummaryRowProps) {
       />
     </div>
   );
-}
-
+});

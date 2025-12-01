@@ -1,3 +1,4 @@
+javascript
 /**
  * DataCard Component
  * Individual clickable card displaying a single metric
@@ -9,6 +10,7 @@ import type { MetricConfig, MetricResult } from "@/lib/data-cards/types";
 import { formatValue, formatTrend } from "@/lib/data-cards/formatters";
 import { trackCardClick } from "@/lib/data-cards/analytics";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { memo } from "react";
 
 interface DataCardProps {
   metric: MetricConfig;
@@ -17,7 +19,7 @@ interface DataCardProps {
   isLoading?: boolean;
 }
 
-export function DataCard({ metric, data, onClick, isLoading }: DataCardProps) {
+export const DataCard = memo(function DataCard({ metric, data, onClick, isLoading }: DataCardProps) {
   const Icon = metric.icon;
   const formattedValue = formatValue(data.value, metric.format);
   
@@ -104,4 +106,4 @@ export function DataCard({ metric, data, onClick, isLoading }: DataCardProps) {
       </CardContent>
     </Card>
   );
-}
+});

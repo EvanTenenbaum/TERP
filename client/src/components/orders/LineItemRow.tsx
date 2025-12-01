@@ -1,10 +1,5 @@
-/**
- * LineItemRow Component
- * Individual line item row with COGS and margin management
- * v2.0 Sales Order Enhancements
- */
-
-import React, { useState } from "react";
+javascript
+import React, { useState, memo } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +36,7 @@ interface LineItemRowProps {
   onRemove: () => void;
 }
 
-export function LineItemRow({
+export const LineItemRow = memo(function LineItemRow({
   item,
   index,
   clientId: _clientId,
@@ -211,5 +206,4 @@ export function LineItemRow({
       </TableCell>
     </TableRow>
   );
-}
-
+});

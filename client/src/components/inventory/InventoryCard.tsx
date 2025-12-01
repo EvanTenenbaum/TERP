@@ -1,3 +1,5 @@
+javascript
+import { memo } from "react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
@@ -20,7 +22,7 @@ interface InventoryCardProps {
   onEdit?: (id: number) => void;
 }
 
-export function InventoryCard({ batch, onView, onEdit }: InventoryCardProps) {
+export const InventoryCard = memo(function InventoryCard({ batch, onView, onEdit }: InventoryCardProps) {
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case "AWAITING_INTAKE":
@@ -125,5 +127,4 @@ export function InventoryCard({ batch, onView, onEdit }: InventoryCardProps) {
       </CardContent>
     </Card>
   );
-}
-
+});

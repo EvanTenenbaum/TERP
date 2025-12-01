@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { MoreVertical, CheckCircle2, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,7 @@ interface CommentItemProps {
   commentableId: number;
 }
 
-export function CommentItem({
+export const CommentItem = memo(function CommentItem({
   comment,
   commentableType,
   commentableId,
@@ -188,4 +188,4 @@ export function CommentItem({
       )}
     </div>
   );
-}
+});

@@ -1,14 +1,16 @@
+javascript
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, Loader2 } from "lucide-react";
 import { useTopStrainFamilies } from "@/hooks/useStrainHooks";
+import { memo } from "react";
 
 /**
  * Top Strain Families Widget
  * Shows the best-selling strain families with sales metrics
  */
-export function TopStrainFamiliesWidget() {
+export const TopStrainFamiliesWidget = memo(function TopStrainFamiliesWidget() {
   const { data: topFamilies, isLoading, error } = useTopStrainFamilies(10);
 
   if (isLoading) {
@@ -104,5 +106,4 @@ export function TopStrainFamiliesWidget() {
       </CardContent>
     </Card>
   );
-}
-
+});

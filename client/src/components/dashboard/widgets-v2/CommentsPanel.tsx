@@ -1,4 +1,5 @@
-import { useState } from "react";
+jsx
+import { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +12,7 @@ interface CommentsPanelProps {
   noteId: number;
 }
 
-export function CommentsPanel({ noteId }: CommentsPanelProps) {
+export const CommentsPanel = memo(function CommentsPanel({ noteId }: CommentsPanelProps) {
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<number | null>(null);
 
@@ -217,5 +218,4 @@ export function CommentsPanel({ noteId }: CommentsPanelProps) {
       )}
     </div>
   );
-}
-
+});

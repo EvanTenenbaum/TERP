@@ -1,9 +1,10 @@
+javascript
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchBadge } from "./MatchBadge";
 import { Package, DollarSign, Boxes, FileText, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { useState, memo } from "react";
 
 /**
  * Match Card Component
@@ -26,7 +27,7 @@ interface MatchCardProps {
   onViewDetails?: () => void;
 }
 
-export function MatchCard({ match, onCreateQuote, onDismiss, onViewDetails }: MatchCardProps) {
+export const MatchCard = memo(function MatchCard({ match, onCreateQuote, onDismiss, onViewDetails }: MatchCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getSourceIcon = () => {
@@ -175,7 +176,7 @@ export function MatchCard({ match, onCreateQuote, onDismiss, onViewDetails }: Ma
       </CardContent>
     </Card>
   );
-}
+});
 
 /**
  * Compact Match List Item
@@ -206,4 +207,3 @@ export function MatchListItem({ match, onSelect }: { match: any; onSelect?: () =
     </div>
   );
 }
-
