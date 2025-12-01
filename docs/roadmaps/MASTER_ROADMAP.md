@@ -2800,6 +2800,1462 @@ These should **NOT** be built:
 
 ---
 
+## 🔧 STANDARDS REMEDIATION PROJECT (20 Weeks)
+
+**Project Lead:** Code Quality Team
+**Created:** 2025-12-01
+**Target Completion:** April 2026
+**Status:** Ready for Execution
+
+This project brings the existing codebase up to the standards defined in `docs/protocols/`. All tasks are atomic, independently executable, and include rollback procedures.
+
+### 📊 Project Metrics (Baseline Audit - Dec 1, 2025)
+
+| Metric | Current | Target | Gap |
+|--------|---------|--------|-----|
+| `any` type usage | 303 | 0 | -303 |
+| `as any` assertions | 447 | <10 (justified) | -437 |
+| `z.any()` in schemas | 16 | 0 | -16 |
+| Components without memo | 173/204 (85%) | <20% | -65% |
+| VARCHAR numeric fields | 28+ | 0 | -28 |
+| INT boolean fields | 9 | 0 | -9 |
+| Redundant ctx.user checks | 109 | 0 | -109 |
+| Test coverage (Tier 1) | <50% | 90%+ | ~40% |
+| Accessibility coverage | 0.35% | 80%+ | ~80% |
+
+### 📋 Phase Overview
+
+| Phase | Name | Duration | Tasks | Dependencies |
+|-------|------|----------|-------|--------------|
+| 0 | Audit & Baseline | 1.5 weeks | REM-001 to REM-004 | None |
+| 1 | Tooling & Prevention | 1.5 weeks | REM-005 to REM-010 | Phase 0 |
+| 2 | Low-Risk Fixes | 3 weeks | REM-011 to REM-020 | Phase 1 |
+| 2.5 | Test Quality | 1 week | REM-021 to REM-024 | Phase 2 |
+| 3 | Medium-Risk Fixes | 5 weeks | REM-025 to REM-035 | Phase 2.5 |
+| 4 | Data Cleanup | 1 week | REM-036 to REM-038 | Phase 3 |
+| 5 | Schema Migrations | 6 weeks | REM-039 to REM-045 | Phase 4 |
+| 6 | Verification | Ongoing | REM-046 to REM-048 | Phase 5 |
+
+---
+
+### Phase 0: Audit & Baseline (Week 1-1.5)
+
+#### REM-001: Generate Comprehensive Codebase Audit Report
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** All
+**Dependencies:** None
+**Prompt:** `docs/prompts/REM-001.md` (to be created)
+
+**Problem:** Cannot track remediation progress without baseline metrics.
+
+**Objectives:**
+
+1. Generate machine-readable audit data for all protocol violations
+2. Create tracking dashboard or report
+3. Establish baseline for measuring progress
+4. Identify highest-impact fixes
+
+**Deliverables:**
+
+- [ ] Run automated scans for all violation types
+- [ ] Generate `docs/audits/baseline-audit.json` with counts
+- [ ] Create `docs/audits/AUDIT-REPORT.md` with analysis
+- [ ] Identify top 20 highest-impact fixes
+- [ ] Calculate effort estimates per category
+- [ ] Session archived
+
+---
+
+#### REM-002: Categorize TypeScript Violations by Risk Level
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** All TypeScript files
+**Dependencies:** REM-001
+**Prompt:** `docs/prompts/REM-002.md` (to be created)
+
+**Problem:** Not all `any` types have equal risk; need prioritized remediation.
+
+**Objectives:**
+
+1. Categorize 303 `any` types by risk (high/medium/low)
+2. Categorize 447 `as any` assertions by risk
+3. Create prioritized fix list
+4. Document justified exceptions
+
+**Deliverables:**
+
+- [ ] Create `docs/audits/typescript-violations.md`
+- [ ] Tag HIGH risk: financial, security, database modules
+- [ ] Tag MEDIUM risk: business logic, API handlers
+- [ ] Tag LOW risk: UI components, utilities
+- [ ] Create priority fix queue
+- [ ] Session archived
+
+---
+
+#### REM-003: Map Database Schema Violations
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** REM-001
+**Prompt:** `docs/prompts/REM-003.md` (to be created)
+
+**Problem:** VARCHAR numeric fields and INT booleans need systematic migration plan.
+
+**Objectives:**
+
+1. Document all 28+ VARCHAR numeric fields with table/column names
+2. Document all 9 INT boolean fields
+3. Identify data dependencies and migration risks
+4. Create migration sequence to avoid FK conflicts
+
+**Deliverables:**
+
+- [ ] Create `docs/audits/schema-violations.md`
+- [ ] List all VARCHAR numeric fields with current usage
+- [ ] List all INT boolean fields with current usage
+- [ ] Analyze data integrity risks per field
+- [ ] Define migration order (leaf tables first)
+- [ ] Session archived
+
+---
+
+#### REM-004: Audit Test Coverage by Tier
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** All test files
+**Dependencies:** REM-001
+**Prompt:** `docs/prompts/REM-004.md` (to be created)
+
+**Problem:** Test coverage is below protocol requirements; need gap analysis.
+
+**Objectives:**
+
+1. Calculate current coverage for Tier 1 modules (financial)
+2. Calculate current coverage for Tier 2 modules (business)
+3. Identify critical untested paths
+4. Flag placeholder/invalid tests for removal
+
+**Deliverables:**
+
+- [ ] Create `docs/audits/test-coverage-report.md`
+- [ ] List Tier 1 modules with current coverage %
+- [ ] List Tier 2 modules with current coverage %
+- [ ] Identify 10 most critical untested functions
+- [ ] List placeholder tests to be removed/replaced
+- [ ] Session archived
+
+---
+
+### Phase 1: Tooling & Prevention (Week 2-3)
+
+#### REM-005: Configure ESLint for Type Safety
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** ESLint configuration
+**Dependencies:** REM-001, REM-002
+**Prompt:** `docs/prompts/REM-005.md` (to be created)
+
+**Problem:** No automated enforcement of TypeScript type safety rules.
+
+**Objectives:**
+
+1. Enable `@typescript-eslint/no-explicit-any` as ERROR
+2. Enable `@typescript-eslint/no-unsafe-assignment` as ERROR
+3. Create file-level ignores for existing violations (to be fixed in Phase 2-3)
+4. Ensure CI fails on new violations
+
+**Deliverables:**
+
+- [ ] Update `.eslintrc.js` with strict type rules
+- [ ] Create `eslint-overrides.json` with file-level ignores
+- [ ] Configure pre-commit hook to run lint
+- [ ] Verify CI fails on new `any` introduction
+- [ ] Document override removal process
+- [ ] All existing tests pass
+- [ ] Session archived
+
+---
+
+#### REM-006: Configure ESLint for React Performance
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** ESLint configuration
+**Dependencies:** REM-005
+**Prompt:** `docs/prompts/REM-006.md` (to be created)
+
+**Problem:** No automated enforcement of React memoization patterns.
+
+**Objectives:**
+
+1. Add custom ESLint rule or plugin for memo detection
+2. Require `useCallback` for handlers passed to children
+3. Warn on inline objects in JSX
+4. Create file-level overrides for existing violations
+
+**Deliverables:**
+
+- [ ] Install `eslint-plugin-react-perf` or equivalent
+- [ ] Configure rules per PERFORMANCE_STANDARDS.md
+- [ ] Create overrides for existing violations
+- [ ] Test rule enforcement on new code
+- [ ] Session archived
+
+---
+
+#### REM-007: Configure ESLint for Accessibility
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** ESLint configuration
+**Dependencies:** REM-005
+**Prompt:** `docs/prompts/REM-007.md` (to be created)
+
+**Problem:** No automated enforcement of accessibility requirements.
+
+**Objectives:**
+
+1. Install and configure `eslint-plugin-jsx-a11y`
+2. Enable all WCAG 2.1 AA related rules
+3. Create file-level overrides for existing violations
+4. Add pre-commit accessibility check
+
+**Deliverables:**
+
+- [ ] Install `eslint-plugin-jsx-a11y`
+- [ ] Configure rules per ACCESSIBILITY_STANDARDS.md
+- [ ] Create overrides for existing violations
+- [ ] Add axe-core integration for CI
+- [ ] Session archived
+
+---
+
+#### REM-008: Create Type Utility Functions
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** `server/_core/types/`
+**Dependencies:** REM-002
+**Prompt:** `docs/prompts/REM-008.md` (to be created)
+
+**Problem:** Developers use `any` because proper typing is difficult; need helpers.
+
+**Objectives:**
+
+1. Create `SafeJsonParse<T>` type and function
+2. Create `ApiResponse<T>` wrapper type
+3. Create `DatabaseResult<T>` wrapper type
+4. Create common utility types for external API responses
+
+**Deliverables:**
+
+- [ ] Create `server/_core/types/utilities.ts`
+- [ ] Add `SafeJsonParse<T>` with runtime validation
+- [ ] Add `ApiResponse<T>` for external APIs
+- [ ] Add `DatabaseResult<T>` for query results
+- [ ] Add documentation with examples
+- [ ] Add tests for utility functions
+- [ ] Session archived
+
+---
+
+#### REM-009: Create Zod Schema Utilities
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `server/_core/validation/`
+**Dependencies:** REM-002
+**Prompt:** `docs/prompts/REM-009.md` (to be created)
+
+**Problem:** 16 `z.any()` usages exist because proper schemas are tedious to write.
+
+**Objectives:**
+
+1. Create reusable Zod schemas for common patterns
+2. Create JSON schema validators with type inference
+3. Create decimal/money schema helpers
+4. Document usage patterns
+
+**Deliverables:**
+
+- [ ] Create `server/_core/validation/schemas.ts`
+- [ ] Add `moneySchema` for currency values
+- [ ] Add `quantitySchema` for quantities
+- [ ] Add `jsonSchema<T>` for typed JSON
+- [ ] Replace 16 `z.any()` usages with proper schemas
+- [ ] Session archived
+
+---
+
+#### REM-010: Set Up Automated Code Quality Dashboard
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 8h
+**Module:** CI/CD configuration
+**Dependencies:** REM-001
+**Prompt:** `docs/prompts/REM-010.md` (to be created)
+
+**Problem:** No visibility into code quality trends over time.
+
+**Objectives:**
+
+1. Create script to generate quality metrics
+2. Store metrics history in repository
+3. Display trends in CI output or dashboard
+4. Alert on quality regression
+
+**Deliverables:**
+
+- [ ] Create `scripts/quality-metrics.ts`
+- [ ] Generate metrics on every CI run
+- [ ] Store in `docs/audits/metrics-history.json`
+- [ ] Add quality gate to CI pipeline
+- [ ] Create simple markdown dashboard
+- [ ] Session archived
+
+---
+
+### Phase 2: Low-Risk Fixes (Week 3-6)
+
+#### REM-011: Remove Redundant ctx.user Checks (109 instances)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** All router files
+**Dependencies:** Phase 1 complete
+**Prompt:** `docs/prompts/REM-011.md` (to be created)
+
+**Problem:** 109 redundant `if (!ctx.user)` checks after middleware already validates.
+
+**Objectives:**
+
+1. Remove all redundant user existence checks
+2. Trust middleware to handle authentication
+3. Improve code readability
+4. Reduce bundle size slightly
+
+**Deliverables:**
+
+- [ ] Batch 1: Remove from financial routers (15 instances)
+- [ ] Batch 2: Remove from order routers (20 instances)
+- [ ] Batch 3: Remove from inventory routers (25 instances)
+- [ ] Batch 4: Remove from client/vendor routers (20 instances)
+- [ ] Batch 5: Remove from remaining routers (29 instances)
+- [ ] Verify all tests pass after each batch
+- [ ] Session archived
+
+---
+
+#### REM-012: Fix TypeScript `any` in Utility Functions
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `server/_core/`, `client/src/lib/`
+**Dependencies:** REM-008, REM-009
+**Prompt:** `docs/prompts/REM-012.md` (to be created)
+
+**Problem:** Utility functions use `any`, propagating type unsafety throughout codebase.
+
+**Objectives:**
+
+1. Fix `any` types in core utility functions first
+2. Use new type utilities from REM-008
+3. Add proper generics where needed
+4. Improve type inference
+
+**Deliverables:**
+
+- [ ] Fix `any` in `server/_core/` files (est. 30 instances)
+- [ ] Fix `any` in `client/src/lib/` files (est. 20 instances)
+- [ ] Add type tests to verify inference
+- [ ] Remove ESLint overrides for fixed files
+- [ ] Session archived
+
+---
+
+#### REM-013: Fix TypeScript `any` in API Handlers (LOW risk files)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** Low-risk router files
+**Dependencies:** REM-012
+**Prompt:** `docs/prompts/REM-013.md` (to be created)
+
+**Problem:** `any` types in API handlers cause runtime errors and bugs.
+
+**Objectives:**
+
+1. Fix `any` types in low-risk routers (calendar, todos, notifications)
+2. Use proper Zod schemas for inputs
+3. Use proper return types for outputs
+4. Add runtime validation
+
+**Deliverables:**
+
+- [ ] Fix `calendar.ts` router (est. 10 instances)
+- [ ] Fix `todos.ts` router (est. 8 instances)
+- [ ] Fix `notifications.ts` router (est. 5 instances)
+- [ ] Fix `settings.ts` router (est. 7 instances)
+- [ ] Remove ESLint overrides for fixed files
+- [ ] All tests pass
+- [ ] Session archived
+
+---
+
+#### REM-014: Add React.memo to Remaining List Components
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `client/src/components/`
+**Dependencies:** Phase 1 complete
+**Prompt:** `docs/prompts/REM-014.md` (to be created)
+
+**Problem:** 173 components lack React.memo, causing unnecessary re-renders.
+
+**Objectives:**
+
+1. Add React.memo to all list item components
+2. Add React.memo to all card components
+3. Add useCallback to handlers passed to children
+4. Verify no regression in functionality
+
+**Deliverables:**
+
+- [ ] Batch 1: List item components (40 components)
+- [ ] Batch 2: Card components (30 components)
+- [ ] Batch 3: Table row components (25 components)
+- [ ] Batch 4: Form field components (20 components)
+- [ ] Verify performance improvement with React DevTools
+- [ ] Session archived
+
+---
+
+#### REM-015: Add React.memo to Page Components
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** `client/src/pages/`
+**Dependencies:** REM-014
+**Prompt:** `docs/prompts/REM-015.md` (to be created)
+
+**Problem:** Page components without memo cause cascading re-renders.
+
+**Objectives:**
+
+1. Add React.memo to page-level components where appropriate
+2. Memoize expensive derived data with useMemo
+3. Memoize callbacks with useCallback
+4. Profile before/after performance
+
+**Deliverables:**
+
+- [ ] Audit all page components for memoization needs
+- [ ] Add useMemo to expensive calculations
+- [ ] Add useCallback to handlers passed down
+- [ ] Document components that should NOT be memoized
+- [ ] Session archived
+
+---
+
+#### REM-016: Add Accessibility to Form Components
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** `client/src/components/ui/`
+**Dependencies:** REM-007
+**Prompt:** `docs/prompts/REM-016.md` (to be created)
+
+**Problem:** Form components lack labels, aria attributes, and keyboard navigation.
+
+**Objectives:**
+
+1. Add labels to all form inputs
+2. Add aria-invalid and aria-describedby for errors
+3. Add aria-required for required fields
+4. Ensure keyboard navigation works
+
+**Deliverables:**
+
+- [ ] Audit all form components for accessibility
+- [ ] Add labels to Input, Select, Textarea components
+- [ ] Add error linking with aria-describedby
+- [ ] Add required field indicators
+- [ ] Test with screen reader
+- [ ] Run axe-core and fix violations
+- [ ] Session archived
+
+---
+
+#### REM-017: Add Accessibility to Button and Link Components
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `client/src/components/ui/`
+**Dependencies:** REM-007
+**Prompt:** `docs/prompts/REM-017.md` (to be created)
+
+**Problem:** Icon buttons lack aria-labels; links lack descriptive text.
+
+**Objectives:**
+
+1. Add aria-label to all icon-only buttons
+2. Ensure all buttons are focusable
+3. Add visible focus indicators
+4. Ensure links have descriptive text
+
+**Deliverables:**
+
+- [ ] Audit all Button usages for icon-only variants
+- [ ] Add aria-label prop to icon buttons
+- [ ] Verify focus indicators are visible
+- [ ] Test keyboard activation (Enter/Space)
+- [ ] Session archived
+
+---
+
+#### REM-018: Add Accessibility to Modal and Dialog Components
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `client/src/components/ui/`
+**Dependencies:** REM-016, REM-017
+**Prompt:** `docs/prompts/REM-018.md` (to be created)
+
+**Problem:** Modals lack focus trapping, aria-modal, and proper labeling.
+
+**Objectives:**
+
+1. Add aria-modal and role="dialog" to all modals
+2. Implement focus trapping
+3. Return focus to trigger on close
+4. Add aria-labelledby and aria-describedby
+
+**Deliverables:**
+
+- [ ] Audit all Dialog/Modal components
+- [ ] Add proper ARIA attributes
+- [ ] Implement focus trap
+- [ ] Test Escape key closes modal
+- [ ] Test focus return on close
+- [ ] Session archived
+
+---
+
+#### REM-019: Fix Color Contrast Issues
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** CSS/Tailwind configuration
+**Dependencies:** REM-007
+**Prompt:** `docs/prompts/REM-019.md` (to be created)
+
+**Problem:** Some text colors don't meet WCAG 2.1 AA contrast requirements.
+
+**Objectives:**
+
+1. Audit all color combinations for contrast
+2. Fix colors below 4.5:1 for normal text
+3. Fix colors below 3:1 for large text
+4. Ensure status indicators use more than color
+
+**Deliverables:**
+
+- [ ] Run automated contrast audit
+- [ ] Create list of failing color combinations
+- [ ] Update Tailwind theme colors
+- [ ] Add icons/text to color-only status indicators
+- [ ] Verify with accessibility tools
+- [ ] Session archived
+
+---
+
+#### REM-020: Add Data-TestId to Interactive Elements
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** All React components
+**Dependencies:** Phase 1 complete
+**Prompt:** `docs/prompts/REM-020.md` (to be created)
+
+**Problem:** E2E tests use brittle selectors; need stable data-testid attributes.
+
+**Objectives:**
+
+1. Add data-testid to all buttons
+2. Add data-testid to all form inputs
+3. Add data-testid to all links
+4. Follow naming convention: `{component}-{action}-{target}`
+
+**Deliverables:**
+
+- [ ] Create data-testid naming convention document
+- [ ] Add to all button components
+- [ ] Add to all form inputs
+- [ ] Add to all navigation links
+- [ ] Update E2E tests to use new selectors
+- [ ] Session archived
+
+---
+
+### Phase 2.5: Test Quality Remediation (Week 6-7)
+
+#### REM-021: Remove Placeholder Tests
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** All test files
+**Dependencies:** REM-004
+**Prompt:** `docs/prompts/REM-021.md` (to be created)
+
+**Problem:** Placeholder tests give false confidence; need real tests or removal.
+
+**Objectives:**
+
+1. Identify all placeholder tests (`expect(true).toBe(true)`)
+2. Remove or replace with real tests
+3. Update coverage reports
+4. Add ESLint rule to prevent new placeholders
+
+**Deliverables:**
+
+- [ ] List all placeholder tests
+- [ ] Remove tests that add no value
+- [ ] Replace critical path placeholders with real tests
+- [ ] Add ESLint rule `no-placeholder-tests`
+- [ ] Session archived
+
+---
+
+#### REM-022: Add Tests for Tier 1 Financial Modules
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 24h
+**Module:** `server/creditEngine.ts`, `server/cogsCalculation.ts`
+**Dependencies:** REM-021
+**Prompt:** `docs/prompts/REM-022.md` (to be created)
+
+**Problem:** Financial modules have <50% coverage; protocol requires 90%+.
+
+**Objectives:**
+
+1. Achieve 90%+ coverage for creditEngine.ts
+2. Achieve 90%+ coverage for cogsCalculation.ts
+3. Test all edge cases (zero values, negative, overflow)
+4. Test error paths
+
+**Deliverables:**
+
+- [ ] Write tests for credit limit enforcement
+- [ ] Write tests for credit usage calculations
+- [ ] Write tests for COGS calculations
+- [ ] Write tests for edge cases
+- [ ] Write tests for error conditions
+- [ ] Verify 90%+ coverage
+- [ ] Session archived
+
+---
+
+#### REM-023: Add Tests for Tier 2 Business Modules
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** `server/ordersDb.ts`, `server/inventoryDb.ts`
+**Dependencies:** REM-022
+**Prompt:** `docs/prompts/REM-023.md` (to be created)
+
+**Problem:** Business modules have <50% coverage; protocol requires 80%+.
+
+**Objectives:**
+
+1. Achieve 80%+ coverage for ordersDb.ts
+2. Achieve 80%+ coverage for inventoryDb.ts
+3. Test transaction rollback scenarios
+4. Test concurrent modification handling
+
+**Deliverables:**
+
+- [ ] Write tests for order creation flow
+- [ ] Write tests for order modification
+- [ ] Write tests for inventory adjustments
+- [ ] Write tests for transaction failures
+- [ ] Verify 80%+ coverage
+- [ ] Session archived
+
+---
+
+#### REM-024: Add Integration Tests for Critical Paths
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** Integration test suite
+**Dependencies:** REM-022, REM-023
+**Prompt:** `docs/prompts/REM-024.md` (to be created)
+
+**Problem:** Unit tests pass but integration fails; need end-to-end coverage.
+
+**Objectives:**
+
+1. Add integration test for complete order flow
+2. Add integration test for inventory intake
+3. Add integration test for invoice generation
+4. Add integration test for payment recording
+
+**Deliverables:**
+
+- [ ] Create integration test harness
+- [ ] Write order creation → shipment → delivery test
+- [ ] Write inventory intake → allocation test
+- [ ] Write invoice generation → payment test
+- [ ] Verify all critical paths covered
+- [ ] Session archived
+
+---
+
+### Phase 3: Medium-Risk Fixes (Week 7-12)
+
+#### REM-025: Fix TypeScript `any` in Financial Routers
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** `server/routers/accounting.ts`, `server/routers/invoices.ts`
+**Dependencies:** Phase 2.5 complete
+**Prompt:** `docs/prompts/REM-025.md` (to be created)
+
+**Problem:** `any` types in financial code are high-risk for bugs.
+
+**Objectives:**
+
+1. Fix all `any` types in accounting router
+2. Fix all `any` types in invoices router
+3. Fix all `any` types in payments router
+4. Ensure tests still pass after each fix
+
+**Deliverables:**
+
+- [ ] Fix `accounting.ts` any types (with tests)
+- [ ] Fix `invoices.ts` any types (with tests)
+- [ ] Fix `payments.ts` any types (with tests)
+- [ ] Remove ESLint overrides
+- [ ] Verify no runtime regressions
+- [ ] Session archived
+
+---
+
+#### REM-026: Fix TypeScript `any` in Order Routers
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** `server/routers/orders.ts`, `server/ordersDb.ts`
+**Dependencies:** REM-025
+**Prompt:** `docs/prompts/REM-026.md` (to be created)
+
+**Problem:** `any` types in order code cause data integrity issues.
+
+**Objectives:**
+
+1. Fix all `any` types in orders router
+2. Fix all `any` types in ordersDb
+3. Add proper types for order line items
+4. Ensure transaction safety
+
+**Deliverables:**
+
+- [ ] Fix `orders.ts` router any types
+- [ ] Fix `ordersDb.ts` any types
+- [ ] Add typed order creation input
+- [ ] Add typed order response output
+- [ ] Verify with integration tests
+- [ ] Session archived
+
+---
+
+#### REM-027: Fix TypeScript `any` in Inventory Routers
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** `server/routers/inventory.ts`, `server/inventoryDb.ts`
+**Dependencies:** REM-026
+**Prompt:** `docs/prompts/REM-027.md` (to be created)
+
+**Problem:** `any` types in inventory code cause stock discrepancies.
+
+**Objectives:**
+
+1. Fix all `any` types in inventory router
+2. Fix all `any` types in inventoryDb
+3. Add proper types for batch operations
+4. Ensure atomic inventory updates
+
+**Deliverables:**
+
+- [ ] Fix `inventory.ts` router any types
+- [ ] Fix `inventoryDb.ts` any types
+- [ ] Add typed batch input/output
+- [ ] Add typed movement records
+- [ ] Verify with integration tests
+- [ ] Session archived
+
+---
+
+#### REM-028: Fix TypeScript `any` in Client/Vendor Routers
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 12h
+**Module:** `server/routers/clients.ts`, `server/routers/vendors.ts`
+**Dependencies:** REM-027
+**Prompt:** `docs/prompts/REM-028.md` (to be created)
+
+**Problem:** `any` types in entity management cause data loss.
+
+**Objectives:**
+
+1. Fix all `any` types in clients router
+2. Fix all `any` types in vendors router
+3. Add proper types for contact information
+4. Add proper types for credit terms
+
+**Deliverables:**
+
+- [ ] Fix `clients.ts` any types
+- [ ] Fix `vendors.ts` any types
+- [ ] Add typed client/vendor interfaces
+- [ ] Verify CRUD operations work correctly
+- [ ] Session archived
+
+---
+
+#### REM-029: Fix Remaining TypeScript `any` Types
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 24h
+**Module:** All remaining files
+**Dependencies:** REM-028
+**Prompt:** `docs/prompts/REM-029.md` (to be created)
+
+**Problem:** Remaining `any` types across codebase need cleanup.
+
+**Objectives:**
+
+1. Fix remaining `any` types in server code
+2. Fix remaining `any` types in client code
+3. Document any justified `any` usages with comments
+4. Remove all ESLint any overrides
+
+**Deliverables:**
+
+- [ ] Fix remaining server `any` types (est. 50)
+- [ ] Fix remaining client `any` types (est. 80)
+- [ ] Document justified exceptions with `// eslint-disable-next-line @typescript-eslint/no-explicit-any -- REASON`
+- [ ] Remove override files
+- [ ] Total `any` count < 10
+- [ ] Session archived
+
+---
+
+#### REM-030: Fix `as any` Assertions in Financial Code
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** Financial modules
+**Dependencies:** REM-025
+**Prompt:** `docs/prompts/REM-030.md` (to be created)
+
+**Problem:** `as any` assertions bypass type checking in critical code.
+
+**Objectives:**
+
+1. Replace `as any` with proper type assertions
+2. Use type guards where needed
+3. Use `satisfies` operator where appropriate
+4. Add runtime validation for external data
+
+**Deliverables:**
+
+- [ ] Fix `as any` in financial routers
+- [ ] Fix `as any` in database queries
+- [ ] Replace with type guards
+- [ ] Add Zod validation for external data
+- [ ] Verify type safety with tests
+- [ ] Session archived
+
+---
+
+#### REM-031: Fix `as any` Assertions in Business Code
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 24h
+**Module:** Business logic modules
+**Dependencies:** REM-030
+**Prompt:** `docs/prompts/REM-031.md` (to be created)
+
+**Problem:** `as any` assertions cause runtime errors in business logic.
+
+**Objectives:**
+
+1. Replace `as any` in order processing
+2. Replace `as any` in inventory management
+3. Replace `as any` in client/vendor management
+4. Use proper type narrowing
+
+**Deliverables:**
+
+- [ ] Fix `as any` in order code
+- [ ] Fix `as any` in inventory code
+- [ ] Fix `as any` in entity management
+- [ ] Total `as any` count < 10 (justified only)
+- [ ] Session archived
+
+---
+
+#### REM-032: Fix `as any` Assertions in UI Code
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 16h
+**Module:** React components
+**Dependencies:** REM-031
+**Prompt:** `docs/prompts/REM-032.md` (to be created)
+
+**Problem:** `as any` in UI code causes render errors and prop mismatches.
+
+**Objectives:**
+
+1. Replace `as any` in component props
+2. Replace `as any` in event handlers
+3. Replace `as any` in hook returns
+4. Use proper generic types
+
+**Deliverables:**
+
+- [ ] Fix `as any` in component files
+- [ ] Fix `as any` in hook files
+- [ ] Use proper event types (React.ChangeEvent<HTMLInputElement>)
+- [ ] Use proper ref types
+- [ ] Session archived
+
+---
+
+#### REM-033: Standardize Error Handling Across Routers
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 16h
+**Module:** All routers
+**Dependencies:** Phase 2.5 complete
+**Prompt:** `docs/prompts/REM-033.md` (to be created)
+
+**Problem:** Inconsistent error handling makes debugging difficult.
+
+**Objectives:**
+
+1. Replace console.error with structured logger
+2. Use TRPCError consistently
+3. Add error context to all errors
+4. Implement error tracking integration
+
+**Deliverables:**
+
+- [ ] Create error handling utility
+- [ ] Replace console.error in all routers
+- [ ] Use TRPCError with proper codes
+- [ ] Add context to error messages
+- [ ] Test error scenarios
+- [ ] Session archived
+
+---
+
+#### REM-034: Add Comprehensive useMemo and useCallback
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 16h
+**Module:** React components
+**Dependencies:** REM-014, REM-015
+**Prompt:** `docs/prompts/REM-034.md` (to be created)
+
+**Problem:** Missing memoization causes performance issues on complex pages.
+
+**Objectives:**
+
+1. Add useMemo to expensive calculations
+2. Add useCallback to all handlers passed to children
+3. Avoid inline objects in JSX
+4. Profile performance improvements
+
+**Deliverables:**
+
+- [ ] Audit dashboard pages for memoization
+- [ ] Add useMemo to stat calculations
+- [ ] Add useCallback to all click handlers
+- [ ] Replace inline objects with memoized values
+- [ ] Verify with React Profiler
+- [ ] Session archived
+
+---
+
+#### REM-035: Add Accessibility to Data Tables
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 12h
+**Module:** Table components
+**Dependencies:** REM-016, REM-017, REM-018
+**Prompt:** `docs/prompts/REM-035.md` (to be created)
+
+**Problem:** Data tables lack proper accessibility for screen readers.
+
+**Objectives:**
+
+1. Add proper table semantics (caption, scope)
+2. Add sortable column announcements
+3. Add pagination accessibility
+4. Add keyboard navigation
+
+**Deliverables:**
+
+- [ ] Add caption to all data tables
+- [ ] Add scope="col" to header cells
+- [ ] Add scope="row" to row headers
+- [ ] Add aria-sort to sortable columns
+- [ ] Test with screen reader
+- [ ] Session archived
+
+---
+
+### Phase 4: Data Cleanup (Week 12-13)
+
+#### REM-036: Audit and Clean VARCHAR Numeric Data
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** Database
+**Dependencies:** REM-003, Phase 3 complete
+**Prompt:** `docs/prompts/REM-036.md` (to be created)
+
+**Problem:** VARCHAR fields may contain invalid numeric data that will fail conversion.
+
+**Objectives:**
+
+1. Audit all VARCHAR numeric fields for invalid data
+2. Fix or flag invalid values
+3. Create data cleaning scripts
+4. Backup data before any changes
+
+**Deliverables:**
+
+- [ ] Query all VARCHAR numeric fields for non-numeric values
+- [ ] Create report of invalid data
+- [ ] Create cleaning script for each field
+- [ ] Create backup before cleaning
+- [ ] Run cleaning scripts with verification
+- [ ] Session archived
+
+---
+
+#### REM-037: Audit and Clean INT Boolean Data
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** Database
+**Dependencies:** REM-003
+**Prompt:** `docs/prompts/REM-037.md` (to be created)
+
+**Problem:** INT boolean fields may have values other than 0/1.
+
+**Objectives:**
+
+1. Audit all INT boolean fields for invalid values
+2. Convert invalid values to proper 0/1
+3. Document any edge cases
+4. Prepare for schema migration
+
+**Deliverables:**
+
+- [ ] Query all INT boolean fields for non-0/1 values
+- [ ] Create report of invalid data
+- [ ] Create cleaning script
+- [ ] Run cleaning with verification
+- [ ] Session archived
+
+---
+
+#### REM-038: Create Database Backup Strategy
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** Infrastructure
+**Dependencies:** None
+**Prompt:** `docs/prompts/REM-038.md` (to be created)
+
+**Problem:** Schema migrations risk data loss without proper backup.
+
+**Objectives:**
+
+1. Create backup script for schema migrations
+2. Create restore verification script
+3. Document backup/restore procedure
+4. Test backup/restore process
+
+**Deliverables:**
+
+- [ ] Create `scripts/backup-before-migration.sh`
+- [ ] Create `scripts/verify-backup.sh`
+- [ ] Create `scripts/restore-from-backup.sh`
+- [ ] Document in `docs/DATABASE_BACKUP.md`
+- [ ] Test backup/restore on staging
+- [ ] Session archived
+
+---
+
+### Phase 5: Schema Migrations (Week 13-19)
+
+#### REM-039: Migrate VARCHAR to DECIMAL - Quantities (Blue-Green)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 24h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** REM-036, REM-038
+**Prompt:** `docs/prompts/REM-039.md` (to be created)
+
+**Problem:** VARCHAR quantity fields cause calculation errors and sorting issues.
+
+**Objectives:**
+
+1. Add new DECIMAL column alongside VARCHAR
+2. Migrate data to new column
+3. Update application to use new column
+4. Remove old VARCHAR column after verification
+
+**Deliverables:**
+
+- [ ] Create migration adding `quantity_decimal` columns
+- [ ] Write data migration script
+- [ ] Update schema types
+- [ ] Deploy application changes
+- [ ] Verify data integrity
+- [ ] Remove old columns in follow-up migration
+- [ ] Session archived
+
+---
+
+#### REM-040: Migrate VARCHAR to DECIMAL - Prices
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 24h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** REM-039
+**Prompt:** `docs/prompts/REM-040.md` (to be created)
+
+**Problem:** VARCHAR price fields cause financial calculation errors.
+
+**Objectives:**
+
+1. Add new DECIMAL(15,2) column for prices
+2. Migrate data with proper precision
+3. Update all price calculations
+4. Verify financial accuracy
+
+**Deliverables:**
+
+- [ ] Create migration adding `price_decimal` columns
+- [ ] Write data migration with rounding rules
+- [ ] Update schema types
+- [ ] Update financial calculations
+- [ ] Verify with financial tests
+- [ ] Remove old columns
+- [ ] Session archived
+
+---
+
+#### REM-041: Migrate INT to BOOLEAN Fields
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 16h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** REM-037
+**Prompt:** `docs/prompts/REM-041.md` (to be created)
+
+**Problem:** INT boolean fields cause confusion and bugs.
+
+**Objectives:**
+
+1. Migrate 9 INT fields to proper BOOLEAN
+2. Update all comparisons
+3. Update queries and filters
+4. Verify boolean logic preserved
+
+**Deliverables:**
+
+- [ ] Create migration for each INT→BOOLEAN field
+- [ ] Update TypeScript types
+- [ ] Update queries (change `= 1` to `= true`)
+- [ ] Update UI components
+- [ ] Test boolean filtering
+- [ ] Session archived
+
+---
+
+#### REM-042: Add Missing Foreign Key Indexes
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** REM-003
+**Prompt:** `docs/prompts/REM-042.md` (to be created)
+
+**Problem:** Missing FK indexes cause slow joins and queries.
+
+**Objectives:**
+
+1. Audit all foreign keys for indexes
+2. Add indexes to all FKs
+3. Add composite indexes for common queries
+4. Verify query performance improvement
+
+**Deliverables:**
+
+- [ ] Generate list of FKs without indexes
+- [ ] Create index migration
+- [ ] Test query performance before/after
+- [ ] Document index additions
+- [ ] Session archived
+
+---
+
+#### REM-043: Fix Inconsistent Column Naming
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 16h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** Phase 3 complete
+**Prompt:** `docs/prompts/REM-043.md` (to be created)
+
+**Problem:** Inconsistent column naming (camelCase vs snake_case) causes confusion.
+
+**Objectives:**
+
+1. Audit all column names for consistency
+2. Standardize on snake_case in database
+3. Update schema mapping
+4. Verify application still works
+
+**Deliverables:**
+
+- [ ] Create list of non-standard column names
+- [ ] Create migration to rename columns
+- [ ] Update schema column mapping
+- [ ] Test all affected queries
+- [ ] Session archived
+
+---
+
+#### REM-044: Add Missing Timestamp Columns
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 8h
+**Module:** `drizzle/schema.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/REM-044.md` (to be created)
+
+**Problem:** Some tables lack created_at/updated_at columns.
+
+**Objectives:**
+
+1. Audit all tables for timestamp columns
+2. Add created_at to tables missing it
+3. Add updated_at to tables missing it
+4. Backfill timestamps where possible
+
+**Deliverables:**
+
+- [ ] Create list of tables missing timestamps
+- [ ] Create migration to add columns
+- [ ] Backfill with reasonable defaults
+- [ ] Verify auto-update triggers work
+- [ ] Session archived
+
+---
+
+#### REM-045: Implement Soft Delete Pattern
+
+**Status:** ready
+**Priority:** LOW
+**Estimate:** 16h
+**Module:** `drizzle/schema.ts`, query helpers
+**Dependencies:** REM-044
+**Prompt:** `docs/prompts/REM-045.md` (to be created)
+
+**Problem:** Hard deletes lose audit trail; need soft delete for compliance.
+
+**Objectives:**
+
+1. Add deleted_at column to transactional tables
+2. Create soft delete helper functions
+3. Update queries to filter deleted records
+4. Create admin UI for viewing deleted records
+
+**Deliverables:**
+
+- [ ] Add deleted_at to orders, invoices, payments tables
+- [ ] Create `softDelete()` and `notDeleted()` helpers
+- [ ] Update all queries to use `notDeleted()`
+- [ ] Add admin endpoint to view deleted records
+- [ ] Session archived
+
+---
+
+### Phase 6: Verification & Monitoring (Week 19+)
+
+#### REM-046: Full Regression Test Suite
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** All
+**Dependencies:** Phase 5 complete
+**Prompt:** `docs/prompts/REM-046.md` (to be created)
+
+**Problem:** Need to verify all changes haven't introduced regressions.
+
+**Objectives:**
+
+1. Run full test suite
+2. Run manual testing on critical paths
+3. Run accessibility audit
+4. Run performance benchmark
+
+**Deliverables:**
+
+- [ ] All unit tests pass
+- [ ] All integration tests pass
+- [ ] All E2E tests pass
+- [ ] Manual testing checklist complete
+- [ ] axe-core audit passes
+- [ ] Performance benchmarks meet targets
+- [ ] Session archived
+
+---
+
+#### REM-047: Update Documentation
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** Documentation
+**Dependencies:** REM-046
+**Prompt:** `docs/prompts/REM-047.md` (to be created)
+
+**Problem:** Code changes require documentation updates.
+
+**Objectives:**
+
+1. Update API documentation
+2. Update database schema documentation
+3. Update developer onboarding guide
+4. Archive completed ADRs
+
+**Deliverables:**
+
+- [ ] Update API docs with new types
+- [ ] Update schema docs with new columns
+- [ ] Update AGENT_ONBOARDING.md
+- [ ] Mark completed ADRs as implemented
+- [ ] Session archived
+
+---
+
+#### REM-048: Set Up Ongoing Quality Monitoring
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 8h
+**Module:** CI/CD
+**Dependencies:** REM-010
+**Prompt:** `docs/prompts/REM-048.md` (to be created)
+
+**Problem:** Need to prevent quality regression after remediation.
+
+**Objectives:**
+
+1. Set up quality gates in CI
+2. Configure coverage thresholds
+3. Set up accessibility monitoring
+4. Create weekly quality report
+
+**Deliverables:**
+
+- [ ] CI fails if `any` count > 10
+- [ ] CI fails if coverage drops below thresholds
+- [ ] CI fails if new a11y violations introduced
+- [ ] Weekly email/Slack report on quality metrics
+- [ ] Dashboard showing trends
+- [ ] Session archived
+
+---
+
+### 📊 Standards Remediation Progress Tracker
+
+| Phase | Total Tasks | Completed | In Progress | Remaining |
+|-------|-------------|-----------|-------------|-----------|
+| Phase 0: Audit | 4 | 0 | 0 | 4 |
+| Phase 1: Tooling | 6 | 0 | 0 | 6 |
+| Phase 2: Low-Risk | 10 | 0 | 0 | 10 |
+| Phase 2.5: Tests | 4 | 0 | 0 | 4 |
+| Phase 3: Medium-Risk | 11 | 0 | 0 | 11 |
+| Phase 4: Data | 3 | 0 | 0 | 3 |
+| Phase 5: Schema | 7 | 0 | 0 | 7 |
+| Phase 6: Verify | 3 | 0 | 0 | 3 |
+| **TOTAL** | **48** | **0** | **0** | **48** |
+
+---
+
 ## 🎯 Priority Decision Framework
 
 **When adding new tasks, use this framework:**
