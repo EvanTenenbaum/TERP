@@ -2,7 +2,7 @@
 
 ## Real-Time Coordination for Parallel Development
 
-**Last Updated:** 2025-11-17  
+**Last Updated:** 2025-11-30  
 **Auto-Generated:** This file tracks all active development sessions  
 **Source:** `docs/sessions/active/*.md`
 
@@ -12,7 +12,7 @@
 
 | Session ID                        | Task    | Branch                            | Module        | Status         | Started    | ETA  |
 | --------------------------------- | ------- | --------------------------------- | ------------- | -------------- | ---------- | ---- |
-| Session-20251124-BUG-007-78a29f8b | BUG-007 | bug-007-permissions-safety-checks | UI Components | ⏳ IN PROGRESS | 2025-11-24 | 2-4h |
+| Session-20251130-PERF-001-c235d037 | PERF-001 | perf-001-database-indexes | Database Schema | ⏳ IN PROGRESS | 2025-11-30 | 16h |
 
 ## ⏸️ Paused / Waiting
 
