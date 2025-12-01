@@ -14,6 +14,42 @@ This generator creates **22 months** of realistic business data (Jan 2024 - Oct 
 - **AR aging**: 15% overdue invoices with realistic aging distribution
 - **Returns & refunds**: 0.5% return rate, 5% refund rate
 
+## Log Access
+
+### terp-logs.sh
+
+Quick access to TERP application logs from any sandbox or machine.
+
+**Usage:**
+
+```bash
+# Basic usage - last 100 run logs
+./scripts/terp-logs.sh
+
+# Specific log type and count
+./scripts/terp-logs.sh build 500
+
+# Follow logs in real-time
+./scripts/terp-logs.sh run 100 --follow
+
+# Different log types
+./scripts/terp-logs.sh run       # Application runtime logs
+./scripts/terp-logs.sh build     # Build logs
+./scripts/terp-logs.sh deploy    # Deployment logs
+./scripts/terp-logs.sh restart   # Restart logs
+```
+
+**Features:**
+- Auto-installs doctl if not present
+- Auto-authenticates with DigitalOcean
+- Supports all log types
+- Real-time log streaming with --follow
+- Color-coded output
+
+**See Also:** [docs/LOGGING_ACCESS_GUIDE.md](../docs/LOGGING_ACCESS_GUIDE.md) for comprehensive logging documentation
+
+---
+
 ## Quick Start
 
 ### Prerequisites

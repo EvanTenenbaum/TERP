@@ -130,3 +130,4 @@ latest_deployment.json
 .deployment-status-*.result
 .deployment-monitor-*.pid
 .deployment-monitor-*.lock
+.env.logging
