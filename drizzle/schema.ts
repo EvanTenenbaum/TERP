@@ -519,7 +519,9 @@ export const batches = mysqlTable("batches", {
   publishB2b: int("publishB2b").notNull().default(0), // 0 = false, 1 = true
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  productIdIdx: index("idx_batches_product_id").on(table.productId),
+}));
 
 export type Batch = typeof batches.$inferSelect;
 export type InsertBatch = typeof batches.$inferInsert;
@@ -845,7 +847,9 @@ export const ledgerEntries = mysqlTable("ledgerEntries", {
   postedBy: int("postedBy"),
   createdBy: int("createdBy").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  accountIdIdx: index("idx_ledger_entries_account_id").on(table.accountId),
+}));
 
 export type LedgerEntry = typeof ledgerEntries.$inferSelect;
 export type InsertLedgerEntry = typeof ledgerEntries.$inferInsert;
@@ -920,7 +924,9 @@ export const invoices = mysqlTable("invoices", {
   createdBy: int("createdBy").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  customerIdIdx: index("idx_invoices_customer_id").on(table.customerId),
+}));
 
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
@@ -1684,7 +1690,9 @@ export const creditSystemSettings = mysqlTable("credit_system_settings", {
   updatedBy: int("updated_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+    batchIdIdx: index("idx_batch_locations_batch_id").on(table.batchId),
+  }));
 
 export type CreditSystemSettings = typeof creditSystemSettings.$inferSelect;
 export type InsertCreditSystemSettings =
@@ -1791,7 +1799,9 @@ export const pricingProfiles = mysqlTable("pricing_profiles", {
   createdBy: int("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+    productIdIdx: index("idx_product_tags_product_id").on(table.productId),
+  }));
 
 export type PricingProfile = typeof pricingProfiles.$inferSelect;
 export type InsertPricingProfile = typeof pricingProfiles.$inferInsert;
@@ -2749,7 +2759,9 @@ export const tagGroups = mysqlTable("tagGroups", {
     .references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    batchIdIdx: index("idx_sales_batch_id").on(table.batchId),
+  }));
 
 export type TagGroup = typeof tagGroups.$inferSelect;
 export type InsertTagGroup = typeof tagGroups.$inferInsert;
