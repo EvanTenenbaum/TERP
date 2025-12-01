@@ -33,8 +33,12 @@ const cleanDatabaseUrl = databaseUrl.replace(/[?&]ssl=[^&]*/gi, '').replace(/[?&
 const poolConfig: any = {
   uri: cleanDatabaseUrl,
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 5,
+  maxIdle: 2,
+  idleTimeout: 60000,
   queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
 };
 
 if (needsSSL) {
