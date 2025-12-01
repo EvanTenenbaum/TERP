@@ -43,10 +43,12 @@ TERP operates on a **test-first** principle. Every feature, fix, and component i
 ## The Roadmap System: Two Halves of a Whole
 
 ### 1. MASTER_ROADMAP.md
+
 - **What it tracks:** Features, bug fixes, infrastructure changes.
 - **Key Field:** `Test Status` (⚪, 🟡, ✅, 🔴)
 
 ### 2. TESTING_ROADMAP.md
+
 - **What it tracks:** Specific testing tasks (Unit, Integration, E2E, etc.).
 - **Key Field:** `Linked Feature` (links back to MASTER_ROADMAP)
 
@@ -57,14 +59,17 @@ TERP operates on a **test-first** principle. Every feature, fix, and component i
 ## The Development & Testing Cycle
 
 ### Step 1: Agent Picks a Task
+
 - Agent can pick a **feature task** from `MASTER_ROADMAP.md` or a **testing task** from `TESTING_ROADMAP.md`.
 
 ### Step 2: Feature Development
+
 - Agent writes code for the feature, following Test-Driven Development (TDD).
 - **MANDATORY:** After completing the feature, the agent **creates a new test task** in `TESTING_ROADMAP.md` and links it to the feature.
 - The feature is marked with `Test Status: ⚪ Untested` in `MASTER_ROADMAP.md`.
 
 ### Step 3: Test Development
+
 - An agent (or the same agent) picks the newly created test task.
 - Agent writes the tests.
 - After tests are written and passing (with >80% coverage), the agent updates:
@@ -73,17 +78,20 @@ TERP operates on a **test-first** principle. Every feature, fix, and component i
   - `TEST_COVERAGE_MAP.md`: Updates the coverage statistics.
 
 ### Step 4: Deployment & Merge
+
 - **Pre-Merge Gate:** Before merging, the agent checks the feature's `Test Status`.
   - **Untested/Partially Tested:** Warns the user.
   - **Tests Failing:** Blocks the merge.
   - **Fully Tested:** Proceeds with the merge.
 
 ### Step 5: Deployment Log Tracking (MANDATORY)
+
 - **🚨 CRITICAL:** After every deployment, agents MUST track logs to verify success.
 - **If deployment fails:** Investigate logs immediately, fix issues, and redeploy.
 - **Never report completion** without verifying deployment succeeded via logs.
 
 **Required Actions:**
+
 1. Monitor build logs: `./scripts/terp-logs.sh build --follow`
 2. Monitor deploy logs: `./scripts/terp-logs.sh deploy --follow`
 3. Check runtime logs for errors: `./scripts/terp-logs.sh run 100 | grep -i "error"`
@@ -99,6 +107,7 @@ TERP operates on a **test-first** principle. Every feature, fix, and component i
 **Location:** `docs/roadmaps/TEST_COVERAGE_MAP.md`
 
 This file provides a real-time, at-a-glance view of test coverage across the entire application, broken down by:
+
 - **Module** (Inventory, Orders, etc.)
 - **User Flow** (Create Order, Vendor Intake, etc.)
 - **Component** (Database, API, Auth, etc.)
@@ -110,6 +119,7 @@ It is **automatically updated** every time a testing task is completed, ensuring
 ## Bulk Test Generation
 
 When you provide an **architecture map** or a list of user flows, the system will:
+
 1. **Parse the document** to identify all modules, flows, and components.
 2. **Automatically generate** hundreds of test tasks in `TESTING_ROADMAP.md`.
 3. **Populate the `TEST_COVERAGE_MAP.md`** to show all newly identified areas as `⚪ Untested`.
@@ -148,3 +158,16 @@ This integrated testing roadmap is the cornerstone of our commitment to quality 
 No feature from the Master Test Suite can be marked 'Done' or considered complete without passing its specific verification steps as defined in the `EXHAUSTIVE_INTERACTION_PROTOCOLS.md` document.
 
 **Reference**: [EXHAUSTIVE_INTERACTION_PROTOCOLS.md](./testing/EXHAUSTIVE_INTERACTION_PROTOCOLS.md)
+
+---
+
+## Code Quality Guidelines
+
+Every session should improve the codebase, not just add to it. Actively refactor code you encounter, even outside your immediate task scope.
+
+- **DRY**: Consolidate duplicate patterns into reusable functions after the 2nd occurrence
+- **Clean**: Delete dead code immediately (unused imports, functions, variables, commented code)
+- **Leverage**: Use battle-tested packages over custom implementations
+- **Readable**: Maintain comments and clear naming—don't sacrifice clarity for LoC
+
+Leave the code cleaner than you found it: fewer LoC through better abstractions.
