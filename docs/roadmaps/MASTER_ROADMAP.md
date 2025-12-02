@@ -11,8 +11,9 @@
 ## 🚨 MANDATORY: Gemini API for Code Generation
 
 **ALL AI agents on Manus platform implementing tasks from this roadmap MUST use Google Gemini API for:**
+
 - Code generation and refactoring
-- Complex reasoning and analysis  
+- Complex reasoning and analysis
 - Bulk operations and batch processing
 
 ```python
@@ -477,6 +478,88 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 - [ ] Enhanced error logging
 - [ ] All tests passing
 - [ ] Zero TypeScript errors
+
+---
+
+#### DATA-010: Implement Schema Validation System
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 80h  
+**Module:** `scripts/validate-schema-comprehensive.ts`, `scripts/utils/schema-introspection.ts`, `scripts/fix-schema-drift.ts`, `scripts/validate-schema-fixes.ts`, `drizzle/schema.ts`  
+**Dependencies:** None  
+**Spec:** `.kiro/specs/schema-validation-system/`  
+**Prompt:** `.kiro/specs/schema-validation-system/tasks.md`
+
+**Problem:** Schema drift between Drizzle ORM definitions and actual MySQL database structure causes seeding failures and data integrity issues. The 6 critical tables for seeding (inventoryMovements, orderStatusHistory, invoices, ledgerEntries, payments, clientActivity) have mismatches that block Phase 2 seeding operations.
+
+**Objectives:**
+
+1. Build comprehensive schema validation tool that compares Drizzle schemas with actual database structure
+2. Detect all types of schema drift: column names, data types, enum values, nullable constraints, defaults, foreign keys
+3. Generate detailed validation reports (JSON and Markdown) with prioritized issues
+4. Create fix recommendation generator that produces actionable code changes
+5. Implement verification tool to confirm fixes were applied correctly
+6. Fix the 6 critical tables needed for seeding
+7. Add npm scripts for validation workflow integration
+
+**Deliverables:**
+
+- [ ] Create `scripts/utils/` directory with schema introspection utilities
+- [ ] Implement naming convention converters (camelCase ↔ snake_case)
+- [ ] Implement database introspection functions (tables, columns, enums, FKs, indexes)
+- [ ] Implement schema comparison utilities with type normalization
+- [ ] Create comprehensive validation tool (`validate-schema-comprehensive.ts`)
+- [ ] Generate JSON report (`schema-validation-report.json`)
+- [ ] Generate Markdown report (`SCHEMA_VALIDATION_REPORT.md`)
+- [ ] Create fix recommendation generator (`fix-schema-drift.ts`)
+- [ ] Generate fix recommendations (`SCHEMA_DRIFT_FIXES.md`)
+- [ ] Create verification tool (`validate-schema-fixes.ts`)
+- [ ] Add npm scripts: `validate:schema`, `fix:schema:report`, `validate:schema:fixes`
+- [ ] Update `scripts/validate-schema-sync.ts` with deprecation notice
+- [ ] Add Schema Validation section to README.md
+- [ ] Implement error handling and validation failure guidance
+- [ ] Implement schema-specific conversion behavior (main vs RBAC/VIP Portal)
+- [ ] Apply fixes to 6 critical tables in `drizzle/schema.ts`:
+  - inventoryMovements
+  - orderStatusHistory
+  - invoices
+  - ledgerEntries
+  - payments
+  - clientActivity
+- [ ] Add comment above each fixed table: `// SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)`
+- [ ] Run verification and confirm all critical tables pass
+- [ ] Property-based tests for 39 correctness properties (optional)
+- [ ] Unit tests for utilities and components (optional)
+- [ ] Integration tests for full workflow (optional)
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+**Key Features:**
+
+- Database-first approach (database is source of truth)
+- Handles both camelCase and snake_case naming conventions
+- Prioritizes 6 critical tables for seeding
+- Color-coded console output (✅ green, ❌ red, ⚠️ yellow)
+- Comprehensive property-based testing (39 properties)
+- Exit code 0/1 for CI/CD integration
+
+**Impact:** Unblocks Phase 2 seeding operations, prevents future schema drift issues, provides ongoing validation infrastructure for database schema integrity.
+
+**Testing Strategy:**
+
+- Property-based tests using fast-check (100+ iterations per property)
+- Unit tests for naming conventions, type normalization, comparison logic
+- Integration tests for end-to-end validation workflow
+- Manual testing against production database
+
+**Documentation:**
+
+- Complete spec in `.kiro/specs/schema-validation-system/`
+- Requirements document with 10 requirements, 50 acceptance criteria
+- Design document with architecture, data models, 39 correctness properties
+- Tasks document with 17 implementation tasks
 
 ---
 
