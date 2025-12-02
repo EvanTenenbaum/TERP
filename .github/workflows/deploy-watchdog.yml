@@ -21,13 +21,32 @@ jobs:
         env:
           APP_NAME: ${{ secrets.DO_APP_NAME }}
         run: |
+          # Check if APP_NAME is set
+          if [ -z "$APP_NAME" ]; then
+            echo "⚠️  DO_APP_NAME secret not set - skipping deployment monitoring"
+            echo "result=skipped" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
           # 1. Get App ID
           APP_ID=$(doctl apps list --format ID,Spec.Name --no-header | grep "$APP_NAME" | awk '{print $1}')
           echo "App ID: $APP_ID"
           
+          if [ -z "$APP_ID" ]; then
+            echo "⚠️  Could not find app with name: $APP_NAME"
+            echo "result=skipped" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
           # 2. Get the latest Deployment ID
           DEPLOY_ID=$(doctl apps list-deployments $APP_ID --format ID --no-header | head -n 1)
           echo "Tracking Deployment: $DEPLOY_ID"
+          
+          if [ -z "$DEPLOY_ID" ]; then
+            echo "⚠️  No deployments found for app: $APP_NAME"
+            echo "result=skipped" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           
           # 3. Loop until finish
           while true; do
@@ -45,7 +64,7 @@ jobs:
           done
 
       - name: Notify Slack (Success)
-        if: success()
+        if: success() && steps.watch.outputs.result == 'success'
         uses: 8398a7/action-slack@v3
         with:
           status: custom
@@ -58,7 +77,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Notify Slack (Failure)
-        if: failure()
+        if: failure() && steps.watch.outputs.result == 'failure'
         uses: 8398a7/action-slack@v3
         with:
           status: custom
