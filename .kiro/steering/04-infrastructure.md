@@ -31,7 +31,10 @@ Post-push hook triggers
     ↓
 Background monitor starts
     ↓
-DigitalOcean detects push
+DigitalOcean checks changed files
+    ↓
+If only ignored paths changed → Skip deployment
+If code/config changed → Continue deployment
     ↓
 Build starts (install deps, build)
     ↓
@@ -42,9 +45,22 @@ Health checks pass
 Traffic routed to new version
 ```
 
+**Ignored Paths** (no deployment triggered):
+
+- `docs/**` - Documentation
+- `*.md` - Markdown files
+- `.github/**` - GitHub workflows
+- `.kiro/**` - Kiro steering files
+- `agent-prompts/**` - Agent prompts
+- `product-management/**` - PM docs
+- `testing/**`, `tests-e2e/**` - Test documentation
+- `dashboard.html` - Static dashboard
+- Editor configs (`.vscode/`, `.cursor/`)
+
 ### Monitoring Deployment
 
 **Automatic (Recommended)**:
+
 ```bash
 # Just push - auto-heal monitors and fixes automatically
 git push origin main
@@ -60,6 +76,7 @@ tail -f .deployment-status-*.log
 ```
 
 **Manual Monitoring**:
+
 ```bash
 # Check deployment status
 bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
@@ -78,7 +95,6 @@ bash scripts/manage-deployment-monitors.sh status
 ```
 
 **See**: `docs/AUTO_DEPLOY_HEAL_GUIDE.md` for complete documentation
-
 
 ### Using doctl CLI
 
@@ -212,6 +228,7 @@ git push origin main
 ### Database Best Practices
 
 **DO** ✅:
+
 - Use migrations for all schema changes
 - Test migrations locally first
 - Make migrations reversible when possible
@@ -220,6 +237,7 @@ git push origin main
 - Back up before major changes
 
 **DON'T** ❌:
+
 - Make manual schema changes in production
 - Skip migration files
 - Delete old migrations
@@ -256,6 +274,7 @@ SENTRY_AUTH_TOKEN="..."
 ### Managing Environment Variables
 
 **Local Development**:
+
 ```bash
 # Copy example file
 cp .env.example .env
@@ -265,6 +284,7 @@ cp .env.example .env
 ```
 
 **Production (DigitalOcean)**:
+
 ```bash
 # Set via DigitalOcean console
 # App Settings > Environment Variables
@@ -276,12 +296,14 @@ doctl apps update <APP_ID> --env KEY=VALUE
 ### Secrets Management
 
 **NEVER**:
+
 - Commit secrets to git
 - Log secrets
 - Expose secrets in error messages
 - Share secrets in chat/email
 
 **ALWAYS**:
+
 - Use environment variables
 - Rotate secrets regularly
 - Use different secrets for dev/prod
@@ -314,12 +336,12 @@ doctl apps update <APP_ID> --env KEY=VALUE
 
 ```typescript
 // Use appropriate log levels
-console.log('Info: User logged in');
-console.warn('Warning: Rate limit approaching');
-console.error('Error: Database connection failed');
+console.log("Info: User logged in");
+console.warn("Warning: Rate limit approaching");
+console.error("Error: Database connection failed");
 
 // Include context
-console.error('Order processing failed:', {
+console.error("Order processing failed:", {
   orderId,
   error: error.message,
   timestamp: new Date().toISOString(),
@@ -329,12 +351,14 @@ console.error('Order processing failed:', {
 ### Monitoring Tools
 
 **Sentry** (Error Tracking):
+
 - Automatic error capture
 - Stack traces
 - User context
 - Performance monitoring
 
 **DigitalOcean Insights**:
+
 - CPU usage
 - Memory usage
 - Request rates
@@ -399,11 +423,13 @@ pnpm build
 ### Database Backups
 
 **Automatic**:
+
 - DigitalOcean takes daily backups
 - 7-day retention
 - Point-in-time recovery available
 
 **Manual Backup**:
+
 ```bash
 # Export database (if needed)
 # Use DigitalOcean console or mysqldump
@@ -412,6 +438,7 @@ pnpm build
 ### Code Backups
 
 **Git is the backup**:
+
 - All code in GitHub
 - Full history preserved
 - Can revert to any commit
@@ -419,12 +446,14 @@ pnpm build
 ### Recovery Procedures
 
 **Database Recovery**:
+
 1. Contact DigitalOcean support
 2. Request restore from backup
 3. Specify date/time
 4. Verify data after restore
 
 **Application Recovery**:
+
 ```bash
 # Revert to last good commit
 git revert <bad-commit>
@@ -497,6 +526,7 @@ const user = await db.query.users.findFirst({
 ### Scaling Strategy
 
 **Horizontal Scaling** (more instances):
+
 ```bash
 # Update app spec
 # Increase instance count in .do/app.yaml
@@ -504,12 +534,14 @@ const user = await db.query.users.findFirst({
 ```
 
 **Vertical Scaling** (bigger instances):
+
 ```bash
 # Update instance size in .do/app.yaml
 # Push to deploy
 ```
 
 **Database Scaling**:
+
 - Upgrade to larger database tier
 - Add read replicas
 - Implement caching layer (Redis)
