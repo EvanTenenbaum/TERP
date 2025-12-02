@@ -1,0 +1,61 @@
+name: Update Dashboard
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/roadmaps/MASTER_ROADMAP.md'
+      - 'docs/initiatives/**'
+      - 'docs/ACTIVE_SESSIONS.md'
+      - 'scripts/generate-html-dashboard.ts'
+      - '.github/workflows/update-dashboard.yml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  generate-dashboard:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      
+      - name: Generate dashboard
+        run: npm run dashboard:html
+      
+      - name: Commit dashboard if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if git diff --quiet dashboard.html; then
+            echo "Dashboard unchanged"
+          else
+            git add dashboard.html
+            git commit -m "chore: update dashboard [skip ci]"
+            git push
+          fi
+      
+      - name: Upload dashboard artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard
+          path: dashboard.html
+          retention-days: 30

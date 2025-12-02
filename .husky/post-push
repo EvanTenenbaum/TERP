@@ -19,6 +19,16 @@ echo ""
 echo "🚀 Post-push: Starting automated deployment monitoring with self-healing..."
 echo ""
 
+# Generate dashboard after push
+echo "📊 Generating project dashboard..."
+if command -v npm &> /dev/null; then
+  npm run dashboard:html > /dev/null 2>&1 || echo "⚠️  Dashboard generation failed (non-blocking)"
+  echo "✅ Dashboard updated: dashboard.html"
+else
+  echo "⚠️  npm not found, skipping dashboard generation"
+fi
+echo ""
+
 # Get the commit SHA that was just pushed
 COMMIT_SHA=$(git rev-parse HEAD)
 STATUS_FILE=".deployment-status-${COMMIT_SHA:0:7}.log"
