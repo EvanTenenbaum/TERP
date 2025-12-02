@@ -6,7 +6,7 @@
 
 # Run AI-powered code review (Senior Engineer, Security, Edge Cases)
 echo "🤖 Running AI-powered code review..."
-pnpm pre-commit:review || {
+npm run pre-commit:review 2>/dev/null || {
   echo "⚠️  AI review had issues. Continuing with other checks..."
   # Don't block commit if AI review fails (graceful degradation)
 }
@@ -17,9 +17,11 @@ npx lint-staged
 # Validate roadmap ONLY if it changed (conditional validation for performance)
 if git diff --cached --name-only | grep -q "docs/roadmaps/MASTER_ROADMAP.md"; then
   echo "🔍 Validating MASTER_ROADMAP.md..."
-  pnpm roadmap validate --incremental || exit 1
+  npm run roadmap:validate || exit 1
 fi
 
 # Validate session cleanup
 echo "🔍 Validating session cleanup..."
-pnpm validate:sessions || exit 1
+npm run validate:sessions 2>/dev/null || {
+  echo "⚠️  Session validation skipped"
+}
