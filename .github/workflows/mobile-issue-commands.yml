@@ -1,0 +1,113 @@
+name: Mobile Issue Commands
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  process-command:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Process agent:status command
+        if: contains(github.event.issue.labels.*.name, 'agent:status')
+        run: |
+          # Generate status report
+          echo "## 📊 Project Status" >> status.md
+          echo "" >> status.md
+          
+          # Count tasks
+          COMPLETE=$(grep -c "**Status:** complete" docs/roadmaps/MASTER_ROADMAP.md || echo "0")
+          IN_PROGRESS=$(grep -c "**Status:** in-progress" docs/roadmaps/MASTER_ROADMAP.md || echo "0")
+          READY=$(grep -c "**Status:** ready" docs/roadmaps/MASTER_ROADMAP.md || echo "0")
+          BLOCKED=$(grep -c "**Status:** blocked" docs/roadmaps/MASTER_ROADMAP.md || echo "0")
+          
+          echo "- ✅ Complete: $COMPLETE" >> status.md
+          echo "- 🔄 In Progress: $IN_PROGRESS" >> status.md
+          echo "- ⚪ Ready: $READY" >> status.md
+          echo "- 🔴 Blocked: $BLOCKED" >> status.md
+          echo "" >> status.md
+          echo "📊 [View Dashboard](https://evantenenbaum.github.io/TERP/dashboard.html)" >> status.md
+          
+          # Post as comment
+          gh issue comment ${{ github.event.issue.number }} --body-file status.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
+      - name: Process agent:dashboard command
+        if: contains(github.event.issue.labels.*.name, 'agent:dashboard')
+        run: |
+          npm install --legacy-peer-deps
+          npm run dashboard:html
+          
+          # Upload dashboard
+          echo "## 📊 Dashboard Generated" > comment.md
+          echo "" >> comment.md
+          echo "View dashboard:" >> comment.md
+          echo "- [GitHub Pages](https://evantenenbaum.github.io/TERP/dashboard.html)" >> comment.md
+          echo "- [Raw File](https://raw.githubusercontent.com/EvanTenenbaum/TERP/main/dashboard.html)" >> comment.md
+          
+          gh issue comment ${{ github.event.issue.number }} --body-file comment.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
+      - name: Process agent:tasks command
+        if: contains(github.event.issue.labels.*.name, 'agent:tasks')
+        run: |
+          echo "## 🔥 Ready High-Priority Tasks" > tasks.md
+          echo "" >> tasks.md
+          
+          # Extract ready high-priority tasks
+          grep -A 5 "^### [A-Z]" docs/roadmaps/MASTER_ROADMAP.md | \
+            grep -B 1 "**Status:** ready" | \
+            grep -B 2 "**Priority:** HIGH" | \
+            grep "^###" | \
+            head -10 >> tasks.md || echo "No tasks found" >> tasks.md
+          
+          gh issue comment ${{ github.event.issue.number }} --body-file tasks.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
+      - name: Process agent:execute command
+        if: contains(github.event.issue.labels.*.name, 'agent:execute')
+        run: |
+          # Extract task ID from issue body
+          TASK_ID=$(echo "${{ github.event.issue.body }}" | grep -oP "Task:\s*\K[A-Z]+-\d+" || echo "")
+          
+          if [ -z "$TASK_ID" ]; then
+            echo "## ❌ Error" > comment.md
+            echo "No task ID found. Please include 'Task: TASK-ID' in issue body." >> comment.md
+          else
+            echo "## 🚀 Task Execution Queued" > comment.md
+            echo "" >> comment.md
+            echo "Task: **$TASK_ID**" >> comment.md
+            echo "" >> comment.md
+            echo "This would trigger agent execution in production." >> comment.md
+            echo "For now, please run manually or use Slack bot." >> comment.md
+          fi
+          
+          gh issue comment ${{ github.event.issue.number }} --body-file comment.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
+      - name: Close issue after processing
+        if: |
+          contains(github.event.issue.labels.*.name, 'agent:status') ||
+          contains(github.event.issue.labels.*.name, 'agent:dashboard') ||
+          contains(github.event.issue.labels.*.name, 'agent:tasks')
+        run: |
+          gh issue close ${{ github.event.issue.number }} --comment "✅ Command processed"
+        env:
+          GH_TOKEN: ${{ github.token }}
