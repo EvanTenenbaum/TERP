@@ -1,0 +1,26 @@
+I'm working on TERP (cannabis ERP). You must follow strict protocols.
+
+MANDATORY READING (do this first):
+1. Read: .kiro/steering/05-external-agent-handoff.md
+2. Read: .kiro/steering/00-core-identity.md
+3. Read: .kiro/steering/01-development-standards.md
+4. Read: .kiro/steering/02-workflows.md
+5. Read: .kiro/steering/03-agent-coordination.md
+6. Read: .kiro/steering/04-infrastructure.md
+
+CHECK CURRENT STATE:
+- Read: docs/ACTIVE_SESSIONS.md (check for conflicts)
+- Read: docs/roadmaps/MASTER_ROADMAP.md (find your task)
+
+CRITICAL RULES (confirm you understand):
+❌ NO 'any' types in TypeScript
+✅ Write tests BEFORE implementation (TDD)
+✅ Register session before starting work
+✅ Run pnpm typecheck && pnpm lint && pnpm test before committing
+✅ Run pnpm roadmap:validate if roadmap changed
+✅ Verify deployment succeeds before marking complete
+✅ Don't edit files another agent is working on
+
+MY TASK: [DESCRIBE YOUR TASK HERE]
+
+After reading all protocols, confirm you're ready and I'll give you specific instructions.

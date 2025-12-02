@@ -4816,3 +4816,55 @@ Completes pricing feature set, enables price monitoring.
 - [ ] All tests passing
 - [ ] Zero TypeScript errors
 - [ ] Session archived
+
+---
+
+## 📊 AUDIT TASKS
+
+### AUDIT-001: Comprehensive System Code Review
+
+**Status:** in-progress  
+**Priority:** HIGH  
+**Estimate:** 8-12 hours  
+**Module:** Entire codebase  
+**Dependencies:** None  
+**Prompt:** `docs/reviews/KIRO_REVIEW_WORKFLOW.md`  
+**Session:** Session-20251202-AUDIT-001-comprehensive-review
+
+**Problem:** Need comprehensive understanding of entire system architecture, code quality, and improvement opportunities.
+
+**Objectives:**
+
+1. Map all system components (frontend, backend, database, integrations)
+2. Analyze code quality and identify technical debt
+3. Assess security, performance, and maintainability
+4. Create systematic improvement roadmap
+5. Document architecture and patterns
+
+**Deliverables:**
+
+- [x] Create review framework and workflow
+- [x] Create automated analysis script
+- [ ] Phase 1: Automated discovery (component inventory)
+- [ ] Phase 2: Architecture deep dive (frontend, backend, database)
+- [ ] Phase 3: Code quality analysis (TypeScript, React, testing)
+- [ ] Phase 4: Security & performance audit
+- [ ] Phase 5: Documentation & maintainability review
+- [ ] Phase 6: Integration & infrastructure review
+- [ ] Phase 7: Synthesis & improvement roadmap
+- [ ] Generate comprehensive reports
+- [ ] Create prioritized improvement tasks
+- [ ] Session archived
+
+**Review Outputs:**
+
+- `docs/reviews/REVIEW_SUMMARY.md` - Executive summary
+- `docs/reviews/COMPONENT_INVENTORY.md` - All components cataloged
+- `docs/reviews/FILE_ANALYSIS.md` - File-by-file metrics
+- `docs/reviews/ARCHITECTURE_REVIEW.md` - Architecture documentation
+- `docs/reviews/CODE_QUALITY_REPORT.md` - Quality assessment
+- `docs/reviews/SECURITY_AUDIT.md` - Security findings
+- `docs/reviews/PERFORMANCE_AUDIT.md` - Performance issues
+- `docs/reviews/TESTING_COVERAGE_REPORT.md` - Test coverage
+- `docs/reviews/TECHNICAL_DEBT_INVENTORY.md` - Debt catalog
+- `docs/reviews/IMPROVEMENT_ROADMAP.md` - Prioritized plan

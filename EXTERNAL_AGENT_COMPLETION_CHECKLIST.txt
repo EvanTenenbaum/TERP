@@ -1,0 +1,47 @@
+Before we finalize, please confirm you completed ALL of these:
+
+## Code Quality Checks
+□ Ran: pnpm typecheck (no errors)
+□ Ran: pnpm lint (no errors)
+□ Ran: pnpm test (all passing)
+□ No 'any' types in TypeScript
+□ All functions have explicit return types
+□ Tests written BEFORE implementation (TDD)
+
+## Session Management
+□ Created session file in docs/sessions/active/
+□ Registered in docs/ACTIVE_SESSIONS.md
+□ Moved session to docs/sessions/completed/
+□ Removed from docs/ACTIVE_SESSIONS.md
+□ Session file has complete handoff notes
+
+## Roadmap
+□ Updated docs/roadmaps/MASTER_ROADMAP.md
+□ Changed task status to "complete"
+□ Added commit hashes to task
+□ Ran: pnpm roadmap:validate (passed)
+
+## Git
+□ Commit messages follow format: type(scope): description
+□ Pulled latest before pushing
+□ No merge conflicts
+□ Pushed all changes
+
+## Deployment
+□ Deployment completed successfully
+□ Ran: curl https://terp-app-b9s35.ondigitalocean.app/health (returns 200)
+□ Tested feature in production
+□ No errors in runtime logs
+
+## Coordination
+□ Checked docs/ACTIVE_SESSIONS.md before starting
+□ Didn't edit files another agent was working on
+□ Updated session file with progress regularly
+
+---
+
+Please respond with:
+1. "✅ All checks complete" OR list which items are incomplete
+2. Show me your session file path
+3. Show me your commit hashes
+4. Confirm deployment status

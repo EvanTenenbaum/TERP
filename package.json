@@ -56,9 +56,11 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "dashboard": "tsx scripts/dashboard.ts",
-    "dashboard:html": "tsx scripts/generate-html-dashboard.ts && open dashboard.html"
+    "dashboard:html": "tsx scripts/generate-html-dashboard.ts && open dashboard.html",
+    "slack-bot:ai": "tsx scripts/slack-bot-ai.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",

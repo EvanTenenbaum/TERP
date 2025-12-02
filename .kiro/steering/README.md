@@ -17,6 +17,7 @@ These files are **automatically included** in every Kiro AI agent session. They 
 | `02-workflows.md` | Git, deployment, testing, session management workflows | Always |
 | `03-agent-coordination.md` | Multi-agent synchronization and conflict prevention | Always |
 | `04-infrastructure.md` | DigitalOcean deployment, database, monitoring | Always |
+| `05-external-agent-handoff.md` | Protocol for agents from other platforms (Claude, ChatGPT, etc.) | Manual |
 | `terp-master-protocol.md` | Roadmap Manager specific protocols | Always |
 
 ---
@@ -51,6 +52,15 @@ After reading steering files, agents should read their role-specific guide:
 - **PM Agent**: `agent-prompts/pm-agent.md`
 - **QA Agent**: `agent-prompts/qa-agent.md`
 - **Initiative Creator**: `agent-prompts/initiative-creator.md`
+
+### External Agent Handoff
+
+For agents working from **other platforms** (Claude, ChatGPT, etc.):
+- **Quick Start**: `EXTERNAL_AGENT_QUICK_START.md` (root directory)
+- **Full Protocol**: `.kiro/steering/05-external-agent-handoff.md`
+- **Onboarding Script**: `bash scripts/external-agent-onboard.sh`
+
+**Why needed**: External agents don't have automatic access to Kiro steering files, so they must read them manually and follow special handoff procedures.
 
 ---
 
