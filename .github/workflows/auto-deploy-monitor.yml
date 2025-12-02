@@ -1,0 +1,139 @@
+name: Auto Deploy Monitor & Self-Heal
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  monitor-and-heal:
+    name: Monitor Deployment & Auto-Heal
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "TERP Auto-Heal Bot"
+          git config --global user.email "bot@terp-deploy.local"
+      
+      - name: Wait for DigitalOcean to detect push
+        run: |
+          echo "⏳ Waiting 30 seconds for DigitalOcean to detect push..."
+          sleep 30
+      
+      - name: Run Auto Deploy Monitor & Self-Heal
+        id: monitor
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        run: |
+          chmod +x scripts/auto-deploy-heal.sh
+          ./scripts/auto-deploy-heal.sh || echo "FAILED=true" >> $GITHUB_OUTPUT
+      
+      - name: Create Issue on Failure
+        if: steps.monitor.outputs.FAILED == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commit = context.sha.substring(0, 7);
+            const title = `🚨 Deployment Failed: ${commit}`;
+            const body = `
+            ## Deployment Failure Report
+            
+            **Commit**: ${context.sha}
+            **Branch**: ${context.ref}
+            **Triggered by**: ${context.actor}
+            **Workflow**: ${context.workflow}
+            
+            ### Summary
+            
+            The automated deployment monitoring and self-healing system attempted to deploy this commit but failed after multiple attempts.
+            
+            ### Actions Taken
+            
+            - ✅ Monitored deployment automatically
+            - ✅ Analyzed failure logs
+            - ✅ Attempted automatic fixes (up to 3 attempts)
+            - ❌ All automatic fixes failed
+            
+            ### Next Steps
+            
+            1. Review the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId}) for detailed logs
+            2. Check DigitalOcean console for deployment status
+            3. Review build and deploy logs:
+               \`\`\`bash
+               ./scripts/terp-logs.sh build
+               ./scripts/terp-logs.sh deploy
+               \`\`\`
+            4. Verify environment variables are set correctly
+            5. Check database connectivity
+            6. Review recent code changes for issues
+            
+            ### Useful Commands
+            
+            \`\`\`bash
+            # Check app status
+            doctl apps list
+            
+            # View logs
+            doctl apps logs <APP_ID> --type build
+            doctl apps logs <APP_ID> --type deploy
+            
+            # Manual deployment trigger
+            doctl apps create-deployment <APP_ID>
+            \`\`\`
+            
+            ### Related
+            
+            - Commit: ${context.sha}
+            - Author: @${context.actor}
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['deployment', 'auto-heal-failed', 'urgent']
+            });
+      
+      - name: Comment on Commit
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const success = '${{ steps.monitor.outputs.FAILED }}' !== 'true';
+            const emoji = success ? '✅' : '❌';
+            const status = success ? 'succeeded' : 'failed';
+            const message = success 
+              ? 'Deployment completed successfully! 🎉'
+              : 'Deployment failed after multiple auto-heal attempts. Manual intervention required.';
+            
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `${emoji} **Deployment ${status}**\n\n${message}\n\n[View workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId})`
+            });

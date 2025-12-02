@@ -44,6 +44,22 @@ Traffic routed to new version
 
 ### Monitoring Deployment
 
+**Automatic (Recommended)**:
+```bash
+# Just push - auto-heal monitors and fixes automatically
+git push origin main
+
+# Monitor progress
+tail -f .deployment-status-*.log
+
+# System will:
+# 1. Monitor deployment
+# 2. Analyze failures
+# 3. Apply fixes automatically (up to 3 attempts)
+# 4. Stop on repeated errors to avoid loops
+```
+
+**Manual Monitoring**:
 ```bash
 # Check deployment status
 bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
@@ -56,7 +72,12 @@ cat .deployment-status-*.log
 
 # List active monitors
 bash scripts/manage-deployment-monitors.sh status
+
+# Run auto-heal manually
+./scripts/auto-deploy-heal.sh
 ```
+
+**See**: `docs/AUTO_DEPLOY_HEAL_GUIDE.md` for complete documentation
 
 
 ### Using doctl CLI
