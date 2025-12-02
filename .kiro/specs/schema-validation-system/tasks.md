@@ -237,7 +237,7 @@
   - **Property 32: Schema-Specific Direct Comparison**
   - **Validates: Requirements 7.4, 7.5**
 
-- [-] 13. Checkpoint - Ensure all tests pass
+- [x] 13. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 14. Manual testing and validation
