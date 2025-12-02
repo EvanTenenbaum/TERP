@@ -1,6 +1,12 @@
 name: terp
 region: nyc
 
+databases:
+  - name: terp-mysql-db
+    engine: MYSQL
+    production: true
+    cluster_name: terp-mysql-db
+
 services:
   - name: web
     github:
@@ -78,10 +84,10 @@ services:
         value: sk_test_gLGRGGDzMjmxvYMdxTfPuRQQeUMpvbOQkJBKBJCZBD
         scope: RUN_TIME
       
-      # Database connection (set actual value in DO control panel)
+      # Database connection (automatically injected from linked database)
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
-        type: SECRET
+        value: ${terp-mysql-db.DATABASE_URL}
       
       # Auth secrets (set actual values in DO control panel)
       - key: NEXTAUTH_SECRET
