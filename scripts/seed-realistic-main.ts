@@ -272,10 +272,29 @@ export async function seedRealisticData() {
       const batch = ordersData.slice(i, i + batchSize);
       await db.insert(orders).values(batch);
     }
+    
+    // Fetch actual inserted order IDs (critical for returns FK relationship)
+    const insertedOrders = await db.select({
+      id: orders.id,
+      clientId: orders.clientId,
+      createdAt: orders.createdAt,
+      total: orders.total,
+      items: orders.items,
+    }).from(orders).orderBy(orders.id);
+    
+    if (insertedOrders.length !== ordersData.length) {
+      console.warn(`   ⚠️  Order insertion mismatch: expected ${ordersData.length}, got ${insertedOrders.length}`);
+    }
+    
+    // Map database IDs back to ordersData for downstream use
+    const ordersWithIds = insertedOrders.map((dbOrder, index) => ({
+      ...ordersData[index],
+      id: dbOrder.id,
+    }));
 
     // Step 8: Generate Invoices
     console.log("💵 Generating invoices...");
-    const invoicesData = generateInvoices(ordersData);
+    const invoicesData = generateInvoices(ordersWithIds);
     console.log(`   ✓ ${invoicesData.length} invoices created\n`);
 
     for (let i = 0; i < invoicesData.length; i += batchSize) {
@@ -285,7 +304,7 @@ export async function seedRealisticData() {
 
     // Step 9: Generate Returns
     console.log("↩️  Generating returns...");
-    const returnsData = generateReturns(ordersData);
+    const returnsData = generateReturns(ordersWithIds);
     console.log(`   ✓ ${returnsData.length} returns created\n`);
 
     if (returnsData.length > 0) {
@@ -299,7 +318,7 @@ export async function seedRealisticData() {
     // TODO: Refunds should be inserted into transactions table, not orders
     // Commenting out for now until proper refunds implementation
     console.log("💸 Generating refunds...");
-    const refundsData = generateRefunds(ordersData);
+    const refundsData = generateRefunds(ordersWithIds);
     console.log(
       `   ✓ ${refundsData.length} refunds created (not inserted - needs transactions table)\n`
     );
