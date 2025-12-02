@@ -9,6 +9,20 @@
 
 ---
 
+## ⚠️ IMPORTANT: This is a Planning Document
+
+**This initiative is for PLANNING ONLY. All executable work MUST be in MASTER_ROADMAP.md.**
+
+**Workflow**:
+1. This document defines goals, phases, and high-level tasks
+2. Tasks are converted to MASTER_ROADMAP.md when ready to execute
+3. Agents work from MASTER_ROADMAP.md (single source of truth)
+4. This document is NOT updated during execution
+
+**See**: `docs/protocols/INITIATIVE_TO_ROADMAP_WORKFLOW.md` for complete workflow
+
+---
+
 ## Executive Summary
 
 Based on the comprehensive code review completed December 2, 2025, this initiative addresses critical gaps in performance, test coverage, and code quality. The system currently scores 7.5/10 overall, with strong security (8/10) but needs improvement in performance (6/10) and testing (5/10).

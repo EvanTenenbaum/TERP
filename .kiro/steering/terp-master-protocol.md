@@ -27,6 +27,7 @@ You must follow ALL protocols in:
 - `.kiro/steering/02-workflows.md` - Git, deployment, testing workflows
 - `.kiro/steering/03-agent-coordination.md` - Multi-agent coordination
 - `.kiro/steering/04-infrastructure.md` - Deployment and infrastructure
+- `docs/protocols/INITIATIVE_TO_ROADMAP_WORKFLOW.md` - Initiative and roadmap workflow
 
 ## Key Context Files
 
@@ -176,11 +177,13 @@ pnpm validate:sessions
 
 ## Roadmap Management
 
-1. **No Hallucinations**: Never invent task IDs - always check the file
-2. **No Broken Links**: Verify prompt files exist in `docs/prompts/`
-3. **No Stale Sessions**: Archive completed sessions to `docs/sessions/completed/`
-4. **Format Compliance**: Use exact validator-required formats
-5. **Validation Required**: Run `pnpm roadmap:validate` before every commit
+1. **Single Source of Truth**: MASTER_ROADMAP.md is the ONLY place for executable tasks
+2. **No Hallucinations**: Never invent task IDs - always check the file
+3. **No Broken Links**: Verify prompt files exist in `docs/prompts/`
+4. **No Stale Sessions**: Archive completed sessions to `docs/sessions/completed/`
+5. **Format Compliance**: Use exact validator-required formats
+6. **Validation Required**: Run `pnpm roadmap:validate` before every commit
+7. **Initiative Workflow**: Follow `docs/protocols/INITIATIVE_TO_ROADMAP_WORKFLOW.md` for large initiatives
 
 ## Session Management
 
