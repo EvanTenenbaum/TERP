@@ -171,3 +171,57 @@ Every session should improve the codebase, not just add to it. Actively refactor
 - **Readable**: Maintain comments and clear naming—don't sacrifice clarity for LoC
 
 Leave the code cleaner than you found it: fewer LoC through better abstractions.
+
+
+---
+
+## 🔐 DigitalOcean API Token Management
+
+**Issue:** DigitalOcean API tokens in documentation may be expired or invalid.
+
+**Protocol for Agents:**
+
+### When DigitalOcean CLI Access is Needed
+
+1. **Check for valid token:**
+   ```bash
+   doctl auth init -t $DIGITALOCEAN_API_TOKEN
+   ```
+
+2. **If authentication fails:**
+   - **DO NOT** assume the token in documentation is valid
+   - **DO NOT** attempt to use expired tokens repeatedly
+   - **DO** request a new token from the user
+   - **DO** offer alternative solutions (manual configuration via web console)
+
+3. **Request token from user:**
+   ```
+   I need a valid DigitalOcean API token to configure the app via CLI.
+   
+   To get a token:
+   1. Go to https://cloud.digitalocean.com/account/api/tokens
+   2. Generate a new Personal Access Token with Write scope
+   3. Provide the token (starts with dop_v1_)
+   
+   Alternatively, I can guide you through manual configuration in the DigitalOcean console.
+   ```
+
+4. **Alternative: Guide user through manual configuration**
+   - Provide step-by-step instructions for DigitalOcean web console
+   - Include exact variable names, values, and scopes
+   - Link to the specific app settings page
+
+### Security Best Practices
+
+- **NEVER** commit DigitalOcean API tokens to the repository
+- **ALWAYS** use environment variables or GitHub Secrets
+- **DOCUMENT** the process of obtaining tokens, not the tokens themselves
+- **ROTATE** tokens regularly for security
+
+### Reference Documentation
+
+See `docs/DIGITALOCEAN_API_TOKEN_ISSUE.md` for complete details on:
+- Why tokens expire
+- How to obtain new tokens
+- Alternative methods when tokens are unavailable
+- Security best practices
