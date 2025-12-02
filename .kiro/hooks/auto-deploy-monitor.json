@@ -1,0 +1,15 @@
+{
+  "name": "Auto Deploy Monitor & Self-Heal",
+  "description": "Monitors DigitalOcean deployment after push to main, automatically debugs and fixes failures",
+  "trigger": {
+    "type": "on_agent_complete",
+    "filter": {
+      "messageContains": ["push", "main", "deploy"]
+    }
+  },
+  "action": {
+    "type": "send_message",
+    "message": "🚀 Deployment to main detected. Starting automated monitoring and self-healing...\n\n**Instructions:**\n1. Monitor the deployment using `./scripts/watch-deploy.sh`\n2. If deployment fails, analyze logs to identify the issue\n3. Attempt automatic fix (max 3 attempts)\n4. For each attempt:\n   - Read deployment logs: `./scripts/terp-logs.sh deploy`\n   - Read build logs: `./scripts/terp-logs.sh build`\n   - Identify root cause\n   - Apply fix\n   - Commit with `fix(deploy): [description]`\n   - Push and monitor again\n5. If all attempts fail, report to user with detailed analysis\n6. Track attempts to avoid infinite loops\n\n**Safety limits:**\n- Max attempts: 3\n- Timeout per attempt: 10 minutes\n- Stop if same error repeats 2 times\n\n**Common fixes:**\n- Build errors: Check TypeScript errors, missing deps\n- Runtime errors: Check env vars, database connection\n- Timeout errors: Optimize build, check resource limits\n\nStart monitoring now."
+  },
+  "enabled": true
+}

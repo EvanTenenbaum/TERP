@@ -16,7 +16,7 @@ elif [ -f "$HOME/.bashrc" ]; then
 fi
 
 echo ""
-echo "🚀 Post-push: Starting deployment monitoring (non-blocking)..."
+echo "🚀 Post-push: Starting automated deployment monitoring with self-healing..."
 echo ""
 
 # Get the commit SHA that was just pushed
@@ -70,10 +70,15 @@ else
   echo "ℹ️  Database check skipped (credentials not available)"
 fi
 
-# Start background monitoring (non-blocking)
-if [ -f "scripts/monitor-deployment-auto.sh" ]; then
-  # Run in background, write status to file
-  nohup bash scripts/monitor-deployment-auto.sh "$COMMIT_SHA" > "$STATUS_FILE" 2>&1 &
+# Check if auto-heal script exists
+if [ -f "scripts/auto-deploy-heal.sh" ]; then
+  echo "🤖 Auto-heal enabled: Will monitor and fix deployment failures automatically"
+  echo "   Max attempts: 3"
+  echo "   Safety: Stops on repeated errors to avoid loops"
+  echo ""
+  
+  # Run auto-heal in background
+  nohup bash scripts/auto-deploy-heal.sh > "$STATUS_FILE" 2>&1 &
   MONITOR_PID=$!
   
   # Save PID
@@ -82,18 +87,36 @@ if [ -f "scripts/monitor-deployment-auto.sh" ]; then
   # Remove lock file
   rm -f "$LOCK_FILE"
   
-  echo "📊 Monitoring deployment in background (PID: $MONITOR_PID)"
+  echo "📊 Auto-heal monitoring started (PID: $MONITOR_PID)"
   echo "   Status file: $STATUS_FILE"
   echo "   Check status: tail -f $STATUS_FILE"
   echo "   Stop monitoring: kill $MONITOR_PID"
   echo ""
-  echo "💡 Tip: Deployment typically takes 3-5 minutes"
-  echo "   You can continue working - check status when ready"
+  echo "💡 The system will:"
+  echo "   1. Monitor deployment progress"
+  echo "   2. Analyze failures automatically"
+  echo "   3. Apply fixes and retry (up to 3 times)"
+  echo "   4. Stop if same error repeats"
+  echo ""
+  echo "🎯 You can continue working - the system will handle deployment"
+  echo ""
+  
+elif [ -f "scripts/monitor-deployment-auto.sh" ]; then
+  # Fallback to basic monitoring (no auto-heal)
+  echo "📊 Basic monitoring enabled (no auto-heal)"
+  nohup bash scripts/monitor-deployment-auto.sh "$COMMIT_SHA" > "$STATUS_FILE" 2>&1 &
+  MONITOR_PID=$!
+  
+  echo "$MONITOR_PID" > "$PID_FILE"
+  rm -f "$LOCK_FILE"
+  
+  echo "📊 Monitoring deployment in background (PID: $MONITOR_PID)"
+  echo "   Status file: $STATUS_FILE"
   echo ""
 else
   rm -f "$LOCK_FILE"
-  echo "⚠️  Warning: Deployment monitoring script not found"
-  echo "   Run manually: bash scripts/monitor-deployment-auto.sh $COMMIT_SHA"
+  echo "⚠️  Warning: Deployment monitoring scripts not found"
+  echo "   Run manually: bash scripts/auto-deploy-heal.sh"
 fi
 
 exit 0  # Never block push
