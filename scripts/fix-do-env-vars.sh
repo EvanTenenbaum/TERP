@@ -19,21 +19,37 @@ BACKUP_FILE="/tmp/terp-spec-backup-$(date +%Y%m%d-%H%M%S).json"
 cp /tmp/terp-current-spec.json "$BACKUP_FILE"
 echo "✅ Backed up current spec to: $BACKUP_FILE"
 
-# Extract existing SECRET values
-echo "🔍 Extracting existing SECRET values..."
-DATABASE_URL_SECRET=$(cat /tmp/terp-current-spec.json | jq -r '.services[0].envs[] | select(.key == "DATABASE_URL" and .type == "SECRET") | .value')
+# Extract existing values
+echo "🔍 Extracting existing values..."
+CLERK_PUB_KEY=$(cat /tmp/terp-current-spec.json | jq -r '.services[0].envs[] | select(.key == "VITE_CLERK_PUBLISHABLE_KEY") | .value // empty')
+CLERK_SECRET=$(cat /tmp/terp-current-spec.json | jq -r '.services[0].envs[] | select(.key == "CLERK_SECRET_KEY") | .value // empty')
 NEXTAUTH_SECRET=$(cat /tmp/terp-current-spec.json | jq -r '.services[0].envs[] | select(.key == "NEXTAUTH_SECRET") | .value')
 NEXTAUTH_URL=$(cat /tmp/terp-current-spec.json | jq -r '.services[0].envs[] | select(.key == "NEXTAUTH_URL") | .value')
 SENTRY_DSN=$(cat /tmp/terp-current-spec.json | jq -r '.services[0].envs[] | select(.key == "SENTRY_DSN") | .value')
 CRON_SECRET=$(cat /tmp/terp-current-spec.json | jq -r '.services[0].envs[] | select(.key == "CRON_SECRET") | .value')
 PAPERTRAIL=$(cat /tmp/terp-current-spec.json | jq -r '.services[0].envs[] | select(.key == "PAPERTRAIL_ENDPOINT") | .value')
 
-echo "✅ Extracted existing secrets"
+# If Clerk keys don't exist, read from .env or .do/app.yaml
+if [ -z "$CLERK_PUB_KEY" ]; then
+  echo "⚠️  VITE_CLERK_PUBLISHABLE_KEY not found in current spec"
+  echo "   You'll need to set it manually in DigitalOcean console"
+  CLERK_PUB_KEY="NEEDS_TO_BE_SET"
+fi
+
+if [ -z "$CLERK_SECRET" ]; then
+  echo "⚠️  CLERK_SECRET_KEY not found in current spec"
+  echo "   You'll need to set it manually in DigitalOcean console"
+  CLERK_SECRET="NEEDS_TO_BE_SET"
+fi
+
+echo "✅ Extracted existing values"
 
 # Update the spec using jq
 echo "🔄 Building corrected environment configuration..."
 
-cat /tmp/terp-current-spec.json | jq --arg db_url "$DATABASE_URL_SECRET" \
+cat /tmp/terp-current-spec.json | jq \
+  --arg clerk_pub "$CLERK_PUB_KEY" \
+  --arg clerk_secret "$CLERK_SECRET" \
   --arg nextauth_secret "$NEXTAUTH_SECRET" \
   --arg nextauth_url "$NEXTAUTH_URL" \
   --arg sentry "$SENTRY_DSN" \
@@ -52,9 +68,9 @@ cat /tmp/terp-current-spec.json | jq --arg db_url "$DATABASE_URL_SECRET" \
     {"key": "VITE_APP_LOGO", "value": "/logo.png", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
     {"key": "VITE_APP_ID", "value": "terp-app", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
     
-    # Clerk auth
-    {"key": "VITE_CLERK_PUBLISHABLE_KEY", "value": "pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
-    {"key": "CLERK_SECRET_KEY", "value": "sk_test_gLGRGGDzMjmxvYMdxTfPuRQQeUMpvbOQkJBKBJCZBD", "scope": "RUN_TIME", "type": "PLAIN"},
+    # Clerk auth (preserve from current spec)
+    {"key": "VITE_CLERK_PUBLISHABLE_KEY", "value": $clerk_pub, "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
+    {"key": "CLERK_SECRET_KEY", "value": $clerk_secret, "scope": "RUN_TIME", "type": "PLAIN"},
     
     # Database - SINGLE ENTRY ONLY (using managed database reference)
     {"key": "DATABASE_URL", "value": "${terp-mysql-db.DATABASE_URL}", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
