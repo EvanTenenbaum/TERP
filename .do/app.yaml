@@ -89,7 +89,11 @@ services:
         scope: RUN_AND_BUILD_TIME
         value: ${terp-mysql-db.DATABASE_URL}
       
-      # Auth secrets (set actual values in DO control panel)
+      # Auth secrets (JWT_SECRET is required, NEXTAUTH_SECRET kept for backward compatibility)
+      - key: JWT_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      
       - key: NEXTAUTH_SECRET
         scope: RUN_TIME
         type: SECRET
