@@ -402,6 +402,54 @@ curl -X PUT \
 **Problem:** Migration errors  
 **Solution:** Run `pnpm db:push` to sync schema
 
+## Schema Validation
+
+To ensure the Drizzle ORM schema matches the actual database structure, use the schema validation tools:
+
+### Validate Schema
+
+Run comprehensive schema validation to check for drift between Drizzle definitions and the actual MySQL database:
+
+```bash
+pnpm validate:schema
+```
+
+This generates two reports:
+
+- `SCHEMA_VALIDATION_REPORT.md` - Human-readable report
+- `schema-validation-report.json` - Machine-readable report
+
+### Generate Fix Recommendations
+
+Generate recommended fixes for schema drift issues:
+
+```bash
+pnpm fix:schema:report
+```
+
+This generates `SCHEMA_DRIFT_FIXES.md` with specific code changes needed.
+
+### Verify Fixes
+
+After applying schema fixes, verify they were applied correctly:
+
+```bash
+pnpm validate:schema:fixes
+```
+
+### Critical Tables for Seeding
+
+The following tables must have accurate schema definitions before seeding:
+
+- `inventoryMovements`
+- `orderStatusHistory`
+- `invoices`
+- `ledgerEntries`
+- `payments`
+- `clientActivity`
+
+See `CONSULTANT_ANALYSIS_SEEDING_STRATEGY.md` for details on why schema validation is critical.
+
 ### Build Issues
 
 **Problem:** TypeScript errors  
@@ -586,4 +634,5 @@ Proprietary - All rights reserved
 **Built with ❤️ by Manus AI**
 
 For questions or support, see [DEPLOYMENT_STATUS.md](./docs/DEPLOYMENT_STATUS.md) or [CLERK_AUTHENTICATION.md](./docs/CLERK_AUTHENTICATION.md)
+
 # Trigger deployment to pick up DATABASE_URL

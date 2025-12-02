@@ -1,7 +1,18 @@
+/**
+ * DEPRECATED: This script only checks 2-3 specific known issues.
+ * Use scripts/validate-schema-comprehensive.ts for full schema validation.
+ *
+ * This script is kept for backwards compatibility and quick checks.
+ * Run: pnpm validate:schema for comprehensive validation.
+ */
+
 import { db } from "./db-sync.js";
 import { sql } from "drizzle-orm";
 
 async function validateSchemaSync() {
+  console.warn(
+    "⚠️  This is a basic validation script. For comprehensive validation, run: pnpm validate:schema\n"
+  );
   console.log("🔍 Validating schema sync...\n");
 
   const issues: string[] = [];
@@ -27,16 +38,18 @@ async function validateSchemaSync() {
     FROM information_schema.COLUMNS
     WHERE TABLE_NAME = 'inventoryMovements'
   `);
-  const invMovColumnNames = (invMovColumns[0] as Array<{ COLUMN_NAME: string }>).map(c => c.COLUMN_NAME);
-  
-  if (!invMovColumnNames.includes('reason')) {
+  const invMovColumnNames = (
+    invMovColumns[0] as Array<{ COLUMN_NAME: string }>
+  ).map(c => c.COLUMN_NAME);
+
+  if (!invMovColumnNames.includes("reason")) {
     issues.push("❌ inventoryMovements missing reason column");
   } else {
     console.log("✅ inventoryMovements.reason exists");
   }
-  
+
   // Check for inventoryMovementType column
-  if (!invMovColumnNames.includes('inventoryMovementType')) {
+  if (!invMovColumnNames.includes("inventoryMovementType")) {
     issues.push("❌ inventoryMovements missing inventoryMovementType column");
   } else {
     console.log("✅ inventoryMovements.inventoryMovementType exists");
