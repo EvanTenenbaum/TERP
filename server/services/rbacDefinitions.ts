@@ -60,8 +60,9 @@ export const ROLES = [
 // ============================================================================
 
 export const PERMISSIONS = [
-  // Dashboard & Analytics (10)
+  // Dashboard & Analytics (11)
   { name: "dashboard:access", description: "Can access the dashboard", module: "dashboard" },
+  { name: "dashboard:read", description: "Can read dashboard data and widgets", module: "dashboard" },
   { name: "dashboard:view_kpis", description: "Can view KPI metrics", module: "dashboard" },
   { name: "dashboard:customize", description: "Can customize dashboard layout", module: "dashboard" },
   { name: "dashboard:preferences:edit", description: "Can edit dashboard preferences", module: "dashboard" },
@@ -373,6 +374,7 @@ export const superAdminPermissions = PERMISSIONS.map((p) => p.name);
 // Owner/Executive: Read-only access to all modules
 export const ownerExecutivePermissions = [
   "dashboard:access",
+  "dashboard:read",
   "dashboard:view_kpis",
   "dashboard:customize",
   "analytics:access",
@@ -417,6 +419,7 @@ export const ownerExecutivePermissions = [
 // Operations Manager: Full access to inventory, orders, POs, vendors, returns
 export const operationsManagerPermissions = [
   "dashboard:access",
+  "dashboard:read",
   "dashboard:view_kpis",
   "dashboard:customize",
   "analytics:access",
@@ -512,6 +515,7 @@ export const operationsManagerPermissions = [
 // Sales Manager: Full access to clients, orders, quotes, sales sheets
 export const salesManagerPermissions = [
   "dashboard:access",
+  "dashboard:read",
   "dashboard:view_kpis",
   "dashboard:customize",
   "analytics:access",
@@ -596,6 +600,7 @@ export const salesManagerPermissions = [
 // Accountant: Full access to accounting, credits, COGS, bad debt
 export const accountantPermissions = [
   "dashboard:access",
+  "dashboard:read",
   "dashboard:view_kpis",
   "analytics:access",
   "analytics:view_reports",
@@ -667,6 +672,7 @@ export const accountantPermissions = [
 // Inventory Manager: Full access to inventory, locations, transfers, product intake
 export const inventoryManagerPermissions = [
   "dashboard:access",
+  "dashboard:read",
   "dashboard:view_kpis",
   "analytics:access",
   "analytics:view_reports",
@@ -741,6 +747,7 @@ export const inventoryManagerPermissions = [
 // Buyer/Procurement: Full access to POs, vendors, vendor supply
 export const buyerProcurementPermissions = [
   "dashboard:access",
+  "dashboard:read",
   "dashboard:view_kpis",
   "analytics:access",
   "analytics:view_reports",
@@ -796,6 +803,7 @@ export const buyerProcurementPermissions = [
 // Customer Service: Full access to clients, orders, returns, refunds
 export const customerServicePermissions = [
   "dashboard:access",
+  "dashboard:read",
   "dashboard:view_kpis",
   "clients:access",
   "clients:read",
@@ -866,6 +874,7 @@ export const customerServicePermissions = [
 // Warehouse Staff: Can receive POs, adjust inventory, transfer inventory, process returns
 export const warehouseStaffPermissions = [
   "dashboard:access",
+  "dashboard:read",
   "dashboard:view_kpis",
   "clients:access",
   "clients:read",
@@ -906,6 +915,7 @@ export const warehouseStaffPermissions = [
 // Read-Only Auditor: Read-only access to all modules + full access to audit logs
 export const readOnlyAuditorPermissions = [
   "dashboard:access",
+  "dashboard:read",
   "dashboard:view_kpis",
   "analytics:access",
   "analytics:view_reports",

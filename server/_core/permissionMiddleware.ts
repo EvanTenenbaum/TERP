@@ -2,6 +2,23 @@ import { TRPCError } from "@trpc/server";
 import { middleware } from "./trpc";
 import { hasPermission, hasAllPermissions, hasAnyPermission, isSuperAdmin } from "../services/permissionService";
 import { logger } from "./logger";
+import { env } from "./env";
+
+// Public demo user constants
+const PUBLIC_USER_EMAIL = env.PUBLIC_DEMO_USER_EMAIL || "demo+public@terp-app.local";
+const PUBLIC_USER_OPEN_ID = env.PUBLIC_DEMO_USER_ID || "public-demo-user";
+
+/**
+ * Check if a user is the public demo user
+ * Matches by openId, email, or the synthetic id of -1
+ */
+function isPublicDemoUser(user: { id: number; openId: string; email: string }): boolean {
+  return (
+    user.id === -1 ||
+    user.openId === PUBLIC_USER_OPEN_ID ||
+    user.email === PUBLIC_USER_EMAIL
+  );
+}
 
 /**
  * Permission Checking Middleware for tRPC
@@ -13,6 +30,7 @@ import { logger } from "./logger";
  * 3. requireAnyPermission - Requires ANY of the specified permissions
  * 
  * Super Admins bypass all permission checks.
+ * Public demo users get automatic read permissions.
  */
 
 /**
@@ -41,16 +59,18 @@ export function requirePermission(permissionName: string) {
       });
     }
 
-    // Public demo user (id: -1) gets read permissions automatically
-    if (ctx.user.id === -1 && permissionName.endsWith(':read')) {
+    // Public demo user gets read permissions automatically
+    if (isPublicDemoUser(ctx.user) && permissionName.endsWith(':read')) {
       logger.debug({ 
         msg: "Permission granted to public user for read operation", 
-        permission: permissionName 
+        permission: permissionName,
+        userId: ctx.user.id,
+        email: ctx.user.email
       });
       return next({ ctx });
     }
 
-    const userId = ctx.user.openId; // Use Clerk user ID
+    const userId = ctx.user.openId; // Use user's openId
 
     // Super Admins bypass all permission checks
     const isSA = await isSuperAdmin(userId);
@@ -114,14 +134,16 @@ export function requireAllPermissions(permissionNames: string[]) {
       });
     }
 
-    // Public demo user (id: -1) gets read permissions automatically
-    if (ctx.user.id === -1) {
+    // Public demo user gets read permissions automatically
+    if (isPublicDemoUser(ctx.user)) {
       // Check if ALL required permissions are read permissions
       const allReadPermissions = permissionNames.every(p => p.endsWith(':read'));
       if (allReadPermissions) {
         logger.debug({ 
           msg: "Permission granted to public user for read operations", 
-          permissions: permissionNames 
+          permissions: permissionNames,
+          userId: ctx.user.id,
+          email: ctx.user.email
         });
         return next({ ctx });
       } else {
@@ -197,14 +219,16 @@ export function requireAnyPermission(permissionNames: string[]) {
       });
     }
 
-    // Public demo user (id: -1) gets read permissions automatically
-    if (ctx.user.id === -1) {
+    // Public demo user gets read permissions automatically
+    if (isPublicDemoUser(ctx.user)) {
       // Check if ANY required permission is a read permission
       const hasReadPermission = permissionNames.some(p => p.endsWith(':read'));
       if (hasReadPermission) {
         logger.debug({ 
           msg: "Permission granted to public user for read operation", 
-          permissions: permissionNames 
+          permissions: permissionNames,
+          userId: ctx.user.id,
+          email: ctx.user.email
         });
         return next({ ctx });
       } else {
