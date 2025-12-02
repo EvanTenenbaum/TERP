@@ -177,9 +177,13 @@ async function startServer() {
         success: true,
         user: {
           id: context.user.id,
+          openId: context.user.openId,
           email: context.user.email,
           role: context.user.role,
         },
+        isPublicDemoUser: context.user.id === -1 || 
+          context.user.openId === "public-demo-user" || 
+          context.user.email === "demo+public@terp-app.local",
         message: "createContext called successfully",
       });
     } catch (error) {

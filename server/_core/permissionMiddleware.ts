@@ -60,8 +60,20 @@ export function requirePermission(permissionName: string) {
     }
 
     // Public demo user gets read permissions automatically
-    if (isPublicDemoUser(ctx.user) && permissionName.endsWith(':read')) {
-      logger.debug({ 
+    const isPublic = isPublicDemoUser(ctx.user);
+    logger.debug({
+      msg: "Permission check - public user check",
+      isPublic,
+      userId: ctx.user.id,
+      openId: ctx.user.openId,
+      email: ctx.user.email,
+      expectedOpenId: PUBLIC_USER_OPEN_ID,
+      expectedEmail: PUBLIC_USER_EMAIL,
+      permission: permissionName,
+    });
+    
+    if (isPublic && permissionName.endsWith(':read')) {
+      logger.info({ 
         msg: "Permission granted to public user for read operation", 
         permission: permissionName,
         userId: ctx.user.id,
