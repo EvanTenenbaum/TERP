@@ -1,8 +1,8 @@
 FROM node:20-slim AS base
 
-# Force rebuild: 2025-11-25-v4
-LABEL build.version="2025-11-25-v4" \
-      build.description="JWT_SECRET fallback + non-fatal seeding fix"
+# Force rebuild: 2025-12-02-BUG-002-FIX
+LABEL build.version="2025-12-02-BUG-002-FIX" \
+      build.description="Fix frontend build failure - add missing VITE env vars"
 
 # Install corepack/pnpm and system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
