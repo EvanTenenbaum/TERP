@@ -41,6 +41,28 @@ services:
       - key: UPLOAD_DIR
         value: /tmp/uploads
       
+      # Vite frontend environment variables (required for build)
+      - key: VITE_APP_TITLE
+        value: TERP
+        scope: RUN_AND_BUILD_TIME
+      
+      - key: VITE_APP_LOGO
+        value: /logo.png
+        scope: RUN_AND_BUILD_TIME
+      
+      - key: VITE_APP_ID
+        value: terp-app
+        scope: RUN_AND_BUILD_TIME
+      
+      # Clerk authentication (using test keys - update to production keys in DO control panel)
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        value: pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA
+        scope: RUN_AND_BUILD_TIME
+      
+      - key: CLERK_SECRET_KEY
+        value: sk_test_gLGRGGDzMjmxvYMdxTfPuRQQeUMpvbOQkJBKBJCZBD
+        scope: RUN_TIME
+      
       # Database connection (set actual value in DO control panel)
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
