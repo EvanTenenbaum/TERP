@@ -56,26 +56,26 @@ cat /tmp/terp-current-spec.json | jq \
   --arg cron "$CRON_SECRET" \
   --arg papertrail "$PAPERTRAIL" '
   .services[0].envs = [
-    # Basic config
-    {"key": "NODE_ENV", "value": "production", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
-    {"key": "RATE_LIMIT_GET", "value": "1000", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
-    {"key": "ENABLE_RBAC", "value": "true", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
-    {"key": "ENABLE_QA_CRONS", "value": "true", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
-    {"key": "UPLOAD_DIR", "value": "/tmp/uploads", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
+    # Basic config (no type field for non-secrets)
+    {"key": "NODE_ENV", "value": "production", "scope": "RUN_AND_BUILD_TIME"},
+    {"key": "RATE_LIMIT_GET", "value": "1000", "scope": "RUN_AND_BUILD_TIME"},
+    {"key": "ENABLE_RBAC", "value": "true", "scope": "RUN_AND_BUILD_TIME"},
+    {"key": "ENABLE_QA_CRONS", "value": "true", "scope": "RUN_AND_BUILD_TIME"},
+    {"key": "UPLOAD_DIR", "value": "/tmp/uploads", "scope": "RUN_AND_BUILD_TIME"},
     
     # Vite frontend variables (required for build)
-    {"key": "VITE_APP_TITLE", "value": "TERP", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
-    {"key": "VITE_APP_LOGO", "value": "/logo.png", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
-    {"key": "VITE_APP_ID", "value": "terp-app", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
+    {"key": "VITE_APP_TITLE", "value": "TERP", "scope": "RUN_AND_BUILD_TIME"},
+    {"key": "VITE_APP_LOGO", "value": "/logo.png", "scope": "RUN_AND_BUILD_TIME"},
+    {"key": "VITE_APP_ID", "value": "terp-app", "scope": "RUN_AND_BUILD_TIME"},
     
     # Clerk auth (preserve from current spec)
-    {"key": "VITE_CLERK_PUBLISHABLE_KEY", "value": $clerk_pub, "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
-    {"key": "CLERK_SECRET_KEY", "value": $clerk_secret, "scope": "RUN_TIME", "type": "PLAIN"},
+    {"key": "VITE_CLERK_PUBLISHABLE_KEY", "value": $clerk_pub, "scope": "RUN_AND_BUILD_TIME"},
+    {"key": "CLERK_SECRET_KEY", "value": $clerk_secret, "scope": "RUN_TIME"},
     
     # Database - SINGLE ENTRY ONLY (using managed database reference)
-    {"key": "DATABASE_URL", "value": "${terp-mysql-db.DATABASE_URL}", "scope": "RUN_AND_BUILD_TIME", "type": "PLAIN"},
+    {"key": "DATABASE_URL", "value": "${terp-mysql-db.DATABASE_URL}", "scope": "RUN_AND_BUILD_TIME"},
     
-    # Auth & Security secrets (preserve existing values)
+    # Auth & Security secrets (preserve existing values - type: SECRET required)
     {"key": "NEXTAUTH_SECRET", "value": $nextauth_secret, "scope": "RUN_TIME", "type": "SECRET"},
     {"key": "NEXTAUTH_URL", "value": $nextauth_url, "scope": "RUN_TIME", "type": "SECRET"},
     

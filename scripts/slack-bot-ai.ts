@@ -1,6 +1,7 @@
-import { App, LogLevel } from '@slack/bolt';
-import Anthropic from '@anthropic-ai/sdk';
-import * as dotenv from 'dotenv';
+import pkg from '@slack/bolt';
+const { App, LogLevel } = pkg;
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
@@ -9,10 +10,9 @@ import { promisify } from 'util';
 dotenv.config();
 const execAsync = promisify(exec);
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Initialize Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
 // Initialize Slack app
 const app = new App({
@@ -105,15 +105,15 @@ async function getRecentActivity(): Promise<string> {
   }
 }
 
-// Chat with Claude
-async function chatWithClaude(userMessage: string, userId: string): Promise<string> {
+// Chat with Gemini
+async function chatWithGemini(userMessage: string, userId: string): Promise<string> {
   try {
     // Load full project context
     const projectContext = loadProjectContext();
     const recentActivity = await getRecentActivity();
     
-    // Build system prompt
-    const systemPrompt = `${projectContext}${recentActivity}
+    // Build system instruction
+    const systemInstruction = `${projectContext}${recentActivity}
 
 You are the TERP AI assistant, accessible via Slack. You have complete context of the project including:
 - All steering files and protocols
@@ -136,25 +136,22 @@ running commands on the server (which can be set up).
 
 Be conversational, helpful, and concise. Format responses for mobile readability.`;
 
-    // Call Claude
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 2000,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: userMessage,
-        },
-      ],
+    // Call Gemini
+    const chat = model.startChat({
+      history: [],
+      generationConfig: {
+        maxOutputTokens: 2000,
+        temperature: 0.7,
+      },
+      systemInstruction,
     });
     
-    // Extract text from response
-    const textContent = response.content.find(block => block.type === 'text');
-    return textContent ? textContent.text : 'Sorry, I could not generate a response.';
+    const result = await chat.sendMessage(userMessage);
+    const response = result.response;
+    return response.text();
     
   } catch (error) {
-    console.error('Claude API Error:', error);
+    console.error('Gemini API Error:', error);
     return `Sorry, I encountered an error: ${error instanceof Error ? error.message : String(error)}`;
   }
 }
@@ -180,8 +177,8 @@ app.message(async ({ message, say }) => {
     // Typing indicator optional
   }
   
-  // Get response from Claude
-  const response = await chatWithClaude(userMessage, userId);
+  // Get response from Gemini
+  const response = await chatWithGemini(userMessage, userId);
   
   // Send response
   await say(response);
@@ -192,7 +189,7 @@ app.event('app_mention', async ({ event, say }) => {
   const userMessage = event.text.replace(/<@[A-Z0-9]+>/g, '').trim();
   const userId = event.user;
   
-  const response = await chatWithClaude(userMessage, userId);
+  const response = await chatWithGemini(userMessage, userId);
   await say(response);
 });
 
@@ -201,7 +198,7 @@ app.command('/terp', async ({ command, ack, say }) => {
   await ack();
   
   const userMessage = command.text || 'status';
-  const response = await chatWithClaude(userMessage, command.user_id);
+  const response = await chatWithGemini(userMessage, command.user_id);
   
   await say(response);
 });
