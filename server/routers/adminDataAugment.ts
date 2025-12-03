@@ -6,7 +6,8 @@
  */
 
 import { z } from "zod";
-import { router, publicProcedure } from "../_core/trpc.js";
+import { router, protectedProcedure } from "../_core/trpc.js";
+import { requirePermission } from "../_core/permissionMiddleware.js";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { logger } from "../_core/logger.js";
@@ -21,7 +22,7 @@ export const adminDataAugmentRouter = router({
   /**
    * Run all augmentation scripts in order
    */
-  runAll: publicProcedure
+  runAll: protectedProcedure.use(requirePermission("system:manage"))
     .input(
       z.object({
         skipTemporal: z.boolean().optional().default(false),
@@ -138,7 +139,7 @@ export const adminDataAugmentRouter = router({
   /**
    * Run individual script
    */
-  runScript: publicProcedure
+  runScript: protectedProcedure.use(requirePermission("system:manage"))
     .input(
       z.object({
         script: z.enum([
@@ -205,7 +206,7 @@ export const adminDataAugmentRouter = router({
   /**
    * Get status of last run
    */
-  getStatus: publicProcedure.query(async () => {
+  getStatus: protectedProcedure.use(requirePermission("system:manage")).query(async () => {
     // This could be enhanced to store status in database
     return {
       message: "Use runAll or runScript to execute augmentation scripts",
