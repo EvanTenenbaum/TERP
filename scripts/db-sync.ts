@@ -53,22 +53,38 @@ if (needsSSL) {
   };
 }
 
-const pool = mysql.createPool(poolConfig);
+// Create pool with better error handling
+let pool: mysql.Pool | null = null;
 
-// Add connection error handling
-pool.on("connection", (connection) => {
-  connection.on("error", (err) => {
-    console.error("[db-sync] MySQL connection error:", err);
+function createPool(): mysql.Pool {
+  if (pool) {
+    return pool;
+  }
+
+  pool = mysql.createPool(poolConfig);
+
+  // Add connection error handling
+  pool.on("connection", (connection) => {
+    connection.on("error", (err) => {
+      console.error("[db-sync] MySQL connection error:", err);
+    });
   });
-});
 
-pool.on("error", (err) => {
-  console.error("[db-sync] MySQL pool error:", err);
-});
+  pool.on("error", (err) => {
+    console.error("[db-sync] MySQL pool error:", err);
+    // Reset pool on error to force recreation
+    pool = null;
+  });
+
+  return pool;
+}
+
+// Initialize pool
+const poolInstance = createPool();
 
 // Create drizzle instance with schema (same syntax as server/db.ts)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const db = drizzle(pool as any, { schema, mode: "default" });
+export const db = drizzle(poolInstance as any, { schema, mode: "default" });
 
 /**
  * Test database connection with retry logic
