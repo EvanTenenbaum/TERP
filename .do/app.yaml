@@ -13,21 +13,6 @@ services:
       repo: EvanTenenbaum/TERP
       branch: main
       deploy_on_push: true
-      # Skip deployments when only these paths change
-      ignore_paths:
-        - "docs/**"
-        - "*.md"
-        - ".github/**"
-        - ".kiro/**"
-        - "agent-prompts/**"
-        - "product-management/**"
-        - "testing/**"
-        - "tests-e2e/**"
-        - ".vscode/**"
-        - ".cursor/**"
-        - "scripts/dashboard.ts"
-        - "scripts/generate-html-dashboard.ts"
-        - "dashboard.html"
     dockerfile_path: Dockerfile
     instance_count: 1
     instance_size_slug: basic-xs
