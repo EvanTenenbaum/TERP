@@ -8,15 +8,17 @@ import React from "react";
  * Captures client-side errors, unhandled promise rejections, and user interactions.
  */
 
-Sentry.init({
-  // DSN from environment variable - set in production
-  dsn: import.meta.env.VITE_SENTRY_DSN || "",
-  
-  // Environment name (development, staging, production)
-  environment: import.meta.env.MODE || "development",
-  
-  // Enable Sentry only in production or when DSN is explicitly set
-  enabled: !!import.meta.env.VITE_SENTRY_DSN,
+// Initialize Sentry with error handling to prevent blocking app startup
+try {
+  Sentry.init({
+    // DSN from environment variable - set in production
+    dsn: import.meta.env.VITE_SENTRY_DSN || "",
+    
+    // Environment name (development, staging, production)
+    environment: import.meta.env.MODE || "development",
+    
+    // Enable Sentry only in production or when DSN is explicitly set
+    enabled: !!import.meta.env.VITE_SENTRY_DSN,
   
   // Performance Monitoring
   tracesSampleRate: import.meta.env.MODE === "production" ? 0.1 : 1.0, // 10% in prod, 100% in dev
@@ -71,7 +73,11 @@ Sentry.init({
     "ResizeObserver loop limit exceeded",
     "Non-Error promise rejection captured",
   ],
-});
+  });
+} catch (error) {
+  // Don't block app startup if Sentry initialization fails
+  console.warn("Sentry initialization failed, continuing without error tracking:", error);
+}
 
 // Export Sentry for use in error boundaries
 export { Sentry };

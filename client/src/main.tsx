@@ -56,7 +56,17 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-createRoot(document.getElementById("root")!).render(
+// Safely get root element with error handling
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  console.error("Failed to find root element. DOM may not be ready.");
+  throw new Error("Root element not found. Cannot mount React application.");
+}
+
+// Clear any existing content (like loading spinner) before mounting
+rootElement.innerHTML = "";
+
+createRoot(rootElement).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
       <App />
