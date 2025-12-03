@@ -45,7 +45,6 @@ jobs:
       pnpm tsx scripts/augment-client-relationships.ts &&
       pnpm tsx scripts/validate-data-quality.ts
     source_dir: /
-    kind: MANUAL
     envs:
       - key: NODE_ENV
         value: production
