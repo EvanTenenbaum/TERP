@@ -9,34 +9,40 @@
 
 ### Setup
 
-1. **Deploy the job configuration:**
-   ```bash
-   doctl apps create --spec .do/app-augment-data-job.yaml
-   ```
-   
-   Or update existing app:
-   ```bash
-   doctl apps update <app-id> --spec .do/app-augment-data-job.yaml
-   ```
-
-2. **Get the app ID:**
+1. **Get the app ID:**
    ```bash
    doctl apps list
+   # TERP app ID: 1fd40be5-b9af-4e71-ab1d-3af0864a7da4
    ```
+
+2. **Deploy/update the job configuration:**
+   ```bash
+   doctl apps update 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --spec .do/app-augment-data-job.yaml
+   ```
+   
+   This will add the `augment-data` job to your app. Wait for the update to complete.
 
 3. **Run the job:**
    ```bash
-   doctl apps create-job-run <app-id> augment-data
+   doctl apps create-job-run 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 augment-data
    ```
 
 4. **Monitor the job:**
    ```bash
-   doctl apps list-job-runs <app-id> augment-data
+   # List job runs
+   doctl apps list-job-runs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 augment-data
+   
+   # Get specific job run ID from above, then:
+   doctl apps get-job-run 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 <job-run-id>
    ```
 
 5. **View job logs:**
    ```bash
-   doctl apps logs <app-id> --type run --component augment-data
+   # View logs for the job component
+   doctl apps logs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --type run --component augment-data
+   
+   # Or view all app logs and filter
+   doctl apps logs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --type run | grep augment
    ```
 
 ### Job Configuration
@@ -119,9 +125,10 @@ pnpm augment:validate
 ## Troubleshooting
 
 ### Job Fails to Start
-- Check app ID: `doctl apps list`
-- Verify job exists: `doctl apps list-jobs <app-id>`
+- Check app ID: `doctl apps list` (TERP app: `1fd40be5-b9af-4e71-ab1d-3af0864a7da4`)
+- Verify job exists: `doctl apps list-jobs 1fd40be5-b9af-4e71-ab1d-3af0864a7da4`
 - Check job spec: `.do/app-augment-data-job.yaml`
+- Ensure job was deployed: `doctl apps update 1fd40be5-b9af-4e71-ab1d-3af0864a7da4 --spec .do/app-augment-data-job.yaml`
 
 ### Script Errors
 - Check logs: `doctl apps logs <app-id> --type run`
