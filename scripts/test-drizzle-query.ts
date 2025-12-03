@@ -1,61 +1,55 @@
-/**
- * Test script to see what SQL Drizzle is generating
- */
+import { config } from "dotenv";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
+import { sql } from "drizzle-orm";
 
-import { drizzle } from 'drizzle-orm/mysql2';
-import mysql from 'mysql2/promise';
-import * as schema from '../drizzle/schema';
-import { eq } from 'drizzle-orm';
-
-const { orders } = schema;
-
-async function test() {
-  // Create connection
-  const connection = await mysql.createConnection({
-    host: 'terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com',
-    port: 25060,
-    user: 'doadmin',
-    password: 'AVNS_Q_RGkS7-uB3Bk7xC2am',
-    database: 'defaultdb',
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  const db = drizzle(connection, { schema, mode: 'default', logger: true });
-
-  console.log('\n=== Test 1: Simple select ===');
-  try {
-    const result1 = await db.select().from(orders).limit(3);
-    console.log('Result count:', result1.length);
-    console.log('First order:', result1[0]);
-  } catch (error) {
-    console.error('ERROR:', error);
-  }
-
-  console.log('\n=== Test 2: Select with isDraft filter ===');
-  try {
-    const result2 = await db.select().from(orders).where(eq(orders.isDraft, false)).limit(3);
-    console.log('Result count:', result2.length);
-    console.log('First order:', result2[0]);
-  } catch (error) {
-    console.error('ERROR:', error);
-  }
-
-  console.log('\n=== Test 3: Select specific columns ===');
-  try {
-    const result3 = await db.select({
-      id: orders.id,
-      orderNumber: orders.orderNumber,
-      isDraft: orders.isDraft,
-    }).from(orders).limit(3);
-    console.log('Result count:', result3.length);
-    console.log('Results:', result3);
-  } catch (error) {
-    console.error('ERROR:', error);
-  }
-
-  await connection.end();
+config();
+if (!process.env.DATABASE_URL) {
+  config({ path: ".env.production" });
 }
 
-test().catch(console.error);
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  console.error("DATABASE_URL not set");
+  process.exit(1);
+}
+
+const needsSSL = databaseUrl.includes("digitalocean.com");
+const cleanDatabaseUrl = databaseUrl
+  .replace(/[?&]ssl=[^&]*/gi, "")
+  .replace(/[?&]ssl-mode=[^&]*/gi, "");
+
+const poolConfig: mysql.PoolOptions = {
+  uri: cleanDatabaseUrl,
+  waitForConnections: true,
+  connectionLimit: 5,
+  ssl: needsSSL ? { rejectUnauthorized: false } : undefined,
+};
+
+const pool = mysql.createPool(poolConfig);
+const db = drizzle(pool, { mode: "default" });
+
+async function test() {
+  try {
+    const result = await db.execute(sql`
+      SELECT TABLE_NAME
+      FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE()
+      ORDER BY TABLE_NAME
+      LIMIT 5
+    `);
+    console.log("✅ Drizzle query successful!");
+    console.log("Result:", JSON.stringify(result, null, 2));
+  } catch (error: unknown) {
+    const err = error as { message?: string; stack?: string };
+    console.error("❌ Drizzle query failed:");
+    console.error("Error:", err.message);
+    if (err.stack) {
+      console.error("Stack:", err.stack.split("\n").slice(0, 5).join("\n"));
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
+test();
