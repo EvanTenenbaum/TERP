@@ -1,5 +1,11 @@
-// Initialize Sentry first, before any other imports
-import "../../sentry.client.config";
+// Conditionally initialize Sentry only if DSN is configured
+// This prevents Sentry from blocking app startup if there are any issues
+// Using dynamic import to avoid blocking if Sentry has issues
+if (import.meta.env.VITE_SENTRY_DSN) {
+  import("../../sentry.client.config").catch((error) => {
+    console.warn("Failed to load Sentry, continuing without error tracking:", error);
+  });
+}
 
 import { trpc } from "@/lib/trpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
