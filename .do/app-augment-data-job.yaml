@@ -1,0 +1,54 @@
+name: terp
+region: nyc
+
+databases:
+  - name: terp-mysql-db
+    engine: MYSQL
+    production: true
+    cluster_name: terp-mysql-db
+
+services:
+  - name: web
+    github:
+      repo: EvanTenenbaum/TERP
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+    instance_count: 1
+    instance_size_slug: basic-xs
+    http_port: 3000
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${terp-mysql-db.DATABASE_URL}
+
+jobs:
+  # Job to run data augmentation scripts
+  # Execute via: doctl apps create-job-run <app-id> augment-data
+  - name: augment-data
+    github:
+      repo: EvanTenenbaum/TERP
+      branch: main
+    dockerfile_path: Dockerfile
+    instance_count: 1
+    instance_size_slug: basic-xs
+    run_command: |
+      pnpm install &&
+      pnpm tsx scripts/fix-temporal-coherence.ts &&
+      pnpm tsx scripts/augment-orders.ts &&
+      pnpm tsx scripts/augment-inventory-movements.ts &&
+      pnpm tsx scripts/augment-financial-chains.ts &&
+      pnpm tsx scripts/augment-client-relationships.ts &&
+      pnpm tsx scripts/validate-data-quality.ts
+    source_dir: /
+    kind: MANUAL
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${terp-mysql-db.DATABASE_URL}
