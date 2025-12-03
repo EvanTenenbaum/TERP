@@ -21,7 +21,12 @@ if (!process.env.DATABASE_URL) {
 // Create database connection
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL environment variable is required");
+  console.error("❌ DATABASE_URL environment variable is required");
+  console.error("\n💡 Next steps:");
+  console.error("   1. Set DATABASE_URL in .env or .env.production");
+  console.error("   2. Ensure the database is accessible");
+  console.error("   3. For production database, ensure SSL is configured");
+  process.exit(1);
 }
 
 const needsSSL =
@@ -45,7 +50,8 @@ const poolConfig: mysql.PoolOptions = {
 };
 
 const pool = mysql.createPool(poolConfig);
-const db = drizzle(pool, { schema, mode: "default" });
+// Use mode: "default" without schema to avoid connection issues with introspection queries
+const db = drizzle(pool, { mode: "default" });
 import {
   getTableList,
   getTableColumns,
@@ -96,14 +102,14 @@ interface ValidationReport {
   allIssues: ValidationIssue[];
 }
 
-// Critical tables for seeding (in snake_case as they appear in database)
+// Critical tables for seeding (using actual database table names)
 const CRITICAL_TABLES = [
-  "inventory_movements",
-  "order_status_history",
+  "inventoryMovements", // Database uses camelCase
+  "order_status_history", // Database uses snake_case
   "invoices",
-  "ledger_entries",
+  "ledgerEntries", // Database uses camelCase
   "payments",
-  "client_activity",
+  "client_activity", // Database uses snake_case
 ] as const;
 
 // ============================================================================
@@ -253,9 +259,30 @@ async function validateTable(
 async function runValidation(): Promise<ValidationReport> {
   console.log("🔍 Starting comprehensive schema validation...\n");
 
-  // Get all tables from database
+  // Get all tables from database with retry logic
   console.log("📊 Querying database structure...");
-  const dbTables = await getTableList(db);
+  let dbTables: string[] = [];
+  let retries = 3;
+  let lastError: Error | null = null;
+  
+  while (retries > 0) {
+    try {
+      dbTables = await getTableList(db);
+      break;
+    } catch (error) {
+      lastError = error as Error;
+      retries--;
+      if (retries > 0) {
+        console.log(`   ⚠️  Connection failed, retrying... (${retries} attempts remaining)`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      }
+    }
+  }
+  
+  if (dbTables.length === 0) {
+    throw lastError || new Error("Failed to query database after retries");
+  }
+  
   console.log(`   Found ${dbTables.length} tables in database\n`);
 
   // Parse Drizzle schemas
@@ -464,7 +491,28 @@ async function main() {
     // Exit with appropriate code
     process.exit(report.totalIssues > 0 ? 1 : 0);
   } catch (error) {
-    console.error("❌ Validation failed:", error);
+    console.error("\n❌ Validation failed");
+    if (error instanceof Error) {
+      console.error(`   Error: ${error.message}`);
+      console.error(`   Name: ${error.name}`);
+      if (error.stack) {
+        console.error(`   Stack (first 10 lines):`);
+        console.error(error.stack.split("\n").slice(0, 10).join("\n"));
+      }
+      if ("cause" in error && error.cause) {
+        console.error(`   Cause: ${error.cause}`);
+      }
+      if (error.message.includes("ETIMEDOUT") || error.message.includes("connect")) {
+        console.error("\n💡 Database connection issue detected:");
+        console.error("   1. Check DATABASE_URL is correct");
+        console.error("   2. Verify database is accessible from this network");
+        console.error("   3. For DigitalOcean databases, ensure SSL is configured");
+        console.error("   4. Check firewall rules allow connections");
+      }
+    } else {
+      console.error("   Unknown error:", error);
+    }
+    console.error("\n📖 See docs/DATABASE_SCHEMA_SYNC.md for troubleshooting");
     process.exit(1);
   }
 }
