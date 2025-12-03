@@ -61,21 +61,36 @@ export function serveStatic(app: Express) {
       : path.resolve(process.cwd(), "dist", "public");
   
   // Log the resolved path for debugging (critical for production issues)
-  logger.info({ distPath, cwd: process.cwd(), __dirname }, "Resolving static file path");
+  // Use try-catch to prevent logger errors from crashing server startup
+  try {
+    logger.info({ distPath, cwd: process.cwd() }, "Resolving static file path");
+  } catch (e) {
+    // Logger might not be initialized yet, use console as fallback
+    console.log(`[serveStatic] Resolving static file path: ${distPath} (cwd: ${process.cwd()})`);
+  }
   
   // Only log errors if directory missing (critical startup issue)
   if (!fs.existsSync(distPath)) {
-    logger.error({ 
+    const errorInfo = {
       distPath, 
       cwd: process.cwd(),
-      __dirname,
       exists: fs.existsSync(path.resolve(process.cwd(), "dist")),
       distContents: fs.existsSync(path.resolve(process.cwd(), "dist")) 
         ? fs.readdirSync(path.resolve(process.cwd(), "dist"))
         : []
-    }, "Could not find the build directory - make sure to build the client first");
+    };
+    try {
+      logger.error(errorInfo, "Could not find the build directory - make sure to build the client first");
+    } catch (e) {
+      console.error("[serveStatic] ERROR: Could not find build directory:", errorInfo);
+    }
   } else {
-    logger.info({ distPath, files: fs.readdirSync(distPath).slice(0, 10) }, "Serving static files from build directory");
+    try {
+      const files = fs.readdirSync(distPath).slice(0, 10);
+      logger.info({ distPath, fileCount: files.length }, "Serving static files from build directory");
+    } catch (e) {
+      console.log(`[serveStatic] Serving static files from: ${distPath}`);
+    }
   }
 
   // Serve static files with proper cache headers
