@@ -109,7 +109,9 @@ export async function getTableList(db: MySql2Database<Record<string, never>>): P
     ORDER BY TABLE_NAME
   `);
   
-  return (result as Array<{ TABLE_NAME: string }>).map((row) => row.TABLE_NAME);
+  // Drizzle returns [rows, metadata], so we need to access result[0]
+  const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+  return (rows as Array<{ TABLE_NAME: string }>).map((row) => row.TABLE_NAME);
 }
 
 /**
@@ -134,7 +136,9 @@ export async function getTableColumns(
     ORDER BY ORDINAL_POSITION
   `);
   
-  return result as ColumnMetadata[];
+  // Drizzle returns [rows, metadata], so we need to access result[0]
+  const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+  return rows as ColumnMetadata[];
 }
 
 /**
@@ -154,11 +158,14 @@ export async function getEnumValues(
       AND COLUMN_NAME = ${columnName}
   `);
   
-  if (!result || result.length === 0) {
+  // Drizzle returns [rows, metadata], so we need to access result[0]
+  const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+  
+  if (!rows || (Array.isArray(rows) && rows.length === 0)) {
     return [];
   }
   
-  const columnType = (result as Array<{ columnType: string }>)[0].columnType;
+  const columnType = (rows as Array<{ columnType: string }>)[0].columnType;
   
   // Parse enum values from COLUMN_TYPE
   // Format: enum('value1','value2','value3')
@@ -199,7 +206,9 @@ export async function getForeignKeys(
     ORDER BY ORDINAL_POSITION
   `);
   
-  return result as ForeignKeyMetadata[];
+  // Drizzle returns [rows, metadata], so we need to access result[0]
+  const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+  return rows as ForeignKeyMetadata[];
 }
 
 /**
@@ -221,7 +230,9 @@ export async function getIndexes(
     ORDER BY INDEX_NAME, SEQ_IN_INDEX
   `);
   
-  return result as IndexMetadata[];
+  // Drizzle returns [rows, metadata], so we need to access result[0]
+  const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+  return rows as IndexMetadata[];
 }
 
 // ============================================================================
