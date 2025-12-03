@@ -102,14 +102,14 @@ interface ValidationReport {
   allIssues: ValidationIssue[];
 }
 
-// Critical tables for seeding (in snake_case as they appear in database)
+// Critical tables for seeding (using actual database table names)
 const CRITICAL_TABLES = [
-  "inventory_movements",
-  "order_status_history",
+  "inventoryMovements", // Database uses camelCase
+  "order_status_history", // Database uses snake_case
   "invoices",
-  "ledger_entries",
+  "ledgerEntries", // Database uses camelCase
   "payments",
-  "client_activity",
+  "client_activity", // Database uses snake_case
 ] as const;
 
 // ============================================================================
@@ -259,9 +259,30 @@ async function validateTable(
 async function runValidation(): Promise<ValidationReport> {
   console.log("🔍 Starting comprehensive schema validation...\n");
 
-  // Get all tables from database
+  // Get all tables from database with retry logic
   console.log("📊 Querying database structure...");
-  const dbTables = await getTableList(db);
+  let dbTables: string[] = [];
+  let retries = 3;
+  let lastError: Error | null = null;
+  
+  while (retries > 0) {
+    try {
+      dbTables = await getTableList(db);
+      break;
+    } catch (error) {
+      lastError = error as Error;
+      retries--;
+      if (retries > 0) {
+        console.log(`   ⚠️  Connection failed, retrying... (${retries} attempts remaining)`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      }
+    }
+  }
+  
+  if (dbTables.length === 0) {
+    throw lastError || new Error("Failed to query database after retries");
+  }
+  
   console.log(`   Found ${dbTables.length} tables in database\n`);
 
   // Parse Drizzle schemas

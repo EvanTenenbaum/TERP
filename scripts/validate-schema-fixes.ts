@@ -44,15 +44,16 @@ const poolConfig: mysql.PoolOptions = {
 };
 
 const pool = mysql.createPool(poolConfig);
-const db = drizzle(pool, { schema, mode: "default" });
+// Use mode: "default" without schema to avoid connection issues with introspection queries
+const db = drizzle(pool, { mode: "default" });
 
 const CRITICAL_TABLES = [
-  "inventory_movements",
-  "order_status_history",
+  "inventoryMovements", // Database uses camelCase
+  "order_status_history", // Database uses snake_case
   "invoices",
-  "ledger_entries",
+  "ledgerEntries", // Database uses camelCase
   "payments",
-  "client_activity",
+  "client_activity", // Database uses snake_case
 ];
 
 interface ValidationIssue {
@@ -70,8 +71,35 @@ async function verifyFixes() {
   for (const tableName of CRITICAL_TABLES) {
     console.log(`Checking ${tableName}...`);
 
+    let dbColumns: Awaited<ReturnType<typeof getTableColumns>> = [];
+    let retries = 3;
+    let lastError: Error | null = null;
+    
+    while (retries > 0) {
+      try {
+        dbColumns = await getTableColumns(db, tableName);
+        break;
+      } catch (error) {
+        lastError = error as Error;
+        retries--;
+        if (retries > 0) {
+          console.log(`  ⚠️  Query failed, retrying... (${retries} attempts remaining)`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+    }
+    
+    if (dbColumns.length === 0 && lastError) {
+      issues.push({
+        table: tableName,
+        column: "*",
+        description: `Error querying table: ${lastError.message}`,
+      });
+      console.log(`  ❌ Error: ${lastError.message}`);
+      continue;
+    }
+    
     try {
-      const dbColumns = await getTableColumns(db, tableName);
       totalChecks += dbColumns.length;
 
       // Simple validation: check if table exists and has columns
