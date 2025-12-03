@@ -194,6 +194,10 @@ async function startServer() {
     }
   });
   
+  // Data augmentation HTTP endpoint (temporary bypass for tRPC auth issues)
+  const dataAugmentRouter = (await import("../routers/dataAugmentHttp.js")).default;
+  app.use("/api/data-augment", dataAugmentRouter);
+  
   // tRPC API
   app.use(
     "/api/trpc",
