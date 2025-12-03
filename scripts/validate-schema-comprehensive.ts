@@ -50,7 +50,8 @@ const poolConfig: mysql.PoolOptions = {
 };
 
 const pool = mysql.createPool(poolConfig);
-const db = drizzle(pool, { schema, mode: "default" });
+// Use mode: "default" without schema to avoid connection issues with introspection queries
+const db = drizzle(pool, { mode: "default" });
 import {
   getTableList,
   getTableColumns,
@@ -472,6 +473,14 @@ async function main() {
     console.error("\n❌ Validation failed");
     if (error instanceof Error) {
       console.error(`   Error: ${error.message}`);
+      console.error(`   Name: ${error.name}`);
+      if (error.stack) {
+        console.error(`   Stack (first 10 lines):`);
+        console.error(error.stack.split("\n").slice(0, 10).join("\n"));
+      }
+      if ("cause" in error && error.cause) {
+        console.error(`   Cause: ${error.cause}`);
+      }
       if (error.message.includes("ETIMEDOUT") || error.message.includes("connect")) {
         console.error("\n💡 Database connection issue detected:");
         console.error("   1. Check DATABASE_URL is correct");
