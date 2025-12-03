@@ -3824,7 +3824,7 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
 
 #### DATA-002-AUGMENT: Augment Seeded Data for Realistic Relationships
 
-**Status:** ready
+**Status:** in-progress
 **Priority:** HIGH
 **Estimate:** 6-8h
 **Module:** `scripts/seed-*.ts`
