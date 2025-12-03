@@ -21,7 +21,12 @@ if (!process.env.DATABASE_URL) {
 // Create database connection
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL environment variable is required");
+  console.error("❌ DATABASE_URL environment variable is required");
+  console.error("\n💡 Next steps:");
+  console.error("   1. Set DATABASE_URL in .env or .env.production");
+  console.error("   2. Ensure the database is accessible");
+  console.error("   3. For production database, ensure SSL is configured");
+  process.exit(1);
 }
 
 const needsSSL =
@@ -464,7 +469,20 @@ async function main() {
     // Exit with appropriate code
     process.exit(report.totalIssues > 0 ? 1 : 0);
   } catch (error) {
-    console.error("❌ Validation failed:", error);
+    console.error("\n❌ Validation failed");
+    if (error instanceof Error) {
+      console.error(`   Error: ${error.message}`);
+      if (error.message.includes("ETIMEDOUT") || error.message.includes("connect")) {
+        console.error("\n💡 Database connection issue detected:");
+        console.error("   1. Check DATABASE_URL is correct");
+        console.error("   2. Verify database is accessible from this network");
+        console.error("   3. For DigitalOcean databases, ensure SSL is configured");
+        console.error("   4. Check firewall rules allow connections");
+      }
+    } else {
+      console.error("   Unknown error:", error);
+    }
+    console.error("\n📖 See docs/DATABASE_SCHEMA_SYNC.md for troubleshooting");
     process.exit(1);
   }
 }
