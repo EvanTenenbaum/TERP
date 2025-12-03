@@ -12,7 +12,6 @@
 
 | Session ID                        | Task    | Branch                            | Module        | Status         | Started    | ETA  |
 | --------------------------------- | ------- | --------------------------------- | ------------- | -------------- | ---------- | ---- |
-| Session-20251203-DATA-002-AUGMENT-a9d8f576 | DATA-002-AUGMENT | data-002-augment | Data Seeding | ⏳ IN PROGRESS | 2025-12-03 | 6-8h |
 | Session-20251203-PROD-LOADING-dc6060 | PROD-LOADING | main | Server/Static Files | ⏳ IN PROGRESS | 2025-12-03 | 1h |
 | Session-20251130-PERF-003-1018ca89 | PERF-003 | perf-003-pagination | Backend Routers | ⏳ IN PROGRESS | 24h |
 
