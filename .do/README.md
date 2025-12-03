@@ -2,6 +2,29 @@
 
 This directory contains the App Platform configuration for the TERP application.
 
+## Jobs
+
+### Data Augmentation Job
+
+Run data augmentation scripts from stable connection:
+
+```bash
+# Get app ID
+doctl apps list
+
+# Deploy/update job configuration
+doctl apps update <app-id> --spec .do/app-augment-data-job.yaml
+
+# Run the job
+doctl apps create-job-run <app-id> augment-data
+
+# Monitor job
+doctl apps list-job-runs <app-id> augment-data
+doctl apps logs <app-id> --type run --component augment-data
+```
+
+See `docs/DATA-002-AUGMENT-RUN-FROM-STABLE-CONNECTION.md` for detailed instructions.
+
 ## Log Forwarding Setup
 
 The app is configured to forward logs to **Papertrail** using Digital Ocean's native log forwarding integration.
