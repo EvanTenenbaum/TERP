@@ -26,19 +26,45 @@ interface OrderSummary {
 }
 
 /**
+ * Retry helper for database queries
+ */
+async function retryQuery<T>(
+  queryFn: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 2000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await queryFn();
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes("ETIMEDOUT") && i < maxRetries - 1) {
+        console.log(`  ⚠️  Retry ${i + 1}/${maxRetries} after ${delayMs}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
+/**
  * Get orders without line items
  */
 async function getOrdersWithoutItems(): Promise<OrderSummary[]> {
-  const result = await db.execute(sql`
-    SELECT o.id, o.order_number as orderNumber, o.client_id as clientId, o.total, 
-           COUNT(oli.id) as itemCount
-    FROM orders o
-    LEFT JOIN order_line_items oli ON o.id = oli.order_id
-    WHERE o.is_draft = 0
-    GROUP BY o.id, o.order_number, o.client_id, o.total
-    HAVING COUNT(oli.id) = 0
-    LIMIT 100
-  `);
+  const result = await retryQuery(async () => {
+    return await db.execute(sql`
+      SELECT o.id, o.order_number as orderNumber, o.client_id as clientId, o.total, 
+             COUNT(oli.id) as itemCount
+      FROM orders o
+      LEFT JOIN order_line_items oli ON o.id = oli.order_id
+      WHERE o.is_draft = 0
+      GROUP BY o.id, o.order_number, o.client_id, o.total
+      HAVING COUNT(oli.id) = 0
+      LIMIT 100
+    `);
+  });
 
   const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
   return (rows as OrderSummary[]) || [];
@@ -53,7 +79,8 @@ async function getAvailableBatches(clientId: number, limit: number = 20): Promis
   unitCogs: string;
   onHandQty: number;
 }>> {
-    const result = await db.execute(sql`
+  const result = await retryQuery(async () => {
+    return await db.execute(sql`
       SELECT b.id, b.productId, b.unitCogs, b.onHandQty
       FROM batches b
       WHERE b.batchStatus = 'LIVE' 
@@ -61,6 +88,7 @@ async function getAvailableBatches(clientId: number, limit: number = 20): Promis
       ORDER BY RAND()
       LIMIT ${limit}
     `);
+  });
 
   const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
   return (rows as Array<{ id: number; productId: number; unitCogs: string; onHandQty: number }>) || [];
