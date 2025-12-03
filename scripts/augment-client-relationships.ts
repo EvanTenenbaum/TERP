@@ -18,17 +18,46 @@ import { clients, orders, orderLineItems, batches, products, clientActivity } fr
 import { sql } from "drizzle-orm";
 
 /**
+ * Retry helper for database queries
+ */
+async function retryQuery<T>(
+  queryFn: () => Promise<T>,
+  maxRetries: number = 5,
+  delayMs: number = 3000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await queryFn();
+    } catch (error) {
+      const err = error as Error & { code?: string };
+      const isTimeout = err.message?.includes("ETIMEDOUT") || err.code === "ETIMEDOUT";
+      
+      if (isTimeout && i < maxRetries - 1) {
+        const delay = delayMs * (i + 1);
+        console.log(`  ⚠️  Connection timeout, retry ${i + 1}/${maxRetries - 1} after ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
+/**
  * Get clients without recent activity
  */
 async function getClientsWithoutActivity(days: number = 90): Promise<Array<{ id: number; name: string }>> {
-  const result = await db.execute(sql`
-    SELECT DISTINCT c.id, c.name
-    FROM clients c
-    LEFT JOIN orders o ON c.id = o.client_id
-    WHERE o.id IS NULL 
-       OR o.created_at < DATE_SUB(NOW(), INTERVAL ${days} DAY)
-    LIMIT 50
-  `);
+  const result = await retryQuery(async () => {
+    return await db.execute(sql`
+      SELECT DISTINCT c.id, c.name
+      FROM clients c
+      LEFT JOIN orders o ON c.id = o.client_id
+      WHERE o.id IS NULL 
+         OR o.created_at < DATE_SUB(NOW(), INTERVAL ${days} DAY)
+      LIMIT 50
+    `);
+  });
 
   const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
   return (rows as Array<{ id: number; name: string }>) || [];
@@ -44,8 +73,8 @@ async function createClientActivity(
 ): Promise<void> {
   try {
     await db.execute(sql`
-      INSERT INTO clientActivity (
-        clientId,
+      INSERT INTO client_activity (
+        client_id,
         activityType,
         description,
         createdAt,

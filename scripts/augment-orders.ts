@@ -30,17 +30,20 @@ interface OrderSummary {
  */
 async function retryQuery<T>(
   queryFn: () => Promise<T>,
-  maxRetries: number = 3,
-  delayMs: number = 2000
+  maxRetries: number = 5,
+  delayMs: number = 3000
 ): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await queryFn();
     } catch (error) {
-      const err = error as Error;
-      if (err.message.includes("ETIMEDOUT") && i < maxRetries - 1) {
-        console.log(`  ⚠️  Retry ${i + 1}/${maxRetries} after ${delayMs}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      const err = error as Error & { code?: string };
+      const isTimeout = err.message?.includes("ETIMEDOUT") || err.code === "ETIMEDOUT";
+      
+      if (isTimeout && i < maxRetries - 1) {
+        const delay = delayMs * (i + 1); // Exponential backoff
+        console.log(`  ⚠️  Connection timeout, retry ${i + 1}/${maxRetries - 1} after ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
       throw error;

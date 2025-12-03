@@ -220,7 +220,7 @@ async function testTemporalCoherence(): Promise<void> {
     const result = await db.execute(sql`
       SELECT COUNT(*) as count
       FROM orders o
-      INNER JOIN invoices i ON o.invoiceId = i.id
+      INNER JOIN invoices i ON o.invoice_id = i.id
       INNER JOIN payments p ON i.id = p.invoiceId
       WHERE o.created_at > i.invoiceDate
          OR i.invoiceDate > p.paymentDate

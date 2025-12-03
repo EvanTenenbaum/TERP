@@ -19,6 +19,33 @@ import { orders, invoices, invoiceLineItems, payments, ledgerEntries, orderLineI
 import { sql, eq, isNull } from "drizzle-orm";
 
 /**
+ * Retry helper for database queries
+ */
+async function retryQuery<T>(
+  queryFn: () => Promise<T>,
+  maxRetries: number = 5,
+  delayMs: number = 3000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await queryFn();
+    } catch (error) {
+      const err = error as Error & { code?: string };
+      const isTimeout = err.message?.includes("ETIMEDOUT") || err.code === "ETIMEDOUT";
+      
+      if (isTimeout && i < maxRetries - 1) {
+        const delay = delayMs * (i + 1);
+        console.log(`  ⚠️  Connection timeout, retry ${i + 1}/${maxRetries - 1} after ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
+/**
  * Get SALE orders without invoices
  */
 async function getOrdersWithoutInvoices(): Promise<Array<{
@@ -30,15 +57,17 @@ async function getOrdersWithoutInvoices(): Promise<Array<{
   total: string;
   createdAt: Date;
 }>> {
-  const result = await db.execute(sql`
-    SELECT o.id, o.order_number as orderNumber, o.client_id as clientId,
-           o.subtotal, o.tax, o.total, o.created_at as createdAt
-    FROM orders o
-    WHERE o.orderType = 'SALE'
-      AND o.is_draft = 0
-      AND (o.invoice_id IS NULL OR o.invoice_id NOT IN (SELECT id FROM invoices))
-    LIMIT 50
-  `);
+  const result = await retryQuery(async () => {
+    return await db.execute(sql`
+      SELECT o.id, o.order_number as orderNumber, o.client_id as clientId,
+             o.subtotal, o.tax, o.total, o.created_at as createdAt
+      FROM orders o
+      WHERE o.orderType = 'SALE'
+        AND o.is_draft = 0
+        AND (o.invoice_id IS NULL OR o.invoice_id NOT IN (SELECT id FROM invoices))
+      LIMIT 50
+    `);
+  });
 
   const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
   return (rows as Array<{ id: number; orderNumber: string; clientId: number; subtotal: string; tax: string; total: string; createdAt: Date }>) || [];
@@ -293,7 +322,7 @@ async function augmentFinancialChains(): Promise<void> {
       try {
         // Try to find the related order
         const orderResult = await db.execute(sql`
-          SELECT id FROM orders WHERE invoiceId = ${invoice.id} LIMIT 1
+          SELECT id FROM orders WHERE invoice_id = ${invoice.id} LIMIT 1
         `);
         const orders = (orderResult[0] as Array<{ id: number }>) || [];
         
