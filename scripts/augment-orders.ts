@@ -53,15 +53,14 @@ async function getAvailableBatches(clientId: number, limit: number = 20): Promis
   unitCogs: string;
   onHandQty: number;
 }>> {
-  const result = await db.execute(sql`
-    SELECT b.id, b.productId, b.unitCogs, b.onHandQty
-    FROM batches b
-    WHERE b.batchStatus = 'LIVE' 
-      AND b.onHandQty > 0
-      AND b.deletedAt IS NULL
-    ORDER BY RAND()
-    LIMIT ${limit}
-  `);
+    const result = await db.execute(sql`
+      SELECT b.id, b.productId, b.unitCogs, b.onHandQty
+      FROM batches b
+      WHERE b.batchStatus = 'LIVE' 
+        AND b.onHandQty > 0
+      ORDER BY RAND()
+      LIMIT ${limit}
+    `);
 
   const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
   return (rows as Array<{ id: number; productId: number; unitCogs: string; onHandQty: number }>) || [];

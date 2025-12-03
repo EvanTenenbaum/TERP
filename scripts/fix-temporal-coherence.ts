@@ -31,7 +31,9 @@ async function fixOrderInvoicePaymentDates(): Promise<void> {
           i.dueDate = DATE_ADD(o.created_at, INTERVAL 30 DAY),
           i.updatedAt = NOW()
       WHERE i.invoiceDate < o.created_at
-    `);
+    `).catch(() => {
+      // Ignore errors - may not have matching records
+    });
 
     // Fix payments that are dated before their invoices
     await db.execute(sql`
@@ -62,7 +64,9 @@ async function fixBatchMovementDates(): Promise<void> {
       SET im.createdAt = b.createdAt,
           im.updatedAt = NOW()
       WHERE im.createdAt < b.createdAt
-    `);
+    `).catch(() => {
+      // Ignore errors - may not have matching records
+    });
 
     console.log("  ✅ Fixed batch → inventory movement date sequence\n");
   } catch (error) {

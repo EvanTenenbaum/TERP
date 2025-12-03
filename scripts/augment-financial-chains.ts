@@ -36,7 +36,7 @@ async function getOrdersWithoutInvoices(): Promise<Array<{
     FROM orders o
     WHERE o.orderType = 'SALE'
       AND o.is_draft = 0
-      AND (o.invoiceId IS NULL OR o.invoiceId NOT IN (SELECT id FROM invoices))
+      AND (o.invoice_id IS NULL OR o.invoice_id NOT IN (SELECT id FROM invoices))
     LIMIT 50
   `);
 
@@ -198,7 +198,7 @@ async function createInvoiceForOrder(order: {
     // Update order with invoice ID
     await db.execute(sql`
       UPDATE orders
-      SET invoiceId = ${invoiceId}
+      SET invoice_id = ${invoiceId}
       WHERE id = ${order.id}
     `);
 
