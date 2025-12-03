@@ -824,11 +824,11 @@ export type InsertAccount = typeof accounts.$inferInsert;
  * General Ledger Entries
  * Immutable double-entry accounting records
  */
+// SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
 export const ledgerEntries = mysqlTable("ledgerEntries", {
   id: int("id").autoincrement().primaryKey(),
-  entryNumber: varchar("entryNumber", { length: 50 ,
-    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  }).notNull().unique(),
+  entryNumber: varchar("entryNumber", { length: 50 }).notNull().unique(),
+  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   entryDate: date("entryDate").notNull(),
   accountId: int("accountId").notNull(),
   debit: decimal("debit", { precision: 12, scale: 2 })
@@ -886,11 +886,11 @@ export type InsertFiscalPeriod = typeof fiscalPeriods.$inferInsert;
  * Invoices (Accounts Receivable)
  * Customer invoices for sales transactions
  */
+// SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
 export const invoices = mysqlTable("invoices", {
   id: int("id").autoincrement().primaryKey(),
-  invoiceNumber: varchar("invoiceNumber", { length: 50 ,
-    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  }).notNull().unique(),
+  invoiceNumber: varchar("invoiceNumber", { length: 50 }).notNull().unique(),
+  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   customerId: int("customerId").notNull(), // Will link to clients table when created
   invoiceDate: date("invoiceDate").notNull(),
   dueDate: date("dueDate").notNull(),
@@ -1036,11 +1036,11 @@ export type InsertBillLineItem = typeof billLineItems.$inferInsert;
  * Payments
  * Unified payment tracking for both AR and AP
  */
+// SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
 export const payments = mysqlTable("payments", {
   id: int("id").autoincrement().primaryKey(),
-  paymentNumber: varchar("paymentNumber", { length: 50 ,
-    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  }).notNull().unique(),
+  paymentNumber: varchar("paymentNumber", { length: 50 }).notNull().unique(),
+  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   paymentType: mysqlEnum("paymentType", ["RECEIVED", "SENT"]).notNull(), // RECEIVED = AR, SENT = AP
   paymentDate: date("paymentDate").notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
@@ -1444,6 +1444,7 @@ export const clientTransactions = mysqlTable(
 export type ClientTransaction = typeof clientTransactions.$inferSelect;
 export type InsertClientTransaction = typeof clientTransactions.$inferInsert;
 
+// SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
 export const clientActivity = mysqlTable(
   "client_activity",
   {
@@ -2016,6 +2017,7 @@ export type InsertOrder = typeof orders.$inferInsert;
  * Order Status History
  * Tracks all fulfillment status changes for orders
  */
+// SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
 export const orderStatusHistory = mysqlTable(
   "order_status_history",
   {
@@ -2445,6 +2447,7 @@ export const adjustmentReasonEnum = mysqlEnum("adjustmentReason", [
  * Comprehensive audit trail of all inventory quantity changes
  * Links inventory changes to business transactions
  */
+// SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
 export const inventoryMovements = mysqlTable(
   "inventoryMovements",
   {

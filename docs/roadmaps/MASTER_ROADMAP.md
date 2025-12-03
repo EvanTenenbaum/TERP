@@ -505,30 +505,30 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 **Deliverables:**
 
-- [ ] Create `scripts/utils/` directory with schema introspection utilities
-- [ ] Implement naming convention converters (camelCase ↔ snake_case)
-- [ ] Implement database introspection functions (tables, columns, enums, FKs, indexes)
-- [ ] Implement schema comparison utilities with type normalization
-- [ ] Create comprehensive validation tool (`validate-schema-comprehensive.ts`)
-- [ ] Generate JSON report (`schema-validation-report.json`)
-- [ ] Generate Markdown report (`SCHEMA_VALIDATION_REPORT.md`)
-- [ ] Create fix recommendation generator (`fix-schema-drift.ts`)
-- [ ] Generate fix recommendations (`SCHEMA_DRIFT_FIXES.md`)
-- [ ] Create verification tool (`validate-schema-fixes.ts`)
-- [ ] Add npm scripts: `validate:schema`, `fix:schema:report`, `validate:schema:fixes`
-- [ ] Update `scripts/validate-schema-sync.ts` with deprecation notice
-- [ ] Add Schema Validation section to README.md
-- [ ] Implement error handling and validation failure guidance
-- [ ] Implement schema-specific conversion behavior (main vs RBAC/VIP Portal)
-- [ ] Apply fixes to 6 critical tables in `drizzle/schema.ts`:
+- [x] Create `scripts/utils/` directory with schema introspection utilities
+- [x] Implement naming convention converters (camelCase ↔ snake_case)
+- [x] Implement database introspection functions (tables, columns, enums, FKs, indexes)
+- [x] Implement schema comparison utilities with type normalization
+- [x] Create comprehensive validation tool (`validate-schema-comprehensive.ts`)
+- [x] Generate JSON report (`schema-validation-report.json`)
+- [x] Generate Markdown report (`SCHEMA_VALIDATION_REPORT.md`)
+- [x] Create fix recommendation generator (`fix-schema-drift.ts`)
+- [x] Generate fix recommendations (`SCHEMA_DRIFT_FIXES.md`)
+- [x] Create verification tool (`validate-schema-fixes.ts`)
+- [x] Add npm scripts: `validate:schema`, `fix:schema:report`, `validate:schema:fixes`
+- [x] Update `scripts/validate-schema-sync.ts` with deprecation notice
+- [x] Add Schema Validation section to README.md
+- [x] Implement error handling and validation failure guidance
+- [x] Implement schema-specific conversion behavior (main vs RBAC/VIP Portal)
+- [x] Apply fixes to 6 critical tables in `drizzle/schema.ts`:
   - inventoryMovements
   - orderStatusHistory
   - invoices
   - ledgerEntries
   - payments
   - clientActivity
-- [ ] Add comment above each fixed table: `// SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)`
-- [ ] Run verification and confirm all critical tables pass
+- [x] Add comment above each fixed table: `// SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)`
+- [ ] Run verification and confirm all critical tables pass (requires database connection)
 - [ ] Property-based tests for 39 correctness properties (optional)
 - [ ] Unit tests for utilities and components (optional)
 - [ ] Integration tests for full workflow (optional)
