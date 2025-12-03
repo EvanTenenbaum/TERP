@@ -18,16 +18,45 @@ import { inventoryMovements, batches } from "../drizzle/schema.js";
 import { sql, eq, isNull } from "drizzle-orm";
 
 /**
+ * Retry helper for database queries
+ */
+async function retryQuery<T>(
+  queryFn: () => Promise<T>,
+  maxRetries: number = 5,
+  delayMs: number = 3000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await queryFn();
+    } catch (error) {
+      const err = error as Error & { code?: string };
+      const isTimeout = err.message?.includes("ETIMEDOUT") || err.code === "ETIMEDOUT";
+      
+      if (isTimeout && i < maxRetries - 1) {
+        const delay = delayMs * (i + 1);
+        console.log(`  ⚠️  Connection timeout, retry ${i + 1}/${maxRetries - 1} after ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
+/**
  * Get inventory movements with invalid batch_id
  */
 async function getInvalidMovements(): Promise<Array<{ id: number; batchId: number | null }>> {
-  const result = await db.execute(sql`
-    SELECT im.id, im.batchId
-    FROM inventoryMovements im
-    LEFT JOIN batches b ON im.batchId = b.id
-    WHERE b.id IS NULL
-    LIMIT 100
-  `);
+  const result = await retryQuery(async () => {
+    return await db.execute(sql`
+      SELECT im.id, im.batchId
+      FROM inventoryMovements im
+      LEFT JOIN batches b ON im.batchId = b.id
+      WHERE b.id IS NULL
+      LIMIT 100
+    `);
+  });
 
   const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
   return (rows as Array<{ id: number; batchId: number | null }>) || [];
@@ -37,12 +66,14 @@ async function getInvalidMovements(): Promise<Array<{ id: number; batchId: numbe
  * Get a random valid batch ID
  */
 async function getRandomBatchId(): Promise<number | null> {
-  const result = await db.execute(sql`
-    SELECT id FROM batches
-    WHERE batchStatus = 'LIVE' AND deletedAt IS NULL
-    ORDER BY RAND()
-    LIMIT 1
-  `);
+  const result = await retryQuery(async () => {
+    return await db.execute(sql`
+      SELECT id FROM batches
+      WHERE batchStatus = 'LIVE'
+      ORDER BY RAND()
+      LIMIT 1
+    `);
+  });
 
   const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
   const batch = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
