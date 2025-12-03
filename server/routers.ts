@@ -47,6 +47,7 @@ import { adminMigrationsRouter } from "./routers/adminMigrations";
 import { adminQuickFixRouter } from "./routers/adminQuickFix";
 import { adminSchemaPushRouter } from "./routers/adminSchemaPush";
 import { adminSchemaRouter } from "./routers/adminSchema";
+import { adminDataAugmentRouter } from "./routers/adminDataAugment";
 import { vipPortalRouter } from "./routers/vipPortal";
 import { vipPortalAdminRouter } from "./routers/vipPortalAdmin";
 // ordersEnhancedV2Router consolidated into ordersRouter (RF-001)
@@ -121,6 +122,7 @@ export const appRouter = router({
   adminQuickFix: adminQuickFixRouter,
   adminSchemaPush: adminSchemaPushRouter,
   adminSchema: adminSchemaRouter,
+  adminDataAugment: adminDataAugmentRouter,
   vipPortal: vipPortalRouter,
   vipPortalAdmin: vipPortalAdminRouter,
   // ordersEnhancedV2: Consolidated into orders router (RF-001)
