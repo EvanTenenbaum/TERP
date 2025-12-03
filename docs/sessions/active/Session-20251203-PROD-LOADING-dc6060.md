@@ -65,7 +65,9 @@ Also added better logging to help diagnose path resolution issues.
 3. `f379a36a` - Add error handling for React mount and Sentry init
 4. `187db1e0` - Make Sentry initialization non-blocking (conditional dynamic import)
 
-**Sentry Fix**: Changed Sentry from blocking top-level import to conditional dynamic import. This ensures Sentry cannot block app startup even if there are issues with the Sentry module itself.
+**Sentry Fix**: Changed Sentry from blocking top-level import to conditional dynamic import AFTER regular imports. This ensures Sentry cannot block app startup even if there are issues with the Sentry module itself.
+
+**ATOMIC ROOT CAUSE IDENTIFIED**: Top-level conditional code or imports BEFORE regular imports can block execution. Moved Sentry import to AFTER all regular imports to ensure React and core app code always execute first.
 
 **Next Steps**: 
 - Continue monitoring for new build version (should show 20251203 date)
