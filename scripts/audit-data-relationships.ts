@@ -30,6 +30,30 @@ import {
 } from "../drizzle/schema.js";
 import { eq, isNull, sql, and, count } from "drizzle-orm";
 
+/**
+ * Retry helper for database queries
+ */
+async function retryQuery<T>(
+  queryFn: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 2000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await queryFn();
+    } catch (error) {
+      const err = error as Error;
+      if (err.message.includes("ETIMEDOUT") && i < maxRetries - 1) {
+        console.log(`  ⚠️  Retry ${i + 1}/${maxRetries} after ${delayMs}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
 interface AuditResult {
   category: string;
   issue: string;
@@ -45,19 +69,18 @@ const results: AuditResult[] = [];
  */
 async function checkOrdersWithoutItems(): Promise<void> {
   try {
-    const ordersWithItems = await db
-      .select({ orderId: orderLineItems.orderId })
-      .from(orderLineItems)
-      .groupBy(orderLineItems.orderId);
+    const result = await retryQuery(async () => {
+      return await db.execute(sql`
+        SELECT o.id
+        FROM orders o
+        LEFT JOIN order_line_items oli ON o.id = oli.order_id
+        WHERE o.is_draft = 0 AND oli.id IS NULL
+        LIMIT 100
+      `);
+    });
 
-    const orderIdsWithItems = new Set(
-      ordersWithItems.map((row) => row.orderId)
-    );
-
-    const allOrders = await db.select({ id: orders.id }).from(orders);
-    const ordersWithoutItems = allOrders.filter(
-      (order) => !orderIdsWithItems.has(order.id)
-    );
+    const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+    const ordersWithoutItems = (rows as Array<{ id: number }>) || [];
 
     results.push({
       category: "Orders",
@@ -86,11 +109,18 @@ async function checkOrdersWithoutItems(): Promise<void> {
  */
 async function checkOrphanedOrderItems(): Promise<void> {
   try {
-    const orphanedItems = await db
-      .select({ id: orderLineItems.id, orderId: orderLineItems.orderId })
-      .from(orderLineItems)
-      .leftJoin(orders, eq(orderLineItems.orderId, orders.id))
-      .where(isNull(orders.id));
+    const result = await retryQuery(async () => {
+      return await db.execute(sql`
+        SELECT oli.id, oli.order_id as orderId
+        FROM order_line_items oli
+        LEFT JOIN orders o ON oli.order_id = o.id
+        WHERE o.id IS NULL
+        LIMIT 100
+      `);
+    });
+
+    const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+    const orphanedItems = (rows as Array<{ id: number; orderId: number }>) || [];
 
     results.push({
       category: "Order Items",
@@ -121,11 +151,18 @@ async function checkOrphanedOrderItems(): Promise<void> {
  */
 async function checkOrderItemsWithInvalidBatch(): Promise<void> {
   try {
-    const invalidBatchItems = await db
-      .select({ id: orderLineItems.id, batchId: orderLineItems.batchId })
-      .from(orderLineItems)
-      .leftJoin(batches, eq(orderLineItems.batchId, batches.id))
-      .where(isNull(batches.id));
+    const result = await retryQuery(async () => {
+      return await db.execute(sql`
+        SELECT oli.id, oli.batch_id as batchId
+        FROM order_line_items oli
+        LEFT JOIN batches b ON oli.batch_id = b.id
+        WHERE b.id IS NULL
+        LIMIT 100
+      `);
+    });
+
+    const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+    const invalidBatchItems = (rows as Array<{ id: number; batchId: number }>) || [];
 
     results.push({
       category: "Order Items",
@@ -156,14 +193,18 @@ async function checkOrderItemsWithInvalidBatch(): Promise<void> {
  */
 async function checkInventoryMovementsWithoutBatch(): Promise<void> {
   try {
-    const invalidMovements = await db
-      .select({
-        id: inventoryMovements.id,
-        batchId: inventoryMovements.batchId,
-      })
-      .from(inventoryMovements)
-      .leftJoin(batches, eq(inventoryMovements.batchId, batches.id))
-      .where(isNull(batches.id));
+    const result = await retryQuery(async () => {
+      return await db.execute(sql`
+        SELECT im.id, im.batchId
+        FROM inventoryMovements im
+        LEFT JOIN batches b ON im.batchId = b.id
+        WHERE b.id IS NULL
+        LIMIT 100
+      `);
+    });
+
+    const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+    const invalidMovements = (rows as Array<{ id: number; batchId: number | null }>) || [];
 
     results.push({
       category: "Inventory Movements",
@@ -196,19 +237,18 @@ async function checkInventoryMovementsWithoutBatch(): Promise<void> {
  */
 async function checkInvoicesWithoutLineItems(): Promise<void> {
   try {
-    const invoicesWithItems = await db
-      .select({ invoiceId: invoiceLineItems.invoiceId })
-      .from(invoiceLineItems)
-      .groupBy(invoiceLineItems.invoiceId);
+    const result = await retryQuery(async () => {
+      return await db.execute(sql`
+        SELECT i.id
+        FROM invoices i
+        LEFT JOIN invoiceLineItems ili ON i.id = ili.invoiceId
+        WHERE ili.id IS NULL
+        LIMIT 100
+      `);
+    });
 
-    const invoiceIdsWithItems = new Set(
-      invoicesWithItems.map((row) => row.invoiceId)
-    );
-
-    const allInvoices = await db.select({ id: invoices.id }).from(invoices);
-    const invoicesWithoutItems = allInvoices.filter(
-      (invoice) => !invoiceIdsWithItems.has(invoice.id)
-    );
+    const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+    const invoicesWithoutItems = (rows as Array<{ id: number }>) || [];
 
     results.push({
       category: "Invoices",
@@ -239,33 +279,31 @@ async function checkInvoicesWithoutLineItems(): Promise<void> {
  */
 async function checkPaymentsWithoutInvoice(): Promise<void> {
   try {
-    // Check AR payments (paymentType = 'RECEIVED') without invoice_id
-    const arPaymentsWithoutInvoice = await db.execute(sql`
-      SELECT id, invoiceId, paymentType
-      FROM payments
-      WHERE paymentType = 'RECEIVED' 
-        AND invoiceId IS NOT NULL
-        AND invoiceId NOT IN (SELECT id FROM invoices)
-    `);
+    const result = await retryQuery(async () => {
+      return await db.execute(sql`
+        SELECT id, invoiceId, paymentType
+        FROM payments
+        WHERE paymentType = 'RECEIVED' 
+          AND invoiceId IS NOT NULL
+          AND invoiceId NOT IN (SELECT id FROM invoices)
+        LIMIT 100
+      `);
+    });
 
-    const rows = Array.isArray(arPaymentsWithoutInvoice) && arPaymentsWithoutInvoice.length > 0 
-      ? arPaymentsWithoutInvoice[0] 
-      : arPaymentsWithoutInvoice;
-
-    const count = Array.isArray(rows) ? rows.length : 0;
+    const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+    const payments = (rows as Array<{ id: number; invoiceId: number }>) || [];
 
     results.push({
       category: "Payments",
       issue: "AR payments with invalid invoice_id",
-      count,
-      severity: count > 0 ? "High" : "Low",
+      count: payments.length,
+      severity: payments.length > 0 ? "High" : "Low",
       details:
-        count > 0 && Array.isArray(rows)
-          ? rows
+        payments.length > 0
+          ? payments
               .slice(0, 10)
               .map(
-                (p: { id: number; invoiceId: number }) =>
-                  `Payment ID: ${p.id}, Invoice ID: ${p.invoiceId}`
+                (p) => `Payment ID: ${p.id}, Invoice ID: ${p.invoiceId}`
               )
           : undefined,
     });
@@ -286,32 +324,30 @@ async function checkPaymentsWithoutInvoice(): Promise<void> {
  */
 async function checkLedgerEntriesWithoutAccount(): Promise<void> {
   try {
-    const invalidEntries = await db.execute(sql`
-      SELECT le.id, le.accountId
-      FROM ledgerEntries le
-      LEFT JOIN accounts a ON le.accountId = a.id
-      WHERE a.id IS NULL
-      LIMIT 100
-    `);
+    const result = await retryQuery(async () => {
+      return await db.execute(sql`
+        SELECT le.id, le.accountId
+        FROM ledgerEntries le
+        LEFT JOIN accounts a ON le.accountId = a.id
+        WHERE a.id IS NULL
+        LIMIT 100
+      `);
+    });
 
-    const rows = Array.isArray(invalidEntries) && invalidEntries.length > 0 
-      ? invalidEntries[0] 
-      : invalidEntries;
-
-    const count = Array.isArray(rows) ? rows.length : 0;
+    const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+    const invalidEntries = (rows as Array<{ id: number; accountId: number }>) || [];
 
     results.push({
       category: "Ledger Entries",
       issue: "Ledger entries with invalid account_id",
-      count,
-      severity: count > 0 ? "High" : "Low",
+      count: invalidEntries.length,
+      severity: invalidEntries.length > 0 ? "High" : "Low",
       details:
-        count > 0 && Array.isArray(rows)
-          ? rows
+        invalidEntries.length > 0
+          ? invalidEntries
               .slice(0, 10)
               .map(
-                (e: { id: number; accountId: number }) =>
-                  `Entry ID: ${e.id}, Account ID: ${e.accountId}`
+                (e) => `Entry ID: ${e.id}, Account ID: ${e.accountId}`
               )
           : undefined,
     });
@@ -332,33 +368,31 @@ async function checkLedgerEntriesWithoutAccount(): Promise<void> {
  */
 async function checkOrdersWithoutInvoices(): Promise<void> {
   try {
-    const saleOrdersWithoutInvoices = await db.execute(sql`
-      SELECT o.id, o.orderNumber, o.invoiceId
-      FROM orders o
-      WHERE o.orderType = 'SALE'
-        AND o.isDraft = false
-        AND (o.invoiceId IS NULL OR o.invoiceId NOT IN (SELECT id FROM invoices))
-      LIMIT 100
-    `);
+    const result = await retryQuery(async () => {
+      return await db.execute(sql`
+        SELECT o.id, o.order_number as orderNumber, o.invoiceId
+        FROM orders o
+        WHERE o.orderType = 'SALE'
+          AND o.is_draft = 0
+          AND (o.invoiceId IS NULL OR o.invoiceId NOT IN (SELECT id FROM invoices))
+        LIMIT 100
+      `);
+    });
 
-    const rows = Array.isArray(saleOrdersWithoutInvoices) && saleOrdersWithoutInvoices.length > 0 
-      ? saleOrdersWithoutInvoices[0] 
-      : saleOrdersWithoutInvoices;
-
-    const count = Array.isArray(rows) ? rows.length : 0;
+    const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+    const saleOrdersWithoutInvoices = (rows as Array<{ id: number; orderNumber: string }>) || [];
 
     results.push({
       category: "Orders",
       issue: "SALE orders without valid invoices",
-      count,
-      severity: count > 0 ? "High" : "Low",
+      count: saleOrdersWithoutInvoices.length,
+      severity: saleOrdersWithoutInvoices.length > 0 ? "High" : "Low",
       details:
-        count > 0 && Array.isArray(rows)
-          ? rows
+        saleOrdersWithoutInvoices.length > 0
+          ? saleOrdersWithoutInvoices
               .slice(0, 10)
               .map(
-                (o: { id: number; orderNumber: string }) =>
-                  `Order ID: ${o.id}, Number: ${o.orderNumber}`
+                (o) => `Order ID: ${o.id}, Number: ${o.orderNumber}`
               )
           : undefined,
     });
@@ -379,14 +413,18 @@ async function checkOrdersWithoutInvoices(): Promise<void> {
  */
 async function checkClientActivityWithoutClient(): Promise<void> {
   try {
-    const invalidActivity = await db
-      .select({
-        id: clientActivity.id,
-        clientId: clientActivity.clientId,
-      })
-      .from(clientActivity)
-      .leftJoin(clients, eq(clientActivity.clientId, clients.id))
-      .where(isNull(clients.id));
+    const result = await retryQuery(async () => {
+      return await db.execute(sql`
+        SELECT ca.id, ca.clientId
+        FROM clientActivity ca
+        LEFT JOIN clients c ON ca.clientId = c.id
+        WHERE c.id IS NULL
+        LIMIT 100
+      `);
+    });
+
+    const rows = Array.isArray(result) && result.length > 0 ? result[0] : result;
+    const invalidActivity = (rows as Array<{ id: number; clientId: number }>) || [];
 
     results.push({
       category: "Client Activity",
