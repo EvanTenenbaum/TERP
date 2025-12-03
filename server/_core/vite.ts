@@ -53,17 +53,29 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
+  // Use process.cwd() for reliable path resolution in production
+  // When bundled, __dirname points to dist/, but process.cwd() is always the app root
   const distPath =
     process.env.NODE_ENV === "development"
       ? path.resolve(__dirname, "../..", "dist", "public")
-      : path.resolve(__dirname, "public");
+      : path.resolve(process.cwd(), "dist", "public");
   
-  // Debug logging removed - use structured logger in production
+  // Log the resolved path for debugging (critical for production issues)
+  logger.info({ distPath, cwd: process.cwd(), __dirname }, "Resolving static file path");
+  
   // Only log errors if directory missing (critical startup issue)
   if (!fs.existsSync(distPath)) {
-    logger.error({ distPath }, "Could not find the build directory - make sure to build the client first");
+    logger.error({ 
+      distPath, 
+      cwd: process.cwd(),
+      __dirname,
+      exists: fs.existsSync(path.resolve(process.cwd(), "dist")),
+      distContents: fs.existsSync(path.resolve(process.cwd(), "dist")) 
+        ? fs.readdirSync(path.resolve(process.cwd(), "dist"))
+        : []
+    }, "Could not find the build directory - make sure to build the client first");
   } else {
-    logger.debug({ distPath }, "Serving static files from build directory");
+    logger.info({ distPath, files: fs.readdirSync(distPath).slice(0, 10) }, "Serving static files from build directory");
   }
 
   // Serve static files with proper cache headers
