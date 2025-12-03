@@ -1,12 +1,3 @@
-// Conditionally initialize Sentry only if DSN is configured
-// This prevents Sentry from blocking app startup if there are any issues
-// Using dynamic import to avoid blocking if Sentry has issues
-if (import.meta.env.VITE_SENTRY_DSN) {
-  import("../../sentry.client.config").catch((error) => {
-    console.warn("Failed to load Sentry, continuing without error tracking:", error);
-  });
-}
-
 import { trpc } from "@/lib/trpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
@@ -14,6 +5,15 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import "./index.css";
+
+// Initialize Sentry AFTER all other imports to prevent blocking
+// Sentry is already wrapped in try-catch in sentry.client.config.ts
+// Only load if DSN is configured (non-blocking)
+if (import.meta.env.VITE_SENTRY_DSN) {
+  import("../../sentry.client.config").catch((error) => {
+    console.warn("Failed to load Sentry, continuing without error tracking:", error);
+  });
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
