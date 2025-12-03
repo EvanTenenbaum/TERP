@@ -142,6 +142,20 @@ pnpm augment:validate
 
 ---
 
+## Quick Start (Easiest Method)
+
+Use the convenience script:
+
+```bash
+./scripts/run-augmentation-via-do-job.sh
+```
+
+This script will:
+1. Deploy the job configuration
+2. Verify the job exists
+3. Run the job
+4. Show you how to monitor it
+
 ## Recommended Approach
 
 **Use Option 1 (DigitalOcean Job)** because:
