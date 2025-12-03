@@ -44,6 +44,9 @@ Also added better logging to help diagnose path resolution issues.
 1. `9434c9f0` - Fix static file path resolution
 2. `c39abc6c` - Add error handling to logger calls
 3. `f379a36a` - Add error handling for React mount and Sentry init
+4. `187db1e0` - Make Sentry initialization non-blocking (conditional dynamic import)
+
+**Sentry Fix**: Changed Sentry from blocking top-level import to conditional dynamic import. This ensures Sentry cannot block app startup even if there are issues with the Sentry module itself.
 
 **Next Steps**: 
 - Continue monitoring for new build version (should show 20251203 date)
