@@ -370,11 +370,11 @@ async function checkOrdersWithoutInvoices(): Promise<void> {
   try {
     const result = await retryQuery(async () => {
       return await db.execute(sql`
-        SELECT o.id, o.order_number as orderNumber, o.invoiceId
+        SELECT o.id, o.order_number as orderNumber, o.invoice_id as invoiceId
         FROM orders o
         WHERE o.orderType = 'SALE'
           AND o.is_draft = 0
-          AND (o.invoiceId IS NULL OR o.invoiceId NOT IN (SELECT id FROM invoices))
+          AND (o.invoice_id IS NULL OR o.invoice_id NOT IN (SELECT id FROM invoices))
         LIMIT 100
       `);
     });
@@ -415,9 +415,9 @@ async function checkClientActivityWithoutClient(): Promise<void> {
   try {
     const result = await retryQuery(async () => {
       return await db.execute(sql`
-        SELECT ca.id, ca.clientId
-        FROM clientActivity ca
-        LEFT JOIN clients c ON ca.clientId = c.id
+        SELECT ca.id, ca.client_id as clientId
+        FROM client_activity ca
+        LEFT JOIN clients c ON ca.client_id = c.id
         WHERE c.id IS NULL
         LIMIT 100
       `);
