@@ -12,6 +12,10 @@ import * as schema from "../drizzle/schema";
 // This allows the script to work both standalone (with .env file) and via API (with server env vars)
 if (!process.env.DATABASE_URL) {
   config();
+  // Also try .env.production if DATABASE_URL still not set
+  if (!process.env.DATABASE_URL) {
+    config({ path: ".env.production" });
+  }
 }
 
 // Create connection pool with SSL configuration
