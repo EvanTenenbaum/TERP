@@ -1117,6 +1117,114 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
   - **Files Affected:**
     - `client/src/components/layout/AppHeader.tsx` (primary component)
 
+---
+
+### FEATURE-003: Live Shopping & Price Negotiation System
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 80h (2 weeks)  
+**Module:** Orders, UI Components  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/FEATURE-003.md` (to be created)
+
+**Problem:** Customers need a real-time shopping experience in the showroom, with the ability to build orders interactively and negotiate prices on specific items before finalizing the purchase.
+
+**Objectives:**
+
+1. Create a "Live Shopping" mode for real-time order creation with customers
+2. Enable iPad/tablet-friendly interface for customer self-service in showroom
+3. Implement price negotiation workflow with "awaiting offer" status
+4. Support vendor consultation for price approval
+5. Provide clear status tracking for negotiated items
+6. Maintain full order history and audit trail
+
+**Deliverables:**
+
+- [ ] Create Live Shopping mode UI component
+  - Tablet-optimized interface (iPad friendly)
+  - Large touch targets for easy interaction
+  - Real-time product search and browsing
+  - Add-to-cart functionality with quantity selection
+  - Running total display
+- [ ] Implement shopping cart with negotiation support
+  - Standard items (confirmed pricing)
+  - Negotiation items (pending pricing)
+  - Status indicators: "Confirmed", "Awaiting Offer", "In Negotiation", "Approved", "Declined"
+- [ ] Create price negotiation workflow
+  - Mark items for negotiation
+  - Add customer requested price
+  - Vendor consultation interface
+  - Approval/decline workflow
+  - Counter-offer capability
+- [ ] Add vendor consultation features
+  - Notification system for pending negotiations
+  - Quick approval interface
+  - Vendor notes and history
+  - Bulk approval for multiple items
+- [ ] Implement order finalization
+  - Convert negotiated items to confirmed pricing
+  - Generate final order with all items
+  - Maintain negotiation history in order metadata
+  - Print/email order summary
+- [ ] Create showroom kiosk mode
+  - Full-screen mode for iPad
+  - Customer-facing interface
+  - Staff override/assistance mode
+  - Session timeout and reset
+- [ ] Add database schema for negotiations
+  - `order_negotiations` table
+  - Track negotiation history
+  - Link to order items
+  - Store vendor responses
+- [ ] Implement tRPC endpoints
+  - `liveShop.createSession` - Start live shopping session
+  - `liveShop.addItem` - Add item to cart
+  - `liveShop.markForNegotiation` - Flag item for price negotiation
+  - `liveShop.submitNegotiation` - Submit negotiation request
+  - `liveShop.approveNegotiation` - Vendor approval
+  - `liveShop.finalizeOrder` - Convert to order
+- [ ] Add comprehensive tests
+  - Unit tests for negotiation logic
+  - Integration tests for workflow
+  - E2E tests for live shopping flow
+- [ ] Create documentation
+  - User guide for live shopping mode
+  - Vendor guide for negotiations
+  - Showroom setup instructions
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+**User Stories:**
+
+1. **As a customer**, I want to browse products on an iPad in the showroom and add items to my cart in real-time, so I can build my order interactively.
+
+2. **As a customer**, I want to request a lower price on specific items, so I can negotiate better deals on bulk purchases.
+
+3. **As a sales rep**, I want to see which items need vendor approval, so I can quickly consult with vendors and provide pricing decisions.
+
+4. **As a vendor**, I want to review negotiation requests and approve/decline them, so I can maintain pricing control while offering flexibility.
+
+5. **As a sales rep**, I want to finalize orders with both confirmed and negotiated items, so I can complete the sale efficiently.
+
+**Technical Notes:**
+
+- Use industry-standard terminology: "Awaiting Offer", "In Negotiation", "Approved", "Declined"
+- Consider real-time updates using WebSockets or polling for multi-user scenarios
+- Implement proper authorization - only vendors can approve negotiations
+- Add audit logging for all negotiation actions
+- Consider offline mode for showroom iPads with sync when online
+- Responsive design for various tablet sizes
+
+**Related Tasks:**
+
+- May require updates to existing order creation flow
+- Consider integration with inventory availability checks
+- May need vendor notification system (email/SMS)
+
+---
+
 ### 🔴 HIGH PRIORITY
 
 - [ ] **Complete Codebase Analysis** (Claude-Session-011CV4V)
