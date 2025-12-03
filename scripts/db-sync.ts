@@ -5,6 +5,7 @@
 
 import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/mysql2";
+import { sql } from "drizzle-orm";
 import mysql from "mysql2/promise";
 import * as schema from "../drizzle/schema";
 
@@ -41,6 +42,7 @@ const poolConfig: any = {
   maxIdle: 2,
   idleTimeout: 60000,
   queueLimit: 0,
+  connectTimeout: 30000, // 30 second connection timeout
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
 };
@@ -53,6 +55,36 @@ if (needsSSL) {
 
 const pool = mysql.createPool(poolConfig);
 
+// Add connection error handling
+pool.on("connection", (connection) => {
+  connection.on("error", (err) => {
+    console.error("[db-sync] MySQL connection error:", err);
+  });
+});
+
+pool.on("error", (err) => {
+  console.error("[db-sync] MySQL pool error:", err);
+});
+
 // Create drizzle instance with schema (same syntax as server/db.ts)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const db = drizzle(pool as any, { schema, mode: "default" });
+
+/**
+ * Test database connection with retry logic
+ */
+export async function testConnection(maxRetries = 3): Promise<boolean> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await db.execute(sql`SELECT 1 as test`);
+      return true;
+    } catch (error) {
+      const err = error as { message?: string; code?: string };
+      if (attempt < maxRetries) {
+        const delay = attempt * 2000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  return false;
+}
