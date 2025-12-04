@@ -24,8 +24,15 @@ function getPermissionIds(permissionNames: string[], allPermissions: any[]) {
 /**
  * Seed RBAC roles, permissions, and role-permission mappings
  * This is idempotent - safe to call multiple times
+ * 
+ * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedRBACDefaults() {
+  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+    console.log("⏭️  SKIP_SEEDING is set - skipping RBAC seeding");
+    return;
+  }
+
   console.log("🌱 Seeding RBAC defaults...");
 
   const db = await getDb();

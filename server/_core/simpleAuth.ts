@@ -221,6 +221,13 @@ export function registerSimpleAuthRoutes(app: Express) {
 
   // Manual seed endpoint (for initial setup)
   app.post("/api/auth/seed", async (req, res) => {
+    // Check if seeding is disabled
+    if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+      return res.status(403).json({
+        error: "Seeding is disabled via SKIP_SEEDING environment variable",
+      });
+    }
+
     try {
       const { seedAllDefaults } = await import("../services/seedDefaults");
       await seedAllDefaults();

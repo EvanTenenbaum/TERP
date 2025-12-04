@@ -12,8 +12,15 @@ import {
 /**
  * Seed default storage locations
  * Creates a main warehouse with zones, racks, shelves, and bins
+ * 
+ * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultLocations() {
+  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+    console.log("⏭️  SKIP_SEEDING is set - skipping location seeding");
+    return;
+  }
+
   console.log("🌱 Seeding default locations...");
 
   const db = await getDb();
@@ -57,8 +64,15 @@ export async function seedDefaultLocations() {
 
 /**
  * Seed default product categories and subcategories
+ * 
+ * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultCategories() {
+  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+    console.log("⏭️  SKIP_SEEDING is set - skipping category seeding");
+    return;
+  }
+
   console.log("🌱 Seeding default categories...");
 
   const db = await getDb();
@@ -127,8 +141,15 @@ export async function seedDefaultCategories() {
 
 /**
  * Seed default product grades
+ * 
+ * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultGrades() {
+  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+    console.log("⏭️  SKIP_SEEDING is set - skipping grade seeding");
+    return;
+  }
+
   console.log("🌱 Seeding default grades...");
 
   const db = await getDb();
@@ -160,8 +181,15 @@ export async function seedDefaultGrades() {
 
 /**
  * Seed default expense categories with parent-child relationships
+ * 
+ * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultExpenseCategories() {
+  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+    console.log("⏭️  SKIP_SEEDING is set - skipping expense category seeding");
+    return;
+  }
+
   console.log("🌱 Seeding default expense categories...");
 
   const db = await getDb();
@@ -228,8 +256,15 @@ export async function seedDefaultExpenseCategories() {
 
 /**
  * Seed default chart of accounts
+ * 
+ * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultChartOfAccounts() {
+  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+    console.log("⏭️  SKIP_SEEDING is set - skipping chart of accounts seeding");
+    return;
+  }
+
   console.log("🌱 Seeding default chart of accounts...");
 
   const db = await getDb();
@@ -279,8 +314,16 @@ export async function seedDefaultChartOfAccounts() {
  * 
  * IMPORTANT: This function is NON-FATAL - it will not crash the server if seeding fails.
  * This ensures the health check endpoints are always available during deployment.
+ * 
+ * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedAllDefaults() {
+  // Bypass seeding if SKIP_SEEDING environment variable is set
+  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+    console.log("⏭️  SKIP_SEEDING is set - skipping all default data seeding");
+    return;
+  }
+
   console.log("🌱 Starting default data seeding...");
 
   try {

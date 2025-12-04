@@ -52,9 +52,17 @@ async function startServer() {
   // Seed default data and create admin user on first startup
   // TEMPORARILY DISABLED: Schema mismatch causing crashes on Railway
   // TODO: Fix schema drift and re-enable seeding
+  // 
+  // NOTE: Seeding can be bypassed by setting SKIP_SEEDING=true environment variable
+  // This allows the app to start even when schema drift prevents seeding
   try {
-    logger.info("Checking for default data and admin user...");
-    // await seedAllDefaults();
+    if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+      logger.info("⏭️  SKIP_SEEDING is set - skipping all default data seeding");
+      logger.info("💡 To enable seeding: remove SKIP_SEEDING or set it to false");
+    } else {
+      logger.info("Checking for default data and admin user...");
+      // await seedAllDefaults(); // Currently disabled due to schema drift
+    }
 
     // Create initial admin user if environment variables are provided
     const { env } = await import("./env");

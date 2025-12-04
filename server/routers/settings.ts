@@ -22,6 +22,11 @@ export const settingsRouter = router({
     .mutation(async ({ input }) => {
       const { scenario } = input;
 
+      // Check if seeding is disabled via environment variable
+      if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+        throw new Error("Seeding is disabled via SKIP_SEEDING environment variable. Remove or set SKIP_SEEDING=false to enable seeding.");
+      }
+
       // Check if seeding is already in progress
       if (isSeeding) {
         throw new Error("Seeding is already in progress. Please wait for it to complete.");
