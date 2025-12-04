@@ -26,12 +26,27 @@ RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 # Copy application source
 COPY . .
 
+# Accept VITE environment variables as build arguments
+# These are needed during the Vite build process to embed into the client bundle
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG VITE_APP_TITLE
+ARG VITE_APP_LOGO
+ARG VITE_APP_ID
+ARG VITE_SENTRY_DSN
+
+# Make VITE variables available as environment variables during build
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_APP_TITLE=$VITE_APP_TITLE
+ENV VITE_APP_LOGO=$VITE_APP_LOGO
+ENV VITE_APP_ID=$VITE_APP_ID
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+
 # Create build timestamp file to bust cache and verify deployed version
 # This RUN command always produces a different output, forcing Docker to rebuild subsequent layers
 RUN echo "BUILD_VERSION=v$(date -u +%Y%m%d-%H%M%S)-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)" > /app/.build-version && \
     cat /app/.build-version
 
-# Build production assets
+# Build production assets with VITE variables embedded
 RUN pnpm run build:production
 
 # Expose default port

@@ -9,18 +9,21 @@
 ## Why Single Environment Makes Sense Now
 
 ### Your Current Stage
+
 - ✅ Pre-launch (no users)
 - ✅ Using "production" as testing anyway
 - ✅ Solo/small team
 - ✅ Fast iteration needed
 
 ### Railway's Safety Net
+
 - ✅ 2-4 minute deploys (fast enough to iterate)
 - ✅ Instant rollbacks (one click)
 - ✅ Deployment history (can redeploy any version)
 - ✅ Health checks (auto-rollback on failure)
 
 ### Cost Savings
+
 - **Single environment**: $10-15/month
 - **With staging**: $23/month
 - **Savings**: $8-13/month ($96-156/year)
@@ -83,7 +86,8 @@ railway variables set ENABLE_RBAC=true
 railway variables set ENABLE_QA_CRONS=true
 railway variables set UPLOAD_DIR=/tmp/uploads
 
-# Vite variables (for build)
+# ⚠️ CRITICAL: Vite variables (needed during Docker build)
+# These MUST be set for frontend to build correctly
 railway variables set VITE_APP_TITLE=TERP
 railway variables set VITE_APP_LOGO=/logo.png
 railway variables set VITE_APP_ID=terp-app
@@ -107,41 +111,57 @@ railway variables set PAPERTRAIL_ENDPOINT=logs.papertrailapp.com:12345
 ```
 
 **Pro tip**: You can also set these in the Railway dashboard:
+
 - Go to: https://railway.app/project/your-project
 - Click "Variables" tab
 - Add variables with nice UI
 
-### Step 5: Configure Build Settings (Optional)
+### Step 5: Configure Docker Build Arguments (REQUIRED)
 
-Railway auto-detects everything, but you can customize:
+**⚠️ CRITICAL**: Railway needs to pass VITE environment variables as Docker build arguments.
 
-```bash
-# Create railway.json (optional)
-cat > railway.json << 'EOF'
+The `railway.json` file is already in the repo and configured correctly:
+
+```json
 {
+  "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "pnpm install && pnpm build"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile",
+    "buildArgs": {
+      "VITE_CLERK_PUBLISHABLE_KEY": "${{VITE_CLERK_PUBLISHABLE_KEY}}",
+      "VITE_APP_TITLE": "${{VITE_APP_TITLE}}",
+      "VITE_APP_LOGO": "${{VITE_APP_LOGO}}",
+      "VITE_APP_ID": "${{VITE_APP_ID}}",
+      "VITE_SENTRY_DSN": "${{VITE_SENTRY_DSN}}"
+    }
   },
   "deploy": {
-    "startCommand": "pnpm start",
-    "healthcheckPath": "/health/live",
-    "healthcheckTimeout": 100,
+    "startCommand": "pnpm run start:production",
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3
+    "restartPolicyMaxRetries": 10,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300
   }
 }
-EOF
-
-git add railway.json
-git commit -m "chore: add Railway configuration"
 ```
 
-**But honestly, you probably don't need this.** Railway auto-detects:
-- Node.js project
-- pnpm package manager
-- Build command from package.json
-- Start command from package.json
+**Why this is needed**:
+
+- Vite needs `VITE_*` variables during build to embed them in client bundle
+- Railway's env vars are only available at runtime by default
+- Build args make them available during Docker build
+
+**Verification**:
+
+```bash
+# Ensure railway.json is committed
+git add railway.json
+git commit -m "chore: add Railway Docker build configuration"
+git push origin main
+```
+
+**See**: `docs/RAILWAY_DOCKER_BUILD_ARGS.md` for detailed explanation
 
 ### Step 6: Deploy! (3 minutes)
 
@@ -323,6 +343,7 @@ railway open
 Update your agent workflows to use Railway:
 
 ### Old (DigitalOcean)
+
 ```bash
 git push origin main
 # Wait 7-11 minutes
@@ -331,6 +352,7 @@ doctl apps logs <app-id>
 ```
 
 ### New (Railway)
+
 ```bash
 git push origin main
 # Wait 2-4 minutes
@@ -368,6 +390,7 @@ railway open
 ## When to Add Staging Environment
 
 Add staging when you have:
+
 - ✅ First paying customers
 - ✅ Multiple people deploying
 - ✅ Need to test before production
@@ -403,11 +426,13 @@ railway up --environment staging
 ## Cost Breakdown
 
 ### Single Environment (Now)
+
 - **App**: ~$8/month (512MB RAM, 0.5 vCPU)
 - **Database**: ~$5/month (1GB storage)
 - **Total**: ~$13/month
 
 ### With Staging (Later)
+
 - **Production app**: ~$8/month
 - **Production DB**: ~$5/month
 - **Staging app**: ~$5/month
