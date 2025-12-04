@@ -247,7 +247,9 @@ railway up
 
 Successfully implemented `SKIP_SEEDING` bypass mechanism to prevent Railway deployment crashes. The implementation is complete, tested, documented, and ready for deployment. The app can now start successfully even when schema drift prevents seeding operations.
 
-**Status**: ✅ Complete and Ready for Production
+**⚠️ IMPORTANT NOTE:** This is a **temporary "duct tape" fix** implemented to get the app online quickly for testing. It needs to be **hardened** into a proper production-ready solution. See **ST-020** in the roadmap for the hardening task.
+
+**Status**: ✅ Complete (Temporary Fix) - Hardening Required (ST-020)
 
 ---
 
