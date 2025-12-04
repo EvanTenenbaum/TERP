@@ -3,6 +3,8 @@
 **Date**: 2025-12-04  
 **Purpose**: Bypass database seeding to get app online for testing when seeding crashes due to schema drift
 
+**⚠️ NOTE:** This is a **temporary workaround**. See **ST-020** in the roadmap for hardening this into a proper production-ready solution.
+
 ---
 
 ## Problem

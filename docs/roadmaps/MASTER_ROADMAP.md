@@ -1474,6 +1474,47 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
   - Estimate: 1-2 days
   - Note: Addresses Kimi AI's finding about missing rate limiting
 
+- [ ] **ST-020: Harden SKIP_SEEDING Bypass** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-020
+  - **Status:** ready
+  - **Priority:** MEDIUM
+  - **Estimate:** 4-8h
+  - **Module:** `server/services/seedDefaults.ts`, `server/services/seedRBAC.ts`, `server/_core/index.ts`
+  - **Dependencies:** Schema drift fix (ST-013 or separate migration task)
+  - **Problem:** SKIP_SEEDING bypass is a temporary "duct tape" fix implemented to prevent Railway crashes. It needs to be hardened into a proper solution.
+  - **Current State:** 
+    - ✅ SKIP_SEEDING bypass implemented and working
+    - ✅ Allows app to start even with schema drift
+    - ⚠️ Temporary workaround - not a permanent solution
+    - ⚠️ Schema drift still needs to be fixed
+  - **Objectives:**
+    1. Fix root cause: Resolve schema drift between code and database
+    2. Implement proper schema validation before seeding
+    3. Add graceful degradation when seeding fails (instead of bypass)
+    4. Create schema migration verification system
+    5. Add health checks for seeding readiness
+    6. Document proper seeding workflow
+  - **Deliverables:**
+    - [ ] Fix schema drift (run migrations or fix-schema-drift script)
+    - [ ] Add schema validation before seeding attempts
+    - [ ] Implement graceful seeding failure handling (log and continue, don't crash)
+    - [ ] Add seeding readiness check (verify schema matches before seeding)
+    - [ ] Create migration verification script
+    - [ ] Update SKIP_SEEDING to be a proper feature flag (not just bypass)
+    - [ ] Add seeding status endpoint (`/api/seed/status`)
+    - [ ] Document proper seeding workflow in production
+    - [ ] Add tests for seeding with schema mismatches
+    - [ ] Remove temporary bypass comments
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+    - [ ] Session archived
+  - **Impact:** Proper production-ready seeding system instead of temporary bypass
+  - **Note:** This replaces the temporary SKIP_SEEDING bypass with a hardened, production-ready solution. The bypass works but should not be permanent.
+  - **Related:** 
+    - Current implementation: `docs/deployment/RAILWAY_SEEDING_BYPASS.md`
+    - Schema drift fix: `scripts/fix-schema-drift.ts`
+    - Session: Session-20251204-SEEDING-BYPASS-eb0b83
+
 - [ ] **ST-014: Fix Broken Test Infrastructure** (Completed: 2025-11-13) 🟡 MEDIUM
   - Task ID: ST-014
   - Issue: 189 pre-existing test failures blocking development
