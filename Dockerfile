@@ -37,6 +37,6 @@ RUN pnpm run build:production
 # Expose default port
 EXPOSE 3000
 
-# Start the production server
-CMD ["pnpm", "run", "start:production"]
+# Start the production server (migrations will run at startup)
+CMD ["sh", "-c", "pnpm drizzle-kit push && pnpm run start:production"]
 
