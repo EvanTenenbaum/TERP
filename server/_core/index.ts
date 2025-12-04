@@ -18,7 +18,7 @@ import {
   readinessCheck,
 } from "./healthCheck";
 import { setupGracefulShutdown } from "./gracefulShutdown";
-import { seedAllDefaults } from "../services/seedDefaults";
+// import { seedAllDefaults } from "../services/seedDefaults"; // TEMPORARILY DISABLED
 import { assignRoleToUser } from "../services/seedRBAC";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
@@ -50,9 +50,11 @@ async function startServer() {
   replaceConsole();
 
   // Seed default data and create admin user on first startup
+  // TEMPORARILY DISABLED: Schema mismatch causing crashes on Railway
+  // TODO: Fix schema drift and re-enable seeding
   try {
     logger.info("Checking for default data and admin user...");
-    await seedAllDefaults();
+    // await seedAllDefaults();
 
     // Create initial admin user if environment variables are provided
     const { env } = await import("./env");
