@@ -12,7 +12,11 @@ import { apiLimiter, authLimiter } from "./rateLimiter";
 import { initMonitoring, setupErrorHandler } from "./monitoring";
 import { requestLogger } from "./requestLogger";
 import { logger, replaceConsole } from "./logger";
-import { performHealthCheck, livenessCheck, readinessCheck } from "./healthCheck";
+import {
+  performHealthCheck,
+  livenessCheck,
+  readinessCheck,
+} from "./healthCheck";
 import { setupGracefulShutdown } from "./gracefulShutdown";
 import { seedAllDefaults } from "../services/seedDefaults";
 import { assignRoleToUser } from "../services/seedRBAC";
@@ -41,55 +45,62 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   // Initialize monitoring
   initMonitoring();
-  
+
   // Replace console with structured logger
   replaceConsole();
-  
+
   // Seed default data and create admin user on first startup
   try {
     logger.info("Checking for default data and admin user...");
     await seedAllDefaults();
-    
+
     // Create initial admin user if environment variables are provided
     const { env } = await import("./env");
     if (env.initialAdminUsername && env.initialAdminPassword) {
       const adminExists = await getUserByEmail(env.initialAdminUsername);
       if (!adminExists) {
         const newAdmin = await simpleAuth.createUser(
-          env.initialAdminUsername, 
-          env.initialAdminPassword, 
+          env.initialAdminUsername,
+          env.initialAdminPassword,
           `${env.initialAdminUsername} (Admin)`
         );
         logger.info(`Admin user created: ${env.initialAdminUsername}`);
-        
+
         // Assign Super Admin role to the initial admin user
         if (newAdmin && newAdmin.openId) {
           await assignRoleToUser(newAdmin.openId, "Super Admin");
-          logger.info(`Super Admin role assigned to ${env.initialAdminUsername}`);
+          logger.info(
+            `Super Admin role assigned to ${env.initialAdminUsername}`
+          );
         }
-        
+
         // Security warning for default credentials
         logger.warn({
           msg: "SECURITY WARNING: Default admin credentials detected",
           username: env.initialAdminUsername,
-          action: "Please change the admin password immediately after first login"
+          action:
+            "Please change the admin password immediately after first login",
         });
       } else {
         logger.info(`Admin user already exists: ${env.initialAdminUsername}`);
       }
     } else {
-      logger.info("No INITIAL_ADMIN_USERNAME/INITIAL_ADMIN_PASSWORD provided - skipping admin user creation");
-      logger.info("Use /api/auth/create-first-user endpoint to create the first admin user");
+      logger.info(
+        "No INITIAL_ADMIN_USERNAME/INITIAL_ADMIN_PASSWORD provided - skipping admin user creation"
+      );
+      logger.info(
+        "Use /api/auth/create-first-user endpoint to create the first admin user"
+      );
     }
   } catch (error) {
     logger.warn({ msg: "Failed to seed defaults or create admin user", error });
   }
-  
+
   const app = express();
   const server = createServer(app);
-  
+
   // Sentry is now auto-instrumented via setupExpressErrorHandler
-  
+
   // Request logging
   app.use(requestLogger);
   // Configure body parser with larger size limit for file uploads
@@ -97,16 +108,17 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // Cookie parser for session management
   app.use(cookieParser());
-  
+
   // Trust proxy headers from DigitalOcean App Platform load balancer
-  app.set('trust proxy', true);
-  
+  app.set("trust proxy", true);
+
   // Simple auth routes under /api/auth
   registerSimpleAuthRoutes(app);
-  
+
   // GitHub webhook endpoint (must be before JSON body parser middleware)
   // We need raw body for signature verification
-  app.post("/api/webhooks/github", 
+  app.post(
+    "/api/webhooks/github",
     express.raw({ type: "application/json" }),
     async (req, res) => {
       try {
@@ -122,22 +134,27 @@ async function startServer() {
       }
     }
   );
-  
+
   // Apply rate limiting
   app.use("/api/trpc", apiLimiter);
   app.use("/api/trpc/auth", authLimiter);
-  
+
   // Health check endpoints
   app.get("/health", async (req, res) => {
     const health = await performHealthCheck();
-    const statusCode = health.status === "healthy" ? 200 : health.status === "degraded" ? 200 : 503;
+    const statusCode =
+      health.status === "healthy"
+        ? 200
+        : health.status === "degraded"
+          ? 200
+          : 503;
     res.status(statusCode).json(health);
   });
-  
+
   app.get("/health/live", (req, res) => {
     res.json(livenessCheck());
   });
-  
+
   app.get("/health/ready", async (req, res) => {
     const ready = await readinessCheck();
     const statusCode = ready.status === "ok" ? 200 : 503;
@@ -154,7 +171,7 @@ async function startServer() {
       if (fs.existsSync(buildVersionPath)) {
         buildVersion = fs.readFileSync(buildVersionPath, "utf-8").trim();
       }
-    } catch (e) {
+    } catch {
       // Ignore errors reading build version
     }
     res.json({
@@ -181,8 +198,9 @@ async function startServer() {
           email: context.user.email,
           role: context.user.role,
         },
-        isPublicDemoUser: context.user.id === -1 || 
-          context.user.openId === "public-demo-user" || 
+        isPublicDemoUser:
+          context.user.id === -1 ||
+          context.user.openId === "public-demo-user" ||
           context.user.email === "demo+public@terp-app.local",
         message: "createContext called successfully",
       });
@@ -193,11 +211,12 @@ async function startServer() {
       });
     }
   });
-  
+
   // Data augmentation HTTP endpoint (temporary bypass for tRPC auth issues)
-  const dataAugmentRouter = (await import("../routers/dataAugmentHttp.js")).default;
+  const dataAugmentRouter = (await import("../routers/dataAugmentHttp.js"))
+    .default;
   app.use("/api/data-augment", dataAugmentRouter);
-  
+
   // tRPC API
   app.use(
     "/api/trpc",
@@ -222,17 +241,17 @@ async function startServer() {
 
   // Sentry error handler (must be after all routes)
   setupErrorHandler(app);
-  
+
   // Setup graceful shutdown
   setupGracefulShutdown();
-  
-  server.listen(port, () => {
-    logger.info(`Server running on http://localhost:${port}/`);
+
+  server.listen(port, "0.0.0.0", () => {
+    logger.info(`Server running on http://0.0.0.0:${port}/`);
     logger.info(`Health check available at http://localhost:${port}/health`);
   });
 }
 
-startServer().catch((error) => {
+startServer().catch(error => {
   logger.error({ error }, "Failed to start server");
   process.exit(1);
 });
