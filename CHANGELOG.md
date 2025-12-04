@@ -1,5 +1,24 @@
 ## [Unreleased]
 
+### Fixed - 2025-12-04 (Railway VITE Build Configuration)
+
+#### Railway Docker Build Args for VITE Variables
+- **Issue**: Frontend not building on Railway due to missing VITE environment variables during Docker build
+- **Root Cause**: Vite requires `VITE_*` env vars during build to embed in client bundle, but Railway env vars only available at runtime
+- **Solution**: 
+  - Updated `Dockerfile` to accept VITE variables as build arguments (ARG)
+  - Created `railway.json` to configure Railway to pass env vars as build args
+  - Documented complete configuration in `docs/RAILWAY_DOCKER_BUILD_ARGS.md`
+- **Impact**: Frontend now builds successfully with all environment variables properly embedded
+- **Verification**: Build completes in 10.84s, all assets generated correctly
+- **Files Changed**:
+  - `Dockerfile` - Added ARG and ENV declarations for VITE variables
+  - `railway.json` - New Railway configuration with buildArgs
+  - `docs/deployment/` - Comprehensive deployment documentation
+  - `docs/RAILWAY_DOCKER_BUILD_ARGS.md` - Detailed guide
+  - `docs/RAILWAY_MIGRATION_GUIDE.md` - Updated with critical step
+- **Commits**: 43878626, 7a9ab42b
+
 ### Added - 2025-11-17 (Session-20251117-db-performance-d6d96289)
 
 #### ST-005: Database Performance Indexes

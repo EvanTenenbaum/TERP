@@ -35,7 +35,7 @@ The Railway deployment was failing because Vite needs `VITE_*` environment varia
 
 ```json
 {
-  "VITE_CLERK_PUBLISHABLE_KEY": "pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA",
+  "VITE_CLERK_PUBLISHABLE_KEY": "pk_test_***",
   "VITE_APP_TITLE": "TERP",
   "VITE_APP_ID": "terp-app",
   "VITE_APP_LOGO": "/logo.png"

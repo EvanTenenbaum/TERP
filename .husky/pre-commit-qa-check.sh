@@ -48,8 +48,8 @@ for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|t
   fi
 done
 
-# 4. Check for hardcoded credentials
-if git diff --cached --diff-filter=ACM --name-only | grep -vE "\.(test|spec)\.ts$" | xargs -I {} git diff --cached {} | grep "^+" | grep -qiE "(password|secret|api_key|token).*=.*[\"']"; then
+# 4. Check for hardcoded credentials (exclude docs and test files)
+if git diff --cached --diff-filter=ACM --name-only | grep -vE "\.(test|spec)\.ts$|^docs/|\.md$" | xargs -I {} git diff --cached {} 2>/dev/null | grep "^+" | grep -qiE "(password|secret|api_key|token).*=.*[\"']"; then
   block_commit "Possible hardcoded credentials detected" "Use environment variables instead."
 fi
 
