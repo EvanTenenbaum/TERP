@@ -22,6 +22,7 @@ import { setupGracefulShutdown } from "./gracefulShutdown";
 import { assignRoleToUser } from "../services/seedRBAC";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
+import { runAutoMigrations } from "../autoMigrate";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -49,16 +50,34 @@ async function startServer() {
   // Replace console with structured logger
   replaceConsole();
 
+  // Run auto-migrations to fix schema drift (adds missing columns/tables)
+  // This ensures the database schema matches what the code expects
+  try {
+    logger.info("🔄 Running auto-migrations to sync database schema...");
+    await runAutoMigrations();
+    logger.info("✅ Auto-migrations complete");
+  } catch (error) {
+    logger.warn({ msg: "Auto-migration failed (non-fatal)", error });
+    // Continue - app may still work depending on what failed
+  }
+
   // Seed default data and create admin user on first startup
   // TEMPORARILY DISABLED: Schema mismatch causing crashes on Railway
   // TODO: Fix schema drift and re-enable seeding
-  // 
+  //
   // NOTE: Seeding can be bypassed by setting SKIP_SEEDING=true environment variable
   // This allows the app to start even when schema drift prevents seeding
   try {
-    if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
-      logger.info("⏭️  SKIP_SEEDING is set - skipping all default data seeding");
-      logger.info("💡 To enable seeding: remove SKIP_SEEDING or set it to false");
+    if (
+      process.env.SKIP_SEEDING === "true" ||
+      process.env.SKIP_SEEDING === "1"
+    ) {
+      logger.info(
+        "⏭️  SKIP_SEEDING is set - skipping all default data seeding"
+      );
+      logger.info(
+        "💡 To enable seeding: remove SKIP_SEEDING or set it to false"
+      );
     } else {
       logger.info("Checking for default data and admin user...");
       // await seedAllDefaults(); // Currently disabled due to schema drift
