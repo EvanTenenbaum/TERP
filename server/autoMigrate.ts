@@ -382,7 +382,9 @@ export async function runAutoMigrations() {
       } else {
         console.log("  ⚠️  clients.vip_portal_last_login:", errMsg);
       }
-       // Add statusId column to batches table (Workflow Queue feature)
+    }
+
+    // Add statusId column to batches table (Workflow Queue feature)
     // NOTE: Schema uses camelCase "statusId" not snake_case
     try {
       await db.execute(
