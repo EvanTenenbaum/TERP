@@ -138,6 +138,8 @@ async function startServer() {
     logger.warn({ msg: "Failed to seed defaults or create admin user", error });
   }
 
+  logger.info("✅ Seeding/admin user setup complete, starting Express server setup...");
+
   const app = express();
   const server = createServer(app);
 
@@ -267,12 +269,16 @@ async function startServer() {
       createContext,
     })
   );
+  logger.info("✅ Routes configured, setting up static files/Vite...");
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
+
+  logger.info("✅ Static files configured, finding available port...");
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
@@ -286,6 +292,8 @@ async function startServer() {
 
   // Setup graceful shutdown
   setupGracefulShutdown();
+
+  logger.info(`✅ All setup complete, starting server on port ${port}...`);
 
   server.listen(port, "0.0.0.0", () => {
     logger.info(`Server running on http://0.0.0.0:${port}/`);
