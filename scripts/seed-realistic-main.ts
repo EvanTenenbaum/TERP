@@ -60,6 +60,14 @@ const ALL_VENDORS = [
 ];
 
 export async function seedRealisticData() {
+  // Check if seeding is disabled via environment variable (case-insensitive)
+  const skipSeeding = process.env.SKIP_SEEDING?.toUpperCase();
+  if (skipSeeding === "TRUE" || skipSeeding === "1") {
+    console.log("⚠️  Seeding is disabled via SKIP_SEEDING environment variable");
+    console.log("   To enable seeding, remove SKIP_SEEDING or set it to false");
+    return;
+  }
+
   // Get scenario from command line args (default to "full")
   const scenarioName = process.argv[2] || "full";
 
