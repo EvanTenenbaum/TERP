@@ -382,20 +382,21 @@ export async function runAutoMigrations() {
       } else {
         console.log("  ⚠️  clients.vip_portal_last_login:", errMsg);
       }
-    }
-
-    // Add statusId column to batches table (fixes schema drift)
+       // Add statusId column to batches table (Workflow Queue feature)
+    // NOTE: Schema uses camelCase "statusId" not snake_case
     try {
       await db.execute(
         sql`ALTER TABLE batches ADD COLUMN statusId INT NULL`
       );
       console.log("  ✅ Added statusId column to batches");
-    } catch (error) {
+    } catch (error: any) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.statusId already exists");
       } else {
-        console.log("  ⚠️  batches.statusId:", errMsg);
+        console.error("  ❌ batches.statusId FAILED:");
+        console.error("  Error message:", errMsg);
+        console.error("  Full error object:", JSON.stringify(error, null, 2));
       }
     }
 
@@ -405,12 +406,14 @@ export async function runAutoMigrations() {
         sql`ALTER TABLE batches ADD COLUMN deleted_at TIMESTAMP NULL`
       );
       console.log("  ✅ Added deleted_at column to batches");
-    } catch (error) {
+    } catch (error: any) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.deleted_at already exists");
       } else {
-        console.log("  ⚠️  batches.deleted_at:", errMsg);
+        console.error("  ❌ batches.deleted_at FAILED:");
+        console.error("  Error message:", errMsg);
+        console.error("  Full error:", JSON.stringify(error, null, 2));
       }
     }
 
@@ -420,12 +423,14 @@ export async function runAutoMigrations() {
         sql`ALTER TABLE batches ADD COLUMN photo_session_event_id INT NULL`
       );
       console.log("  ✅ Added photo_session_event_id column to batches");
-    } catch (error) {
+    } catch (error: any) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.photo_session_event_id already exists");
       } else {
-        console.log("  ⚠️  batches.photo_session_event_id:", errMsg);
+        console.error("  ❌ batches.photo_session_event_id FAILED:");
+        console.error("  Error message:", errMsg);
+        console.error("  Full error:", JSON.stringify(error, null, 2));
       }
     }
 
