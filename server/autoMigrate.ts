@@ -414,6 +414,21 @@ export async function runAutoMigrations() {
       }
     }
 
+    // Add photo_session_event_id column to batches table (Calendar v3.2 feature)
+    try {
+      await db.execute(
+        sql`ALTER TABLE batches ADD COLUMN photo_session_event_id INT NULL`
+      );
+      console.log("  ✅ Added photo_session_event_id column to batches");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  batches.photo_session_event_id already exists");
+      } else {
+        console.log("  ⚠️  batches.photo_session_event_id:", errMsg);
+      }
+    }
+
     // Create VIP Portal tables if they don't exist
     try {
       await db.execute(sql`
