@@ -1,4 +1,6 @@
+
 import "dotenv/config";
+
 // Global error handlers for uncaught exceptions and unhandled rejections
 process.on('uncaughtException', (err) => {
   console.error('❌ UNCAUGHT EXCEPTION:', err);
@@ -12,296 +14,65 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
+
 import express from "express";
-import cookieParser from "cookie-parser";
-import { createServer } from "http";
-import net from "net";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerSimpleAuthRoutes } from "./simpleAuth";
-import { appRouter } from "../routers";
-import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
-import { apiLimiter, authLimiter } from "./rateLimiter";
-import { initMonitoring, setupErrorHandler } from "./monitoring";
-import { requestLogger } from "./requestLogger";
-import { logger, replaceConsole } from "./logger";
-import {
-  performHealthCheck,
-  livenessCheck,
-  readinessCheck,
-} from "./healthCheck";
-import { setupGracefulShutdown } from "./gracefulShutdown";
-// import { seedAllDefaults } from "../services/seedDefaults"; // TEMPORARILY DISABLED
-import { assignRoleToUser } from "../services/seedRBAC";
-import { simpleAuth } from "./simpleAuth";
-import { getUserByEmail } from "../db";
-import { runAutoMigrations } from "../autoMigrate";
-
-function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise(resolve => {
-    const server = net.createServer();
-    server.listen(port, () => {
-      server.close(() => resolve(true));
-    });
-    server.on("error", () => resolve(false));
-  });
-}
-
-async function findAvailablePort(startPort: number = 3000): Promise<number> {
-  for (let port = startPort; port < startPort + 20; port++) {
-    if (await isPortAvailable(port)) {
-      return port;
-    }
-  }
-  throw new Error(`No available port found starting from ${startPort}`);
-}
+import { createConnection } from "mysql2/promise";
+import { logger } from "./logger";
+import http from 'http';
 
 async function startServer() {
-  // Initialize monitoring
-  initMonitoring();
+  console.log("🔍 DIAGNOSTIC MODE ACTIVE");
 
-  // Replace console with structured logger
-  replaceConsole();
-
-  // Run auto-migrations to fix schema drift (adds missing columns/tables)
-  // This ensures the database schema matches what the code expects
   try {
-    logger.info("🔄 Running auto-migrations to sync database schema...");
-    await runAutoMigrations();
-    logger.info("✅ Auto-migrations complete");
-  } catch (error) {
-    logger.warn({ msg: "Auto-migration failed (non-fatal)", error });
-    // Continue - app may still work depending on what failed
-  }
+    // Phase 1: Import statements
+    console.log("Phase 1: Before Import statements");
+    console.log("Phase 1: After Import statements");
 
-  // Seed default data and create admin user on first startup
-  // TEMPORARILY DISABLED: Schema mismatch causing crashes on Railway
-  // TODO: Fix schema drift and re-enable seeding
-  //
-  // NOTE: Seeding can be bypassed by setting SKIP_SEEDING=true environment variable
-  // This allows the app to start even when schema drift prevents seeding
-  try {
-    if (
-      process.env.SKIP_SEEDING === "true" ||
-      process.env.SKIP_SEEDING === "1"
-    ) {
-      logger.info(
-        "⏭️  SKIP_SEEDING is set - skipping all default data seeding"
-      );
-      logger.info(
-        "💡 To enable seeding: remove SKIP_SEEDING or set it to false"
-      );
-    } else {
-      logger.info("Checking for default data and admin user...");
-      // await seedAllDefaults(); // Currently disabled due to schema drift
-    }
-
-    // Create initial admin user if environment variables are provided
-    const { env } = await import("./env");
-    if (env.initialAdminUsername && env.initialAdminPassword) {
-      const adminExists = await getUserByEmail(env.initialAdminUsername);
-      if (!adminExists) {
-        const newAdmin = await simpleAuth.createUser(
-          env.initialAdminUsername,
-          env.initialAdminPassword,
-          `${env.initialAdminUsername} (Admin)`
-        );
-        logger.info(`Admin user created: ${env.initialAdminUsername}`);
-
-        // Assign Super Admin role to the initial admin user
-        if (newAdmin && newAdmin.openId) {
-          await assignRoleToUser(newAdmin.openId, "Super Admin");
-          logger.info(
-            `Super Admin role assigned to ${env.initialAdminUsername}`
-          );
-        }
-
-        // Security warning for default credentials
-        logger.warn({
-          msg: "SECURITY WARNING: Default admin credentials detected",
-          username: env.initialAdminUsername,
-          action:
-            "Please change the admin password immediately after first login",
-        });
-      } else {
-        logger.info(`Admin user already exists: ${env.initialAdminUsername}`);
-      }
-    } else {
-      logger.info(
-        "No INITIAL_ADMIN_USERNAME/INITIAL_ADMIN_PASSWORD provided - skipping admin user creation"
-      );
-      logger.info(
-        "Use /api/auth/create-first-user endpoint to create the first admin user"
-      );
-    }
-  } catch (error) {
-    logger.warn({ msg: "Failed to seed defaults or create admin user", error });
-  }
-
-  logger.info("✅ Seeding/admin user setup complete, starting Express server setup...");
-
-  const app = express();
-  const server = createServer(app);
-
-  // Sentry is now auto-instrumented via setupExpressErrorHandler
-
-  // Request logging
-  app.use(requestLogger);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // Cookie parser for session management
-  app.use(cookieParser());
-
-  // Trust proxy headers from DigitalOcean App Platform load balancer
-  app.set("trust proxy", true);
-
-  // Simple auth routes under /api/auth
-  registerSimpleAuthRoutes(app);
-
-  // GitHub webhook endpoint (must be before JSON body parser middleware)
-  // We need raw body for signature verification
-  app.post(
-    "/api/webhooks/github",
-    express.raw({ type: "application/json" }),
-    async (req, res) => {
-      try {
-        const { handleGitHubWebhook } = await import("../webhooks/github.js");
-        // Convert raw body back to JSON if it's a Buffer
-        if (Buffer.isBuffer(req.body)) {
-          req.body = JSON.parse(req.body.toString());
-        }
-        await handleGitHubWebhook(req, res);
-      } catch (error) {
-        logger.error({ err: error, msg: "GitHub webhook route error" });
-        res.status(500).json({ error: "Internal server error" });
-      }
-    }
-  );
-
-  // Apply rate limiting
-  app.use("/api/trpc", apiLimiter);
-  app.use("/api/trpc/auth", authLimiter);
-
-  // Health check endpoints
-  app.get("/health", async (req, res) => {
-    const health = await performHealthCheck();
-    const statusCode =
-      health.status === "healthy"
-        ? 200
-        : health.status === "degraded"
-          ? 200
-          : 503;
-    res.status(statusCode).json(health);
-  });
-
-  app.get("/health/live", (req, res) => {
-    res.json(livenessCheck());
-  });
-
-  app.get("/health/ready", async (req, res) => {
-    const ready = await readinessCheck();
-    const statusCode = ready.status === "ok" ? 200 : 503;
-    res.status(statusCode).json(ready);
-  });
-
-  // Version check endpoint to verify deployed code
-  app.get("/api/version-check", async (req, res) => {
-    let buildVersion = "unknown";
-    try {
-      const fs = await import("fs");
-      const path = await import("path");
-      const buildVersionPath = path.resolve(process.cwd(), ".build-version");
-      if (fs.existsSync(buildVersionPath)) {
-        buildVersion = fs.readFileSync(buildVersionPath, "utf-8").trim();
-      }
-    } catch {
-      // Ignore errors reading build version
-    }
-    res.json({
-      version: "2025-11-25-v4",
-      build: buildVersion,
-      hasContextLogging: true,
-      hasDebugEndpoint: true,
-      hasDefensiveMiddleware: true,
-      hasPublicUserProvisioning: true,
-      commit: process.env.GIT_COMMIT || "unknown",
-      timestamp: new Date().toISOString(),
+    // Phase 2: Database connection
+    console.log("Phase 2: Before Database connection");
+    const dbHost = process.env.DB_HOST || "localhost";
+    const dbUser = process.env.DB_USER || "root";
+    const dbPassword = process.env.DB_PASSWORD || "";
+    const dbName = process.env.DB_NAME || "test";
+    const dbPort = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306;
+    const connection = await createConnection({
+      host: dbHost,
+      user: dbUser,
+      password: dbPassword,
+      database: dbName,
+      port: dbPort,
     });
-  });
+    console.log("✅ Database connection successful");
+    console.log("Phase 2: After Database connection");
 
-  // Debug endpoint to test createContext directly
-  app.get("/api/debug/context", async (req, res) => {
-    try {
-      const context = await createContext({ req, res });
-      res.json({
-        success: true,
-        user: {
-          id: context.user.id,
-          openId: context.user.openId,
-          email: context.user.email,
-          role: context.user.role,
-        },
-        isPublicDemoUser:
-          context.user.id === -1 ||
-          context.user.openId === "public-demo-user" ||
-          context.user.email === "demo+public@terp-app.local",
-        message: "createContext called successfully",
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  });
+    // Phase 3: Express app creation
+    console.log("Phase 3: Before Express app creation");
+    const app = express();
+    console.log("Phase 3: After Express app creation");
 
-  // Data augmentation HTTP endpoint (temporary bypass for tRPC auth issues)
-  const dataAugmentRouter = (await import("../routers/dataAugmentHttp.js"))
-    .default;
-  app.use("/api/data-augment", dataAugmentRouter);
+    // Phase 4: Basic health route
+    console.log("Phase 4: Before Health Route");
+    app.get("/health", (req, res) => {
+      res.status(200).send("OK");
+    });
+    console.log("Phase 4: After Health Route");
 
-  // tRPC API
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext,
-    })
-  );
-  logger.info("✅ Routes configured, setting up static files/Vite...");
+    // Phase 5: server.listen()
+    console.log("Phase 5: Before server.listen()");
 
-  // development mode uses Vite, production mode uses static files
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+    const port = parseInt(process.env.PORT || "8080", 10);
+    const server = http.createServer(app);
+
+    server.listen(port, () => {
+      console.log(`Server running on http://0.0.0.0:${port}/`);
+    });
+    console.log("Phase 5: After server.listen()");
+
+  } catch (error) {
+    console.error("❌ Error during startup:", error);
+    console.error("Stack:", (error as any).stack);
+    process.exit(1);
   }
-
-  logger.info("✅ Static files configured, finding available port...");
-
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    logger.warn(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
-  // Sentry error handler (must be after all routes)
-  setupErrorHandler(app);
-
-  // Setup graceful shutdown
-  setupGracefulShutdown();
-
-  logger.info(`✅ All setup complete, starting server on port ${port}...`);
-
-  server.listen(port, "0.0.0.0", () => {
-    logger.info(`Server running on http://0.0.0.0:${port}/`);
-    logger.info(`Health check available at http://localhost:${port}/health`);
-  });
 }
 
-startServer().catch(error => {
-  logger.error({ error }, "Failed to start server");
-  process.exit(1);
-});
+startServer();
