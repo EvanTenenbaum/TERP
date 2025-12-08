@@ -1,6 +1,6 @@
 FROM node:20-slim AS base
 
-# Force rebuild: 2025-12-02-BUG-002-FIX
+# Force rebuild: 2025-12-08-RAILWAY-FIX-DATABASE-URL
 LABEL build.version="2025-12-02-BUG-002-FIX" \
       build.description="Fix frontend build failure - add missing VITE env vars"
 
