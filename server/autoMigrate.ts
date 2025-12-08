@@ -384,6 +384,36 @@ export async function runAutoMigrations() {
       }
     }
 
+    // Add statusId column to batches table (fixes schema drift)
+    try {
+      await db.execute(
+        sql`ALTER TABLE batches ADD COLUMN statusId INT NULL`
+      );
+      console.log("  ✅ Added statusId column to batches");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  batches.statusId already exists");
+      } else {
+        console.log("  ⚠️  batches.statusId:", errMsg);
+      }
+    }
+
+    // Add deleted_at column to batches table (ST-013 soft delete support)
+    try {
+      await db.execute(
+        sql`ALTER TABLE batches ADD COLUMN deleted_at TIMESTAMP NULL`
+      );
+      console.log("  ✅ Added deleted_at column to batches");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  batches.deleted_at already exists");
+      } else {
+        console.log("  ⚠️  batches.deleted_at:", errMsg);
+      }
+    }
+
     // Create VIP Portal tables if they don't exist
     try {
       await db.execute(sql`
