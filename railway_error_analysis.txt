@@ -1,0 +1,49 @@
+Railway Deployment Error Analysis
+===================================
+
+Date: 2024-12-08
+Session: Session-20251208-RAILWAY-FIX-8ce562
+
+KEY ERROR IDENTIFIED:
+--------------------
+Error: Unknown column 'statusId' in 'field list'
+SQL State: 42S22
+SQL Message: Unknown column 'statusId' in 'field list'
+
+Exit Code: 1 (ELIFECYCLE Command failed)
+
+CONTEXT:
+--------
+The error occurs during database seeding when trying to insert batch data.
+The seeding script is attempting to reference a column 'statusId' that doesn't exist in the database schema.
+
+This is a SCHEMA DRIFT issue - the code expects columns that don't exist in the Railway MySQL database.
+
+PREVIOUS KNOWN ISSUES (from documentation):
+------------------------------------------
+1. Missing column: 'vip_portal_enabled' 
+2. Missing column: 'vip_portal_last_login'
+
+NEW ISSUE DISCOVERED:
+--------------------
+3. Missing column: 'statusId' in batch/inventory related table
+
+ROOT CAUSE:
+-----------
+The seeding script is failing because the database schema on Railway doesn't match the code schema.
+Multiple columns are missing, causing the seeding process to crash during startup.
+
+SOLUTION STRATEGY:
+-----------------
+1. Set SKIP_SEEDING=true environment variable in Railway to bypass all seeding
+2. This will allow the app to start without running the problematic seeding scripts
+3. The app can function without seeded data for testing purposes
+4. Schema drift can be fixed separately later
+
+NEXT STEPS:
+-----------
+1. Check if SKIP_SEEDING is already set in Railway
+2. If not, set it via Railway CLI or dashboard
+3. Trigger a new deployment
+4. Verify app starts successfully
+5. Test frontend and backend functionality
