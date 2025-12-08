@@ -1,6 +1,5 @@
 
 import "dotenv/config";
-
 // Global error handlers for uncaught exceptions and unhandled rejections
 process.on('uncaughtException', (err) => {
   console.error('❌ UNCAUGHT EXCEPTION:', err);
@@ -14,107 +13,248 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-
 import express from "express";
+import cookieParser from "cookie-parser";
+import { createServer } from "http";
+import net from "net";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { registerSimpleAuthRoutes } from "./simpleAuth";
+import { appRouter } from "../../routers";
+import { createContext } from "./context";
+import { serveStatic, setupVite } from "./vite";
+import { apiLimiter, authLimiter } from "./rateLimiter";
+import { initMonitoring, setupErrorHandler } from "./monitoring";
+import { requestLogger } from "./requestLogger";
+import { logger, replaceConsole } from "./logger";
+import {
+  performHealthCheck,
+  livenessCheck,
+  readinessCheck,
+} from "./healthCheck";
+import { setupGracefulShutdown } from "./gracefulShutdown";
+import { seedAllDefaults } from "../../services/seedDefaults"; // TEMPORARILY DISABLED
+import { assignRoleToUser } from "../../services/seedRBAC";
+import { simpleAuth } from "./simpleAuth";
+import { getUserByEmail } from "../../db";
+import { runAutoMigrations } from "../../autoMigrate";
 import { createConnection } from "mysql2/promise";
-import { logger } from "./logger";
-import http from 'http';
+
+function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise(resolve => {
+    const server = net.createServer();
+    server.listen(port, () => {
+      server.close(() => resolve(true));
+    });
+    server.on("error", () => resolve(false));
+  });
+}
+
+async function findAvailablePort(startPort: number = 3000): Promise<number> {
+  for (let port = startPort; port < startPort + 20; port++) {
+    if (await isPortAvailable(port)) {
+      return port;
+    }
+  }
+  throw new Error(`No available port found starting from ${startPort}`);
+}
 
 async function startServer() {
-  console.log("🔍 DIAGNOSTIC MODE ACTIVE");
+  // Initialize monitoring
+  initMonitoring();
 
-  try {
-    // Phase 1: Import statements
-    console.log("Phase 1: Before Import statements");
-    console.log("Phase 1: After Import statements");
+  // Replace console with structured logger
+  replaceConsole();
 
-    // Phase 2: Database connection
-    console.log("Phase 2: Before Database connection");
+  // Database Configuration
+  let dbHost = process.env.DB_HOST || "localhost";
+  let dbUser = process.env.DB_USER || "root";
+  let dbPassword = process.env.DB_PASSWORD || "";
+  let dbName = process.env.DB_NAME || "test";
+  let dbPort = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306;
 
-    // Log database environment variables
-    console.log("Database Environment Variables:");
-    console.log(`DB_HOST: ${process.env.DB_HOST}`);
-    console.log(`DB_USER: ${process.env.DB_USER}`);
-    console.log(`DB_PASSWORD: ${process.env.DB_PASSWORD ? '********' : ''}`);
-    console.log(`DB_NAME: ${process.env.DB_NAME}`);
-    console.log(`DB_PORT: ${process.env.DB_PORT}`);
-    console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? (process.env.DATABASE_URL.includes(':') ? process.env.DATABASE_URL.substring(0, process.env.DATABASE_URL.indexOf(':')) + ':********' + process.env.DATABASE_URL.substring(process.env.DATABASE_URL.lastIndexOf('@')) : '********') : ''}`);
-
-    let dbHost = process.env.DB_HOST || "localhost";
-    let dbUser = process.env.DB_USER || "root";
-    let dbPassword = process.env.DB_PASSWORD || "";
-    let dbName = process.env.DB_NAME || "test";
-    let dbPort = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306;
-
-    if (process.env.DATABASE_URL) {
-      try {
-        const url = new URL(process.env.DATABASE_URL);
-        dbHost = url.hostname;
-        dbUser = url.username;
-        dbPassword = url.password;
-        dbName = url.pathname.substring(1); // Remove the leading slash
-        dbPort = parseInt(url.port, 10) || 3306;
-
-        console.log("Using DATABASE_URL configuration.");
-      } catch (urlError) {
-        console.error("Error parsing DATABASE_URL:", urlError);
-      }
-    }
-
-    console.log("Attempting database connection with:");
-    console.log(`Host: ${dbHost}`);
-    console.log(`User: ${dbUser}`);
-    console.log(`Database: ${dbName}`);
-    console.log(`Port: ${dbPort}`);
-
-    let connection;
+  if (process.env.DATABASE_URL) {
     try {
-      connection = await createConnection({
-        host: dbHost,
-        user: dbUser,
-        password: dbPassword,
-        database: dbName,
-        port: dbPort,
-      });
-      console.log("✅ Database connection successful");
-      console.log("Phase 2: After Database connection");
-    } catch (dbError: any) {
-      console.error("❌ Error during database connection:", dbError);
-      console.error("Error Message:", dbError.message);
-      console.error("Error Code:", dbError.code);
-      console.error("Error Number:", dbError.errno);
-      console.error("Stack:", dbError.stack);
-      process.exit(1);
+      const url = new URL(process.env.DATABASE_URL);
+      dbHost = url.hostname;
+      dbUser = url.username;
+      dbPassword = url.password;
+      dbName = url.pathname.substring(1); // Remove the leading slash
+      dbPort = parseInt(url.port, 10) || 3306;
+
+      logger.info("Using DATABASE_URL configuration.");
+    } catch (urlError) {
+      logger.error({ msg: "Error parsing DATABASE_URL", error: urlError });
+    }
+  }
+
+  logger.info({
+    msg: "Attempting database connection",
+    host: dbHost,
+    user: dbUser,
+    database: dbName,
+    port: dbPort,
+  });
+
+  let connection;
+  try {
+    connection = await createConnection({
+      host: dbHost,
+      user: dbUser,
+      password: dbPassword,
+      database: dbName,
+      port: dbPort,
+    });
+    logger.info("✅ Database connection successful");
+  } catch (dbError: any) {
+    logger.error({
+      msg: "❌ Error during database connection",
+      error: dbError,
+      dbHost,
+      dbUser,
+      dbName,
+      dbPort,
+      errorMessage: dbError.message,
+      errorCode: dbError.code,
+      errorNumber: dbError.errno,
+      stack: dbError.stack,
+    });
+    process.exit(1);
+    return; // Ensure function exits after exiting process
+  }
+
+
+  // Run auto-migrations to fix schema drift (adds missing columns/tables)
+  // This ensures the database schema matches what the code expects
+  try {
+    logger.info("🔄 Running auto-migrations to sync database schema...");
+    await runAutoMigrations();
+    logger.info("✅ Auto-migrations complete");
+  } catch (error) {
+    logger.warn({ msg: "Auto-migration failed (non-fatal)", error });
+    // Continue - app may still work depending on what failed
+  }
+
+  // Seed default data and create admin user on first startup
+  // TEMPORARILY DISABLED: Schema mismatch causing crashes on Railway
+  // TODO: Fix schema drift and re-enable seeding
+  //
+  // NOTE: Seeding can be bypassed by setting SKIP_SEEDING=true environment variable
+  // This allows the app to start even when schema drift prevents seeding
+  try {
+    if (
+      process.env.SKIP_SEEDING === "true" ||
+      process.env.SKIP_SEEDING === "1"
+    ) {
+      logger.info(
+        "⏭️  SKIP_SEEDING is set - skipping all default data seeding"
+      );
+      logger.info(
+        "💡 To enable seeding: remove SKIP_SEEDING or set it to false"
+      );
+    } else {
+      logger.info("Checking for default data and admin user...");
+      await seedAllDefaults(); // Currently disabled due to schema drift
     }
 
-    // Phase 3: Express app creation
-    console.log("Phase 3: Before Express app creation");
-    const app = express();
-    console.log("Phase 3: After Express app creation");
+    // Create initial admin user if environment variables are provided
+    const { env } = await import("./env");
+    if (env.initialAdminUsername && env.initialAdminPassword) {
+      const adminExists = await getUserByEmail(env.initialAdminUsername);
+      if (!adminExists) {
+        const newAdmin = await simpleAuth.createUser(
+          env.initialAdminUsername,
+          env.initialAdminPassword,
+          `${env.initialAdminUsername} (Admin)`
+        );
+        logger.info(`Admin user created: ${env.initialAdminUsername}`);
 
-    // Phase 4: Basic health route
-    console.log("Phase 4: Before Health Route");
-    app.get("/health", (req, res) => {
-      res.status(200).send("OK");
-    });
-    console.log("Phase 4: After Health Route");
+        // Assign Super Admin role to the initial admin user
+        if (newAdmin && newAdmin.openId) {
+          await assignRoleToUser(newAdmin.openId, "Super Admin");
+          logger.info(
+            `Super Admin role assigned to ${env.initialAdminUsername}`
+          );
+        }
 
-    // Phase 5: server.listen()
-    console.log("Phase 5: Before server.listen()");
-
-    const port = parseInt(process.env.PORT || "8080", 10);
-    const server = http.createServer(app);
-
-    server.listen(port, () => {
-      console.log(`Server running on http://0.0.0.0:${port}/`);
-    });
-    console.log("Phase 5: After server.listen()");
-
-  } catch (error: any) {
-    console.error("❌ Error during startup:", error);
-    console.error("Stack:", error.stack);
-    process.exit(1);
+        // Security warning for default credentials
+        logger.warn({
+          msg: "SECURITY WARNING: Default admin credentials detected",
+          username: env.initialAdminUsername,
+          action:
+            "Please change the admin password immediately after first login",
+        });
+      } else {
+        logger.info(`Admin user already exists: ${env.initialAdminUsername}`);
+      }
+    } else {
+      logger.info(
+        "No INITIAL_ADMIN_USERNAME/INITIAL_ADMIN_PASSWORD provided - skipping admin user creation"
+      );
+      logger.info(
+        "Use /api/auth/create-first-user endpoint to create the first admin user"
+      );
+    }
+  } catch (error) {
+    logger.warn({ msg: "Failed to seed defaults or create admin user", error });
   }
+
+
+  const app = express();
+
+  // Trust Proxy
+  app.set("trust proxy", 1);
+
+  // Apply rate limiters
+  app.use("/api/", apiLimiter); // Rate limit all /api routes
+  app.use("/api/auth/", authLimiter); // Rate limit /api/auth routes
+
+  // Log all requests
+  app.use(requestLogger);
+
+  app.use(cookieParser()); // Parse cookies
+
+  // Health check endpoints
+  app.get("/healthz", performHealthCheck); // Full health check
+  app.get("/livez", livenessCheck); // Liveness probe
+  app.get("/readyz", readinessCheck); // Readiness probe
+
+  // Register simple auth routes (login, logout, register)
+  registerSimpleAuthRoutes(app);
+
+  // trpc handler
+  app.use(
+    "/api/trpc",
+    createExpressMiddleware({
+      router: appRouter,
+      createContext,
+      onError: setupErrorHandler,
+    })
+  );
+
+  // Serve static assets
+  if (process.env.NODE_ENV === "production") {
+    serveStatic(app);
+  } else {
+    await setupVite(app);
+  }
+
+  // Error handling middleware (must be defined after all routes)
+  setupErrorHandler(app);
+
+  // Find an available port
+  const port = parseInt(process.env.PORT || "3000", 10);
+  const actualPort = await findAvailablePort(port);
+
+  // Create HTTP server
+  const server = createServer(app);
+
+  // Set up graceful shutdown
+  setupGracefulShutdown(server);
+
+  // Start listening on the available port
+  server.listen(actualPort, () => {
+    logger.info(`Server listening at http://localhost:${actualPort}`);
+  });
 }
 
 startServer();
