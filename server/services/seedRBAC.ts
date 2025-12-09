@@ -158,8 +158,9 @@ export async function assignRoleToUser(userOpenId: string, roleName: string) {
       `✅ Successfully assigned role "${roleName}" to user ${userOpenId}`
     );
   } catch (error) {
-    // Log the error but DON'T throw - role assignment failure should not crash the server
-    console.error(`❌ Error assigning role to user (non-fatal):`, error);
+    // Log the error and re-throw so the caller can decide how to handle it
+    console.error(`❌ Error assigning role to user:`, error);
     console.warn(`⚠️ User ${userOpenId} may not have the expected permissions`);
+    throw error; // Re-throw the error
   }
 }

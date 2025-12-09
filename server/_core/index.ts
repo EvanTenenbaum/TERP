@@ -70,8 +70,9 @@ async function startServer() {
     await runAutoMigrations();
     logger.info("✅ Auto-migrations complete");
   } catch (error) {
-    logger.warn({ msg: "Auto-migration failed (non-fatal)", error });
-    // Continue - app may still work depending on what failed
+    logger.error({ msg: "CRITICAL: Auto-migration failed - database schema may be out of sync", error });
+    logger.error("Cannot start server with failed migrations - data corruption risk");
+    process.exit(1); // Prevent server from starting with schema issues
   }
 
   // Seed default data and create admin user on first startup
@@ -109,10 +110,21 @@ async function startServer() {
 
         // Assign Super Admin role to the initial admin user
         if (newAdmin && newAdmin.openId) {
-          await assignRoleToUser(newAdmin.openId, "Super Admin");
-          logger.info(
-            `Super Admin role assigned to ${env.initialAdminUsername}`
-          );
+          try {
+            await assignRoleToUser(newAdmin.openId, "Super Admin");
+            logger.info(
+              `Super Admin role assigned to ${env.initialAdminUsername}`
+            );
+          } catch (error) {
+            logger.warn({
+              msg: "Failed to assign Super Admin role",
+              error,
+              userOpenId: newAdmin.openId,
+            });
+            // IMPORTANT: Log the error, but DO NOT re-throw.
+            // Allow the server to start even if role assignment fails.
+            // We can handle RBAC issues later through the admin interface.
+          }
         }
 
         // Security warning for default credentials
