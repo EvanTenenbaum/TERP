@@ -81,10 +81,9 @@ async function startServer() {
   // NOTE: Seeding can be bypassed by setting SKIP_SEEDING=true environment variable
   // This allows the app to start even when schema drift prevents seeding
   try {
-    if (
-      process.env.SKIP_SEEDING === "true" ||
-      process.env.SKIP_SEEDING === "1"
-    ) {
+    // Check SKIP_SEEDING (case-insensitive)
+    const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+    if (skipSeeding === "true" || skipSeeding === "1") {
       logger.info(
         "⏭️  SKIP_SEEDING is set - skipping all default data seeding"
       );
