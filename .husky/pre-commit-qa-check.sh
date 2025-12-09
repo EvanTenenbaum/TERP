@@ -41,8 +41,8 @@ if git diff --cached --diff-filter=ACM | grep "^+" | grep -q ': "any"'; then
   block_commit "Found new 'any' types" "Define proper TypeScript interfaces."
 fi
 
-# 3. Check for large files
-for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$'); do
+# 3. Check for large files (exclude drizzle/ schema files which are consolidated by design)
+for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' | grep -v '^drizzle/'); do
   if [ -f "$file" ] && [ $(wc -l < "$file") -gt 500 ]; then
     block_commit "$file has more than 500 lines" "Split into smaller modules."
   fi
