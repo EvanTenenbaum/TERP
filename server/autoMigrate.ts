@@ -396,117 +396,129 @@ export async function runAutoMigrations() {
     }
 
     // Create RBAC tables if they don't exist
+    // NOTE: Indexes are NOT created here to avoid conflicts with migration 0022_create_rbac_tables.sql
+    // The migration file handles index creation. This fallback only creates base tables for
+    // environments where migrations never ran (e.g., completely blank database).
+
+    // Check if migrations have been applied by looking for __drizzle_migrations table
+    let migrationsApplied = false;
     try {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS roles (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(100) NOT NULL UNIQUE,
-          description TEXT,
-          is_system_role INT NOT NULL DEFAULT 0,
-          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_roles_name (name)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      console.log("  ✅ Created roles table");
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  roles table already exists");
-      } else {
-        console.log("  ⚠️  roles table:", errMsg);
-      }
+      await db.execute(sql`SELECT 1 FROM __drizzle_migrations LIMIT 1`);
+      migrationsApplied = true;
+      console.log(
+        "  ℹ️  Drizzle migrations detected - skipping RBAC table creation (handled by migration 0022)"
+      );
+    } catch {
+      // __drizzle_migrations doesn't exist, proceed with table creation
+      console.log(
+        "  ℹ️  No migration table found - will create RBAC tables as fallback"
+      );
     }
 
-    try {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS permissions (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(100) NOT NULL UNIQUE,
-          description TEXT,
-          module VARCHAR(50) NOT NULL,
-          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_permissions_name (name),
-          INDEX idx_permissions_module (module)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      console.log("  ✅ Created permissions table");
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  permissions table already exists");
-      } else {
-        console.log("  ⚠️  permissions table:", errMsg);
+    if (!migrationsApplied) {
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS roles (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            description TEXT,
+            is_system_role INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("  ✅ Created roles table");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
+          console.log("  ℹ️  roles table already exists");
+        } else {
+          console.log("  ⚠️  roles table:", errMsg);
+        }
       }
-    }
 
-    try {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS role_permissions (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          role_id INT NOT NULL,
-          permission_id INT NOT NULL,
-          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_role_permissions_role (role_id),
-          INDEX idx_role_permissions_permission (permission_id),
-          FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
-          FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      console.log("  ✅ Created role_permissions table");
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  role_permissions table already exists");
-      } else {
-        console.log("  ⚠️  role_permissions table:", errMsg);
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS permissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            description TEXT,
+            module VARCHAR(50) NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("  ✅ Created permissions table");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
+          console.log("  ℹ️  permissions table already exists");
+        } else {
+          console.log("  ⚠️  permissions table:", errMsg);
+        }
       }
-    }
 
-    try {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS user_roles (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          user_id VARCHAR(255) NOT NULL,
-          role_id INT NOT NULL,
-          assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          assigned_by VARCHAR(255),
-          INDEX idx_user_roles_user (user_id),
-          INDEX idx_user_roles_role (role_id),
-          FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      console.log("  ✅ Created user_roles table");
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  user_roles table already exists");
-      } else {
-        console.log("  ⚠️  user_roles table:", errMsg);
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS role_permissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            role_id INT NOT NULL,
+            permission_id INT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+            FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("  ✅ Created role_permissions table");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
+          console.log("  ℹ️  role_permissions table already exists");
+        } else {
+          console.log("  ⚠️  role_permissions table:", errMsg);
+        }
       }
-    }
 
-    try {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS user_permission_overrides (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          user_id VARCHAR(255) NOT NULL,
-          permission_id INT NOT NULL,
-          granted INT NOT NULL,
-          granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          granted_by VARCHAR(255),
-          INDEX idx_user_permission_overrides_user (user_id),
-          INDEX idx_user_permission_overrides_permission (permission_id),
-          FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      console.log("  ✅ Created user_permission_overrides table");
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  user_permission_overrides table already exists");
-      } else {
-        console.log("  ⚠️  user_permission_overrides table:", errMsg);
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS user_roles (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            role_id INT NOT NULL,
+            assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            assigned_by VARCHAR(255),
+            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("  ✅ Created user_roles table");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
+          console.log("  ℹ️  user_roles table already exists");
+        } else {
+          console.log("  ⚠️  user_roles table:", errMsg);
+        }
+      }
+
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS user_permission_overrides (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            permission_id INT NOT NULL,
+            granted INT NOT NULL,
+            granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            granted_by VARCHAR(255),
+            FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("  ✅ Created user_permission_overrides table");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
+          console.log("  ℹ️  user_permission_overrides table already exists");
+        } else {
+          console.log("  ⚠️  user_permission_overrides table:", errMsg);
+        }
       }
     }
 
