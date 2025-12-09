@@ -26,6 +26,18 @@ CLERK_PUBLISHABLE_KEY=<your-clerk-key>
 CLERK_SECRET_KEY=<your-clerk-secret>
 ```
 
+### Railway-Specific Variables
+
+**Required for Railway deployments:**
+
+```bash
+SKIP_SEEDING=true
+```
+
+This bypasses default data seeding during startup to prevent crashes from schema drift. The application checks this variable in `server/_core/index.ts` and skips seeding when set to `"true"` or `"1"`.
+
+**Note:** This is a temporary workaround. Once schema drift is resolved, seeding can be re-enabled by removing this variable.
+
 ### Validation
 
 The application will automatically validate environment variables at startup. If validation fails, check the logs for specific error messages.

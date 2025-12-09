@@ -13,6 +13,7 @@ This index provides quick access to all deployment-related documentation.
 docs/
 ├── deployment/                          # Deployment-specific docs
 │   ├── README.md                        # Main deployment guide
+│   ├── DEPLOY_SKIP_SEEDING.md          # SKIP_SEEDING deployment guide
 │   ├── RAILWAY_VITE_BUILD_FIX.md       # VITE fix quick summary
 │   ├── RAILWAY_VITE_FIX_COMPLETE_SUMMARY.md  # Full verification
 │   └── RAILWAY_DEPLOYMENT_STATUS.md    # Current deployment status
@@ -20,7 +21,8 @@ docs/
 ├── RAILWAY_DOCKER_BUILD_ARGS.md        # Docker build configuration
 ├── RAILWAY_ENV_SETUP_COMPLETE.md       # Environment variables
 ├── RAILWAY_ATOMIC_MIGRATION_PLAN.md    # Migration planning
-└── PLATFORM_COMPARISON_ANALYSIS.md     # Railway vs DigitalOcean
+├── PLATFORM_COMPARISON_ANALYSIS.md     # Railway vs DigitalOcean
+└── railway.json.md                      # Railway config documentation
 ```
 
 ---
@@ -88,6 +90,31 @@ docs/
 - Optional variables
 - Secret generation
 - Verification steps
+
+#### [Railway Configuration Documentation](../../railway.json.md)
+
+**Purpose**: Detailed explanation of railway.json configuration  
+**Audience**: Developers, DevOps  
+**Status**: Complete  
+**Topics**:
+
+- Build configuration
+- Health check settings
+- Restart policies
+- Environment variable integration
+- Troubleshooting
+
+#### [SKIP_SEEDING Deployment Guide](./DEPLOY_SKIP_SEEDING.md)
+
+**Purpose**: Guide for deploying with SKIP_SEEDING bypass  
+**Audience**: Developers, DevOps  
+**Status**: Complete  
+**Topics**:
+
+- SKIP_SEEDING environment variable
+- Deployment steps
+- Verification checklist
+- Troubleshooting
 
 ### Recent Fixes
 
