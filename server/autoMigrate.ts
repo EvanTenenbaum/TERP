@@ -158,14 +158,11 @@ export async function runAutoMigrations() {
       );
       console.log("  ✅ Added openthcId column");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate column")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  openthcId column already exists");
       } else {
-        console.log("  ⚠️  openthcId:", error.message);
+        console.log("  ⚠️  openthcId:", errMsg);
       }
     }
 
@@ -176,14 +173,11 @@ export async function runAutoMigrations() {
       );
       console.log("  ✅ Added openthcStub column");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate column")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  openthcStub column already exists");
       } else {
-        console.log("  ⚠️  openthcStub:", error.message);
+        console.log("  ⚠️  openthcStub:", errMsg);
       }
     }
 
@@ -194,14 +188,11 @@ export async function runAutoMigrations() {
       );
       console.log("  ✅ Added parentStrainId column");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate column")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  parentStrainId column already exists");
       } else {
-        console.log("  ⚠️  parentStrainId:", error.message);
+        console.log("  ⚠️  parentStrainId:", errMsg);
       }
     }
 
@@ -212,14 +203,11 @@ export async function runAutoMigrations() {
       );
       console.log("  ✅ Added baseStrainName column");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate column")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  baseStrainName column already exists");
       } else {
-        console.log("  ⚠️  baseStrainName:", error.message);
+        console.log("  ⚠️  baseStrainName:", errMsg);
       }
     }
 
@@ -230,14 +218,11 @@ export async function runAutoMigrations() {
       );
       console.log("  ✅ Added strainId to client_needs");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate column")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  client_needs.strainId already exists");
       } else {
-        console.log("  ⚠️  client_needs.strainId:", error.message);
+        console.log("  ⚠️  client_needs.strainId:", errMsg);
       }
     }
 
@@ -248,15 +233,11 @@ export async function runAutoMigrations() {
       );
       console.log("  ✅ Created index on openthcId");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate") ||
-            error.message.includes("already exists")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
         console.log("  ℹ️  Index on openthcId already exists");
       } else {
-        console.log("  ⚠️  Index openthcId:", error.message);
+        console.log("  ⚠️  Index openthcId:", errMsg);
       }
     }
 
@@ -266,15 +247,11 @@ export async function runAutoMigrations() {
       );
       console.log("  ✅ Created index on parentStrainId");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate") ||
-            error.message.includes("already exists")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
         console.log("  ℹ️  Index on parentStrainId already exists");
       } else {
-        console.log("  ⚠️  Index parentStrainId:", error.message);
+        console.log("  ⚠️  Index parentStrainId:", errMsg);
       }
     }
 
@@ -284,15 +261,11 @@ export async function runAutoMigrations() {
       );
       console.log("  ✅ Created index on baseStrainName");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate") ||
-            error.message.includes("already exists")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
         console.log("  ℹ️  Index on baseStrainName already exists");
       } else {
-        console.log("  ⚠️  Index baseStrainName:", error.message);
+        console.log("  ⚠️  Index baseStrainName:", errMsg);
       }
     }
 
@@ -302,15 +275,11 @@ export async function runAutoMigrations() {
       );
       console.log("  ✅ Created index on client_needs.strainId");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate") ||
-            error.message.includes("already exists")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
         console.log("  ℹ️  Index on client_needs.strainId already exists");
       } else {
-        console.log("  ⚠️  Index client_needs.strainId:", error.message);
+        console.log("  ⚠️  Index client_needs.strainId:", errMsg);
       }
     }
 
@@ -323,15 +292,11 @@ export async function runAutoMigrations() {
       `);
       console.log("  ✅ Added foreign key fk_parent_strain");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate") ||
-            error.message.includes("already exists")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
         console.log("  ℹ️  Foreign key fk_parent_strain already exists");
       } else {
-        console.log("  ⚠️  Foreign key fk_parent_strain:", error.message);
+        console.log("  ⚠️  Foreign key fk_parent_strain:", errMsg);
       }
     }
 
@@ -343,15 +308,11 @@ export async function runAutoMigrations() {
       `);
       console.log("  ✅ Added foreign key fk_client_needs_strain");
     } catch (error) {
-      if (
-        error instanceof Error
-          ? error.message
-          : String(error).includes("Duplicate") ||
-            error.message.includes("already exists")
-      ) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate") || errMsg.includes("already exists")) {
         console.log("  ℹ️  Foreign key fk_client_needs_strain already exists");
       } else {
-        console.log("  ⚠️  Foreign key fk_client_needs_strain:", error.message);
+        console.log("  ⚠️  Foreign key fk_client_needs_strain:", errMsg);
       }
     }
 
@@ -387,11 +348,9 @@ export async function runAutoMigrations() {
     // Add statusId column to batches table (Workflow Queue feature)
     // NOTE: Schema uses camelCase "statusId" not snake_case
     try {
-      await db.execute(
-        sql`ALTER TABLE batches ADD COLUMN statusId INT NULL`
-      );
+      await db.execute(sql`ALTER TABLE batches ADD COLUMN statusId INT NULL`);
       console.log("  ✅ Added statusId column to batches");
-    } catch (error: any) {
+    } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.statusId already exists");
@@ -408,7 +367,7 @@ export async function runAutoMigrations() {
         sql`ALTER TABLE batches ADD COLUMN deleted_at TIMESTAMP NULL`
       );
       console.log("  ✅ Added deleted_at column to batches");
-    } catch (error: any) {
+    } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.deleted_at already exists");
@@ -425,7 +384,7 @@ export async function runAutoMigrations() {
         sql`ALTER TABLE batches ADD COLUMN photo_session_event_id INT NULL`
       );
       console.log("  ✅ Added photo_session_event_id column to batches");
-    } catch (error: any) {
+    } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.photo_session_event_id already exists");
@@ -433,6 +392,121 @@ export async function runAutoMigrations() {
         console.error("  ❌ batches.photo_session_event_id FAILED:");
         console.error("  Error message:", errMsg);
         console.error("  Full error:", JSON.stringify(error, null, 2));
+      }
+    }
+
+    // Create RBAC tables if they don't exist
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS roles (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(100) NOT NULL UNIQUE,
+          description TEXT,
+          is_system_role INT NOT NULL DEFAULT 0,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_roles_name (name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created roles table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.log("  ℹ️  roles table already exists");
+      } else {
+        console.log("  ⚠️  roles table:", errMsg);
+      }
+    }
+
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS permissions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(100) NOT NULL UNIQUE,
+          description TEXT,
+          module VARCHAR(50) NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_permissions_name (name),
+          INDEX idx_permissions_module (module)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created permissions table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.log("  ℹ️  permissions table already exists");
+      } else {
+        console.log("  ⚠️  permissions table:", errMsg);
+      }
+    }
+
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS role_permissions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          role_id INT NOT NULL,
+          permission_id INT NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_role_permissions_role (role_id),
+          INDEX idx_role_permissions_permission (permission_id),
+          FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+          FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created role_permissions table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.log("  ℹ️  role_permissions table already exists");
+      } else {
+        console.log("  ⚠️  role_permissions table:", errMsg);
+      }
+    }
+
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS user_roles (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id VARCHAR(255) NOT NULL,
+          role_id INT NOT NULL,
+          assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          assigned_by VARCHAR(255),
+          INDEX idx_user_roles_user (user_id),
+          INDEX idx_user_roles_role (role_id),
+          FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created user_roles table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.log("  ℹ️  user_roles table already exists");
+      } else {
+        console.log("  ⚠️  user_roles table:", errMsg);
+      }
+    }
+
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS user_permission_overrides (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id VARCHAR(255) NOT NULL,
+          permission_id INT NOT NULL,
+          granted INT NOT NULL,
+          granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          granted_by VARCHAR(255),
+          INDEX idx_user_permission_overrides_user (user_id),
+          INDEX idx_user_permission_overrides_permission (permission_id),
+          FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created user_permission_overrides table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.log("  ℹ️  user_permission_overrides table already exists");
+      } else {
+        console.log("  ⚠️  user_permission_overrides table:", errMsg);
       }
     }
 
