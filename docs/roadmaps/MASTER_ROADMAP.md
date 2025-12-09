@@ -181,6 +181,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 **Session:** Session-20251209-SCHEMA-FIX-db7a91
 
 **Problem:** Four tables had index definitions referencing non-existent columns (copy-paste errors):
+
 - `creditSystemSettings`: idx referencing non-existent batchId
 - `pricingProfiles`: idx referencing non-existent productId
 - `tagGroups`: idx referencing non-existent batchId
@@ -613,6 +614,120 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 - Requirements document with 10 requirements, 50 acceptance criteria
 - Design document with architecture, data models, 39 correctness properties
 - Tasks document with 17 implementation tasks
+
+---
+
+#### DATA-011: Production-Grade Database Seeding System
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 17-24h  
+**Module:** `scripts/seed/`, `scripts/seed/lib/`  
+**Dependencies:** DATA-010 (complete)  
+**Spec:** `.kiro/specs/database-seeding-system/`  
+**Prompt:** `.kiro/specs/database-seeding-system/tasks.md`
+
+**Problem:** Previous seeding approach embedded in app startup caused production crashes when database schemas drifted. After 6+ hours of debugging, rolled back to stable Nov 26 commit. Need production-grade CLI-based seeding system completely separate from application startup.
+
+**Objectives:**
+
+1. Implement CLI-based seeding system separate from application startup
+2. Add explicit rollback strategy for all seeders (Liquibase requirement)
+3. Implement PII masking for GDPR/CCPA compliance (Salesforce requirement)
+4. Optimize performance with bulk insert operations (60x improvement - Tighten)
+5. Add concurrency protection via database advisory locks (Microsoft EF Core)
+6. Implement data integrity validation and foreign key checking (Salesforce)
+7. Create comprehensive logging and audit trail
+8. Support environment-specific configuration (dev/staging/production)
+9. Implement idempotency checks to prevent duplicate data
+10. Create rollback script with confirmation prompts and dry-run mode
+
+**Deliverables:**
+
+- [ ] Create `scripts/seed/` directory structure with lib utilities
+- [ ] Implement database locking mechanism (`lib/locking.ts`)
+- [ ] Set up structured logging infrastructure (winston/pino)
+- [ ] Create CLI orchestrator (`seed-main.ts`) with argument parsing
+- [ ] Implement schema validation utilities (`lib/validation.ts`)
+- [ ] Create PII masking utilities (`lib/data-masking.ts`)
+- [ ] Implement base seeder class with idempotency checks
+- [ ] Create individual seeders (clients, batches, inventory, orders)
+- [ ] Implement rollback script (`seed-rollback.ts`)
+- [ ] Add seeding metadata tracking table migration
+- [ ] Create performance benchmarks (1k, 10k, 50k records)
+- [ ] Write 26 property-based tests for correctness properties
+- [ ] Write integration tests for full workflow
+- [ ] Create comprehensive documentation (README, troubleshooting, runbook)
+- [ ] Create GDPR/CCPA compliance documentation
+- [ ] Add npm scripts: `seed`, `seed:rollback`, `seed:dry-run`
+- [ ] Validate in staging environment
+- [ ] All tests passing (>80% coverage)
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+**Key Features:**
+
+- CLI-based (never part of app startup)
+- Explicit rollback per seeder
+- PII masking in non-production
+- Performance: <5s for 1k records, <1min for 10k records
+- Concurrency protection via advisory locks
+- Idempotent (can run multiple times safely)
+- Environment-aware (dev/staging/production)
+- Comprehensive audit logging
+- Dry-run mode for preview
+
+**Research Foundation:**
+
+Based on industry best practices from four authoritative sources:
+
+- Salesforce: Enterprise patterns, compliance, data integrity
+- Tighten: Performance optimization (60x improvement)
+- Liquibase: Rollback strategies, deployment safety
+- Microsoft EF Core: Concurrency protection, idempotency
+
+**Impact:** Enables safe, repeatable database seeding without risk of application crashes. Unblocks development and testing workflows. Provides production-grade data management with compliance and audit capabilities.
+
+**Testing Strategy:**
+
+- Property-based tests using fast-check (26 properties, 100+ iterations each)
+- Unit tests for all utilities and components (>80% coverage target)
+- Integration tests for end-to-end workflows
+- Performance benchmarks for various data volumes
+- Staging environment validation
+
+**Documentation:**
+
+- Complete spec in `.kiro/specs/database-seeding-system/`
+- Requirements document with 12 requirements, 60 acceptance criteria
+- Design document with architecture, 26 correctness properties
+- Tasks document with 12 major tasks, 70+ sub-tasks
+- README with CLI usage examples
+- Troubleshooting guide
+- Production runbook
+- GDPR/CCPA compliance documentation
+
+**CLI Commands (After Implementation):**
+
+```bash
+# Run full seed
+pnpm seed
+
+# Seed specific table
+pnpm seed --table=clients
+
+# Control data volume
+pnpm seed --size=medium
+
+# Environment-specific
+pnpm seed --env=dev
+
+# Rollback seeded data
+pnpm seed:rollback
+
+# Preview without executing
+pnpm seed --dry-run
+```
 
 ---
 
@@ -1535,7 +1650,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
   - **Module:** `server/services/seedDefaults.ts`, `server/services/seedRBAC.ts`, `server/_core/index.ts`
   - **Dependencies:** Schema drift fix (ST-013 or separate migration task)
   - **Problem:** SKIP_SEEDING bypass is a temporary "duct tape" fix implemented to prevent Railway crashes. It needs to be hardened into a proper solution.
-  - **Current State:** 
+  - **Current State:**
     - ✅ SKIP_SEEDING bypass implemented and working
     - ✅ Allows app to start even with schema drift
     - ⚠️ Temporary workaround - not a permanent solution
@@ -1563,7 +1678,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
     - [ ] Session archived
   - **Impact:** Proper production-ready seeding system instead of temporary bypass
   - **Note:** This replaces the temporary SKIP_SEEDING bypass with a hardened, production-ready solution. The bypass works but should not be permanent.
-  - **Related:** 
+  - **Related:**
     - Current implementation: `docs/deployment/RAILWAY_SEEDING_BYPASS.md`
     - Schema drift fix: `scripts/fix-schema-drift.ts`
     - Session: Session-20251204-SEEDING-BYPASS-eb0b83
@@ -4060,6 +4175,7 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
   - ⚠️ `validate-data-quality.ts` - Pending full execution
 
 **Key Commits:**
+
 - `16f48bdd` - feat(DATA-002-AUGMENT): add referential integrity audit script
 - `9412a154` - feat(DATA-002-AUGMENT): add data augmentation and validation scripts
 - `70bf49f5` - fix(DATA-002-AUGMENT): add retry logic and raw SQL to audit script
@@ -4068,7 +4184,8 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
 - `f3c6a5a9` - fix(DATA-002-AUGMENT): add authentication to adminDataAugment router
 - `53840935` - docs(DATA-002-AUGMENT): add execution status and monitoring script
 
-**Execution Status:** 
+**Execution Status:**
+
 - ✅ Temporal coherence fixes applied
 - ✅ 100 orders augmented with line items
 - ✅ Inventory movements validated (all valid, 0 fixes needed)
@@ -4080,6 +4197,7 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
 - See `docs/DATA-002-AUGMENT-EXECUTION-STATUS.md` for detailed status
 
 **Next Steps:**
+
 1. Debug why `adminDataAugmentRouter` isn't loading in production (check build logs)
 2. Alternative: Run scripts directly from production server if SSH access available
 3. Alternative: Use DigitalOcean console to manually trigger job execution
