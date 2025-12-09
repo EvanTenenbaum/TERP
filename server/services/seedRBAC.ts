@@ -1,34 +1,44 @@
 import { getDb } from "../db";
-import { roles, permissions, rolePermissions, userRoles } from "../../drizzle/schema";
+import {
+  roles,
+  permissions,
+  rolePermissions,
+  userRoles,
+} from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 /**
  * RBAC Seeding Service
- * 
+ *
  * This module provides functions to seed RBAC roles, permissions, and mappings.
  * It's designed to be idempotent and safe to call multiple times.
  */
 
 // Import role and permission definitions from the original seed script
-import { ROLES, PERMISSIONS, ROLE_PERMISSION_MAPPINGS } from "./rbacDefinitions";
+import {
+  ROLES,
+  PERMISSIONS,
+  ROLE_PERMISSION_MAPPINGS,
+} from "./rbacDefinitions";
 
 /**
  * Helper function to get permission IDs by names
  */
 function getPermissionIds(permissionNames: string[], allPermissions: any[]) {
   return allPermissions
-    .filter((p) => permissionNames.includes(p.name))
-    .map((p) => p.id);
+    .filter(p => permissionNames.includes(p.name))
+    .map(p => p.id);
 }
 
 /**
  * Seed RBAC roles, permissions, and role-permission mappings
  * This is idempotent - safe to call multiple times
- * 
+ *
  * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedRBACDefaults() {
-  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+  const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+  if (skipSeeding === "true" || skipSeeding === "1") {
     console.log("⏭️  SKIP_SEEDING is set - skipping RBAC seeding");
     return;
   }
@@ -65,28 +75,36 @@ export async function seedRBACDefaults() {
     console.log("🔗 Creating role-permission mappings...");
 
     for (const mapping of ROLE_PERMISSION_MAPPINGS) {
-      const role = allRoles.find((r) => r.name === mapping.roleName);
+      const role = allRoles.find(r => r.name === mapping.roleName);
       if (!role) {
         console.error(`❌ Role not found: ${mapping.roleName}`);
         continue;
       }
 
-      const permissionIds = getPermissionIds(mapping.permissionNames, allPermissions);
+      const permissionIds = getPermissionIds(
+        mapping.permissionNames,
+        allPermissions
+      );
 
-      const rolePermissionRecords = permissionIds.map((permissionId) => ({
+      const rolePermissionRecords = permissionIds.map(permissionId => ({
         roleId: role.id,
         permissionId,
       }));
 
       await db.insert(rolePermissions).values(rolePermissionRecords);
-      console.log(`✅ Mapped ${permissionIds.length} permissions to ${mapping.roleName}`);
+      console.log(
+        `✅ Mapped ${permissionIds.length} permissions to ${mapping.roleName}`
+      );
     }
 
     console.log("✅ RBAC defaults seeded successfully!");
   } catch (error) {
     // Log the error but DON'T throw - RBAC seeding failure should not crash the server
     // This is critical for deployment health checks to succeed
-    console.error("❌ Error seeding RBAC defaults (non-fatal, server will continue):", error);
+    console.error(
+      "❌ Error seeding RBAC defaults (non-fatal, server will continue):",
+      error
+    );
     console.warn("⚠️ RBAC may be incomplete - some permission checks may fail");
   }
 }
@@ -107,8 +125,12 @@ export async function assignRoleToUser(userOpenId: string, roleName: string) {
 
   try {
     // Find the role by name
-    const [role] = await db.select().from(roles).where(eq(roles.name, roleName)).limit(1);
-    
+    const [role] = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.name, roleName))
+      .limit(1);
+
     if (!role) {
       console.error(`❌ Role not found: ${roleName}`);
       return;
@@ -132,7 +154,9 @@ export async function assignRoleToUser(userOpenId: string, roleName: string) {
       roleId: role.id,
     });
 
-    console.log(`✅ Successfully assigned role "${roleName}" to user ${userOpenId}`);
+    console.log(
+      `✅ Successfully assigned role "${roleName}" to user ${userOpenId}`
+    );
   } catch (error) {
     // Log the error but DON'T throw - role assignment failure should not crash the server
     console.error(`❌ Error assigning role to user (non-fatal):`, error);

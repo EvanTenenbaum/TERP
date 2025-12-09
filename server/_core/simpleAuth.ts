@@ -211,18 +211,17 @@ export function registerSimpleAuthRoutes(app: Express) {
         output: result.output,
       });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          error: error instanceof Error ? error.message : String(error),
-        });
+      res.status(500).json({
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   });
 
   // Manual seed endpoint (for initial setup)
   app.post("/api/auth/seed", async (req, res) => {
-    // Check if seeding is disabled
-    if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+    // Check if seeding is disabled (case-insensitive)
+    const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+    if (skipSeeding === "true" || skipSeeding === "1") {
       return res.status(403).json({
         error: "Seeding is disabled via SKIP_SEEDING environment variable",
       });
@@ -239,8 +238,8 @@ export function registerSimpleAuthRoutes(app: Express) {
         const adminExists = await getUserByEmail(env.initialAdminUsername);
         if (!adminExists) {
           await simpleAuth.createUser(
-            env.initialAdminUsername, 
-            env.initialAdminPassword, 
+            env.initialAdminUsername,
+            env.initialAdminPassword,
             `${env.initialAdminUsername} (Admin)`
           );
         }
@@ -248,11 +247,9 @@ export function registerSimpleAuthRoutes(app: Express) {
 
       res.json({ success: true, message: "Seeding completed successfully" });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          error: error instanceof Error ? error.message : String(error),
-        });
+      res.status(500).json({
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   });
 
@@ -271,12 +268,9 @@ export function registerSimpleAuthRoutes(app: Express) {
       res.json({ success: true, user: { name: user.name, email: user.email } });
     } catch (error) {
       // Error logging handled by error handling middleware
-      res
-        .status(400)
-        .json({
-          error:
-            error instanceof Error ? error.message : "Failed to create user",
-        });
+      res.status(400).json({
+        error: error instanceof Error ? error.message : "Failed to create user",
+      });
     }
   });
 }

@@ -12,11 +12,12 @@ import {
 /**
  * Seed default storage locations
  * Creates a main warehouse with zones, racks, shelves, and bins
- * 
+ *
  * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultLocations() {
-  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+  const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+  if (skipSeeding === "true" || skipSeeding === "1") {
     console.log("⏭️  SKIP_SEEDING is set - skipping location seeding");
     return;
   }
@@ -40,19 +41,73 @@ export async function seedDefaultLocations() {
   // Format: Site / Zone / Rack / Shelf / Bin
   const locationsData = [
     // Zone A
-    { site: "Main Warehouse", zone: "Zone A", rack: "Rack 1", shelf: "Shelf 1", bin: "Bin 1" },
-    { site: "Main Warehouse", zone: "Zone A", rack: "Rack 1", shelf: "Shelf 1", bin: "Bin 2" },
-    { site: "Main Warehouse", zone: "Zone A", rack: "Rack 1", shelf: "Shelf 2", bin: "Bin 1" },
-    
+    {
+      site: "Main Warehouse",
+      zone: "Zone A",
+      rack: "Rack 1",
+      shelf: "Shelf 1",
+      bin: "Bin 1",
+    },
+    {
+      site: "Main Warehouse",
+      zone: "Zone A",
+      rack: "Rack 1",
+      shelf: "Shelf 1",
+      bin: "Bin 2",
+    },
+    {
+      site: "Main Warehouse",
+      zone: "Zone A",
+      rack: "Rack 1",
+      shelf: "Shelf 2",
+      bin: "Bin 1",
+    },
+
     // Zone B
-    { site: "Main Warehouse", zone: "Zone B", rack: "Rack 1", shelf: "Shelf 1", bin: "Bin 1" },
-    { site: "Main Warehouse", zone: "Zone B", rack: "Rack 1", shelf: "Shelf 1", bin: "Bin 2" },
-    { site: "Main Warehouse", zone: "Zone B", rack: "Rack 1", shelf: "Shelf 2", bin: "Bin 1" },
-    
+    {
+      site: "Main Warehouse",
+      zone: "Zone B",
+      rack: "Rack 1",
+      shelf: "Shelf 1",
+      bin: "Bin 1",
+    },
+    {
+      site: "Main Warehouse",
+      zone: "Zone B",
+      rack: "Rack 1",
+      shelf: "Shelf 1",
+      bin: "Bin 2",
+    },
+    {
+      site: "Main Warehouse",
+      zone: "Zone B",
+      rack: "Rack 1",
+      shelf: "Shelf 2",
+      bin: "Bin 1",
+    },
+
     // Zone C
-    { site: "Main Warehouse", zone: "Zone C", rack: "Rack 1", shelf: "Shelf 1", bin: "Bin 1" },
-    { site: "Main Warehouse", zone: "Zone C", rack: "Rack 1", shelf: "Shelf 1", bin: "Bin 2" },
-    { site: "Main Warehouse", zone: "Zone C", rack: "Rack 1", shelf: "Shelf 2", bin: "Bin 1" },
+    {
+      site: "Main Warehouse",
+      zone: "Zone C",
+      rack: "Rack 1",
+      shelf: "Shelf 1",
+      bin: "Bin 1",
+    },
+    {
+      site: "Main Warehouse",
+      zone: "Zone C",
+      rack: "Rack 1",
+      shelf: "Shelf 1",
+      bin: "Bin 2",
+    },
+    {
+      site: "Main Warehouse",
+      zone: "Zone C",
+      rack: "Rack 1",
+      shelf: "Shelf 2",
+      bin: "Bin 1",
+    },
   ];
 
   for (const location of locationsData) {
@@ -64,11 +119,12 @@ export async function seedDefaultLocations() {
 
 /**
  * Seed default product categories and subcategories
- * 
+ *
  * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultCategories() {
-  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+  const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+  if (skipSeeding === "true" || skipSeeding === "1") {
     console.log("⏭️  SKIP_SEEDING is set - skipping category seeding");
     return;
   }
@@ -141,11 +197,12 @@ export async function seedDefaultCategories() {
 
 /**
  * Seed default product grades
- * 
+ *
  * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultGrades() {
-  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+  const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+  if (skipSeeding === "true" || skipSeeding === "1") {
     console.log("⏭️  SKIP_SEEDING is set - skipping grade seeding");
     return;
   }
@@ -181,11 +238,12 @@ export async function seedDefaultGrades() {
 
 /**
  * Seed default expense categories with parent-child relationships
- * 
+ *
  * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultExpenseCategories() {
-  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+  const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+  if (skipSeeding === "true" || skipSeeding === "1") {
     console.log("⏭️  SKIP_SEEDING is set - skipping expense category seeding");
     return;
   }
@@ -256,11 +314,12 @@ export async function seedDefaultExpenseCategories() {
 
 /**
  * Seed default chart of accounts
- * 
+ *
  * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultChartOfAccounts() {
-  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+  const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+  if (skipSeeding === "true" || skipSeeding === "1") {
     console.log("⏭️  SKIP_SEEDING is set - skipping chart of accounts seeding");
     return;
   }
@@ -282,23 +341,68 @@ export async function seedDefaultChartOfAccounts() {
 
   const accountsData = [
     // ASSETS
-    { accountNumber: "1000", accountName: "Cash", accountType: "ASSET" as const, normalBalance: "DEBIT" as const },
-    { accountNumber: "1100", accountName: "Accounts Receivable", accountType: "ASSET" as const, normalBalance: "DEBIT" as const },
-    { accountNumber: "1200", accountName: "Inventory", accountType: "ASSET" as const, normalBalance: "DEBIT" as const },
+    {
+      accountNumber: "1000",
+      accountName: "Cash",
+      accountType: "ASSET" as const,
+      normalBalance: "DEBIT" as const,
+    },
+    {
+      accountNumber: "1100",
+      accountName: "Accounts Receivable",
+      accountType: "ASSET" as const,
+      normalBalance: "DEBIT" as const,
+    },
+    {
+      accountNumber: "1200",
+      accountName: "Inventory",
+      accountType: "ASSET" as const,
+      normalBalance: "DEBIT" as const,
+    },
 
     // LIABILITIES
-    { accountNumber: "2000", accountName: "Accounts Payable", accountType: "LIABILITY" as const, normalBalance: "CREDIT" as const },
+    {
+      accountNumber: "2000",
+      accountName: "Accounts Payable",
+      accountType: "LIABILITY" as const,
+      normalBalance: "CREDIT" as const,
+    },
 
     // EQUITY
-    { accountNumber: "3000", accountName: "Owner's Equity", accountType: "EQUITY" as const, normalBalance: "CREDIT" as const },
-    { accountNumber: "3100", accountName: "Retained Earnings", accountType: "EQUITY" as const, normalBalance: "CREDIT" as const },
+    {
+      accountNumber: "3000",
+      accountName: "Owner's Equity",
+      accountType: "EQUITY" as const,
+      normalBalance: "CREDIT" as const,
+    },
+    {
+      accountNumber: "3100",
+      accountName: "Retained Earnings",
+      accountType: "EQUITY" as const,
+      normalBalance: "CREDIT" as const,
+    },
 
     // REVENUE
-    { accountNumber: "4000", accountName: "Sales Revenue", accountType: "REVENUE" as const, normalBalance: "CREDIT" as const },
+    {
+      accountNumber: "4000",
+      accountName: "Sales Revenue",
+      accountType: "REVENUE" as const,
+      normalBalance: "CREDIT" as const,
+    },
 
     // EXPENSES
-    { accountNumber: "5000", accountName: "Cost of Goods Sold", accountType: "EXPENSE" as const, normalBalance: "DEBIT" as const },
-    { accountNumber: "5100", accountName: "Operating Expenses", accountType: "EXPENSE" as const, normalBalance: "DEBIT" as const },
+    {
+      accountNumber: "5000",
+      accountName: "Cost of Goods Sold",
+      accountType: "EXPENSE" as const,
+      normalBalance: "DEBIT" as const,
+    },
+    {
+      accountNumber: "5100",
+      accountName: "Operating Expenses",
+      accountType: "EXPENSE" as const,
+      normalBalance: "DEBIT" as const,
+    },
   ];
 
   for (const account of accountsData) {
@@ -311,15 +415,16 @@ export async function seedDefaultChartOfAccounts() {
 /**
  * Master function to seed all defaults
  * This is idempotent and safe to call multiple times
- * 
+ *
  * IMPORTANT: This function is NON-FATAL - it will not crash the server if seeding fails.
  * This ensures the health check endpoints are always available during deployment.
- * 
+ *
  * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedAllDefaults() {
-  // Bypass seeding if SKIP_SEEDING environment variable is set
-  if (process.env.SKIP_SEEDING === "true" || process.env.SKIP_SEEDING === "1") {
+  // Bypass seeding if SKIP_SEEDING environment variable is set (case-insensitive)
+  const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
+  if (skipSeeding === "true" || skipSeeding === "1") {
     console.log("⏭️  SKIP_SEEDING is set - skipping all default data seeding");
     return;
   }
@@ -329,7 +434,7 @@ export async function seedAllDefaults() {
   try {
     // Seed RBAC first (roles and permissions must exist before user-role assignments)
     await seedRBACDefaults();
-    
+
     await seedDefaultLocations();
     await seedDefaultCategories();
     await seedDefaultGrades();
@@ -340,8 +445,12 @@ export async function seedAllDefaults() {
   } catch (error) {
     // Log the error but DON'T throw - seeding failure should not crash the server
     // This is critical for deployment health checks to succeed
-    console.error("❌ Error seeding defaults (non-fatal, server will continue):", error);
-    console.warn("⚠️ Some default data may be missing - the app will still function but some features may be unavailable");
+    console.error(
+      "❌ Error seeding defaults (non-fatal, server will continue):",
+      error
+    );
+    console.warn(
+      "⚠️ Some default data may be missing - the app will still function but some features may be unavailable"
+    );
   }
 }
-
