@@ -140,7 +140,8 @@ async function startServer() {
 
   logger.info("✅ Seeding/admin user setup complete, starting Express server setup...");
 
-  const app = express();
+  try {
+    const app = express();
   const server = createServer(app);
 
   // Sentry is now auto-instrumented via setupExpressErrorHandler
@@ -299,6 +300,12 @@ async function startServer() {
     logger.info(`Server running on http://0.0.0.0:${port}/`);
     logger.info(`Health check available at http://localhost:${port}/health`);
   });
+
+  } catch (error) {
+    logger.error({ error }, "❌ CRITICAL ERROR during Express server setup:");
+    logger.error("Stack:", error.stack);
+    process.exit(1);
+  }
 }
 
 startServer().catch(error => {
