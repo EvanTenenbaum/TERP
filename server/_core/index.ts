@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 // Global error handlers for uncaught exceptions and unhandled rejections
 process.on('uncaughtException', (err) => {
@@ -19,7 +18,7 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerSimpleAuthRoutes } from "./simpleAuth";
-import { appRouter } from "../../routers";
+import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { apiLimiter, authLimiter } from "./rateLimiter";
@@ -32,12 +31,11 @@ import {
   readinessCheck,
 } from "./healthCheck";
 import { setupGracefulShutdown } from "./gracefulShutdown";
-import { seedAllDefaults } from "../../services/seedDefaults"; // TEMPORARILY DISABLED
-import { assignRoleToUser } from "../../services/seedRBAC";
+// import { seedAllDefaults } from "../services/seedDefaults"; // TEMPORARILY DISABLED
+import { assignRoleToUser } from "../services/seedRBAC";
 import { simpleAuth } from "./simpleAuth";
-import { getUserByEmail } from "../../db";
-import { runAutoMigrations } from "../../autoMigrate";
-import { createConnection } from "mysql2/promise";
+import { getUserByEmail } from "../db";
+import { runAutoMigrations } from "../autoMigrate";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -64,64 +62,6 @@ async function startServer() {
 
   // Replace console with structured logger
   replaceConsole();
-
-  // Database Configuration
-  let dbHost = process.env.DB_HOST || "localhost";
-  let dbUser = process.env.DB_USER || "root";
-  let dbPassword = process.env.DB_PASSWORD || "";
-  let dbName = process.env.DB_NAME || "test";
-  let dbPort = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306;
-
-  if (process.env.DATABASE_URL) {
-    try {
-      const url = new URL(process.env.DATABASE_URL);
-      dbHost = url.hostname;
-      dbUser = url.username;
-      dbPassword = url.password;
-      dbName = url.pathname.substring(1); // Remove the leading slash
-      dbPort = parseInt(url.port, 10) || 3306;
-
-      logger.info("Using DATABASE_URL configuration.");
-    } catch (urlError) {
-      logger.error({ msg: "Error parsing DATABASE_URL", error: urlError });
-    }
-  }
-
-  logger.info({
-    msg: "Attempting database connection",
-    host: dbHost,
-    user: dbUser,
-    database: dbName,
-    port: dbPort,
-  });
-
-  let connection;
-  try {
-    connection = await createConnection({
-      host: dbHost,
-      user: dbUser,
-      password: dbPassword,
-      database: dbName,
-      port: dbPort,
-    });
-    logger.info("✅ Database connection successful");
-  } catch (dbError: any) {
-    logger.error({
-      msg: "❌ Error during database connection",
-      error: dbError,
-      dbHost,
-      dbUser,
-      dbName,
-      dbPort,
-      errorMessage: dbError.message,
-      errorCode: dbError.code,
-      errorNumber: dbError.errno,
-      stack: dbError.stack,
-    });
-    process.exit(1);
-    return; // Ensure function exits after exiting process
-  }
-
 
   // Run auto-migrations to fix schema drift (adds missing columns/tables)
   // This ensures the database schema matches what the code expects
@@ -153,7 +93,7 @@ async function startServer() {
       );
     } else {
       logger.info("Checking for default data and admin user...");
-      await seedAllDefaults(); // Currently disabled due to schema drift
+      // await seedAllDefaults(); // Currently disabled due to schema drift
     }
 
     // Create initial admin user if environment variables are provided
@@ -198,63 +138,170 @@ async function startServer() {
     logger.warn({ msg: "Failed to seed defaults or create admin user", error });
   }
 
+  logger.info("✅ Seeding/admin user setup complete, starting Express server setup...");
 
   const app = express();
+  const server = createServer(app);
 
-  // Trust Proxy
-  app.set("trust proxy", 1);
+  // Sentry is now auto-instrumented via setupExpressErrorHandler
 
-  // Apply rate limiters
-  app.use("/api/", apiLimiter); // Rate limit all /api routes
-  app.use("/api/auth/", authLimiter); // Rate limit /api/auth routes
-
-  // Log all requests
+  // Request logging
   app.use(requestLogger);
+  // Configure body parser with larger size limit for file uploads
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // Cookie parser for session management
+  app.use(cookieParser());
 
-  app.use(cookieParser()); // Parse cookies
+  // Trust proxy headers from DigitalOcean App Platform load balancer
+  app.set("trust proxy", true);
 
-  // Health check endpoints
-  app.get("/healthz", performHealthCheck); // Full health check
-  app.get("/livez", livenessCheck); // Liveness probe
-  app.get("/readyz", readinessCheck); // Readiness probe
-
-  // Register simple auth routes (login, logout, register)
+  // Simple auth routes under /api/auth
   registerSimpleAuthRoutes(app);
 
-  // trpc handler
+  // GitHub webhook endpoint (must be before JSON body parser middleware)
+  // We need raw body for signature verification
+  app.post(
+    "/api/webhooks/github",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      try {
+        const { handleGitHubWebhook } = await import("../webhooks/github.js");
+        // Convert raw body back to JSON if it's a Buffer
+        if (Buffer.isBuffer(req.body)) {
+          req.body = JSON.parse(req.body.toString());
+        }
+        await handleGitHubWebhook(req, res);
+      } catch (error) {
+        logger.error({ err: error, msg: "GitHub webhook route error" });
+        res.status(500).json({ error: "Internal server error" });
+      }
+    }
+  );
+
+  // Apply rate limiting
+  app.use("/api/trpc", apiLimiter);
+  app.use("/api/trpc/auth", authLimiter);
+
+  // Health check endpoints
+  app.get("/health", async (req, res) => {
+    const health = await performHealthCheck();
+    const statusCode =
+      health.status === "healthy"
+        ? 200
+        : health.status === "degraded"
+          ? 200
+          : 503;
+    res.status(statusCode).json(health);
+  });
+
+  app.get("/health/live", (req, res) => {
+    res.json(livenessCheck());
+  });
+
+  app.get("/health/ready", async (req, res) => {
+    const ready = await readinessCheck();
+    const statusCode = ready.status === "ok" ? 200 : 503;
+    res.status(statusCode).json(ready);
+  });
+
+  // Version check endpoint to verify deployed code
+  app.get("/api/version-check", async (req, res) => {
+    let buildVersion = "unknown";
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const buildVersionPath = path.resolve(process.cwd(), ".build-version");
+      if (fs.existsSync(buildVersionPath)) {
+        buildVersion = fs.readFileSync(buildVersionPath, "utf-8").trim();
+      }
+    } catch {
+      // Ignore errors reading build version
+    }
+    res.json({
+      version: "2025-11-25-v4",
+      build: buildVersion,
+      hasContextLogging: true,
+      hasDebugEndpoint: true,
+      hasDefensiveMiddleware: true,
+      hasPublicUserProvisioning: true,
+      commit: process.env.GIT_COMMIT || "unknown",
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Debug endpoint to test createContext directly
+  app.get("/api/debug/context", async (req, res) => {
+    try {
+      const context = await createContext({ req, res });
+      res.json({
+        success: true,
+        user: {
+          id: context.user.id,
+          openId: context.user.openId,
+          email: context.user.email,
+          role: context.user.role,
+        },
+        isPublicDemoUser:
+          context.user.id === -1 ||
+          context.user.openId === "public-demo-user" ||
+          context.user.email === "demo+public@terp-app.local",
+        message: "createContext called successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
+  // Data augmentation HTTP endpoint (temporary bypass for tRPC auth issues)
+  const dataAugmentRouter = (await import("../routers/dataAugmentHttp.js"))
+    .default;
+  app.use("/api/data-augment", dataAugmentRouter);
+
+  // tRPC API
   app.use(
     "/api/trpc",
     createExpressMiddleware({
       router: appRouter,
       createContext,
-      onError: setupErrorHandler,
     })
   );
+  logger.info("✅ Routes configured, setting up static files/Vite...");
 
-  // Serve static assets
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
+  // development mode uses Vite, production mode uses static files
+  if (process.env.NODE_ENV === "development") {
+    await setupVite(app, server);
   } else {
-    await setupVite(app);
+    serveStatic(app);
   }
 
-  // Error handling middleware (must be defined after all routes)
+  logger.info("✅ Static files configured, finding available port...");
+
+  const preferredPort = parseInt(process.env.PORT || "3000");
+  const port = await findAvailablePort(preferredPort);
+
+  if (port !== preferredPort) {
+    logger.warn(`Port ${preferredPort} is busy, using port ${port} instead`);
+  }
+
+  // Sentry error handler (must be after all routes)
   setupErrorHandler(app);
 
-  // Find an available port
-  const port = parseInt(process.env.PORT || "3000", 10);
-  const actualPort = await findAvailablePort(port);
+  // Setup graceful shutdown
+  setupGracefulShutdown();
 
-  // Create HTTP server
-  const server = createServer(app);
+  logger.info(`✅ All setup complete, starting server on port ${port}...`);
 
-  // Set up graceful shutdown
-  setupGracefulShutdown(server);
-
-  // Start listening on the available port
-  server.listen(actualPort, () => {
-    logger.info(`Server listening at http://localhost:${actualPort}`);
+  server.listen(port, "0.0.0.0", () => {
+    logger.info(`Server running on http://0.0.0.0:${port}/`);
+    logger.info(`Health check available at http://localhost:${port}/health`);
   });
 }
 
-startServer();
+startServer().catch(error => {
+  logger.error({ error }, "Failed to start server");
+  process.exit(1);
+});
