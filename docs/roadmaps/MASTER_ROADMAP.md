@@ -137,6 +137,59 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ## 🔴 CRITICAL PRIORITY (P0) - Security & Data Integrity
 
+### Schema & Infrastructure Fixes (Completed Dec 9, 2025)
+
+### ST-020: Add Drizzle Schema to TypeScript Checking
+
+**Status:** ✅ Complete
+**Priority:** P0 (ROOT CAUSE)
+**Estimate:** 5min
+**Actual Time:** 5min
+**Module:** `tsconfig.json`
+**Session:** Session-20251209-SCHEMA-FIX-db7a91
+
+**Problem:** The `drizzle/` folder was excluded from TypeScript type-checking, meaning schema errors were never caught during development or CI. This was the ROOT CAUSE of ST-021 and ST-022 persisting undetected.
+
+**Fix:** Added `"drizzle/**/*"` to tsconfig.json includes array.
+
+---
+
+### ST-021: Fix Malformed Soft Delete Column Definitions
+
+**Status:** ✅ Complete
+**Priority:** P0
+**Estimate:** 1-2h
+**Actual Time:** 1h
+**Module:** `drizzle/schema.ts`
+**Session:** Session-20251209-SCHEMA-FIX-db7a91
+
+**Problem:** 45+ tables had `deletedAt` columns incorrectly placed inside varchar/decimal/references option objects instead of as sibling columns. Caused by botched merge of ST-013 soft delete feature.
+
+**Impact:** Soft delete columns were NOT actually being created in these tables. Soft delete functionality was broken.
+
+**Fix:** Used regex-based script and manual edits to move all deletedAt columns to proper sibling position.
+
+---
+
+### ST-022: Remove Broken Index Definitions
+
+**Status:** ✅ Complete
+**Priority:** P0
+**Estimate:** 15min
+**Actual Time:** 15min
+**Module:** `drizzle/schema.ts`
+**Session:** Session-20251209-SCHEMA-FIX-db7a91
+
+**Problem:** Four tables had index definitions referencing non-existent columns (copy-paste errors):
+- `creditSystemSettings`: idx referencing non-existent batchId
+- `pricingProfiles`: idx referencing non-existent productId
+- `tagGroups`: idx referencing non-existent batchId
+- `deployments`: idx referencing non-existent createdAt
+
+**Fix:** Removed broken indexes from first three tables, fixed deployments to use startedAt.
+
+---
+
 ### Security Fixes
 
 ### SEC-001: Fix Permission System Bypass
