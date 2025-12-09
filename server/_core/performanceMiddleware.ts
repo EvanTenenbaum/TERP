@@ -1,5 +1,6 @@
 import { middleware } from "./trpc";
-import { Sentry } from "../../sentry.server.config";
+// Sentry temporarily disabled to troubleshoot Railway deployment issues
+// import { Sentry } from "../../sentry.server.config";
 import { logger } from "./logger";
 
 /**
@@ -68,16 +69,7 @@ export const performanceMiddleware = middleware(async ({ path, type, next, ctx }
   const startTime = Date.now();
   const procedureName = `${type}.${path}`;
   
-  // Start Sentry transaction for distributed tracing
-  const transaction = Sentry.startTransaction({
-    op: "trpc.procedure",
-    name: procedureName,
-    data: {
-      type,
-      path,
-      userId: ctx.user?.id,
-    },
-  });
+  // Sentry disabled - no transaction tracking
   
   try {
     // Execute the procedure
@@ -101,9 +93,6 @@ export const performanceMiddleware = middleware(async ({ path, type, next, ctx }
         duration,
         userId: ctx.user?.id,
       });
-      
-      // Report to Sentry
-      Sentry.captureMessage(`Very slow procedure: ${procedureName} (${duration}ms)`, "error");
     } else if (duration > SLOW_QUERY_THRESHOLD_MS) {
       logger.warn({
         msg: "Slow tRPC procedure",
@@ -111,9 +100,6 @@ export const performanceMiddleware = middleware(async ({ path, type, next, ctx }
         duration,
         userId: ctx.user?.id,
       });
-      
-      // Report to Sentry
-      Sentry.captureMessage(`Slow procedure: ${procedureName} (${duration}ms)`, "warning");
     } else {
       // Log normal execution in debug mode
       logger.debug({
@@ -122,10 +108,6 @@ export const performanceMiddleware = middleware(async ({ path, type, next, ctx }
         duration,
       });
     }
-    
-    // Finish Sentry transaction
-    transaction.setStatus("ok");
-    transaction.finish();
     
     return result;
   } catch (error) {
@@ -148,23 +130,6 @@ export const performanceMiddleware = middleware(async ({ path, type, next, ctx }
       error: error instanceof Error ? error.message : String(error),
       userId: ctx.user?.id,
     });
-    
-    // Report to Sentry with context
-    Sentry.captureException(error, {
-      tags: {
-        procedure: procedureName,
-        type,
-      },
-      extra: {
-        duration,
-        userId: ctx.user?.id,
-        path,
-      },
-    });
-    
-    // Finish Sentry transaction with error
-    transaction.setStatus("internal_error");
-    transaction.finish();
     
     throw error;
   }
@@ -190,8 +155,6 @@ export function trackDatabaseQuery<T>(
           query: queryName,
           duration,
         });
-        
-        Sentry.captureMessage(`Slow database query: ${queryName} (${duration}ms)`, "warning");
       }
       
       return result;
@@ -204,15 +167,6 @@ export function trackDatabaseQuery<T>(
         query: queryName,
         duration,
         error: error instanceof Error ? error.message : String(error),
-      });
-      
-      Sentry.captureException(error, {
-        tags: {
-          query: queryName,
-        },
-        extra: {
-          duration,
-        },
       });
       
       throw error;

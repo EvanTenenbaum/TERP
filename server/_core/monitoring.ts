@@ -1,50 +1,42 @@
-import { Sentry, setupSentryErrorHandler } from "../../sentry.server.config";
+// Sentry temporarily disabled to troubleshoot Railway deployment issues
+// import { Sentry, setupSentryErrorHandler } from "../../sentry.server.config";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 /**
  * Initialize monitoring and error tracking
- * Note: Sentry is now initialized in sentry.server.config.ts
+ * Note: Sentry temporarily disabled
  */
 export function initMonitoring() {
-  if (process.env.SENTRY_DSN) {
-    console.log("✓ Sentry monitoring initialized");
-  } else if (isProduction) {
-    console.warn("⚠ Sentry DSN not configured - error tracking disabled");
-  } else {
-    console.log("ℹ Sentry disabled in development (set SENTRY_DSN to enable)");
-  }
+  console.log("ℹ Monitoring disabled (Sentry removed for troubleshooting)");
 }
 
 /**
  * Capture exception with context
+ * Note: Sentry temporarily disabled
  */
 export function captureException(error: Error, context?: Record<string, any>) {
-  if (process.env.SENTRY_DSN) {
-    Sentry.captureException(error, {
-      extra: context,
-    });
-  }
+  // Sentry disabled - just log to console
+  console.error("Exception:", error, context);
 }
 
 /**
  * Capture message with severity level
+ * Note: Sentry temporarily disabled
  */
 export function captureMessage(
   message: string,
-  level: Sentry.SeverityLevel = "info"
+  level: string = "info"
 ) {
-  if (process.env.SENTRY_DSN) {
-    Sentry.captureMessage(message, level);
-  }
+  // Sentry disabled - just log to console
+  console.log(`[${level}]`, message);
 }
 
 /**
- * Setup Sentry Express error handler
- * Call this after all routes are defined
+ * Setup error handler
+ * Note: Sentry temporarily disabled
  */
 export function setupErrorHandler(app: any) {
-  if (process.env.SENTRY_DSN) {
-    setupSentryErrorHandler(app);
-  }
+  // Sentry disabled - no error handler needed
+  console.log("ℹ Sentry error handler disabled");
 }
