@@ -1,0 +1,117 @@
+{
+  "id": "TERP-INIT-009",
+  "title": "Production-Grade Database Seeding System",
+  "type": "initiative",
+  "status": "ready-for-implementation",
+  "priority": "high",
+  "created": "2025-12-08",
+  "updated": "2025-12-08",
+  "author": "manus-agent",
+  "description": "Implement production-grade database seeding system based on industry best practices from Salesforce, Tighten, Liquibase, and Microsoft EF Core. Addresses root causes of previous seeding crashes with CLI-based approach, rollback strategies, PII masking, and comprehensive safety features.",
+  "context": "After 6+ hours debugging seeding crashes, rolled back to stable Nov 26 commit. Old approach embedded seeding in app startup causing crashes on schema drift. New approach validated against four authoritative research sources.",
+  "estimated_hours": "17-24",
+  "estimated_days": "2-3",
+  "risk_level": "low",
+  "quality_score_target": "9/10",
+  "tasks": [
+    {
+      "id": "TERP-TASK-009-01",
+      "title": "Infrastructure Setup",
+      "hours": "3-4",
+      "status": "not-started",
+      "dependencies": []
+    },
+    {
+      "id": "TERP-TASK-009-02",
+      "title": "Core Seeding Logic",
+      "hours": "5-7",
+      "status": "not-started",
+      "dependencies": ["TERP-TASK-009-01"]
+    },
+    {
+      "id": "TERP-TASK-009-03",
+      "title": "Rollback and Safety Features",
+      "hours": "3-4",
+      "status": "not-started",
+      "dependencies": ["TERP-TASK-009-02"]
+    },
+    {
+      "id": "TERP-TASK-009-04",
+      "title": "PII Masking and Compliance",
+      "hours": "2-3",
+      "status": "not-started",
+      "dependencies": ["TERP-TASK-009-02"]
+    },
+    {
+      "id": "TERP-TASK-009-05",
+      "title": "Testing and Validation",
+      "hours": "3-4",
+      "status": "not-started",
+      "dependencies": ["TERP-TASK-009-04"]
+    },
+    {
+      "id": "TERP-TASK-009-06",
+      "title": "Documentation and Handoff",
+      "hours": "1-2",
+      "status": "not-started",
+      "dependencies": ["TERP-TASK-009-05"]
+    }
+  ],
+  "research_sources": [
+    {
+      "name": "Salesforce",
+      "url": "https://www.salesforce.com/platform/data-seeding/",
+      "focus": "Enterprise data seeding patterns and compliance"
+    },
+    {
+      "name": "Tighten",
+      "url": "https://tighten.com/insights/10-efficient-and-fun-ways-to-seed-your-database/",
+      "focus": "Practical seeding methods and performance patterns"
+    },
+    {
+      "name": "Liquibase",
+      "url": "https://forum.liquibase.org/t/best-practices-for-seeding-a-production-database/9494",
+      "focus": "Database change management and rollback strategies"
+    },
+    {
+      "name": "Microsoft EF Core",
+      "url": "https://learn.microsoft.com/en-us/ef/core/modeling/data-seeding",
+      "focus": "Official Entity Framework Core seeding documentation"
+    }
+  ],
+  "key_improvements": [
+    "Explicit rollback strategy (Liquibase requirement)",
+    "PII masking and GDPR/CCPA compliance (Salesforce)",
+    "Performance optimization - 60x improvement (Tighten)",
+    "Concurrency protection (Microsoft EF Core)",
+    "Data integrity validation (Salesforce)",
+    "Version control requirements (Salesforce)"
+  ],
+  "success_criteria": [
+    "CLI-based seeding separate from app startup",
+    "Zero impact on application stability",
+    "Explicit rollback per seeder",
+    "PII masking for non-production",
+    "Performance: <5 sec for 1k records",
+    "Test coverage >80%",
+    "GDPR/CCPA compliance",
+    "Quality score 9/10"
+  ],
+  "related_documents": [
+    "/home/ubuntu/terp/docs/MOCK_DATA_SEEDING_STRATEGY_V2.md",
+    "/tmp/gemini_qa_analysis.md",
+    "/tmp/research_salesforce.md",
+    "/tmp/research_tighten.md",
+    "/tmp/research_liquibase.md",
+    "/tmp/research_microsoft_ef.md"
+  ],
+  "tags": [
+    "database",
+    "seeding",
+    "testing",
+    "compliance",
+    "performance",
+    "production-ready",
+    "research-validated"
+  ]
+}
