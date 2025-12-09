@@ -521,66 +521,80 @@ export async function runAutoMigrations() {
     }
 
     // Create VIP Portal tables if they don't exist
+    // NOTE: Indexes are NOT created here to avoid conflicts with migration 0020_flimsy_makkari.sql
+    // The migration file handles index creation. This fallback only creates base tables.
+
+    // Check if VIP Portal tables already exist (created by migration 0020 or previous autoMigrate run)
+    let vipPortalTablesExist = false;
     try {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS vip_portal_configurations (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          client_id INT NOT NULL,
-          module_live_catalog_enabled BOOLEAN DEFAULT TRUE,
-          module_draft_order_enabled BOOLEAN DEFAULT TRUE,
-          module_order_history_enabled BOOLEAN DEFAULT TRUE,
-          module_invoice_enabled BOOLEAN DEFAULT TRUE,
-          module_price_alerts_enabled BOOLEAN DEFAULT TRUE,
-          module_analytics_enabled BOOLEAN DEFAULT FALSE,
-          theme_primary_color VARCHAR(20) DEFAULT '#10b981',
-          theme_logo_url VARCHAR(500) DEFAULT NULL,
-          custom_welcome_message TEXT DEFAULT NULL,
-          catalog_categories JSON DEFAULT NULL,
-          catalog_show_prices BOOLEAN DEFAULT TRUE,
-          catalog_show_cogs BOOLEAN DEFAULT FALSE,
-          catalog_allow_draft_orders BOOLEAN DEFAULT TRUE,
-          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          UNIQUE KEY idx_vip_portal_client_id (client_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      console.log("  ✅ Created vip_portal_configurations table");
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  vip_portal_configurations table already exists");
-      } else {
-        console.log("  ⚠️  vip_portal_configurations table:", errMsg);
-      }
+      await db.execute(sql`SELECT 1 FROM vip_portal_configurations LIMIT 1`);
+      vipPortalTablesExist = true;
+      console.log("  ℹ️  VIP Portal tables already exist - skipping creation");
+    } catch {
+      // vip_portal_configurations table doesn't exist, proceed with table creation
+      console.log(
+        "  ℹ️  VIP Portal tables not found - will create as fallback"
+      );
     }
 
-    try {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS vip_portal_auth (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          client_id INT NOT NULL,
-          email VARCHAR(255) NOT NULL,
-          password_hash VARCHAR(255) NOT NULL,
-          session_token VARCHAR(255) DEFAULT NULL,
-          session_expires_at TIMESTAMP NULL DEFAULT NULL,
-          reset_token VARCHAR(255) DEFAULT NULL,
-          reset_token_expires_at TIMESTAMP NULL DEFAULT NULL,
-          last_login TIMESTAMP NULL DEFAULT NULL,
-          login_count INT DEFAULT 0,
-          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_vip_portal_auth_client (client_id),
-          UNIQUE KEY idx_vip_portal_auth_email (email),
-          INDEX idx_vip_portal_auth_session (session_token)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      console.log("  ✅ Created vip_portal_auth table");
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("already exists")) {
-        console.log("  ℹ️  vip_portal_auth table already exists");
-      } else {
-        console.log("  ⚠️  vip_portal_auth table:", errMsg);
+    if (!vipPortalTablesExist) {
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS vip_portal_configurations (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            client_id INT NOT NULL UNIQUE,
+            module_live_catalog_enabled BOOLEAN DEFAULT TRUE,
+            module_draft_order_enabled BOOLEAN DEFAULT TRUE,
+            module_order_history_enabled BOOLEAN DEFAULT TRUE,
+            module_invoice_enabled BOOLEAN DEFAULT TRUE,
+            module_price_alerts_enabled BOOLEAN DEFAULT TRUE,
+            module_analytics_enabled BOOLEAN DEFAULT FALSE,
+            theme_primary_color VARCHAR(20) DEFAULT '#10b981',
+            theme_logo_url VARCHAR(500) DEFAULT NULL,
+            custom_welcome_message TEXT DEFAULT NULL,
+            catalog_categories JSON DEFAULT NULL,
+            catalog_show_prices BOOLEAN DEFAULT TRUE,
+            catalog_show_cogs BOOLEAN DEFAULT FALSE,
+            catalog_allow_draft_orders BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("  ✅ Created vip_portal_configurations table");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
+          console.log("  ℹ️  vip_portal_configurations table already exists");
+        } else {
+          console.log("  ⚠️  vip_portal_configurations table:", errMsg);
+        }
+      }
+
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS vip_portal_auth (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            client_id INT NOT NULL UNIQUE,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            password_hash VARCHAR(255) NOT NULL,
+            session_token VARCHAR(255) DEFAULT NULL,
+            session_expires_at TIMESTAMP NULL DEFAULT NULL,
+            reset_token VARCHAR(255) DEFAULT NULL,
+            reset_token_expires_at TIMESTAMP NULL DEFAULT NULL,
+            last_login TIMESTAMP NULL DEFAULT NULL,
+            login_count INT DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log("  ✅ Created vip_portal_auth table");
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes("already exists")) {
+          console.log("  ℹ️  vip_portal_auth table already exists");
+        } else {
+          console.log("  ⚠️  vip_portal_auth table:", errMsg);
+        }
       }
     }
 
