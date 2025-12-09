@@ -141,14 +141,30 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ST-020: Add Drizzle Schema to TypeScript Checking
 
-**Status:** ✅ Complete
-**Priority:** P0 (ROOT CAUSE)
-**Estimate:** 5min
+**Status:** complete
+**Priority:** HIGH
+**Estimate:** 1h
 **Actual Time:** 5min
 **Module:** `tsconfig.json`
+**Dependencies:** None
+**Prompt:** `docs/prompts/ST-020.md`
 **Session:** Session-20251209-SCHEMA-FIX-db7a91
 
 **Problem:** The `drizzle/` folder was excluded from TypeScript type-checking, meaning schema errors were never caught during development or CI. This was the ROOT CAUSE of ST-021 and ST-022 persisting undetected.
+
+**Objectives:**
+
+- Add drizzle folder to TypeScript checking
+- Catch schema errors during development
+- Enable CI validation of schema files
+
+**Deliverables:**
+
+- [ ] Add `"drizzle/**/*"` to tsconfig.json includes array
+- [ ] Verify TypeScript checks drizzle folder
+- [ ] Test schema error detection
+- [ ] Update CI configuration
+- [ ] Document change
 
 **Fix:** Added `"drizzle/**/*"` to tsconfig.json includes array.
 
@@ -156,14 +172,30 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ST-021: Fix Malformed Soft Delete Column Definitions
 
-**Status:** ✅ Complete
-**Priority:** P0
+**Status:** complete
+**Priority:** HIGH
 **Estimate:** 1-2h
 **Actual Time:** 1h
 **Module:** `drizzle/schema.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/ST-021.md`
 **Session:** Session-20251209-SCHEMA-FIX-db7a91
 
 **Problem:** 45+ tables had `deletedAt` columns incorrectly placed inside varchar/decimal/references option objects instead of as sibling columns. Caused by botched merge of ST-013 soft delete feature.
+
+**Objectives:**
+
+- Fix malformed deletedAt column definitions in 45+ tables
+- Move deletedAt columns to proper sibling position
+- Restore soft delete functionality
+
+**Deliverables:**
+
+- [ ] Create regex-based script to identify malformed columns
+- [ ] Fix deletedAt placement in 45+ tables
+- [ ] Verify soft delete functionality restored
+- [ ] Test schema compilation
+- [ ] Document changes
 
 **Impact:** Soft delete columns were NOT actually being created in these tables. Soft delete functionality was broken.
 
@@ -173,12 +205,29 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ST-022: Remove Broken Index Definitions
 
-**Status:** ✅ Complete
-**Priority:** P0
-**Estimate:** 15min
+**Status:** complete
+**Priority:** HIGH
+**Estimate:** 1h
 **Actual Time:** 15min
 **Module:** `drizzle/schema.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/ST-022.md`
+
+**Objectives:**
+
+- Remove broken index definitions from schema
+- Clean up malformed index syntax
+- Ensure schema compiles without errors
+
 **Session:** Session-20251209-SCHEMA-FIX-db7a91
+
+**Deliverables:**
+
+- [ ] Identify broken index definitions
+- [ ] Remove malformed index syntax
+- [ ] Verify schema compiles
+- [ ] Test database operations
+- [ ] Document changes
 
 **Problem:** Four tables had index definitions referencing non-existent columns (copy-paste errors):
 
@@ -2449,6 +2498,51 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 - App ID: `2df472a8-2f48-49c7-8de2-16a68d5842d0`
 - Architecture: Separate repo, clones TERP at runtime for roadmap access
 - Dependencies: Minimal (~10 packages vs 1000+ in TERP)
+
+---
+
+### INFRA-013: Create RBAC Database Tables Migration [RETROACTIVE]
+
+**Status:** complete  
+**Priority:** HIGH  
+**Estimate:** 4h (Actual: 2h)  
+**Module:** `drizzle/`, `server/autoMigrate.ts`  
+**Dependencies:** None  
+**Session:** Session-20251209-INFRA-013-rbac-migration
+
+**Problem:** RBAC system fully defined in schema but tables never created in database. Migration journal shows 22 migrations (0000-0021) but none include RBAC tables. Seeding service ready to populate 255 permissions and 11 roles but fails with "Table 'railway.user_roles' doesn't exist" errors.
+
+**Objectives:**
+
+1. Generate proper SQL migration file (0022) for all 5 RBAC tables
+2. Add RBAC table creation to auto-migration script as fallback
+3. Update migration journal to register new migration
+4. Create migration snapshot for Drizzle Kit
+5. Verify tables created with proper indexes and foreign keys
+
+**Deliverables:**
+
+- [x] Migration file `drizzle/0022_create_rbac_tables.sql` created
+- [x] Journal entry added to `drizzle/meta/_journal.json`
+- [x] Snapshot file `drizzle/meta/0022_snapshot.json` created
+- [x] Auto-migration code added to `server/autoMigrate.ts`
+- [x] All 5 RBAC tables defined: roles, permissions, role_permissions, user_roles, user_permission_overrides
+- [x] All indexes created: 9 indexes across 5 tables
+- [x] All foreign keys created: 4 foreign key constraints with CASCADE delete
+- [x] Changes committed and pushed
+
+**Key Commits:** [current commit]
+
+**Technical Details:**
+
+- Tables created in dependency order: roles → permissions → role_permissions → user_roles → user_permission_overrides
+- Dual approach: migration file + auto-migration ensures tables created in all environments
+- Follows existing migration patterns from 0021_giant_leech.sql
+- Compatible with Railway deployment using `drizzle-kit push`
+
+**Actual Time:** 2 hours
+
+---
 
 ### ROADMAP-001: Process Consolidated Roadmap Update Report
 
