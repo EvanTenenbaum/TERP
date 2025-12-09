@@ -47,7 +47,10 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
 
   if (dbCheck.status === "error" || memoryCheck.status === "critical") {
     status = "unhealthy";
-  } else if (memoryCheck.status === "warning" || poolCheck?.status === "warning") {
+  } else if (
+    memoryCheck.status === "warning" ||
+    poolCheck?.status === "warning"
+  ) {
     status = "degraded";
   }
 
@@ -74,27 +77,42 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
 /**
  * Check database connectivity and latency
  */
-async function checkDatabase(): Promise<HealthCheckResult["checks"]["database"]> {
+async function checkDatabase(): Promise<
+  HealthCheckResult["checks"]["database"]
+> {
   try {
     const start = Date.now();
-    const db = await getDb();
 
-    if (!db) {
+    // Add timeout to prevent health check from hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(
+        () => reject(new Error("Database health check timeout")),
+        5000
+      );
+    });
+
+    const dbCheckPromise = (async () => {
+      const db = await getDb();
+
+      if (!db) {
+        return {
+          status: "error" as const,
+          error: "Database not available",
+        };
+      }
+
+      // Simple query to test connectivity
+      await db.execute("SELECT 1");
+
+      const latency = Date.now() - start;
+
       return {
-        status: "error",
-        error: "Database not available",
+        status: "ok" as const,
+        latency,
       };
-    }
+    })();
 
-    // Simple query to test connectivity
-    await db.execute("SELECT 1");
-
-    const latency = Date.now() - start;
-
-    return {
-      status: "ok",
-      latency,
-    };
+    return await Promise.race([dbCheckPromise, timeoutPromise]);
   } catch (error) {
     logger.error({
       msg: "Database health check failed",
@@ -136,7 +154,9 @@ function checkMemory(): HealthCheckResult["checks"]["memory"] {
 /**
  * Check connection pool status
  */
-function checkConnectionPool(): HealthCheckResult["checks"]["connectionPool"] | null {
+function checkConnectionPool():
+  | HealthCheckResult["checks"]["connectionPool"]
+  | null {
   const stats = getPoolStats();
 
   if (!stats) {
@@ -169,7 +189,10 @@ export function livenessCheck(): { status: "ok" } {
 /**
  * Readiness check (returns OK if server can handle requests)
  */
-export async function readinessCheck(): Promise<{ status: "ok" | "not_ready"; reason?: string }> {
+export async function readinessCheck(): Promise<{
+  status: "ok" | "not_ready";
+  reason?: string;
+}> {
   try {
     const db = await getDb();
     if (!db) {
@@ -184,4 +207,3 @@ export async function readinessCheck(): Promise<{ status: "ok" | "not_ready"; re
     };
   }
 }
-
