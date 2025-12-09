@@ -400,22 +400,20 @@ export async function runAutoMigrations() {
     // The migration file handles index creation. This fallback only creates base tables for
     // environments where migrations never ran (e.g., completely blank database).
 
-    // Check if migrations have been applied by looking for __drizzle_migrations table
-    let migrationsApplied = false;
+    // Check if RBAC tables already exist (created by migration 0022 or previous autoMigrate run)
+    // We check for the roles table instead of __drizzle_migrations because Railway uses
+    // drizzle-kit push which doesn't create the migrations table
+    let rbacTablesExist = false;
     try {
-      await db.execute(sql`SELECT 1 FROM __drizzle_migrations LIMIT 1`);
-      migrationsApplied = true;
-      console.log(
-        "  ℹ️  Drizzle migrations detected - skipping RBAC table creation (handled by migration 0022)"
-      );
+      await db.execute(sql`SELECT 1 FROM roles LIMIT 1`);
+      rbacTablesExist = true;
+      console.log("  ℹ️  RBAC tables already exist - skipping creation");
     } catch {
-      // __drizzle_migrations doesn't exist, proceed with table creation
-      console.log(
-        "  ℹ️  No migration table found - will create RBAC tables as fallback"
-      );
+      // roles table doesn't exist, proceed with table creation
+      console.log("  ℹ️  RBAC tables not found - will create as fallback");
     }
 
-    if (!migrationsApplied) {
+    if (!rbacTablesExist) {
       try {
         await db.execute(sql`
           CREATE TABLE IF NOT EXISTS roles (
