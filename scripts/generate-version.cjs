@@ -10,21 +10,23 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Helper to safely execute git commands
+function safeGitExec(command, fallback) {
+  try {
+    return execSync(command, { stdio: 'pipe' }).toString().trim();
+  } catch (error) {
+    return fallback;
+  }
+}
+
 try {
-  // Get current commit SHA (short form)
-  const commit = execSync('git rev-parse --short HEAD')
-    .toString()
-    .trim();
-
-  // Get current commit date
-  const date = execSync('git log -1 --format=%cd --date=short')
-    .toString()
-    .trim();
-
-  // Get current branch
-  const branch = execSync('git rev-parse --abbrev-ref HEAD')
-    .toString()
-    .trim();
+  // Get git information with fallbacks for Docker builds
+  const commit = safeGitExec('git rev-parse --short HEAD', `build-${Date.now().toString(36)}`);
+  const date = safeGitExec('git log -1 --format=%cd --date=short', new Date().toISOString().split('T')[0]);
+  const branch = safeGitExec(
+    'git rev-parse --abbrev-ref HEAD',
+    process.env.RAILWAY_GIT_BRANCH || process.env.BRANCH || process.env.VERCEL_GIT_COMMIT_REF || 'unknown'
+  );
 
   // Determine version based on branch or use package.json version
   let version = '1.0.0';
@@ -37,10 +39,9 @@ try {
 
   // Determine phase based on commit message or branch
   let phase = 'Development';
+  const commitMessage = safeGitExec('git log -1 --pretty=%B', '');
+  
   try {
-    const commitMessage = execSync('git log -1 --pretty=%B')
-      .toString()
-      .trim();
     
     if (commitMessage.includes('P2') || commitMessage.includes('Performance')) {
       phase = 'P2 Performance & Operational Excellence';
@@ -79,6 +80,10 @@ try {
   console.log('✅ Generated version.json:');
   console.log(JSON.stringify(versionInfo, null, 2));
   console.log('✅ Also generated public/version.json for version checking');
+  
+  if (commit.startsWith('build-')) {
+    console.warn('⚠️  Git repository not available - using build timestamp for version');
+  }
   
   process.exit(0);
 } catch (error) {
