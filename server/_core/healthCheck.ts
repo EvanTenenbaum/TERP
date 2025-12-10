@@ -77,53 +77,63 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
 /**
  * Check database connectivity and latency
  */
-async function checkDatabase(): Promise<
+export async function checkDatabase(): Promise<
   HealthCheckResult["checks"]["database"]
 > {
-  try {
-    const start = Date.now();
+  const maxRetries = 3;
+  let retryCount = 0;
 
-    // Add timeout to prevent health check from hanging
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(
-        () => reject(new Error("Database health check timeout")),
-        5000
-      );
-    });
+  while (retryCount < maxRetries) {
+    try {
+      const start = Date.now();
 
-    const dbCheckPromise = (async () => {
-      const db = await getDb();
+      // Add timeout to prevent health check from hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(
+          () => reject(new Error("Database health check timeout")),
+          5000
+        );
+      });
 
-      if (!db) {
+      const dbCheckPromise = (async () => {
+        const db = await getDb();
+
+        if (!db) {
+          throw new Error("Database not available");
+        }
+
+        // Simple query to test connectivity
+        await db.execute("SELECT 1");
+
+        const latency = Date.now() - start;
+
         return {
-          status: "error" as const,
-          error: "Database not available",
+          status: "ok" as const,
+          latency,
         };
+      })();
+
+      return await Promise.race([dbCheckPromise, timeoutPromise]);
+    } catch (error) {
+      logger.warn({
+        msg: `Database health check failed (attempt ${retryCount + 1}/${maxRetries})`,
+        error,
+      });
+      retryCount++;
+
+      if (retryCount < maxRetries) {
+        // Exponential backoff: 2s, 4s, 8s
+        const delay = Math.pow(2, retryCount) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-
-      // Simple query to test connectivity
-      await db.execute("SELECT 1");
-
-      const latency = Date.now() - start;
-
-      return {
-        status: "ok" as const,
-        latency,
-      };
-    })();
-
-    return await Promise.race([dbCheckPromise, timeoutPromise]);
-  } catch (error) {
-    logger.error({
-      msg: "Database health check failed",
-      error,
-    });
-
-    return {
-      status: "error",
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
+    }
   }
+
+  // All retries failed
+  return {
+    status: "error",
+    error: "Database not available after multiple retries",
+  };
 }
 
 /**

@@ -21,7 +21,7 @@ services:
     # Uses /health/live for liveness (no DB dependency, prevents premature restarts)
     health_check:
       http_path: /health/live
-      initial_delay_seconds: 90
+      initial_delay_seconds: 180  # Increased to allow time for migrations and DB connection
       period_seconds: 10
       timeout_seconds: 5
       success_threshold: 1

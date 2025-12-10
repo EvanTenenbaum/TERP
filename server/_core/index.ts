@@ -64,13 +64,41 @@ async function startServer() {
   replaceConsole();
 
   // Run auto-migrations to fix schema drift (adds missing columns/tables)
+  // Load environment variables and log DATABASE_URL for debugging
+  const { env } = await import("./env");
+  logger.info(`🔗 DATABASE_URL configured: ${env.databaseUrl ? 'YES' : 'NO'}`);
+  if (env.databaseUrl) {
+    // Log sanitized version (hide password)
+    const sanitized = env.databaseUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:****@');
+    logger.info(`📊 Database connection: ${sanitized}`);
+  }
+
   // This ensures the database schema matches what the code expects
+  // Add retry mechanism for auto-migrations
+  const runMigrationsWithRetry = async (maxRetries = 3) => {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        logger.info(`🔄 Running auto-migrations (attempt ${i + 1}/${maxRetries})...`);
+        await runAutoMigrations();
+        logger.info("✅ Auto-migrations complete");
+        return; // Success, exit the loop
+      } catch (error) {
+        logger.warn({ msg: `Auto-migration attempt ${i + 1} failed`, error });
+        if (i === maxRetries - 1) {
+          throw error; // Re-throw on final attempt
+        }
+        // Exponential backoff: 3s, 6s, 12s
+        const delay = Math.pow(2, i + 1) * 1500;
+        logger.info(`⏳ Waiting ${delay/1000}s before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  };
+
   try {
-    logger.info("🔄 Running auto-migrations to sync database schema...");
-    await runAutoMigrations();
-    logger.info("✅ Auto-migrations complete");
+    await runMigrationsWithRetry();
   } catch (error) {
-    logger.warn({ msg: "Auto-migration failed (non-fatal) - app may still work", error });
+    logger.warn({ msg: "Auto-migration failed after all retries (non-fatal) - app may still work", error });
     logger.warn("Some features may not work correctly if schema is out of sync");
     // Continue - app may still work depending on what failed
     // The server will start in degraded mode and can be fixed later
@@ -98,7 +126,7 @@ async function startServer() {
     }
 
     // Create initial admin user if environment variables are provided
-    const { env } = await import("./env");
+    // (env already loaded above)
     if (env.initialAdminUsername && env.initialAdminPassword) {
       const adminExists = await getUserByEmail(env.initialAdminUsername);
       if (!adminExists) {
