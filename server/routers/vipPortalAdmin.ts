@@ -242,14 +242,28 @@ export const vipPortalAdminRouter = router({
         moduleMarketplaceNeedsEnabled: z.boolean().optional(),
         moduleMarketplaceSupplyEnabled: z.boolean().optional(),
         moduleLiveCatalogEnabled: z.boolean().optional(),
-        moduleLeaderboardEnabled: z.boolean().optional(),
+        moduleLeaderboardEnabled: z.boolean().optional(), // Stored in featuresConfig.leaderboard.enabled
         featuresConfig: z.any().optional(),
         advancedOptions: z.any().optional(),
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        const { clientId, ...updateData } = input;
+        const { clientId, moduleLeaderboardEnabled, ...updateData } = input;
+
+        // Handle moduleLeaderboardEnabled specially - store in featuresConfig.leaderboard.enabled
+        // since the column doesn't exist in the database
+        if (moduleLeaderboardEnabled !== undefined) {
+          const existingConfig = await db.query.vipPortalConfigurations.findFirst({
+            where: eq(vipPortalConfigurations.clientId, clientId),
+          });
+          const featuresConfig = (existingConfig?.featuresConfig as Record<string, unknown>) || {};
+          if (!featuresConfig.leaderboard) {
+            featuresConfig.leaderboard = {};
+          }
+          (featuresConfig.leaderboard as Record<string, unknown>).enabled = moduleLeaderboardEnabled;
+          updateData.featuresConfig = featuresConfig;
+        }
 
         await db.update(vipPortalConfigurations)
           .set(updateData)
@@ -444,19 +458,25 @@ export const vipPortalAdminRouter = router({
           where: eq(vipPortalConfigurations.clientId, input.clientId),
         });
 
+        // Read leaderboard settings from featuresConfig JSON (not from non-existent columns)
+        const leaderboardConfig = config?.featuresConfig?.leaderboard;
+        
         if (!config) {
           return {
             moduleLeaderboardEnabled: false,
             leaderboardMetrics: [],
             leaderboardDisplayMode: 'black_box',
+            leaderboardType: 'ytd_spend',
+            minimumClients: 5,
           };
         }
 
-        const featuresConfig = config.featuresConfig as any || {};
         return {
-          moduleLeaderboardEnabled: config.moduleLeaderboardEnabled || false,
-          leaderboardMetrics: featuresConfig.leaderboardMetrics || [],
-          leaderboardDisplayMode: featuresConfig.leaderboardDisplayMode || 'black_box',
+          moduleLeaderboardEnabled: leaderboardConfig?.enabled ?? false,
+          leaderboardMetrics: leaderboardConfig?.metrics ?? [],
+          leaderboardDisplayMode: leaderboardConfig?.displayMode ?? 'black_box',
+          leaderboardType: leaderboardConfig?.type ?? 'ytd_spend',
+          minimumClients: leaderboardConfig?.minimumClients ?? 5,
         };
       }),
 
@@ -467,6 +487,8 @@ export const vipPortalAdminRouter = router({
         moduleLeaderboardEnabled: z.boolean(),
         leaderboardMetrics: z.array(z.string()),
         leaderboardDisplayMode: z.enum(['black_box', 'transparent']),
+        leaderboardType: z.enum(['ytd_spend', 'payment_speed', 'order_frequency', 'credit_utilization', 'ontime_payment_rate']).optional(),
+        minimumClients: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -476,25 +498,31 @@ export const vipPortalAdminRouter = router({
           where: eq(vipPortalConfigurations.clientId, input.clientId),
         });
 
-        const featuresConfig = (existingConfig?.featuresConfig as any) || {};
-        featuresConfig.leaderboardMetrics = input.leaderboardMetrics;
-        featuresConfig.leaderboardDisplayMode = input.leaderboardDisplayMode;
+        // Store all leaderboard settings in featuresConfig.leaderboard JSON
+        const featuresConfig = (existingConfig?.featuresConfig as Record<string, unknown>) || {};
+        featuresConfig.leaderboard = {
+          enabled: input.moduleLeaderboardEnabled,
+          metrics: input.leaderboardMetrics,
+          displayMode: input.leaderboardDisplayMode,
+          type: input.leaderboardType ?? 'ytd_spend',
+          minimumClients: input.minimumClients ?? 5,
+          showSuggestions: true,
+          showRankings: true,
+        };
 
         if (existingConfig) {
-          // Update existing config
+          // Update existing config - only update featuresConfig (no non-existent columns)
           await db
             .update(vipPortalConfigurations)
             .set({
-              moduleLeaderboardEnabled: input.moduleLeaderboardEnabled,
               featuresConfig: featuresConfig,
               updatedAt: new Date(),
             })
             .where(eq(vipPortalConfigurations.clientId, input.clientId));
         } else {
-          // Create new config
+          // Create new config - only use columns that exist in DB
           await db.insert(vipPortalConfigurations).values({
             clientId: input.clientId,
-            moduleLeaderboardEnabled: input.moduleLeaderboardEnabled,
             featuresConfig: featuresConfig,
           });
         }

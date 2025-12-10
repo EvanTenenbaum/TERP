@@ -3291,14 +3291,24 @@ export const vipPortalConfigurations = mysqlTable(
         showTags?: boolean;
       };
       leaderboard?: {
+        enabled?: boolean;
         showSuggestions?: boolean;
         showRankings?: boolean;
+        type?: 'ytd_spend' | 'payment_speed' | 'order_frequency' | 'credit_utilization' | 'ontime_payment_rate';
+        displayMode?: 'blackbox' | 'transparent' | 'black_box';
+        minimumClients?: number;
+        metrics?: string[];
       };
     }>(),
 
-    // NOTE: Leaderboard columns (leaderboardType, leaderboardDisplayMode, 
-    // leaderboardShowSuggestions, leaderboardMinimumClients) removed - not in database
-    // If needed, create a migration to add them
+    // NOTE: Leaderboard settings are stored in featuresConfig.leaderboard JSON
+    // The following columns do NOT exist in the database:
+    // - moduleLeaderboardEnabled
+    // - leaderboardType
+    // - leaderboardDisplayMode
+    // - leaderboardShowSuggestions
+    // - leaderboardMinimumClients
+    // All leaderboard config should be read from featuresConfig.leaderboard
 
     // Advanced options
     advancedOptions: json("advanced_options").$type<{
