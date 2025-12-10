@@ -164,11 +164,11 @@ export const returnsRouter = router({
     const stats = await db
       .select({
         totalReturns: sql<number>`COUNT(*)`,
-        defectiveCount: sql<number>`SUM(CASE WHEN ${returns.reason} = 'DEFECTIVE' THEN 1 ELSE 0 END)`,
-        wrongItemCount: sql<number>`SUM(CASE WHEN ${returns.reason} = 'WRONG_ITEM' THEN 1 ELSE 0 END)`,
-        notAsDescribedCount: sql<number>`SUM(CASE WHEN ${returns.reason} = 'NOT_AS_DESCRIBED' THEN 1 ELSE 0 END)`,
-        customerChangedMindCount: sql<number>`SUM(CASE WHEN ${returns.reason} = 'CUSTOMER_CHANGED_MIND' THEN 1 ELSE 0 END)`,
-        otherCount: sql<number>`SUM(CASE WHEN ${returns.reason} = 'OTHER' THEN 1 ELSE 0 END)`,
+        defectiveCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'DEFECTIVE' THEN 1 ELSE 0 END)`,
+        wrongItemCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'WRONG_ITEM' THEN 1 ELSE 0 END)`,
+        notAsDescribedCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'NOT_AS_DESCRIBED' THEN 1 ELSE 0 END)`,
+        customerChangedMindCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'CUSTOMER_CHANGED_MIND' THEN 1 ELSE 0 END)`,
+        otherCount: sql<number>`SUM(CASE WHEN ${returns.returnReason} = 'OTHER' THEN 1 ELSE 0 END)`,
       })
       .from(returns);
 

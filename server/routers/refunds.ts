@@ -38,14 +38,14 @@ export const refundsRouter = router({
           createdBy: transactions.createdBy,
           createdAt: transactions.createdAt,
           originalTransactionId: transactionLinks.parentTransactionId,
-          linkType: transactionLinks.linkType,
+          transactionLinkType: transactionLinks.transactionLinkType,
         })
         .from(transactions)
         .innerJoin(
           transactionLinks,
           eq(transactions.id, transactionLinks.childTransactionId)
         )
-        .where(eq(transactionLinks.linkType, "REFUND_OF"))
+        .where(eq(transactionLinks.transactionLinkType, "REFUND_OF"))
         .orderBy(desc(transactions.date))
         .limit(limit)
         .offset(offset);
@@ -74,7 +74,7 @@ export const refundsRouter = router({
       .where(
         and(
           eq(transactionLinks.childTransactionId, input.id),
-          eq(transactionLinks.linkType, "REFUND_OF")
+          eq(transactionLinks.transactionLinkType, "REFUND_OF")
         )
       );
 
@@ -202,7 +202,7 @@ export const refundsRouter = router({
         .where(
           and(
             eq(transactionLinks.parentTransactionId, input.transactionId),
-            eq(transactionLinks.linkType, "REFUND_OF")
+            eq(transactionLinks.transactionLinkType, "REFUND_OF")
           )
         )
         .orderBy(desc(transactions.date));

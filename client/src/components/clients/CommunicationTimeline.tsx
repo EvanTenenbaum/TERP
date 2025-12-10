@@ -124,7 +124,7 @@ export function CommunicationTimeline({
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        {getTypeBadge(comm.type)}
+                        {getTypeBadge(comm.communicationType)}
                         <span className="text-sm text-muted-foreground">
                           {comm.communicatedAt
                             ? format(new Date(comm.communicatedAt), 'MMM d, yyyy h:mm a')

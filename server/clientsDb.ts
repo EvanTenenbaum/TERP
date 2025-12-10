@@ -786,14 +786,14 @@ export async function getClientCommunications(
   // Build where conditions
   const conditions = [eq(clientCommunications.clientId, clientId)];
   if (type) {
-    conditions.push(eq(clientCommunications.type, type));
+    conditions.push(eq(clientCommunications.communicationType, type));
   }
   
   const query = db
     .select({
       id: clientCommunications.id,
       clientId: clientCommunications.clientId,
-      type: clientCommunications.type,
+      communicationType: clientCommunications.communicationType,
       subject: clientCommunications.subject,
       notes: clientCommunications.notes,
       communicatedAt: clientCommunications.communicatedAt,

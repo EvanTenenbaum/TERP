@@ -422,7 +422,7 @@ export async function getBadDebtAgingReport(daysThreshold: number = 90): Promise
       .from(transactions)
       .where(
         and(
-          eq(transactions.status, "OVERDUE"),
+          eq(transactions.transactionStatus, "OVERDUE"),
           sql`${transactions.transactionDate} < ${thresholdDate.toISOString()}`
         )
       );

@@ -349,7 +349,7 @@ export async function getPendingSampleRequests(): Promise<SampleRequest[]> {
   try {
     const requests = await db.select()
       .from(sampleRequests)
-      .where(eq(sampleRequests.status, "PENDING"))
+      .where(eq(sampleRequests.sampleRequestStatus, "PENDING"))
       .orderBy(desc(sampleRequests.requestDate));
 
     return requests;

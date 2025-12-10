@@ -207,7 +207,7 @@ export async function calculateTotalInventoryValue(): Promise<number> {
     const allBatches = await db
       .select()
       .from(batches)
-      .where(eq(batches.status, "LIVE"));
+      .where(eq(batches.batchStatus, "LIVE"));
     
     let totalValue = 0;
     

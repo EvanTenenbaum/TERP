@@ -132,7 +132,7 @@ export async function getInventoryValuation(): Promise<any> {
   try {
     const activeBatches = await db.select()
       .from(batches)
-      .where(sql`${batches.status} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE', 'ON_HOLD')`);
+      .where(sql`${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE', 'ON_HOLD')`);
 
     let totalValue = 0;
     let totalUnits = 0;

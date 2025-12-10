@@ -82,7 +82,7 @@ export async function getCatalog(
 
   // Build WHERE clause for batches
   const conditions = [
-    inArray(batches.status, ["LIVE", "PHOTOGRAPHY_COMPLETE"]),
+    inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"]),
   ];
 
   // Apply visibility filters from configuration
@@ -273,7 +273,7 @@ export async function getFilterOptions(clientId: number): Promise<FilterOptions>
     })
     .from(batches)
     .leftJoin(products, eq(batches.productId, products.id))
-    .where(inArray(batches.status, ["LIVE", "PHOTOGRAPHY_COMPLETE"]));
+    .where(inArray(batches.batchStatus, ["LIVE", "PHOTOGRAPHY_COMPLETE"]));
 
   // Extract unique categories
   const categoryMap = new Map<string, number>();
