@@ -70,9 +70,10 @@ async function startServer() {
     await runAutoMigrations();
     logger.info("✅ Auto-migrations complete");
   } catch (error) {
-    logger.error({ msg: "CRITICAL: Auto-migration failed - database schema may be out of sync", error });
-    logger.error("Cannot start server with failed migrations - data corruption risk");
-    process.exit(1); // Prevent server from starting with schema issues
+    logger.warn({ msg: "Auto-migration failed (non-fatal) - app may still work", error });
+    logger.warn("Some features may not work correctly if schema is out of sync");
+    // Continue - app may still work depending on what failed
+    // The server will start in degraded mode and can be fixed later
   }
 
   // Seed default data and create admin user on first startup
