@@ -306,13 +306,23 @@ async function startServer() {
       serveStatic(app);
     }
 
-    logger.info("✅ Static files configured, finding available port...");
+    logger.info("✅ Static files configured, determining port...");
 
+    // Railway/production: use exact PORT provided (no fallback search)
+    // Local dev: search for available port starting from 3000
     const preferredPort = parseInt(process.env.PORT || "3000");
-    const port = await findAvailablePort(preferredPort);
-
-    if (port !== preferredPort) {
-      logger.warn(`Port ${preferredPort} is busy, using port ${port} instead`);
+    let port: number;
+    
+    if (process.env.PORT) {
+      // Production (Railway, etc): MUST use exact port provided
+      port = preferredPort;
+      logger.info(`Using Railway-assigned PORT: ${port}`);
+    } else {
+      // Local development: search for available port
+      port = await findAvailablePort(preferredPort);
+      if (port !== preferredPort) {
+        logger.warn(`Port ${preferredPort} is busy, using port ${port} instead`);
+      }
     }
 
     // Sentry error handler (must be after all routes)
