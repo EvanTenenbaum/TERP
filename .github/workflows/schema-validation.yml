@@ -1,0 +1,95 @@
+name: Schema Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'drizzle/**'
+      - 'server/**'
+      - 'scripts/validate-schema*.ts'
+      - 'scripts/utils/schema-introspection.ts'
+  push:
+    branches: [main]
+    paths:
+      - 'drizzle/**'
+      - 'server/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-schema:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpassword
+          MYSQL_DATABASE: terp_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping -h 127.0.0.1 -P 3306 --silent; do
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+
+      - name: Apply migrations
+        env:
+          DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
+        run: pnpm db:push
+
+      - name: Run schema validation
+        env:
+          DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
+        run: pnpm validate:schema
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-validation-report
+          path: |
+            schema-validation-report.json
+            SCHEMA_VALIDATION_REPORT.md
+          retention-days: 7
+
+      - name: Check for schema drift
+        run: |
+          if grep -q '"totalIssues": 0' schema-validation-report.json; then
+            echo "✅ No schema drift detected"
+          else
+            echo "❌ Schema drift detected! Check the validation report."
+            cat SCHEMA_VALIDATION_REPORT.md
+            exit 1
+          fi
