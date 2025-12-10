@@ -94,7 +94,7 @@ async function startServer() {
         logger.info(`⏳ Waiting ${delay/1000}s before retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
-    
+    }
   };
 
   try {
@@ -368,3 +368,4 @@ startServer().catch(error => {
   logger.error({ error }, "Failed to start server");
   process.exit(1);
 });
+
