@@ -55,7 +55,14 @@ RUN echo "BUILD_VERSION=v$(date -u +%Y%m%d-%H%M%S)-$(cat /dev/urandom | tr -dc '
     cat /app/.build-version
 
 # Build production assets with VITE variables embedded
-RUN pnpm run build:production
+# Explicitly set env vars in the same RUN command to ensure they're available to Node.js
+RUN export VITE_CLERK_PUBLISHABLE_KEY="${VITE_CLERK_PUBLISHABLE_KEY}" && \
+    export VITE_APP_TITLE="${VITE_APP_TITLE}" && \
+    export VITE_APP_LOGO="${VITE_APP_LOGO}" && \
+    export VITE_APP_ID="${VITE_APP_ID}" && \
+    export VITE_SENTRY_DSN="${VITE_SENTRY_DSN}" && \
+    echo "Building with VITE_APP_TITLE=${VITE_APP_TITLE}" && \
+    pnpm run build:production
 
 # Expose default port
 EXPOSE 3000
