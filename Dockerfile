@@ -28,8 +28,26 @@ COPY . .
 
 # VITE environment variables for build-time embedding
 # Note: These are public/publishable values embedded in client bundle, not secrets
-# DigitalOcean passes these automatically with RUN_AND_BUILD_TIME scope
-# No ARG needed - DO injects env vars directly into build environment
+# DigitalOcean passes these as build args when scope: RUN_AND_BUILD_TIME is set
+# Kaniko (DO's build system) requires explicit ARG declarations
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG VITE_APP_TITLE
+ARG VITE_APP_LOGO
+ARG VITE_APP_ID
+ARG VITE_SENTRY_DSN
+
+# Debug: Print ARG values to verify they're being passed
+RUN echo "DEBUG: VITE_APP_TITLE=${VITE_APP_TITLE}" && \
+    echo "DEBUG: VITE_APP_LOGO=${VITE_APP_LOGO}" && \
+    echo "DEBUG: VITE_APP_ID=${VITE_APP_ID}" && \
+    echo "DEBUG: VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}"
+
+# Make args available as env vars for the build process
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_APP_TITLE=$VITE_APP_TITLE
+ENV VITE_APP_LOGO=$VITE_APP_LOGO
+ENV VITE_APP_ID=$VITE_APP_ID
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
 
 # Create build timestamp file to bust cache and verify deployed version
 # This RUN command always produces a different output, forcing Docker to rebuild subsequent layers
