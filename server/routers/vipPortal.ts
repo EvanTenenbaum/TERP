@@ -678,26 +678,31 @@ export const vipPortalRouter = router({
           where: eq(vipPortalConfigurations.clientId, input.clientId),
         });
 
-        if (!config || !config.moduleLeaderboardEnabled) {
+        // Read leaderboard settings from featuresConfig JSON (not from non-existent columns)
+        const leaderboardConfig = config?.featuresConfig?.leaderboard;
+        const isLeaderboardEnabled = leaderboardConfig?.enabled ?? false;
+
+        if (!config || !isLeaderboardEnabled) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Leaderboard not enabled for this client",
           });
         }
 
-        const leaderboardType = (config.leaderboardType || 'ytd_spend') as 'ytd_spend' | 'payment_speed' | 'order_frequency' | 'credit_utilization' | 'ontime_payment_rate';
-        const displayMode = (config.leaderboardDisplayMode || 'blackbox') as 'blackbox' | 'transparent';
-        const showSuggestions = config.featuresConfig?.leaderboard?.showSuggestions ?? true;
+        const leaderboardType = (leaderboardConfig?.type || 'ytd_spend') as 'ytd_spend' | 'payment_speed' | 'order_frequency' | 'credit_utilization' | 'ontime_payment_rate';
+        const displayMode = (leaderboardConfig?.displayMode || 'blackbox') as 'blackbox' | 'transparent';
+        const showSuggestions = leaderboardConfig?.showSuggestions ?? true;
+        const minimumClients = leaderboardConfig?.minimumClients ?? 5;
 
         // Get all VIP clients
         const vipClients = await db.query.clients.findMany({
           where: eq(clients.vipPortalEnabled, true),
         });
 
-        if (vipClients.length < (config.leaderboardMinimumClients || 5)) {
+        if (vipClients.length < minimumClients) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: `Leaderboard requires at least ${config.leaderboardMinimumClients || 5} VIP clients`,
+            message: `Leaderboard requires at least ${minimumClients} VIP clients`,
           });
         }
 
