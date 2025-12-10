@@ -61,8 +61,8 @@ async function checkLowStock(batch: Batch): Promise<void> {
       .where(
         and(
           eq(inventoryAlerts.batchId, batch.id),
-          eq(inventoryAlerts.alertType, "LOW_STOCK"),
-          eq(inventoryAlerts.status, "ACTIVE")
+          eq(inventoryAlerts.inventoryAlertType, "LOW_STOCK"),
+          eq(inventoryAlerts.alertStatus, "ACTIVE")
         )
       )
       .limit(1);
@@ -130,8 +130,8 @@ async function checkExpiring(batch: Batch): Promise<void> {
         .where(
           and(
             eq(inventoryAlerts.batchId, batch.id),
-            eq(inventoryAlerts.alertType, "EXPIRING"),
-            eq(inventoryAlerts.status, "ACTIVE")
+            eq(inventoryAlerts.inventoryAlertType, "EXPIRING"),
+            eq(inventoryAlerts.alertStatus, "ACTIVE")
           )
         )
         .limit(1);
@@ -193,8 +193,8 @@ async function checkOverstock(batch: Batch): Promise<void> {
       .where(
         and(
           eq(inventoryAlerts.batchId, batch.id),
-          eq(inventoryAlerts.alertType, "OVERSTOCK"),
-          eq(inventoryAlerts.status, "ACTIVE")
+          eq(inventoryAlerts.inventoryAlertType, "OVERSTOCK"),
+          eq(inventoryAlerts.alertStatus, "ACTIVE")
         )
       )
       .limit(1);
@@ -261,8 +261,8 @@ async function checkSlowMoving(batch: Batch): Promise<void> {
       .where(
         and(
           eq(inventoryAlerts.batchId, batch.id),
-          eq(inventoryAlerts.alertType, "SLOW_MOVING"),
-          eq(inventoryAlerts.status, "ACTIVE")
+          eq(inventoryAlerts.inventoryAlertType, "SLOW_MOVING"),
+          eq(inventoryAlerts.alertStatus, "ACTIVE")
         )
       )
       .limit(1);
