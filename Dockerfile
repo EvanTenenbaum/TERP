@@ -34,20 +34,19 @@ ARG VITE_APP_LOGO
 ARG VITE_APP_ID
 ARG VITE_SENTRY_DSN
 
-# Make VITE variables available as environment variables during build
-ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
-ENV VITE_APP_TITLE=$VITE_APP_TITLE
-ENV VITE_APP_LOGO=$VITE_APP_LOGO
-ENV VITE_APP_ID=$VITE_APP_ID
-ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
-
 # Create build timestamp file to bust cache and verify deployed version
 # This RUN command always produces a different output, forcing Docker to rebuild subsequent layers
 RUN echo "BUILD_VERSION=v$(date -u +%Y%m%d-%H%M%S)-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)" > /app/.build-version && \
     cat /app/.build-version
 
-# Build production assets with VITE variables embedded
-RUN pnpm run build:production
+# Build production assets with VITE variables passed as environment
+# Security: Pass as env vars to build command instead of persisting in image layers
+RUN VITE_CLERK_PUBLISHABLE_KEY="$VITE_CLERK_PUBLISHABLE_KEY" \
+    VITE_APP_TITLE="$VITE_APP_TITLE" \
+    VITE_APP_LOGO="$VITE_APP_LOGO" \
+    VITE_APP_ID="$VITE_APP_ID" \
+    VITE_SENTRY_DSN="$VITE_SENTRY_DSN" \
+    pnpm run build:production
 
 # Expose default port
 EXPOSE 3000
