@@ -26,21 +26,10 @@ RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 # Copy application source
 COPY . .
 
-# Accept VITE environment variables as build arguments (for Railway)
-ARG VITE_CLERK_PUBLISHABLE_KEY
-ARG VITE_APP_TITLE
-ARG VITE_APP_LOGO
-ARG VITE_APP_ID
-ARG VITE_SENTRY_DSN
-
-# Make VITE variables available as environment variables during build
+# VITE environment variables for build-time embedding
 # Note: These are public/publishable values embedded in client bundle, not secrets
-# DigitalOcean passes these as env vars, Railway as build args
-ENV VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
-ENV VITE_APP_TITLE=${VITE_APP_TITLE}
-ENV VITE_APP_LOGO=${VITE_APP_LOGO}
-ENV VITE_APP_ID=${VITE_APP_ID}
-ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
+# DigitalOcean passes these automatically with RUN_AND_BUILD_TIME scope
+# No ARG needed - DO injects env vars directly into build environment
 
 # Create build timestamp file to bust cache and verify deployed version
 # This RUN command always produces a different output, forcing Docker to rebuild subsequent layers
