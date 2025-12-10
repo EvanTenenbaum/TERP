@@ -58,10 +58,20 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   // Initialize monitoring
-  initMonitoring();
+  try {
+    initMonitoring();
+  } catch (error) {
+    console.warn("Failed to initialize monitoring:", error);
+    // Continue - monitoring is non-critical
+  }
 
   // Replace console with structured logger
-  replaceConsole();
+  try {
+    replaceConsole();
+  } catch (error) {
+    console.warn("Failed to replace console:", error);
+    // Continue - can use regular console
+  }
 
   // Run auto-migrations to fix schema drift (adds missing columns/tables)
   // Load environment variables and log DATABASE_URL for debugging
@@ -130,43 +140,49 @@ async function startServer() {
     // Create initial admin user if environment variables are provided
     // (env already loaded above)
     if (env.initialAdminUsername && env.initialAdminPassword) {
-      const adminExists = await getUserByEmail(env.initialAdminUsername);
-      if (!adminExists) {
-        const newAdmin = await simpleAuth.createUser(
-          env.initialAdminUsername,
-          env.initialAdminPassword,
-          `${env.initialAdminUsername} (Admin)`
-        );
-        logger.info(`Admin user created: ${env.initialAdminUsername}`);
+      try {
+        const adminExists = await getUserByEmail(env.initialAdminUsername);
+        if (!adminExists) {
+          const newAdmin = await simpleAuth.createUser(
+            env.initialAdminUsername,
+            env.initialAdminPassword,
+            `${env.initialAdminUsername} (Admin)`
+          );
+          logger.info(`Admin user created: ${env.initialAdminUsername}`);
 
-        // Assign Super Admin role to the initial admin user
-        if (newAdmin && newAdmin.openId) {
-          try {
-            await assignRoleToUser(newAdmin.openId, "Super Admin");
-            logger.info(
-              `Super Admin role assigned to ${env.initialAdminUsername}`
-            );
-          } catch (error) {
-            logger.warn({
-              msg: "Failed to assign Super Admin role",
-              error,
-              userOpenId: newAdmin.openId,
-            });
-            // IMPORTANT: Log the error, but DO NOT re-throw.
-            // Allow the server to start even if role assignment fails.
-            // We can handle RBAC issues later through the admin interface.
+          // Assign Super Admin role to the initial admin user
+          if (newAdmin && newAdmin.openId) {
+            try {
+              await assignRoleToUser(newAdmin.openId, "Super Admin");
+              logger.info(
+                `Super Admin role assigned to ${env.initialAdminUsername}`
+              );
+            } catch (error) {
+              logger.warn({
+                msg: "Failed to assign Super Admin role",
+                error,
+                userOpenId: newAdmin.openId,
+              });
+              // IMPORTANT: Log the error, but DO NOT re-throw.
+              // Allow the server to start even if role assignment fails.
+              // We can handle RBAC issues later through the admin interface.
+            }
           }
-        }
 
-        // Security warning for default credentials
-        logger.warn({
-          msg: "SECURITY WARNING: Default admin credentials detected",
-          username: env.initialAdminUsername,
-          action:
-            "Please change the admin password immediately after first login",
-        });
-      } else {
-        logger.info(`Admin user already exists: ${env.initialAdminUsername}`);
+          // Security warning for default credentials
+          logger.warn({
+            msg: "SECURITY WARNING: Default admin credentials detected",
+            username: env.initialAdminUsername,
+            action:
+              "Please change the admin password immediately after first login",
+          });
+        } else {
+          logger.info(`Admin user already exists: ${env.initialAdminUsername}`);
+        }
+      } catch (error) {
+        logger.error({ msg: "Failed to create admin user (database schema mismatch?) - server will start without admin user", error });
+        logger.info("💡 You can create the first admin user via /api/auth/create-first-user endpoint");
+        // Don't re-throw - allow server to start
       }
     } else {
       logger.info(
@@ -346,10 +362,20 @@ async function startServer() {
     }
 
     // Sentry error handler (must be after all routes)
-    setupErrorHandler(app);
+    try {
+      setupErrorHandler(app);
+    } catch (error) {
+      logger.warn({ msg: "Failed to setup error handler (Sentry)", error });
+      // Continue - error handling is nice-to-have
+    }
 
     // Setup graceful shutdown
-    setupGracefulShutdown();
+    try {
+      setupGracefulShutdown();
+    } catch (error) {
+      logger.warn({ msg: "Failed to setup graceful shutdown", error });
+      // Continue - graceful shutdown is nice-to-have
+    }
 
     logger.info(`✅ All setup complete, starting server on port ${port}...`);
 
