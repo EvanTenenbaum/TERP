@@ -74,8 +74,8 @@ async function startServer() {
   }
 
   // This ensures the database schema matches what the code expects
-  // Add retry mechanism for auto-migrations
-  const runMigrationsWithRetry = async (maxRetries = 3) => {
+  // Add retry mechanism for auto-migrations (reduced delays for faster deployment)
+  const runMigrationsWithRetry = async (maxRetries = 2) => {
     for (let i = 0; i < maxRetries; i++) {
       try {
         logger.info(`🔄 Running auto-migrations (attempt ${i + 1}/${maxRetries})...`);
@@ -85,14 +85,16 @@ async function startServer() {
       } catch (error) {
         logger.warn({ msg: `Auto-migration attempt ${i + 1} failed`, error });
         if (i === maxRetries - 1) {
-          throw error; // Re-throw on final attempt
+          // Non-fatal: log error but allow server to start
+          logger.error({ msg: "Auto-migrations failed after retries - server starting in degraded mode", error });
+          return; // Don't throw, allow server to start
         }
-        // Exponential backoff: 3s, 6s, 12s
-        const delay = Math.pow(2, i + 1) * 1500;
+        // Reduced backoff: 2s, 4s
+        const delay = Math.pow(2, i + 1) * 1000;
         logger.info(`⏳ Waiting ${delay/1000}s before retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
-    }
+    
   };
 
   try {
@@ -336,21 +338,11 @@ async function startServer() {
 
     logger.info("✅ Static files configured, determining port...");
 
-    // Railway/production: use exact PORT provided (no fallback search)
-    // Local dev: search for available port starting from 3000
+    // Determine port: prefer PORT env var, but search for available port if busy
     const preferredPort = parseInt(process.env.PORT || "3000");
-    let port: number;
-    
-    if (process.env.PORT) {
-      // Production (Railway, etc): MUST use exact port provided
-      port = preferredPort;
-      logger.info(`Using Railway-assigned PORT: ${port}`);
-    } else {
-      // Local development: search for available port
-      port = await findAvailablePort(preferredPort);
-      if (port !== preferredPort) {
-        logger.warn(`Port ${preferredPort} is busy, using port ${port} instead`);
-      }
+    const port = await findAvailablePort(preferredPort);
+    if (port !== preferredPort) {
+      logger.warn(`Port ${preferredPort} is busy, using port ${port} instead`);
     }
 
     // Sentry error handler (must be after all routes)

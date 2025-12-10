@@ -80,7 +80,7 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
 export async function checkDatabase(): Promise<
   HealthCheckResult["checks"]["database"]
 > {
-  const maxRetries = 3;
+  const maxRetries = 2;  // Reduced for faster deployment
   let retryCount = 0;
 
   while (retryCount < maxRetries) {
@@ -122,8 +122,8 @@ export async function checkDatabase(): Promise<
       retryCount++;
 
       if (retryCount < maxRetries) {
-        // Exponential backoff: 2s, 4s, 8s
-        const delay = Math.pow(2, retryCount) * 1000;
+        // Reduced backoff: 1s, 2s
+        const delay = Math.pow(2, retryCount) * 500;
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
