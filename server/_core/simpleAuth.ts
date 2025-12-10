@@ -6,9 +6,10 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "./env";
 
-// JWT_SECRET is now validated in env.ts at module load time
-// No fallback - application will fail to start if JWT_SECRET is missing or insecure
-const JWT_SECRET = env.JWT_SECRET;
+// JWT_SECRET is accessed lazily to prevent startup crashes
+// This allows the server to start even if JWT_SECRET validation fails
+// The error will occur when auth is actually used, not during module import
+const getJwtSecret = () => env.JWT_SECRET;
 const COOKIE_NAME = "terp_session";
 
 interface SessionPayload {
@@ -39,7 +40,7 @@ class SimpleAuthService {
       userId: user.openId,
       email: user.email || "",
     };
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
+    return jwt.sign(payload, getJwtSecret(), { expiresIn: "30d" });
   }
 
   /**
@@ -47,7 +48,7 @@ class SimpleAuthService {
    */
   verifySessionToken(token: string): SessionPayload | null {
     try {
-      return jwt.verify(token, JWT_SECRET) as SessionPayload;
+      return jwt.verify(token, getJwtSecret()) as SessionPayload;
     } catch (error) {
       return null;
     }
