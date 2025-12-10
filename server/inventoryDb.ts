@@ -334,7 +334,7 @@ export async function getBatchesWithDetails(
     conditions.push(sql`${batches.id} < ${cursor}`);
   }
   if (filters?.status) {
-    conditions.push(sql`${batches.status} = ${filters.status}`);
+    conditions.push(sql`${batches.batchStatus} = ${filters.status}`);
   }
   if (filters?.category) {
     conditions.push(eq(products.category, filters.category));
@@ -891,7 +891,7 @@ export async function getDashboardStats() {
       const allBatches = await db
         .select({
           batchId: batches.id,
-          status: batches.status,
+          batchStatus: batches.batchStatus,
           onHandQty: batches.onHandQty,
           unitCogs: batches.unitCogs,
           category: products.category,
@@ -1095,7 +1095,7 @@ export async function bulkUpdateBatchStatus(
       if (!batch) continue;
 
       // Skip if already SOLD_OUT or CLOSED
-      if (batch.status === "SOLD_OUT" || batch.status === "CLOSED") {
+      if (batch.batchStatus === "SOLD_OUT" || batch.batchStatus === "CLOSED") {
         continue;
       }
 

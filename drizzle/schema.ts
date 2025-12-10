@@ -212,7 +212,7 @@ export const purchaseOrders = mysqlTable(
       .references(() => intakeSessions.id, { onDelete: "set null" }),
     
     // Status and dates
-    status: purchaseOrderStatusEnum.notNull().default("DRAFT"),
+    purchaseOrderStatus: purchaseOrderStatusEnum.notNull().default("DRAFT"),
     orderDate: date("orderDate").notNull(),
     expectedDeliveryDate: date("expectedDeliveryDate"),
     actualDeliveryDate: date("actualDeliveryDate"),
@@ -243,7 +243,7 @@ export const purchaseOrders = mysqlTable(
   },
   (table) => ({
     vendorIdIdx: index("idx_po_vendor_id").on(table.vendorId),
-    statusIdx: index("idx_po_status").on(table.status),
+    statusIdx: index("idx_po_status").on(table.purchaseOrderStatus),
     orderDateIdx: index("idx_po_order_date").on(table.orderDate),
   })
 );
@@ -475,7 +475,7 @@ export const batches = mysqlTable("batches", {
   sku: varchar("sku", { length: 100 }).notNull().unique(),
   productId: int("productId").notNull(),
   lotId: int("lotId").notNull(),
-  status: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
+  batchStatus: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
   statusId: int("statusId").references(() => workflowStatuses.id, {
     onDelete: "set null",
   }), // New workflow queue status (nullable for backward compatibility)
@@ -1341,7 +1341,7 @@ export const clientCommunications = mysqlTable(
     clientId: int("client_id")
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
-    type: communicationTypeEnum.notNull(),
+    communicationType: communicationTypeEnum.notNull(),
     subject: varchar("subject", { length: 255 }).notNull(),
     notes: text("notes"),
     communicatedAt: timestamp("communicated_at").notNull(),
@@ -1353,7 +1353,7 @@ export const clientCommunications = mysqlTable(
   table => ({
     clientIdIdx: index("idx_client_id").on(table.clientId),
     communicatedAtIdx: index("idx_communicated_at").on(table.communicatedAt),
-    typeIdx: index("idx_type").on(table.type),
+    typeIdx: index("idx_type").on(table.communicationType),
   })
 );
 
@@ -2022,7 +2022,7 @@ export const returns = mysqlTable(
       .notNull()
       .references(() => orders.id, { onDelete: "cascade" }),
     items: json("items").notNull(), // Array of { batchId, quantity, reason }
-    reason: returnReasonEnum.notNull(),
+    returnReason: returnReasonEnum.notNull(),
     notes: text("notes"),
     processedBy: int("processed_by")
       .notNull()
@@ -2171,13 +2171,13 @@ export const transactions = mysqlTable(
     transactionNumber: varchar("transactionNumber", { length: 50 })
       .notNull()
       .unique(),
-    transactionType: transactionTypeEnum.notNull(),
+    transactionType: transactionTypeEnum.notNull(), // DB column name matches
     clientId: int("clientId")
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
     transactionDate: timestamp("transactionDate").notNull(),
     amount: varchar("amount", { length: 20 }).notNull(),
-    status: transactionStatusEnum.notNull(),
+    transactionStatus: transactionStatusEnum.notNull(),
     notes: text("notes"),
     metadata: text("metadata"), // JSON string for type-specific data
     createdBy: int("createdBy")
@@ -2194,7 +2194,7 @@ export const transactions = mysqlTable(
     transactionDateIdx: index("idx_transactions_date").on(
       table.transactionDate
     ),
-    statusIdx: index("idx_transactions_status").on(table.status),
+    statusIdx: index("idx_transactions_status").on(table.transactionStatus),
   })
 );
 
@@ -2229,7 +2229,7 @@ export const transactionLinks = mysqlTable(
     childTransactionId: int("childTransactionId")
       .notNull()
       .references(() => transactions.id, { onDelete: "cascade" }),
-    linkType: transactionLinkTypeEnum.notNull(),
+    transactionLinkType: transactionLinkTypeEnum.notNull(),
     linkAmount: varchar("linkAmount", { length: 20 }), // Amount of the link (for partial payments/refunds)
     notes: text("notes"),
     createdBy: int("createdBy")
@@ -2244,7 +2244,7 @@ export const transactionLinks = mysqlTable(
     childIdIdx: index("idx_transaction_links_child").on(
       table.childTransactionId
     ),
-    linkTypeIdx: index("idx_transaction_links_type").on(table.linkType),
+    linkTypeIdx: index("idx_transaction_links_type").on(table.transactionLinkType),
   })
 );
 
@@ -2285,7 +2285,7 @@ export const credits = mysqlTable(
     amountRemaining: varchar("amountRemaining", { length: 20 }).notNull(),
     creditReason: varchar("creditReason", { length: 100 }),
     expirationDate: timestamp("expirationDate"),
-    status: creditStatusEnum.notNull().default("ACTIVE"),
+    creditStatus: creditStatusEnum.notNull().default("ACTIVE"),
     notes: text("notes"),
     createdBy: int("createdBy")
       .notNull()
@@ -2295,7 +2295,7 @@ export const credits = mysqlTable(
   },
   table => ({
     clientIdIdx: index("idx_credits_client_id").on(table.clientId),
-    statusIdx: index("idx_credits_status").on(table.status),
+    statusIdx: index("idx_credits_status").on(table.creditStatus),
     expirationDateIdx: index("idx_credits_expiration").on(table.expirationDate),
   })
 );
@@ -2405,6 +2405,7 @@ export const adjustmentReasonEnum = mysqlEnum("adjustmentReason", [
  * Links inventory changes to business transactions
  */
 // SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
+// PILOT FIX: Added deletedAt to align with database (migration 0039)
 export const inventoryMovements = mysqlTable(
   "inventoryMovements",
   {
@@ -2423,6 +2424,7 @@ export const inventoryMovements = mysqlTable(
       .notNull()
       .references(() => users.id),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   },
   table => ({
     batchIdIdx: index("idx_inventory_movements_batch").on(table.batchId),
@@ -2473,7 +2475,7 @@ export const sampleRequests = mysqlTable(
     products: json("products")
       .$type<Array<{ productId: number; quantity: string }>>()
       .notNull(), // Array of {productId, quantity}
-    status: sampleRequestStatusEnum.notNull().default("PENDING"),
+    sampleRequestStatus: sampleRequestStatusEnum.notNull().default("PENDING"),
     fulfilledDate: timestamp("fulfilledDate"),
     fulfilledBy: int("fulfilledBy").references(() => users.id),
     cancelledDate: timestamp("cancelledDate"),
@@ -2488,7 +2490,7 @@ export const sampleRequests = mysqlTable(
   },
   table => ({
     clientIdIdx: index("idx_sample_requests_client").on(table.clientId),
-    statusIdx: index("idx_sample_requests_status").on(table.status),
+    statusIdx: index("idx_sample_requests_status").on(table.sampleRequestStatus),
     requestDateIdx: index("idx_sample_requests_date").on(table.requestDate),
     relatedOrderIdx: index("idx_sample_requests_order").on(
       table.relatedOrderId
@@ -2575,14 +2577,14 @@ export const inventoryAlerts = mysqlTable(
   "inventoryAlerts",
   {
     id: int("id").autoincrement().primaryKey(),
-    alertType: inventoryAlertTypeEnum.notNull(),
+    inventoryAlertType: inventoryAlertTypeEnum.notNull(),
     batchId: int("batchId")
       .notNull()
       .references(() => batches.id, { onDelete: "cascade" }),
     threshold: decimal("threshold", { precision: 10, scale: 2 }),
     currentValue: decimal("currentValue", { precision: 10, scale: 2 }),
-    severity: alertSeverityEnum.notNull(),
-    status: alertStatusEnum.notNull().default("ACTIVE"),
+    alertSeverity: alertSeverityEnum.notNull(),
+    alertStatus: alertStatusEnum.notNull().default("ACTIVE"),
     message: text("message"),
     acknowledgedBy: int("acknowledgedBy").references(() => users.id),
     acknowledgedAt: timestamp("acknowledgedAt"),
@@ -2593,9 +2595,9 @@ export const inventoryAlerts = mysqlTable(
   },
   table => ({
     batchIdIdx: index("idx_inventory_alerts_batch").on(table.batchId),
-    statusIdx: index("idx_inventory_alerts_status").on(table.status),
-    alertTypeIdx: index("idx_inventory_alerts_type").on(table.alertType),
-    severityIdx: index("idx_inventory_alerts_severity").on(table.severity),
+    statusIdx: index("idx_inventory_alerts_status").on(table.alertStatus),
+    alertTypeIdx: index("idx_inventory_alerts_type").on(table.inventoryAlertType),
+    severityIdx: index("idx_inventory_alerts_severity").on(table.alertSeverity),
   })
 );
 
@@ -3203,6 +3205,9 @@ export const vipPortalConfigurations = mysqlTable(
     moduleDashboardEnabled: boolean("module_dashboard_enabled")
       .default(true)
       .notNull(),
+    moduleLiveCatalogEnabled: boolean("module_live_catalog_enabled")
+      .default(false)
+      .notNull(),
     moduleArEnabled: boolean("module_ar_enabled").default(true).notNull(),
     moduleApEnabled: boolean("module_ap_enabled").default(true).notNull(),
     moduleTransactionHistoryEnabled: boolean(
@@ -3222,9 +3227,8 @@ export const vipPortalConfigurations = mysqlTable(
     moduleMarketplaceSupplyEnabled: boolean("module_marketplace_supply_enabled")
       .default(true)
       .notNull(),
-    moduleLeaderboardEnabled: boolean("module_leaderboard_enabled")
-      .default(false)
-      .notNull(),
+    // NOTE: moduleLeaderboardEnabled and leaderboard columns removed - not in database
+    // If needed, create a migration to add them
 
     // Feature-level controls (stored as JSON for flexibility)
     featuresConfig: json("features_config").$type<{
@@ -3292,17 +3296,9 @@ export const vipPortalConfigurations = mysqlTable(
       };
     }>(),
 
-    // Leaderboard-specific configuration
-    leaderboardType: varchar("leaderboard_type", { length: 50 }).default(
-      "ytd_spend"
-    ),
-    leaderboardDisplayMode: varchar("leaderboard_display_mode", {
-      length: 20,
-    }).default("blackbox"),
-    leaderboardShowSuggestions: boolean("leaderboard_show_suggestions").default(
-      true
-    ),
-    leaderboardMinimumClients: int("leaderboard_minimum_clients").default(5),
+    // NOTE: Leaderboard columns (leaderboardType, leaderboardDisplayMode, 
+    // leaderboardShowSuggestions, leaderboardMinimumClients) removed - not in database
+    // If needed, create a migration to add them
 
     // Advanced options
     advancedOptions: json("advanced_options").$type<{
@@ -4392,10 +4388,7 @@ export const calendarEventInvitations = mysqlTable(
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 
     // Link to participant record (created after acceptance)
-    participantId: int("participant_id").references(
-      () => calendarEventParticipants.id,
-      { onDelete: "set null" }
-    ),
+    participantId: int("participant_id"),
   },
   table => ({
     // Indexes for performance
@@ -4466,9 +4459,7 @@ export const calendarInvitationHistory = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
 
-    invitationId: int("invitation_id")
-      .notNull()
-      .references(() => calendarEventInvitations.id, { onDelete: "cascade" }),
+    invitationId: int("invitation_id").notNull(),
 
     action: mysqlEnum("action", [
       "CREATED",

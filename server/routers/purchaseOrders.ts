@@ -90,7 +90,7 @@ export const purchaseOrdersRouter = router({
       }
 
       if (input?.status) {
-        query = query.where(eq(purchaseOrders.status, input.status)) as typeof query;
+        query = query.where(eq(purchaseOrders.purchaseOrderStatus, input.status)) as typeof query;
       }
 
       return await query;
@@ -302,7 +302,7 @@ export const purchaseOrdersRouter = router({
         poId: purchaseOrders.id,
         poNumber: purchaseOrders.poNumber,
         vendorId: purchaseOrders.vendorId,
-        status: purchaseOrders.status,
+        purchaseOrderStatus: purchaseOrders.purchaseOrderStatus,
         orderDate: purchaseOrders.orderDate,
         quantityOrdered: purchaseOrderItems.quantityOrdered,
         unitCost: purchaseOrderItems.unitCost,

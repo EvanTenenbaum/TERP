@@ -242,6 +242,7 @@ export async function getIndexes(
 /**
  * Normalize MySQL and Drizzle data types for comparison
  * Handles variations like int(11) vs int, varchar(255) vs varchar({ length: 255 })
+ * Also handles JavaScript runtime types (number, string, date) that Drizzle exposes
  */
 export function normalizeDataType(
   mysqlType: string,
@@ -261,15 +262,17 @@ export function normalizeDataType(
     .toLowerCase()
     .trim();
   
-  // Type mappings
+  // Type mappings - includes JavaScript runtime types that Drizzle exposes
   const typeMap: Record<string, string[]> = {
-    'int': ['int', 'integer', 'int4'],
-    'bigint': ['bigint', 'int8'],
+    'int': ['int', 'integer', 'int4', 'number'], // 'number' is JS runtime type for int
+    'bigint': ['bigint', 'int8', 'number'],
     'varchar': ['varchar', 'string'],
-    'text': ['text', 'longtext', 'mediumtext'],
-    'decimal': ['decimal', 'numeric'],
-    'timestamp': ['timestamp', 'datetime'],
+    'text': ['text', 'longtext', 'mediumtext', 'string'], // 'string' is JS runtime type
+    'decimal': ['decimal', 'numeric', 'string', 'number'], // decimal can be string or number in JS
+    'timestamp': ['timestamp', 'datetime', 'date'], // 'date' is JS runtime type for timestamp
     'boolean': ['boolean', 'bool', 'tinyint'],
+    'enum': ['enum', 'string'], // enums are strings in JS runtime
+    'json': ['json', 'object', 'unknown'],
   };
   
   // Check if types match

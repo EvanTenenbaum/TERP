@@ -1339,7 +1339,7 @@ export async function getOrderReturns(orderId: number) {
     id: returns.id,
     orderId: returns.orderId,
     items: returns.items,
-    reason: returns.reason,
+    returnReason: returns.returnReason,
     notes: returns.notes,
     processedBy: returns.processedBy,
     processedByName: users.name,

@@ -212,8 +212,8 @@ async function validateTable(
       });
     }
 
-    // Check nullable
-    const dbNullable = dbCol.isNullable;
+    // Check nullable - normalize to boolean (MySQL may return 0/1 instead of true/false)
+    const dbNullable = Boolean(dbCol.isNullable);
     const drizzleNullable = !drizzleColDef?.notNull;
 
     if (dbNullable !== drizzleNullable) {

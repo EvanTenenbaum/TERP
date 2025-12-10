@@ -21,7 +21,7 @@ export async function generateInventoryAlerts(): Promise<void> {
     const activeBatches = await db
       .select()
       .from(batches)
-      .where(sql`${batches.status} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')`);
+      .where(sql`${batches.batchStatus} IN ('LIVE', 'PHOTOGRAPHY_COMPLETE')`);
 
     for (const batch of activeBatches) {
       // Check for low stock
@@ -73,13 +73,13 @@ async function checkLowStock(batch: Batch): Promise<void> {
         onHandQty <= 5 ? "HIGH" : onHandQty <= 8 ? "MEDIUM" : "LOW";
 
       await db.insert(inventoryAlerts).values({
-        alertType: "LOW_STOCK",
+        inventoryAlertType: "LOW_STOCK",
         batchId: batch.id,
         threshold: lowStockThreshold.toString(),
         currentValue: onHandQty.toString(),
-        severity,
+        alertSeverity: severity,
         message: `Batch ${batch.code} is low on stock (${onHandQty} units remaining)`,
-        status: "ACTIVE",
+        alertStatus: "ACTIVE",
       });
     }
   } else if (onHandQty > lowStockThreshold) {
@@ -87,7 +87,7 @@ async function checkLowStock(batch: Batch): Promise<void> {
     await db
       .update(inventoryAlerts)
       .set({
-        status: "RESOLVED",
+        alertStatus: "RESOLVED",
         resolvedAt: new Date(),
         resolution: "Stock level increased",
         updatedAt: new Date(),
@@ -95,8 +95,8 @@ async function checkLowStock(batch: Batch): Promise<void> {
       .where(
         and(
           eq(inventoryAlerts.batchId, batch.id),
-          eq(inventoryAlerts.alertType, "LOW_STOCK"),
-          eq(inventoryAlerts.status, "ACTIVE")
+          eq(inventoryAlerts.inventoryAlertType, "LOW_STOCK"),
+          eq(inventoryAlerts.alertStatus, "ACTIVE")
         )
       );
   }
@@ -145,13 +145,13 @@ async function checkExpiring(batch: Batch): Promise<void> {
               : "LOW";
 
         await db.insert(inventoryAlerts).values({
-          alertType: "EXPIRING",
+          inventoryAlertType: "EXPIRING",
           batchId: batch.id,
           threshold: "30",
           currentValue: daysUntilExpiration.toString(),
-          severity,
+          alertSeverity: severity,
           message: `Batch ${batch.code} expires in ${daysUntilExpiration} days`,
-          status: "ACTIVE",
+          alertStatus: "ACTIVE",
         });
       }
     } else if (daysUntilExpiration <= 0) {
@@ -159,15 +159,15 @@ async function checkExpiring(batch: Batch): Promise<void> {
       await db
         .update(inventoryAlerts)
         .set({
-          severity: "HIGH",
+          alertSeverity: "HIGH",
           message: `Batch ${batch.code} has expired`,
           updatedAt: new Date(),
         })
         .where(
           and(
             eq(inventoryAlerts.batchId, batch.id),
-            eq(inventoryAlerts.alertType, "EXPIRING"),
-            eq(inventoryAlerts.status, "ACTIVE")
+            eq(inventoryAlerts.inventoryAlertType, "EXPIRING"),
+            eq(inventoryAlerts.alertStatus, "ACTIVE")
           )
         );
     }
@@ -204,20 +204,20 @@ async function checkOverstock(batch: Batch): Promise<void> {
         onHandQty >= 200 ? "HIGH" : onHandQty >= 150 ? "MEDIUM" : "LOW";
 
       await db.insert(inventoryAlerts).values({
-        alertType: "OVERSTOCK",
+        inventoryAlertType: "OVERSTOCK",
         batchId: batch.id,
         threshold: overstockThreshold.toString(),
         currentValue: onHandQty.toString(),
-        severity,
+        alertSeverity: severity,
         message: `Batch ${batch.code} has excess inventory (${onHandQty} units)`,
-        status: "ACTIVE",
+        alertStatus: "ACTIVE",
       });
     }
   } else if (onHandQty < overstockThreshold) {
     await db
       .update(inventoryAlerts)
       .set({
-        status: "RESOLVED",
+        alertStatus: "RESOLVED",
         resolvedAt: new Date(),
         resolution: "Stock level decreased",
         updatedAt: new Date(),
@@ -225,8 +225,8 @@ async function checkOverstock(batch: Batch): Promise<void> {
       .where(
         and(
           eq(inventoryAlerts.batchId, batch.id),
-          eq(inventoryAlerts.alertType, "OVERSTOCK"),
-          eq(inventoryAlerts.status, "ACTIVE")
+          eq(inventoryAlerts.inventoryAlertType, "OVERSTOCK"),
+          eq(inventoryAlerts.alertStatus, "ACTIVE")
         )
       );
   }
@@ -269,20 +269,20 @@ async function checkSlowMoving(batch: Batch): Promise<void> {
 
     if (existing.length === 0) {
       await db.insert(inventoryAlerts).values({
-        alertType: "SLOW_MOVING",
+        inventoryAlertType: "SLOW_MOVING",
         batchId: batch.id,
         threshold: "90",
         currentValue: "0",
-        severity: "MEDIUM",
+        alertSeverity: "MEDIUM",
         message: `Batch ${batch.code} has no sales in 90 days`,
-        status: "ACTIVE",
+        alertStatus: "ACTIVE",
       });
     }
   } else if (recentSales.length > 0) {
     await db
       .update(inventoryAlerts)
       .set({
-        status: "RESOLVED",
+        alertStatus: "RESOLVED",
         resolvedAt: new Date(),
         resolution: "Batch has recent sales",
         updatedAt: new Date(),
@@ -290,8 +290,8 @@ async function checkSlowMoving(batch: Batch): Promise<void> {
       .where(
         and(
           eq(inventoryAlerts.batchId, batch.id),
-          eq(inventoryAlerts.alertType, "SLOW_MOVING"),
-          eq(inventoryAlerts.status, "ACTIVE")
+          eq(inventoryAlerts.inventoryAlertType, "SLOW_MOVING"),
+          eq(inventoryAlerts.alertStatus, "ACTIVE")
         )
       );
   }
@@ -310,8 +310,8 @@ export async function getActiveInventoryAlerts(
     const alerts = await db
       .select()
       .from(inventoryAlerts)
-      .where(eq(inventoryAlerts.status, "ACTIVE"))
-      .orderBy(desc(inventoryAlerts.severity), desc(inventoryAlerts.createdAt));
+      .where(eq(inventoryAlerts.alertStatus, "ACTIVE"))
+      .orderBy(desc(inventoryAlerts.alertSeverity), desc(inventoryAlerts.createdAt));
 
     return alerts;
   } catch (error) {
@@ -335,7 +335,7 @@ export async function acknowledgeAlert(
     await db
       .update(inventoryAlerts)
       .set({
-        status: "ACKNOWLEDGED",
+        alertStatus: "ACKNOWLEDGED",
         acknowledgedBy: _userId,
         acknowledgedAt: new Date(),
         updatedAt: new Date(),
@@ -363,7 +363,7 @@ export async function resolveAlert(
     await db
       .update(inventoryAlerts)
       .set({
-        status: "RESOLVED",
+        alertStatus: "RESOLVED",
         resolvedAt: new Date(),
         resolution,
         updatedAt: new Date(),
@@ -401,22 +401,22 @@ export async function getAlertSummary(): Promise<{
     const alerts = await db
       .select()
       .from(inventoryAlerts)
-      .where(eq(inventoryAlerts.status, "ACTIVE"));
+      .where(eq(inventoryAlerts.alertStatus, "ACTIVE"));
 
     const summary = {
       total: alerts.length,
       byType: {
-        LOW_STOCK: alerts.filter(a => a.alertType === "LOW_STOCK").length,
-        EXPIRING: alerts.filter(a => a.alertType === "EXPIRING").length,
-        OVERSTOCK: alerts.filter(a => a.alertType === "OVERSTOCK").length,
-        SLOW_MOVING: alerts.filter(a => a.alertType === "SLOW_MOVING").length,
+        LOW_STOCK: alerts.filter(a => a.inventoryAlertType === "LOW_STOCK").length,
+        EXPIRING: alerts.filter(a => a.inventoryAlertType === "EXPIRING").length,
+        OVERSTOCK: alerts.filter(a => a.inventoryAlertType === "OVERSTOCK").length,
+        SLOW_MOVING: alerts.filter(a => a.inventoryAlertType === "SLOW_MOVING").length,
       },
       bySeverity: {
-        HIGH: alerts.filter(a => a.severity === "HIGH").length,
-        MEDIUM: alerts.filter(a => a.severity === "MEDIUM").length,
-        LOW: alerts.filter(a => a.severity === "LOW").length,
+        HIGH: alerts.filter(a => a.alertSeverity === "HIGH").length,
+        MEDIUM: alerts.filter(a => a.alertSeverity === "MEDIUM").length,
+        LOW: alerts.filter(a => a.alertSeverity === "LOW").length,
       },
-      highPriority: alerts.filter(a => a.severity === "HIGH"),
+      highPriority: alerts.filter(a => a.alertSeverity === "HIGH"),
     };
 
     return summary;

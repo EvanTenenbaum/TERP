@@ -125,8 +125,8 @@ export async function getCreditsByClient(clientId: number, activeOnly: boolean =
           and(
             eq(credits.clientId, clientId),
             or(
-              eq(credits.status, "ACTIVE"),
-              eq(credits.status, "PARTIALLY_USED")
+              eq(credits.creditStatus, "ACTIVE"),
+              eq(credits.creditStatus, "PARTIALLY_USED")
             )
           )
         )
@@ -444,8 +444,8 @@ export async function markExpiredCredits(): Promise<number> {
         and(
           lt(credits.expirationDate, now),
           or(
-            eq(credits.status, "ACTIVE"),
-            eq(credits.status, "PARTIALLY_USED")
+            eq(credits.creditStatus, "ACTIVE"),
+            eq(credits.creditStatus, "PARTIALLY_USED")
           )
         )
       );

@@ -374,7 +374,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
       .leftJoin(products, eq(batches.productId, products.id))
       .where(
         and(
-          eq(batches.status, "LIVE"),
+          eq(batches.batchStatus, "LIVE"),
           sql`CAST(${batches.onHandQty} AS DECIMAL) > 0`
         )
       );

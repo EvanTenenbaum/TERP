@@ -149,10 +149,10 @@ async function calculateInventoryMetrics(
       totalValue: sum(sql`CAST(${batches.onHandQty} AS DECIMAL(15,2)) * CAST(${batches.unitCogs} AS DECIMAL(15,2))`),
       totalUnits: sum(batches.onHandQty),
       avgCogs: sql<number>`AVG(CAST(${batches.unitCogs} AS DECIMAL(15,2)))`,
-      awaitingIntake: count(sql`CASE WHEN ${batches.status} = 'AWAITING_INTAKE' THEN 1 END`),
-      quarantined: count(sql`CASE WHEN ${batches.status} = 'QUARANTINED' THEN 1 END`),
-      onHold: count(sql`CASE WHEN ${batches.status} = 'ON_HOLD' THEN 1 END`),
-      live: count(sql`CASE WHEN ${batches.status} = 'LIVE' THEN 1 END`),
+      awaitingIntake: count(sql`CASE WHEN ${batches.batchStatus} = 'AWAITING_INTAKE' THEN 1 END`),
+      quarantined: count(sql`CASE WHEN ${batches.batchStatus} = 'QUARANTINED' THEN 1 END`),
+      onHold: count(sql`CASE WHEN ${batches.batchStatus} = 'ON_HOLD' THEN 1 END`),
+      live: count(sql`CASE WHEN ${batches.batchStatus} = 'LIVE' THEN 1 END`),
       lowStock: count(sql`CASE WHEN (CAST(${batches.onHandQty} AS DECIMAL(15,2)) - CAST(${batches.reservedQty} AS DECIMAL(15,2)) - CAST(${batches.quarantineQty} AS DECIMAL(15,2)) - CAST(${batches.holdQty} AS DECIMAL(15,2))) <= 100 THEN 1 END`),
       totalBatches: count(),
     })
@@ -237,7 +237,7 @@ async function calculateInventoryMetrics(
       })
       .from(batches)
       .leftJoin(products, eq(batches.productId, products.id))
-      .where(eq(batches.status, 'LIVE'))
+      .where(eq(batches.batchStatus, 'LIVE'))
       .groupBy(products.category)
       .orderBy(desc(count()))
       .limit(1);

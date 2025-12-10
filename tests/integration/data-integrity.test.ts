@@ -194,7 +194,7 @@ describe("Data Integrity Tests", () => {
         .select()
         .from(batches)
         .where(
-          sql`${batches.status} NOT IN ('AWAITING_INTAKE', 'LIVE', 'ON_HOLD', 'QUARANTINED', 'PHOTOGRAPHY_COMPLETE', 'SOLD_OUT', 'CLOSED')`
+          sql`${batches.batchStatus} NOT IN ('AWAITING_INTAKE', 'LIVE', 'ON_HOLD', 'QUARANTINED', 'PHOTOGRAPHY_COMPLETE', 'SOLD_OUT', 'CLOSED')`
         );
 
       expect(batchesWithInvalidStatus.length).toBe(0);

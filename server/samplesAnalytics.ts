@@ -24,7 +24,7 @@ export async function getSampleDistributionReport(
     const requests = await db.select()
       .from(sampleRequests)
       .where(and(
-        eq(sampleRequests.status, "FULFILLED"),
+        eq(sampleRequests.sampleRequestStatus, "FULFILLED"),
         gte(sampleRequests.fulfilledDate, startDate),
         lte(sampleRequests.fulfilledDate, endDate)
       ));
@@ -107,7 +107,7 @@ export async function getSampleConversionReport(
     const allSamples = await db.select()
       .from(sampleRequests)
       .where(and(
-        eq(sampleRequests.status, "FULFILLED"),
+        eq(sampleRequests.sampleRequestStatus, "FULFILLED"),
         gte(sampleRequests.fulfilledDate, startDate),
         lte(sampleRequests.fulfilledDate, endDate)
       ));
@@ -166,7 +166,7 @@ export async function getSampleEffectivenessByProduct(
     const requests = await db.select()
       .from(sampleRequests)
       .where(and(
-        eq(sampleRequests.status, "FULFILLED"),
+        eq(sampleRequests.sampleRequestStatus, "FULFILLED"),
         gte(sampleRequests.fulfilledDate, startDate),
         lte(sampleRequests.fulfilledDate, endDate)
       ));
@@ -252,7 +252,7 @@ export async function getSampleCostByProduct(
     const requests = await db.select()
       .from(sampleRequests)
       .where(and(
-        eq(sampleRequests.status, "FULFILLED"),
+        eq(sampleRequests.sampleRequestStatus, "FULFILLED"),
         gte(sampleRequests.fulfilledDate, startDate),
         lte(sampleRequests.fulfilledDate, endDate)
       ));
@@ -300,7 +300,7 @@ export async function getSampleCostByClient(
     const requests = await db.select()
       .from(sampleRequests)
       .where(and(
-        eq(sampleRequests.status, "FULFILLED"),
+        eq(sampleRequests.sampleRequestStatus, "FULFILLED"),
         gte(sampleRequests.fulfilledDate, startDate),
         lte(sampleRequests.fulfilledDate, endDate)
       ));
