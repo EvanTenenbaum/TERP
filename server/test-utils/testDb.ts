@@ -7,171 +7,312 @@
 
 import { vi } from 'vitest';
 
-/**
- * Create a mock database object that matches the Drizzle ORM interface
- */
+// Helper to get table name from object
+function getTableName(table: any) {
+    if (typeof table === 'string') return table;
+    const symbols = Object.getOwnPropertySymbols(table || {});
+    for (const sym of symbols) {
+        if (sym.toString() === 'Symbol(drizzle:Name)') {
+            return table[sym];
+        }
+    }
+    if (table?._?.name) return table._.name;
+    return 'unknown';
+}
+
+function getColValue(rowCtx: any, col: any) {
+    const tableName = getTableName(col.table);
+    const row = rowCtx[tableName];
+    if (!row) return undefined;
+    return row[col.name];
+}
+
 export function createMockDb() {
-  const mockDb = {
-    select: vi.fn(),
-    insert: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    query: {},
-    transaction: vi.fn(),
-    $with: vi.fn(),
+  const storage: Record<string, any[]> = {};
+
+  const getStorage = (key: string) => {
+      if (storage[key]) return storage[key];
+      const snake = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      if (storage[snake]) return storage[snake];
+      return [];
   };
 
-  // Setup chainable query builder pattern
-  const setupChainableMock = () => ({
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    leftJoin: vi.fn().mockReturnThis(),
-    innerJoin: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    offset: vi.fn().mockReturnThis(),
-    groupBy: vi.fn().mockReturnThis(),
-    having: vi.fn().mockReturnThis(),
-    execute: vi.fn().mockResolvedValue([]),
-    then: vi.fn((resolve) => resolve([])), // Make it thenable
-  });
-
-  // Make select() return a chainable mock
-  mockDb.select.mockReturnValue(setupChainableMock());
-
-  // Make insert() return a chainable mock
-  mockDb.insert.mockReturnValue({
-    values: vi.fn().mockReturnValue({
-      returning: vi.fn().mockReturnValue({
-        execute: vi.fn().mockResolvedValue([]),
-        then: vi.fn((resolve) => resolve([])),
-      }),
-      execute: vi.fn().mockResolvedValue({ insertId: 1, changes: 1 }),
-      then: vi.fn((resolve) => resolve({ insertId: 1, changes: 1 })),
+  const mockDb: any = {
+    select: vi.fn((selection) => {
+        let currentRows: any[] = [];
+        let isJoined = false;
+        
+        const builder = {
+            from: vi.fn((table) => {
+                const tableName = getTableName(table);
+                // Start with wrapped rows: { [tableName]: row }
+                currentRows = (storage[tableName] || []).map(row => ({ [tableName]: row }));
+                return builder;
+            }),
+            leftJoin: vi.fn((table, condition) => {
+                isJoined = true;
+                const joinTableName = getTableName(table);
+                const joinRows = storage[joinTableName] || [];
+                
+                const newRows: any[] = [];
+                currentRows.forEach(mainRow => {
+                    let matchFound = false;
+                    
+                    joinRows.forEach(joinRow => {
+                         let matches = true;
+                         
+                         const check = (cond: any) => {
+                             if (!cond) return true;
+                             if (cond.op === 'eq') {
+                                 const leftVal = getColValue(mainRow, cond.col);
+                                 
+                                 let rightVal = cond.val;
+                                 if (cond.val && typeof cond.val === 'object' && cond.val.table) {
+                                     if (getTableName(cond.val.table) === joinTableName) {
+                                         rightVal = joinRow[cond.val.name];
+                                     } else {
+                                         rightVal = getColValue(mainRow, cond.val);
+                                     }
+                                 }
+                                 
+                                 return leftVal == rightVal;
+                             }
+                             if (cond.op === 'and') {
+                                 return cond.args.every(check);
+                             }
+                             return true;
+                         };
+                         
+                         if (check(condition)) {
+                             newRows.push({ ...mainRow, [joinTableName]: joinRow });
+                             matchFound = true;
+                         }
+                    });
+                    
+                    if (!matchFound) {
+                        newRows.push({ ...mainRow, [joinTableName]: null });
+                    }
+                });
+                
+                currentRows = newRows;
+                return builder;
+            }),
+            where: vi.fn((condition) => {
+                const applyCondition = (cond: any) => {
+                    if (!cond) return;
+                    if (cond.op === 'eq') {
+                         currentRows = currentRows.filter(rowCtx => {
+                             const val = getColValue(rowCtx, cond.col);
+                             return val == cond.val;
+                         });
+                    } else if (cond.op === 'and') {
+                        cond.args.forEach(applyCondition);
+                    } else if (cond.op === 'inArray') {
+                         currentRows = currentRows.filter(rowCtx => {
+                             const val = getColValue(rowCtx, cond.col);
+                             return cond.values.includes(val);
+                         });
+                    }
+                };
+                applyCondition(condition);
+                return builder;
+            }),
+            limit: vi.fn((n) => {
+                currentRows = currentRows.slice(0, n);
+                return builder;
+            }),
+            offset: vi.fn().mockReturnThis(),
+            orderBy: vi.fn().mockReturnThis(),
+            innerJoin: vi.fn().mockReturnThis(),
+            then: (resolve: any) => {
+                if (isJoined) {
+                    if (selection && typeof selection === 'object') {
+                         const mappedRows = currentRows.map(row => {
+                             const mapped: any = {};
+                             for (const key in selection) {
+                                 const targetTable = getTableName(selection[key]);
+                                 mapped[key] = row[targetTable];
+                             }
+                             return mapped;
+                         });
+                         return resolve(mappedRows);
+                    }
+                    return resolve(currentRows);
+                } else {
+                    const flatRows = currentRows.map(r => Object.values(r)[0]);
+                    return resolve(flatRows);
+                }
+            },
+            execute: vi.fn().mockResolvedValue(currentRows)
+        };
+        return builder;
     }),
-  });
-
-  // Make update() return a chainable mock
-  mockDb.update.mockReturnValue({
-    set: vi.fn().mockReturnValue({
-      where: vi.fn().mockReturnValue({
-        returning: vi.fn().mockReturnValue({
-          execute: vi.fn().mockResolvedValue([]),
-          then: vi.fn((resolve) => resolve([])),
-        }),
-        execute: vi.fn().mockResolvedValue({ changes: 1 }),
-        then: vi.fn((resolve) => resolve({ changes: 1 })),
-      }),
+    
+    insert: vi.fn((table) => {
+        const tableName = getTableName(table);
+        return {
+            values: vi.fn((values) => {
+                const rows = Array.isArray(values) ? values : [values];
+                
+                const mappedRows = rows.map((row: any) => {
+                    const mapped: any = { ...row };
+                    for (const key of Object.keys(row)) {
+                         const col = table[key];
+                         if (col && typeof col === 'object' && col.name) {
+                             mapped[col.name] = row[key];
+                         }
+                    }
+                    return mapped;
+                });
+                
+                if (!storage[tableName]) storage[tableName] = [];
+                const startId = storage[tableName].length + 1;
+                
+                const newRows = mappedRows.map((r: any, i: number) => ({
+                    ...r,
+                    id: r.id || (startId + i)
+                }));
+                
+                storage[tableName].push(...newRows);
+                
+                const result = { insertId: newRows[0].id, changes: newRows.length };
+                return {
+                    onDuplicateKeyUpdate: vi.fn().mockResolvedValue(result),
+                    then: (resolve: any) => resolve(result)
+                };
+            })
+        };
     }),
-  });
-
-  // Make delete() return a chainable mock
-  mockDb.delete.mockReturnValue({
-    where: vi.fn().mockReturnValue({
-      execute: vi.fn().mockResolvedValue({ changes: 1 }),
-      then: vi.fn((resolve) => resolve({ changes: 1 })),
+    
+    update: vi.fn((table) => {
+        const tableName = getTableName(table);
+        return {
+            set: vi.fn((values) => {
+                return {
+                    where: vi.fn((condition) => {
+                        const rows = storage[tableName] || [];
+                        let updatedCount = 0;
+                        
+                        const newRows = rows.map(row => {
+                            let match = false;
+                            const checkCondition = (cond: any): boolean => {
+                                if (!cond) return true;
+                                if (cond.op === 'eq') {
+                                    return row[cond.col.name] == cond.val;
+                                } else if (cond.op === 'and') {
+                                    return cond.args.every(checkCondition);
+                                }
+                                return true;
+                            };
+                            
+                            if (checkCondition(condition)) {
+                                match = true;
+                            }
+                            
+                            if (match) {
+                                updatedCount++;
+                                const updatedRow = { ...row };
+                                for (const key in values) {
+                                    updatedRow[key] = values[key];
+                                    const col = table[key];
+                                    if (col && typeof col === 'object' && col.name) {
+                                        updatedRow[col.name] = values[key];
+                                    }
+                                }
+                                return updatedRow;
+                            }
+                            return row;
+                        });
+                        
+                        storage[tableName] = newRows;
+                        
+                        return { then: (r: any) => r({ changes: updatedCount }) };
+                    })
+                };
+            })
+        };
     }),
-  });
-
+    
+    delete: vi.fn((table) => {
+        const tableName = getTableName(table);
+        return {
+            where: vi.fn((condition) => {
+                if (condition && condition.op === 'eq') {
+                     const colName = condition.col.name;
+                     const initialLen = (storage[tableName] || []).length;
+                     storage[tableName] = (storage[tableName] || []).filter((r: any) => r[colName] != condition.val);
+                     return { then: (r: any) => r({ changes: initialLen - storage[tableName].length }) };
+                }
+                return { then: (r: any) => r({ changes: 0 }) };
+            })
+        };
+    }),
+    
+    query: new Proxy({}, {
+        get: (target, prop: string) => {
+            return {
+                findFirst: vi.fn((args) => {
+                    const rows = getStorage(prop);
+                    let result = rows;
+                    if (args?.where) {
+                        const applyCondition = (cond: any) => {
+                            if (!cond) return;
+                            if (cond.op === 'eq') {
+                                const colName = cond.col.name;
+                                const initialLen = result.length;
+                                result = result.filter((r: any) => {
+                                    const val = r[colName];
+                                    const match = val == cond.val;
+                                    process.stdout.write(`[findFirst] Filter ${prop}: ${colName}=${val} vs ${cond.val} -> ${match}\n`);
+                                    return match;
+                                });
+                            } else if (cond.op === 'and') {
+                                cond.args.forEach(applyCondition);
+                            } else {
+                                process.stdout.write(`[findFirst] Unknown Op: ${cond.op}\n`);
+                            }
+                        };
+                        applyCondition(args.where);
+                    } else {
+                        process.stdout.write(`[findFirst] No where args\n`);
+                    }
+                    return Promise.resolve(result[0] || undefined);
+                }),
+                findMany: vi.fn((args) => {
+                    let result = getStorage(prop);
+                    if (args?.where) {
+                        const applyCondition = (cond: any) => {
+                            if (!cond) return;
+                            if (cond.op === 'eq') {
+                                const colName = cond.col.name;
+                                result = result.filter((r: any) => r[colName] == cond.val);
+                            } else if (cond.op === 'and') {
+                                cond.args.forEach(applyCondition);
+                            }
+                        };
+                        applyCondition(args.where);
+                    }
+                    if (args?.limit) result = result.slice(0, args.limit);
+                    return Promise.resolve(result);
+                }),
+            };
+        }
+    }),
+    
+    transaction: vi.fn((callback) => callback(mockDb)),
+  };
+  
   return mockDb;
 }
 
-/**
- * Setup database mock for a test file
- * 
- * Usage in test files:
- * ```ts
- * import { setupDbMock } from '../test-utils/testDb';
- * 
- * vi.mock('../db', () => setupDbMock());
- * ```
- */
 export function setupDbMock() {
   const mockDb = createMockDb();
-  
   return {
     db: mockDb,
-    getDb: vi.fn().mockReturnValue(mockDb),
+    getDb: vi.fn().mockResolvedValue(mockDb),
   };
 }
 
-/**
- * Create a mock query result
- * 
- * Usage:
- * ```ts
- * const mockDb = createMockDb();
- * mockDb.select().from().where().mockResolvedValue(createMockResult([{ id: 1, name: 'Test' }]));
- * ```
- */
-export function createMockResult<T>(data: T[]): T[] {
-  return data;
-}
-
-/**
- * Helper to setup a mock select query with specific results
- */
-export function mockSelectQuery(mockDb: ReturnType<typeof createMockDb>, results: unknown[]) {
-  const chainable = {
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    leftJoin: vi.fn().mockReturnThis(),
-    innerJoin: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    offset: vi.fn().mockReturnThis(),
-    groupBy: vi.fn().mockReturnThis(),
-    having: vi.fn().mockReturnThis(),
-    execute: vi.fn().mockResolvedValue(results),
-    then: vi.fn((resolve) => resolve(results)),
-  };
-
-  mockDb.select.mockReturnValue(chainable);
-  return chainable;
-}
-
-/**
- * Helper to setup a mock insert query
- */
-export function mockInsertQuery(mockDb: ReturnType<typeof createMockDb>, result: unknown) {
-  mockDb.insert.mockReturnValue({
-    values: vi.fn().mockReturnValue({
-      returning: vi.fn().mockReturnValue({
-        execute: vi.fn().mockResolvedValue([result]),
-        then: vi.fn((resolve) => resolve([result])),
-      }),
-      execute: vi.fn().mockResolvedValue({ insertId: 1, changes: 1 }),
-      then: vi.fn((resolve) => resolve({ insertId: 1, changes: 1 })),
-    }),
-  });
-}
-
-/**
- * Helper to setup a mock update query
- */
-export function mockUpdateQuery(mockDb: ReturnType<typeof createMockDb>, result: unknown) {
-  mockDb.update.mockReturnValue({
-    set: vi.fn().mockReturnValue({
-      where: vi.fn().mockReturnValue({
-        returning: vi.fn().mockReturnValue({
-          execute: vi.fn().mockResolvedValue([result]),
-          then: vi.fn((resolve) => resolve([result])),
-        }),
-        execute: vi.fn().mockResolvedValue({ changes: 1 }),
-        then: vi.fn((resolve) => resolve({ changes: 1 })),
-      }),
-    }),
-  });
-}
-
-/**
- * Helper to setup a mock delete query
- */
-export function mockDeleteQuery(mockDb: ReturnType<typeof createMockDb>) {
-  mockDb.delete.mockReturnValue({
-    where: vi.fn().mockReturnValue({
-      execute: vi.fn().mockResolvedValue({ changes: 1 }),
-      then: vi.fn((resolve) => resolve({ changes: 1 })),
-    }),
-  });
+export function mockSelectQuery(mockDb: any, results: any[]) {
+    // Basic mock
 }
