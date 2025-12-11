@@ -12,6 +12,18 @@ import { setupDbMock } from '../test-utils/testDb';
 // Mock the database (MUST be before other imports)
 vi.mock('../db', () => setupDbMock());
 
+// Mock drizzle-orm to return simple objects for testDb.ts
+vi.mock("drizzle-orm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("drizzle-orm")>();
+  return {
+    ...actual,
+    eq: (col: any, val: any) => ({ op: 'eq', col, val }),
+    and: (...args: any[]) => ({ op: 'and', args }),
+    or: (...args: any[]) => ({ op: 'or', args }),
+    inArray: (col: any, values: any[]) => ({ op: 'inArray', col, values }),
+  };
+});
+
 import { appRouter } from '../routers';
 import { db, getDb } from '../db';
 import { clients } from '../../drizzle/schema';
@@ -19,7 +31,9 @@ import {
   vipPortalConfigurations,
   clientDraftInterests,
   clientCatalogViews,
-} from '../../drizzle/schema-vip-portal';
+  batches,
+  products,
+} from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 // Mock VIP portal client user
@@ -54,6 +68,30 @@ describe('VIP Portal - Live Catalog (Client-Facing)', () => {
     });
     
     testClientId = Number(result.insertId);
+    
+    // Create product
+    const productResult = await db.insert(products).values({
+      brandId: 1,
+      nameCanonical: "Test Product",
+      category: "Flower",
+      uomSellable: "EA",
+    });
+    const productId = Number(productResult.insertId);
+
+    // Create batches (IDs 1-6 for tests)
+    for (let i = 1; i <= 6; i++) {
+        await db.insert(batches).values({
+            id: i,
+            productId: productId,
+            code: `BATCH-00${i}`,
+            sku: `SKU-00${i}`,
+            lotId: 1,
+            cogsMode: "FIXED",
+            paymentTerms: "COD",
+            batchStatus: "LIVE",
+            onHandQty: "100",
+        });
+    }
     
     // Create VIP portal configuration with Live Catalog enabled
     await db.insert(vipPortalConfigurations).values({

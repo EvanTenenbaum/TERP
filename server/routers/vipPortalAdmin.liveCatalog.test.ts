@@ -12,14 +12,35 @@ import { setupDbMock } from '../test-utils/testDb';
 // Mock the database (MUST be before other imports)
 vi.mock('../db', () => setupDbMock());
 
+// Mock drizzle-orm to return simple objects for testDb.ts
+vi.mock("drizzle-orm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("drizzle-orm")>();
+  return {
+    ...actual,
+    eq: (col: any, val: any) => ({ op: 'eq', col, val }),
+    and: (...args: any[]) => ({ op: 'and', args }),
+    or: (...args: any[]) => ({ op: 'or', args }),
+    inArray: (col: any, values: any[]) => ({ op: 'inArray', col, values }),
+  };
+});
+
 import { appRouter } from '../routers';
 import { db, getDb } from '../db';
-import { clients, vipPortalConfigurations } from '../../drizzle/schema-vip-portal';
+import { 
+  clients, 
+  vipPortalConfigurations,
+  roles,
+  userRoles,
+  permissions,
+  rolePermissions
+} from '../../drizzle/schema';
+import { seedRBACDefaults, assignRoleToUser } from '../services/seedRBAC';
 import { eq } from 'drizzle-orm';
 
 // Mock user for authenticated admin requests
 const mockAdminUser = {
   id: 1,
+  openId: "admin-user-id",
   email: 'admin@terp.com',
   name: 'Admin User',
   role: 'admin' as const,
@@ -44,6 +65,10 @@ describe('VIP Portal Admin - Live Catalog', () => {
     // Create a test client for testing
     const db = await getDb();
     if (!db) throw new Error('Database not available');
+    
+    // Seed RBAC and assign role to admin user
+    await seedRBACDefaults();
+    await assignRoleToUser("admin-user-id", "Super Admin");
     
     const result = await db.insert(clients).values({
       name: 'Test Live Catalog Client',
