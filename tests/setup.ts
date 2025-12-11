@@ -117,6 +117,13 @@ const createTrpcMockProxy = (path: string): any => {
         if (prop === 'useMutation') {
           return vi.fn(() => defaultMutationReturn);
         }
+        if (prop === 'useContext') {
+          return vi.fn(() => ({
+            invalidate: vi.fn(),
+            refetch: vi.fn(),
+            cancel: vi.fn(),
+          }));
+        }
         
         // Handle nested routers - recursively create a new proxy
         return createTrpcMockProxy(fullPath);
