@@ -10,12 +10,12 @@
 
 ## 🟢 Currently Working
 
-| Session ID                        | Task    | Branch                            | Module        | Status         | Started    | ETA  |
-| --------------------------------- | ------- | --------------------------------- | ------------- | -------------- | ---------- | ---- |
-| Session-20251209-SCHEMA-FIX-db7a91 | ST-020/021/022 | claude/review-database-structure-* | Drizzle Schema | ⏳ IN PROGRESS | 2025-12-09 | 2h |
-| Session-20251203-PROD-LOADING-dc6060 | PROD-LOADING | main | Server/Static Files | ⏳ IN PROGRESS | 2025-12-03 | 1h |
-| Session-20251130-PERF-003-1018ca89 | PERF-003 | perf-003-pagination | Backend Routers | ⏳ IN PROGRESS | 24h |
-| Session-20251130-PERF-002-9da73aa3 | PERF-002 | perf-002-react-memo | React Components | ⏳ IN PROGRESS | 2025-11-30 | 24h |
+| Session ID                           | Task           | Branch                              | Module              | Status         | Started    | ETA |
+| ------------------------------------ | -------------- | ----------------------------------- | ------------------- | -------------- | ---------- | --- |
+| Session-20251209-SCHEMA-FIX-db7a91   | ST-020/021/022 | claude/review-database-structure-\* | Drizzle Schema      | ⏳ IN PROGRESS | 2025-12-09 | 2h  |
+| Session-20251203-PROD-LOADING-dc6060 | PROD-LOADING   | main                                | Server/Static Files | ⏳ IN PROGRESS | 2025-12-03 | 1h  |
+| Session-20251130-PERF-003-1018ca89   | PERF-003       | perf-003-pagination                 | Backend Routers     | ⏳ IN PROGRESS | 24h        |
+| Session-20251130-PERF-002-9da73aa3   | PERF-002       | perf-002-react-memo                 | React Components    | ⏳ IN PROGRESS | 2025-11-30 | 24h |
 
 ## ⏸️ Paused / Waiting
 
@@ -25,8 +25,8 @@
 
 ## ✅ Completed Today (2025-12-04)
 
-| Session ID                         | Task                                          | Status      |
-| ---------------------------------- | --------------------------------------------- | ----------- |
+| Session ID                             | Task                                         | Status      |
+| -------------------------------------- | -------------------------------------------- | ----------- |
 | Session-20251204-SEEDING-BYPASS-eb0b83 | SEEDING-BYPASS: Railway Seeding Crash Bypass | ✅ Complete |
 
 ## ✅ Completed Previously (2025-11-17)
@@ -92,3 +92,5 @@
 - Session-20251119-BUG-001-ca579e66: BUG-001 - Fix all list views returning zero results
 - SEC-001: Session-20251125-SEC-001-7aa9b79d (2025-11-25)
 
+- Session-20251211-DB-PILOT-ASSESS-2cf0ce: DB-PILOT-ASSESS - [Platform: External] [Files: docs/analysis/DB_PILOT_ASSESSMENT.md]
+- Session-20251211-DB-PLAN-f9b211: DB-PLAN - [Platform: External] [Files: docs/analysis/DB_DATA_ROLLOUT_PLAN.md]
