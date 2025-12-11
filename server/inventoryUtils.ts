@@ -448,3 +448,26 @@ export function stringifyMetadata(metadata: Record<string, unknown>): string {
   }
   return JSON.stringify(metadata);
 }
+
+// List of all exported functions for default export
+export default {
+  calculateAvailableQty,
+  validateQuantityConsistency,
+  getQuantityBreakdown,
+  hasAvailableQty,
+  isValidStatusTransition,
+  getAllowedNextStatuses,
+  generateSKU,
+  generateLotCode,
+  generateBatchCode,
+  normalizeToKey,
+  normalizeProductName,
+  validateCOGS,
+  isPriceValid,
+  parseQty,
+  formatQty,
+  createAuditSnapshot,
+  validateMetadata,
+  parseMetadata,
+  stringifyMetadata,
+};

@@ -2,23 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import EventFormDialog from './EventFormDialog';
 import { trpc } from '../../lib/trpc';
+import { mockTrpc } from '../../../tests/setup'; // Assuming mockTrpc is exported from setup
 
-// Mock tRPC
-vi.mock('../../lib/trpc', () => ({
-  trpc: {
-    calendar: {
-      createEvent: {
-        useMutation: vi.fn(),
-      },
-      updateEvent: {
-        useMutation: vi.fn(),
-      },
-      getEventById: {
-        useQuery: vi.fn(),
-      },
-    },
-  },
-}));
+// Remove the local vi.mock statement entirely.
 
 describe('EventFormDialog', () => {
   const mockOnClose = vi.fn();
@@ -27,20 +13,36 @@ describe('EventFormDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    // Setup default mocks
-    (trpc.calendar.createEvent.useMutation as any).mockReturnValue({
+    mockMutateAsync.mockClear();
+
+    // Setup global mock responses for the component's dependencies
+    mockTrpc.calendar.createEvent.useMutation.mockReturnValue({
       mutateAsync: mockMutateAsync,
       isLoading: false,
     });
-    
-    (trpc.calendar.updateEvent.useMutation as any).mockReturnValue({
+
+    mockTrpc.calendar.updateEvent.useMutation.mockReturnValue({
       mutateAsync: mockMutateAsync,
       isLoading: false,
     });
-    
-    (trpc.calendar.getEventById.useQuery as any).mockReturnValue({
+
+    mockTrpc.calendar.getEventById.useQuery.mockReturnValue({
       data: null,
+      isLoading: false,
+      isError: false,
+    });
+
+    // Mock other dependencies used by the component (userManagement.listUsers and clients.list)
+    mockTrpc.userManagement.listUsers.useQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    });
+
+    mockTrpc.clients.list.useQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
     });
   });
 
@@ -119,7 +121,7 @@ describe('EventFormDialog', () => {
   });
 
   it('shows loading state during submission', () => {
-    (trpc.calendar.createEvent.useMutation as any).mockReturnValue({
+    mockTrpc.calendar.createEvent.useMutation.mockReturnValue({
       mutateAsync: mockMutateAsync,
       isLoading: true,
     });
@@ -140,7 +142,7 @@ describe('EventFormDialog', () => {
   it('handles submission errors gracefully', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-    
+
     mockMutateAsync.mockRejectedValue(new Error('Network error'));
 
     render(
@@ -152,8 +154,18 @@ describe('EventFormDialog', () => {
       />
     );
 
+    // Fill in required fields to enable submission
+    const titleInput = screen.getByLabelText(/event title/i) || screen.getByPlaceholderText(/event title/i);
+    if (titleInput) {
+      fireEvent.change(titleInput, { target: { value: 'Test Event' } });
+    }
+
     const submitButton = screen.getByRole('button', { name: /create event/i });
     fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalled();
+    });
 
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalled();

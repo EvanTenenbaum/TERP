@@ -26,8 +26,8 @@ vi.mock("drizzle-orm", async (importOriginal) => {
 
 import { appRouter } from '../routers';
 import { db, getDb } from '../db';
+import { clients } from '../../drizzle/schema';
 import { 
-  clients, 
   vipPortalConfigurations,
   clientDraftInterests,
   clientCatalogViews,

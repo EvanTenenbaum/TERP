@@ -73,3 +73,70 @@ afterEach(() => {
   localStorageMock.clear();
 });
 
+
+// ============================================================================
+// tRPC Mock Setup
+// ============================================================================
+
+// Define the default mock return values
+const defaultQueryReturn = {
+  data: null,
+  isLoading: false,
+  isError: false,
+  error: null,
+  isSuccess: true,
+  isFetching: false,
+  refetch: vi.fn(),
+};
+
+const defaultMutationReturn = {
+  mutate: vi.fn(),
+  mutateAsync: vi.fn(async () => undefined),
+  isLoading: false,
+  isError: false,
+  error: null,
+  isSuccess: false,
+  reset: vi.fn(),
+};
+
+/**
+ * Creates a recursive Proxy handler for tRPC hooks.
+ * This allows mocking any depth of router structure (e.g., trpc.user.list.useQuery).
+ */
+const createTrpcMockProxy = (path: string): any => {
+  return new Proxy(
+    {},
+    {
+      get: (target, prop, receiver) => {
+        const fullPath = `${path}.${String(prop)}`;
+        
+        // Handle the terminal hook calls (useQuery, useMutation, etc.)
+        if (prop === 'useQuery') {
+          return vi.fn(() => defaultQueryReturn);
+        }
+        if (prop === 'useMutation') {
+          return vi.fn(() => defaultMutationReturn);
+        }
+        if (prop === 'useContext') {
+          return vi.fn(() => ({
+            invalidate: vi.fn(),
+            refetch: vi.fn(),
+            cancel: vi.fn(),
+          }));
+        }
+        
+        // Handle nested routers - recursively create a new proxy
+        return createTrpcMockProxy(fullPath);
+      },
+    }
+  );
+};
+
+// Mock the tRPC client module
+vi.mock('../client/src/lib/trpc', () => {
+  const trpc = createTrpcMockProxy('trpc');
+  return {
+    trpc,
+    useContext: vi.fn(() => trpc),
+  };
+});
