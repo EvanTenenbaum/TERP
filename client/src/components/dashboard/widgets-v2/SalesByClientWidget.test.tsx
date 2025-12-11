@@ -10,29 +10,6 @@ import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { SalesByClientWidget } from "./SalesByClientWidget";
 
-// Mock tRPC
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    dashboard: {
-      getSalesByClient: {
-        useQuery: vi.fn(() => ({
-          data: {
-            data: [
-              { customerId: 1, customerName: "Customer 1", totalSales: 1000 },
-              { customerId: 2, customerName: "Customer 2", totalSales: 2000 },
-            ],
-            total: 2,
-            limit: 50,
-            offset: 0,
-            hasMore: false,
-          },
-          isLoading: false,
-        })),
-      },
-    },
-  },
-}));
-
 describe("SalesByClientWidget React.memo optimization", () => {
   it("should be wrapped with React.memo", () => {
     // Check if the component has the memo wrapper

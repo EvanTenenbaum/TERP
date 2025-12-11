@@ -11,50 +11,6 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import WorkflowQueuePage from "./WorkflowQueuePage";
 
-// Mock the trpc hooks
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    workflowQueue: {
-      listStatuses: {
-        useQuery: () => ({
-          data: [
-            {
-              id: 1,
-              name: "Intake",
-              slug: "intake",
-              color: "#3B82F6",
-              order: 1,
-            },
-            {
-              id: 2,
-              name: "Processing",
-              slug: "processing",
-              color: "#F59E0B",
-              order: 2,
-            },
-          ],
-          isLoading: false,
-        }),
-      },
-      getQueues: {
-        useQuery: () => ({
-          data: {
-            1: [{ id: 1, code: "BATCH-001" }],
-            2: [{ id: 2, code: "BATCH-002" }],
-          },
-          isLoading: false,
-        }),
-      },
-      getRecentChanges: {
-        useQuery: () => ({
-          data: [],
-          isLoading: false,
-        }),
-      },
-    },
-  },
-}));
-
 // Mock the workflow components
 vi.mock("@/components/workflow/WorkflowBoard", () => ({
   WorkflowBoard: () => <div data-testid="workflow-board">Board View</div>,
