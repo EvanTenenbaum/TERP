@@ -3,7 +3,7 @@
 **Session ID:** Session-20251211-CODE-QUALITY-STABILIZATION
 **Date:** 2025-12-11
 **Agent:** External (Gemini)
-**Task:** Code Quality Stabilization (code-quality-stabilization)
+**Task:** Code Quality Stabilization (ST-023)
 **Branch:** cursor/stabilize-terp-code-quality-fdaa
 
 ## Objectives

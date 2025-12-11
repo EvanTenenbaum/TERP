@@ -240,6 +240,38 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ---
 
+
+### ST-023: Code Quality Stabilization
+
+**Status:** in-progress
+**Priority:** HIGH
+**Estimate:** 40h
+**Module:** Multiple
+**Dependencies:** None
+**Prompt:** `docs/prompts/ST-023.md`
+**Session:** Session-20251211-CODE-QUALITY-STABILIZATION
+
+**Problem:** Critical technical debt accumulated during schema drift emergency response, including TypeScript errors and unstable tests.
+
+**Objectives:**
+
+- Fix TypeScript errors
+- Stabilize test harness
+- Resolve diagnostic issues
+- Implement CI hardening
+
+**Deliverables:**
+
+- [ ] Fix TypeScript errors
+- [ ] Stabilize test harness
+- [ ] Resolve diagnostic issues
+- [ ] Implement CI hardening
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+---
+
 ### Security Fixes
 
 ### SEC-001: Fix Permission System Bypass
