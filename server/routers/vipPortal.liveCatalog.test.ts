@@ -14,8 +14,8 @@ vi.mock('../db', () => setupDbMock());
 
 import { appRouter } from '../routers';
 import { db, getDb } from '../db';
+import { clients } from '../../drizzle/schema';
 import { 
-  clients, 
   vipPortalConfigurations,
   clientDraftInterests,
   clientCatalogViews,
