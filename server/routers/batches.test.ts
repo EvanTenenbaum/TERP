@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { inventoryUtils } from "../inventoryUtils";
+import inventoryUtils from "../inventoryUtils";
 import type { BatchStatus } from "../inventoryUtils";
 
 describe("Batch Status Transition Logic (ST-017)", () => {
