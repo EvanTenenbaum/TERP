@@ -5,7 +5,7 @@ import {
   rolePermissions,
   userRoles,
 } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 /**
  * RBAC Seeding Service
@@ -140,7 +140,7 @@ export async function assignRoleToUser(userOpenId: string, roleName: string) {
     const existingAssignment = await db
       .select()
       .from(userRoles)
-      .where(eq(userRoles.userId, userOpenId))
+      .where(and(eq(userRoles.userId, userOpenId), eq(userRoles.roleId, role.id)))
       .limit(1);
 
     if (existingAssignment.length > 0) {
