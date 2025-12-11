@@ -10,6 +10,13 @@ Deliver a production-ready rollout for the database/table/data initiative that l
 - Data coverage remains thin: production has data in only 36/119 tables; ten priority tables tied to recent fixes are empty (`todo_lists`, `todo_tasks`, `todo_list_members`, `comments`, `comment_mentions`, `userDashboardPreferences`, `dashboard_widget_layouts`, `dashboard_kpi_configs`, `pricing_rules`, `pricing_profiles`).【F:docs/analysis/DB_PILOT_ASSESSMENT.md†L15-L19】
 - Outstanding debt that blocks confidence: ~100 TS errors, 52 failing tests, and unresolved schema gaps like `adjustmentReason` on `inventoryMovements` and duplicate mapping on `orderStatusHistory`.【F:docs/analysis/DB_PILOT_ASSESSMENT.md†L15-L23】
 
+## Immediate Next Steps (next 3 days)
+
+- **Validate production before touching data (Day 0):** Run the `adminSchema.validate` snippet from `DATA-010-FINAL-STATUS.md`, archive JSON/MD artifacts under `docs/analysis/validation-reports/<date>/`, and flag any drift before seeding.
+- **Stage the ten empty tables (Day 1):** Refresh or add generators for todos/comments/dashboards/pricing, run them in staging, and capture before/after counts plus referential integrity checks.
+- **Production seed after green validation (Day 2):** Apply the generators to production once validation is clean, add smoke checks for todos/comments/dashboards/pricing flows, and record inserted volumes for audit.
+- **Schema clean-up follow-up (Day 3):** Ship migrations for `inventoryMovements.adjustmentReason` and the `orderStatusHistory` duplicate mapping, then rerun validation to ensure zero drift before closing the rollout.
+
 ## Phase 0 – Preconditions (same day)
 
 - ✅ Confirm active sessions to avoid conflicts (done).【F:docs/ACTIVE_SESSIONS.md†L57-L74】
