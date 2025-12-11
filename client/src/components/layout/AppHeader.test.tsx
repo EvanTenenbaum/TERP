@@ -26,69 +26,6 @@ vi.mock("../../../version.json", () => ({
   },
 }));
 
-// Mock the trpc hooks
-const mockInvalidate = vi.fn();
-const mockMutate = vi.fn();
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    inbox: {
-      getStats: {
-        useQuery: vi.fn(() => ({
-          data: { total: 5, unread: 3, archived: 0 },
-          isLoading: false,
-        })),
-      },
-      getUnread: {
-        useQuery: vi.fn(() => ({
-          data: [
-            {
-              id: 1,
-              sourceType: "mention",
-              sourceId: 1,
-              userId: 1,
-              createdAt: new Date().toISOString(),
-              seenAt: null,
-              isArchived: false,
-              metadata: "You were mentioned in a comment",
-            },
-            {
-              id: 2,
-              sourceType: "task_assignment",
-              sourceId: 2,
-              userId: 1,
-              createdAt: new Date().toISOString(),
-              seenAt: null,
-              isArchived: false,
-              metadata: "New task assigned to you",
-            },
-          ],
-          isLoading: false,
-        })),
-      },
-      bulkMarkAsSeen: {
-        useMutation: vi.fn(() => ({
-          mutate: mockMutate,
-          isPending: false,
-        })),
-      },
-    },
-    useContext: () => ({
-      inbox: {
-        getMyItems: {
-          invalidate: mockInvalidate,
-        },
-        getUnread: {
-          invalidate: mockInvalidate,
-        },
-        getStats: {
-          invalidate: mockInvalidate,
-        },
-      },
-    }),
-  },
-}));
-
 describe("AppHeader - Inbox Dropdown", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -105,6 +42,7 @@ describe("AppHeader - Inbox Dropdown", () => {
     expect(inboxButton).toBeInTheDocument();
 
     // Check for unread badge
+    // This relies on the global tRPC mock in setup.ts
     const badge = screen.getByText("3");
     expect(badge).toBeInTheDocument();
   });
@@ -135,7 +73,7 @@ describe("AppHeader - Inbox Dropdown", () => {
       </ThemeProvider>
     );
 
-    // Should show "3" based on mock data
+    // Should show "3" based on mock data from setup.ts
     const badge = screen.getByText("3");
     expect(badge).toBeInTheDocument();
     expect(badge).toHaveClass("absolute", "-top-1", "-right-1");

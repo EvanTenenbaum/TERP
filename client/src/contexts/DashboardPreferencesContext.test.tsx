@@ -8,15 +8,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { ReactNode } from "react";
 import { DashboardPreferencesProvider, useDashboardPreferences } from "./DashboardPreferencesContext";
 import { LAYOUT_PRESETS, DEFAULT_LAYOUT_ID } from "@/lib/constants/dashboardPresets";
 
-// Mock tRPC
+// Mock tRPC setup (local mock removed, relying on global setup.ts)
 const mockUseQuery = vi.fn();
 const mockUseMutation = vi.fn();
 
+// Mock tRPC functions globally for this file's context
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     dashboardPreferences: {
