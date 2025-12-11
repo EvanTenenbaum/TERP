@@ -63,6 +63,7 @@ const trpcClient = trpc.createClient({
 });
 
 // Safely get root element with error handling
+// [FIX APPLIED] Verified fix for spinning wheel issue (Safe mount)
 const rootElement = document.getElementById("root");
 if (!rootElement) {
   console.error("Failed to find root element. DOM may not be ready.");

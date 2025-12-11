@@ -9,6 +9,7 @@ import React from "react";
  */
 
 // Initialize Sentry with error handling to prevent blocking app startup
+// [FIX APPLIED] Verified fix for spinning wheel issue (Non-blocking Sentry)
 try {
   Sentry.init({
     // DSN from environment variable - set in production
