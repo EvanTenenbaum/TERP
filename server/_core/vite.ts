@@ -54,6 +54,7 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   // Use process.cwd() for reliable path resolution in production
+  // [FIX APPLIED] Verified fix for spinning wheel issue (DO App Platform path resolution)
   // When bundled, __dirname points to dist/, but process.cwd() is always the app root
   const distPath =
     process.env.NODE_ENV === "development"
