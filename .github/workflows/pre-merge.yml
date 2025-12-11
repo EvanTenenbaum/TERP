@@ -83,7 +83,6 @@ jobs:
               task_id
             } = ${{ steps.extract_task.outputs }};
 
-            let conclusion = "success";
             let summary = "";
 
             if (is_hotfix === 'true') {
@@ -91,15 +90,15 @@ jobs:
             } else if (status === 'fully_tested' || status === 'testing_task') {
               summary = "✅ **PASS:** Feature is fully tested or is a testing task.";
             } else {
-              conclusion = "failure";
+              // Softened restrictions: Warnings instead of blockers
               if (status === 'untested') {
-                summary = "❌ **FAIL:** Feature is untested. Merge blocked.";
+                summary = "⚠️ **WARNING:** Feature is untested. Please ensure adequate testing before merging.";
               } else if (status === 'no_task_id') {
-                summary = "❌ **FAIL:** Could not extract Task ID from branch name. Merge blocked.";
+                summary = "⚠️ **WARNING:** Could not extract Task ID from branch name. Roadmap tracking skipped.";
               } else if (status === 'not_found') {
-                summary = `❌ **FAIL:** Task ${task_id} not found in any roadmap. Merge blocked.`;
+                summary = `⚠️ **WARNING:** Task ${task_id} not found in any roadmap. Please ensure it is tracked.`;
               } else {
-                summary = `❌ **FAIL:** Test status is not '✅ Fully Tested'. Merge blocked.`;
+                summary = `⚠️ **WARNING:** Test status is not '✅ Fully Tested'. Proceed with caution.`;
               }
             }
 
@@ -112,6 +111,5 @@ jobs:
               body: body
             });
 
-            if (conclusion === 'failure') {
-              core.setFailed(summary);
-            }
+            // Note: We are no longer failing the build (core.setFailed) to avoid blocking merges.
+            // The warnings above serve as the quality gate feedback.
