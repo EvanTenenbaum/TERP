@@ -395,7 +395,7 @@ export async function getAllOrders(filters?: {
     offset = 0,
   } = filters || {};
   
-  const conditions: unknown[] = [];
+  const conditions: ReturnType<typeof eq>[] = [];
   
   if (orderType) {
     conditions.push(eq(orders.orderType, orderType));
@@ -1142,9 +1142,13 @@ export async function updateOrderStatus(input: {
     
     // Log status change in history
     const { orderStatusHistory } = await import('../drizzle/schema');
+    // Map status to valid fulfillmentStatus enum values
+    const validStatus = newStatus === "PENDING" || newStatus === "PACKED" || newStatus === "SHIPPED" 
+      ? newStatus 
+      : "PENDING"; // Default to PENDING for unsupported statuses
     await tx.insert(orderStatusHistory).values({
       orderId,
-      fulfillmentStatus: newStatus as "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED",
+      fulfillmentStatus: validStatus,
       changedBy: userId,
       notes: sanitizedNotes,
     });

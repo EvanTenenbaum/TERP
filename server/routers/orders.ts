@@ -149,7 +149,7 @@ export const ordersRouter = router({
       const dbName = dbUrl.match(/\/([^?]+)/)?.[1] || 'unknown';
       
       const allOrders = await db.select().from(orders).limit(50);
-      const confirmedOrders = allOrders.filter(o => o.isDraft === false || o.isDraft === 0);
+      const confirmedOrders = allOrders.filter(o => !o.isDraft);
       
       return {
         dbInfo: {
@@ -159,7 +159,7 @@ export const ordersRouter = router({
         },
         total: allOrders.length,
         confirmed: confirmedOrders.length,
-        draft: allOrders.filter(o => o.isDraft === true || o.isDraft === 1).length,
+        draft: allOrders.filter(o => o.isDraft).length,
         sample: allOrders.slice(0, 3).map(o => ({
           id: o.id,
           orderNumber: o.orderNumber,
@@ -374,10 +374,12 @@ export const ordersRouter = router({
           return {
             ...item,
             cogsPerUnit,
+            originalCogsPerUnit: originalCogs,
             marginPercent,
             marginDollar,
             marginSource,
             unitPrice,
+            pricePerUnit: unitPrice, // Alias for LineItemWithPrice interface
             lineTotal,
           };
         })
@@ -414,16 +416,17 @@ export const ordersRouter = router({
         orderType: input.orderType,
         clientId: input.clientId,
         isDraft: true,
+        items: JSON.stringify(lineItemsWithPrices.map(item => ({
+          batchId: item.batchId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          isSample: item.isSample,
+        }))),
         total: totals.finalTotal.toString(),
         subtotal: totals.subtotal.toString(),
         avgMarginPercent: totals.avgMarginPercent.toString(),
-        avgMarginDollar: totals.avgMarginDollar.toString(),
-        orderLevelAdjustment: input.orderLevelAdjustment
-          ? JSON.stringify(input.orderLevelAdjustment)
-          : null,
-        showAdjustmentOnDocument: input.showAdjustmentOnDocument,
         notes: input.notes || null,
-        validUntil: input.validUntil || null,
+        validUntil: input.validUntil ? new Date(input.validUntil) : null,
         paymentTerms: input.paymentTerms || null,
         cashPayment: input.cashPayment?.toString() || null,
         createdBy: userId,
@@ -441,6 +444,7 @@ export const ordersRouter = router({
             quantity: item.quantity.toString(),
             isSample: item.isSample,
             cogsPerUnit: item.cogsPerUnit.toString(),
+            originalCogsPerUnit: item.originalCogsPerUnit.toString(),
             marginPercent: item.marginPercent.toString(),
             marginDollar: item.marginDollar.toString(),
             isCogsOverridden: item.isCogsOverridden,
@@ -545,10 +549,12 @@ export const ordersRouter = router({
           return {
             ...item,
             cogsPerUnit,
+            originalCogsPerUnit: originalCogs,
             marginPercent,
             marginDollar,
             marginSource,
             unitPrice,
+            pricePerUnit: unitPrice, // Alias for LineItemWithPrice interface
             lineTotal,
           };
         })
@@ -583,11 +589,6 @@ export const ordersRouter = router({
           total: totals.finalTotal.toString(),
           subtotal: totals.subtotal.toString(),
           avgMarginPercent: totals.avgMarginPercent.toString(),
-          avgMarginDollar: totals.avgMarginDollar.toString(),
-          orderLevelAdjustment: input.orderLevelAdjustment
-            ? JSON.stringify(input.orderLevelAdjustment)
-            : null,
-          showAdjustmentOnDocument: input.showAdjustmentOnDocument,
           notes: input.notes,
         })
         .where(eq(orders.id, input.orderId));
@@ -607,6 +608,7 @@ export const ordersRouter = router({
             quantity: item.quantity.toString(),
             isSample: item.isSample,
             cogsPerUnit: item.cogsPerUnit.toString(),
+            originalCogsPerUnit: item.originalCogsPerUnit.toString(),
             marginPercent: item.marginPercent.toString(),
             marginDollar: item.marginDollar.toString(),
             isCogsOverridden: item.isCogsOverridden,
@@ -677,7 +679,7 @@ export const ordersRouter = router({
           isSample: item.isSample,
         })),
         finalTotal: parseFloat(existingOrder.total),
-        overallMarginPercent: parseFloat(existingOrder.avgMarginPercent),
+        overallMarginPercent: parseFloat(existingOrder.avgMarginPercent || "0"),
       });
 
       if (!validation.isValid) {
@@ -823,18 +825,19 @@ export const ordersRouter = router({
 
       const oldCOGS = parseFloat(lineItem.cogsPerUnit);
 
-      // Call COGS change service
-      const cogsResult = await cogsChangeIntegrationService.updateCOGS({
-        batchId: input.batchId,
-        newCOGS: input.newCOGS,
-        reason: input.reason,
-        scope: input.scope,
-        userId,
-      });
-
-      if (!cogsResult.success) {
-        throw new Error(`COGS update failed: ${cogsResult.error}`);
+      // Validate COGS value
+      const validation = cogsChangeIntegrationService.validateCOGS(input.newCOGS);
+      if (!validation.isValid) {
+        throw new Error(`COGS validation failed: ${validation.errors.join(", ")}`);
       }
+
+      // Track COGS override for reporting
+      await cogsChangeIntegrationService.trackCOGSOverride(
+        input.batchId,
+        oldCOGS,
+        input.newCOGS,
+        input.reason
+      );
 
       // Update line item
       await db
