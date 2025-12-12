@@ -22,7 +22,7 @@ export const calendarRemindersRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         userId,
         input.eventId,
         "VIEW"
@@ -48,7 +48,7 @@ export const calendarRemindersRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         userId,
         input.eventId,
         "VIEW"

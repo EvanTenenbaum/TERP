@@ -19,7 +19,7 @@ export const calendarParticipantsRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission to view event
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         userId,
         input.eventId,
         "VIEW"
@@ -49,7 +49,7 @@ export const calendarParticipantsRouter = router({
       const currentUserId = ctx.user?.id || 1;
 
       // Check permission to edit event
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         currentUserId,
         input.eventId,
         "EDIT"
@@ -75,10 +75,10 @@ export const calendarParticipantsRouter = router({
         eventId: input.eventId,
         changedBy: currentUserId,
         changeType: "UPDATED",
-        fieldName: "participants",
-        oldValue: null,
+        fieldChanged: "participants",
+        previousValue: null,
         newValue: `Added participant: User ${input.userId} as ${input.role}`,
-        notes: null,
+        changeReason: null,
       });
 
       // Send notification if requested
@@ -114,10 +114,10 @@ export const calendarParticipantsRouter = router({
         eventId: input.eventId,
         changedBy: userId,
         changeType: "UPDATED",
-        fieldName: "participant_response",
-        oldValue: null,
+        fieldChanged: "participant_response",
+        previousValue: null,
         newValue: `User ${userId} responded: ${input.responseStatus}`,
-        notes: null,
+        changeReason: null,
       });
 
       return { success: true };
@@ -135,7 +135,7 @@ export const calendarParticipantsRouter = router({
       const currentUserId = ctx.user?.id || 1;
 
       // Check permission to edit event
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         currentUserId,
         input.eventId,
         "EDIT"
@@ -153,10 +153,10 @@ export const calendarParticipantsRouter = router({
         eventId: input.eventId,
         changedBy: currentUserId,
         changeType: "UPDATED",
-        fieldName: "participants",
-        oldValue: null,
+        fieldChanged: "participants",
+        previousValue: null,
         newValue: `Removed participant: User ${input.userId}`,
-        notes: null,
+        changeReason: null,
       });
 
       return { success: true };
@@ -178,7 +178,7 @@ export const calendarParticipantsRouter = router({
       const currentUserId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         currentUserId,
         input.eventId,
         "EDIT"
@@ -208,10 +208,10 @@ export const calendarParticipantsRouter = router({
         eventId: input.eventId,
         changedBy: currentUserId,
         changeType: "UPDATED",
-        fieldName: "participants",
-        oldValue: null,
+        fieldChanged: "participants",
+        previousValue: null,
         newValue: `Added ${input.userIds.length} participants as ${input.role}`,
-        notes: null,
+        changeReason: null,
       });
 
       return participants;
