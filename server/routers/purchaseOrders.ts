@@ -42,11 +42,18 @@ export const purchaseOrdersRouter = router({
 
       // Create PO
       const [po] = await db.insert(purchaseOrders).values({
-        ...poData,
+        vendorId: poData.vendorId,
+        intakeSessionId: poData.intakeSessionId,
+        orderDate: new Date(poData.orderDate),
+        expectedDeliveryDate: poData.expectedDeliveryDate ? new Date(poData.expectedDeliveryDate) : null,
+        paymentTerms: poData.paymentTerms,
+        notes: poData.notes,
+        vendorNotes: poData.vendorNotes,
+        createdBy: poData.createdBy,
         poNumber,
         subtotal: subtotal.toString(),
         total: subtotal.toString(), // tax and shipping can be added later
-        status: "DRAFT",
+        purchaseOrderStatus: "DRAFT",
       });
 
       // Create PO items
