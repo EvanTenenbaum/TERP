@@ -345,10 +345,10 @@ export const adminRouter = router({
         throw new Error("Database connection failed");
       }
 
-      // Find user by username or email
+      // Find user by name or email
       const conditions = [];
       if (input.username) {
-        conditions.push(eq(users.username, input.username));
+        conditions.push(eq(users.name, input.username));
       }
       if (input.email) {
         conditions.push(eq(users.email, input.email));
@@ -373,7 +373,7 @@ export const adminRouter = router({
       logger.info({
         msg: "[Admin] Found user",
         userId: user.id,
-        username: user.username,
+        username: user.name,
         email: user.email,
         role: user.role,
       });
@@ -386,7 +386,7 @@ export const adminRouter = router({
           message: "User is already an admin",
           user: {
             id: user.id,
-            username: user.username,
+            username: user.name,
             email: user.email,
             role: user.role,
           },
@@ -410,7 +410,7 @@ export const adminRouter = router({
           message: "User is now an admin",
           user: {
             id: user.id,
-            username: user.username,
+            username: user.name,
             email: user.email,
             role: "admin",
           },
@@ -422,7 +422,7 @@ export const adminRouter = router({
         message: "No changes made",
         user: {
           id: user.id,
-          username: user.username,
+          username: user.name,
           email: user.email,
           role: user.role,
         },
@@ -451,7 +451,7 @@ export const adminRouter = router({
       count: allUsers.length,
       users: allUsers.map((u) => ({
         id: u.id,
-        username: u.username,
+        username: u.name,
         email: u.email,
         openId: u.openId,
         role: u.role,
