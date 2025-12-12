@@ -1,0 +1,109 @@
+name: Migration Lint
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'drizzle/migrations/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lint-migrations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed migration files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: drizzle/migrations/**
+
+      - name: Check for dangerous operations
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          echo "🔍 Checking migration files for dangerous operations..."
+          DANGEROUS_FOUND=false
+
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "Checking: $file"
+
+            # Check for DROP statements
+            if grep -iE '\bDROP\s+(TABLE|COLUMN|INDEX|DATABASE|CONSTRAINT)\b' "$file" 2>/dev/null; then
+              echo "❌ BLOCKED: DROP statement found in $file"
+              DANGEROUS_FOUND=true
+            fi
+
+            # Check for RENAME statements
+            if grep -iE '\bRENAME\s+(TABLE|COLUMN|TO)\b' "$file" 2>/dev/null; then
+              echo "❌ BLOCKED: RENAME statement found in $file"
+              DANGEROUS_FOUND=true
+            fi
+
+            # Check for MODIFY/ALTER that narrows column types
+            if grep -iE '\bMODIFY\b.*\b(TINYINT|SMALLINT|MEDIUMINT)\b' "$file" 2>/dev/null; then
+              echo "⚠️ WARNING: Column type narrowing detected in $file"
+              echo "   Please verify this doesn't truncate data"
+            fi
+
+            # Check for VARCHAR narrowing patterns
+            if grep -iE '\bVARCHAR\s*\(\s*[0-9]+\s*\)' "$file" | grep -iE 'MODIFY|ALTER' 2>/dev/null; then
+              echo "⚠️ WARNING: VARCHAR modification detected in $file"
+              echo "   Please verify column size is not being reduced"
+            fi
+
+            # Check for NOT NULL additions without DEFAULT
+            if grep -iE '\bNOT\s+NULL\b' "$file" 2>/dev/null | grep -ivE '\bDEFAULT\b'; then
+              echo "⚠️ WARNING: NOT NULL constraint without DEFAULT in $file"
+              echo "   This may fail on existing rows"
+            fi
+          done
+
+          if [ "$DANGEROUS_FOUND" = true ]; then
+            echo ""
+            echo "❌ Migration lint failed!"
+            echo ""
+            echo "Dangerous operations (DROP/RENAME) are blocked by default."
+            echo "If this is intentional, please:"
+            echo "1. Create a backup plan in the PR description"
+            echo "2. Add [MIGRATION-OVERRIDE] to the PR title"
+            echo "3. Get explicit approval from a database admin"
+            exit 1
+          fi
+
+          echo "✅ Migration lint passed"
+
+      - name: Comment on PR if issues found
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ❌ Migration Lint Failed
+
+              Dangerous migration operations detected. Please review the workflow logs.
+
+              ### Blocked Operations:
+              - \`DROP TABLE/COLUMN/INDEX/DATABASE/CONSTRAINT\`
+              - \`RENAME TABLE/COLUMN\`
+
+              ### To proceed:
+              1. Create a backup plan in the PR description
+              2. Add \`[MIGRATION-OVERRIDE]\` to the PR title
+              3. Get explicit approval from a database admin`
+            })
