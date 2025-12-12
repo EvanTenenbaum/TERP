@@ -65,6 +65,11 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ai:init": "playwright init-agents --loop=vscode",
+    "test:e2e:ai:plan": "playwright ai plan http://localhost:5173",
+    "test:e2e:ai:generate": "playwright ai generate",
+    "test:e2e:ai:heal": "playwright ai heal",
+    "test:e2e:ai:run": "playwright test tests-e2e/ai-generated/",
     "dashboard": "tsx scripts/dashboard.ts",
     "dashboard:html": "tsx scripts/generate-html-dashboard.ts && open dashboard.html",
     "slack-bot:ai": "tsx scripts/slack-bot-ai.ts"
