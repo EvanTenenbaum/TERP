@@ -315,7 +315,9 @@ export async function autoArchiveOldItems(): Promise<number> {
       )
     );
 
-  return result.rowsAffected ?? 0;
+  // MySQL returns [ResultSetHeader, FieldPacket[]] - access affectedRows from first element
+  const resultHeader = Array.isArray(result) ? result[0] : result;
+  return (resultHeader as { affectedRows?: number })?.affectedRows ?? 0;
 }
 
 /**
