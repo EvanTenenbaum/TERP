@@ -34,7 +34,7 @@ export const refundsRouter = router({
         .select({
           id: transactions.id,
           amount: transactions.amount,
-          date: transactions.date,
+          date: transactions.transactionDate,
           notes: transactions.notes,
           createdBy: transactions.createdBy,
           createdAt: transactions.createdAt,
@@ -47,7 +47,7 @@ export const refundsRouter = router({
           eq(transactions.id, transactionLinks.childTransactionId)
         )
         .where(eq(transactionLinks.transactionLinkType, "REFUND_OF"))
-        .orderBy(desc(transactions.date))
+        .orderBy(desc(transactions.transactionDate))
         .limit(limit)
         .offset(offset);
 
@@ -162,8 +162,8 @@ export const refundsRouter = router({
       .select({
         id: transactions.id,
         amount: transactions.amount,
-        date: transactions.date,
-        paymentMethod: transactions.paymentMethod,
+        date: transactions.transactionDate,
+        metadata: transactions.metadata,
         notes: transactions.notes,
         createdBy: transactions.createdBy,
         createdAt: transactions.createdAt,
@@ -171,11 +171,11 @@ export const refundsRouter = router({
       .from(transactions)
       .where(
         and(
-          eq(transactions.type, "REFUND"),
+          eq(transactions.transactionType, "REFUND"),
           sql`${transactions.notes} LIKE ${`%return #${input.returnId}%`}`
         )
       )
-      .orderBy(desc(transactions.date));
+      .orderBy(desc(transactions.transactionDate));
 
     return refunds;
   }),
@@ -192,8 +192,8 @@ export const refundsRouter = router({
         .select({
           id: transactions.id,
           amount: transactions.amount,
-          date: transactions.date,
-          paymentMethod: transactions.paymentMethod,
+          date: transactions.transactionDate,
+          metadata: transactions.metadata,
           notes: transactions.notes,
           createdBy: transactions.createdBy,
           createdAt: transactions.createdAt,

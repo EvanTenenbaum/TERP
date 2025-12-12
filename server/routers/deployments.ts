@@ -31,10 +31,10 @@ export const deploymentsRouter = router({
         conditions.push(eq(deployments.status, input.status));
       }
       if (input.startDate) {
-        conditions.push(gte(deployments.createdAt, new Date(input.startDate)));
+        conditions.push(gte(deployments.startedAt, new Date(input.startDate)));
       }
       if (input.endDate) {
-        conditions.push(lte(deployments.createdAt, new Date(input.endDate)));
+        conditions.push(lte(deployments.startedAt, new Date(input.endDate)));
       }
 
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -43,7 +43,7 @@ export const deploymentsRouter = router({
         .select()
         .from(deployments)
         .where(whereClause)
-        .orderBy(desc(deployments.createdAt))
+        .orderBy(desc(deployments.startedAt))
         .limit(input.limit)
         .offset(input.offset);
 
@@ -92,7 +92,7 @@ export const deploymentsRouter = router({
         .select()
         .from(deployments)
         .where(eq(deployments.commitSha, input.commitSha))
-        .orderBy(desc(deployments.createdAt))
+        .orderBy(desc(deployments.startedAt))
         .limit(1);
 
       if (!deployment) {
@@ -111,7 +111,7 @@ export const deploymentsRouter = router({
     const [deployment] = await db
       .select()
       .from(deployments)
-      .orderBy(desc(deployments.createdAt))
+      .orderBy(desc(deployments.startedAt))
       .limit(1);
 
     return deployment || null;
@@ -155,7 +155,7 @@ export const deploymentsRouter = router({
       .select()
       .from(deployments)
       .where(eq(deployments.status, "failed"))
-      .orderBy(desc(deployments.createdAt))
+      .orderBy(desc(deployments.startedAt))
       .limit(5);
 
     // Deployments in progress
@@ -193,7 +193,7 @@ export const deploymentsRouter = router({
         .select()
         .from(deployments)
         .where(eq(deployments.status, input.status))
-        .orderBy(desc(deployments.createdAt))
+        .orderBy(desc(deployments.startedAt))
         .limit(10);
 
       return results;
@@ -209,7 +209,7 @@ export const deploymentsRouter = router({
       .select()
       .from(deployments)
       .where(sql`status IN ('pending', 'building', 'deploying')`)
-      .orderBy(desc(deployments.createdAt))
+      .orderBy(desc(deployments.startedAt))
       .limit(1);
 
     return deployment || null;
