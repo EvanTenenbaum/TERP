@@ -54,12 +54,19 @@ export const poReceivingRouter = router({
         }
 
         // Create intake session for this receipt
+        const sessionNumber = `IS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const validPaymentTerms = ["COD", "NET_7", "NET_15", "NET_30", "CONSIGNMENT", "PARTIAL"] as const;
+        const paymentTermsValue = validPaymentTerms.includes(po.paymentTerms as typeof validPaymentTerms[number]) 
+          ? (po.paymentTerms as typeof validPaymentTerms[number])
+          : "NET_30";
         const [intakeSession] = await tx.insert(intakeSessions).values({
+          sessionNumber,
           vendorId: po.vendorId,
-          sessionDate: new Date(),
+          receiveDate: new Date(),
           status: "COMPLETED",
-          notes: input.notes || `Receiving PO #${po.poNumber}`,
-          createdBy: input.receivedBy,
+          internalNotes: input.notes || `Receiving PO #${po.poNumber}`,
+          receivedBy: input.receivedBy,
+          paymentTerms: paymentTermsValue,
         });
 
         const intakeSessionId = intakeSession.insertId;
@@ -70,12 +77,18 @@ export const poReceivingRouter = router({
 
           // Create new batch if needed
           if (!batchId && item.newBatchData) {
+            const batchCode = `B-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            const batchSku = `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             const [newBatch] = await tx.insert(batches).values({
+              code: batchCode,
+              sku: batchSku,
               productId: item.newBatchData.productId,
-              lotCode: item.newBatchData.lotCode,
-              onHandQty: item.receivedQuantity,
-              costPerUnit: item.newBatchData.costPerUnit,
-              intakeSessionId,
+              lotId: 1, // Default lot ID
+              onHandQty: item.receivedQuantity.toString(),
+              unitCogs: item.newBatchData.costPerUnit?.toString() || "0",
+              cogsMode: "FIXED",
+              paymentTerms: "NET_30",
+              batchStatus: "LIVE",
             });
             batchId = newBatch.insertId;
           } else if (batchId) {
@@ -108,7 +121,7 @@ export const poReceivingRouter = router({
               quantityAfter: newQty.toString(),
               referenceType: "PO_RECEIPT",
               referenceId: input.poId,
-              notes: `Received from PO #${po.poNumber}`,
+              reason: `Received from PO #${po.poNumber}`,
               performedBy: input.receivedBy,
             });
           }
