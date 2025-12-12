@@ -319,7 +319,7 @@ async function startServer() {
     // Debug endpoint to test createContext directly
     app.get("/api/debug/context", async (req, res) => {
       try {
-        const context = await createContext({ req, res });
+        const context = await createContext({ req, res } as Parameters<typeof createContext>[0]);
         res.json({
           success: true,
           user: {
