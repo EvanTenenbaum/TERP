@@ -157,10 +157,10 @@ export default function VendorsPage() {
   // Calculate statistics
   const stats = {
     total: vendors.length,
-    withPaymentTerms: vendors.filter(v => v.paymentTerms).length,
-    withContacts: vendors.filter(v => v.contactEmail || v.contactPhone).length,
+    withPaymentTerms: vendors.filter((v: Vendor) => v.paymentTerms).length,
+    withContacts: vendors.filter((v: Vendor) => v.contactEmail || v.contactPhone).length,
     paymentTermsBreakdown: vendors.reduce(
-      (acc, v) => {
+      (acc: Record<string, number>, v: Vendor) => {
         const term = v.paymentTerms || "Not Set";
         acc[term] = (acc[term] || 0) + 1;
         return acc;
@@ -171,7 +171,7 @@ export default function VendorsPage() {
 
   // Get unique payment terms for filter dropdown
   const uniquePaymentTerms = Array.from(
-    new Set(vendors.map(v => v.paymentTerms).filter(Boolean))
+    new Set(vendors.map((v: Vendor) => v.paymentTerms).filter(Boolean))
   ).sort();
 
   // Create vendor mutation
