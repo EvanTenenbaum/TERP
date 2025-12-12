@@ -120,12 +120,12 @@ export const poReceivingRouter = router({
             .where(eq(purchaseOrderItems.id, item.poItemId));
 
           if (poItem) {
-            const currentReceived = parseFloat(poItem.receivedQuantity || "0");
+            const currentReceived = parseFloat(poItem.quantityReceived || "0");
             const newReceived = currentReceived + parseFloat(item.receivedQuantity);
 
             await tx
               .update(purchaseOrderItems)
-              .set({ receivedQuantity: newReceived.toString() })
+              .set({ quantityReceived: newReceived.toString() })
               .where(eq(purchaseOrderItems.id, item.poItemId));
           }
         }
@@ -135,7 +135,7 @@ export const poReceivingRouter = router({
           .select({
             allReceived: sql<number>`
               SUM(CASE 
-                WHEN CAST(${purchaseOrderItems.receivedQuantity} AS DECIMAL(15,4)) >= CAST(${purchaseOrderItems.quantity} AS DECIMAL(15,4)) 
+                WHEN CAST(${purchaseOrderItems.quantityReceived} AS DECIMAL(15,4)) >= CAST(${purchaseOrderItems.quantityOrdered} AS DECIMAL(15,4)) 
                 THEN 1 
                 ELSE 0 
               END) = COUNT(*)
@@ -147,13 +147,13 @@ export const poReceivingRouter = router({
         if (poItems && poItems.allReceived) {
           await tx
             .update(purchaseOrders)
-            .set({ status: "RECEIVED" })
+            .set({ purchaseOrderStatus: "RECEIVED" })
             .where(eq(purchaseOrders.id, input.poId));
         } else {
           // Partially received
           await tx
             .update(purchaseOrders)
-            .set({ status: "PARTIAL" })
+            .set({ purchaseOrderStatus: "RECEIVING" })
             .where(eq(purchaseOrders.id, input.poId));
         }
 
@@ -167,6 +167,8 @@ export const poReceivingRouter = router({
   getReceivingHistory: publicProcedure
     .input(z.object({ poId: z.number() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
       const history = await db
         .select()
         .from(inventoryMovements)
@@ -185,16 +187,18 @@ export const poReceivingRouter = router({
   getPOItemsWithReceipts: publicProcedure
     .input(z.object({ poId: z.number() }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
       const items = await db
         .select({
           id: purchaseOrderItems.id,
           productId: purchaseOrderItems.productId,
-          quantity: purchaseOrderItems.quantity,
-          receivedQuantity: purchaseOrderItems.receivedQuantity,
+          quantityOrdered: purchaseOrderItems.quantityOrdered,
+          quantityReceived: purchaseOrderItems.quantityReceived,
           unitCost: purchaseOrderItems.unitCost,
           remainingQuantity: sql<string>`
-            CAST(${purchaseOrderItems.quantity} AS DECIMAL(15,4)) - 
-            COALESCE(CAST(${purchaseOrderItems.receivedQuantity} AS DECIMAL(15,4)), 0)
+            CAST(${purchaseOrderItems.quantityOrdered} AS DECIMAL(15,4)) - 
+            COALESCE(CAST(${purchaseOrderItems.quantityReceived} AS DECIMAL(15,4)), 0)
           `,
         })
         .from(purchaseOrderItems)
@@ -205,6 +209,8 @@ export const poReceivingRouter = router({
 
   // Get receiving statistics
   getStats: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
     const stats = await db
       .select({
         totalReceipts: sql<number>`COUNT(DISTINCT ${inventoryMovements.referenceId})`,
