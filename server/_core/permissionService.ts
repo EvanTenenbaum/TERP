@@ -32,6 +32,7 @@ export class PermissionService {
     requiredPermission: PermissionLevel
   ): Promise<boolean> {
     const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
     // Get the event
     const [event] = await db
@@ -136,6 +137,7 @@ export class PermissionService {
     await this.requirePermission(grantedBy, eventId, "MANAGE");
 
     const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
     // Check if permission already exists
     const existing = await db
@@ -185,6 +187,7 @@ export class PermissionService {
     await this.requirePermission(revokedBy, eventId, "MANAGE");
 
     const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
     await db
       .delete(calendarEventPermissions)
@@ -205,6 +208,7 @@ export class PermissionService {
     await this.requirePermission(userId, eventId, "VIEW");
 
     const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
     return await db
       .select()
@@ -232,6 +236,7 @@ export class PermissionService {
     }
 
     const db = await getDb();
+    if (!db) throw new Error("Database not available");
     const permissionMap: Record<number, boolean> = {};
 
     // Fetch all events in a single query using inArray for efficiency
@@ -383,6 +388,7 @@ export class PermissionService {
     eventId: number
   ): Promise<PermissionLevel | null> {
     const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
     // Get the event
     const [event] = await db
