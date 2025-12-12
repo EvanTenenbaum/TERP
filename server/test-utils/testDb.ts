@@ -41,8 +41,8 @@ export function createMockDb() {
     select: vi.fn((selection) => {
         let currentRows: any[] = [];
         let isJoined = false;
-        
-        const builder = {
+
+        const builder: any = {
             from: vi.fn((table) => {
                 const tableName = getTableName(table);
                 // Start with wrapped rows: { [tableName]: row }
@@ -53,19 +53,19 @@ export function createMockDb() {
                 isJoined = true;
                 const joinTableName = getTableName(table);
                 const joinRows = storage[joinTableName] || [];
-                
+
                 const newRows: any[] = [];
                 currentRows.forEach(mainRow => {
                     let matchFound = false;
-                    
+
                     joinRows.forEach(joinRow => {
                          let matches = true;
-                         
+
                          const check = (cond: any) => {
                              if (!cond) return true;
                              if (cond.op === 'eq') {
                                  const leftVal = getColValue(mainRow, cond.col);
-                                 
+
                                  let rightVal = cond.val;
                                  if (cond.val && typeof cond.val === 'object' && cond.val.table) {
                                      if (getTableName(cond.val.table) === joinTableName) {
@@ -74,7 +74,7 @@ export function createMockDb() {
                                          rightVal = getColValue(mainRow, cond.val);
                                      }
                                  }
-                                 
+
                                  return leftVal == rightVal;
                              }
                              if (cond.op === 'and') {
@@ -82,18 +82,18 @@ export function createMockDb() {
                              }
                              return true;
                          };
-                         
+
                          if (check(condition)) {
                              newRows.push({ ...mainRow, [joinTableName]: joinRow });
                              matchFound = true;
                          }
                     });
-                    
+
                     if (!matchFound) {
                         newRows.push({ ...mainRow, [joinTableName]: null });
                     }
                 });
-                
+
                 currentRows = newRows;
                 return builder;
             }),
@@ -121,9 +121,10 @@ export function createMockDb() {
                 currentRows = currentRows.slice(0, n);
                 return builder;
             }),
-            offset: vi.fn().mockReturnThis(),
-            orderBy: vi.fn().mockReturnThis(),
-            innerJoin: vi.fn().mockReturnThis(),
+            offset: vi.fn(() => builder),
+            orderBy: vi.fn(() => builder),
+            groupBy: vi.fn(() => builder),
+            innerJoin: vi.fn(() => builder),
             then: (resolve: any) => {
                 if (isJoined) {
                     if (selection && typeof selection === 'object') {
@@ -147,13 +148,41 @@ export function createMockDb() {
         };
         return builder;
     }),
+
+    selectDistinct: vi.fn((selection) => {
+        let currentRows: any[] = [];
+
+        const builder: any = {
+            from: vi.fn((table) => {
+                const tableName = getTableName(table);
+                currentRows = (storage[tableName] || []).map(row => ({ [tableName]: row }));
+                return builder;
+            }),
+            where: vi.fn(() => builder),
+            orderBy: vi.fn(() => builder),
+            groupBy: vi.fn(() => builder),
+            then: (resolve: any) => {
+                const flatRows = currentRows.map(r => Object.values(r)[0]);
+                // Simple dedup based on JSON string
+                const seen = new Set();
+                const unique = flatRows.filter(row => {
+                    const key = JSON.stringify(row);
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+                return resolve(unique);
+            },
+        };
+        return builder;
+    }),
     
     insert: vi.fn((table) => {
         const tableName = getTableName(table);
         return {
             values: vi.fn((values) => {
                 const rows = Array.isArray(values) ? values : [values];
-                
+
                 const mappedRows = rows.map((row: any) => {
                     const mapped: any = { ...row };
                     for (const key of Object.keys(row)) {
@@ -164,20 +193,22 @@ export function createMockDb() {
                     }
                     return mapped;
                 });
-                
+
                 if (!storage[tableName]) storage[tableName] = [];
                 const startId = storage[tableName].length + 1;
-                
+
                 const newRows = mappedRows.map((r: any, i: number) => ({
                     ...r,
                     id: r.id || (startId + i)
                 }));
-                
+
                 storage[tableName].push(...newRows);
-                
+
                 const result = { insertId: newRows[0].id, changes: newRows.length };
+                const returningIds = newRows.map(r => ({ id: r.id }));
                 return {
                     onDuplicateKeyUpdate: vi.fn().mockResolvedValue(result),
+                    $returningId: vi.fn(() => Promise.resolve(returningIds)),
                     then: (resolve: any) => resolve(result)
                 };
             })

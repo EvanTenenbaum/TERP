@@ -1,0 +1,133 @@
+name: TypeScript Baseline Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - 'tsconfig.json'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - 'tsconfig.json'
+      - 'package.json'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# Baseline: 869 TypeScript errors (documented in TYPESCRIPT-ERRORS-ALLOWLIST.md)
+env:
+  TYPESCRIPT_ERROR_BASELINE: 869
+
+jobs:
+  typescript-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run TypeScript check
+        id: tsc-check
+        run: |
+          # Run tsc and capture output
+          set +e
+          TSC_OUTPUT=$(pnpm tsc --noEmit 2>&1)
+          TSC_EXIT_CODE=$?
+          set -e
+
+          # Count errors
+          ERROR_COUNT=$(echo "$TSC_OUTPUT" | grep -c "error TS" || echo "0")
+          echo "error_count=$ERROR_COUNT" >> $GITHUB_OUTPUT
+
+          # Save output for later
+          echo "$TSC_OUTPUT" > tsc-output.txt
+
+          echo "📊 TypeScript Error Count: $ERROR_COUNT"
+          echo "📊 Baseline: $TYPESCRIPT_ERROR_BASELINE"
+
+      - name: Check against baseline
+        run: |
+          ERROR_COUNT=${{ steps.tsc-check.outputs.error_count }}
+          BASELINE=$TYPESCRIPT_ERROR_BASELINE
+
+          if [ "$ERROR_COUNT" -gt "$BASELINE" ]; then
+            echo "❌ TypeScript errors increased!"
+            echo ""
+            echo "Current errors: $ERROR_COUNT"
+            echo "Baseline: $BASELINE"
+            echo "Increase: $((ERROR_COUNT - BASELINE))"
+            echo ""
+            echo "Please fix the new TypeScript errors before merging."
+            echo "See tsc-output.txt for details."
+            exit 1
+          elif [ "$ERROR_COUNT" -lt "$BASELINE" ]; then
+            echo "🎉 TypeScript errors decreased!"
+            echo ""
+            echo "Current errors: $ERROR_COUNT"
+            echo "Baseline: $BASELINE"
+            echo "Reduction: $((BASELINE - ERROR_COUNT))"
+            echo ""
+            echo "Consider updating the baseline in this workflow."
+          else
+            echo "✅ TypeScript errors stable at baseline"
+            echo ""
+            echo "Current errors: $ERROR_COUNT"
+            echo "Baseline: $BASELINE"
+          fi
+
+      - name: Upload TypeScript output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typescript-output
+          path: tsc-output.txt
+          retention-days: 7
+
+      - name: Comment on PR if errors increased
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const errorCount = '${{ steps.tsc-check.outputs.error_count }}';
+            const baseline = process.env.TYPESCRIPT_ERROR_BASELINE;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ❌ TypeScript Errors Increased
+
+              | Metric | Value |
+              |--------|-------|
+              | Current Errors | ${errorCount} |
+              | Baseline | ${baseline} |
+              | Increase | ${parseInt(errorCount) - parseInt(baseline)} |
+
+              Please fix the new TypeScript errors before merging.
+
+              See the workflow artifacts for the full error list.`
+            })
