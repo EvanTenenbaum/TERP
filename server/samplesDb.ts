@@ -79,7 +79,7 @@ export async function fulfillSampleRequest(
       throw new Error("Sample request not found");
     }
 
-    if (request.status !== "PENDING") {
+    if (request.sampleRequestStatus !== "PENDING") {
       throw new Error("Sample request is not pending");
     }
 
