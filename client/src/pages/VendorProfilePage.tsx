@@ -94,12 +94,12 @@ export default function VendorProfilePage() {
     { enabled: !!id }
   );
 
-  const vendor = useMemo(() => {
+  const vendor = useMemo((): Vendor | undefined => {
     if (!vendorResponse) return undefined;
     if ('success' in vendorResponse && vendorResponse.success && 'data' in vendorResponse) {
       return vendorResponse.data as Vendor;
     }
-    return vendorResponse as Vendor;
+    return undefined;
   }, [vendorResponse]);
 
   // Update vendor mutation
