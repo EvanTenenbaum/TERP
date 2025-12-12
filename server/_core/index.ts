@@ -224,8 +224,10 @@ async function startServer() {
     // Cookie parser for session management
     app.use(cookieParser());
 
-    // Trust proxy headers from DigitalOcean App Platform load balancer
-    app.set("trust proxy", true);
+    // Trust proxy headers from DigitalOcean App Platform load balancer.
+    // IMPORTANT: `true` is considered too permissive by `express-rate-limit` and can throw:
+    // ERR_ERL_PERMISSIVE_TRUST_PROXY. Use a hop count instead.
+    app.set("trust proxy", 1);
 
     // Simple auth routes under /api/auth
     registerSimpleAuthRoutes(app);
