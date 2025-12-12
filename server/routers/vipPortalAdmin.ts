@@ -610,7 +610,7 @@ export const vipPortalAdminRouter = router({
             moduleLiveCatalogEnabled: input.enabled,
             featuresConfig: {
               liveCatalog: liveCatalogConfig,
-            },
+            } as any, // Type assertion needed due to complex nested JSON type
           });
         }
         
@@ -653,7 +653,7 @@ export const vipPortalAdminRouter = router({
             whereClause = and(
               eq(clientInterestLists.clientId, input.clientId),
               eq(clientInterestLists.status, input.status)
-            );
+            )!; // Non-null assertion since we know both conditions are defined
           }
           
           const lists = await db.query.clientInterestLists.findMany({
@@ -725,7 +725,7 @@ export const vipPortalAdminRouter = router({
             id: batch.id,
             name: batch.sku || `Batch #${batch.id}`,
             category: product?.category,
-            subcategory: product?.subcategory,
+            subcategory: product?.subcategory || undefined,
             strain: undefined,
             basePrice: parseFloat(batch.unitCogs || '0'),
             quantity: parseFloat(batch.onHandQty || '0'),
@@ -762,7 +762,7 @@ export const vipPortalAdminRouter = router({
             }
             
             const currentPrice = pricedItem.retailPrice;
-            const currentQuantity = pricedItem.quantity;
+            const currentQuantity = pricedItem.quantity ?? 0;
             const snapshotPrice = parseFloat(item.priceAtInterest);
             const snapshotQuantity = parseFloat(item.quantityAtInterest || '0');
             
@@ -873,7 +873,7 @@ export const vipPortalAdminRouter = router({
             batchesData.map(({ batch, product }) => [
               batch.id,
               {
-                displayName: product?.name || batch.sku || `Batch #${batch.id}`,
+                displayName: product?.nameCanonical || batch.sku || `Batch #${batch.id}`,
                 originalName: batch.sku || `Batch #${batch.id}`,
               },
             ])
@@ -885,8 +885,8 @@ export const vipPortalAdminRouter = router({
             return {
               batchId: item.batchId,
               displayName: batchInfo?.displayName || `Batch #${item.batchId}`,
-              quantity: item.snapshotQuantity,
-              unitPrice: parseFloat(item.snapshotPrice),
+              quantity: parseFloat(item.quantityAtInterest || '0'),
+              unitPrice: parseFloat(item.priceAtInterest),
               isSample: false,
             };
           });
@@ -988,7 +988,7 @@ export const vipPortalAdminRouter = router({
             batchesData.map(({ batch, product }) => [
               batch.id,
               {
-                displayName: product?.name || batch.sku || `Batch #${batch.id}`,
+                displayName: product?.nameCanonical || batch.sku || `Batch #${batch.id}`,
                 originalName: batch.sku || `Batch #${batch.id}`,
               },
             ])
@@ -1000,8 +1000,8 @@ export const vipPortalAdminRouter = router({
             return {
               batchId: item.batchId,
               displayName: batchInfo?.displayName || `Batch #${item.batchId}`,
-              quantity: item.snapshotQuantity,
-              unitPrice: parseFloat(item.snapshotPrice),
+              quantity: parseFloat(item.quantityAtInterest || '0'),
+              unitPrice: parseFloat(item.priceAtInterest),
               isSample: false,
             };
           });
@@ -1072,7 +1072,7 @@ export const vipPortalAdminRouter = router({
             id: batch.id,
             name: batch.sku || `Batch #${batch.id}`,
             category: product?.category,
-            subcategory: product?.subcategory,
+            subcategory: product?.subcategory || undefined,
             strain: undefined,
             basePrice: parseFloat(batch.unitCogs || '0'),
             quantity: parseFloat(batch.onHandQty || '0'),
@@ -1108,7 +1108,7 @@ export const vipPortalAdminRouter = router({
               category: pricedItem.category,
               subcategory: pricedItem.subcategory,
               retailPrice: pricedItem.retailPrice.toFixed(2),
-              quantity: pricedItem.quantity.toFixed(2),
+              quantity: (pricedItem.quantity ?? 0).toFixed(2),
               addedAt: draft.addedAt,
             };
           }).filter(item => item !== null);

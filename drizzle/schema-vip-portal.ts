@@ -93,6 +93,15 @@ export const vipPortalConfigurations = mysqlTable("vip_portal_configurations", {
       showMarkup?: boolean;
       enablePriceAlerts?: boolean;
     };
+    leaderboard?: {
+      enabled?: boolean;
+      type?: string;
+      displayMode?: string;
+      minimumClients?: number;
+      metrics?: string[];
+      showSuggestions?: boolean;
+      showRankings?: boolean;
+    };
   }>(),
   
   // Advanced options
