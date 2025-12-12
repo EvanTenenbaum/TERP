@@ -48,7 +48,7 @@ export const adminQuickFixRouter = router({
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database connection failed");
     
-    const results: Array<{ column: string; status: string; message?: string }> = [];
+    const results: Array<{ column?: string; index?: string; constraint?: string; status: string; message?: string }> = [];
 
     try{
       // Add openthcId
@@ -180,7 +180,7 @@ export const adminQuickFixRouter = router({
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database connection failed");
     
-    const results: Array<{ column: string; status: string; message?: string }> = [];
+    const results: Array<{ column?: string; index?: string; constraint?: string; status: string; message?: string }> = [];
 
     try {
       // Add strainId column

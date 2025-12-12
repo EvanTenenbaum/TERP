@@ -931,10 +931,10 @@ export async function getDashboardStats() {
 
         // Status counts
         if (
-          batch.status &&
-          Object.prototype.hasOwnProperty.call(statusCounts, batch.status)
+          batch.batchStatus &&
+          Object.prototype.hasOwnProperty.call(statusCounts, batch.batchStatus)
         ) {
-          statusCounts[batch.status]++;
+          statusCounts[batch.batchStatus]++;
         }
 
         // Category breakdown
@@ -1265,7 +1265,7 @@ export async function getTopProfitableBatches(limit: number = 10) {
       results.push({
         ...profitability,
         sku: batch.sku,
-        status: batch.status,
+        status: batch.batchStatus,
       });
     }
   }

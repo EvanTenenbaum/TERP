@@ -189,12 +189,12 @@ export const inventoryRouter = router({
       // Validate transition
       if (
         !inventoryUtils.isValidStatusTransition(
-          batch.status as BatchStatus,
+          batch.batchStatus as BatchStatus,
           input.status as BatchStatus
         )
       ) {
         throw ErrorCatalog.INVENTORY.INVALID_STATUS_TRANSITION(
-          batch.status as string,
+          batch.batchStatus as string,
           input.status
         );
       }

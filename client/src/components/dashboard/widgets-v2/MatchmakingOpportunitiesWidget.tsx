@@ -13,6 +13,32 @@ import { trpc } from "@/lib/trpc";
 import { Target, AlertTriangle, TrendingUp, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
 
+// Type definitions for matchmaking data
+interface MatchData {
+  confidence: number;
+  batchId: number;
+  batchCode: string;
+  availableQty: number;
+  unitPrice: number;
+}
+
+interface NeedWithMatches {
+  clientNeedId: number;
+  clientId: number;
+  clientName: string | null;
+  strain: string | null;
+  priority: string;
+  matches: MatchData[];
+}
+
+interface PredictionData {
+  clientId: number;
+  clientName: string;
+  daysUntilPredictedOrder: number;
+  predictedOrderDate: string;
+  averageOrderValue: number;
+}
+
 export const MatchmakingOpportunitiesWidget = memo(function MatchmakingOpportunitiesWidget() {
   const [, setLocation] = useLocation();
 
@@ -33,10 +59,10 @@ export const MatchmakingOpportunitiesWidget = memo(function MatchmakingOpportuni
   const isLoading = matchesLoading || predictionsLoading;
 
   // Get top 5 high-confidence matches
-  const topMatches = (matchesData?.data || [])
-    .filter(m => m.matches.length > 0)
-    .flatMap(m =>
-      m.matches.map(match => ({
+  const topMatches = ((matchesData?.data || []) as NeedWithMatches[])
+    .filter((m: NeedWithMatches) => m.matches.length > 0)
+    .flatMap((m: NeedWithMatches) =>
+      m.matches.map((match: MatchData) => ({
         ...match,
         clientNeedId: m.clientNeedId,
         clientId: m.clientId,
@@ -45,23 +71,23 @@ export const MatchmakingOpportunitiesWidget = memo(function MatchmakingOpportuni
         priority: m.priority,
       }))
     )
-    .filter(m => m.confidence >= 75)
-    .sort((a, b) => b.confidence - a.confidence)
+    .filter((m: MatchData & { clientNeedId: number; clientId: number; clientName: string; strain: string | null; priority: string }) => m.confidence >= 75)
+    .sort((a: { confidence: number }, b: { confidence: number }) => b.confidence - a.confidence)
     .slice(0, 5);
 
   // Get urgent needs (no matches or low confidence)
-  const urgentNeeds = (matchesData?.data || [])
-    .filter(m => m.priority === "URGENT" || m.priority === "HIGH")
+  const urgentNeeds = ((matchesData?.data || []) as NeedWithMatches[])
+    .filter((m: NeedWithMatches) => m.priority === "URGENT" || m.priority === "HIGH")
     .filter(
-      m =>
+      (m: NeedWithMatches) =>
         m.matches.length === 0 ||
-        m.matches.every(match => match.confidence < 60)
+        m.matches.every((match: MatchData) => match.confidence < 60)
     )
     .slice(0, 5);
 
   // Get overdue predicted reorders
-  const overdueReorders = (predictionsData?.data || [])
-    .filter(p => p.daysUntilPredictedOrder < 0)
+  const overdueReorders = ((predictionsData?.data || []) as PredictionData[])
+    .filter((p: PredictionData) => p.daysUntilPredictedOrder < 0)
     .slice(0, 5);
 
   const totalOpportunities = topMatches.length + overdueReorders.length;
