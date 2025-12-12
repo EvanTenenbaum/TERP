@@ -37,26 +37,33 @@ export const rbacRolesRouter = router({
         if (!db) throw new Error("Database not available");
 
 
-        // Get all roles
-        let query = db
-          .select({
-            id: roles.id,
-            name: roles.name,
-            description: roles.description,
-            isSystemRole: roles.isSystemRole,
-            createdAt: roles.createdAt,
-            updatedAt: roles.updatedAt,
-          })
-          .from(roles);
-
-        // Filter out system roles if requested
-        if (!input.includeSystemRoles) {
-          query = query.where(eq(roles.isSystemRole, 0));
-        }
-
-        const roleRecords = await query
-          .limit(input.limit)
-          .offset(input.offset);
+        // Get all roles - use conditional where clause
+        const roleRecords = !input.includeSystemRoles
+          ? await db
+              .select({
+                id: roles.id,
+                name: roles.name,
+                description: roles.description,
+                isSystemRole: roles.isSystemRole,
+                createdAt: roles.createdAt,
+                updatedAt: roles.updatedAt,
+              })
+              .from(roles)
+              .where(eq(roles.isSystemRole, 0))
+              .limit(input.limit)
+              .offset(input.offset)
+          : await db
+              .select({
+                id: roles.id,
+                name: roles.name,
+                description: roles.description,
+                isSystemRole: roles.isSystemRole,
+                createdAt: roles.createdAt,
+                updatedAt: roles.updatedAt,
+              })
+              .from(roles)
+              .limit(input.limit)
+              .offset(input.offset);
 
         // Get permission counts for each role
         const roleIds = roleRecords.map(r => r.id);

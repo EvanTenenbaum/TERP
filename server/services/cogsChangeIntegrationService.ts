@@ -36,7 +36,7 @@ export const cogsChangeIntegrationService = {
 
     // Return the COGS from the batch
     // Note: The actual field name may vary based on schema
-    return batch[0].cogs || batch[0].costPerUnit || 0;
+    return parseFloat(batch[0].unitCogs || '0');
   },
 
   /**

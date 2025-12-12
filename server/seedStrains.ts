@@ -32,7 +32,13 @@ export async function seedStrainsFromCSV() {
   
   console.log(`Found ${dataLines.length} strains in CSV`);
   
-  const strainsToInsert: unknown[] = [];
+  const strainsToInsert: Array<{
+    name: string;
+    standardizedName: string;
+    category: string;
+    description: string | null;
+    aliases: string | null;
+  }> = [];
   let processedCount = 0;
   let skippedCount = 0;
 

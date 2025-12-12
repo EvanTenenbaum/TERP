@@ -93,8 +93,8 @@ export const returnsRouter = router({
         // Create return record
         const [returnRecord] = await tx.insert(returns).values({
           orderId: input.orderId,
-          items: input.items as any,
-          reason: input.reason,
+          items: input.items as unknown,
+          returnReason: input.reason,
           notes: input.notes,
           processedBy: userId,
         });
@@ -132,7 +132,7 @@ export const returnsRouter = router({
               quantityAfter: newQty.toString(),
               referenceType: "RETURN",
               referenceId: returnRecord.insertId,
-              notes: item.reason || input.notes,
+              reason: item.reason || input.notes,
               performedBy: userId,
             });
           }

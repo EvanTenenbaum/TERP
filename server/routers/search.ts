@@ -125,12 +125,12 @@ export const searchRouter = router({
         products: products.map((p) => ({
           id: p.id,
           type: "product" as const,
-          title: p.name || "Unknown",
-          description: p.description || undefined,
+          title: p.code || "Unknown",
+          description: p.sku || undefined,
           url: `/inventory/${p.id}`,
           metadata: {
-            quantityAvailable: p.quantityAvailable,
-            unitPrice: p.unitPrice,
+            quantityAvailable: p.onHandQty,
+            unitPrice: p.unitCogs,
           },
         })),
       };

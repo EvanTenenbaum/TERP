@@ -235,16 +235,23 @@ export const vipPortalRouter = router({
         });
 
         if (!config) {
-          // Return default configuration
+          // Return default configuration with all fields matching schema
           return {
-            moduleArEnabled: true,
-            moduleApEnabled: true,
-            moduleTransactionHistoryEnabled: true,
-            moduleMarketplaceNeedsEnabled: true,
-            moduleMarketplaceSupplyEnabled: true,
-            moduleCreditCenterEnabled: false,
-            moduleVipTierEnabled: false,
-            featuresConfig: {},
+            id: 0,
+            clientId: input.clientId,
+            moduleDashboardEnabled: true as boolean,
+            moduleLiveCatalogEnabled: false as boolean,
+            moduleArEnabled: true as boolean,
+            moduleApEnabled: true as boolean,
+            moduleTransactionHistoryEnabled: true as boolean,
+            moduleVipTierEnabled: false as boolean,
+            moduleCreditCenterEnabled: false as boolean,
+            moduleMarketplaceNeedsEnabled: true as boolean,
+            moduleMarketplaceSupplyEnabled: true as boolean,
+            featuresConfig: null as null,
+            advancedOptions: null as null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
           };
         }
 
@@ -1018,7 +1025,7 @@ export const vipPortalRouter = router({
           id: batch.id,
           name: batch.sku || `Batch #${batch.id}`,
           category: product?.category,
-          subcategory: product?.subcategory,
+          subcategory: product?.subcategory ?? undefined,
           strain: undefined,
           basePrice: parseFloat(batch.unitCogs || '0'),
           quantity: parseFloat(batch.onHandQty || '0'),
@@ -1048,7 +1055,7 @@ export const vipPortalRouter = router({
           }
           
           const currentPrice = pricedItem.retailPrice;
-          const currentQuantity = pricedItem.quantity;
+          const currentQuantity = pricedItem.quantity ?? 0;
           const stillAvailable = currentQuantity > 0;
           
           // For simplicity, assume no price/quantity at add time (no historical tracking yet)
@@ -1252,7 +1259,7 @@ export const vipPortalRouter = router({
           id: batch.id,
           name: batch.sku || `Batch #${batch.id}`,
           category: product?.category,
-          subcategory: product?.subcategory,
+          subcategory: product?.subcategory ?? undefined,
           strain: undefined,
           basePrice: parseFloat(batch.unitCogs || '0'),
           quantity: parseFloat(batch.onHandQty || '0'),
@@ -1285,7 +1292,7 @@ export const vipPortalRouter = router({
             totalValue: totalValue.toFixed(2),
           });
           
-          const interestListId = Number(listResult.insertId);
+          const interestListId = Number((listResult as unknown as { insertId: number }).insertId);
           
           // Create interest list items
           const itemsToInsert = drafts.map(draft => {
@@ -1303,7 +1310,7 @@ export const vipPortalRouter = router({
               category: pricedItem.category || null,
               subcategory: pricedItem.subcategory || null,
               priceAtInterest: pricedItem.retailPrice.toFixed(2),
-              quantityAtInterest: pricedItem.quantity.toFixed(2),
+              quantityAtInterest: (pricedItem.quantity ?? 0).toFixed(2),
             };
           });
           

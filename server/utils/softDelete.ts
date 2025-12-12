@@ -149,11 +149,16 @@ export async function isDeleted<T extends MySqlTable>(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const record = await db.query[table.$inferSelect.name].findFirst({
-    where: eq((table as any).id, id),
-  });
+  // Use direct query instead of relational query builder
+  const tableWithId = table as T & { id: Parameters<typeof eq>[0] };
+  const results = await db
+    .select()
+    .from(table)
+    .where(eq(tableWithId.id, id))
+    .limit(1);
 
-  return record && (record as any).deletedAt !== null;
+  const record = results[0] as { deletedAt?: Date | null } | undefined;
+  return record !== undefined && record.deletedAt !== null;
 }
 
 /**
