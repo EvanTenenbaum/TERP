@@ -45,8 +45,8 @@ export const calendarRouter = router({
 
       // Build base query for calendar events
       let eventConditions: any[] = [
-        gte(calendarEvents.startDate, input.startDate),
-        lte(calendarEvents.endDate, input.endDate),
+        gte(calendarEvents.startDate, new Date(input.startDate)),
+        lte(calendarEvents.endDate, new Date(input.endDate)),
         isNull(calendarEvents.deletedAt),
       ];
 
@@ -105,8 +105,8 @@ export const calendarRouter = router({
 
       // Query recurrence instances
       const instanceConditions: any[] = [
-        gte(calendarRecurrenceInstances.instanceDate, input.startDate),
-        lte(calendarRecurrenceInstances.instanceDate, input.endDate),
+        gte(calendarRecurrenceInstances.instanceDate, new Date(input.startDate)),
+        lte(calendarRecurrenceInstances.instanceDate, new Date(input.endDate)),
       ];
 
       const instances = await db
@@ -128,35 +128,44 @@ export const calendarRouter = router({
       ];
 
       // Convert to user's timezone if provided
-      if (input.timezone) {
-        allEvents.forEach((event) => {
-          if (event.startTime && event.timezone) {
-            const converted = TimezoneService.convertTimezone(
-              event.startDate,
-              event.startTime,
-              event.timezone,
-              input.timezone!
-            );
-            event.displayTime = converted.time;
-            event.displayTimezone = input.timezone;
-          }
-        });
-      }
+      const eventsWithDisplay = allEvents.map((event) => {
+        if (input.timezone && event.startTime && event.timezone) {
+          const dateStr = event.startDate instanceof Date 
+            ? event.startDate.toISOString().split('T')[0] 
+            : String(event.startDate);
+          const converted = TimezoneService.convertTimezone(
+            dateStr,
+            event.startTime,
+            event.timezone,
+            input.timezone!
+          );
+          return {
+            ...event,
+            displayTime: converted.time,
+            displayTimezone: input.timezone,
+          };
+        }
+        return {
+          ...event,
+          displayTime: null as string | null,
+          displayTimezone: null as string | null,
+        };
+      });
 
       // Return with pagination metadata if requested
       if (input.includeTotalCount) {
         return {
-          data: allEvents,
+          data: eventsWithDisplay,
           pagination: {
             total: totalCount,
             limit: limit,
             offset: offset,
-            hasMore: offset + allEvents.length < totalCount,
+            hasMore: offset + eventsWithDisplay.length < totalCount,
           },
         };
       }
 
-      return allEvents;
+      return eventsWithDisplay;
     }),
 
   // Get single event with full details
@@ -171,11 +180,8 @@ export const calendarRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.getEventPermissions(
-        userId,
-        input.id,
-        "VIEW"
-      );
+      // Check if user has VIEW permission via requirePermission
+      const hasPermission = await PermissionService.hasPermission(userId, input.id, "VIEW");
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -201,19 +207,26 @@ export const calendarRouter = router({
       }
 
       // Convert to user's timezone
+      let displayTime: string | null = null;
+      let displayTimezone: string | null = null;
       if (input.timezone && event.startTime && event.timezone) {
+        const dateStr = event.startDate instanceof Date 
+          ? event.startDate.toISOString().split('T')[0] 
+          : String(event.startDate);
         const converted = TimezoneService.convertTimezone(
-          event.startDate,
+          dateStr,
           event.startTime,
           event.timezone,
           input.timezone
         );
-        event.displayTime = converted.time;
-        event.displayTimezone = input.timezone;
+        displayTime = converted.time;
+        displayTimezone = input.timezone;
       }
 
       return {
         ...event,
+        displayTime,
+        displayTimezone,
         participants,
         reminders,
         attachments,
@@ -324,8 +337,8 @@ export const calendarRouter = router({
         title: input.title,
         description: input.description || null,
         location: input.location || null,
-        startDate: input.startDate,
-        endDate: input.endDate,
+        startDate: new Date(input.startDate),
+        endDate: new Date(input.endDate),
         startTime: input.startTime || null,
         endTime: input.endTime || null,
         timezone: input.timezone,
@@ -358,8 +371,8 @@ export const calendarRouter = router({
           byWeekOfMonth: input.recurrenceRule.byWeekOfMonth || null,
           byDayOfWeekInMonth: input.recurrenceRule.byDayOfWeekInMonth || null,
           byMonth: input.recurrenceRule.byMonth || null,
-          startDate: input.recurrenceRule.startDate,
-          endDate: input.recurrenceRule.endDate || null,
+          startDate: new Date(input.recurrenceRule.startDate),
+          endDate: input.recurrenceRule.endDate ? new Date(input.recurrenceRule.endDate) : null,
           count: input.recurrenceRule.count || null,
           exceptionDates: input.recurrenceRule.exceptionDates || null,
         });
@@ -407,10 +420,10 @@ export const calendarRouter = router({
         eventId,
         changedBy: userId,
         changeType: "CREATED",
-        fieldName: null,
-        oldValue: null,
+        fieldChanged: null,
+        previousValue: null,
         newValue: null,
-        notes: "Event created",
+        changeReason: "Event created",
       });
 
       return newEvent;
@@ -445,11 +458,7 @@ export const calendarRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.getEventPermissions(
-        userId,
-        input.id,
-        "EDIT"
-      );
+      const hasPermission = await PermissionService.hasPermission(userId, input.id, "EDIT");
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -459,21 +468,30 @@ export const calendarRouter = router({
       const currentEvent = await calendarDb.getEventById(input.id);
       if (!currentEvent) throw new Error("Event not found");
 
+      // Convert string dates to Date objects for database
+      const dbUpdates: Record<string, unknown> = { ...input.updates };
+      if (input.updates.startDate) {
+        dbUpdates.startDate = new Date(input.updates.startDate);
+      }
+      if (input.updates.endDate) {
+        dbUpdates.endDate = new Date(input.updates.endDate);
+      }
+
       // Update event
-      await calendarDb.updateEvent(input.id, input.updates);
+      await calendarDb.updateEvent(input.id, dbUpdates as Parameters<typeof calendarDb.updateEvent>[1]);
 
       // Log changes to history
-      for (const [field, newValue] of Object.entries(input.updates)) {
+      for (const [field, value] of Object.entries(input.updates)) {
         const oldValue = currentEvent[field as keyof typeof currentEvent];
-        if (oldValue !== newValue) {
+        if (oldValue !== value) {
           await calendarDb.addHistoryEntry({
             eventId: input.id,
             changedBy: userId,
             changeType: "UPDATED",
-            fieldName: field,
-            oldValue: String(oldValue),
-            newValue: String(newValue),
-            notes: null,
+            fieldChanged: field,
+            previousValue: String(oldValue),
+            newValue: String(value),
+            changeReason: null,
           });
         }
       }
@@ -503,11 +521,7 @@ export const calendarRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.getEventPermissions(
-        userId,
-        input.id,
-        "DELETE"
-      );
+      const hasPermission = await PermissionService.hasPermission(userId, input.id, "DELETE");
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -521,10 +535,10 @@ export const calendarRouter = router({
         eventId: input.id,
         changedBy: userId,
         changeType: "DELETED",
-        fieldName: null,
-        oldValue: null,
+        fieldChanged: null,
+        previousValue: null,
         newValue: null,
-        notes: "Event deleted",
+        changeReason: "Event deleted",
       });
 
       return { success: true };

@@ -20,11 +20,7 @@ export const calendarRecurrenceRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
-        userId,
-        input.eventId,
-        "VIEW"
-      );
+      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "VIEW");
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -46,11 +42,7 @@ export const calendarRecurrenceRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
-        userId,
-        input.eventId,
-        "VIEW"
-      );
+      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "VIEW");
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -83,11 +75,7 @@ export const calendarRecurrenceRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
-        userId,
-        input.eventId,
-        "EDIT"
-      );
+      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -106,10 +94,10 @@ export const calendarRecurrenceRouter = router({
         eventId: input.eventId,
         changedBy: userId,
         changeType: "UPDATED",
-        fieldName: "recurrence_instance",
-        oldValue: null,
+        fieldChanged: "recurrence_instance",
+        previousValue: null,
         newValue: `Modified instance on ${input.instanceDate}`,
-        notes: JSON.stringify(input.modifications),
+        changeReason: JSON.stringify(input.modifications),
       });
 
       return { success: true };
@@ -127,11 +115,7 @@ export const calendarRecurrenceRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
-        userId,
-        input.eventId,
-        "EDIT"
-      );
+      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -148,10 +132,10 @@ export const calendarRecurrenceRouter = router({
         eventId: input.eventId,
         changedBy: userId,
         changeType: "UPDATED",
-        fieldName: "recurrence_instance",
-        oldValue: null,
+        fieldChanged: "recurrence_instance",
+        previousValue: null,
         newValue: `Cancelled instance on ${input.instanceDate}`,
-        notes: null,
+        changeReason: null,
       });
 
       return { success: true };
@@ -169,11 +153,7 @@ export const calendarRecurrenceRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
-        userId,
-        input.eventId,
-        "MANAGE"
-      );
+      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "MANAGE");
 
       if (!hasPermission) {
         throw new Error("Permission denied - requires MANAGE permission");
@@ -190,10 +170,10 @@ export const calendarRecurrenceRouter = router({
         eventId: input.eventId,
         changedBy: userId,
         changeType: "UPDATED",
-        fieldName: "recurrence_instances",
-        oldValue: null,
+        fieldChanged: "recurrence_instances",
+        previousValue: null,
         newValue: `Regenerated ${count} instances`,
-        notes: `Days ahead: ${input.daysAhead}`,
+        changeReason: `Days ahead: ${input.daysAhead}`,
       });
 
       return { count };
@@ -239,18 +219,20 @@ export const calendarRecurrenceRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
-        userId,
-        input.eventId,
-        "EDIT"
-      );
+      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
 
       if (!hasPermission) {
         throw new Error("Permission denied");
       }
 
+      // Convert string dates to Date objects for database
+      const dbUpdates: Record<string, unknown> = { ...input.updates };
+      if (input.updates.endDate) {
+        dbUpdates.endDate = new Date(input.updates.endDate);
+      }
+
       // Update recurrence rule
-      await calendarDb.updateRecurrenceRule(input.eventId, input.updates);
+      await calendarDb.updateRecurrenceRule(input.eventId, dbUpdates as Parameters<typeof calendarDb.updateRecurrenceRule>[1]);
 
       // Regenerate instances with new rule
       await InstanceGenerationService.generateInstances(input.eventId, 90);
@@ -260,10 +242,10 @@ export const calendarRecurrenceRouter = router({
         eventId: input.eventId,
         changedBy: userId,
         changeType: "UPDATED",
-        fieldName: "recurrence_rule",
-        oldValue: null,
+        fieldChanged: "recurrence_rule",
+        previousValue: null,
         newValue: "Recurrence rule updated",
-        notes: JSON.stringify(input.updates),
+        changeReason: JSON.stringify(input.updates),
       });
 
       return { success: true };
@@ -276,11 +258,7 @@ export const calendarRecurrenceRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
-        userId,
-        input.eventId,
-        "EDIT"
-      );
+      const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
 
       if (!hasPermission) {
         throw new Error("Permission denied");
@@ -300,10 +278,10 @@ export const calendarRecurrenceRouter = router({
         eventId: input.eventId,
         changedBy: userId,
         changeType: "UPDATED",
-        fieldName: "recurrence_rule",
-        oldValue: "Recurring",
+        fieldChanged: "recurrence_rule",
+        previousValue: "Recurring",
         newValue: "Single event",
-        notes: "Recurrence rule deleted",
+        changeReason: "Recurrence rule deleted",
       });
 
       return { success: true };
