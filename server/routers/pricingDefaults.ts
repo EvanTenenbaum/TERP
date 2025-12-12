@@ -14,7 +14,7 @@ export const pricingDefaultsRouter = router({
    * Get all default margins
    */
   getAll: protectedProcedure.use(requirePermission("pricing:read")).query(async () => {
-    return await pricingService.getAllDefaults();
+    return await pricingService.getAllDefaultMargins();
   }),
 
   /**
@@ -32,9 +32,8 @@ export const pricingDefaultsRouter = router({
         ? new Date(input.effectiveDate)
         : new Date();
 
-      const margin = await pricingService.getDefaultMargin(
-        input.productCategory,
-        effectiveDate
+      const margin = await pricingService.getDefaultMarginByCategory(
+        input.productCategory
       );
 
       return {
@@ -58,12 +57,9 @@ export const pricingDefaultsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.user?.id || 1;
 
-      const _result = await pricingService.upsertDefaultMargin(
+      await pricingService.setDefaultMarginByCategory(
         input.productCategory,
-        input.marginPercent,
-        input.description,
-        new Date(input.effectiveDate),
-        userId
+        input.marginPercent
       );
 
       return {
