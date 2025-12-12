@@ -452,11 +452,9 @@ function CategoriesManager() {
   });
 
   const handleUpdateCategory = (id: number) => {
-    if (window.confirm("Do you want to update this category for all existing products?")) {
-      updateCategoryMutation.mutate({ id, name: editName, updateProducts: true });
-    } else {
-      updateCategoryMutation.mutate({ id, name: editName, updateProducts: false });
-    }
+    // Note: updateProducts functionality would need to be implemented in the router
+    // For now, just update the category name
+    updateCategoryMutation.mutate({ id, name: editName });
   };
 
   return (
@@ -605,11 +603,9 @@ function GradesManager() {
   });
 
   const handleUpdate = (id: number) => {
-    if (window.confirm("Do you want to update this grade for all existing products?")) {
-      updateMutation.mutate({ id, name: editName, updateProducts: true });
-    } else {
-      updateMutation.mutate({ id, name: editName, updateProducts: false });
-    }
+    // Note: updateProducts functionality would need to be implemented in the router
+    // For now, just update the grade name
+    updateMutation.mutate({ id, name: editName });
   };
 
   return (

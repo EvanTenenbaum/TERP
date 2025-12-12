@@ -90,6 +90,35 @@ const subcategoriesRouter = router({
       }
       return query;
     }),
+  create: publicProcedure
+    .input(z.object({ categoryId: z.number(), name: z.string().min(1), description: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.insert(subcategories).values({ 
+        categoryId: input.categoryId, 
+        name: input.name, 
+        description: input.description 
+      });
+      return { success: true };
+    }),
+  update: publicProcedure
+    .input(z.object({ id: z.number(), name: z.string().min(1).optional(), description: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const { id, ...updates } = input;
+      await db.update(subcategories).set(updates).where(eq(subcategories.id, id));
+      return { success: true };
+    }),
+  delete: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.update(subcategories).set({ deletedAt: new Date() }).where(eq(subcategories.id, input.id));
+      return { success: true };
+    }),
 });
 
 // Nested router for locations
