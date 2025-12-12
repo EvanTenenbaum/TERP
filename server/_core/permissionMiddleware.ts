@@ -12,7 +12,7 @@ const PUBLIC_USER_OPEN_ID = env.PUBLIC_DEMO_USER_ID || "public-demo-user";
  * Check if a user is the public demo user
  * Matches by openId, email, or the synthetic id of -1
  */
-function isPublicDemoUser(user: { id: number; openId: string; email: string }): boolean {
+function isPublicDemoUser(user: { id: number; openId: string; email: string | null }): boolean {
   return (
     user.id === -1 ||
     user.openId === PUBLIC_USER_OPEN_ID ||
