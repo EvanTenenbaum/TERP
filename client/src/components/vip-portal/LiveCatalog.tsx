@@ -337,14 +337,14 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
       name: newViewName,
       filters: {
         category: categoryFilter,
-        brands: brandFilter.length > 0 ? brandFilter : undefined,
-        grades: gradeFilter.length > 0 ? gradeFilter : undefined,
+        brand: brandFilter.length > 0 ? brandFilter : undefined,
+        grade: gradeFilter.length > 0 ? gradeFilter : undefined,
         stockLevel: stockFilter,
-        minPrice: priceRange[0],
-        maxPrice: priceRange[1],
+        priceMin: priceRange[0],
+        priceMax: priceRange[1],
         search: search || undefined,
       },
-      sortBy: sortBy as any,
+      sortBy: sortBy as 'name' | 'price' | 'category' | 'date',
     });
   };
 
@@ -504,7 +504,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                   {/* Stock Level Filter */}
                   <div className="space-y-2">
                     <Label>Stock Level</Label>
-                    <Select value={stockFilter} onValueChange={setStockFilter}>
+                    <Select value={stockFilter} onValueChange={(value) => setStockFilter(value as 'all' | 'in_stock' | 'low_stock' | undefined)}>
                       <SelectTrigger>
                         <SelectValue placeholder="All items" />
                       </SelectTrigger>

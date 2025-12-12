@@ -43,10 +43,10 @@ export default function PurchaseOrdersPage() {
   // Fetch data
   const { data: pos = [], refetch } = trpc.purchaseOrders.getAll.useQuery();
   const { data: vendorsResponse } = trpc.vendors.getAll.useQuery();
-  const vendors = useMemo(() => {
+  const vendors: Array<{ id: number; name: string; contactName?: string | null; contactEmail?: string | null; contactPhone?: string | null; paymentTerms?: string | null }> = useMemo(() => {
     if (!vendorsResponse) return [];
     if ('success' in vendorsResponse && vendorsResponse.success && 'data' in vendorsResponse) {
-      return vendorsResponse.data;
+      return vendorsResponse.data as Array<{ id: number; name: string; contactName?: string | null; contactEmail?: string | null; contactPhone?: string | null; paymentTerms?: string | null }>;
     }
     if (Array.isArray(vendorsResponse)) return vendorsResponse;
     return [];
