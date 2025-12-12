@@ -80,6 +80,7 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
 
   try {
     const db = await getDb();
+    if (!db) throw new Error("Database not available");
     
     // 1. Get user's roles
     const userRoleRecords = await db
@@ -246,6 +247,7 @@ export async function hasAnyPermission(
 export async function getUserRoles(userId: string): Promise<Array<{ id: number; name: string; description: string | null }>> {
   try {
     const db = await getDb();
+    if (!db) throw new Error("Database not available");
     
     const userRoleRecords = await db
       .select({
