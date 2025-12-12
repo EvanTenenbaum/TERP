@@ -67,8 +67,8 @@ export async function getEventsByDateRange(
     .from(calendarEvents)
     .where(
       and(
-        gte(calendarEvents.startDate, startDate),
-        lte(calendarEvents.endDate, endDate),
+        gte(calendarEvents.startDate, new Date(startDate)),
+        lte(calendarEvents.endDate, new Date(endDate)),
         isNull(calendarEvents.deletedAt)
       )
     );
@@ -295,16 +295,20 @@ export async function getInstancesByEvent(
     .from(calendarRecurrenceInstances)
     .where(eq(calendarRecurrenceInstances.parentEventId, eventId));
 
+  // Note: Additional date filtering should be done in the initial query
+  // For now, filter in memory if dates provided
+  const results = await query;
+  
   if (startDate && endDate) {
-    query = query.where(
-      and(
-        gte(calendarRecurrenceInstances.instanceDate, startDate),
-        lte(calendarRecurrenceInstances.instanceDate, endDate)
-      )
-    );
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return results.filter(r => {
+      const instanceDate = new Date(r.instanceDate);
+      return instanceDate >= start && instanceDate <= end;
+    });
   }
 
-  return await query;
+  return results;
 }
 
 /**
@@ -321,7 +325,7 @@ export async function getInstanceByDate(eventId: number, instanceDate: string) {
     .where(
       and(
         eq(calendarRecurrenceInstances.parentEventId, eventId),
-        eq(calendarRecurrenceInstances.instanceDate, instanceDate)
+        eq(calendarRecurrenceInstances.instanceDate, new Date(instanceDate))
       )
     )
     .limit(1);
@@ -892,6 +896,10 @@ export async function checkConflicts(params: {
   if (!db) throw new Error("Database not available");
 
   const { startDate, startTime, endDate, endTime, excludeEventId } = params;
+  
+  // Convert string dates to Date objects
+  const startDateObj = new Date(startDate);
+  const endDateObj = new Date(endDate);
 
   // Build conditions
   const conditions: any[] = [
@@ -907,18 +915,18 @@ export async function checkConflicts(params: {
     or(
       // New event starts during existing event
       and(
-        lte(calendarEvents.startDate, startDate),
-        gte(calendarEvents.endDate, startDate)
+        lte(calendarEvents.startDate, startDateObj),
+        gte(calendarEvents.endDate, startDateObj)
       ),
       // New event ends during existing event
       and(
-        lte(calendarEvents.startDate, endDate),
-        gte(calendarEvents.endDate, endDate)
+        lte(calendarEvents.startDate, endDateObj),
+        gte(calendarEvents.endDate, endDateObj)
       ),
       // New event completely contains existing event
       and(
-        gte(calendarEvents.startDate, startDate),
-        lte(calendarEvents.endDate, endDate)
+        gte(calendarEvents.startDate, startDateObj),
+        lte(calendarEvents.endDate, endDateObj)
       )
     ),
   ];
