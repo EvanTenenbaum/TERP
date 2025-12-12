@@ -177,7 +177,7 @@ export function createErrorHandlingMiddleware(procedureName?: string) {
     path: string;
     type: "query" | "mutation" | "subscription";
     input?: unknown;
-  }) => {
+  }): Promise<unknown> => {
     const { ctx, next, path, input } = opts;
 
     try {

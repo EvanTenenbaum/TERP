@@ -13,11 +13,25 @@ const t = initTRPC.context<TrpcContext>().create({
 });
 
 export const router = t.router;
+export const middleware = t.middleware;
+
 // Global error handling middleware applied to all procedures
-const errorHandlingMiddleware = createErrorHandlingMiddleware();
+const errorHandlingMiddleware = t.middleware(async (opts) => {
+  const { ctx, next, path, input } = opts;
+  try {
+    return await next();
+  } catch (error) {
+    // Log error with context
+    logger.error({
+      error: error instanceof Error ? error.message : String(error),
+      path,
+      userId: ctx.user?.id,
+    }, "tRPC procedure error");
+    throw error;
+  }
+});
 
 export const publicProcedure = t.procedure.use(errorHandlingMiddleware);
-export const middleware = t.middleware;
 
 /**
  * Recursively sanitize all string values in an object
@@ -106,7 +120,7 @@ async function getOrCreatePublicUserFallback() {
     openId: PUBLIC_USER_ID,
     email: PUBLIC_USER_EMAIL,
     name: "Public Demo User",
-    role: "user",
+    role: "user" as const,
     loginMethod: null,
     deletedAt: null,
     createdAt: now,
