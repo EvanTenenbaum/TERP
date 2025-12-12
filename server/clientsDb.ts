@@ -3,7 +3,7 @@
  * Handles all database operations for the Client Management System
  */
 
-import { eq, and, desc, like, or, sql } from "drizzle-orm";
+import { eq, and, desc, like, or, sql, SQL } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   clients,
@@ -64,14 +64,15 @@ export async function getClients(options: {
 
   // Filter by client types
   if (clientTypes && clientTypes.length > 0) {
-    const typeConditions: unknown[] = [];
+    const typeConditions: SQL<unknown>[] = [];
     if (clientTypes.includes("buyer")) typeConditions.push(eq(clients.isBuyer, true));
     if (clientTypes.includes("seller")) typeConditions.push(eq(clients.isSeller, true));
     if (clientTypes.includes("brand")) typeConditions.push(eq(clients.isBrand, true));
     if (clientTypes.includes("referee")) typeConditions.push(eq(clients.isReferee, true));
     if (clientTypes.includes("contractor")) typeConditions.push(eq(clients.isContractor, true));
     if (typeConditions.length > 0) {
-      conditions.push(or(...typeConditions));
+      const orCondition = or(...typeConditions);
+      if (orCondition) conditions.push(orCondition);
     }
   }
 
@@ -136,14 +137,15 @@ export async function getClientCount(options: {
   }
 
   if (clientTypes && clientTypes.length > 0) {
-    const typeConditions: unknown[] = [];
+    const typeConditions: SQL<unknown>[] = [];
     if (clientTypes.includes("buyer")) typeConditions.push(eq(clients.isBuyer, true));
     if (clientTypes.includes("seller")) typeConditions.push(eq(clients.isSeller, true));
     if (clientTypes.includes("brand")) typeConditions.push(eq(clients.isBrand, true));
     if (clientTypes.includes("referee")) typeConditions.push(eq(clients.isReferee, true));
     if (clientTypes.includes("contractor")) typeConditions.push(eq(clients.isContractor, true));
     if (typeConditions.length > 0) {
-      conditions.push(or(...typeConditions));
+      const orCondition = or(...typeConditions);
+      if (orCondition) conditions.push(orCondition);
     }
   }
 
