@@ -279,7 +279,7 @@ export async function updateBatchStatus(id: number, status: string) {
 
   await db
     .update(batches)
-    .set({ status: sql`${status}` })
+    .set({ batchStatus: status })
     .where(eq(batches.id, id));
 }
 
@@ -1103,7 +1103,7 @@ export async function bulkUpdateBatchStatus(
       await tx
         .update(batches)
         .set({
-          status: sql`${newStatus}`,
+          batchStatus: newStatus,
           updatedAt: new Date(),
         })
         .where(eq(batches.id, batchId));
@@ -1150,7 +1150,7 @@ export async function bulkDeleteBatches(
       await tx
         .update(batches)
         .set({
-          status: "CLOSED",
+          batchStatus: "CLOSED",
           updatedAt: new Date(),
         })
         .where(eq(batches.id, batchId));
