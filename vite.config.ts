@@ -7,10 +7,26 @@ import { defineConfig } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime()];
+export default defineConfig(({ mode }) => {
+  /**
+   * IMPORTANT:
+   * - `vite-plugin-manus-runtime` is intended for Manus-hosted environments.
+   *   When enabled in a normal production build (e.g., DigitalOcean), it injects a runtime
+   *   that can leave the bundle referencing a bare `jsx` symbol, causing:
+   *     "Uncaught ReferenceError: jsx is not defined"
+   * - `jsxLocPlugin()` is a dev-quality-of-life plugin; keep it out of production bundles.
+   */
+  const isProd = mode === "production";
 
-export default defineConfig({
-  plugins,
+  const plugins = [
+    react(),
+    tailwindcss(),
+    ...(isProd ? [] : [jsxLocPlugin()]),
+    ...(isProd ? [] : [vitePluginManusRuntime()]),
+  ];
+
+  return {
+    plugins,
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -81,4 +97,5 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
+  };
 });
