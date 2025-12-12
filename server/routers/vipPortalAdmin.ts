@@ -610,7 +610,7 @@ export const vipPortalAdminRouter = router({
             moduleLiveCatalogEnabled: input.enabled,
             featuresConfig: {
               liveCatalog: liveCatalogConfig,
-            } as any, // Type assertion needed due to complex nested JSON type
+            } as typeof vipPortalConfigurations.$inferInsert.featuresConfig
           });
         }
         
@@ -763,7 +763,7 @@ export const vipPortalAdminRouter = router({
             
             const currentPrice = pricedItem.retailPrice;
             const currentQuantity = pricedItem.quantity ?? 0;
-            const snapshotPrice = parseFloat(item.priceAtInterest);
+            const snapshotPrice = parseFloat(item.priceAtInterest || '0');
             const snapshotQuantity = parseFloat(item.quantityAtInterest || '0');
             
             const priceChanged = Math.abs(currentPrice - snapshotPrice) > 0.01;
@@ -886,7 +886,7 @@ export const vipPortalAdminRouter = router({
               batchId: item.batchId,
               displayName: batchInfo?.displayName || `Batch #${item.batchId}`,
               quantity: parseFloat(item.quantityAtInterest || '0'),
-              unitPrice: parseFloat(item.priceAtInterest),
+              unitPrice: parseFloat(item.priceAtInterest || '0'),
               isSample: false,
             };
           });
@@ -1001,7 +1001,7 @@ export const vipPortalAdminRouter = router({
               batchId: item.batchId,
               displayName: batchInfo?.displayName || `Batch #${item.batchId}`,
               quantity: parseFloat(item.quantityAtInterest || '0'),
-              unitPrice: parseFloat(item.priceAtInterest),
+              unitPrice: parseFloat(item.priceAtInterest || '0'),
               isSample: false,
             };
           });
