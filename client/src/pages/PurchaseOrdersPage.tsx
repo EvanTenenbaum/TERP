@@ -133,7 +133,7 @@ export default function PurchaseOrdersPage() {
       const matchesSearch =
         (po.poNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         vendors
-          .find(v => v.id === po.vendorId)
+          .find((v: { id: number; name: string }) => v.id === po.vendorId)
           ?.name.toLowerCase()
           .includes(searchQuery.toLowerCase());
 
@@ -197,7 +197,7 @@ export default function PurchaseOrdersPage() {
   };
 
   const getVendorName = (vendorId: number) => {
-    return vendors.find(v => v.id === vendorId)?.name || "Unknown";
+    return vendors.find((v: { id: number; name: string }) => v.id === vendorId)?.name || "Unknown";
   };
 
   const getStatusBadge = (status: string) => {
