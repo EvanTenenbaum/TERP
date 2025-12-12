@@ -1,4 +1,3 @@
-javascript
 import { useState, memo } from "react";
 import {
   CheckCircle2,

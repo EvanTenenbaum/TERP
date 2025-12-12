@@ -1,4 +1,3 @@
-javascript
 import { memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";

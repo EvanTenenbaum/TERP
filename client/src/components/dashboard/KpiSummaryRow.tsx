@@ -1,4 +1,3 @@
-javascript
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DollarSign, ShoppingCart, Package, AlertTriangle } from "lucide-react";
 import { memo } from "react";

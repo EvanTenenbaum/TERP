@@ -1,4 +1,3 @@
-javascript
 import { useState, memo } from "react";
 import { MoreVertical, Users, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
