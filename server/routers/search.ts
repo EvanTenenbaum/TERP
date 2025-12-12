@@ -82,19 +82,18 @@ export const searchRouter = router({
         .select({
           id: batches.id,
           type: sql<string>`'product'`.as("type"),
-          name: batches.name,
-          description: batches.description,
+          code: batches.code,
+          sku: batches.sku,
           batchId: batches.id,
-          quantityAvailable: batches.quantityAvailable,
-          unitPrice: batches.unitPrice,
+          onHandQty: batches.onHandQty,
+          unitCogs: batches.unitCogs,
           createdAt: batches.createdAt,
         })
         .from(batches)
         .where(
           or(
-            like(batches.name || "", searchTerm),
-            like(batches.description || "", searchTerm),
-            like(batches.sku || "", searchTerm)
+            like(batches.code, searchTerm),
+            like(batches.sku, searchTerm)
           )
         )
         .limit(limit);
