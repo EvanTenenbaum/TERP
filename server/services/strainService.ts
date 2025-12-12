@@ -15,9 +15,35 @@ import { strains, products, batches, clients } from "../../drizzle/schema";
 import { eq, and, or, like, sql, desc, isNull } from "drizzle-orm";
 import { findFuzzyStrainMatches, getOrCreateStrain } from "../strainMatcher";
 
-// Cache for frequently accessed data
+// Cache for frequently accessed data with automatic cleanup
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_SIZE = 100; // Prevent unbounded growth
+
+// Cleanup expired entries periodically
+function cleanupExpiredEntries() {
+  const now = Date.now();
+  const expiredKeys: string[] = [];
+  
+  for (const [key, entry] of cache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL) {
+      expiredKeys.push(key);
+    }
+  }
+  
+  expiredKeys.forEach(key => cache.delete(key));
+  
+  // If still too large, remove oldest entries
+  if (cache.size > MAX_CACHE_SIZE) {
+    const entries = Array.from(cache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    const toRemove = entries.slice(0, cache.size - MAX_CACHE_SIZE);
+    toRemove.forEach(([key]) => cache.delete(key));
+  }
+}
+
+// Run cleanup every 2 minutes
+setInterval(cleanupExpiredEntries, 2 * 60 * 1000);
 
 function getCached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   const cached = cache.get(key);
@@ -26,6 +52,11 @@ function getCached<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   }
   
   return fetcher().then(data => {
+    // Clean up before adding new entry if cache is getting large
+    if (cache.size >= MAX_CACHE_SIZE) {
+      cleanupExpiredEntries();
+    }
+    
     cache.set(key, { data, timestamp: Date.now() });
     return data;
   });

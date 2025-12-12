@@ -16,10 +16,36 @@ import { logger } from "../_core/logger";
  * It implements caching for performance and supports per-user permission overrides.
  */
 
-// In-memory cache for user permissions
+// In-memory cache for user permissions with automatic cleanup
 // Key: userId, Value: { permissions: Set<string>, timestamp: number }
 const permissionCache = new Map<string, { permissions: Set<string>; timestamp: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_PERMISSION_CACHE_SIZE = 50; // Prevent unbounded growth
+
+// Cleanup expired permission cache entries
+function cleanupExpiredPermissionCache() {
+  const now = Date.now();
+  const expiredKeys: string[] = [];
+  
+  for (const [key, entry] of permissionCache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL_MS) {
+      expiredKeys.push(key);
+    }
+  }
+  
+  expiredKeys.forEach(key => permissionCache.delete(key));
+  
+  // If still too large, remove oldest entries
+  if (permissionCache.size > MAX_PERMISSION_CACHE_SIZE) {
+    const entries = Array.from(permissionCache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    const toRemove = entries.slice(0, permissionCache.size - MAX_PERMISSION_CACHE_SIZE);
+    toRemove.forEach(([key]) => permissionCache.delete(key));
+  }
+}
+
+// Run cleanup every 2 minutes
+setInterval(cleanupExpiredPermissionCache, 2 * 60 * 1000);
 
 /**
  * Clear the permission cache for a specific user or all users
@@ -136,6 +162,11 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
       }
     }
 
+    // Clean up before adding new entry if cache is getting large
+    if (permissionCache.size >= MAX_PERMISSION_CACHE_SIZE) {
+      cleanupExpiredPermissionCache();
+    }
+    
     // Cache the result
     permissionCache.set(userId, { permissions: userPermissions, timestamp: Date.now() });
 

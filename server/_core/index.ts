@@ -36,6 +36,7 @@ import { assignRoleToUser } from "../services/seedRBAC";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
 import { runAutoMigrations } from "../autoMigrate";
+import { setupMemoryManagement } from "../utils/memoryOptimizer";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -57,6 +58,15 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Initialize memory management FIRST to prevent memory leaks
+  try {
+    setupMemoryManagement();
+    logger.info("✅ Memory management initialized");
+  } catch (error) {
+    console.warn("Failed to initialize memory management:", error);
+    // Continue - memory management is critical but not fatal
+  }
+
   // Initialize monitoring
   try {
     initMonitoring();
