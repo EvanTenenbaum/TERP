@@ -127,7 +127,7 @@ export const rbacUsersRouter = router({
             permissionName: permissions.name,
             permissionDescription: permissions.description,
             granted: userPermissionOverrides.granted,
-            createdAt: userPermissionOverrides.createdAt,
+            grantedAt: userPermissionOverrides.grantedAt,
           })
           .from(userPermissionOverrides)
           .innerJoin(permissions, eq(userPermissionOverrides.permissionId, permissions.id))
@@ -153,7 +153,7 @@ export const rbacUsersRouter = router({
             permissionName: o.permissionName,
             permissionDescription: o.permissionDescription,
             granted: o.granted === 1,
-            createdAt: o.createdAt,
+            createdAt: o.grantedAt,
           })),
         };
       } catch (error) {
@@ -589,20 +589,19 @@ export const rbacUsersRouter = router({
           };
         }
 
-        const userId = ctx.user.id;
+        const userId = String(ctx.user.id);
 
-        // Check if user is Super Admin
+        // Check if user is Super Admin (check by role name since isSuperAdmin column doesn't exist)
         const userRoleRecords = await db
           .select({
             roleId: userRoles.roleId,
             roleName: roles.name,
-            isSuperAdmin: roles.isSuperAdmin,
           })
           .from(userRoles)
           .innerJoin(roles, eq(userRoles.roleId, roles.id))
           .where(eq(userRoles.userId, userId));
 
-        const isSuperAdmin = userRoleRecords.some(r => r.isSuperAdmin);
+        const isSuperAdmin = userRoleRecords.some(r => r.roleName === 'Super Admin');
 
         // If Super Admin, return all permissions
         if (isSuperAdmin) {

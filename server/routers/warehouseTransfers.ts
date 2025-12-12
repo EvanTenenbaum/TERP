@@ -45,7 +45,7 @@ export const warehouseTransfersRouter = router({
             throw new Error("Source location not found");
           }
 
-          const currentQty = parseFloat(fromLocation.quantity);
+          const currentQty = parseFloat(fromLocation.qty);
           const transferQty = parseFloat(input.quantity);
 
           if (currentQty < transferQty) {
@@ -61,7 +61,7 @@ export const warehouseTransfersRouter = router({
             // Update quantity
             await tx
               .update(batchLocations)
-              .set({ quantity: newQty.toString() })
+              .set({ qty: newQty.toString() })
               .where(eq(batchLocations.id, input.fromLocationId));
           }
         }
@@ -84,13 +84,13 @@ export const warehouseTransfersRouter = router({
 
         if (existingToLocation) {
           // Add to existing location
-          const currentQty = parseFloat(existingToLocation.quantity);
+          const currentQty = parseFloat(existingToLocation.qty);
           const transferQty = parseFloat(input.quantity);
           const newQty = currentQty + transferQty;
 
           await tx
             .update(batchLocations)
-            .set({ quantity: newQty.toString() })
+            .set({ qty: newQty.toString() })
             .where(eq(batchLocations.id, existingToLocation.id));
         } else {
           // Create new location record
@@ -101,7 +101,7 @@ export const warehouseTransfersRouter = router({
             rack: input.toRack,
             shelf: input.toShelf,
             bin: input.toBin,
-            quantity: input.quantity,
+            qty: input.quantity,
           });
         }
 
@@ -114,7 +114,7 @@ export const warehouseTransfersRouter = router({
           quantityAfter: "0", // Not applicable for transfers
           referenceType: "WAREHOUSE_TRANSFER",
           referenceId: null,
-          notes: input.notes || `Transfer to ${input.toSite}${input.toZone ? `/${input.toZone}` : ""}${input.toRack ? `/${input.toRack}` : ""}${input.toShelf ? `/${input.toShelf}` : ""}${input.toBin ? `/${input.toBin}` : ""}`,
+          reason: input.notes || `Transfer to ${input.toSite}${input.toZone ? `/${input.toZone}` : ""}${input.toRack ? `/${input.toRack}` : ""}${input.toShelf ? `/${input.toShelf}` : ""}${input.toBin ? `/${input.toBin}` : ""}`,
           performedBy: input.performedBy,
         });
 

@@ -2,7 +2,7 @@ import { router, publicProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { grades, categories, subcategories, locations } from "../../drizzle/schema";
-import { eq, isNull } from "drizzle-orm";
+import { eq, isNull, and } from "drizzle-orm";
 // Static import - esbuild bundles this at build time, solving path resolution and TypeScript compilation
 import { seedRealisticData } from "../../scripts/seed-realistic-main";
 
@@ -84,11 +84,10 @@ const subcategoriesRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      let query = db.select().from(subcategories).where(isNull(subcategories.deletedAt));
       if (input?.categoryId) {
-        query = query.where(eq(subcategories.categoryId, input.categoryId)) as typeof query;
+        return db.select().from(subcategories).where(and(isNull(subcategories.deletedAt), eq(subcategories.categoryId, input.categoryId)));
       }
-      return query;
+      return db.select().from(subcategories).where(isNull(subcategories.deletedAt));
     }),
   create: publicProcedure
     .input(z.object({ categoryId: z.number(), name: z.string().min(1), description: z.string().optional() }))

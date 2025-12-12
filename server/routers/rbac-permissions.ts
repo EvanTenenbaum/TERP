@@ -38,25 +38,31 @@ export const rbacPermissionsRouter = router({
 
 
         
-        // Build query
-        let query = db
-          .select({
-            id: permissions.id,
-            name: permissions.name,
-            description: permissions.description,
-            module: permissions.module,
-            createdAt: permissions.createdAt,
-          })
-          .from(permissions);
-
-        // Filter by module if specified
-        if (input.module) {
-          query = query.where(eq(permissions.module, input.module));
-        }
-
-        const permissionRecords = await query
-          .limit(input.limit)
-          .offset(input.offset);
+        // Build query - use conditional where clause
+        const permissionRecords = input.module
+          ? await db
+              .select({
+                id: permissions.id,
+                name: permissions.name,
+                description: permissions.description,
+                module: permissions.module,
+                createdAt: permissions.createdAt,
+              })
+              .from(permissions)
+              .where(eq(permissions.module, input.module))
+              .limit(input.limit)
+              .offset(input.offset)
+          : await db
+              .select({
+                id: permissions.id,
+                name: permissions.name,
+                description: permissions.description,
+                module: permissions.module,
+                createdAt: permissions.createdAt,
+              })
+              .from(permissions)
+              .limit(input.limit)
+              .offset(input.offset);
 
         // Filter by search term if specified (client-side for simplicity)
         let filteredPermissions = permissionRecords;

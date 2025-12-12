@@ -78,7 +78,7 @@ export async function getCatalog(
     return { items: [], total: 0 };
   }
 
-  const liveCatalogConfig = config.featuresConfig?.liveCatalog;
+  const liveCatalogConfig = (config.featuresConfig as { liveCatalog?: { visibleCategories?: number[]; hiddenItems?: number[]; visibleItems?: number[]; showBasePrice?: boolean; showMarkup?: boolean; showQuantity?: boolean } } | undefined)?.liveCatalog;
 
   // Build WHERE clause for batches
   const conditions = [
@@ -158,7 +158,7 @@ export async function getCatalog(
     id: batch.id,
     name: batch.sku || `Batch #${batch.id}`,
     category: product?.category,
-    subcategory: product?.subcategory,
+    subcategory: product?.subcategory ?? undefined,
     strain: undefined,
     basePrice: parseFloat(batch.unitCogs || '0'),
     quantity: parseFloat(batch.onHandQty || '0'),
@@ -225,7 +225,7 @@ export async function getCatalog(
       batchId: item.id,
       itemName: item.name,
       category: item.category,
-      subcategory: item.subcategory,
+      subcategory: item.subcategory ?? undefined,
       brand: undefined, // TODO: Get brand from brandId
       grade: item.grade,
       date: undefined, // TODO: Get from batch

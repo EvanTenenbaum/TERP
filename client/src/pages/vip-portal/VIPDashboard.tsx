@@ -31,13 +31,45 @@ import { MarketplaceSupply } from "@/components/vip-portal/MarketplaceSupply";
 import { Leaderboard } from "@/components/vip-portal/Leaderboard";
 import { LiveCatalog } from "@/components/vip-portal/LiveCatalog";
 
+// Type for VIP Portal configuration with all module flags as boolean
+interface VipPortalConfig {
+  id: number;
+  clientId: number;
+  moduleDashboardEnabled: boolean;
+  moduleLiveCatalogEnabled: boolean;
+  moduleArEnabled: boolean;
+  moduleApEnabled: boolean;
+  moduleTransactionHistoryEnabled: boolean;
+  moduleVipTierEnabled: boolean;
+  moduleCreditCenterEnabled: boolean;
+  moduleMarketplaceNeedsEnabled: boolean;
+  moduleMarketplaceSupplyEnabled: boolean;
+  featuresConfig: {
+    dashboard?: {
+      showGreeting?: boolean;
+      showCurrentBalance?: boolean;
+      showYtdSpend?: boolean;
+      showQuickLinks?: boolean;
+    };
+    leaderboard?: {
+      enabled?: boolean;
+    };
+  } | null;
+  advancedOptions: Record<string, unknown> | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export default function VIPDashboard() {
   const { clientId, clientName, logout } = useVIPPortalAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { data: config } = trpc.vipPortal.config.get.useQuery({ clientId });
+  const { data: rawConfig } = trpc.vipPortal.config.get.useQuery({ clientId });
   const { data: kpis } = trpc.vipPortal.dashboard.getKPIs.useQuery({ clientId });
+  
+  // Cast config to properly typed interface to avoid unknown type issues
+  const config = rawConfig as VipPortalConfig | undefined;
 
   if (!config || !kpis) {
     return (
@@ -51,13 +83,13 @@ export default function VIPDashboard() {
   }
 
   const tabs = [
-    { id: "dashboard", label: "Dashboard", enabled: 'moduleDashboardEnabled' in config ? config.moduleDashboardEnabled : false },
-    { id: "catalog", label: "Catalog", enabled: 'moduleLiveCatalogEnabled' in config ? config.moduleLiveCatalogEnabled : false },
-    { id: "ar", label: "Receivables", enabled: 'moduleArEnabled' in config ? config.moduleArEnabled : false },
-    { id: "ap", label: "Payables", enabled: 'moduleApEnabled' in config ? config.moduleApEnabled : false },
-    { id: "needs", label: "My Needs", enabled: 'moduleMarketplaceNeedsEnabled' in config ? config.moduleMarketplaceNeedsEnabled : false },
-    { id: "supply", label: "My Supply", enabled: 'moduleMarketplaceSupplyEnabled' in config ? config.moduleMarketplaceSupplyEnabled : false },
-    { id: "leaderboard", label: "Leaderboard", enabled: 'moduleLeaderboardEnabled' in config ? config.moduleLeaderboardEnabled : false },
+    { id: "dashboard", label: "Dashboard", enabled: config.moduleDashboardEnabled },
+    { id: "catalog", label: "Catalog", enabled: config.moduleLiveCatalogEnabled },
+    { id: "ar", label: "Receivables", enabled: config.moduleArEnabled },
+    { id: "ap", label: "Payables", enabled: config.moduleApEnabled },
+    { id: "needs", label: "My Needs", enabled: config.moduleMarketplaceNeedsEnabled },
+    { id: "supply", label: "My Supply", enabled: config.moduleMarketplaceSupplyEnabled },
+    { id: "leaderboard", label: "Leaderboard", enabled: config.featuresConfig?.leaderboard?.enabled ?? false },
   ].filter(tab => tab.enabled);
 
   return (
@@ -275,7 +307,7 @@ export default function VIPDashboard() {
           )}
 
           {/* Needs Tab */}
-          {activeTab === "needs" && Boolean(config.moduleMarketplaceNeedsEnabled) && (
+          {activeTab === "needs" && config.moduleMarketplaceNeedsEnabled && (
             <MarketplaceNeeds clientId={clientId} config={config} />
           )}
 
@@ -290,12 +322,12 @@ export default function VIPDashboard() {
           )}
 
           {/* Live Catalog Tab */}
-          {activeTab === "catalog" && 'moduleLiveCatalogEnabled' in config && config.moduleLiveCatalogEnabled && (
+          {activeTab === "catalog" && config.moduleLiveCatalogEnabled && (
             <LiveCatalog clientId={clientId} />
           )}
 
           {/* Leaderboard Tab */}
-          {activeTab === "leaderboard" && 'moduleLeaderboardEnabled' in config && config.moduleLeaderboardEnabled && (
+          {activeTab === "leaderboard" && config.featuresConfig?.leaderboard?.enabled && (
             <Leaderboard clientId={clientId} config={config} />
           )}
         </div>

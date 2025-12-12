@@ -99,9 +99,14 @@ export const purchaseOrdersRouter = router({
       }
 
       if (input?.status) {
-        const validStatuses = ["DRAFT", "SENT", "CONFIRMED", "PARTIALLY_RECEIVED", "RECEIVED", "CANCELLED"] as const;
-        if (validStatuses.includes(input.status as typeof validStatuses[number])) {
-          query = query.where(eq(purchaseOrders.purchaseOrderStatus, input.status as typeof validStatuses[number])) as typeof query;
+        // Map PARTIALLY_RECEIVED to RECEIVING for schema compatibility
+        const statusMap: Record<string, string> = {
+          "PARTIALLY_RECEIVED": "RECEIVING"
+        };
+        const mappedStatus = statusMap[input.status] || input.status;
+        const validStatuses = ["DRAFT", "SENT", "CONFIRMED", "RECEIVING", "RECEIVED", "CANCELLED"] as const;
+        if (validStatuses.includes(mappedStatus as typeof validStatuses[number])) {
+          query = query.where(eq(purchaseOrders.purchaseOrderStatus, mappedStatus as typeof validStatuses[number])) as typeof query;
         }
       }
 

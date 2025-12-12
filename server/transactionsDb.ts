@@ -227,7 +227,7 @@ export async function linkTransactions(
     const [link] = await db.insert(transactionLinks).values({
       parentTransactionId: parentId,
       childTransactionId: childId,
-      linkType,
+      transactionLinkType: linkType,
       linkAmount,
       notes,
       createdBy

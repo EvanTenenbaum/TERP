@@ -39,8 +39,8 @@ export async function createSampleRequest(
       clientId,
       requestedBy,
       requestDate: new Date(),
-      products: products as any,
-      status: "PENDING",
+      products: products as { productId: number; quantity: string }[],
+      sampleRequestStatus: "PENDING",
       notes
     });
 
@@ -139,7 +139,7 @@ export async function fulfillSampleRequest(
     // Update sample request
     await db.update(sampleRequests)
       .set({
-        status: "FULFILLED",
+        sampleRequestStatus: "FULFILLED",
         fulfilledDate: new Date(),
         fulfilledBy,
         totalCost: totalCost.toFixed(2),
@@ -178,7 +178,7 @@ export async function cancelSampleRequest(
   try {
     await db.update(sampleRequests)
       .set({
-        status: "CANCELLED",
+        sampleRequestStatus: "CANCELLED",
         cancelledDate: new Date(),
         cancelledBy,
         cancellationReason: reason,
