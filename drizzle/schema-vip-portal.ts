@@ -95,8 +95,8 @@ export const vipPortalConfigurations = mysqlTable("vip_portal_configurations", {
     };
     leaderboard?: {
       enabled?: boolean;
-      type?: string;
-      displayMode?: string;
+      type?: 'ytd_spend' | 'payment_speed' | 'order_frequency' | 'credit_utilization' | 'ontime_payment_rate';
+      displayMode?: 'black_box' | 'transparent';
       minimumClients?: number;
       metrics?: string[];
       showSuggestions?: boolean;
