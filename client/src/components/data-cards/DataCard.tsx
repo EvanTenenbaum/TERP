@@ -1,4 +1,3 @@
-javascript
 /**
  * DataCard Component
  * Individual clickable card displaying a single metric
