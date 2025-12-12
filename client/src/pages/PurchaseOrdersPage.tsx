@@ -42,8 +42,17 @@ export default function PurchaseOrdersPage() {
 
   // Fetch data
   const { data: pos = [], refetch } = trpc.purchaseOrders.getAll.useQuery();
-  const { data: vendors = [] } = trpc.vendors.getAll.useQuery();
-  const { data: products = [] } = trpc.inventory.getAll.useQuery();
+  const { data: vendorsResponse } = trpc.vendors.getAll.useQuery();
+  const vendors = useMemo(() => {
+    if (!vendorsResponse) return [];
+    if ('success' in vendorsResponse && vendorsResponse.success && 'data' in vendorsResponse) {
+      return vendorsResponse.data;
+    }
+    if (Array.isArray(vendorsResponse)) return vendorsResponse;
+    return [];
+  }, [vendorsResponse]);
+  const { data: productsData } = trpc.inventory.list.useQuery({});
+  const products = productsData?.items ?? [];
 
   // Mutations
   const createPO = trpc.purchaseOrders.create.useMutation({
@@ -510,8 +519,8 @@ export default function PurchaseOrdersPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleCreatePO} disabled={createPO.isLoading}>
-              {createPO.isLoading ? "Creating..." : "Create Purchase Order"}
+            <Button onClick={handleCreatePO} disabled={createPO.isPending}>
+              {createPO.isPending ? "Creating..." : "Create Purchase Order"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -539,9 +548,9 @@ export default function PurchaseOrdersPage() {
               onClick={() =>
                 selectedPO && deletePO.mutate({ id: selectedPO.id })
               }
-              disabled={deletePO.isLoading}
+              disabled={deletePO.isPending}
             >
-              {deletePO.isLoading ? "Deleting..." : "Delete"}
+              {deletePO.isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

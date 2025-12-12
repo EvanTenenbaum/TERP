@@ -64,10 +64,15 @@ export default function MatchmakingServicePage() {
   const allMatches = matchesData?.data || [];
 
   // Get top suggested matches (sorted by confidence)
+  interface MatchItem {
+    matches: Array<{ confidence: number; [key: string]: unknown }>;
+    clientNeedId: number;
+    clientId: number;
+  }
   const topMatches = allMatches
-    .filter(m => m.matches.length > 0)
-    .flatMap(m =>
-      m.matches.map(match => ({
+    .filter((m: MatchItem) => m.matches.length > 0)
+    .flatMap((m: MatchItem) =>
+      m.matches.map((match: { confidence: number; [key: string]: unknown }) => ({
         ...match,
         clientNeedId: m.clientNeedId,
         clientId: m.clientId,

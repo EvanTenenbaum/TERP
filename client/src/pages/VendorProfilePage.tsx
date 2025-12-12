@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { trpc } from "../lib/trpc";
 import { Button } from "../components/ui/button";
 import {
@@ -88,25 +88,21 @@ export default function VendorProfilePage() {
   });
 
   // Fetch vendor details
-  const { data: vendorResponse, isLoading } = useQuery({
-    queryKey: ["vendor", id],
-    queryFn: async () => {
-      const result = await trpc.vendors.getById.query({ id: Number(id) });
-      if (!result.success) throw new Error(result.error);
-      return result.data;
-    },
-    enabled: !!id,
-  });
+  const { data: vendorResponse, isLoading } = trpc.vendors.getById.useQuery(
+    { id: Number(id) },
+    { enabled: !!id }
+  );
 
-  const vendor = vendorResponse as Vendor | undefined;
+  const vendor = useMemo(() => {
+    if (!vendorResponse) return undefined;
+    if ('success' in vendorResponse && vendorResponse.success && 'data' in vendorResponse) {
+      return vendorResponse.data as Vendor;
+    }
+    return vendorResponse as Vendor;
+  }, [vendorResponse]);
 
   // Update vendor mutation
-  const updateMutation = useMutation({
-    mutationFn: async (data: VendorFormData & { id: number }) => {
-      const result = await trpc.vendors.update.mutate(data);
-      if (!result.success) throw new Error(result.error);
-      return result.data;
-    },
+  const updateMutation = trpc.vendors.update.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor", id] });
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
@@ -116,7 +112,7 @@ export default function VendorProfilePage() {
         description: "Vendor information has been updated successfully.",
       });
     },
-    onError: _error => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update vendor. Please try again.",

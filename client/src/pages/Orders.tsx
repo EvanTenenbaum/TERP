@@ -90,7 +90,7 @@ export default function Orders() {
   }, {
     refetchOnMount: 'always',
     staleTime: 0,
-    cacheTime: 0,
+    gcTime: 0,
   });
 
   // Debug logging removed - use browser DevTools Network tab for API debugging

@@ -65,12 +65,16 @@ export default function OrderCreatorPageV2() {
     { 
       enabled: !!clientId && clientId > 0,
       retry: false,
-      onError: (error) => {
-        console.error("Failed to load inventory:", error);
-        toast.error(`Failed to load inventory: ${error.message || "Unknown error"}`);
-      }
     }
   );
+  
+  // Handle inventory error with useEffect
+  React.useEffect(() => {
+    if (inventoryError) {
+      console.error("Failed to load inventory:", inventoryError);
+      toast.error(`Failed to load inventory: ${inventoryError.message || "Unknown error"}`);
+    }
+  }, [inventoryError]);
 
   // Calculations
   const { totals, warnings, isValid } = useOrderCalculations(items, adjustment);
@@ -404,7 +408,7 @@ export default function OrderCreatorPageV2() {
                   className="w-full"
                   variant="outline"
                   onClick={handleSaveDraft}
-                  disabled={items.length === 0 || createDraftMutation.isLoading}
+                  disabled={items.length === 0 || createDraftMutation.isPending}
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Save as Draft
@@ -413,7 +417,7 @@ export default function OrderCreatorPageV2() {
                 <Button
                   className="w-full"
                   onClick={handlePreviewAndFinalize}
-                  disabled={!isValid || finalizeMutation.isLoading}
+                  disabled={!isValid || finalizeMutation.isPending}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Preview & Finalize
