@@ -28,12 +28,12 @@ try {
   replaysSessionSampleRate: 0.1, // 10% of sessions
   replaysOnErrorSampleRate: 1.0, // 100% of sessions with errors
   
+  // Trace propagation targets for distributed tracing
+  tracePropagationTargets: ["localhost", /^https:\/\/.*\.terp\.app/],
+  
   integrations: [
     // Browser tracing for performance monitoring
-    Sentry.browserTracingIntegration({
-      // Trace React Router navigation
-      tracePropagationTargets: ["localhost", /^https:\/\/.*\.terp\.app/],
-    }),
+    Sentry.browserTracingIntegration(),
     
     // Session replay for debugging
     Sentry.replayIntegration({

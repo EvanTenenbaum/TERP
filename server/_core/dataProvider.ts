@@ -38,13 +38,6 @@ export interface DataProvider {
   getUserByEmail(email: string): Promise<User | null>;
 
   /**
-   * Access to Drizzle query builder
-   *
-   * For complex queries that need the full power of Drizzle ORM
-   */
-  query: typeof db.query;
-
-  /**
    * Get the name of the current data provider
    *
    * @returns Provider name (e.g., 'drizzle', 'redis', 'offline')
@@ -59,15 +52,13 @@ export interface DataProvider {
  */
 class DrizzleDataProvider implements DataProvider {
   async getUser(userId: string): Promise<User | null> {
-    return db.getUser(userId);
+    const user = await db.getUser(userId);
+    return user ?? null;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
-    return db.getUserByEmail(email);
-  }
-
-  get query() {
-    return db.query;
+    const user = await db.getUserByEmail(email);
+    return user ?? null;
   }
 
   getProvider(): string {
