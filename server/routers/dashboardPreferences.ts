@@ -39,7 +39,7 @@ const widgetConfigSchema = z.object({
   id: z.string(),
   isVisible: z.boolean(),
   order: z.number().optional(),
-  settings: z.record(z.any()).optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

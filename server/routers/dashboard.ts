@@ -330,11 +330,17 @@ export const dashboardRouter = router({
               customerName: `Customer ${customerId}`, // Will be updated with actual name below
               revenue: 0,
               cost: 0,
+              profitMargin: 0,
             };
           }
           acc[customerId].revenue += Number(inv.totalAmount || 0);
           // Simplified: assume 60% margin
           acc[customerId].cost += Number(inv.totalAmount || 0) * 0.4;
+          // Calculate profit margin
+          const profit = acc[customerId].revenue - acc[customerId].cost;
+          acc[customerId].profitMargin = acc[customerId].revenue > 0 
+            ? (profit / acc[customerId].revenue) * 100 
+            : 0;
           return acc;
         }, {});
         
