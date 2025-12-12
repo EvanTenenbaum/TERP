@@ -82,6 +82,13 @@ export const env = {
   get initialAdminPassword() {
     return process.env.INITIAL_ADMIN_PASSWORD ?? "";
   },
+  // Public demo user (for unauthenticated access)
+  get PUBLIC_DEMO_USER_EMAIL() {
+    return process.env.PUBLIC_DEMO_USER_EMAIL ?? "demo+public@terp-app.local";
+  },
+  get PUBLIC_DEMO_USER_ID() {
+    return process.env.PUBLIC_DEMO_USER_ID ?? "public-demo-user";
+  },
 };
 
 // Legacy export for compatibility
