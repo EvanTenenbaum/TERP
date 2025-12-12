@@ -311,7 +311,7 @@ export async function getBatchesNotInQueue(
       .select()
       .from(batches)
       .where(
-        sql`${batches.statusId} IS NULL AND (${batches.sku} LIKE ${searchTerm} OR ${batches.productName} LIKE ${searchTerm})`
+        sql`${batches.statusId} IS NULL AND (${batches.sku} LIKE ${searchTerm} OR ${batches.code} LIKE ${searchTerm})`
       )
       .orderBy(desc(batches.createdAt))
       .limit(limit) as typeof batchQuery;
