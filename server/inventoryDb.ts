@@ -1295,8 +1295,9 @@ export async function getProfitabilitySummary() {
   let totalUnits = 0;
   const batchIds = new Set<number>();
 
-  // Cache batches to avoid repeated queries
-  const batchCache = new Map<number, { unitCogs: string; onHandQty: string }>();
+  // Cache batches to avoid repeated queries - use Pick to only cache needed fields
+  type BatchCacheEntry = Pick<typeof batches.$inferSelect, 'unitCogs' | 'onHandQty'>;
+  const batchCache = new Map<number, BatchCacheEntry>();
 
   for (const order of allOrders) {
     if (!order.items) continue;
@@ -1321,7 +1322,7 @@ export async function getProfitabilitySummary() {
         // Get batch cost (with caching)
         if (!batchCache.has(item.batchId)) {
           const [batch] = await db
-            .select()
+            .select({ unitCogs: batches.unitCogs, onHandQty: batches.onHandQty })
             .from(batches)
             .where(eq(batches.id, item.batchId));
           if (batch) {
