@@ -268,7 +268,7 @@ export default function VendorsPage() {
 
   const handleDelete = (id: number) => {
     if (window.confirm("Are you sure you want to delete this vendor?")) {
-      deleteMutation.mutate(id);
+      deleteMutation.mutate({ id });
     }
   };
 

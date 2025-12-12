@@ -64,7 +64,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
   const [brandFilter, setBrandFilter] = useState<string[]>([]);
   const [gradeFilter, setGradeFilter] = useState<string[]>([]);
-  const [stockFilter, setStockFilter] = useState<string | undefined>();
+  const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | undefined>();
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [sortBy, setSortBy] = useState<string>("name");
   const [page, setPage] = useState(0);
@@ -82,8 +82,8 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   const [targetPrice, setTargetPrice] = useState<string>("");
 
   // Fetch client configuration to check if price alerts are enabled
-  const { data: clientConfig } = trpc.vipPortal.getConfig.useQuery({ clientId });
-  const priceAlertsEnabled = clientConfig?.featuresConfig?.liveCatalog?.enablePriceAlerts ?? false;
+  const { data: clientConfig } = trpc.vipPortal.config.get.useQuery({ clientId });
+  const priceAlertsEnabled = (clientConfig?.featuresConfig as { liveCatalog?: { enablePriceAlerts?: boolean } } | null)?.liveCatalog?.enablePriceAlerts ?? false;
 
   // Fetch catalog
   const {
@@ -91,15 +91,14 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     isLoading: catalogLoading,
     refetch: refetchCatalog,
   } = trpc.vipPortal.liveCatalog.get.useQuery({
-    clientId,
     search: search || undefined,
     category: categoryFilter,
-    brands: brandFilter.length > 0 ? brandFilter : undefined,
-    grades: gradeFilter.length > 0 ? gradeFilter : undefined,
+    brand: brandFilter.length > 0 ? brandFilter : undefined,
+    grade: gradeFilter.length > 0 ? gradeFilter : undefined,
     stockLevel: stockFilter === 'all' ? undefined : (stockFilter as 'in_stock' | 'low_stock' | undefined),
-    minPrice: priceRange[0],
-    maxPrice: priceRange[1],
-    sortBy: sortBy as any,
+    priceMin: priceRange[0],
+    priceMax: priceRange[1],
+    sortBy: sortBy as 'name' | 'price' | 'category' | 'date',
     limit,
     offset: page * limit,
   });
@@ -349,7 +348,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     });
   };
 
-  const handleLoadView = (view: any) => {
+  const handleLoadView = (view: { name: string; filters: { search?: string; category?: string; brands?: string[]; grades?: string[]; stockLevel?: 'all' | 'in_stock' | 'low_stock'; minPrice?: number; maxPrice?: number }; sortBy?: string }) => {
     setSearch(view.filters.search || "");
     setCategoryFilter(view.filters.category);
     setBrandFilter(view.filters.brands || []);
