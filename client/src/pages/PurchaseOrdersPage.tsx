@@ -138,7 +138,7 @@ export default function PurchaseOrdersPage() {
           .includes(searchQuery.toLowerCase());
 
       const matchesStatus =
-        statusFilter === "all" || po.status === statusFilter;
+        statusFilter === "all" || po.purchaseOrderStatus === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -297,7 +297,7 @@ export default function PurchaseOrdersPage() {
                   <TableCell>
                     {formatDate(po.expectedDeliveryDate)}
                   </TableCell>
-                  <TableCell>{getStatusBadge(po.status)}</TableCell>
+                  <TableCell>{getStatusBadge(po.purchaseOrderStatus)}</TableCell>
                   <TableCell>${parseFloat(po.total).toFixed(2)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">

@@ -68,8 +68,8 @@ export class InstanceGenerationService {
       .where(
         and(
           eq(calendarRecurrenceInstances.parentEventId, eventId),
-          gte(calendarRecurrenceInstances.instanceDate, today.toISOString().split("T")[0]),
-          lte(calendarRecurrenceInstances.instanceDate, endDate.toISOString().split("T")[0])
+          gte(calendarRecurrenceInstances.instanceDate, today),
+          lte(calendarRecurrenceInstances.instanceDate, endDate)
         )
       );
 
@@ -280,7 +280,7 @@ export class InstanceGenerationService {
       .where(
         and(
           eq(calendarRecurrenceInstances.parentEventId, parentEventId),
-          eq(calendarRecurrenceInstances.instanceDate, instanceDate)
+          eq(calendarRecurrenceInstances.instanceDate, new Date(instanceDate))
         )
       )
       .limit(1);
@@ -324,7 +324,7 @@ export class InstanceGenerationService {
       .where(
         and(
           eq(calendarRecurrenceInstances.parentEventId, parentEventId),
-          eq(calendarRecurrenceInstances.instanceDate, instanceDate)
+          eq(calendarRecurrenceInstances.instanceDate, new Date(instanceDate))
         )
       );
   }
@@ -346,8 +346,8 @@ export class InstanceGenerationService {
       .where(
         and(
           eq(calendarRecurrenceInstances.parentEventId, parentEventId),
-          gte(calendarRecurrenceInstances.instanceDate, startDate),
-          lte(calendarRecurrenceInstances.instanceDate, endDate)
+          gte(calendarRecurrenceInstances.instanceDate, new Date(startDate)),
+          lte(calendarRecurrenceInstances.instanceDate, new Date(endDate))
         )
       );
   }
@@ -362,13 +362,16 @@ export class InstanceGenerationService {
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-    const cutoffDateString = cutoffDate.toISOString().split("T")[0];
 
     const result = await db
       .delete(calendarRecurrenceInstances)
-      .where(lte(calendarRecurrenceInstances.instanceDate, cutoffDateString));
+      .where(lte(calendarRecurrenceInstances.instanceDate, cutoffDate));
 
-    return result.rowsAffected || 0;
+    // MySQL returns result as array, extract affected rows
+    const affectedRows = Array.isArray(result) 
+      ? (result[0] as { affectedRows?: number })?.affectedRows ?? 0 
+      : 0;
+    return affectedRows;
   }
 }
 

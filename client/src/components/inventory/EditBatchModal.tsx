@@ -63,7 +63,7 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
   useEffect(() => {
     if (batch) {
       setFormData({
-        status: batch.batch.status,
+        status: batch.batch.batchStatus,
         locationZone: batch.locations?.[0]?.zone || "",
         locationRack: batch.locations?.[0]?.rack || "",
         locationShelf: batch.locations?.[0]?.shelf || "",
@@ -129,7 +129,7 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
               </div>
               <div>
                 <Label className="text-sm text-gray-600">Current Status</Label>
-                <p className="font-medium">{batch?.batch.status}</p>
+                <p className="font-medium">{batch?.batch.batchStatus}</p>
               </div>
               <div>
                 <Label className="text-sm text-gray-600">Quantity</Label>
