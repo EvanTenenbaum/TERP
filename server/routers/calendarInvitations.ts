@@ -194,7 +194,7 @@ export const calendarInvitationsRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission to edit event
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         userId,
         input.eventId,
         "EDIT"
@@ -314,7 +314,7 @@ export const calendarInvitationsRouter = router({
       }
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         userId,
         invitation.eventId,
         "EDIT"
@@ -677,7 +677,7 @@ export const calendarInvitationsRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         userId,
         input.eventId,
         "VIEW"
@@ -748,7 +748,7 @@ export const calendarInvitationsRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         userId,
         input.eventId,
         "EDIT"
@@ -870,7 +870,7 @@ export const calendarInvitationsRouter = router({
       }
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         userId,
         invitation.eventId,
         "EDIT"
@@ -929,7 +929,7 @@ export const calendarInvitationsRouter = router({
       }
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.hasPermission(
         userId,
         invitation.eventId,
         "VIEW"
