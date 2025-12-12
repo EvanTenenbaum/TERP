@@ -150,6 +150,7 @@ export function NeedForm({
       // Reset form on success
       setFormData({
         strain: "",
+        productName: "",
         strainId: null,
         category: "",
         subcategory: "",

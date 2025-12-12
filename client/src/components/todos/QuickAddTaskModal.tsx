@@ -81,7 +81,7 @@ export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
       setTimeout(() => {
         const input = document.querySelector(
           '[data-quick-add-title]'
-        ) as { focus?: () => void } | null;
+        ) as HTMLInputElement | null;
         input?.focus();
       }, 100);
     }

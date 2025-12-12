@@ -108,6 +108,7 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
     setEditingSupply(supply);
     setFormData({
       strain: supply.strain,
+      productName: supply.productName || "",
       category: supply.category,
       quantity: supply.quantity.toString(),
       unit: supply.unit,

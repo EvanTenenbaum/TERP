@@ -46,7 +46,8 @@ export default function EventInvitationDialog({
 
   // Queries
   const { data: users } = trpc.userManagement.listUsers.useQuery();
-  const { data: clients } = trpc.clients.getAllClients.useQuery();
+  const { data: clientsData } = trpc.clients.list.useQuery({});
+  const clients = clientsData?.clients ?? [];
   const { data: existingInvitations, refetch: refetchInvitations } =
     trpc.calendarInvitations.getInvitationsByEvent.useQuery({ eventId });
 
@@ -135,7 +136,7 @@ export default function EventInvitationDialog({
       return user?.name || `User #${invitee.userId}`;
     }
     if (invitee.inviteeType === "CLIENT" && invitee.clientId) {
-      const client = clients?.find(c => c.id === invitee.clientId);
+      const client = clients?.find((c: { id: number; name: string }) => c.id === invitee.clientId);
       return client?.name || `Client #${invitee.clientId}`;
     }
     if (invitee.inviteeType === "EXTERNAL") {
@@ -278,7 +279,7 @@ export default function EventInvitationDialog({
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
                 >
                   <option value="">Choose a client...</option>
-                  {clients?.map(client => (
+                  {clients?.map((client: { id: number; name: string }) => (
                     <option key={client.id} value={client.id}>
                       {client.name}
                     </option>
