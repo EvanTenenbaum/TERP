@@ -408,19 +408,11 @@ export async function seedRealisticData() {
   }
 }
 
-// Run the seed function only if called directly (not imported)
-// Check if this is the main module
-if (import.meta.url === `file://${process.argv[1]}` || 
-    process.argv[1]?.includes("seed-realistic-main") ||
-    process.argv[1]?.endsWith("seed-realistic-main.ts") ||
-    process.argv[1]?.endsWith("seed-realistic-main.js")) {
-  seedRealisticData()
-    .then(() => {
-      console.log("✅ Seeding completed successfully");
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error("❌ Seeding failed:", error);
-      process.exit(1);
-    });
-}
+// IMPORTANT:
+// Do NOT auto-run this module.
+//
+// This file is imported into the server bundle (see `server/routers/settings.ts`),
+// and when bundled by esbuild into `dist/index.js`, "main module" checks can
+// accidentally evaluate true and cause seeding to run during normal web startup.
+//
+// Use `scripts/seed-realistic-runner.ts` as the CLI entrypoint instead.
