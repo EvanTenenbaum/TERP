@@ -27,11 +27,6 @@ export function startPriceAlertsCron() {
       console.log(`[Cron] [${timestamp}] Price alerts check complete:`);
       console.log(`  - Alerts checked: ${result.checked}`);
       console.log(`  - Alerts triggered: ${result.triggered}`);
-      console.log(`  - Notifications sent: ${result.notificationsSent}`);
-      
-      if (result.errors && result.errors.length > 0) {
-        console.error(`[Cron] [${timestamp}] Errors during price alert check:`, result.errors);
-      }
     } catch (error) {
       console.error(`[Cron] [${timestamp}] Fatal error running price alerts check:`, error);
     }

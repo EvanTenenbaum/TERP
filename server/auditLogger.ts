@@ -267,9 +267,9 @@ export async function logInventoryMovement(
   userId: number
 ): Promise<void> {
   const eventType =
-    movement.inventoryMovementType === "SALE"
+    movement.movementType === "SALE"
       ? AuditEventType.INVENTORY_DECREASED
-      : movement.inventoryMovementType === "REFUND_RETURN"
+      : movement.movementType === "REFUND_RETURN"
         ? AuditEventType.INVENTORY_INCREASED
         : AuditEventType.INVENTORY_ADJUSTED;
 
@@ -280,7 +280,7 @@ export async function logInventoryMovement(
     userId,
     metadata: {
       batchId: movement.batchId,
-      movementType: movement.inventoryMovementType,
+      movementType: movement.movementType,
       quantityChange: movement.quantityChange,
       quantityBefore: movement.quantityBefore,
       quantityAfter: movement.quantityAfter,
