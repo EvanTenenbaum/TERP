@@ -88,7 +88,19 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
   useEffect(() => {
     if (config) {
       setEnabled(config.moduleLiveCatalogEnabled || false);
-      const liveCatalogConfig = config.featuresConfig?.liveCatalog;
+      // Type assertion needed because featuresConfig is a JSON column with flexible structure
+      const featuresConfig = config.featuresConfig as {
+        liveCatalog?: {
+          showQuantity?: boolean;
+          showBrand?: boolean;
+          showGrade?: boolean;
+          showDate?: boolean;
+          showBasePrice?: boolean;
+          showMarkup?: boolean;
+          enablePriceAlerts?: boolean;
+        };
+      } | null;
+      const liveCatalogConfig = featuresConfig?.liveCatalog;
       if (liveCatalogConfig) {
         setShowQuantity(liveCatalogConfig.showQuantity ?? true);
         setShowBrand(liveCatalogConfig.showBrand ?? true);
@@ -865,7 +877,6 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
         <TableRow>
           <TableHead>Product</TableHead>
           <TableHead>Category</TableHead>
-          <TableHead>Brand</TableHead>
           <TableHead>Target Price</TableHead>
           <TableHead>Current Price</TableHead>
           <TableHead>Status</TableHead>
@@ -882,7 +893,6 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
             <TableRow key={alert.id}>
               <TableCell className="font-medium">{alert.productName}</TableCell>
               <TableCell>{alert.category || "N/A"}</TableCell>
-              <TableCell>{alert.brand || "N/A"}</TableCell>
               <TableCell>${alert.targetPrice.toFixed(2)}</TableCell>
               <TableCell>
                 {alert.currentPrice !== null ? (
