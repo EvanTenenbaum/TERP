@@ -1,4 +1,3 @@
-jsx
 import { useState, useEffect, memo } from "react";
 import "./tiptap-styles.css";
 import { useEditor, EditorContent } from "@tiptap/react";
