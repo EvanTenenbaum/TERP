@@ -14,6 +14,9 @@ export interface OrderTotals extends LineItemTotals {
   adjustmentAmount: number;
   finalTotal: number;
   overallMarginPercent: number;
+  avgMarginPercent: number;
+  avgMarginDollar: number;
+  subtotal: number;
 }
 
 export interface OrderAdjustment {
@@ -97,13 +100,19 @@ export const priceCalculationService = {
     const overallMarginPercent =
       finalTotal > 0 ? (finalMargin / finalTotal) * 100 : 0;
 
+    const avgMarginPercent = Math.round(overallMarginPercent * 100) / 100;
+    const avgMarginDollar = Math.round(finalMargin * 100) / 100;
+
     return {
       subtotalCOGS: lineItemTotals.subtotalCOGS,
       subtotalPrice: lineItemTotals.subtotalPrice,
       subtotalMargin: lineItemTotals.subtotalMargin,
       adjustmentAmount,
       finalTotal: Math.round(finalTotal * 100) / 100,
-      overallMarginPercent: Math.round(overallMarginPercent * 100) / 100,
+      overallMarginPercent: avgMarginPercent,
+      avgMarginPercent,
+      avgMarginDollar,
+      subtotal: lineItemTotals.subtotalPrice,
     };
   },
 
