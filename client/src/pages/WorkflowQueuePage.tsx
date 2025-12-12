@@ -255,7 +255,7 @@ export default function WorkflowQueuePage() {
                             {batch.sku || `Batch #${batch.id}`}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {batch.productName || "N/A"} - Qty: {batch.onHandQty || "0"}
+                            {batch.sku || "N/A"} - Qty: {batch.onHandQty || "0"}
                           </div>
                         </div>
                       </div>

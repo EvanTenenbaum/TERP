@@ -59,6 +59,7 @@ export default function CalendarPage() {
     eventType: "eventType" in event ? event.eventType : "MEETING",
     status: "status" in event ? event.status : "SCHEDULED",
     priority: "priority" in event ? event.priority : "MEDIUM",
+    module: "module" in event ? (event.module || "") : "",
   }));
 
   // Handle view change

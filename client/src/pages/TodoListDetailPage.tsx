@@ -21,7 +21,15 @@ export function TodoListDetailPage() {
   const [, setLocation] = useLocation();
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isEditListOpen, setIsEditListOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<unknown>(null);
+  const [editingTask, setEditingTask] = useState<{
+    id: number;
+    title: string;
+    description?: string | null;
+    status: "todo" | "in_progress" | "done";
+    priority?: "low" | "medium" | "high" | "urgent" | null;
+    dueDate?: Date | null;
+    assignedTo?: number | null;
+  } | null>(null);
 
   const utils = trpc.useContext();
 
@@ -69,8 +77,8 @@ export function TodoListDetailPage() {
     },
   });
 
-  const handleToggleComplete = (task: { id: number; completed: boolean }) => {
-    if (task.completed) {
+  const handleToggleComplete = (task: { id: number; status: string }) => {
+    if (task.status === "done") {
       uncomplete.mutate({ taskId: task.id });
     } else {
       toggleComplete.mutate({ taskId: task.id });
@@ -201,7 +209,7 @@ export function TodoListDetailPage() {
               key={task.id}
               task={task}
               onClick={() => setEditingTask(task)}
-              onToggleComplete={() => handleToggleComplete(task)}
+              onToggleComplete={() => handleToggleComplete({ id: task.id, status: task.status })}
               onEdit={() => setEditingTask(task)}
               onDelete={() => handleDeleteTask(task.id)}
             />
@@ -218,7 +226,7 @@ export function TodoListDetailPage() {
 
       <TaskForm
         listId={Number(listId)}
-        task={editingTask}
+        task={editingTask || undefined}
         isOpen={!!editingTask}
         onClose={() => setEditingTask(null)}
       />

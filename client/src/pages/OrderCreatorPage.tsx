@@ -82,7 +82,7 @@ export default function OrderCreatorPageV2() {
   // Mutations
   const createDraftMutation = trpc.orders.createDraftEnhanced.useMutation({
     onSuccess: data => {
-      toast.success(`Draft order #${data.id} saved successfully`);
+      toast.success(`Draft order #${data.orderId} saved successfully`);
       // Reset form
       setItems([]);
       setAdjustment(null);
@@ -129,7 +129,7 @@ export default function OrderCreatorPageV2() {
         isMarginOverridden: item.isMarginOverridden,
         marginSource: item.marginSource,
       })),
-      orderLevelAdjustment: adjustment,
+      orderLevelAdjustment: adjustment || undefined,
       showAdjustmentOnDocument,
     });
   };
@@ -147,7 +147,8 @@ export default function OrderCreatorPageV2() {
 
     // Check credit limit for SALE orders
     if (orderType === "SALE" && clientDetails) {
-      const creditLimit = parseFloat(clientDetails.creditLimit || "0");
+      // creditLimit may not exist on client type - use 0 as default
+      const creditLimit = 0;
       const currentExposure = parseFloat(clientDetails.totalOwed || "0");
       const availableCredit = creditLimit - currentExposure;
       
@@ -168,7 +169,8 @@ export default function OrderCreatorPageV2() {
 
     if (!confirmed) return;
 
-    finalizeMutation.mutate({
+    // First create the draft, then finalize it
+    createDraftMutation.mutate({
       orderType,
       clientId,
       lineItems: items.map(item => ({
@@ -181,7 +183,7 @@ export default function OrderCreatorPageV2() {
         isMarginOverridden: item.isMarginOverridden,
         marginSource: item.marginSource,
       })),
-      orderLevelAdjustment: adjustment,
+      orderLevelAdjustment: adjustment || undefined,
       showAdjustmentOnDocument,
     });
   };
@@ -206,6 +208,10 @@ export default function OrderCreatorPageV2() {
       
       return {
         ...calculated,
+        marginPercent: marginPercent || 0, // Ensure marginPercent is always a number
+        marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
+        unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number
+        lineTotal: calculated.lineTotal || 0, // Ensure lineTotal is always a number
         productDisplayName: item.name,
         originalCogsPerUnit: cogsPerUnit,
         isCogsOverridden: false,
