@@ -47,7 +47,7 @@ export async function getClients(options: {
   let query = db.select().from(clients);
 
   // Build WHERE conditions
-  const conditions: unknown[] = [];
+  const conditions: (SQL<unknown> | undefined)[] = [];
 
   // Enhanced multi-field search (TERI code, name, email, phone, address)
   if (search) {
@@ -121,7 +121,7 @@ export async function getClientCount(options: {
   let query = db.select({ count: sql<number>`count(*)` }).from(clients);
 
   // Build WHERE conditions (same as getClients)
-  const conditions: unknown[] = [];
+  const conditions: (SQL<unknown> | undefined)[] = [];
 
   // Enhanced multi-field search (same as getClients)
   if (search) {
