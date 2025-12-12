@@ -6,7 +6,7 @@
  * Version 2.0 - Post-Adversarial QA
  */
 
-import { eq, and, isNull, lt, inArray, sql } from "drizzle-orm";
+import { eq, and, isNull, lt, inArray, sql, not } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   calendarEvents,
@@ -22,7 +22,7 @@ import {
 
 /** Helper to get db with null check */
 async function requireDb() {
-  const db = await requireDb();
+  const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db;
 }
@@ -61,7 +61,7 @@ export class DataIntegrityService {
       return 0;
     }
 
-    const orphanedIds = orphanedRules.map(r => r.id);
+    const orphanedIds = orphanedRules.map((r: { id: number }) => r.id);
 
     const result = await db
       .delete(calendarRecurrenceRules)
@@ -90,7 +90,7 @@ export class DataIntegrityService {
       return 0;
     }
 
-    const orphanedIds = orphanedInstances.map(i => i.id);
+    const orphanedIds = orphanedInstances.map((i: { id: number }) => i.id);
 
     const result = await db
       .delete(calendarRecurrenceInstances)
@@ -119,7 +119,7 @@ export class DataIntegrityService {
       return 0;
     }
 
-    const orphanedIds = orphanedParticipants.map(p => p.id);
+    const orphanedIds = orphanedParticipants.map((p: { id: number }) => p.id);
 
     const result = await db
       .delete(calendarEventParticipants)
@@ -148,7 +148,7 @@ export class DataIntegrityService {
       return 0;
     }
 
-    const orphanedIds = orphanedReminders.map(r => r.id);
+    const orphanedIds = orphanedReminders.map((r: { id: number }) => r.id);
 
     const result = await db
       .delete(calendarReminders)
@@ -177,7 +177,7 @@ export class DataIntegrityService {
       return 0;
     }
 
-    const orphanedIds = orphanedPermissions.map(p => p.id);
+    const orphanedIds = orphanedPermissions.map((p: { id: number }) => p.id);
 
     const result = await db
       .delete(calendarEventPermissions)
@@ -206,7 +206,7 @@ export class DataIntegrityService {
       return 0;
     }
 
-    const orphanedIds = orphanedAttachments.map(a => a.id);
+    const orphanedIds = orphanedAttachments.map((a: { id: number }) => a.id);
 
     const result = await db
       .delete(calendarEventAttachments)
@@ -229,7 +229,7 @@ export class DataIntegrityService {
       .delete(calendarEvents)
       .where(
         and(
-          isNull(calendarEvents.deletedAt) === false,
+          not(isNull(calendarEvents.deletedAt)),
           lt(calendarEvents.deletedAt, cutoffDate)
         )
       );
