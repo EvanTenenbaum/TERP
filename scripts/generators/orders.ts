@@ -39,7 +39,7 @@ export interface OrderItem {
 export interface OrderData {
   id?: number;
   orderNumber: string;
-  orderType: string;
+  orderType: "QUOTE" | "SALE";
   isDraft?: boolean;
   clientId: number;
   clientNeedId: number | null;

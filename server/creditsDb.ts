@@ -259,7 +259,7 @@ export async function applyCredit(
       .set({
         amountUsed: newAmountUsed.toFixed(2),
         amountRemaining: newAmountRemaining.toFixed(2),
-        status: newStatus
+        creditStatus: newStatus
       })
       .where(eq(credits.id, creditId));
     
@@ -407,7 +407,7 @@ export async function voidCredit(creditId: number): Promise<Credit> {
     await db
       .update(credits)
       .set({
-        status: "VOID",
+        creditStatus: "VOID",
         amountRemaining: "0"
       })
       .where(eq(credits.id, creditId));
@@ -439,7 +439,7 @@ export async function markExpiredCredits(): Promise<number> {
     
     const result = await db
       .update(credits)
-      .set({ status: "EXPIRED" })
+      .set({ creditStatus: "EXPIRED" })
       .where(
         and(
           lt(credits.expirationDate, now),

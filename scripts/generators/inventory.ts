@@ -26,11 +26,11 @@ export interface BatchData {
   isSample: number;
   sampleOnly: number;
   sampleAvailable: number;
-  cogsMode: string;
+  cogsMode: "FIXED" | "RANGE";
   unitCogs: string;
   unitCogsMin: string | null;
   unitCogsMax: string | null;
-  paymentTerms: string;
+  paymentTerms: "COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT" | "PARTIAL";
   amountPaid: string;
   metadata: string | null;
   onHandQty: string;

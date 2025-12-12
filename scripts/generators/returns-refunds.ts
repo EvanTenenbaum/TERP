@@ -12,7 +12,7 @@ export interface ReturnData {
   id?: number;
   orderId: number;
   items: string; // JSON string
-  reason: string;
+  returnReason: "DEFECTIVE" | "WRONG_ITEM" | "NOT_AS_DESCRIBED" | "CUSTOMER_CHANGED_MIND" | "OTHER";
   notes: string | null;
   processedBy: number;
   processedAt: Date;
@@ -52,8 +52,8 @@ export function generateReturns(orders: OrderData[]): ReturnData[] {
     returnOrderIndices.add(randomInRange(0, orders.length - 1));
   }
   
-  let returnIndex = 1;
-  for (const orderIndex of returnOrderIndices) {
+  const returnOrderIndicesArray = Array.from(returnOrderIndices);
+  for (const orderIndex of returnOrderIndicesArray) {
     const order = orders[orderIndex];
     const orderDate = order.createdAt;
     
@@ -66,10 +66,13 @@ export function generateReturns(orders: OrderData[]): ReturnData[] {
     const restockingFee = refundAmount * 0.10; // 10% restocking fee
     const netRefund = refundAmount - restockingFee;
     
+    const returnReasons: Array<"DEFECTIVE" | "WRONG_ITEM" | "NOT_AS_DESCRIBED" | "CUSTOMER_CHANGED_MIND" | "OTHER"> = 
+      ['DEFECTIVE', 'WRONG_ITEM', 'NOT_AS_DESCRIBED', 'CUSTOMER_CHANGED_MIND', 'OTHER'];
+    
     returns.push({
       orderId: order.id || 0,
-      items: order.items, // Copy items from order
-      reason: ['DEFECTIVE', 'WRONG_ITEM', 'NOT_AS_DESCRIBED', 'CUSTOMER_CHANGED_MIND', 'OTHER'][randomInRange(0, 4)],
+      items: typeof order.items === 'string' ? order.items : JSON.stringify(order.items),
+      returnReason: returnReasons[randomInRange(0, 4)],
       notes: null,
       processedBy: 1, // Default admin user
       processedAt: returnDate,
@@ -101,7 +104,8 @@ export function generateRefunds(orders: OrderData[]): RefundData[] {
   }
   
   let refundIndex = 1;
-  for (const orderIndex of refundOrderIndices) {
+  const refundOrderIndicesArray = Array.from(refundOrderIndices);
+  for (const orderIndex of refundOrderIndicesArray) {
     const order = orders[orderIndex];
     const orderDate = order.createdAt;
     

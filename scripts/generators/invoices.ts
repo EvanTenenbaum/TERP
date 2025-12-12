@@ -20,7 +20,7 @@ export interface InvoiceData {
   totalAmount: string;
   amountPaid: string;
   amountDue: string;
-  status: string;
+  status: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
   paymentTerms: string;
   notes: string | null;
   referenceType: string;
@@ -75,7 +75,7 @@ export function generateInvoices(orders: OrderData[]): InvoiceData[] {
     const isOverdue = overdueIndices.has(i);
     const is120PlusOverdue = overdue120PlusIndices.has(i);
     
-    let status = 'PAID';
+    let status: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID" = 'PAID';
     let amountPaid = order.total;
     let amountDue = '0.00';
     

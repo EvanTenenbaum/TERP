@@ -107,12 +107,12 @@ export default function VendorsPage() {
   // Fetch all vendors
   const { data: vendorsResponse, isLoading } = trpc.vendors.getAll.useQuery();
 
-  const vendors = useMemo(() => {
+  const vendors: Vendor[] = useMemo(() => {
     if (!vendorsResponse) return [];
     if ('success' in vendorsResponse && vendorsResponse.success && 'data' in vendorsResponse) {
-      return vendorsResponse.data;
+      return vendorsResponse.data as Vendor[];
     }
-    if (Array.isArray(vendorsResponse)) return vendorsResponse;
+    if (Array.isArray(vendorsResponse)) return vendorsResponse as Vendor[];
     return [];
   }, [vendorsResponse]);
 
