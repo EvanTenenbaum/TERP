@@ -273,7 +273,10 @@ export async function getBatchByCode(code: string) {
   return result[0] || null;
 }
 
-export async function updateBatchStatus(id: number, status: string) {
+export async function updateBatchStatus(
+  id: number, 
+  status: "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED"
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -1077,7 +1080,7 @@ export async function deleteInventoryView(viewId: number, _userId: number) {
  */
 export async function bulkUpdateBatchStatus(
   batchIds: number[],
-  newStatus: string,
+  newStatus: "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED",
   _userId: number
 ): Promise<{ success: boolean; updated: number }> {
   const db = await getDb();
