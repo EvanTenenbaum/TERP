@@ -471,8 +471,10 @@ export const dashboardRouter = router({
         const receivables = receivablesResult.invoices || [];
         const payables = payablesResult.bills || [];
         
-        const totalAR = receivables.reduce((sum: number, r: Invoice) => sum + Number(r.amountDue || 0), 0);
-        const totalAP = payables.reduce((sum: number, p: Invoice) => sum + Number(p.amountDue || 0), 0);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalAR = receivables.reduce((sum: number, r: any) => sum + Number(r.amountDue || 0), 0);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalAP = payables.reduce((sum: number, p: any) => sum + Number(p.amountDue || 0), 0);
         
         return {
           totalDebtOwedToMe: totalAR,

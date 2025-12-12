@@ -307,7 +307,7 @@ export default function PurchaseOrdersPage() {
                     {formatDate(po.expectedDeliveryDate)}
                   </TableCell>
                   <TableCell>{getStatusBadge(po.purchaseOrderStatus)}</TableCell>
-                  <TableCell>${parseFloat(po.total).toFixed(2)}</TableCell>
+                  <TableCell>${parseFloat(po.total || '0').toFixed(2)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button

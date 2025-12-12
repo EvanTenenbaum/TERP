@@ -81,7 +81,7 @@ export async function writeOffBadDebt(
       clientId: originalTransaction.clientId,
       transactionDate: new Date(),
       amount: writeOffAmount,
-      status: "COMPLETED",
+      transactionStatus: "COMPLETED",
       notes: `Bad debt write-off: ${reason}`,
       metadata: JSON.stringify({
         writeOffReason: reason,
@@ -105,7 +105,7 @@ export async function writeOffBadDebt(
     // Update original transaction status
     const isFullWriteOff = writeOffNum >= originalAmount;
     await transactionsDb.updateTransaction(transactionId, {
-      status: isFullWriteOff ? "WRITTEN_OFF" : "PARTIAL",
+      transactionStatus: isFullWriteOff ? "WRITTEN_OFF" : "PARTIAL",
       notes: originalTransaction.notes 
         ? `${originalTransaction.notes}\n\nPartial write-off: $${writeOffAmount} on ${new Date().toISOString()}`
         : `Partial write-off: $${writeOffAmount} on ${new Date().toISOString()}`
@@ -233,7 +233,7 @@ export async function reverseBadDebtWriteOff(
     
     // Mark write-off transaction as void
     await transactionsDb.updateTransaction(writeOffTransactionId, {
-      status: "VOID",
+      transactionStatus: "VOID",
       notes: writeOffTransaction.notes 
         ? `${writeOffTransaction.notes}\n\nReversed: ${reason} on ${new Date().toISOString()}`
         : `Reversed: ${reason} on ${new Date().toISOString()}`
@@ -246,7 +246,7 @@ export async function reverseBadDebtWriteOff(
       : originalTransaction.transactionStatus; // Keep current status if partial
     
     const updatedOriginal = await transactionsDb.updateTransaction(originalTransactionId, {
-      status: newStatus,
+      transactionStatus: newStatus,
       notes: originalTransaction.notes 
         ? `${originalTransaction.notes}\n\nWrite-off reversed: ${reason} on ${new Date().toISOString()}`
         : `Write-off reversed: ${reason} on ${new Date().toISOString()}`

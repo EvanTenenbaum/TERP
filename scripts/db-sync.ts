@@ -94,8 +94,7 @@ export async function testConnection(maxRetries = 3): Promise<boolean> {
     try {
       await db.execute(sql`SELECT 1 as test`);
       return true;
-    } catch (error) {
-      const err = error as { message?: string; code?: string };
+    } catch (_error) {
       if (attempt < maxRetries) {
         const delay = attempt * 2000;
         await new Promise(resolve => setTimeout(resolve, delay));
