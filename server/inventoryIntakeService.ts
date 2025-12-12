@@ -101,7 +101,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
     const result = await db.transaction(async tx => {
       // 1. Find or create vendor
       // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
-      const vendor = await findOrCreate<Vendor>(
+      const vendor = await findOrCreate<typeof vendors, Vendor>(
         tx,
         vendors,
         [eq(vendors.name, input.vendorName)],
@@ -110,7 +110,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
 
       // 2. Find or create brand
       // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
-      const brand = await findOrCreate<Brand>(
+      const brand = await findOrCreate<typeof brands, Brand>(
         tx,
         brands,
         [eq(brands.name, input.brandName), eq(brands.vendorId, vendor.id)],
@@ -122,7 +122,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
       const normalizedProductName = inventoryUtils.normalizeProductName(
         input.productName
       );
-      const product = await findOrCreate<Product>(
+      const product = await findOrCreate<typeof products, Product>(
         tx,
         products,
         [
@@ -188,7 +188,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           sku: sku,
           productId: product.id,
           lotId: lot.id,
-          status: "AWAITING_INTAKE",
+          batchStatus: "AWAITING_INTAKE",
           grade: input.grade,
           isSample: 0,
           sampleOnly: 0,

@@ -73,9 +73,13 @@ export class InstanceGenerationService {
         )
       );
 
-    // Insert new instances
+    // Insert new instances - convert string dates to Date objects
     if (instances.length > 0) {
-      await db.insert(calendarRecurrenceInstances).values(instances);
+      const instancesWithDates = instances.map(inst => ({
+        ...inst,
+        instanceDate: new Date(inst.instanceDate),
+      }));
+      await db.insert(calendarRecurrenceInstances).values(instancesWithDates);
     }
 
     return instances.length;

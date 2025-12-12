@@ -128,7 +128,7 @@ export async function decreaseInventory(
         .insert(inventoryMovements)
         .values({
           batchId,
-          movementType: "SALE",
+          inventoryMovementType: "SALE",
           quantityChange: `-${quantity}`,
           quantityBefore: onHandQty.toString(),
           quantityAfter: newQty.toString(),
@@ -222,7 +222,7 @@ export async function increaseInventory(
         .insert(inventoryMovements)
         .values({
           batchId,
-          movementType: "REFUND_RETURN",
+          inventoryMovementType: "REFUND_RETURN",
           quantityChange: `+${quantity}`,
           quantityBefore: onHandQty.toString(),
           quantityAfter: newQty.toString(),
@@ -314,7 +314,7 @@ export async function adjustInventory(
         .insert(inventoryMovements)
         .values({
           batchId,
-          movementType: "ADJUSTMENT",
+          inventoryMovementType: "ADJUSTMENT",
           quantityChange: changeStr,
           quantityBefore: onHandQty.toString(),
           quantityAfter: newQty.toString(),
@@ -536,7 +536,7 @@ export async function reverseInventoryMovement(
         .insert(inventoryMovements)
         .values({
           batchId: originalMovement.batchId,
-          movementType: "ADJUSTMENT",
+          inventoryMovementType: "ADJUSTMENT",
           quantityChange:
             reversalChange >= 0
               ? `+${reversalChange}`

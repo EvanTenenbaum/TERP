@@ -118,7 +118,7 @@ export async function fulfillSampleRequest(
       // Create inventory movement
       await db.insert(inventoryMovements).values({
         batchId: batch.id,
-        movementType: "SAMPLE",
+        inventoryMovementType: "SAMPLE",
         quantityChange: `-${product.quantity}`,
         quantityBefore,
         quantityAfter,

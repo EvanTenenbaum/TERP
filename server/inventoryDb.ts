@@ -565,7 +565,7 @@ export async function seedInventoryData() {
       sku: sku,
       productId: product.id,
       lotId: lotId,
-      status: "LIVE",
+      batchStatus: "LIVE",
       grade: "A",
       isSample: 0,
       cogsMode: "FIXED",

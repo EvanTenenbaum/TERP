@@ -1144,8 +1144,7 @@ export async function updateOrderStatus(input: {
     const { orderStatusHistory } = await import('../drizzle/schema');
     await tx.insert(orderStatusHistory).values({
       orderId,
-      fromStatus: oldStatus as any,
-      toStatus: newStatus as any,
+      fulfillmentStatus: newStatus as "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED",
       changedBy: userId,
       notes: sanitizedNotes,
     });
@@ -1165,8 +1164,7 @@ export async function getOrderStatusHistory(orderId: number) {
   return await db.select({
     id: orderStatusHistory.id,
     orderId: orderStatusHistory.orderId,
-    fromStatus: orderStatusHistory.fromStatus,
-    toStatus: orderStatusHistory.toStatus,
+    fulfillmentStatus: orderStatusHistory.fulfillmentStatus,
     changedBy: orderStatusHistory.changedBy,
     changedByName: users.name,
     changedAt: orderStatusHistory.changedAt,
@@ -1287,7 +1285,7 @@ export async function processReturn(input: {
     const [returnRecord] = await tx.insert(returns).values({
       orderId,
       items: JSON.stringify(items),
-      reason,
+      returnReason: reason as "DEFECTIVE" | "WRONG_ITEM" | "NOT_AS_DESCRIBED" | "CUSTOMER_CHANGED_MIND" | "OTHER",
       notes: sanitizedNotes,
       processedBy: userId,
     }).$returningId();
@@ -1312,7 +1310,7 @@ export async function processReturn(input: {
       // Log inventory movement
       await tx.insert(inventoryMovements).values({
         batchId: item.batchId,
-        movementType: 'RETURN',
+        inventoryMovementType: 'RETURN',
         quantityChange: item.quantity.toString(),
         quantityBefore: quantityBefore.toString(),
         quantityAfter: quantityAfter.toString(),

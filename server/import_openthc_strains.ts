@@ -79,7 +79,15 @@ export async function importOpenTHCStrainsFromJSON() {
   
   console.log(`Found ${openthcStrains.length} strains in OpenTHC VDB`);
   
-  const strainsToInsert: unknown[] = [];
+  const strainsToInsert: Array<{
+    name: string;
+    standardizedName: string;
+    category: "indica" | "sativa" | "hybrid" | null;
+    description: string | null;
+    aliases: string | null;
+    openthcId: string;
+    openthcStub: string;
+  }> = [];
   let processedCount = 0;
   let skippedCount = 0;
   let withTypeCount = 0;

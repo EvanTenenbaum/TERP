@@ -102,7 +102,7 @@ export const poReceivingRouter = router({
             // Record inventory movement
             await tx.insert(inventoryMovements).values({
               batchId,
-              movementType: "INTAKE",
+              inventoryMovementType: "INTAKE",
               quantityChange: `+${receivedQty}`,
               quantityBefore: currentQty.toString(),
               quantityAfter: newQty.toString(),
