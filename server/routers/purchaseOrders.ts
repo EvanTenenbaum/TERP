@@ -99,7 +99,10 @@ export const purchaseOrdersRouter = router({
       }
 
       if (input?.status) {
-        query = query.where(eq(purchaseOrders.purchaseOrderStatus, input.status)) as typeof query;
+        const validStatuses = ["DRAFT", "SENT", "CONFIRMED", "PARTIALLY_RECEIVED", "RECEIVED", "CANCELLED"] as const;
+        if (validStatuses.includes(input.status as typeof validStatuses[number])) {
+          query = query.where(eq(purchaseOrders.purchaseOrderStatus, input.status as typeof validStatuses[number])) as typeof query;
+        }
       }
 
       return await query;
@@ -336,7 +339,7 @@ export const purchaseOrdersRouter = router({
 });
 
 // Helper function to generate PO number
-async function generatePONumber(db: Awaited<ReturnType<typeof getDb>>): Promise<string> {
+async function generatePONumber(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `PO-${year}-`;
 
@@ -353,7 +356,7 @@ async function generatePONumber(db: Awaited<ReturnType<typeof getDb>>): Promise<
 }
 
 // Helper function to recalculate PO totals
-async function recalculatePOTotals(db: Awaited<ReturnType<typeof getDb>>, purchaseOrderId: number): Promise<void> {
+async function recalculatePOTotals(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, purchaseOrderId: number): Promise<void> {
   const items = await db
     .select()
     .from(purchaseOrderItems)
