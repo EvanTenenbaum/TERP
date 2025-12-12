@@ -106,7 +106,15 @@ export const adminImportRouter = router({
       }
 
       // Import the batch
-      const strainsToInsert: unknown[] = [];
+      const strainsToInsert: Array<{
+        name: string;
+        standardizedName: string;
+        category: "indica" | "sativa" | "hybrid" | null;
+        description: string | null;
+        aliases: string | null;
+        openthcId: string;
+        openthcStub: string;
+      }> = [];
       let imported = 0;
       let skipped = 0;
 

@@ -260,7 +260,7 @@ export async function completeIntakeSession(intakeSessionId: number) {
     await db
       .update(intakeSessions)
       .set({
-        intakeSessionStatus: "COMPLETED",
+        status: "COMPLETED",
         completedAt: new Date(),
       })
       .where(eq(intakeSessions.id, intakeSessionId));
