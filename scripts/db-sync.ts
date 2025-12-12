@@ -65,13 +65,12 @@ function createPool(): mysql.Pool {
 
   // Add connection error handling
   pool.on("connection", (connection) => {
-    connection.on("error", (err) => {
-      console.error("[db-sync] MySQL connection error:", err);
+    connection.on("error", () => {
+      // Connection error - pool will handle reconnection
     });
   });
 
-  pool.on("error", (err) => {
-    console.error("[db-sync] MySQL pool error:", err);
+  pool.on("error", () => {
     // Reset pool on error to force recreation
     pool = null;
   });

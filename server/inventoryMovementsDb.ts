@@ -320,8 +320,7 @@ export async function adjustInventory(
           quantityAfter: newQty.toString(),
           referenceType: "MANUAL_ADJUSTMENT",
           referenceId: null,
-          reason,
-          notes,
+          reason: notes ? `${reason} - ${notes}` : reason,
           performedBy: userId,
         })
         .$returningId();

@@ -350,8 +350,11 @@ export const dashboardRouter = router({
           }
         });
         
-        const sortedData: ClientMargin[] = Object.values(marginByClient).map((c: Omit<ClientMargin, 'profitMargin'>) => ({
-          ...c,
+        const sortedData: ClientMargin[] = Object.values(marginByClient).map((c) => ({
+          customerId: c.customerId,
+          customerName: c.customerName,
+          revenue: c.revenue,
+          cost: c.cost,
           profitMargin: c.revenue > 0 ? ((c.revenue - c.cost) / c.revenue) * 100 : 0,
         })).sort((a: ClientMargin, b: ClientMargin) => b.profitMargin - a.profitMargin);
         

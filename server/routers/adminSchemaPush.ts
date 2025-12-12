@@ -224,7 +224,7 @@ export const adminSchemaPushRouter = router({
         AND TABLE_NAME = 'strains'
       `);
       
-      const strainsCols = (strainsColumns as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
+      const strainsCols = (strainsColumns as unknown as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
       
       // Check client_needs columns
       const clientNeedsColumns = await db.execute(sql`
@@ -234,7 +234,7 @@ export const adminSchemaPushRouter = router({
         AND TABLE_NAME = 'client_needs'
       `);
       
-      const clientNeedsCols = (clientNeedsColumns as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
+      const clientNeedsCols = (clientNeedsColumns as unknown as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
 
       const verification = {
         strains: {

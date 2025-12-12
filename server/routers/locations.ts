@@ -157,7 +157,7 @@ export const locationsRouter = router({
           rack: batchLocations.rack,
           shelf: batchLocations.shelf,
           bin: batchLocations.bin,
-          quantity: batchLocations.quantity,
+          qty: batchLocations.qty,
           createdAt: batchLocations.createdAt,
           updatedAt: batchLocations.updatedAt,
         })
@@ -195,7 +195,7 @@ export const locationsRouter = router({
         rack: input.rack,
         shelf: input.shelf,
         bin: input.bin,
-        quantity: input.quantity,
+        qty: input.quantity,
       });
 
       return { id: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
