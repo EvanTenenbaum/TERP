@@ -60,8 +60,8 @@ export function ReturnHistorySection({ orderId }: ReturnHistorySectionProps) {
                   </div>
                 </div>
               </div>
-              <Badge variant="outline" className={getReasonColor(returnRecord.reason)}>
-                {getReasonLabel(returnRecord.reason)}
+              <Badge variant="outline" className={getReasonColor(returnRecord.returnReason)}>
+                {getReasonLabel(returnRecord.returnReason)}
               </Badge>
             </div>
             

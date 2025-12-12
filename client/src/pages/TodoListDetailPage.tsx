@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams } from "wouter";
 import { useLocation } from "wouter";
 import { BackButton } from "@/components/common/BackButton";
-import { Plus, MoreVertical } from "lucide-react";
+import { Plus, MoreVertical, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -70,7 +70,7 @@ export function TodoListDetailPage() {
   });
 
   const handleToggleComplete = (task: { id: number; completed: boolean }) => {
-    if (task.isCompleted) {
+    if (task.completed) {
       uncomplete.mutate({ taskId: task.id });
     } else {
       toggleComplete.mutate({ taskId: task.id });

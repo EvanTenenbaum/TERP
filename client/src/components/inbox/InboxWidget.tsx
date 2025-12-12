@@ -11,8 +11,7 @@ export function InboxWidget() {
 
   // Fetch inbox items
   const { data: items = [], refetch } = trpc.inbox.getMyItems.useQuery({
-    limit: 5,
-    onlyUnseen: true,
+    includeArchived: false,
   });
 
   // Mark as seen mutation
@@ -21,13 +20,16 @@ export function InboxWidget() {
       refetch();
     },
   });
+  
+  // Limit to 5 items for widget display
+  const displayItems = items.slice(0, 5);
 
-  const unreadCount = items.filter((item) => !item.seenAt).length;
+  const unreadCount = displayItems.filter((item) => !item.seenAt).length;
 
   const handleItemClick = (item: typeof items[0]) => {
     // Mark as seen
     if (!item.seenAt) {
-      markAsSeen.mutate({ id: item.id });
+      markAsSeen.mutate({ itemId: item.id });
     }
 
     // Navigate to the entity based on sourceType and referenceType
@@ -86,7 +88,7 @@ export function InboxWidget() {
         </Button>
       </CardHeader>
       <CardContent>
-        {items.length === 0 ? (
+        {displayItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <CheckCheck className="h-12 w-12 text-muted-foreground/50 mb-3" />
             <p className="text-sm text-muted-foreground font-medium">
@@ -98,7 +100,7 @@ export function InboxWidget() {
           </div>
         ) : (
           <div className="space-y-2">
-            {items.map((item) => (
+            {displayItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item)}
@@ -108,15 +110,15 @@ export function InboxWidget() {
               >
                 <div className="flex items-start gap-3">
                   <span className="text-xl flex-shrink-0 mt-0.5">
-                    {getItemIcon(item.type)}
+                    {getItemIcon(item.sourceType)}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium line-clamp-2">
                       {item.title}
                     </p>
-                    {item.message && (
+                    {item.description && (
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                        {item.message}
+                        {item.description}
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">

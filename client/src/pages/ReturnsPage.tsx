@@ -202,7 +202,7 @@ export default function ReturnsPage() {
                   <TableCell>#{returnRecord.orderId}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-red-100 text-red-700">
-                      {returnRecord.reason}
+                      {returnRecord.returnReason}
                     </span>
                   </TableCell>
                   <TableCell>User #{returnRecord.processedBy}</TableCell>

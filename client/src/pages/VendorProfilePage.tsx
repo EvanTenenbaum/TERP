@@ -31,6 +31,7 @@ import {
   Phone,
   Calendar,
   DollarSign,
+  ArrowLeft,
 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import { VendorNotesDialog } from "../components/VendorNotesDialog";
