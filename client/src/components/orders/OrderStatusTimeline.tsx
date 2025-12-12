@@ -37,7 +37,7 @@ export function OrderStatusTimeline({ orderId }: OrderStatusTimelineProps) {
           </div>
           <div className="flex-1 pb-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="font-medium">{entry.toStatus}</span>
+              <span className="font-medium">{entry.fulfillmentStatus}</span>
               <span className="text-sm text-muted-foreground">
                 {format(new Date(entry.changedAt), 'MMM d, h:mm a')}
               </span>

@@ -46,7 +46,23 @@ export async function findClientNeedsForBatch(batchId: number) {
       .leftJoin(clients, eq(clientNeeds.clientId, clients.id))
       .where(eq(clientNeeds.status, "ACTIVE"));
 
-    const matches: unknown[] = [];
+    interface MatchResult {
+      clientId: number;
+      clientName: string;
+      clientNeedId: number;
+      needDescription: string;
+      matchType: string;
+      confidence: number;
+      reasons: string[];
+      priority: string | null;
+      quantityNeeded: string | null;
+      maxPrice: string | null;
+      neededBy: Date | null;
+      availableQuantity: number;
+      daysSinceCreated: number | undefined;
+    }
+    
+    const matches: MatchResult[] = [];
 
     for (const { need, client } of activeNeeds) {
       if (!client) continue;
@@ -112,7 +128,7 @@ export async function findClientNeedsForBatch(batchId: number) {
       if (b.confidence !== a.confidence) {
         return b.confidence - a.confidence;
       }
-      return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+      return (priorityOrder[b.priority || ''] || 0) - (priorityOrder[a.priority || ''] || 0);
     });
 
     return matches;
