@@ -49,11 +49,13 @@ export async function findOrCreate<
   // Create new entity
   const [created] = await tx.insert(table).values(createValues).$returningId();
 
-  // Fetch the created entity
+  // Fetch the created entity using the created id
+  // Cast to any to avoid TypeScript issues with dynamic table access
+  const tableWithId = table as TTable & { id: any };
   const [newEntity] = await tx
     .select()
     .from(table)
-    .where(eq(table.id, created.id))
+    .where(eq(tableWithId.id, (created as { id: number }).id))
     .limit(1);
 
   return newEntity as TSelect;

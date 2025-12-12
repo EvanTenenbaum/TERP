@@ -126,7 +126,7 @@ export const returnsRouter = router({
             // Record inventory movement
             await tx.insert(inventoryMovements).values({
               batchId: item.batchId,
-              movementType: "RETURN",
+              inventoryMovementType: "RETURN",
               quantityChange: `+${returnQty}`,
               quantityBefore: currentQty.toString(),
               quantityAfter: newQty.toString(),

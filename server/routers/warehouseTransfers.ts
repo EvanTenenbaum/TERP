@@ -108,7 +108,7 @@ export const warehouseTransfersRouter = router({
         // Record inventory movement for tracking
         await tx.insert(inventoryMovements).values({
           batchId: input.batchId,
-          movementType: "TRANSFER",
+          inventoryMovementType: "TRANSFER",
           quantityChange: `0`, // Net change is zero (just moving location)
           quantityBefore: "0", // Not applicable for transfers
           quantityAfter: "0", // Not applicable for transfers

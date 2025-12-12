@@ -833,7 +833,7 @@ export async function addCommunication(input: {
   
   const [result] = await db.insert(clientCommunications).values({
     clientId: input.clientId,
-    type: input.type,
+    communicationType: input.type,
     subject: sanitizedSubject,
     notes: sanitizedNotes,
     communicatedAt: new Date(input.communicatedAt),
