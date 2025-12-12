@@ -17,6 +17,7 @@ export const adminMigrationsRouter = router({
    */
   runAllMigrations: adminProcedure.mutation(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database connection failed");
     
     const results: unknown[] = [];
@@ -206,6 +207,7 @@ export const adminMigrationsRouter = router({
    */
   checkMigrationStatus: adminProcedure.query(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database connection failed");
     
     const checks: unknown[] = [];

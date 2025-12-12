@@ -34,6 +34,7 @@ export const rbacRolesRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         // Get all roles
@@ -119,6 +120,7 @@ export const rbacRolesRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         // Get role details
@@ -197,6 +199,7 @@ export const rbacRolesRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Check if role name already exists
         const existing = await db
           .select({ id: roles.id })
@@ -215,7 +218,7 @@ export const rbacRolesRouter = router({
           isSystemRole: 0, // Custom roles are not system roles
         });
 
-        const roleId = Number(result.insertId);
+        const roleId = Number(Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0);
 
         logger.info({ 
           msg: "Role created", 
@@ -250,6 +253,7 @@ export const rbacRolesRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Check if role exists and is not a system role
         const role = await db
           .select({ 
@@ -319,6 +323,7 @@ export const rbacRolesRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Check if role exists and is not a system role
         const role = await db
           .select({ 
@@ -376,6 +381,7 @@ export const rbacRolesRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Validate role and permission exist
         const role = await db
           .select({ id: roles.id, name: roles.name })
@@ -452,6 +458,7 @@ export const rbacRolesRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Get role and permission names for logging
         const role = await db
           .select({ name: roles.name })
@@ -508,6 +515,7 @@ export const rbacRolesRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Validate role exists
         const role = await db
           .select({ id: roles.id, name: roles.name })
@@ -583,6 +591,7 @@ export const rbacRolesRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Validate role exists
         const role = await db
           .select({ id: roles.id, name: roles.name })

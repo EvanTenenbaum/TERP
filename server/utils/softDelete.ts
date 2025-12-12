@@ -5,7 +5,7 @@
  * Provides consistent soft delete functionality across all tables
  */
 
-import { eq, isNull, SQL, and } from "drizzle-orm";
+import { eq, isNull, not, SQL, and } from "drizzle-orm";
 import { MySqlTable } from "drizzle-orm/mysql-core";
 import { getDb } from "../db";
 
@@ -27,7 +27,9 @@ export async function softDelete<T extends MySqlTable>(
     .set({ deletedAt: new Date() } as any)
     .where(eq((table as any).id, id));
 
-  return result.rowsAffected || 0;
+  // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
+  const affectedRows = Array.isArray(result) ? (result[0] as any)?.affectedRows : 0;
+  return affectedRows || 0;
 }
 
 /**
@@ -52,7 +54,9 @@ export async function softDeleteMany<T extends MySqlTable>(
       (table as any).id.in ? (table as any).id.in(ids) : eq((table as any).id, ids[0])
     );
 
-  return result.rowsAffected || 0;
+  // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
+  const affectedRows = Array.isArray(result) ? (result[0] as any)?.affectedRows : 0;
+  return affectedRows || 0;
 }
 
 /**
@@ -73,7 +77,9 @@ export async function restoreDeleted<T extends MySqlTable>(
     .set({ deletedAt: null } as any)
     .where(eq((table as any).id, id));
 
-  return result.rowsAffected || 0;
+  // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
+  const affectedRows = Array.isArray(result) ? (result[0] as any)?.affectedRows : 0;
+  return affectedRows || 0;
 }
 
 /**
@@ -92,7 +98,9 @@ export async function hardDelete<T extends MySqlTable>(
 
   const result = await db.delete(table).where(eq((table as any).id, id));
 
-  return result.rowsAffected || 0;
+  // MySQL returns [ResultSetHeader, FieldPacket[]] - extract affectedRows
+  const affectedRows = Array.isArray(result) ? (result[0] as any)?.affectedRows : 0;
+  return affectedRows || 0;
 }
 
 /**
@@ -112,7 +120,7 @@ export function excludeDeleted<T extends MySqlTable>(table: T): SQL {
  * @returns SQL condition to include only deleted records
  */
 export function onlyDeleted<T extends MySqlTable>(table: T): SQL {
-  return isNull((table as any).deletedAt).not();
+  return not(isNull((table as any).deletedAt));
 }
 
 /**

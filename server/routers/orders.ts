@@ -140,6 +140,7 @@ export const ordersRouter = router({
     .use(requirePermission("orders:read"))
     .query(async () => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
       
       // Get database connection info (without exposing credentials)
@@ -321,6 +322,7 @@ export const ordersRouter = router({
     .input(createOrderInputSchema)
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -484,6 +486,7 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -642,6 +645,7 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -710,6 +714,7 @@ export const ordersRouter = router({
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const order = await db.query.orders.findFirst({
@@ -748,6 +753,7 @@ export const ordersRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       return await pricingService.getMarginWithFallback(
@@ -801,6 +807,7 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -1013,6 +1020,7 @@ export const ordersRouter = router({
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       return await orderAuditService.getAuditLog(input.orderId);

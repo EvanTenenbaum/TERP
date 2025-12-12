@@ -88,6 +88,7 @@ export const calendarRemindersRouter = router({
 
       // Delete reminder
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       await db
@@ -140,6 +141,7 @@ export const calendarRemindersRouter = router({
       future.setHours(future.getHours() + input.hoursAhead);
 
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const reminders = await db

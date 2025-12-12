@@ -30,6 +30,7 @@ async function checkAutoAccept(
   organizerId: number
 ): Promise<{ autoAccept: boolean; reason: string | null }> {
   const db = await getDb();
+        if (!db) throw new Error("Database not available");
   if (!db) return { autoAccept: false, reason: null };
 
   // Get user's invitation settings
@@ -109,6 +110,7 @@ async function createParticipantFromInvitation(
   addedBy: number
 ): Promise<number> {
   const db = await getDb();
+        if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [participant] = await db
@@ -153,6 +155,7 @@ async function logInvitationAction(
   metadata?: Record<string, unknown>
 ) {
   const db = await getDb();
+        if (!db) throw new Error("Database not available");
   if (!db) return;
 
   await db.insert(calendarInvitationHistory).values({
@@ -185,6 +188,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -293,6 +297,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -380,6 +385,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -446,6 +452,7 @@ export const calendarInvitationsRouter = router({
    */
   getInvitationSettings: publicProcedure.query(async ({ ctx }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const userId = ctx.user?.id || 1;
@@ -495,6 +502,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -581,6 +589,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const adminId = ctx.user?.id || 1;
@@ -662,6 +671,7 @@ export const calendarInvitationsRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -690,6 +700,7 @@ export const calendarInvitationsRouter = router({
    */
   getPendingInvitations: publicProcedure.query(async ({ ctx }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const userId = ctx.user?.id || 1;
@@ -731,6 +742,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -841,6 +853,7 @@ export const calendarInvitationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -899,6 +912,7 @@ export const calendarInvitationsRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;

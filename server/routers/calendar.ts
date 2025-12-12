@@ -38,6 +38,7 @@ export const calendarRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = ctx.user?.id || 1;
@@ -130,7 +131,7 @@ export const calendarRouter = router({
       if (input.timezone) {
         allEvents.forEach((event) => {
           if (event.startTime && event.timezone) {
-            const converted = TimezoneService.convertToTimezone(
+            const converted = TimezoneService.convertTimezone(
               event.startDate,
               event.startTime,
               event.timezone,
@@ -170,7 +171,7 @@ export const calendarRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.getEventPermissions(
         userId,
         input.id,
         "VIEW"
@@ -201,7 +202,7 @@ export const calendarRouter = router({
 
       // Convert to user's timezone
       if (input.timezone && event.startTime && event.timezone) {
-        const converted = TimezoneService.convertToTimezone(
+        const converted = TimezoneService.convertTimezone(
           event.startDate,
           event.startTime,
           event.timezone,
@@ -316,6 +317,7 @@ export const calendarRouter = router({
 
       // Create event in transaction
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const newEvent = await calendarDb.createEvent({
@@ -443,7 +445,7 @@ export const calendarRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.getEventPermissions(
         userId,
         input.id,
         "EDIT"
@@ -501,7 +503,7 @@ export const calendarRouter = router({
       const userId = ctx.user?.id || 1;
 
       // Check permission
-      const hasPermission = await PermissionService.checkEventPermission(
+      const hasPermission = await PermissionService.getEventPermissions(
         userId,
         input.id,
         "DELETE"

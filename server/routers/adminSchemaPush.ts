@@ -14,6 +14,7 @@ export const adminSchemaPushRouter = router({
    */
   pushSchema: adminProcedure.mutation(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database connection failed");
     
     const results: Array<{ step: string; status: string; message?: string }> = [];
@@ -211,6 +212,7 @@ export const adminSchemaPushRouter = router({
    */
   verifySchema: adminProcedure.query(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database connection failed");
     
     try {

@@ -19,6 +19,7 @@ export const calendarFinancialsRouter = router({
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       // TODO: Integrate with actual accounting module
@@ -55,6 +56,7 @@ export const calendarFinancialsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       // TODO: Integrate with actual accounting module
@@ -79,6 +81,7 @@ export const calendarFinancialsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       // TODO: Integrate with actual accounting module
@@ -170,6 +173,7 @@ export const calendarFinancialsRouter = router({
     .query(async ({ input, ctx }) => {
       const userId = ctx.user?.id || 1;
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const now = new Date();
@@ -245,6 +249,7 @@ export const calendarFinancialsRouter = router({
   // Get overdue payment events
   getOverduePayments: publicProcedure.query(async ({ ctx }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const today = new Date().toISOString().split("T")[0];

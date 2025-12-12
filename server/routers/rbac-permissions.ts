@@ -34,6 +34,7 @@ export const rbacPermissionsRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         
@@ -113,6 +114,7 @@ export const rbacPermissionsRouter = router({
     .query(async () => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         const modules = await db
@@ -146,6 +148,7 @@ export const rbacPermissionsRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         // Get permission details
@@ -223,6 +226,7 @@ export const rbacPermissionsRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Check if permission name already exists
         const existing = await db
           .select({ id: permissions.id })
@@ -241,7 +245,7 @@ export const rbacPermissionsRouter = router({
           module: input.module,
         });
 
-        const permissionId = Number(result.insertId);
+        const permissionId = Number(Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0);
 
         logger.info({ 
           msg: "Permission created", 
@@ -277,6 +281,7 @@ export const rbacPermissionsRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Check if permission exists
         const permission = await db
           .select({ 
@@ -341,6 +346,7 @@ export const rbacPermissionsRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Check if permission exists
         const permission = await db
           .select({ 
@@ -386,6 +392,7 @@ export const rbacPermissionsRouter = router({
     .query(async () => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         // Get all permissions
@@ -455,6 +462,7 @@ export const rbacPermissionsRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         // Get all permissions (we'll filter client-side for simplicity)
@@ -503,6 +511,7 @@ export const rbacPermissionsRouter = router({
     .query(async () => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         // Total permissions

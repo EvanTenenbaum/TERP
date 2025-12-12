@@ -30,6 +30,7 @@ export class InstanceGenerationService {
     daysAhead: number = 90
   ): Promise<number> {
     const db = await getDb();
+  if (!db) throw new Error("Database not available");
 
     // Get the event
     const [event] = await db
@@ -231,6 +232,7 @@ export class InstanceGenerationService {
    */
   static async regenerateAllInstances(daysAhead: number = 90): Promise<number> {
     const db = await getDb();
+  if (!db) throw new Error("Database not available");
 
     // Get all recurring events
     const recurringEvents = await db
@@ -269,6 +271,7 @@ export class InstanceGenerationService {
     modifiedBy: number
   ): Promise<void> {
     const db = await getDb();
+  if (!db) throw new Error("Database not available");
 
     // Find the instance
     const [instance] = await db
@@ -311,6 +314,7 @@ export class InstanceGenerationService {
     instanceDate: string
   ): Promise<void> {
     const db = await getDb();
+  if (!db) throw new Error("Database not available");
 
     await db
       .update(calendarRecurrenceInstances)
@@ -334,6 +338,7 @@ export class InstanceGenerationService {
     endDate: string
   ) {
     const db = await getDb();
+  if (!db) throw new Error("Database not available");
 
     return await db
       .select()
@@ -353,6 +358,7 @@ export class InstanceGenerationService {
    */
   static async cleanupOldInstances(daysToKeep: number = 30): Promise<number> {
     const db = await getDb();
+  if (!db) throw new Error("Database not available");
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);

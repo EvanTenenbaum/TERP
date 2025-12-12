@@ -29,6 +29,7 @@ export const purchaseOrdersRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const { items, ...poData } = input;
@@ -78,6 +79,7 @@ export const purchaseOrdersRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const limit = input?.limit ?? 100;
@@ -99,6 +101,7 @@ export const purchaseOrdersRouter = router({
   // Get purchase order by ID with items
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const [po] = await db
@@ -132,6 +135,7 @@ export const purchaseOrdersRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const { id, ...data } = input;
@@ -147,6 +151,7 @@ export const purchaseOrdersRouter = router({
   // Delete purchase order
   delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     await db.delete(purchaseOrders).where(eq(purchaseOrders.id, input.id));
@@ -163,6 +168,7 @@ export const purchaseOrdersRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const updateData: Record<string, unknown> = { status: input.status };
@@ -193,6 +199,7 @@ export const purchaseOrdersRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const totalCost = input.quantityOrdered * input.unitCost;
@@ -224,6 +231,7 @@ export const purchaseOrdersRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const { id, ...data } = input;
@@ -261,6 +269,7 @@ export const purchaseOrdersRouter = router({
   // Delete PO item
   deleteItem: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const [item] = await db
@@ -283,6 +292,7 @@ export const purchaseOrdersRouter = router({
   // Get PO history for a vendor
   getByVendor: publicProcedure.input(z.object({ vendorId: z.number() })).query(async ({ input }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     return await db
@@ -295,6 +305,7 @@ export const purchaseOrdersRouter = router({
   // Get PO history for a product
   getByProduct: publicProcedure.input(z.object({ productId: z.number() })).query(async ({ input }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const items = await db

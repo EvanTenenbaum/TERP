@@ -23,6 +23,7 @@ export const refundsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const limit = input?.limit ?? 100;
@@ -56,6 +57,7 @@ export const refundsRouter = router({
   // Get refund by ID
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const [transaction] = await db
@@ -98,6 +100,7 @@ export const refundsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       // Wrap in transaction for atomicity
@@ -151,6 +154,7 @@ export const refundsRouter = router({
   // Get refunds for a specific return
   getByReturn: publicProcedure.input(z.object({ returnId: z.number() })).query(async ({ input }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     // Find transactions with notes mentioning this return ID
@@ -181,6 +185,7 @@ export const refundsRouter = router({
     .input(z.object({ transactionId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const refunds = await db
@@ -213,6 +218,7 @@ export const refundsRouter = router({
   // Get refund statistics
   getStats: publicProcedure.query(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const stats = await db
