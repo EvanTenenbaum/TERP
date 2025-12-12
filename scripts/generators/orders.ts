@@ -52,11 +52,11 @@ export interface OrderData {
   totalMargin: string;
   avgMarginPercent: string;
   validUntil: Date | null;
-  quoteStatus: string | null;
+  quoteStatus: "DRAFT" | "SENT" | "VIEWED" | "ACCEPTED" | "REJECTED" | "EXPIRED" | "CONVERTED" | null;
   paymentTerms: "NET_7" | "NET_15" | "NET_30" | "COD" | "PARTIAL" | "CONSIGNMENT" | null;
   cashPayment: string;
   dueDate: Date | null;
-  saleStatus: string | null;
+  saleStatus: "PENDING" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED" | "REFUNDED" | null;
   invoiceId: number | null;
   fulfillmentStatus?: string;
   createdBy: number;

@@ -216,7 +216,7 @@ export const locationsRouter = router({
           rack: batchLocations.rack,
           shelf: batchLocations.shelf,
           bin: batchLocations.bin,
-          totalQuantity: sql<string>`SUM(CAST(${batchLocations.quantity} AS DECIMAL(15,4)))`,
+          totalQuantity: sql<string>`SUM(CAST(${batchLocations.qty} AS DECIMAL(15,4)))`,
           batchCount: sql<number>`COUNT(DISTINCT ${batchLocations.batchId})`,
         })
         .from(batchLocations)

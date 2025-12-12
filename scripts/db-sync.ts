@@ -70,10 +70,8 @@ function createPool(): mysql.Pool {
     });
   });
 
-  pool.on("error", () => {
-    // Reset pool on error to force recreation
-    pool = null;
-  });
+  // Note: Pool-level error handling removed as mysql2 Pool type doesn't support it
+  // The pool will handle errors internally
 
   return pool;
 }
