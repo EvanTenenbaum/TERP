@@ -275,7 +275,7 @@ export default function VIPDashboard() {
           )}
 
           {/* Needs Tab */}
-          {activeTab === "needs" && config.moduleMarketplaceNeedsEnabled && (
+          {activeTab === "needs" && Boolean(config.moduleMarketplaceNeedsEnabled) && (
             <MarketplaceNeeds clientId={clientId} config={config} />
           )}
 
