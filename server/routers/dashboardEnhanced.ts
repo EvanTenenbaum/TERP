@@ -131,10 +131,11 @@ export const dashboardEnhancedRouter = router({
   resolveAlert: publicProcedure
     .input(z.object({
       alertId: z.number(),
-      resolution: z.string()
+      resolution: z.string(),
+      userId: z.number()
     }))
     .mutation(async ({ input }) => {
-      await inventoryAlerts.resolveAlert(input.alertId, input.resolution);
+      await inventoryAlerts.resolveAlert(input.alertId, input.resolution, input.userId);
       return { success: true };
     }),
 });
