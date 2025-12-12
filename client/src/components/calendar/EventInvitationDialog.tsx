@@ -47,7 +47,7 @@ export default function EventInvitationDialog({
   // Queries
   const { data: users } = trpc.userManagement.listUsers.useQuery();
   const { data: clientsData } = trpc.clients.list.useQuery({});
-  const clients = clientsData?.clients ?? [];
+  const clients: Array<{ id: number; name: string }> = (clientsData as { clients?: Array<{ id: number; name: string }> })?.clients ?? [];
   const { data: existingInvitations, refetch: refetchInvitations } =
     trpc.calendarInvitations.getInvitationsByEvent.useQuery({ eventId });
 

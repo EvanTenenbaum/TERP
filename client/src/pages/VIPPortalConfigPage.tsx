@@ -104,7 +104,7 @@ export default function VIPPortalConfigPage() {
   const handleApplyTemplate = (template: string) => {
     applyTemplateMutation.mutate({
       clientId: parseInt(clientId || "0"),
-      template: template as "basic" | "advanced" | "enterprise",
+      template: template as "FULL_ACCESS" | "FINANCIAL_ONLY" | "MARKETPLACE_ONLY" | "BASIC",
     });
   };
 
@@ -243,7 +243,7 @@ export default function VIPPortalConfigPage() {
       id: "leaderboard",
       title: "Leaderboard",
       field: "moduleLeaderboardEnabled",
-      enabled: config.moduleLeaderboardEnabled || false,
+      enabled: (config.featuresConfig as { leaderboard?: { enabled?: boolean } } | null)?.leaderboard?.enabled || false,
       features: [
         { id: "showSuggestions", label: "Show Improvement Suggestions" },
         { id: "showRankings", label: "Show Full Rankings List" },
@@ -333,7 +333,7 @@ export default function VIPPortalConfigPage() {
                           Leaderboard Type
                         </Label>
                         <Select
-                          value={config.leaderboardType || "ytd_spend"}
+                          value={(config.featuresConfig as { leaderboard?: { type?: string } } | null)?.leaderboard?.type || "ytd_spend"}
                           onValueChange={value =>
                             handleLeaderboardTypeChange(value)
                           }
@@ -363,7 +363,7 @@ export default function VIPPortalConfigPage() {
                           Display Mode
                         </Label>
                         <Select
-                          value={config.leaderboardDisplayMode || "blackbox"}
+                          value={(config.featuresConfig as { leaderboard?: { displayMode?: string } } | null)?.leaderboard?.displayMode || "blackbox"}
                           onValueChange={value =>
                             handleLeaderboardDisplayModeChange(value)
                           }

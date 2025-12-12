@@ -226,7 +226,7 @@ export const vipPortalAdminRouter = router({
           listId: z.number(),
           itemIds: z.array(z.number()),
         }))
-        .mutation(async ({ input, ctx }) => {
+        .mutation(async ({ input, ctx }): Promise<{ orderNumber: string; itemCount: number }> => {
           // TODO: Implement in service layer with order creation integration
           throw new Error("Not yet implemented in service layer");
         }),
@@ -237,7 +237,7 @@ export const vipPortalAdminRouter = router({
           orderId: z.number(),
           itemIds: z.array(z.number()),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input }): Promise<{ itemsAdded: number; orderNumber: string }> => {
           // TODO: Implement in service layer with order update integration
           throw new Error("Not yet implemented in service layer");
         }),

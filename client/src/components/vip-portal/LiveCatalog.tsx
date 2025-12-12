@@ -81,6 +81,10 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   const [selectedProductForAlert, setSelectedProductForAlert] = useState<any>(null);
   const [targetPrice, setTargetPrice] = useState<string>("");
 
+  // Fetch client configuration to check if price alerts are enabled
+  const { data: clientConfig } = trpc.vipPortal.getConfig.useQuery({ clientId });
+  const priceAlertsEnabled = clientConfig?.featuresConfig?.liveCatalog?.enablePriceAlerts ?? false;
+
   // Fetch catalog
   const {
     data: catalogData,
@@ -92,7 +96,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
     category: categoryFilter,
     brands: brandFilter.length > 0 ? brandFilter : undefined,
     grades: gradeFilter.length > 0 ? gradeFilter : undefined,
-    stockLevel: stockFilter === 'all' ? undefined : (stockFilter as 'IN_STOCK' | 'LOW_STOCK' | undefined),
+    stockLevel: stockFilter === 'all' ? undefined : (stockFilter as 'in_stock' | 'low_stock' | undefined),
     minPrice: priceRange[0],
     maxPrice: priceRange[1],
     sortBy: sortBy as any,
@@ -435,8 +439,8 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                         <SelectContent>
                           <SelectItem value="all">All categories</SelectItem>
                           {filterOptions.categories.map((cat) => (
-                            <SelectItem key={cat} value={cat}>
-                              {cat}
+                            <SelectItem key={cat.id} value={cat.name}>
+                              {cat.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -507,8 +511,8 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All items</SelectItem>
-                        <SelectItem value="IN_STOCK">In Stock</SelectItem>
-                        <SelectItem value="LOW_STOCK">Low Stock</SelectItem>
+                        <SelectItem value="in_stock">In Stock</SelectItem>
+                        <SelectItem value="low_stock">Low Stock</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -670,7 +674,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
               ))}
               {stockFilter && stockFilter !== "all" && (
                 <Badge variant="secondary" className="gap-1">
-                  {stockFilter === "IN_STOCK" ? "In Stock" : "Low Stock"}
+                  {stockFilter === "in_stock" ? "In Stock" : "Low Stock"}
                   <X
                     className="h-3 w-3 cursor-pointer"
                     onClick={() => setStockFilter(undefined)}
@@ -778,7 +782,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                       </Button>
                       
                       {/* Price Alert Button (if enabled) */}
-                      {config?.priceAlertsEnabled && (
+                      {priceAlertsEnabled && (
                         <Button
                           onClick={() => handleOpenPriceAlertDialog(item)}
                           variant="outline"
@@ -828,7 +832,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
       </div>
 
       {/* My Price Alerts Section */}
-      {config?.priceAlertsEnabled && (
+      {priceAlertsEnabled && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>My Price Alerts</CardTitle>
@@ -1217,7 +1221,6 @@ function MyPriceAlerts() {
               {alert.category && (
                 <div className="text-xs text-muted-foreground mt-1">
                   {alert.category}
-                  {alert.brand && ` • ${alert.brand}`}
                 </div>
               )}
             </div>

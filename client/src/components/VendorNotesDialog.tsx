@@ -62,10 +62,10 @@ export function VendorNotesDialog({
     { vendorId },
     { enabled: open }
   );
-  const notesData: VendorNote[] = React.useMemo(() => {
+  const notesData = React.useMemo((): VendorNote[] => {
     if (!notesResponse) return [];
     if ('success' in notesResponse && notesResponse.success && 'data' in notesResponse) {
-      return notesResponse.data;
+      return notesResponse.data as VendorNote[];
     }
     return [];
   }, [notesResponse]);
@@ -75,10 +75,10 @@ export function VendorNotesDialog({
     { vendorId },
     { enabled: open }
   );
-  const historyData: VendorHistoryItem[] = React.useMemo(() => {
+  const historyData = React.useMemo((): VendorHistoryItem[] => {
     if (!historyResponse) return [];
     if ('success' in historyResponse && historyResponse.success && 'data' in historyResponse) {
-      return historyResponse.data;
+      return historyResponse.data as VendorHistoryItem[];
     }
     return [];
   }, [historyResponse]);
