@@ -53,7 +53,7 @@ export interface OrderData {
   avgMarginPercent: string;
   validUntil: Date | null;
   quoteStatus: string | null;
-  paymentTerms: string | null;
+  paymentTerms: "NET_7" | "NET_15" | "NET_30" | "COD" | "PARTIAL" | "CONSIGNMENT" | null;
   cashPayment: string;
   dueDate: Date | null;
   saleStatus: string | null;

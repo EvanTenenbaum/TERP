@@ -31,7 +31,7 @@ export const calendarMeetingsRouter = router({
       .from(calendarEvents)
       .where(
         and(
-          lt(calendarEvents.endDate, now.toISOString().split("T")[0]),
+          lt(calendarEvents.endDate, now),
           inArray(calendarEvents.status, ["SCHEDULED", "IN_PROGRESS"]),
           eq(calendarEvents.eventType, "MEETING"),
           isNull(calendarEvents.deletedAt)
@@ -100,8 +100,7 @@ export const calendarMeetingsRouter = router({
       const participants = await calendarDb.getEventParticipants(input.eventId);
       const attendees = participants.map((p) => ({
         userId: p.userId,
-        role: p.role,
-        responseStatus: p.responseStatus,
+        name: `User ${p.userId}`, // Name will be resolved from user lookup if needed
       }));
 
       // Create meeting history entry
@@ -121,10 +120,10 @@ export const calendarMeetingsRouter = router({
         eventId: input.eventId,
         changedBy: userId,
         changeType: "UPDATED",
-        fieldName: "meeting_confirmation",
-        oldValue: null,
+        fieldChanged: "meeting_confirmation",
+        previousValue: null,
         newValue: `Meeting confirmed: ${input.outcome}`,
-        notes: input.notes || null,
+        changeReason: input.notes || null,
       });
 
       return historyEntry;

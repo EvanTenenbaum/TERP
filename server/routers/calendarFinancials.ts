@@ -127,8 +127,8 @@ export const calendarFinancialsRouter = router({
         title: `Sales Sheet Follow-up #${input.salesSheetId}`,
         description: input.message || "Follow up on sales sheet",
         location: null,
-        startDate: dateStr,
-        endDate: dateStr,
+        startDate: reminderDate,
+        endDate: reminderDate,
         startTime: timeStr,
         endTime: null,
         timezone: "America/Los_Angeles", // TODO: Use user's timezone
@@ -188,8 +188,8 @@ export const calendarFinancialsRouter = router({
             eq(calendarEvents.assignedTo, userId),
             eq(calendarEvents.entityType, "sales_sheet"),
             eq(calendarEvents.eventType, "FOLLOW_UP"),
-            gte(calendarEvents.startDate, now.toISOString().split("T")[0]),
-            lte(calendarEvents.startDate, future.toISOString().split("T")[0]),
+            gte(calendarEvents.startDate, now),
+            lte(calendarEvents.startDate, future),
             isNull(calendarEvents.deletedAt)
           )
         );
@@ -223,8 +223,8 @@ export const calendarFinancialsRouter = router({
         title: `Payment Due: Invoice #${input.invoiceId}`,
         description: `Payment of $${input.amount.toFixed(2)} due on ${input.dueDate}`,
         location: null,
-        startDate: dateStr,
-        endDate: dateStr,
+        startDate: reminderDate,
+        endDate: reminderDate,
         startTime: "09:00:00",
         endTime: null,
         timezone: "America/Los_Angeles",
@@ -252,7 +252,7 @@ export const calendarFinancialsRouter = router({
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date();
 
     const events = await db
       .select()

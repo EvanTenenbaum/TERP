@@ -26,7 +26,7 @@ export const inventoryMovementsRouter = router({
       
       return await inventoryMovementsDb.recordInventoryMovement({
         batchId: input.batchId,
-        inventoryMovementType: input.inventoryMovementType,
+        inventoryMovementType: input.movementType,
         quantityChange: input.quantityChange,
         quantityBefore: input.quantityBefore,
         quantityAfter: input.quantityAfter,

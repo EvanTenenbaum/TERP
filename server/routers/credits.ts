@@ -36,7 +36,7 @@ export const creditsRouter = router({
         expirationDate: input.expirationDate,
         notes: input.notes,
         createdBy: ctx.user.id,
-        status: "ACTIVE"
+        creditStatus: "ACTIVE"
       });
     }),
 

@@ -24,7 +24,7 @@ export const adminQuickFixRouter = router({
         AND TABLE_NAME = 'strains'
       `);
       
-      const columnNames = (strainsColumns as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
+      const columnNames = (strainsColumns as unknown as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
       
       return {
         hasOpenthcId: columnNames.includes('openthcId'),
@@ -152,7 +152,7 @@ export const adminQuickFixRouter = router({
         results.push({ constraint: 'fk_parent_strain', status: 'added' });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        if (error.message.includes('Duplicate')) {
+        if (errorMessage.includes('Duplicate')) {
           results.push({ constraint: 'fk_parent_strain', status: 'already_exists' });
         } else {
           results.push({ constraint: 'fk_parent_strain', status: 'error', message: errorMessage });
@@ -219,7 +219,7 @@ export const adminQuickFixRouter = router({
         results.push({ constraint: 'fk_client_needs_strain', status: 'added' });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        if (error.message.includes('Duplicate')) {
+        if (errorMessage.includes('Duplicate')) {
           results.push({ constraint: 'fk_client_needs_strain', status: 'already_exists' });
         } else {
           results.push({ constraint: 'fk_client_needs_strain', status: 'error', message: errorMessage });

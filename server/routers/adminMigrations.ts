@@ -221,10 +221,10 @@ export const adminMigrationsRouter = router({
         AND TABLE_NAME = 'strains'
       `);
       
-      const hasParentStrainId = (strainsColumns as Array<{ COLUMN_NAME: string }>).some(
+      const hasParentStrainId = (strainsColumns as unknown as Array<{ COLUMN_NAME: string }>).some(
         (row) => row.COLUMN_NAME === 'parentStrainId'
       );
-      const hasBaseStrainName = (strainsColumns as Array<{ COLUMN_NAME: string }>).some(
+      const hasBaseStrainName = (strainsColumns as unknown as Array<{ COLUMN_NAME: string }>).some(
         (row) => row.COLUMN_NAME === 'baseStrainName'
       );
 
@@ -245,7 +245,7 @@ export const adminMigrationsRouter = router({
         AND TABLE_NAME = 'client_needs'
       `);
       
-      const hasStrainId = (clientNeedsColumns as Array<{ COLUMN_NAME: string }>).some(
+      const hasStrainId = (clientNeedsColumns as unknown as Array<{ COLUMN_NAME: string }>).some(
         (row) => row.COLUMN_NAME === 'strainId'
       );
 
@@ -276,7 +276,7 @@ export const adminMigrationsRouter = router({
         WHERE TABLE_SCHEMA = DATABASE()
       `);
       
-      const viewNames = (views as Array<{ TABLE_NAME: string }>).map((row) => row.TABLE_NAME);
+      const viewNames = (views as unknown as Array<{ TABLE_NAME: string }>).map((row) => row.TABLE_NAME);
       const hasProductsView = viewNames.includes('products_with_strain_family');
       const hasPreferencesView = viewNames.includes('client_strain_preferences');
       const hasStatsView = viewNames.includes('strain_family_stats');
@@ -291,7 +291,7 @@ export const adminMigrationsRouter = router({
         }
       });
 
-      const allPassed = checks.every(c => c.status === "exists");
+      const allPassed = (checks as Array<{ status: string }>).every((c) => c.status === "exists");
 
       return {
         allPassed,
