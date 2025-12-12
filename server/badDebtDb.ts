@@ -50,12 +50,12 @@ export async function writeOffBadDebt(
     }
     
     // Verify transaction is not already written off
-    if (originalTransaction.status === "WRITTEN_OFF") {
+    if (originalTransaction.transactionStatus === "WRITTEN_OFF") {
       throw new Error("Transaction is already written off");
     }
     
     // Verify transaction has an outstanding balance
-    if (originalTransaction.status === "PAID") {
+    if (originalTransaction.transactionStatus === "PAID") {
       throw new Error("Cannot write off a fully paid transaction");
     }
     
@@ -241,9 +241,9 @@ export async function reverseBadDebtWriteOff(
     
     // Restore original transaction status
     // Determine appropriate status based on payment history
-    const newStatus = originalTransaction.status === "WRITTEN_OFF" 
+    const newStatus = originalTransaction.transactionStatus === "WRITTEN_OFF" 
       ? "OVERDUE" // Restore to overdue if it was fully written off
-      : originalTransaction.status; // Keep current status if partial
+      : originalTransaction.transactionStatus; // Keep current status if partial
     
     const updatedOriginal = await transactionsDb.updateTransaction(originalTransactionId, {
       status: newStatus,
@@ -354,7 +354,7 @@ export async function getClientWriteOffs(
         const metadata = JSON.parse(t.metadata as string);
         const isWriteOff = metadata.writeOffType === "BAD_DEBT";
         
-        if (!includeReversed && t.status === "VOID") {
+        if (!includeReversed && t.transactionStatus === "VOID") {
           return false;
         }
         

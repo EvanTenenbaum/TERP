@@ -261,7 +261,7 @@ export function BatchDetailDrawer({
             </SheetHeader>
 
             {/* Status */}
-            <div>{getStatusBadge(batch.status)}</div>
+            <div>{getStatusBadge(batch.batchStatus)}</div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-4">

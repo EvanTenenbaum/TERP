@@ -122,7 +122,7 @@ export default function Inventory() {
           vendor: vendor?.name || '',
           brand: brand?.name || '',
           grade: batch?.grade || '',
-          status: batch?.status || '',
+          status: batch?.batchStatus || '',
           onHand: onHand.toFixed(2),
           reserved: reserved.toFixed(2),
           quarantine: quarantine.toFixed(2),
@@ -283,7 +283,7 @@ export default function Inventory() {
       if (!batch) return false;
       
       // Status filter
-      if (filters.status.length > 0 && !filters.status.includes(batch.status)) {
+      if (filters.status.length > 0 && !filters.status.includes(batch.batchStatus)) {
         return false;
       }
       
@@ -355,14 +355,14 @@ export default function Inventory() {
 
     return {
       awaitingIntake: inventoryData.filter(
-        (item) => item.batch?.status === "AWAITING_INTAKE"
+        (item) => item.batch?.batchStatus === "AWAITING_INTAKE"
       ).length,
       qcPending: 0, // QC_PENDING status removed
       quarantined: inventoryData.filter(
-        (item) => item.batch?.status === "QUARANTINED"
+        (item) => item.batch?.batchStatus === "QUARANTINED"
       ).length,
       onHold: inventoryData.filter(
-        (item) => item.batch?.status === "ON_HOLD"
+        (item) => item.batch?.batchStatus === "ON_HOLD"
       ).length,
       lowStock: inventoryData.filter((item) => {
         if (!item.batch) return false;
@@ -725,7 +725,7 @@ export default function Inventory() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell>{getStatusBadge(batch.status)}</TableCell>
+                      <TableCell>{getStatusBadge(batch.batchStatus)}</TableCell>
                       <TableCell className="text-right font-mono">
                         {parseFloat(batch.onHandQty).toFixed(2)}
                       </TableCell>
@@ -753,7 +753,7 @@ export default function Inventory() {
                           >
                             View
                           </Button>
-                          {batch.status === "AWAITING_INTAKE" && (
+                          {batch.batchStatus === "AWAITING_INTAKE" && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -818,13 +818,13 @@ export default function Inventory() {
                     brandName: brand?.name || "Unknown",
                     vendorName: vendor?.name || "Unknown",
                     grade: batch.grade || "-",
-                    status: batch.status,
+                    status: batch.batchStatus,
                     onHandQty: batch.onHandQty,
                     reservedQty: batch.reservedQty,
                     availableQty: available.toString(),
                   }}
                   onView={(id) => setSelectedBatch(id)}
-                  onEdit={batch.status === "AWAITING_INTAKE" ? (id) => setEditingBatch(id) : undefined}
+                  onEdit={batch.batchStatus === "AWAITING_INTAKE" ? (id) => setEditingBatch(id) : undefined}
                 />
               );
             })

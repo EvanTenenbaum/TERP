@@ -208,8 +208,8 @@ export async function applyCredit(
     }
     
     // Verify credit is active or partially used
-    if (credit.status !== "ACTIVE" && credit.status !== "PARTIALLY_USED") {
-      throw new Error(`Credit is ${credit.status.toLowerCase()} and cannot be applied`);
+    if (credit.creditStatus !== "ACTIVE" && credit.creditStatus !== "PARTIALLY_USED") {
+      throw new Error(`Credit is ${credit.creditStatus.toLowerCase()} and cannot be applied`);
     }
     
     // Check if credit is expired
@@ -393,7 +393,7 @@ export async function voidCredit(creditId: number): Promise<Credit> {
       throw new Error("Credit not found");
     }
     
-    if (credit.status === "FULLY_USED") {
+    if (credit.creditStatus === "FULLY_USED") {
       throw new Error("Cannot void a fully used credit");
     }
     
