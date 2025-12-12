@@ -397,7 +397,7 @@ async function startServer() {
     });
   } catch (error) {
     logger.error({ error }, "❌ CRITICAL ERROR during Express server setup:");
-    logger.error("Stack:", error.stack);
+    logger.error("Stack:", error instanceof Error ? error.stack : String(error));
     process.exit(1);
   }
 }
