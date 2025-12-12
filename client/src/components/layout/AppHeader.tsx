@@ -195,11 +195,9 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
                           })}
                         </span>
                       </div>
-                      {item.metadata && (
+                      {item.description && (
                         <p className="text-xs text-muted-foreground line-clamp-2 pl-4">
-                          {typeof item.metadata === "string"
-                            ? item.metadata
-                            : JSON.stringify(item.metadata)}
+                          {item.description}
                         </p>
                       )}
                     </DropdownMenuItem>

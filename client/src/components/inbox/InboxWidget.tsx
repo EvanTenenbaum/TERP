@@ -30,19 +30,19 @@ export function InboxWidget() {
       markAsSeen.mutate({ id: item.id });
     }
 
-    // Navigate to the entity
-    if (item.entityType === "task") {
-      setLocation(`/todos/${item.metadata?.listId || ""}`);
-    } else if (item.entityType === "comment") {
-      // Navigate based on commentable type
-      const commentableType = item.metadata?.commentableType;
-      const commentableId = item.metadata?.commentableId;
+    // Navigate to the entity based on sourceType and referenceType
+    if (item.sourceType === "task_assignment" || item.sourceType === "task_update") {
+      setLocation(`/todos/${item.referenceId || ""}`);
+    } else if (item.sourceType === "mention") {
+      // Navigate based on reference type
+      const referenceType = item.referenceType;
+      const referenceId = item.referenceId;
 
-      if (commentableType === "client" && commentableId) {
-        setLocation(`/clients/${commentableId}`);
-      } else if (commentableType === "inventory_batch" && commentableId) {
+      if (referenceType === "client" && referenceId) {
+        setLocation(`/clients/${referenceId}`);
+      } else if (referenceType === "inventory_batch" && referenceId) {
         setLocation(`/inventory`);
-      } else if (commentableType === "dashboard" && commentableId) {
+      } else if (referenceType === "dashboard" && referenceId) {
         setLocation(`/dashboard`);
       }
     }
