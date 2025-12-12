@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { trpc } from "../lib/trpc";
 import {
   Table,
@@ -34,10 +33,7 @@ export default function LocationsPage() {
   const [limit] = useState(100);
   const [offset] = useState(0);
 
-  const { data: locations, isLoading } = useQuery({
-    queryKey: ["locations", { limit, offset }],
-    queryFn: () => trpc.locations.getAll.query({ limit, offset }),
-  });
+  const { data: locations, isLoading } = trpc.locations.getAll.useQuery({ limit, offset });
 
   return (
     <div className="container mx-auto p-6 space-y-6">

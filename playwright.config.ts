@@ -1,7 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default defineConfig({
   testDir: './tests-e2e',
+  testMatch: ['**/*.spec.ts', '**/ai-generated/**/*.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -27,11 +33,22 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'ai-generated',
+      testDir: './tests-e2e/ai-generated',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
   webServer: {
     command: 'pnpm dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
   },
-  globalSetup: require.resolve('./testing/setup-e2e.ts'),
+  globalSetup: resolve(__dirname, './testing/setup-e2e.ts'),
+  metadata: {
+    aiAgentsEnabled: true,
+    plannerVersion: '1.0',
+    generatorVersion: '1.0',
+    healerVersion: '1.0',
+  },
 });

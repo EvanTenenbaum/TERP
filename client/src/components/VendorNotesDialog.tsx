@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { trpc } from "../lib/trpc";
 import {
   Dialog,
@@ -58,34 +58,33 @@ export function VendorNotesDialog({
   const [editingNoteText, setEditingNoteText] = useState("");
 
   // Fetch notes
-  const { data: notesData } = useQuery({
-    queryKey: ["vendorNotes", vendorId],
-    queryFn: async () => {
-      const result = await trpc.vendors.getNotes.query({ vendorId });
-      return result.data as VendorNote[];
-    },
-    enabled: open,
-  });
+  const { data: notesResponse } = trpc.vendors.getNotes.useQuery(
+    { vendorId },
+    { enabled: open }
+  );
+  const notesData = React.useMemo((): VendorNote[] => {
+    if (!notesResponse) return [];
+    if ('success' in notesResponse && notesResponse.success && 'data' in notesResponse) {
+      return notesResponse.data;
+    }
+    return [];
+  }, [notesResponse]);
 
   // Fetch history
-  const { data: historyData } = useQuery({
-    queryKey: ["vendorHistory", vendorId],
-    queryFn: async () => {
-      const result = await trpc.vendors.getHistory.query({ vendorId });
-      return result.data as VendorHistoryItem[];
-    },
-    enabled: open,
-  });
+  const { data: historyResponse } = trpc.vendors.getHistory.useQuery(
+    { vendorId },
+    { enabled: open }
+  );
+  const historyData = React.useMemo((): VendorHistoryItem[] => {
+    if (!historyResponse) return [];
+    if ('success' in historyResponse && historyResponse.success && 'data' in historyResponse) {
+      return historyResponse.data;
+    }
+    return [];
+  }, [historyResponse]);
 
   // Create note mutation
-  const createNoteMutation = useMutation({
-    mutationFn: async (note: string) => {
-      return trpc.vendors.createNote.mutate({
-        vendorId,
-        userId: 1, // TODO: Get from auth context
-        note,
-      });
-    },
+  const createNoteMutation = trpc.vendors.createNote.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendorNotes", vendorId] });
       setNewNote("");
@@ -94,7 +93,7 @@ export function VendorNotesDialog({
         description: "Vendor note has been added successfully.",
       });
     },
-    onError: _error => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to create note. Please try again.",
@@ -104,10 +103,7 @@ export function VendorNotesDialog({
   });
 
   // Update note mutation
-  const updateNoteMutation = useMutation({
-    mutationFn: async ({ id, note }: { id: number; note: string }) => {
-      return trpc.vendors.updateNote.mutate({ id, note });
-    },
+  const updateNoteMutation = trpc.vendors.updateNote.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendorNotes", vendorId] });
       setEditingNoteId(null);
@@ -117,7 +113,7 @@ export function VendorNotesDialog({
         description: "Vendor note has been updated successfully.",
       });
     },
-    onError: _error => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update note. Please try again.",
@@ -127,10 +123,7 @@ export function VendorNotesDialog({
   });
 
   // Delete note mutation
-  const deleteNoteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return trpc.vendors.deleteNote.mutate({ id });
-    },
+  const deleteNoteMutation = trpc.vendors.deleteNote.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendorNotes", vendorId] });
       toast({
@@ -138,7 +131,7 @@ export function VendorNotesDialog({
         description: "Vendor note has been deleted successfully.",
       });
     },
-    onError: _error => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to delete note. Please try again.",
@@ -149,7 +142,11 @@ export function VendorNotesDialog({
 
   const handleCreateNote = () => {
     if (newNote.trim()) {
-      createNoteMutation.mutate(newNote);
+      createNoteMutation.mutate({
+        vendorId,
+        userId: 1, // TODO: Get from auth context
+        note: newNote,
+      });
     }
   };
 
@@ -161,7 +158,7 @@ export function VendorNotesDialog({
 
   const handleDeleteNote = (id: number) => {
     if (window.confirm("Are you sure you want to delete this note?")) {
-      deleteNoteMutation.mutate(id);
+      deleteNoteMutation.mutate({ id });
     }
   };
 

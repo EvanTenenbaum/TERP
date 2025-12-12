@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { trpc } from "../lib/trpc";
 import { Button } from "../components/ui/button";
 import {
@@ -105,20 +105,20 @@ export default function VendorsPage() {
   });
 
   // Fetch all vendors
-  const { data: vendorsResponse, isLoading } = useQuery({
-    queryKey: ["vendors"],
-    queryFn: async () => {
-      const result = await trpc.vendors.getAll.query();
-      if (!result.success) throw new Error(result.error);
-      return result.data;
-    },
-  });
+  const { data: vendorsResponse, isLoading } = trpc.vendors.getAll.useQuery();
 
-  const vendors = vendorsResponse || [];
+  const vendors = useMemo(() => {
+    if (!vendorsResponse) return [];
+    if ('success' in vendorsResponse && vendorsResponse.success && 'data' in vendorsResponse) {
+      return vendorsResponse.data;
+    }
+    if (Array.isArray(vendorsResponse)) return vendorsResponse;
+    return [];
+  }, [vendorsResponse]);
 
   // Filter and sort vendors
   const filteredAndSortedVendors = vendors
-    .filter(vendor => {
+    .filter((vendor: Vendor) => {
       // Search filter
       const matchesSearch =
         vendor.name
@@ -137,7 +137,7 @@ export default function VendorsPage() {
 
       return matchesSearch && matchesPaymentTerms;
     })
-    .sort((a, b) => {
+    .sort((a: Vendor, b: Vendor) => {
       let compareValue = 0;
 
       if (sortBy === "name") {
@@ -175,12 +175,7 @@ export default function VendorsPage() {
   ).sort();
 
   // Create vendor mutation
-  const createMutation = useMutation({
-    mutationFn: async (data: VendorFormData) => {
-      const result = await trpc.vendors.create.mutate(data);
-      if (!result.success) throw new Error(result.error);
-      return result.data;
-    },
+  const createMutation = trpc.vendors.create.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
       setIsCreateDialogOpen(false);
@@ -190,7 +185,7 @@ export default function VendorsPage() {
         description: "The vendor has been successfully created.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Error",
         description: error.message,
@@ -200,12 +195,7 @@ export default function VendorsPage() {
   });
 
   // Update vendor mutation
-  const updateMutation = useMutation({
-    mutationFn: async (data: VendorFormData & { id: number }) => {
-      const result = await trpc.vendors.update.mutate(data);
-      if (!result.success) throw new Error(result.error);
-      return result.data;
-    },
+  const updateMutation = trpc.vendors.update.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
       setIsEditDialogOpen(false);
@@ -216,7 +206,7 @@ export default function VendorsPage() {
         description: "The vendor has been successfully updated.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Error",
         description: error.message,
@@ -226,11 +216,7 @@ export default function VendorsPage() {
   });
 
   // Delete vendor mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const result = await trpc.vendors.delete.mutate({ id });
-      if (!result.success) throw new Error(result.error);
-    },
+  const deleteMutation = trpc.vendors.delete.useMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
       toast({
@@ -238,7 +224,7 @@ export default function VendorsPage() {
         description: "The vendor has been successfully deleted.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Error",
         description: error.message,
