@@ -250,7 +250,7 @@ export async function completeIntakeSession(intakeSessionId: number) {
           .update(batches)
           .set({
             onHandQty: newQty.toString(),
-            status: "ACTIVE" as any,
+            batchStatus: "LIVE",
           })
           .where(eq(batches.id, sessionBatch.batchId));
       }
@@ -260,8 +260,8 @@ export async function completeIntakeSession(intakeSessionId: number) {
     await db
       .update(intakeSessions)
       .set({
-        status: "COMPLETED",
-        completedAt: new Date() as any,
+        intakeSessionStatus: "COMPLETED",
+        completedAt: new Date(),
       })
       .where(eq(intakeSessions.id, intakeSessionId));
 
