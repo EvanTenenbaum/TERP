@@ -60,6 +60,7 @@ export async function getEventsByDateRange(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   let query = db
     .select()
@@ -84,6 +85,7 @@ export async function getEventsByDateRange(
 export async function getEventById(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   const [event] = await db
     .select()
@@ -105,6 +107,7 @@ export async function getEventById(eventId: number) {
 export async function createEvent(event: InsertCalendarEvent) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   const [newEvent] = await db
     .insert(calendarEvents)
@@ -119,6 +122,7 @@ export async function createEvent(event: InsertCalendarEvent) {
  */
 export async function updateEvent(eventId: number, updates: Partial<InsertCalendarEvent>) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   await db
@@ -135,6 +139,7 @@ export async function updateEvent(eventId: number, updates: Partial<InsertCalend
 export async function softDeleteEvent(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   await db
     .update(calendarEvents)
@@ -150,6 +155,7 @@ export async function softDeleteEvent(eventId: number) {
 export async function hardDeleteEvent(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   await db
     .delete(calendarEvents)
@@ -163,6 +169,7 @@ export async function hardDeleteEvent(eventId: number) {
  */
 export async function getEventsByEntity(entityType: string, entityId: number) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   return await db
@@ -182,6 +189,7 @@ export async function getEventsByEntity(entityType: string, entityId: number) {
  */
 export async function getEventsAssignedToUser(userId: number) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   return await db
@@ -205,6 +213,7 @@ export async function getEventsAssignedToUser(userId: number) {
 export async function getRecurrenceRule(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   const [rule] = await db
     .select()
@@ -220,6 +229,7 @@ export async function getRecurrenceRule(eventId: number) {
  */
 export async function createRecurrenceRule(rule: InsertCalendarRecurrenceRule) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [newRule] = await db
@@ -239,6 +249,7 @@ export async function updateRecurrenceRule(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   await db
     .update(calendarRecurrenceRules)
@@ -253,6 +264,7 @@ export async function updateRecurrenceRule(
  */
 export async function deleteRecurrenceRule(eventId: number) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   await db
@@ -275,6 +287,7 @@ export async function getInstancesByEvent(
   endDate?: string
 ) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   let query = db
@@ -300,6 +313,7 @@ export async function getInstancesByEvent(
 export async function getInstanceByDate(eventId: number, instanceDate: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   const [instance] = await db
     .select()
@@ -321,6 +335,7 @@ export async function getInstanceByDate(eventId: number, instanceDate: string) {
 export async function createInstance(instance: InsertCalendarRecurrenceInstance) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   const [newInstance] = await db
     .insert(calendarRecurrenceInstances)
@@ -339,6 +354,7 @@ export async function updateInstance(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   await db
     .update(calendarRecurrenceInstances)
@@ -353,6 +369,7 @@ export async function updateInstance(
  */
 export async function deleteInstancesByEvent(eventId: number) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   await db
@@ -372,6 +389,7 @@ export async function deleteInstancesByEvent(eventId: number) {
 export async function getEventParticipants(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   return await db
     .select()
@@ -384,6 +402,7 @@ export async function getEventParticipants(eventId: number) {
  */
 export async function addParticipant(participant: InsertCalendarEventParticipant) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [newParticipant] = await db
@@ -403,6 +422,7 @@ export async function updateParticipantResponse(
   responseStatus: "PENDING" | "ACCEPTED" | "DECLINED" | "TENTATIVE"
 ) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   await db
@@ -427,6 +447,7 @@ export async function updateParticipantResponse(
 export async function removeParticipant(eventId: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   await db
     .delete(calendarEventParticipants)
@@ -450,6 +471,7 @@ export async function removeParticipant(eventId: number, userId: number) {
 export async function getEventReminders(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   return await db
     .select()
@@ -462,6 +484,7 @@ export async function getEventReminders(eventId: number) {
  */
 export async function getPendingReminders(beforeTime: Date) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   return await db
@@ -480,6 +503,7 @@ export async function getPendingReminders(beforeTime: Date) {
  */
 export async function createReminder(reminder: InsertCalendarReminder) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [newReminder] = await db
@@ -500,6 +524,7 @@ export async function updateReminderStatus(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   await db
     .update(calendarReminders)
@@ -519,6 +544,7 @@ export async function updateReminderStatus(
 export async function deleteEventReminders(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   await db
     .delete(calendarReminders)
@@ -537,6 +563,7 @@ export async function deleteEventReminders(eventId: number) {
 export async function getEventHistory(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   return await db
     .select()
@@ -550,6 +577,7 @@ export async function getEventHistory(eventId: number) {
  */
 export async function addHistoryEntry(entry: InsertCalendarEventHistoryEntry) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [newEntry] = await db
@@ -570,6 +598,7 @@ export async function addHistoryEntry(entry: InsertCalendarEventHistoryEntry) {
 export async function getEventAttachments(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   return await db
     .select()
@@ -582,6 +611,7 @@ export async function getEventAttachments(eventId: number) {
  */
 export async function addAttachment(attachment: InsertCalendarEventAttachment) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [newAttachment] = await db
@@ -597,6 +627,7 @@ export async function addAttachment(attachment: InsertCalendarEventAttachment) {
  */
 export async function deleteAttachment(attachmentId: number) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   await db
@@ -616,6 +647,7 @@ export async function deleteAttachment(attachmentId: number) {
 export async function getUserViews(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   return await db
     .select()
@@ -628,6 +660,7 @@ export async function getUserViews(userId: number) {
  */
 export async function getUserDefaultView(userId: number) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [view] = await db
@@ -650,6 +683,7 @@ export async function getUserDefaultView(userId: number) {
 export async function createView(view: InsertCalendarView) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   const [newView] = await db
     .insert(calendarViews)
@@ -665,6 +699,7 @@ export async function createView(view: InsertCalendarView) {
 export async function updateView(viewId: number, updates: Partial<InsertCalendarView>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   await db
     .update(calendarViews)
@@ -679,6 +714,7 @@ export async function updateView(viewId: number, updates: Partial<InsertCalendar
  */
 export async function deleteView(viewId: number) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   await db
@@ -698,6 +734,7 @@ export async function deleteView(viewId: number) {
 export async function getEventPermissions(eventId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   return await db
     .select()
@@ -710,6 +747,7 @@ export async function getEventPermissions(eventId: number) {
  */
 export async function addPermission(permission: InsertCalendarEventPermission) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [newPermission] = await db
@@ -725,6 +763,7 @@ export async function addPermission(permission: InsertCalendarEventPermission) {
  */
 export async function deletePermission(permissionId: number) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   await db
@@ -744,6 +783,7 @@ export async function deletePermission(permissionId: number) {
 export async function getClientMeetingHistory(clientId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   return await db
     .select()
@@ -757,6 +797,7 @@ export async function getClientMeetingHistory(clientId: number) {
  */
 export async function addMeetingHistoryEntry(entry: InsertClientMeetingHistoryEntry) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const [newEntry] = await db
@@ -775,6 +816,7 @@ export async function updateMeetingHistoryEntry(
   updates: Partial<InsertClientMeetingHistoryEntry>
 ) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   await db
@@ -796,6 +838,7 @@ export async function updateMeetingHistoryEntry(
 export async function getEventsByClient(clientId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
 
   return await db
     .select()
@@ -815,6 +858,7 @@ export async function getEventsByClient(clientId: number) {
  */
 export async function getEventsByVendor(vendorId: number) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   return await db
@@ -844,6 +888,7 @@ export async function checkConflicts(params: {
   excludeEventId?: number;
 }) {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   const { startDate, startTime, endDate, endTime, excludeEventId } = params;
@@ -900,6 +945,7 @@ export async function withTransaction<T>(
   callback: (tx: any) => Promise<T>
 ): Promise<T> {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
 
   return await db.transaction(async (tx) => {

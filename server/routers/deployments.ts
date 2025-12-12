@@ -21,6 +21,7 @@ export const deploymentsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       
       const conditions = [];
       if (input.branch) {
@@ -65,6 +66,7 @@ export const deploymentsRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       const [deployment] = await db
         .select()
         .from(deployments)
@@ -85,6 +87,7 @@ export const deploymentsRouter = router({
     .input(z.object({ commitSha: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       const [deployment] = await db
         .select()
         .from(deployments)
@@ -104,6 +107,7 @@ export const deploymentsRouter = router({
    */
   latest: protectedProcedure.query(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     const [deployment] = await db
       .select()
       .from(deployments)
@@ -118,6 +122,7 @@ export const deploymentsRouter = router({
    */
   stats: protectedProcedure.query(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
     // Total deployments
     const [totalResult] = await db
@@ -183,6 +188,7 @@ export const deploymentsRouter = router({
     .input(z.object({ status: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       const results = await db
         .select()
         .from(deployments)
@@ -198,6 +204,7 @@ export const deploymentsRouter = router({
    */
   current: protectedProcedure.query(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     const [deployment] = await db
       .select()
       .from(deployments)

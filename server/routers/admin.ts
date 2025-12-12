@@ -36,6 +36,7 @@ export const adminRouter = router({
       };
       
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) {
         throw new Error("Database not available");
       }
@@ -170,6 +171,7 @@ export const adminRouter = router({
   verifyStrainSystem: protectedProcedure.use(requirePermission("system:manage"))
     .query(async () => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) {
         throw new Error("Database not available");
       }
@@ -285,6 +287,7 @@ export const adminRouter = router({
   getStrainSystemStatus: protectedProcedure.use(requirePermission("system:manage"))
     .query(async () => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) {
         throw new Error("Database not available");
       }
@@ -336,6 +339,7 @@ export const adminRouter = router({
       logger.info({ msg: "[Admin] fixUserPermissions called", input });
 
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) {
         logger.error("[Admin] Database connection failed");
         throw new Error("Database connection failed");
@@ -435,6 +439,7 @@ export const adminRouter = router({
     logger.info("[Admin] listUsers called");
 
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) {
       throw new Error("Database connection failed");
     }
@@ -471,6 +476,7 @@ export const adminRouter = router({
       logger.info({ msg: "[Admin] grantPermission called", input });
 
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) {
         logger.error("[Admin] Database connection failed");
         throw new Error("Database connection failed");
@@ -617,6 +623,7 @@ export const adminRouter = router({
       logger.info({ msg: "[Admin] assignSuperAdminRole called", input });
 
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) {
         logger.error("[Admin] Database connection failed");
         throw new Error("Database connection failed");

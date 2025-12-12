@@ -2,6 +2,9 @@
  * Pricing Service
  * Handles customer-specific and default margin lookups with fallback logic
  * v2.0 Sales Order Enhancements
+ * 
+ * Note: Client-specific margins are now handled via pricingProfileId and customPricingRules
+ * on the clients table, not a defaultMarginPercent column.
  */
 
 import { getDb } from "../db";
@@ -18,7 +21,7 @@ export interface MarginResult {
 export const pricingService = {
   /**
    * Get margin for a customer and product category with fallback logic:
-   * 1. Customer-specific margin (if exists)
+   * 1. Customer-specific margin from customPricingRules (if exists)
    * 2. Default margin by category (if exists)
    * 3. null (manual input required)
    */
@@ -29,19 +32,22 @@ export const pricingService = {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    // Step 1: Try customer-specific margin
+    // Step 1: Try customer-specific margin from customPricingRules
     const customer = await db
       .select()
       .from(clients)
       .where(eq(clients.id, customerId))
       .limit(1);
 
-    if (customer.length > 0 && customer[0].defaultMarginPercent !== null) {
-      return {
-        marginPercent: customer[0].defaultMarginPercent,
-        source: "CUSTOMER_PROFILE",
-        customerId,
-      };
+    if (customer.length > 0 && customer[0].customPricingRules) {
+      const rules = customer[0].customPricingRules as Record<string, number>;
+      if (rules.defaultMarginPercent !== undefined) {
+        return {
+          marginPercent: rules.defaultMarginPercent,
+          source: "CUSTOMER_PROFILE",
+          customerId,
+        };
+      }
     }
 
     // Step 2: Try default margin by category
@@ -53,7 +59,7 @@ export const pricingService = {
 
     if (defaultMargin.length > 0) {
       return {
-        marginPercent: defaultMargin[0].defaultMarginPercent,
+        marginPercent: parseFloat(defaultMargin[0].defaultMarginPercent),
         source: "DEFAULT",
         productCategory,
       };
@@ -68,6 +74,7 @@ export const pricingService = {
 
   /**
    * Get customer-specific margin only (no fallback)
+   * Reads from customPricingRules JSON field
    */
   async getCustomerMargin(customerId: number): Promise<number | null> {
     const db = await getDb();
@@ -79,7 +86,12 @@ export const pricingService = {
       .where(eq(clients.id, customerId))
       .limit(1);
 
-    return customer.length > 0 ? customer[0].defaultMarginPercent : null;
+    if (customer.length > 0 && customer[0].customPricingRules) {
+      const rules = customer[0].customPricingRules as Record<string, number>;
+      return rules.defaultMarginPercent ?? null;
+    }
+
+    return null;
   },
 
   /**
@@ -98,12 +110,13 @@ export const pricingService = {
       .limit(1);
 
     return defaultMargin.length > 0
-      ? defaultMargin[0].defaultMarginPercent
+      ? parseFloat(defaultMargin[0].defaultMarginPercent)
       : null;
   },
 
   /**
    * Set customer-specific default margin
+   * Stores in customPricingRules JSON field
    */
   async setCustomerMargin(
     customerId: number,
@@ -112,9 +125,19 @@ export const pricingService = {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
+    // Get existing rules
+    const customer = await db
+      .select()
+      .from(clients)
+      .where(eq(clients.id, customerId))
+      .limit(1);
+
+    const existingRules = (customer[0]?.customPricingRules as Record<string, unknown>) || {};
+    const updatedRules = { ...existingRules, defaultMarginPercent: marginPercent };
+
     await db
       .update(clients)
-      .set({ defaultMarginPercent: marginPercent })
+      .set({ customPricingRules: updatedRules })
       .where(eq(clients.id, customerId));
   },
 
@@ -140,15 +163,14 @@ export const pricingService = {
       await db
         .update(pricingDefaults)
         .set({
-          defaultMarginPercent: marginPercent,
-          updatedAt: new Date(),
+          defaultMarginPercent: String(marginPercent),
         })
         .where(eq(pricingDefaults.productCategory, productCategory));
     } else {
       // Insert new
       await db.insert(pricingDefaults).values({
         productCategory,
-        defaultMarginPercent: marginPercent,
+        defaultMarginPercent: String(marginPercent),
       });
     }
   },
@@ -162,6 +184,10 @@ export const pricingService = {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    return await db.select().from(pricingDefaults);
+    const results = await db.select().from(pricingDefaults);
+    return results.map(r => ({
+      productCategory: r.productCategory,
+      defaultMarginPercent: parseFloat(r.defaultMarginPercent),
+    }));
   },
 };

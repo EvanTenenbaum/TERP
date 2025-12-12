@@ -73,6 +73,7 @@ export const calendarViewsRouter = router({
       if (input.isDefault) {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+        if (!db) throw new Error("Database not available");
 
         await db
           .update(calendarViews)
@@ -124,6 +125,7 @@ export const calendarViewsRouter = router({
 
       // Verify ownership
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const [view] = await db
@@ -161,6 +163,7 @@ export const calendarViewsRouter = router({
 
       // Verify ownership
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const [view] = await db
@@ -185,6 +188,7 @@ export const calendarViewsRouter = router({
 
       // Verify ownership
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const [view] = await db

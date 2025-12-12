@@ -18,6 +18,7 @@ export const calendarMeetingsRouter = router({
   getUnconfirmedMeetings: publicProcedure.query(async ({ ctx }) => {
     const userId = ctx.user?.id || 1;
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     // Get past meetings that are still in SCHEDULED or IN_PROGRESS status
@@ -172,6 +173,7 @@ export const calendarMeetingsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const now = new Date();
@@ -207,6 +209,7 @@ export const calendarMeetingsRouter = router({
 
       // Get meeting history entry
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const [entry] = await db

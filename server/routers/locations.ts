@@ -25,6 +25,7 @@ export const locationsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const limit = input?.limit ?? 100;
@@ -51,6 +52,7 @@ export const locationsRouter = router({
   // Get location by ID
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const [location] = await db
@@ -79,6 +81,7 @@ export const locationsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const [result] = await db.insert(locations).values({
@@ -90,7 +93,7 @@ export const locationsRouter = router({
         isActive: input.isActive ? 1 : 0,
       });
 
-      return { id: result.insertId };
+      return { id: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
     }),
 
   // Update location
@@ -108,6 +111,7 @@ export const locationsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const { id, ...updates } = input;
@@ -128,6 +132,7 @@ export const locationsRouter = router({
   // Delete location (soft delete by setting isActive = 0)
   delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     await db.update(locations).set({ isActive: 0 }).where(eq(locations.id, input.id));
@@ -140,6 +145,7 @@ export const locationsRouter = router({
     .input(z.object({ batchId: z.number().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       let query = db
@@ -179,6 +185,7 @@ export const locationsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const [result] = await db.insert(batchLocations).values({
@@ -191,7 +198,7 @@ export const locationsRouter = router({
         quantity: input.quantity,
       });
 
-      return { id: result.insertId };
+      return { id: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
     }),
 
   // Get location inventory summary
@@ -199,6 +206,7 @@ export const locationsRouter = router({
     .input(z.object({ site: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       let query = db

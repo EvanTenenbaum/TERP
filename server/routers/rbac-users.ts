@@ -35,6 +35,7 @@ export const rbacUsersRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         // Get all user-role assignments
@@ -44,7 +45,7 @@ export const rbacUsersRouter = router({
             roleId: userRoles.roleId,
             roleName: roles.name,
             roleDescription: roles.description,
-            assignedAt: userRoles.createdAt,
+            assignedAt: userRoles.assignedAt,
           })
           .from(userRoles)
           .innerJoin(roles, eq(userRoles.roleId, roles.id))
@@ -104,6 +105,7 @@ export const rbacUsersRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
 
 
         // Get user's roles
@@ -112,7 +114,7 @@ export const rbacUsersRouter = router({
             roleId: userRoles.roleId,
             roleName: roles.name,
             roleDescription: roles.description,
-            assignedAt: userRoles.createdAt,
+            assignedAt: userRoles.assignedAt,
           })
           .from(userRoles)
           .innerJoin(roles, eq(userRoles.roleId, roles.id))
@@ -173,6 +175,7 @@ export const rbacUsersRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Check if role exists
         const role = await db
           .select({ id: roles.id, name: roles.name })
@@ -238,6 +241,7 @@ export const rbacUsersRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Get role name for logging
         const role = await db
           .select({ name: roles.name })
@@ -287,6 +291,7 @@ export const rbacUsersRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Check if permission exists
         const permission = await db
           .select({ id: permissions.id, name: permissions.name })
@@ -344,6 +349,7 @@ export const rbacUsersRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Check if permission exists
         const permission = await db
           .select({ id: permissions.id, name: permissions.name })
@@ -401,6 +407,7 @@ export const rbacUsersRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Get permission name for logging
         const permission = await db
           .select({ name: permissions.name })
@@ -450,6 +457,7 @@ export const rbacUsersRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Validate all roles exist
         const existingRoles = await db
           .select({ id: roles.id, name: roles.name })
@@ -513,6 +521,7 @@ export const rbacUsersRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         // Validate all roles exist
         const existingRoles = await db
           .select({ id: roles.id, name: roles.name })
@@ -566,6 +575,7 @@ export const rbacUsersRouter = router({
     .query(async ({ ctx }) => {
       try {
         const db = await getDb();
+        if (!db) throw new Error("Database not available");
         
         // PUBLIC ACCESS MODE: Return empty permissions when no user is present
         // User explicitly requested public access for production site verification

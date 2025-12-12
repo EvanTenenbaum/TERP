@@ -7,8 +7,8 @@
 
 import { getDb } from '../db';
 import { batches, products, clientPriceAlerts, clients } from '../../drizzle/schema';
-import { eq, and, lte, sql } from 'drizzle-orm';
-import { calculateRetailPrice } from '../pricingEngine';
+import { eq, and } from 'drizzle-orm';
+import { calculateRetailPrice, getClientPricingRules, InventoryItem } from '../pricingEngine';
 
 export interface PriceAlert {
   id: number;
@@ -19,10 +19,8 @@ export interface PriceAlert {
   currentPrice: number | null;
   productName: string;
   category: string | null;
-  brand: string | null;
   priceDropPercentage: number | null;
   createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface PriceAlertNotification {
@@ -64,17 +62,16 @@ export async function createPriceAlert(
       where: and(
         eq(clientPriceAlerts.clientId, clientId),
         eq(clientPriceAlerts.batchId, batchId),
-        eq(clientPriceAlerts.isActive, true)
+        eq(clientPriceAlerts.active, true)
       ),
     });
 
     if (existingAlert) {
-      // Update existing alert
+      // Update existing alert - use string for decimal column
       await db
         .update(clientPriceAlerts)
         .set({
-          targetPrice,
-          updatedAt: new Date(),
+          targetPrice: String(targetPrice),
         })
         .where(eq(clientPriceAlerts.id, existingAlert.id));
 
@@ -85,20 +82,26 @@ export async function createPriceAlert(
       };
     }
 
-    // Create new alert
-    const [newAlert] = await db
+    // Create new alert - calculate expiration (30 days from now)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    const result = await db
       .insert(clientPriceAlerts)
       .values({
         clientId,
         batchId,
-        targetPrice,
-        isActive: true,
-      })
-      .returning();
+        targetPrice: String(targetPrice),
+        active: true,
+        expiresAt,
+      });
+
+    // Extract insertId from MySQL result
+    const insertId = Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId : 0;
 
     return {
       success: true,
-      alertId: newAlert.id,
+      alertId: insertId,
       message: 'Price alert created',
     };
   } catch (error) {
@@ -121,13 +124,11 @@ export async function getClientPriceAlerts(clientId: number): Promise<PriceAlert
         clientId: clientPriceAlerts.clientId,
         batchId: clientPriceAlerts.batchId,
         targetPrice: clientPriceAlerts.targetPrice,
-        isActive: clientPriceAlerts.isActive,
+        isActive: clientPriceAlerts.active,
         createdAt: clientPriceAlerts.createdAt,
-        updatedAt: clientPriceAlerts.updatedAt,
-        productName: products.name,
+        productName: products.nameCanonical,
         category: products.category,
-        brand: batches.brand,
-        basePrice: batches.basePrice,
+        unitCogs: batches.unitCogs,
       })
       .from(clientPriceAlerts)
       .innerJoin(batches, eq(clientPriceAlerts.batchId, batches.id))
@@ -135,39 +136,47 @@ export async function getClientPriceAlerts(clientId: number): Promise<PriceAlert
       .where(
         and(
           eq(clientPriceAlerts.clientId, clientId),
-          eq(clientPriceAlerts.isActive, true)
+          eq(clientPriceAlerts.active, true)
         )
       )
       .orderBy(clientPriceAlerts.createdAt);
 
+    // Get client pricing rules once
+    const pricingRules = await getClientPricingRules(clientId);
+
     // Calculate current prices and price drop percentages
     const alertsWithPrices = await Promise.all(
       alerts.map(async (alert) => {
-        // Get personalized price for this client
-        const currentPrice = await calculateRetailPrice(
-          alert.basePrice || 0,
-          clientId,
-          alert.batchId
-        );
+        // Build inventory item for pricing calculation
+        const basePrice = parseFloat(alert.unitCogs || '0');
+        const item: InventoryItem = {
+          id: alert.batchId,
+          name: alert.productName || 'Unknown Product',
+          category: alert.category || undefined,
+          basePrice,
+        };
 
+        // Get personalized price for this client
+        const pricedItem = await calculateRetailPrice(item, pricingRules);
+        const currentPrice = pricedItem.retailPrice;
+
+        const targetPriceNum = parseFloat(alert.targetPrice);
         const priceDropPercentage =
-          currentPrice !== null
-            ? ((alert.targetPrice - currentPrice) / currentPrice) * 100
+          currentPrice > 0
+            ? ((targetPriceNum - currentPrice) / currentPrice) * 100
             : null;
 
         return {
           id: alert.id,
           clientId: alert.clientId,
           batchId: alert.batchId,
-          targetPrice: alert.targetPrice,
+          targetPrice: targetPriceNum,
           isActive: alert.isActive,
           currentPrice,
           productName: alert.productName || 'Unknown Product',
           category: alert.category,
-          brand: alert.brand,
           priceDropPercentage,
           createdAt: alert.createdAt,
-          updatedAt: alert.updatedAt,
         };
       })
     );
@@ -190,11 +199,10 @@ export async function deactivatePriceAlert(
     const db = await getDb();
     if (!db) throw new Error('Database not available');
     
-    const result = await db
+    await db
       .update(clientPriceAlerts)
       .set({
-        isActive: false,
-        updatedAt: new Date(),
+        active: false,
       })
       .where(
         and(
@@ -228,29 +236,42 @@ export async function checkPriceAlerts(): Promise<PriceAlertNotification[]> {
         targetPrice: clientPriceAlerts.targetPrice,
         clientName: clients.name,
         clientEmail: clients.email,
-        productName: products.name,
-        basePrice: batches.basePrice,
+        productName: products.nameCanonical,
+        unitCogs: batches.unitCogs,
       })
       .from(clientPriceAlerts)
       .innerJoin(clients, eq(clientPriceAlerts.clientId, clients.id))
       .innerJoin(batches, eq(clientPriceAlerts.batchId, batches.id))
       .leftJoin(products, eq(batches.productId, products.id))
-      .where(eq(clientPriceAlerts.isActive, true));
+      .where(eq(clientPriceAlerts.active, true));
 
     const triggeredAlerts: PriceAlertNotification[] = [];
 
     for (const alert of alerts) {
+      // Get client pricing rules
+      const pricingRules = await getClientPricingRules(alert.clientId);
+
+      // Build inventory item for pricing calculation
+      const basePrice = parseFloat(alert.unitCogs || '0');
+      const item: InventoryItem = {
+        id: alert.batchId,
+        name: alert.productName || 'Unknown Product',
+        category: undefined,
+        basePrice,
+      };
+
       // Calculate current personalized price
-      const currentPrice = await calculateRetailPrice(
-        alert.basePrice || 0,
-        alert.clientId,
-        alert.batchId
-      );
+      const pricedItem = await calculateRetailPrice(item, pricingRules);
+      const currentPrice = pricedItem.retailPrice;
+
+      const targetPriceNum = parseFloat(alert.targetPrice);
 
       // Check if price has dropped to or below target
-      if (currentPrice !== null && currentPrice <= alert.targetPrice) {
-        const priceDropAmount = alert.targetPrice - currentPrice;
-        const priceDropPercentage = (priceDropAmount / alert.targetPrice) * 100;
+      if (currentPrice <= targetPriceNum) {
+        const priceDropAmount = targetPriceNum - currentPrice;
+        const priceDropPercentage = targetPriceNum > 0 
+          ? (priceDropAmount / targetPriceNum) * 100 
+          : 0;
 
         triggeredAlerts.push({
           alertId: alert.id,
@@ -259,7 +280,7 @@ export async function checkPriceAlerts(): Promise<PriceAlertNotification[]> {
           clientEmail: alert.clientEmail || '',
           batchId: alert.batchId,
           productName: alert.productName || 'Unknown Product',
-          targetPrice: alert.targetPrice,
+          targetPrice: targetPriceNum,
           currentPrice,
           priceDropAmount,
           priceDropPercentage,
@@ -287,7 +308,7 @@ export async function sendPriceAlertNotifications(
       console.log('[PriceAlerts] Sending notification:', {
         to: notification.clientEmail,
         subject: `Price Alert: ${notification.productName}`,
-        message: `The price for ${notification.productName} has dropped to $${notification.currentPrice.toFixed(2)} (your target: $${notification.targetPrice.toFixed(2)})`,
+        message: `The price for ${notification.productName} has dropped to ${notification.currentPrice.toFixed(2)} (your target: ${notification.targetPrice.toFixed(2)})`,
       });
 
       // Deactivate the alert after notification is sent

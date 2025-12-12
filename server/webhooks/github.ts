@@ -105,6 +105,10 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     // Create deployment record
     console.log("[WEBHOOK] Getting database connection");
     const db = await getDb();
+    if (!db) {
+      console.error("[WEBHOOK] Database not available");
+      return res.status(500).json({ error: "Database not available" });
+    }
     console.log("[WEBHOOK] Database connection obtained, inserting deployment");
     const result = await db.insert(deployments).values({
       commitSha: head_commit.id,
@@ -118,6 +122,9 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
       webhookPayload: pushPayload,
     });
 
+    // Extract insertId from MySQL result (returns [ResultSetHeader, FieldPacket[]])
+    const insertId = Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId : 0;
+
     console.log("[WEBHOOK] Deployment record inserted successfully");
     console.log(`Deployment created: ${head_commit.id.substring(0, 7)} by ${pusher.name}`);
 
@@ -126,7 +133,7 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
 
     return res.status(200).json({
       message: "Webhook received",
-      deploymentId: result.insertId,
+      deploymentId: insertId,
       commitSha: head_commit.id.substring(0, 7),
     });
   } catch (error) {

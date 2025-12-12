@@ -9,6 +9,7 @@ export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: User; // Always non-null - public user is provisioned if no authenticated user
+  vipPortalClientId?: number; // Set by VIP Portal authentication middleware
 };
 
 const PUBLIC_USER_EMAIL =

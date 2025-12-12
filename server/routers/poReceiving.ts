@@ -37,6 +37,7 @@ export const poReceivingRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) throw new Error('Database not available');
       
       // Wrap in transaction for atomicity

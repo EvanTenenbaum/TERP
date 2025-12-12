@@ -20,6 +20,21 @@ import {
   clientMeetingHistory,
 } from "../../drizzle/schema";
 
+/** Helper to get db with null check */
+async function requireDb() {
+  const db = await requireDb();
+  if (!db) throw new Error("Database not available");
+  return db;
+}
+
+/** Extract affected rows from MySQL result */
+function getAffectedRows(result: unknown): number {
+  if (Array.isArray(result)) {
+    return (result[0] as { affectedRows?: number })?.affectedRows ?? 0;
+  }
+  return 0;
+}
+
 /**
  * Data Integrity Service
  * Proactive data quality management
@@ -30,7 +45,7 @@ export class DataIntegrityService {
    * Remove rules that reference non-existent events
    */
   static async cleanupOrphanedRecurrenceRules(): Promise<number> {
-    const db = await getDb();
+    const db = await requireDb();
 
     // Find rules where the parent event doesn't exist
     const orphanedRules = await db
@@ -52,7 +67,7 @@ export class DataIntegrityService {
       .delete(calendarRecurrenceRules)
       .where(inArray(calendarRecurrenceRules.id, orphanedIds));
 
-    return result.rowsAffected || 0;
+    return getAffectedRows(result);
   }
 
   /**
@@ -60,7 +75,7 @@ export class DataIntegrityService {
    * Remove instances that reference non-existent events
    */
   static async cleanupOrphanedInstances(): Promise<number> {
-    const db = await getDb();
+    const db = await requireDb();
 
     const orphanedInstances = await db
       .select({ id: calendarRecurrenceInstances.id })
@@ -81,7 +96,7 @@ export class DataIntegrityService {
       .delete(calendarRecurrenceInstances)
       .where(inArray(calendarRecurrenceInstances.id, orphanedIds));
 
-    return result.rowsAffected || 0;
+    return getAffectedRows(result);
   }
 
   /**
@@ -89,7 +104,7 @@ export class DataIntegrityService {
    * Remove participants that reference non-existent events or users
    */
   static async cleanupOrphanedParticipants(): Promise<number> {
-    const db = await getDb();
+    const db = await requireDb();
 
     const orphanedParticipants = await db
       .select({ id: calendarEventParticipants.id })
@@ -110,7 +125,7 @@ export class DataIntegrityService {
       .delete(calendarEventParticipants)
       .where(inArray(calendarEventParticipants.id, orphanedIds));
 
-    return result.rowsAffected || 0;
+    return getAffectedRows(result);
   }
 
   /**
@@ -118,7 +133,7 @@ export class DataIntegrityService {
    * Remove reminders that reference non-existent events or users
    */
   static async cleanupOrphanedReminders(): Promise<number> {
-    const db = await getDb();
+    const db = await requireDb();
 
     const orphanedReminders = await db
       .select({ id: calendarReminders.id })
@@ -139,7 +154,7 @@ export class DataIntegrityService {
       .delete(calendarReminders)
       .where(inArray(calendarReminders.id, orphanedIds));
 
-    return result.rowsAffected || 0;
+    return getAffectedRows(result);
   }
 
   /**
@@ -147,7 +162,7 @@ export class DataIntegrityService {
    * Remove permissions that reference non-existent events
    */
   static async cleanupOrphanedPermissions(): Promise<number> {
-    const db = await getDb();
+    const db = await requireDb();
 
     const orphanedPermissions = await db
       .select({ id: calendarEventPermissions.id })
@@ -168,7 +183,7 @@ export class DataIntegrityService {
       .delete(calendarEventPermissions)
       .where(inArray(calendarEventPermissions.id, orphanedIds));
 
-    return result.rowsAffected || 0;
+    return getAffectedRows(result);
   }
 
   /**
@@ -176,7 +191,7 @@ export class DataIntegrityService {
    * Remove attachments that reference non-existent events
    */
   static async cleanupOrphanedAttachments(): Promise<number> {
-    const db = await getDb();
+    const db = await requireDb();
 
     const orphanedAttachments = await db
       .select({ id: calendarEventAttachments.id })
@@ -197,7 +212,7 @@ export class DataIntegrityService {
       .delete(calendarEventAttachments)
       .where(inArray(calendarEventAttachments.id, orphanedIds));
 
-    return result.rowsAffected || 0;
+    return getAffectedRows(result);
   }
 
   /**
@@ -205,7 +220,7 @@ export class DataIntegrityService {
    * Permanently delete events that have been soft-deleted for more than N days
    */
   static async cleanupSoftDeletedEvents(daysToKeep: number = 30): Promise<number> {
-    const db = await getDb();
+    const db = await requireDb();
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
@@ -219,7 +234,7 @@ export class DataIntegrityService {
         )
       );
 
-    return result.rowsAffected || 0;
+    return getAffectedRows(result);
   }
 
   /**
@@ -227,7 +242,7 @@ export class DataIntegrityService {
    * Remove sent reminders older than N days
    */
   static async cleanupOldReminders(daysToKeep: number = 30): Promise<number> {
-    const db = await getDb();
+    const db = await requireDb();
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
@@ -241,7 +256,7 @@ export class DataIntegrityService {
         )
       );
 
-    return result.rowsAffected || 0;
+    return getAffectedRows(result);
   }
 
   /**
@@ -249,7 +264,7 @@ export class DataIntegrityService {
    * Remove history entries older than N days
    */
   static async cleanupOldHistory(daysToKeep: number = 365): Promise<number> {
-    const db = await getDb();
+    const db = await requireDb();
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
@@ -258,7 +273,7 @@ export class DataIntegrityService {
       .delete(calendarEventHistory)
       .where(lt(calendarEventHistory.changedAt, cutoffDate));
 
-    return result.rowsAffected || 0;
+    return getAffectedRows(result);
   }
 
   /**
@@ -274,7 +289,7 @@ export class DataIntegrityService {
     orphanedAttachments: number;
     invalidEntityLinks: number;
   }> {
-    const db = await getDb();
+    const db = await requireDb();
 
     // Count orphaned records
     const orphanedRules = await db
@@ -386,7 +401,7 @@ export class DataIntegrityService {
     isValid: boolean;
     errors: string[];
   }> {
-    const db = await getDb();
+    const db = await requireDb();
     const errors: string[] = [];
 
     // Get the event

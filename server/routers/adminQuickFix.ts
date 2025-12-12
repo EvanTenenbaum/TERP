@@ -13,6 +13,7 @@ export const adminQuickFixRouter = router({
    */
   checkColumns: adminProcedure.query(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database connection failed");
     
     try {
@@ -44,6 +45,7 @@ export const adminQuickFixRouter = router({
    */
   addMissingColumns: adminProcedure.mutation(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database connection failed");
     
     const results: Array<{ column: string; status: string; message?: string }> = [];
@@ -175,6 +177,7 @@ export const adminQuickFixRouter = router({
    */
   addStrainIdToClientNeeds: adminProcedure.mutation(async () => {
     const db = await getDb();
+        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database connection failed");
     
     const results: Array<{ column: string; status: string; message?: string }> = [];

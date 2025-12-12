@@ -63,6 +63,7 @@ export const adminImportRouter = router({
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) {
         throw new Error("Database not available");
       }
@@ -178,6 +179,7 @@ export const adminImportRouter = router({
   getImportProgress: protectedProcedure.use(requirePermission("system:manage"))
     .query(async () => {
       const db = await getDb();
+        if (!db) throw new Error("Database not available");
       if (!db) {
         throw new Error("Database not available");
       }

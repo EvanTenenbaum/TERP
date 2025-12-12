@@ -25,6 +25,7 @@ import { eq, and, or, desc, sql } from "drizzle-orm";
 export async function createTransaction(data: InsertTransaction): Promise<Transaction> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
   
   try {
     const [transaction] = await db.insert(transactions).values(data).$returningId();
@@ -58,6 +59,7 @@ export async function createTransaction(data: InsertTransaction): Promise<Transa
 export async function getTransactionById(id: number): Promise<Transaction | undefined> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
   
   try {
     const [transaction] = await db
@@ -79,6 +81,7 @@ export async function getTransactionById(id: number): Promise<Transaction | unde
  */
 export async function getTransactionByNumber(transactionNumber: string): Promise<Transaction | undefined> {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
   
   try {
@@ -102,6 +105,7 @@ export async function getTransactionByNumber(transactionNumber: string): Promise
  */
 export async function getTransactionsByClient(clientId: number, limit: number = 100): Promise<Transaction[]> {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
   
   try {
@@ -127,6 +131,7 @@ export async function getTransactionsByClient(clientId: number, limit: number = 
  */
 export async function updateTransaction(id: number, data: Partial<InsertTransaction>): Promise<Transaction> {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
   
   try {
@@ -167,6 +172,7 @@ export async function linkTransactions(
   notes?: string
 ): Promise<TransactionLink> {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
   
   try {
@@ -259,6 +265,7 @@ export async function getTransactionLinks(transactionId: number): Promise<{
 }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
   
   try {
     const asParent = await db
@@ -293,6 +300,7 @@ export async function getTransactionWithRelationships(transactionId: number): Pr
   };
 }> {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
   
   try {
@@ -346,6 +354,7 @@ export async function getClientTransactionHistory(clientId: number, limit: numbe
 }>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
   
   try {
     const clientTransactions = await getTransactionsByClient(clientId, limit);
@@ -377,6 +386,7 @@ export async function getClientTransactionHistory(clientId: number, limit: numbe
 export async function removeTransactionLink(linkId: number): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("Database not available");
   
   try {
     const result = await db
@@ -397,6 +407,7 @@ export async function removeTransactionLink(linkId: number): Promise<boolean> {
  */
 export async function generateTransactionNumber(prefix: string): Promise<string> {
   const db = await getDb();
+  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
   
   try {
