@@ -126,11 +126,14 @@ export const refundsRouter = router({
         }
 
         // Create refund transaction
+        const txNumber = `REF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const [refundTx] = await tx.insert(transactions).values({
-          type: "REFUND",
+          transactionNumber: txNumber,
+          transactionType: "REFUND",
+          clientId: originalTx.clientId,
           amount: `-${input.amount}`, // Negative for refund
-          date: new Date(),
-          paymentMethod: input.paymentMethod,
+          transactionDate: new Date(),
+          transactionStatus: "COMPLETED",
           notes: input.notes || `Refund for return #${input.returnId}`,
           createdBy: input.createdBy,
         });
@@ -139,8 +142,8 @@ export const refundsRouter = router({
         await tx.insert(transactionLinks).values({
           parentTransactionId: input.originalTransactionId,
           childTransactionId: refundTx.insertId,
-          linkType: "REFUND_OF",
-          linkAmount: input.amount,
+          transactionLinkType: "REFUND_OF",
+          linkAmount: input.amount.toString(),
           notes: `Refund for return #${input.returnId}`,
           createdBy: input.createdBy,
         });
@@ -210,7 +213,7 @@ export const refundsRouter = router({
             eq(transactionLinks.transactionLinkType, "REFUND_OF")
           )
         )
-        .orderBy(desc(transactions.date));
+        .orderBy(desc(transactions.transactionDate));
 
       return refunds;
     }),
@@ -225,17 +228,13 @@ export const refundsRouter = router({
       .select({
         totalRefunds: sql<number>`COUNT(*)`,
         totalAmount: sql<string>`SUM(ABS(CAST(${transactions.amount} AS DECIMAL(15,2))))`,
-        cashRefunds: sql<number>`SUM(CASE WHEN ${transactions.paymentMethod} = 'CASH' THEN 1 ELSE 0 END)`,
-        cardRefunds: sql<number>`SUM(CASE WHEN ${transactions.paymentMethod} IN ('CREDIT_CARD', 'DEBIT_CARD') THEN 1 ELSE 0 END)`,
       })
       .from(transactions)
-      .where(eq(transactions.type, "REFUND"));
+      .where(eq(transactions.transactionType, "REFUND"));
 
     return stats[0] || {
       totalRefunds: 0,
       totalAmount: "0.00",
-      cashRefunds: 0,
-      cardRefunds: 0,
     };
   }),
 });
