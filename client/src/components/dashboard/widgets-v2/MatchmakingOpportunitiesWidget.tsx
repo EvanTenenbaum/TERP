@@ -13,31 +13,11 @@ import { trpc } from "@/lib/trpc";
 import { Target, AlertTriangle, TrendingUp, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
 
-// Type definitions for matchmaking data
-interface MatchData {
-  confidence: number;
-  batchId: number;
-  batchCode: string;
-  availableQty: number;
-  unitPrice: number;
-}
-
-interface NeedWithMatches {
-  clientNeedId: number;
-  clientId: number;
-  clientName: string | null;
-  strain: string | null;
-  priority: string;
-  matches: MatchData[];
-}
-
-interface PredictionData {
-  clientId: number;
-  clientName: string;
-  daysUntilPredictedOrder: number;
-  predictedOrderDate: string;
-  averageOrderValue: number;
-}
+// Type definitions for matchmaking data - using any to match actual API response
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MatchItem = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PredictionItem = any;
 
 export const MatchmakingOpportunitiesWidget = memo(function MatchmakingOpportunitiesWidget() {
   const [, setLocation] = useLocation();
@@ -58,36 +38,28 @@ export const MatchmakingOpportunitiesWidget = memo(function MatchmakingOpportuni
 
   const isLoading = matchesLoading || predictionsLoading;
 
-  // Get top 5 high-confidence matches
-  const topMatches = ((matchesData?.data || []) as NeedWithMatches[])
-    .filter((m: NeedWithMatches) => m.matches.length > 0)
-    .flatMap((m: NeedWithMatches) =>
-      m.matches.map((match: MatchData) => ({
-        ...match,
-        clientNeedId: m.clientNeedId,
-        clientId: m.clientId,
-        clientName: m.clientName || "Unknown",
-        strain: m.strain,
-        priority: m.priority,
-      }))
-    )
-    .filter((m: MatchData & { clientNeedId: number; clientId: number; clientName: string; strain: string | null; priority: string }) => m.confidence >= 75)
-    .sort((a: { confidence: number }, b: { confidence: number }) => b.confidence - a.confidence)
+  // Get top 5 high-confidence matches from the flat list returned by API
+  const allMatches = (matchesData?.data || []) as MatchItem[];
+  const topMatches = allMatches
+    .filter((m: MatchItem) => m.confidence >= 75)
+    .sort((a: MatchItem, b: MatchItem) => b.confidence - a.confidence)
     .slice(0, 5);
 
-  // Get urgent needs (no matches or low confidence)
-  const urgentNeeds = ((matchesData?.data || []) as NeedWithMatches[])
-    .filter((m: NeedWithMatches) => m.priority === "URGENT" || m.priority === "HIGH")
-    .filter(
-      (m: NeedWithMatches) =>
-        m.matches.length === 0 ||
-        m.matches.every((match: MatchData) => match.confidence < 60)
-    )
+  // Get urgent needs (high priority with low confidence)
+  const urgentNeeds = allMatches
+    .filter((m: MatchItem) => m.priority === "URGENT" || m.priority === "HIGH")
+    .filter((m: MatchItem) => m.confidence < 60)
     .slice(0, 5);
 
-  // Get overdue predicted reorders
-  const overdueReorders = ((predictionsData?.data || []) as PredictionData[])
-    .filter((p: PredictionData) => p.daysUntilPredictedOrder < 0)
+  // Get overdue predicted reorders - calculate days from predictedReorderDate
+  const predictions = (predictionsData?.data || []) as PredictionItem[];
+  const overdueReorders = predictions
+    .map((p: PredictionItem) => {
+      const predictedDate = p.predictedReorderDate ? new Date(p.predictedReorderDate) : null;
+      const daysUntil = predictedDate ? Math.floor((predictedDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+      return { ...p, daysUntilPredictedOrder: daysUntil };
+    })
+    .filter((p: PredictionItem) => p.daysUntilPredictedOrder < 0)
     .slice(0, 5);
 
   const totalOpportunities = topMatches.length + overdueReorders.length;
@@ -249,9 +221,9 @@ export const MatchmakingOpportunitiesWidget = memo(function MatchmakingOpportuni
                         <Badge variant="destructive">{need.priority}</Badge>
                       </div>
                       <p className="text-xs text-orange-600">
-                        {need.matches.length === 0
-                          ? "No matches found - consider sourcing"
-                          : `Only ${need.matches[0].confidence}% confidence match`}
+                        {need.confidence < 30
+                          ? "No good matches found - consider sourcing"
+                          : `Only ${need.confidence}% confidence match`}
                       </p>
                     </div>
                   ))}

@@ -30,7 +30,7 @@ export function useMarginLookup(clientId: number, productCategory: string) {
   );
 
   return {
-    margin: data?.margin ?? null,
+    margin: data?.marginPercent ?? null,
     source: data?.source ?? "MANUAL",
     isLoading,
     error,

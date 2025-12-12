@@ -47,11 +47,7 @@ export function PotentialBuyersWidget({
   const { data: historicalData, isLoading: historicalLoading } =
     trpc.matching.findHistoricalBuyers.useQuery(
       {
-        strain: productData?.strain || undefined,
-        category: productData?.category || undefined,
-        subcategory: productData?.subcategory || undefined,
-        grade: productData?.grade || undefined,
-        lapsedDaysThreshold: 90,
+        batchId,
       },
       {
         enabled: !!(productData?.strain || productData?.category),

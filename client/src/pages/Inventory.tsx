@@ -130,9 +130,9 @@ export default function Inventory() {
           available: available.toFixed(2),
           unitCogs: batch?.unitCogs || '',
           totalValue: batch?.unitCogs ? (parseFloat(batch.unitCogs) * onHand).toFixed(2) : '',
-          purchaseDate: batch?.purchaseDate || '',
-          expirationDate: batch?.expirationDate || '',
-          location: batch?.location || '',
+          purchaseDate: batch?.createdAt ? new Date(batch.createdAt).toISOString().split('T')[0] : '',
+          expirationDate: '', // Not available in batch schema
+          location: '', // Location is in batchLocations table, not batch
         };
       });
       

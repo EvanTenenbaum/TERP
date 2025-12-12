@@ -344,17 +344,16 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
         priceMax: priceRange[1],
         search: search || undefined,
       },
-      sortBy: sortBy as 'name' | 'price' | 'category' | 'date',
     });
   };
 
-  const handleLoadView = (view: { name: string; filters: { search?: string; category?: string; brands?: string[]; grades?: string[]; stockLevel?: 'all' | 'in_stock' | 'low_stock'; minPrice?: number; maxPrice?: number }; sortBy?: string }) => {
+  const handleLoadView = (view: { name: string; filters: { search?: string; category?: string | null; brand?: string[]; grade?: string[]; stockLevel?: 'all' | 'in_stock' | 'low_stock'; priceMin?: number; priceMax?: number }; sortBy?: string }) => {
     setSearch(view.filters.search || "");
-    setCategoryFilter(view.filters.category);
-    setBrandFilter(view.filters.brands || []);
-    setGradeFilter(view.filters.grades || []);
+    setCategoryFilter(view.filters.category || undefined);
+    setBrandFilter(view.filters.brand || []);
+    setGradeFilter(view.filters.grade || []);
     setStockFilter(view.filters.stockLevel);
-    setPriceRange([view.filters.minPrice || 0, view.filters.maxPrice || 1000]);
+    setPriceRange([view.filters.priceMin || 0, view.filters.priceMax || 1000]);
     setSortBy(view.sortBy || "name");
     setSavedViewsOpen(false);
     toast({

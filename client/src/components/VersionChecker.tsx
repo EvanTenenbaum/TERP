@@ -19,9 +19,6 @@ export function VersionChecker() {
               window.location.reload();
             },
           },
-          onClick: () => {
-            window.location.reload();
-          },
         });
       }
     } else {

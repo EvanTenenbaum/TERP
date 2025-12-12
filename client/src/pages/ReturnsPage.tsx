@@ -243,7 +243,7 @@ export default function ReturnsPage() {
                 <div className="mt-2 p-3 bg-accent rounded-lg">
                   <div className="font-medium">Order #{orderDetails.order.orderNumber || orderDetails.order.id}</div>
                   <div className="text-sm text-muted-foreground">
-                    Client: {orderDetails.order.clientName || "N/A"} - Total: ${orderDetails.order.totalAmount?.toFixed(2) || "0.00"}
+                    Client ID: {orderDetails.order.clientId || "N/A"} - Total: ${parseFloat(orderDetails.order.total || "0").toFixed(2)}
                   </div>
                 </div>
               )}

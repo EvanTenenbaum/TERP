@@ -433,12 +433,12 @@ export default function PurchaseOrdersPage() {
                         <SelectValue placeholder="Select product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map(product => (
+                        {products.map(item => (
                           <SelectItem
-                            key={product.id}
-                            value={product.id.toString()}
+                            key={item.batch?.id || item.product?.id}
+                            value={(item.batch?.id || item.product?.id || 0).toString()}
                           >
-                            {product.nameCanonical}
+                            {item.product?.nameCanonical || item.batch?.sku || "Unknown"}
                           </SelectItem>
                         ))}
                       </SelectContent>

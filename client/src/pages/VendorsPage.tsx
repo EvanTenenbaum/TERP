@@ -361,7 +361,7 @@ export default function VendorsPage() {
             >
               <option value="">All Payment Terms</option>
               {uniquePaymentTerms.map(term => (
-                <option key={term} value={term}>
+                <option key={term as string} value={term as string}>
                   {term}
                 </option>
               ))}

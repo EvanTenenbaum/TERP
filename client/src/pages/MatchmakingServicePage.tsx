@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MatchBadge } from "@/components/needs/MatchBadge";
+
 import { Search, Plus, Loader2, Package, Users, Target } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
@@ -64,21 +64,10 @@ export default function MatchmakingServicePage() {
   const allMatches = matchesData?.data || [];
 
   // Get top suggested matches (sorted by confidence)
-  interface MatchItem {
-    matches: Array<{ confidence: number; [key: string]: unknown }>;
-    clientNeedId: number;
-    clientId: number;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const topMatches = allMatches
-    .filter((m: MatchItem) => m.matches.length > 0)
-    .flatMap((m: MatchItem) =>
-      m.matches.map((match: { confidence: number; [key: string]: unknown }) => ({
-        ...match,
-        clientNeedId: m.clientNeedId,
-        clientId: m.clientId,
-      }))
-    )
-    .sort((a, b) => b.confidence - a.confidence)
+    .filter((m: any) => m.confidence > 0)
+    .sort((a: any, b: any) => b.confidence - a.confidence)
     .slice(0, 10);
 
   // Filter needs based on search and priority
@@ -314,7 +303,7 @@ export default function MatchmakingServicePage() {
                         </Badge>
                       </div>
                       {need.matchCount > 0 && (
-                        <MatchBadge count={need.matchCount} />
+                        <Badge variant="secondary">{need.matchCount} matches</Badge>
                       )}
                     </div>
                     <h4 className="font-medium">
