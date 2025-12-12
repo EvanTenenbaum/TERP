@@ -953,7 +953,8 @@ pnpm seed --dry-run
 
 ### Code Quality Fixes
 
-**🎯 PROGRESS UPDATE (2025-12-12)**: 
+**🎯 PROGRESS UPDATE (2025-12-12)**:
+
 - **TypeScript Errors**: Reduced from 976 → 605 (~38% reduction, 371 errors fixed)
 - **Strategy**: Batch fixes using sed patterns, file deletions, type augmentation
 - **Key Fixes**: Schema drift corrections, db null checks, MySQL result type helpers
@@ -2023,6 +2024,75 @@ Three workflows are designed for PR-based development but the project now pushes
 **Context:**
 
 Agents sometimes mark tasks complete but forget to archive sessions and remove them from ACTIVE_SESSIONS.md. Recent examples: QA-010, QA-031, QA-037, QA-038 marked complete but sessions still active. QA-015 had duplicate sessions due to race condition.
+
+---
+
+### ST-023: Stabilize Deploy-Time Data Operations (Seeding + Post-Deploy Job)
+
+**Status:** complete  
+**Priority:** HIGH  
+**Estimate:** 4-8h  
+**Module:** `scripts/`, `package.json`, DigitalOcean App Platform  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/ST-023.md`  
+**Session:** Session-20251212-ST-023-8fd20c14
+
+**Problem:**
+Deploys were failing/rolling back due to data mutation scripts being executed at the wrong time (web startup side-effects, and/or post-deploy job command parsing issues). These flows must be explicit and safe for production deployments.
+
+**Objectives:**
+
+- Ensure realistic seeding never runs as a side-effect of server startup/bundling/imports
+- Provide explicit CLI entrypoints for seeding and post-deploy augmentation workflows
+- Eliminate DigitalOcean `run_command` shell/operator parsing pitfalls for augmentation jobs
+
+**Deliverables:**
+
+- [ ] Realistic seeding does not auto-run on web startup
+- [ ] Dedicated seed runner entrypoint exists (explicit invocation only)
+- [ ] Dedicated post-deploy augment runner exists (single command entrypoint)
+- [ ] Deployment no longer fails due to `pnpm` parsing chained commands
+- [ ] Session archived
+
+**Key Commits:**
+
+- `e6348ea2` - Fix: prevent realistic seed from running on web startup
+- `8fd20c14` - Fix: add augment-data job runner for DO (no shell operators)
+
+---
+
+### BUG-024: Fix Production Infinite Spinner (Frontend Bundle Crash)
+
+**Status:** complete  
+**Priority:** HIGH  
+**Estimate:** 4-8h  
+**Module:** `client/`, `vite.config.ts`, `server/_core/index.ts`  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/BUG-024.md`  
+**Session:** Session-20251203-PROD-LOADING-dc6060
+
+**Problem:**
+Production rendered the HTML shell but stayed stuck on the loading spinner because the React bundle crashed immediately in the browser (e.g. `ReferenceError: jsx is not defined`, `ReferenceError: javascript is not defined`).
+
+**Objectives:**
+
+- Identify the first fatal runtime error preventing React mount in production
+- Remove the code/content causing undefined identifier crashes in the built bundle
+- Validate production renders and core dashboard requests succeed post-deploy
+
+**Deliverables:**
+
+- [ ] Remove stray top-of-file tokens in `.tsx` sources that compile into invalid JS statements
+- [ ] Ensure production Vite build does not inject dev-only runtimes
+- [ ] Fix `trust proxy` configuration to satisfy `express-rate-limit` validation
+- [ ] Verify production homepage renders (spinner removed)
+- [ ] Session archived
+
+**Key Commits:**
+
+- `41de73e8` - Fix: production build crash (disable Manus runtime) + trust proxy
+- `450261e2` - Fix: remove stray jsx tokens causing production crash
+- `0a8087b7` - Fix: remove stray 'javascript' tokens causing frontend crash
 
 ---
 
