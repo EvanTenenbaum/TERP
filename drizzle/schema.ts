@@ -29,7 +29,7 @@ export const users = mysqlTable("users", {
    * Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user.
    * This mirrors the Manus account and should be used for authentication lookups.
    */
-  openId: varchar("openId", { length: 64  }).notNull().unique(),
+  openId: varchar("openId", { length: 64 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   name: text("name"),
   email: varchar("email", { length: 320 }),
@@ -141,7 +141,7 @@ export const paymentTermsEnum = mysqlEnum("paymentTerms", [
  */
 export const vendors = mysqlTable("vendors", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255  }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   contactName: varchar("contactName", { length: 255 }),
   contactEmail: varchar("contactEmail", { length: 320 }),
@@ -183,12 +183,12 @@ export type InsertVendorNote = typeof vendorNotes.$inferInsert;
  * Tracks the lifecycle of a purchase order
  */
 export const purchaseOrderStatusEnum = mysqlEnum("purchaseOrderStatus", [
-  "DRAFT",       // Being created
-  "SENT",        // Sent to vendor
-  "CONFIRMED",   // Vendor confirmed
-  "RECEIVING",   // Partially received
-  "RECEIVED",    // Fully received
-  "CANCELLED",   // Cancelled before completion
+  "DRAFT", // Being created
+  "SENT", // Sent to vendor
+  "CONFIRMED", // Vendor confirmed
+  "RECEIVING", // Partially received
+  "RECEIVED", // Fully received
+  "CANCELLED", // Cancelled before completion
 ]);
 
 /**
@@ -201,47 +201,49 @@ export const purchaseOrders = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     poNumber: varchar("poNumber", { length: 50 }).notNull().unique(),
-    
+
     // Vendor relationship
     vendorId: int("vendorId")
       .notNull()
       .references(() => vendors.id, { onDelete: "restrict" }),
-    
+
     // Optional link to intake session (if PO created from intake)
-    intakeSessionId: int("intakeSessionId")
-      .references(() => intakeSessions.id, { onDelete: "set null" }),
-    
+    intakeSessionId: int("intakeSessionId").references(
+      () => intakeSessions.id,
+      { onDelete: "set null" }
+    ),
+
     // Status and dates
     purchaseOrderStatus: purchaseOrderStatusEnum.notNull().default("DRAFT"),
     orderDate: date("orderDate").notNull(),
     expectedDeliveryDate: date("expectedDeliveryDate"),
     actualDeliveryDate: date("actualDeliveryDate"),
-    
+
     // Financial
     subtotal: decimal("subtotal", { precision: 15, scale: 2 }).default("0"),
     tax: decimal("tax", { precision: 15, scale: 2 }).default("0"),
     shipping: decimal("shipping", { precision: 15, scale: 2 }).default("0"),
     total: decimal("total", { precision: 15, scale: 2 }).default("0"),
-    
+
     // Payment
     paymentTerms: varchar("paymentTerms", { length: 100 }),
     paymentDueDate: date("paymentDueDate"),
-    
+
     // Notes
     notes: text("notes"),
     vendorNotes: text("vendorNotes"), // Notes visible to vendor
-    
+
     // Tracking
     createdBy: int("createdBy")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
-    
+
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
     sentAt: timestamp("sentAt"),
     confirmedAt: timestamp("confirmedAt"),
   },
-  (table) => ({
+  table => ({
     vendorIdIdx: index("idx_po_vendor_id").on(table.vendorId),
     statusIdx: index("idx_po_status").on(table.purchaseOrderStatus),
     orderDateIdx: index("idx_po_order_date").on(table.orderDate),
@@ -262,27 +264,33 @@ export const purchaseOrderItems = mysqlTable(
     purchaseOrderId: int("purchaseOrderId")
       .notNull()
       .references(() => purchaseOrders.id, { onDelete: "cascade" }),
-    
+
     // Product reference
     productId: int("productId")
       .notNull()
       .references(() => products.id, { onDelete: "restrict" }),
-    
+
     // Quantities
-    quantityOrdered: decimal("quantityOrdered", { precision: 15, scale: 4 }).notNull(),
-    quantityReceived: decimal("quantityReceived", { precision: 15, scale: 4 }).default("0"),
-    
+    quantityOrdered: decimal("quantityOrdered", {
+      precision: 15,
+      scale: 4,
+    }).notNull(),
+    quantityReceived: decimal("quantityReceived", {
+      precision: 15,
+      scale: 4,
+    }).default("0"),
+
     // Pricing
     unitCost: decimal("unitCost", { precision: 15, scale: 4 }).notNull(),
     totalCost: decimal("totalCost", { precision: 15, scale: 4 }).notNull(),
-    
+
     // Item-specific notes
     notes: text("notes"),
-    
+
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
-  (table) => ({
+  table => ({
     poIdIdx: index("idx_poi_po_id").on(table.purchaseOrderId),
     productIdIdx: index("idx_poi_product_id").on(table.productId),
   })
@@ -298,7 +306,7 @@ export type InsertPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;
  */
 export const sequences = mysqlTable("sequences", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 50  }).notNull().unique(),
+  name: varchar("name", { length: 50 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013) // e.g., "lot_code", "batch_code"
   prefix: varchar("prefix", { length: 20 }).notNull(), // e.g., "LOT-", "BATCH-"
   currentValue: int("currentValue").notNull().default(0),
@@ -315,7 +323,7 @@ export type InsertSequence = typeof sequences.$inferInsert;
  */
 export const brands = mysqlTable("brands", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255  }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   vendorId: int("vendorId"),
   description: text("description"),
@@ -333,7 +341,7 @@ export type InsertBrand = typeof brands.$inferInsert;
  */
 export const strains = mysqlTable("strains", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255  }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   standardizedName: varchar("standardizedName", { length: 255 }).notNull(),
   aliases: text("aliases"), // JSON array of alternative names
@@ -361,7 +369,7 @@ export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
   brandId: int("brandId").notNull(),
   strainId: int("strainId"), // Link to strain library
-  nameCanonical: varchar("nameCanonical", { length: 500  }).notNull(),
+  nameCanonical: varchar("nameCanonical", { length: 500 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   category: varchar("category", { length: 100 }).notNull(),
   subcategory: varchar("subcategory", { length: 100 }),
@@ -381,7 +389,7 @@ export type InsertProduct = typeof products.$inferInsert;
 export const productSynonyms = mysqlTable("productSynonyms", {
   id: int("id").autoincrement().primaryKey(),
   productId: int("productId").notNull(),
-  synonym: varchar("synonym", { length: 500  }).notNull(),
+  synonym: varchar("synonym", { length: 500 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -396,7 +404,7 @@ export type InsertProductSynonym = typeof productSynonyms.$inferInsert;
 export const productMedia = mysqlTable("productMedia", {
   id: int("id").autoincrement().primaryKey(),
   productId: int("productId").notNull(),
-  url: varchar("url", { length: 1000  }).notNull(),
+  url: varchar("url", { length: 1000 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   type: varchar("type", { length: 50 }).notNull(), // image, document, video, etc.
   filename: varchar("filename", { length: 255 }).notNull(),
@@ -415,7 +423,7 @@ export type InsertProductMedia = typeof productMedia.$inferInsert;
  */
 export const tags = mysqlTable("tags", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 100  }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   standardizedName: varchar("standardizedName", { length: 100 }).notNull(),
   category: varchar("category", { length: 50 }), // strain_type, flavor, effect, etc.
@@ -437,8 +445,8 @@ export const productTags = mysqlTable("productTags", {
   tagId: int("tagId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 
-    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  });
+  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+});
 
 export type ProductTag = typeof productTags.$inferSelect;
 export type InsertProductTag = typeof productTags.$inferInsert;
@@ -450,7 +458,7 @@ export type InsertProductTag = typeof productTags.$inferInsert;
  */
 export const lots = mysqlTable("lots", {
   id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50  }).notNull().unique(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   vendorId: int("vendorId").notNull(),
   date: timestamp("date").notNull(),
@@ -468,47 +476,56 @@ export type InsertLot = typeof lots.$inferInsert;
  * ADDED: amountPaid for COD/Partial payment tracking
  * REMOVED: unitCogsFloor (FLOOR mode removed)
  */
-export const batches = mysqlTable("batches", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50  }).notNull().unique(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  sku: varchar("sku", { length: 100 }).notNull().unique(),
-  productId: int("productId").notNull(),
-  lotId: int("lotId").notNull(),
-  batchStatus: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
-  statusId: int("statusId").references(() => workflowStatuses.id, {
-    onDelete: "set null",
-  }), // New workflow queue status (nullable for backward compatibility)
-  grade: varchar("grade", { length: 10 }),
-  isSample: int("isSample").notNull().default(0), // 0 = false, 1 = true
-  sampleOnly: int("sampleOnly").notNull().default(0), // 0 = false, 1 = true (batch can only be sampled, not sold)
-  sampleAvailable: int("sampleAvailable").notNull().default(0), // 0 = false, 1 = true (batch can be used for samples)
-  cogsMode: cogsModeEnum.notNull(),
-  unitCogs: varchar("unitCogs", { length: 20 }), // FIXED
-  unitCogsMin: varchar("unitCogsMin", { length: 20 }), // RANGE
-  unitCogsMax: varchar("unitCogsMax", { length: 20 }), // RANGE
-  paymentTerms: paymentTermsEnum.notNull(),
-  amountPaid: varchar("amountPaid", { length: 20 }).default("0"), // For COD/Partial tracking
-  metadata: text("metadata"), // JSON string: test results, harvest code, COA, etc.
-  
-  // v3.2: Link to PHOTOGRAPHY calendar event if batch had photo session
-  photoSessionEventId: int("photo_session_event_id").references(() => calendarEvents.id, { onDelete: "set null" }),
-  
-  onHandQty: varchar("onHandQty", { length: 20 }).notNull().default("0"),
-  sampleQty: varchar("sampleQty", { length: 20 }).notNull().default("0"),
-  reservedQty: varchar("reservedQty", { length: 20 }).notNull().default("0"),
-  quarantineQty: varchar("quarantineQty", { length: 20 })
-    .notNull()
-    .default("0"),
-  holdQty: varchar("holdQty", { length: 20 }).notNull().default("0"),
-  defectiveQty: varchar("defectiveQty", { length: 20 }).notNull().default("0"),
-  publishEcom: int("publishEcom").notNull().default(0), // 0 = false, 1 = true
-  publishB2b: int("publishB2b").notNull().default(0), // 0 = false, 1 = true
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => ({
-  productIdIdx: index("idx_batches_product_id").on(table.productId),
-}));
+export const batches = mysqlTable(
+  "batches",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 50 }).notNull().unique(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+    sku: varchar("sku", { length: 100 }).notNull().unique(),
+    productId: int("productId").notNull(),
+    lotId: int("lotId").notNull(),
+    batchStatus: batchStatusEnum.notNull().default("AWAITING_INTAKE"),
+    statusId: int("statusId").references(() => workflowStatuses.id, {
+      onDelete: "set null",
+    }), // New workflow queue status (nullable for backward compatibility)
+    grade: varchar("grade", { length: 10 }),
+    isSample: int("isSample").notNull().default(0), // 0 = false, 1 = true
+    sampleOnly: int("sampleOnly").notNull().default(0), // 0 = false, 1 = true (batch can only be sampled, not sold)
+    sampleAvailable: int("sampleAvailable").notNull().default(0), // 0 = false, 1 = true (batch can be used for samples)
+    cogsMode: cogsModeEnum.notNull(),
+    unitCogs: varchar("unitCogs", { length: 20 }), // FIXED
+    unitCogsMin: varchar("unitCogsMin", { length: 20 }), // RANGE
+    unitCogsMax: varchar("unitCogsMax", { length: 20 }), // RANGE
+    paymentTerms: paymentTermsEnum.notNull(),
+    amountPaid: varchar("amountPaid", { length: 20 }).default("0"), // For COD/Partial tracking
+    metadata: text("metadata"), // JSON string: test results, harvest code, COA, etc.
+
+    // v3.2: Link to PHOTOGRAPHY calendar event if batch had photo session
+    photoSessionEventId: int("photo_session_event_id").references(
+      () => calendarEvents.id,
+      { onDelete: "set null" }
+    ),
+
+    onHandQty: varchar("onHandQty", { length: 20 }).notNull().default("0"),
+    sampleQty: varchar("sampleQty", { length: 20 }).notNull().default("0"),
+    reservedQty: varchar("reservedQty", { length: 20 }).notNull().default("0"),
+    quarantineQty: varchar("quarantineQty", { length: 20 })
+      .notNull()
+      .default("0"),
+    holdQty: varchar("holdQty", { length: 20 }).notNull().default("0"),
+    defectiveQty: varchar("defectiveQty", { length: 20 })
+      .notNull()
+      .default("0"),
+    publishEcom: int("publishEcom").notNull().default(0), // 0 = false, 1 = true
+    publishB2b: int("publishB2b").notNull().default(0), // 0 = false, 1 = true
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    productIdIdx: index("idx_batches_product_id").on(table.productId),
+  })
+);
 
 export type Batch = typeof batches.$inferSelect;
 export type InsertBatch = typeof batches.$inferInsert;
@@ -521,7 +538,7 @@ export const paymentHistory = mysqlTable("paymentHistory", {
   id: int("id").autoincrement().primaryKey(),
   batchId: int("batchId").notNull(),
   vendorId: int("vendorId").notNull(),
-  amount: varchar("amount", { length: 20  }).notNull(),
+  amount: varchar("amount", { length: 20 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   paymentDate: timestamp("paymentDate").notNull(),
   paymentMethod: varchar("paymentMethod", { length: 50 }),
@@ -540,7 +557,7 @@ export type InsertPaymentHistory = typeof paymentHistory.$inferInsert;
 export const batchLocations = mysqlTable("batchLocations", {
   id: int("id").autoincrement().primaryKey(),
   batchId: int("batchId").notNull(),
-  site: varchar("site", { length: 100  }).notNull(),
+  site: varchar("site", { length: 100 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   zone: varchar("zone", { length: 100 }),
   rack: varchar("rack", { length: 100 }),
@@ -562,7 +579,7 @@ export const sales = mysqlTable("sales", {
   id: int("id").autoincrement().primaryKey(),
   batchId: int("batchId").notNull(),
   productId: int("productId").notNull(),
-  quantity: varchar("quantity", { length: 20  }).notNull(),
+  quantity: varchar("quantity", { length: 20 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   cogsAtSale: varchar("cogsAtSale", { length: 20 }).notNull(), // COGS snapshot
   salePrice: varchar("salePrice", { length: 20 }).notNull(),
@@ -605,7 +622,7 @@ export type InsertCogsHistory = typeof cogsHistory.$inferInsert;
 export const auditLogs = mysqlTable("auditLogs", {
   id: int("id").autoincrement().primaryKey(),
   actorId: int("actorId").notNull(),
-  entity: varchar("entity", { length: 50  }).notNull(),
+  entity: varchar("entity", { length: 50 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   entityId: int("entityId").notNull(),
   action: varchar("action", { length: 100 }).notNull(),
@@ -628,7 +645,7 @@ export type InsertAuditLog = typeof auditLogs.$inferInsert;
  */
 export const locations = mysqlTable("locations", {
   id: int("id").autoincrement().primaryKey(),
-  site: varchar("site", { length: 100  }).notNull(),
+  site: varchar("site", { length: 100 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   zone: varchar("zone", { length: 100 }),
   rack: varchar("rack", { length: 100 }),
@@ -648,7 +665,7 @@ export type InsertLocation = typeof locations.$inferInsert;
  */
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 100  }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   description: text("description"),
   isActive: int("isActive").notNull().default(1),
@@ -666,7 +683,7 @@ export type InsertCategory = typeof categories.$inferInsert;
 export const subcategories = mysqlTable("subcategories", {
   id: int("id").autoincrement().primaryKey(),
   categoryId: int("categoryId").notNull(),
-  name: varchar("name", { length: 100  }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   description: text("description"),
   isActive: int("isActive").notNull().default(1),
@@ -683,7 +700,7 @@ export type InsertSubcategory = typeof subcategories.$inferInsert;
  */
 export const grades = mysqlTable("grades", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 50  }).notNull().unique(),
+  name: varchar("name", { length: 50 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   description: text("description"),
   sortOrder: int("sortOrder").default(0),
@@ -752,7 +769,7 @@ export type InsertDashboardWidgetLayout =
 export const dashboardKpiConfigs = mysqlTable("dashboard_kpi_configs", {
   id: int("id").autoincrement().primaryKey(),
   role: mysqlEnum("role", ["user", "admin"]).notNull(),
-  kpiType: varchar("kpiType", { length: 100  }).notNull(),
+  kpiType: varchar("kpiType", { length: 100 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   position: int("position").notNull(),
   isVisible: boolean("isVisible").default(true).notNull(),
@@ -773,7 +790,7 @@ export type InsertDashboardKpiConfig = typeof dashboardKpiConfigs.$inferInsert;
  */
 export const accounts = mysqlTable("accounts", {
   id: int("id").autoincrement().primaryKey(),
-  accountNumber: varchar("accountNumber", { length: 20  }).notNull().unique(),
+  accountNumber: varchar("accountNumber", { length: 20 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   accountName: varchar("accountName", { length: 255 }).notNull(),
   accountType: mysqlEnum("accountType", [
@@ -799,31 +816,35 @@ export type InsertAccount = typeof accounts.$inferInsert;
  * Immutable double-entry accounting records
  */
 // SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
-export const ledgerEntries = mysqlTable("ledgerEntries", {
-  id: int("id").autoincrement().primaryKey(),
-  entryNumber: varchar("entryNumber", { length: 50 }).notNull().unique(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  entryDate: date("entryDate").notNull(),
-  accountId: int("accountId").notNull(),
-  debit: decimal("debit", { precision: 12, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  credit: decimal("credit", { precision: 12, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  description: text("description"),
-  referenceType: varchar("referenceType", { length: 50 }), // INVOICE, BILL, PAYMENT, EXPENSE, ADJUSTMENT
-  referenceId: int("referenceId"),
-  fiscalPeriodId: int("fiscalPeriodId").notNull(),
-  isManual: boolean("isManual").default(false).notNull(),
-  isPosted: boolean("isPosted").default(false).notNull(),
-  postedAt: timestamp("postedAt"),
-  postedBy: int("postedBy"),
-  createdBy: int("createdBy").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => ({
-  accountIdIdx: index("idx_ledger_entries_account_id").on(table.accountId),
-}));
+export const ledgerEntries = mysqlTable(
+  "ledgerEntries",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    entryNumber: varchar("entryNumber", { length: 50 }).notNull().unique(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+    entryDate: date("entryDate").notNull(),
+    accountId: int("accountId").notNull(),
+    debit: decimal("debit", { precision: 12, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    credit: decimal("credit", { precision: 12, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    description: text("description"),
+    referenceType: varchar("referenceType", { length: 50 }), // INVOICE, BILL, PAYMENT, EXPENSE, ADJUSTMENT
+    referenceId: int("referenceId"),
+    fiscalPeriodId: int("fiscalPeriodId").notNull(),
+    isManual: boolean("isManual").default(false).notNull(),
+    isPosted: boolean("isPosted").default(false).notNull(),
+    postedAt: timestamp("postedAt"),
+    postedBy: int("postedBy"),
+    createdBy: int("createdBy").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => ({
+    accountIdIdx: index("idx_ledger_entries_account_id").on(table.accountId),
+  })
+);
 
 export type LedgerEntry = typeof ledgerEntries.$inferSelect;
 export type InsertLedgerEntry = typeof ledgerEntries.$inferInsert;
@@ -834,7 +855,7 @@ export type InsertLedgerEntry = typeof ledgerEntries.$inferInsert;
  */
 export const fiscalPeriods = mysqlTable("fiscalPeriods", {
   id: int("id").autoincrement().primaryKey(),
-  periodName: varchar("periodName", { length: 100  }).notNull(),
+  periodName: varchar("periodName", { length: 100 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   startDate: date("startDate").notNull(),
   endDate: date("endDate").notNull(),
@@ -860,46 +881,50 @@ export type InsertFiscalPeriod = typeof fiscalPeriods.$inferInsert;
  * Customer invoices for sales transactions
  */
 // SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
-export const invoices = mysqlTable("invoices", {
-  id: int("id").autoincrement().primaryKey(),
-  invoiceNumber: varchar("invoiceNumber", { length: 50 }).notNull().unique(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  customerId: int("customerId").notNull(), // Will link to clients table when created
-  invoiceDate: date("invoiceDate").notNull(),
-  dueDate: date("dueDate").notNull(),
-  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
-  taxAmount: decimal("taxAmount", { precision: 12, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  discountAmount: decimal("discountAmount", { precision: 12, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
-  amountPaid: decimal("amountPaid", { precision: 12, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  amountDue: decimal("amountDue", { precision: 12, scale: 2 }).notNull(),
-  status: mysqlEnum("status", [
-    "DRAFT",
-    "SENT",
-    "VIEWED",
-    "PARTIAL",
-    "PAID",
-    "OVERDUE",
-    "VOID",
-  ])
-    .default("DRAFT")
-    .notNull(),
-  paymentTerms: varchar("paymentTerms", { length: 100 }),
-  notes: text("notes"),
-  referenceType: varchar("referenceType", { length: 50 }), // SALE, ORDER, CONTRACT
-  referenceId: int("referenceId"),
-  createdBy: int("createdBy").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => ({
-  customerIdIdx: index("idx_invoices_customer_id").on(table.customerId),
-}));
+export const invoices = mysqlTable(
+  "invoices",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    invoiceNumber: varchar("invoiceNumber", { length: 50 }).notNull().unique(),
+    // NOTE: deletedAt removed - column does not exist in production database (DATA-010)
+    customerId: int("customerId").notNull(), // Will link to clients table when created
+    invoiceDate: date("invoiceDate").notNull(),
+    dueDate: date("dueDate").notNull(),
+    subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
+    taxAmount: decimal("taxAmount", { precision: 12, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    discountAmount: decimal("discountAmount", { precision: 12, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
+    amountPaid: decimal("amountPaid", { precision: 12, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    amountDue: decimal("amountDue", { precision: 12, scale: 2 }).notNull(),
+    status: mysqlEnum("status", [
+      "DRAFT",
+      "SENT",
+      "VIEWED",
+      "PARTIAL",
+      "PAID",
+      "OVERDUE",
+      "VOID",
+    ])
+      .default("DRAFT")
+      .notNull(),
+    paymentTerms: varchar("paymentTerms", { length: 100 }),
+    notes: text("notes"),
+    referenceType: varchar("referenceType", { length: 50 }), // SALE, ORDER, CONTRACT
+    referenceId: int("referenceId"),
+    createdBy: int("createdBy").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    customerIdIdx: index("idx_invoices_customer_id").on(table.customerId),
+  })
+);
 
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
@@ -936,7 +961,7 @@ export type InsertInvoiceLineItem = typeof invoiceLineItems.$inferInsert;
  */
 export const bills = mysqlTable("bills", {
   id: int("id").autoincrement().primaryKey(),
-  billNumber: varchar("billNumber", { length: 50  }).notNull().unique(),
+  billNumber: varchar("billNumber", { length: 50 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   vendorId: int("vendorId").notNull(),
   billDate: date("billDate").notNull(),
@@ -1010,7 +1035,7 @@ export type InsertBillLineItem = typeof billLineItems.$inferInsert;
 export const payments = mysqlTable("payments", {
   id: int("id").autoincrement().primaryKey(),
   paymentNumber: varchar("paymentNumber", { length: 50 }).notNull().unique(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+  // NOTE: deletedAt removed - column does not exist in production database (DATA-010)
   paymentType: mysqlEnum("paymentType", ["RECEIVED", "SENT"]).notNull(), // RECEIVED = AR, SENT = AP
   paymentDate: date("paymentDate").notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
@@ -1050,7 +1075,7 @@ export type InsertPayment = typeof payments.$inferInsert;
  */
 export const bankAccounts = mysqlTable("bankAccounts", {
   id: int("id").autoincrement().primaryKey(),
-  accountName: varchar("accountName", { length: 255  }).notNull(),
+  accountName: varchar("accountName", { length: 255 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   accountNumber: varchar("accountNumber", { length: 50 }).notNull(),
   bankName: varchar("bankName", { length: 255 }).notNull(),
@@ -1108,7 +1133,7 @@ export type InsertBankTransaction = typeof bankTransactions.$inferInsert;
  */
 export const expenseCategories = mysqlTable("expenseCategories", {
   id: int("id").autoincrement().primaryKey(),
-  categoryName: varchar("categoryName", { length: 255  }).notNull(),
+  categoryName: varchar("categoryName", { length: 255 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   parentCategoryId: int("parentCategoryId"),
   ledgerAccountId: int("ledgerAccountId"), // Link to Chart of Accounts
@@ -1126,7 +1151,7 @@ export type InsertExpenseCategory = typeof expenseCategories.$inferInsert;
  */
 export const expenses = mysqlTable("expenses", {
   id: int("id").autoincrement().primaryKey(),
-  expenseNumber: varchar("expenseNumber", { length: 50  }).notNull().unique(),
+  expenseNumber: varchar("expenseNumber", { length: 50 }).notNull().unique(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   expenseDate: date("expenseDate").notNull(),
   categoryId: int("categoryId").notNull(),
@@ -1749,7 +1774,7 @@ export type InsertPricingRule = typeof pricingRules.$inferInsert;
  */
 export const pricingProfiles = mysqlTable("pricing_profiles", {
   id: int("id").primaryKey().autoincrement(),
-  name: varchar("name", { length: 255  }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   description: text("description"),
 
@@ -1901,9 +1926,11 @@ export const orders = mysqlTable(
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
     clientNeedId: int("client_need_id"), // Link to client need if order was created from a need
-    
+
     // v3.2: Link to INTAKE calendar event if order was created from appointment
-    intakeEventId: int("intake_event_id").references(() => calendarEvents.id, { onDelete: "set null" }),
+    intakeEventId: int("intake_event_id").references(() => calendarEvents.id, {
+      onDelete: "set null",
+    }),
 
     // Items (same structure for both quotes and sales)
     items: json("items").notNull(),
@@ -2244,7 +2271,9 @@ export const transactionLinks = mysqlTable(
     childIdIdx: index("idx_transaction_links_child").on(
       table.childTransactionId
     ),
-    linkTypeIdx: index("idx_transaction_links_type").on(table.transactionLinkType),
+    linkTypeIdx: index("idx_transaction_links_type").on(
+      table.transactionLinkType
+    ),
   })
 );
 
@@ -2490,7 +2519,9 @@ export const sampleRequests = mysqlTable(
   },
   table => ({
     clientIdIdx: index("idx_sample_requests_client").on(table.clientId),
-    statusIdx: index("idx_sample_requests_status").on(table.sampleRequestStatus),
+    statusIdx: index("idx_sample_requests_status").on(
+      table.sampleRequestStatus
+    ),
     requestDateIdx: index("idx_sample_requests_date").on(table.requestDate),
     relatedOrderIdx: index("idx_sample_requests_order").on(
       table.relatedOrderId
@@ -2596,7 +2627,9 @@ export const inventoryAlerts = mysqlTable(
   table => ({
     batchIdIdx: index("idx_inventory_alerts_batch").on(table.batchId),
     statusIdx: index("idx_inventory_alerts_status").on(table.alertStatus),
-    alertTypeIdx: index("idx_inventory_alerts_type").on(table.inventoryAlertType),
+    alertTypeIdx: index("idx_inventory_alerts_type").on(
+      table.inventoryAlertType
+    ),
     severityIdx: index("idx_inventory_alerts_severity").on(table.alertSeverity),
   })
 );
@@ -2711,7 +2744,7 @@ export type InsertTagHierarchy = typeof tagHierarchy.$inferInsert;
  */
 export const tagGroups = mysqlTable("tagGroups", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 100  }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
   description: text("description"),
   color: varchar("color", { length: 7 }), // Hex color code
@@ -3294,8 +3327,13 @@ export const vipPortalConfigurations = mysqlTable(
         enabled?: boolean;
         showSuggestions?: boolean;
         showRankings?: boolean;
-        type?: 'ytd_spend' | 'payment_speed' | 'order_frequency' | 'credit_utilization' | 'ontime_payment_rate';
-        displayMode?: 'blackbox' | 'transparent' | 'black_box';
+        type?:
+          | "ytd_spend"
+          | "payment_speed"
+          | "order_frequency"
+          | "credit_utilization"
+          | "ontime_payment_rate";
+        displayMode?: "blackbox" | "transparent" | "black_box";
         minimumClients?: number;
         metrics?: string[];
       };
@@ -3845,8 +3883,12 @@ export const calendarEvents = mysqlTable(
     entityId: int("entity_id"),
 
     // v3.2: Explicit foreign keys for common entities (alongside polymorphic)
-    clientId: int("client_id").references(() => clients.id, { onDelete: "set null" }),
-    vendorId: int("vendor_id").references(() => vendors.id, { onDelete: "set null" }),
+    clientId: int("client_id").references(() => clients.id, {
+      onDelete: "set null",
+    }),
+    vendorId: int("vendor_id").references(() => vendors.id, {
+      onDelete: "set null",
+    }),
 
     // v3.2: JSON metadata for v3.1 metadata system
     metadata: json("metadata"),
@@ -4347,8 +4389,11 @@ export const calendarEventInvitations = mysqlTable(
       .references(() => calendarEvents.id, { onDelete: "cascade" }),
 
     // Invitee information (polymorphic)
-    inviteeType: mysqlEnum("invitee_type", ["USER", "CLIENT", "EXTERNAL"])
-      .notNull(),
+    inviteeType: mysqlEnum("invitee_type", [
+      "USER",
+      "CLIENT",
+      "EXTERNAL",
+    ]).notNull(),
     userId: int("user_id").references(() => users.id, { onDelete: "cascade" }),
     clientId: int("client_id").references(() => clients.id, {
       onDelete: "cascade",
@@ -4440,14 +4485,17 @@ export const calendarInvitationSettings = mysqlTable(
 
     // Auto-accept rules
     autoAcceptAll: boolean("auto_accept_all").default(false).notNull(),
-    autoAcceptFromOrganizers:
-      json("auto_accept_from_organizers").$type<number[]>(),
+    autoAcceptFromOrganizers: json("auto_accept_from_organizers").$type<
+      number[]
+    >(),
     autoAcceptByEventType: json("auto_accept_by_event_type").$type<string[]>(),
     autoAcceptByModule: json("auto_accept_by_module").$type<string[]>(),
 
     // Notification preferences
     notifyOnInvitation: boolean("notify_on_invitation").default(true).notNull(),
-    notifyOnAutoAccept: boolean("notify_on_auto_accept").default(true).notNull(),
+    notifyOnAutoAccept: boolean("notify_on_auto_accept")
+      .default(true)
+      .notNull(),
 
     // Metadata
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -4627,7 +4675,6 @@ export {
   type ClientPriceAlert,
   type InsertClientPriceAlert,
 } from "./schema-vip-portal";
-
 
 // ============================================================================
 // DEPLOYMENT MONITORING
