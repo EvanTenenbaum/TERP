@@ -91,12 +91,12 @@ jobs:
             sleep 2
           done
 
-      - name: Setup test database
+      - name: Setup test database (schema only, no mock data)
         env:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
         run: |
           pnpm db:push
-          pnpm seed:light
+          # Skip seeding - tests should work with empty database or use existing production data
 
       - name: Build application
         env:
