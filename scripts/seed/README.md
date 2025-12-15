@@ -30,6 +30,15 @@ scripts/seed/
 │   ├── validation.ts      # Schema validation using introspection
 │   ├── data-masking.ts    # PII masking with Faker.js
 │   └── logging.ts         # Structured logging utilities
+├── seeders/
+│   ├── index.ts           # Seeder types and exports
+│   ├── seed-vendors.ts    # Vendor seeder (no dependencies)
+│   ├── seed-clients.ts    # Client seeder (no dependencies)
+│   ├── seed-products.ts   # Product seeder (depends on brands)
+│   ├── seed-batches.ts    # Batch seeder (depends on products, lots, vendors)
+│   ├── seed-orders.ts     # Order seeder (depends on clients, batches)
+│   ├── seed-invoices.ts   # Invoice seeder (depends on clients, orders)
+│   └── seed-payments.ts   # Payment seeder (depends on invoices, clients)
 └── README.md              # This documentation
 ```
 
@@ -355,7 +364,7 @@ const audit = masker.getAuditSummary();
 
 ## Roadmap
 
-### Phase 1 (Current) ✅
+### Phase 1 ✅
 - [x] Database locking mechanism
 - [x] Schema validation utilities
 - [x] PII masking utilities
@@ -363,15 +372,18 @@ const audit = masker.getAuditSummary();
 - [x] Structured logging
 - [x] Documentation
 
-### Phase 2 (Planned)
-- [ ] Individual table seeders
-- [ ] Idempotency checks
-- [ ] Rollback capabilities
-- [ ] Metadata table for tracking
-- [ ] Remove legacy `SKIP_SEEDING` bypass
+### Phase 2 ✅
+- [x] Individual table seeders (vendors, clients, products, batches, orders, invoices, payments)
+- [x] FK dependency ordering
+- [x] Schema validation before insert
+- [x] PII masking in non-production
+- [x] Batch inserts for performance
 
 ### Phase 3 (Future)
+- [ ] Idempotency checks (seeding_metadata table)
+- [ ] Rollback capabilities
 - [ ] Seed data snapshots
 - [ ] Cross-environment seeding
 - [ ] Parallel table seeding
 - [ ] Custom data templates
+- [ ] Remove legacy `SKIP_SEEDING` bypass

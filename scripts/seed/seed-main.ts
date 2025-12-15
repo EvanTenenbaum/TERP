@@ -24,6 +24,19 @@ import { PIIMasker } from "./lib/data-masking";
 import { seedLogger, withPerformanceLogging } from "./lib/logging";
 import * as readline from "readline";
 
+// Import seeders
+import {
+  SEEDING_ORDER,
+  type SeederResult,
+  seedVendors,
+  seedClients,
+  seedProducts,
+  seedBatches,
+  seedOrders,
+  seedInvoices,
+  seedPayments,
+} from "./seeders";
+
 // ============================================================================
 // Type Definitions
 // ============================================================================
@@ -37,6 +50,7 @@ interface CLIFlags {
   rollback: boolean;
   help: boolean;
   verbose: boolean;
+  clean: boolean;
 }
 
 interface SeedingStats {
@@ -66,6 +80,7 @@ function parseArgs(): CLIFlags {
     rollback: false,
     help: false,
     verbose: false,
+    clean: false,
   };
 
   for (const arg of args) {
@@ -79,6 +94,8 @@ function parseArgs(): CLIFlags {
       flags.rollback = true;
     } else if (arg === "--verbose" || arg === "-v") {
       flags.verbose = true;
+    } else if (arg === "--clean" || arg === "-c") {
+      flags.clean = true;
     } else if (arg.startsWith("--table=")) {
       flags.table = arg.split("=")[1];
     } else if (arg.startsWith("--size=")) {
@@ -143,6 +160,7 @@ OPTIONS:
   --force, -f          Skip confirmation prompts (required for production)
   --rollback           Rollback seeded data (Phase 2 feature)
   --verbose, -v        Enable verbose output
+  --clean, -c          Clear existing data before seeding (respects FK order)
   --help, -h           Show this help message
 
 EXAMPLES:
@@ -231,20 +249,57 @@ function getRecordCounts(size: CLIFlags["size"]): Record<string, number> {
 }
 
 /**
- * Available tables for seeding
+ * Available tables for seeding (in FK dependency order)
  */
-const SEEDABLE_TABLES = [
-  "clients",
-  "vendors",
-  "products",
-  "batches",
-  "orders",
-  "invoices",
-  "payments",
-];
+const SEEDABLE_TABLES = [...SEEDING_ORDER];
 
 /**
- * Execute seeding operation (placeholder for Phase 2)
+ * Tables in reverse FK order for deletion
+ */
+const DELETION_ORDER = [...SEEDING_ORDER].reverse();
+
+/**
+ * Clean existing data from tables (in reverse FK order)
+ */
+async function cleanTables(tables: string[], dryRun: boolean): Promise<void> {
+  // Get tables in reverse FK order for safe deletion
+  const tablesToClean = DELETION_ORDER.filter((t) => tables.includes(t));
+
+  seedLogger.operationStart("clean", { tables: tablesToClean, dryRun });
+
+  for (const tableName of tablesToClean) {
+    if (dryRun) {
+      seedLogger.dryRun({ table: tableName, action: "Would delete all records" });
+      continue;
+    }
+
+    try {
+      // Use raw SQL to delete all records
+      await db.execute(`DELETE FROM \`${tableName}\``);
+      console.log(`   ✓ Cleaned table: ${tableName}`);
+    } catch (error) {
+      console.warn(`   ⚠ Failed to clean ${tableName}: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+
+  seedLogger.operationSuccess("clean", { tables: tablesToClean });
+}
+
+/**
+ * Seeder function map
+ */
+const SEEDERS: Record<string, (count: number, validator: SchemaValidator, masker: PIIMasker) => Promise<SeederResult>> = {
+  vendors: seedVendors,
+  clients: seedClients,
+  products: seedProducts,
+  batches: seedBatches,
+  orders: seedOrders,
+  invoices: seedInvoices,
+  payments: seedPayments,
+};
+
+/**
+ * Execute seeding operation
  */
 async function executeSeed(
   flags: CLIFlags,
@@ -289,8 +344,6 @@ async function executeSeed(
       continue;
     }
 
-    // Phase 2: Individual seeders will be called here
-    // For now, we just validate the infrastructure is working
     try {
       // Validate table exists
       const tableExists = await validator.validateTableExists(tableName);
@@ -303,17 +356,33 @@ async function executeSeed(
         continue;
       }
 
-      // Log that individual seeders are not yet implemented
-      seedLogger.operationStart(`seed:${tableName}`, {
-        note: "Phase 2 - Individual seeders not yet implemented",
-        recordCount,
-      });
+      // Get the seeder function
+      const seeder = SEEDERS[tableName];
+      if (!seeder) {
+        seedLogger.validationWarning(tableName, "No seeder implemented for this table");
+        stats.errors.push({
+          table: tableName,
+          error: "No seeder implemented",
+        });
+        continue;
+      }
 
-      // Placeholder for Phase 2 seeding
-      // await seedTable(tableName, recordCount, validator, masker);
+      // Execute the seeder
+      const result = await seeder(recordCount, validator, masker);
 
-      stats.recordsInserted[tableName] = 0; // Will be updated in Phase 2
-      seedLogger.tableSeeded(tableName, 0, 0);
+      // Update stats
+      stats.recordsInserted[tableName] = result.inserted;
+
+      // Add any errors from the seeder
+      if (result.errors.length > 0) {
+        for (const error of result.errors) {
+          stats.errors.push({ table: tableName, error });
+        }
+      }
+
+      if (result.skipped > 0) {
+        seedLogger.recordSkipped(tableName, `${result.skipped} records skipped due to validation errors`);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       stats.errors.push({ table: tableName, error: errorMessage });
@@ -410,6 +479,14 @@ async function main(): Promise<void> {
         );
       }
     });
+
+    // Clean existing data if requested
+    if (flags.clean) {
+      const tables = flags.table ? [flags.table] : SEEDABLE_TABLES;
+      await withPerformanceLogging("clean-tables", async () => {
+        await cleanTables(tables, flags.dryRun);
+      });
+    }
 
     // Execute seeding
     await withPerformanceLogging("seed-execution", async () => {
