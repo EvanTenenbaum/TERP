@@ -132,3 +132,15 @@ latest_deployment.json
 .deployment-monitor-*.pid
 .deployment-monitor-*.lock
 .env.logging
+
+# Playwright test results (local runs)
+test-results/
+test-results.json
+playwright-report/
+playwright/.cache/
+
+# QA Results - keep history but ignore local test outputs
+!qa-results/
+!qa-results/.gitkeep
+!qa-results/history.json
+!qa-results/audit/
