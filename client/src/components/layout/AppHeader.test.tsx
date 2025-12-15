@@ -26,6 +26,45 @@ vi.mock("../../../version.json", () => ({
   },
 }));
 
+// Mock tRPC with specific inbox data
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    inbox: {
+      getStats: {
+        useQuery: vi.fn(() => ({
+          data: { unread: 3, total: 10 },
+          isLoading: false,
+          isError: false,
+        })),
+      },
+      getUnread: {
+        useQuery: vi.fn(() => ({
+          data: [
+            { id: 1, title: "Test Item 1", createdAt: new Date() },
+            { id: 2, title: "Test Item 2", createdAt: new Date() },
+            { id: 3, title: "Test Item 3", createdAt: new Date() },
+          ],
+          isLoading: false,
+          isError: false,
+        })),
+      },
+      bulkMarkAsSeen: {
+        useMutation: vi.fn(() => ({
+          mutate: vi.fn(),
+          isLoading: false,
+        })),
+      },
+    },
+    useContext: vi.fn(() => ({
+      inbox: {
+        getMyItems: { invalidate: vi.fn() },
+        getStats: { invalidate: vi.fn() },
+        getUnread: { invalidate: vi.fn() },
+      },
+    })),
+  },
+}));
+
 describe("AppHeader - Inbox Dropdown", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -41,8 +80,7 @@ describe("AppHeader - Inbox Dropdown", () => {
     const inboxButton = screen.getByTitle("Inbox");
     expect(inboxButton).toBeInTheDocument();
 
-    // Check for unread badge
-    // This relies on the global tRPC mock in setup.ts
+    // Check for unread badge - should show "3" based on mock data
     const badge = screen.getByText("3");
     expect(badge).toBeInTheDocument();
   });
@@ -73,7 +111,7 @@ describe("AppHeader - Inbox Dropdown", () => {
       </ThemeProvider>
     );
 
-    // Should show "3" based on mock data from setup.ts
+    // Should show "3" based on mock data
     const badge = screen.getByText("3");
     expect(badge).toBeInTheDocument();
     expect(badge).toHaveClass("absolute", "-top-1", "-right-1");

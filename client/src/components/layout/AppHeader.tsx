@@ -40,7 +40,8 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   const { data: inboxStats } = trpc.inbox.getStats.useQuery();
 
   // Fetch recent inbox items for dropdown preview
-  const { data: recentItems = [] } = trpc.inbox.getUnread.useQuery();
+  const { data: recentItemsData } = trpc.inbox.getUnread.useQuery();
+  const recentItems = recentItemsData ?? [];
 
   const utils = trpc.useContext();
 
