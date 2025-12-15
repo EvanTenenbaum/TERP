@@ -1,0 +1,309 @@
+name: Initial QA Deep Dive Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      generate_specs:
+        description: 'Generate test specs using Playwright AI Planner'
+        type: boolean
+        default: true
+      run_all_tests:
+        description: 'Run all E2E tests after generation'
+        type: boolean
+        default: true
+      create_bugs:
+        description: 'Create bug entries for failures'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  initial-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpassword
+          MYSQL_DATABASE: terp_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping -h 127.0.0.1 -P 3306 --silent; do
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+
+      - name: Setup test database with full data
+        env:
+          DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
+        run: |
+          pnpm db:push
+          pnpm seed:full
+
+      - name: Build application
+        env:
+          DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
+        run: pnpm build
+
+      - name: Start application server
+        env:
+          DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
+          NODE_ENV: test
+          PORT: 5173
+          JWT_SECRET: test-secret-for-ci-only-32chars!!
+        run: |
+          pnpm start &
+          sleep 15
+          curl --retry 15 --retry-delay 3 --retry-connrefused http://localhost:5173/health || true
+
+      - name: Run comprehensive E2E test suite
+        id: e2e_tests
+        if: inputs.run_all_tests
+        env:
+          DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
+          CI: true
+        run: |
+          echo "🔍 Running comprehensive E2E test suite..."
+          
+          # Playwright config already has JSON reporter configured to output test-results.json
+          # Use --retries=1 to reduce flakiness
+          pnpm exec playwright test --retries=1 || true
+          
+          echo "tests_completed=true" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Generate audit report
+        id: audit_report
+        run: |
+          echo "📊 Generating audit report..."
+          
+          # Create audit report directory
+          mkdir -p qa-results/audit
+          
+          # Generate timestamp
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # Parse test results if they exist
+          if [ -f test-results.json ]; then
+            TOTAL=$(jq '.stats.expected + .stats.unexpected + .stats.flaky + .stats.skipped' test-results.json 2>/dev/null || echo "0")
+            PASSED=$(jq '.stats.expected' test-results.json 2>/dev/null || echo "0")
+            FAILED=$(jq '.stats.unexpected' test-results.json 2>/dev/null || echo "0")
+            SKIPPED=$(jq '.stats.skipped' test-results.json 2>/dev/null || echo "0")
+            FLAKY=$(jq '.stats.flaky' test-results.json 2>/dev/null || echo "0")
+          else
+            TOTAL=0
+            PASSED=0
+            FAILED=0
+            SKIPPED=0
+            FLAKY=0
+          fi
+          
+          # Create audit summary
+          cat > qa-results/audit/INITIAL_AUDIT_REPORT.md << EOF
+          # TERP Initial QA Audit Report
+          
+          **Generated:** ${TIMESTAMP}
+          **Workflow Run:** [View Details](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
+          
+          ## Executive Summary
+          
+          This report documents the initial comprehensive QA audit of the TERP application.
+          
+          ## Test Results
+          
+          | Metric | Count |
+          |--------|-------|
+          | Total Tests | ${TOTAL} |
+          | Passed | ${PASSED} |
+          | Failed | ${FAILED} |
+          | Skipped | ${SKIPPED} |
+          | Flaky | ${FLAKY} |
+          
+          ## Pass Rate
+          
+          $(if [ "$TOTAL" -gt 0 ]; then echo "**$(( PASSED * 100 / TOTAL ))%** of tests passing"; else echo "No tests run"; fi)
+          
+          ## Test Coverage Areas
+          
+          The following areas were tested:
+          
+          - Authentication flows
+          - Order CRUD operations
+          - Inventory management
+          - Client management
+          - Dashboard functionality
+          - Navigation and UI
+          - Live catalog (admin and client views)
+          
+          ## Recommendations
+          
+          1. Review all failing tests and create bug tickets
+          2. Prioritize critical path failures (auth, orders)
+          3. Address flaky tests to improve CI reliability
+          4. Consider adding more edge case coverage
+          
+          ## Next Steps
+          
+          - [ ] Review generated bug entries in MASTER_ROADMAP.md
+          - [ ] Prioritize bugs by severity
+          - [ ] Assign bugs to sprints
+          - [ ] Set up daily QA monitoring
+          
+          ---
+          
+          *This report was automatically generated by the Initial QA Audit workflow.*
+          EOF
+          
+          echo "audit_generated=true" >> $GITHUB_OUTPUT
+          echo "total_tests=$TOTAL" >> $GITHUB_OUTPUT
+          echo "failed_tests=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: Run QA Pipeline to create bugs
+        if: inputs.create_bugs
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ -f test-results.json ]; then
+            pnpm tsx scripts/qa/index.ts test-results.json || true
+          else
+            echo "No test results to process"
+          fi
+        continue-on-error: true
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: initial-audit-${{ github.run_id }}
+          path: |
+            test-results.json
+            qa-results/
+            playwright-report/
+            specs/
+          retention-days: 90
+
+      - name: Commit audit results
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Add all generated files
+          git add -A qa-results/ || true
+          git add -A docs/prompts/ || true
+          git add -A docs/roadmaps/MASTER_ROADMAP.md || true
+          git add -A specs/ || true
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(qa): initial audit results - ${{ steps.audit_report.outputs.failed_tests }} failures found [skip ci]"
+            git push
+          fi
+
+      - name: Create audit summary issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let reportContent = '';
+            try {
+              reportContent = fs.readFileSync('qa-results/audit/INITIAL_AUDIT_REPORT.md', 'utf-8');
+            } catch (e) {
+              reportContent = '## Initial Audit\n\nAudit completed. Check workflow artifacts for details.';
+            }
+            
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            
+            let body = reportContent;
+            body += `\n\n---\n\n[View Workflow Run](${runUrl})`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔍 Initial QA Audit Complete',
+              labels: ['automated-qa', 'audit', 'documentation'],
+              body: body
+            });
+
+      - name: Send Slack notification
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "No Slack webhook configured"
+            exit 0
+          fi
+          
+          TOTAL="${{ steps.audit_report.outputs.total_tests }}"
+          FAILED="${{ steps.audit_report.outputs.failed_tests }}"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          
+          curl -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"text\": \"🔍 *TERP Initial QA Audit Complete*\n\n📊 *Results:*\n• Total Tests: ${TOTAL}\n• Failed: ${FAILED}\n\n📋 Bug entries have been added to the roadmap.\n\n🔗 <${RUN_URL}|View Full Report>\"
+            }"

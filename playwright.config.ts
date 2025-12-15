@@ -15,6 +15,7 @@ export default defineConfig({
   reporter: [
     process.env.CI ? ['dot'] : ['list'],
     ['html'],
+    ['json', { outputFile: 'test-results.json' }],
     [
       '@argos-ci/playwright/reporter',
       {
@@ -39,10 +40,12 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
+  // In CI, we start the server manually before running tests
+  // In local dev, Playwright starts the dev server automatically
+  webServer: process.env.CI ? undefined : {
     command: 'pnpm dev',
     url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
   },
   globalSetup: resolve(__dirname, './testing/setup-e2e.ts'),
   metadata: {
