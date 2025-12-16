@@ -10,9 +10,6 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "mysql",
   dbCredentials: {
-    url: connectionString,
-    ssl: {
-      rejectUnauthorized: false
-    }
+    url: connectionString
   },
 });
