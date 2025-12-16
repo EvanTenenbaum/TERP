@@ -45,16 +45,15 @@ export default function Expenses() {
   // Fetch expense breakdown
   const { data: breakdown } = trpc.accounting.expenses.getBreakdownByCategory.useQuery({});
 
-  // Filter expenses
+  // Filter expenses - extract from paginated response { expenses: [], total: number }
   const filteredExpenses = useMemo(() => {
-    if (!expenses) return [];
-    
-    const expenseList = Array.isArray(expenses) ? expenses : [];
+    // Extract expenses array from paginated response object
+    const expenseList = expenses?.expenses ?? [];
     
     if (!searchQuery) return expenseList;
 
     const query = searchQuery.toLowerCase();
-    return expenseList.filter((exp: any) =>
+    return expenseList.filter((exp) =>
       (exp.expenseNumber && exp.expenseNumber.toLowerCase().includes(query)) ||
       (exp.description && exp.description.toLowerCase().includes(query))
     );

@@ -2,11 +2,16 @@
  * Payment Seeder
  *
  * Seeds the payments table with realistic payment data.
+ * Links payments to invoices and updates invoice amountPaid and status.
  * Depends on: invoices, clients
+ *
+ * Requirements: 9.3 - WHEN seeding payments THEN the system SHALL link them to
+ * invoices via invoiceId and update invoice amountPaid and status
  */
 
 import { db } from "../../db-sync";
 import { payments, invoices, clients } from "../../../drizzle/schema";
+import { eq } from "drizzle-orm";
 import type { SchemaValidator } from "../lib/validation";
 import type { PIIMasker } from "../lib/data-masking";
 import { seedLogger, withPerformanceLogging } from "../lib/logging";
@@ -17,10 +22,11 @@ import { faker } from "@faker-js/faker";
 // Payment Generation Utilities
 // ============================================================================
 
-type PaymentMethod = PaymentMethod;
+type PaymentMethod = "CASH" | "CHECK" | "WIRE" | "ACH" | "CREDIT_CARD" | "DEBIT_CARD" | "OTHER";
 const _PAYMENT_METHODS = ["CASH", "CHECK", "WIRE", "ACH", "CREDIT_CARD", "DEBIT_CARD", "OTHER"] as const;
-type PaymentType = PaymentType;
+type PaymentType = "RECEIVED" | "SENT";
 const _PAYMENT_TYPES = ["RECEIVED", "SENT"] as const;
+type InvoiceStatus = "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
 
 interface PaymentData {
   paymentNumber: string;
@@ -38,6 +44,51 @@ interface PaymentData {
   isReconciled: boolean;
   createdBy: number;
   createdAt: Date;
+}
+
+interface InvoiceUpdate {
+  invoiceId: number;
+  newAmountPaid: string;
+  newAmountDue: string;
+  newStatus: InvoiceStatus;
+}
+
+/**
+ * Calculate the new invoice status based on payment amounts
+ * Requirements: 9.3
+ */
+export function calculateInvoiceStatus(
+  totalAmount: number,
+  amountPaid: number
+): InvoiceStatus {
+  if (amountPaid >= totalAmount) {
+    return "PAID";
+  } else if (amountPaid > 0) {
+    return "PARTIAL";
+  }
+  return "SENT"; // Default status for unpaid invoices
+}
+
+/**
+ * Calculate invoice update after payment
+ * Requirements: 9.3 - Update invoice amountPaid and status after payment creation
+ */
+export function calculateInvoiceUpdate(
+  invoiceId: number,
+  currentAmountPaid: number,
+  totalAmount: number,
+  paymentAmount: number
+): InvoiceUpdate {
+  const newAmountPaid = currentAmountPaid + paymentAmount;
+  const newAmountDue = Math.max(0, totalAmount - newAmountPaid);
+  const newStatus = calculateInvoiceStatus(totalAmount, newAmountPaid);
+
+  return {
+    invoiceId,
+    newAmountPaid: newAmountPaid.toFixed(2),
+    newAmountDue: newAmountDue.toFixed(2),
+    newStatus,
+  };
 }
 
 /**
@@ -114,6 +165,7 @@ function generatePayment(
 
 /**
  * Seed payments table
+ * Requirements: 9.3 - Link payments to invoices and update invoice amountPaid and status
  */
 export async function seedPayments(
   count: number,
@@ -127,13 +179,15 @@ export async function seedPayments(
     try {
       seedLogger.tableSeeding("payments", count);
 
-      // Get existing invoices that have been paid (at least partially)
+      // Get existing invoices - prioritize unpaid/partially paid invoices
       const existingInvoices = await db
         .select({
           id: invoices.id,
           customerId: invoices.customerId,
           totalAmount: invoices.totalAmount,
           amountPaid: invoices.amountPaid,
+          amountDue: invoices.amountDue,
+          status: invoices.status,
           invoiceDate: invoices.invoiceDate,
         })
         .from(invoices);
@@ -148,34 +202,60 @@ export async function seedPayments(
         return result;
       }
 
-      // Filter invoices that have payments
-      const paidInvoices = existingInvoices.filter(
-        (inv) => parseFloat(inv.amountPaid || "0") > 0
+      // Filter invoices that need payments (not fully paid)
+      const unpaidInvoices = existingInvoices.filter(
+        (inv) => inv.status !== "PAID" && inv.status !== "VOID"
       );
 
       const records: PaymentData[] = [];
+      const invoiceUpdates: InvoiceUpdate[] = [];
       const batchSize = 50;
 
-      // Generate payments
+      // Track cumulative payments per invoice to handle multiple payments
+      const invoicePaymentTotals = new Map<number, number>();
+
+      // Generate payments - link to invoices when available
       for (let i = 0; i < count; i++) {
         let clientId: number | null = null;
         let vendorId: number | null = null;
         let invoiceId: number | null = null;
         let invoiceAmount: number;
         let invoiceDate: Date;
+        let invoiceForUpdate: typeof existingInvoices[0] | null = null;
 
-        if (paidInvoices.length > 0 && i < paidInvoices.length) {
-          // Link to existing paid invoice (AR payment - RECEIVED)
-          const invoice = paidInvoices[i];
+        if (unpaidInvoices.length > 0) {
+          // Link to unpaid invoice (AR payment - RECEIVED)
+          // Cycle through unpaid invoices
+          const invoiceIndex = i % unpaidInvoices.length;
+          const invoice = unpaidInvoices[invoiceIndex];
           clientId = invoice.customerId;
           invoiceId = invoice.id;
-          invoiceAmount = parseFloat(invoice.amountPaid || "0");
+          invoiceForUpdate = invoice;
+
+          // Calculate remaining amount due considering previous payments in this seeding run
+          const previousPayments = invoicePaymentTotals.get(invoice.id) || 0;
+          const currentAmountPaid = parseFloat(invoice.amountPaid || "0") + previousPayments;
+          const totalAmount = parseFloat(invoice.totalAmount || "1000");
+          const remainingDue = totalAmount - currentAmountPaid;
+
+          // Payment amount: either full remaining or partial
+          if (remainingDue > 0) {
+            const isPartial = Math.random() < 0.3; // 30% chance of partial payment
+            invoiceAmount = isPartial
+              ? remainingDue * faker.number.float({ min: 0.3, max: 0.9 })
+              : remainingDue;
+          } else {
+            // Invoice already fully paid, create a smaller payment
+            invoiceAmount = faker.number.float({ min: 100, max: 1000, fractionDigits: 2 });
+          }
+
           invoiceDate = invoice.invoiceDate || new Date();
         } else if (existingInvoices.length > 0) {
           // Link to any invoice (AR payment - RECEIVED)
           const invoice = existingInvoices[i % existingInvoices.length];
           clientId = invoice.customerId;
           invoiceId = invoice.id;
+          invoiceForUpdate = invoice;
           invoiceAmount = parseFloat(invoice.totalAmount || "1000");
           invoiceDate = invoice.invoiceDate || new Date();
         } else {
@@ -190,7 +270,7 @@ export async function seedPayments(
 
         const payment = generatePayment(i, clientId, vendorId, invoiceId, invoiceAmount, invoiceDate);
 
-        const validation = await validator.validateColumns("payments", payment);
+        const validation = await validator.validateColumns("payments", payment as unknown as Record<string, unknown>);
         if (!validation.valid) {
           result.errors.push(
             `Payment ${i}: ${validation.errors.map((e) => e.message).join(", ")}`
@@ -200,9 +280,28 @@ export async function seedPayments(
         }
 
         records.push(payment);
+
+        // Track invoice update if linked to an invoice
+        if (invoiceId && invoiceForUpdate) {
+          const previousPayments = invoicePaymentTotals.get(invoiceId) || 0;
+          const paymentAmount = parseFloat(payment.amount);
+          invoicePaymentTotals.set(invoiceId, previousPayments + paymentAmount);
+
+          // Calculate invoice update
+          const currentAmountPaid = parseFloat(invoiceForUpdate.amountPaid || "0") + previousPayments;
+          const totalAmount = parseFloat(invoiceForUpdate.totalAmount || "0");
+
+          const update = calculateInvoiceUpdate(
+            invoiceId,
+            currentAmountPaid,
+            totalAmount,
+            paymentAmount
+          );
+          invoiceUpdates.push(update);
+        }
       }
 
-      // Insert in batches
+      // Insert payments in batches
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
         await db.insert(payments).values(batch);
@@ -216,6 +315,38 @@ export async function seedPayments(
           );
         }
       }
+
+      // Update invoices with new amountPaid and status
+      // Group updates by invoiceId to get final state
+      const finalInvoiceUpdates = new Map<number, InvoiceUpdate>();
+      for (const update of invoiceUpdates) {
+        finalInvoiceUpdates.set(update.invoiceId, update);
+      }
+
+      // Apply invoice updates
+      let invoicesUpdated = 0;
+      for (const [invoiceId, update] of finalInvoiceUpdates) {
+        try {
+          await db
+            .update(invoices)
+            .set({
+              amountPaid: update.newAmountPaid,
+              amountDue: update.newAmountDue,
+              status: update.newStatus,
+            })
+            .where(eq(invoices.id, invoiceId));
+          invoicesUpdated++;
+        } catch (updateError) {
+          result.errors.push(
+            `Failed to update invoice ${invoiceId}: ${updateError instanceof Error ? updateError.message : String(updateError)}`
+          );
+        }
+      }
+
+      seedLogger.operationSuccess("seed:payments", {
+        paymentsInserted: result.inserted,
+        invoicesUpdated,
+      });
 
       result.duration = Date.now() - startTime;
       seedLogger.tableSeeded("payments", result.inserted, result.duration);

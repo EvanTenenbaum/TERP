@@ -55,13 +55,14 @@ export type SeederFunction = (
  * Seeding order - tables must be seeded in this order to respect FK constraints
  */
 export const SEEDING_ORDER = [
-  "vendors",   // No dependencies
-  "clients",   // No dependencies
-  "products",  // Depends on vendors (via brands)
-  "batches",   // Depends on products, vendors
-  "orders",    // Depends on clients, batches
-  "invoices",  // Depends on clients, orders
-  "payments",  // Depends on invoices, clients
+  "vendors",              // No dependencies
+  "clients",              // No dependencies
+  "products",             // Depends on vendors (via brands)
+  "batches",              // Depends on products, vendors
+  "orders",               // Depends on clients, batches
+  "client_transactions",  // Depends on clients, orders (Requirements: 6.1, 9.1)
+  "invoices",             // Depends on clients, orders
+  "payments",             // Depends on invoices, clients
 ] as const;
 
 export type SeedableTable = (typeof SEEDING_ORDER)[number];
@@ -112,5 +113,6 @@ export { seedVendors } from "./seed-vendors";
 export { seedProducts } from "./seed-products";
 export { seedBatches } from "./seed-batches";
 export { seedOrders } from "./seed-orders";
+export { seedClientTransactions } from "./seed-client-transactions";
 export { seedInvoices } from "./seed-invoices";
 export { seedPayments } from "./seed-payments";

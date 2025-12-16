@@ -292,6 +292,33 @@ export const inventoryRouter = router({
       return await inventoryDb.getAllBrands();
     }),
 
+  // Get batches by vendor
+  // _Requirements: 7.1_
+  getBatchesByVendor: protectedProcedure.use(requirePermission("inventory:read"))
+    .input(z.object({ vendorId: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        inventoryLogger.operationStart("getBatchesByVendor", {
+          vendorId: input.vendorId,
+        });
+
+        const result = await inventoryDb.getBatchesByVendor(input.vendorId);
+
+        inventoryLogger.operationSuccess("getBatchesByVendor", {
+          vendorId: input.vendorId,
+          batchCount: result.length,
+        });
+
+        return result;
+      } catch (error) {
+        inventoryLogger.operationFailure("getBatchesByVendor", error as Error, {
+          vendorId: input.vendorId,
+        });
+        handleError(error, "inventory.getBatchesByVendor");
+        throw error;
+      }
+    }),
+
   // Seed inventory data
   seed: protectedProcedure.use(requirePermission("inventory:read")).mutation(async () => {
     await inventoryDb.seedInventoryData();

@@ -39,16 +39,15 @@ export default function Bills() {
     { enabled: showAging }
   );
 
-  // Filter bills
+  // Filter bills - extract from paginated response { bills: [], total: number }
   const filteredBills = useMemo(() => {
-    if (!bills) return [];
-    
-    const billList = Array.isArray(bills) ? bills : [];
+    // Extract bills array from paginated response object
+    const billList = bills?.bills ?? [];
     
     if (!searchQuery) return billList;
 
     const query = searchQuery.toLowerCase();
-    return billList.filter((bill: any) =>
+    return billList.filter((bill: { id: number; billNumber: string; billDate: Date | string; dueDate: Date | string; totalAmount: string; amountPaid: string; amountDue: string; status: string }) =>
       bill.billNumber.toLowerCase().includes(query)
     );
   }, [bills, searchQuery]);

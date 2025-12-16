@@ -34,16 +34,15 @@ export default function BankTransactions() {
     isReconciled: selectedReconciled === "YES" ? true : selectedReconciled === "NO" ? false : undefined,
   });
 
-  // Filter transactions
+  // Filter transactions - extract from paginated response { transactions: [], total: number }
   const filteredTransactions = useMemo(() => {
-    if (!transactions) return [];
-    
-    const txList = Array.isArray(transactions) ? transactions : [];
+    // Extract transactions array from paginated response object
+    const txList = transactions?.transactions ?? [];
     
     if (!searchQuery) return txList;
 
     const query = searchQuery.toLowerCase();
-    return txList.filter((tx: any) =>
+    return txList.filter((tx) =>
       (tx.description && tx.description.toLowerCase().includes(query)) ||
       (tx.referenceNumber && tx.referenceNumber.toLowerCase().includes(query))
     );

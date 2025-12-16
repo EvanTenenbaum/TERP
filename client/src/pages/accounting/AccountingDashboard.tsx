@@ -52,11 +52,11 @@ export default function AccountingDashboard() {
     return format(date, "MMM dd, yyyy");
   };
 
-  // Calculate totals
-  const invoiceList = Array.isArray(recentInvoices) ? recentInvoices : [];
-  const billList = Array.isArray(recentBills) ? recentBills : [];
-  const receivablesList = Array.isArray(outstandingReceivables) ? outstandingReceivables : [];
-  const payablesList = Array.isArray(outstandingPayables) ? outstandingPayables : [];
+  // Calculate totals - extract from paginated response objects { invoices: [], total: number }
+  const invoiceList = recentInvoices?.invoices ?? [];
+  const billList = recentBills?.bills ?? [];
+  const receivablesList = outstandingReceivables?.invoices ?? [];
+  const payablesList = outstandingPayables?.bills ?? [];
 
   const totalReceivables = receivablesList.reduce((sum: number, inv: any) => 
     sum + parseFloat(inv.amountDue), 0
@@ -68,7 +68,7 @@ export default function AccountingDashboard() {
   // Get recent items (last 5)
   const recentInvoicesList = invoiceList.slice(0, 5);
   const recentBillsList = billList.slice(0, 5);
-  const recentPaymentsList = Array.isArray(recentPayments) ? recentPayments.slice(0, 5) : [];
+  const recentPaymentsList = (recentPayments?.payments ?? []).slice(0, 5);
 
   return (
     <div className="flex flex-col gap-6 p-6">

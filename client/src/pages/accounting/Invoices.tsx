@@ -52,17 +52,15 @@ export default function Invoices() {
     { enabled: showAging }
   );
 
-  // Filter invoices
+  // Filter invoices - extract from paginated response { invoices: [], total: number }
   const filteredInvoices = useMemo(() => {
-    if (!invoices) return [];
-    
-    // Handle array response
-    const invoiceList = Array.isArray(invoices) ? invoices : [];
+    // Extract invoices array from paginated response object
+    const invoiceList = invoices?.invoices ?? [];
     
     if (!searchQuery) return invoiceList;
 
     const query = searchQuery.toLowerCase();
-    return invoiceList.filter((inv: any) =>
+    return invoiceList.filter((inv: Invoice) =>
       inv.invoiceNumber.toLowerCase().includes(query)
     );
   }, [invoices, searchQuery]);

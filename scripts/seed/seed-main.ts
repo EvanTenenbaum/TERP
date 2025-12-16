@@ -33,6 +33,7 @@ import {
   seedProducts,
   seedBatches,
   seedOrders,
+  seedClientTransactions,
   seedInvoices,
   seedPayments,
 } from "./seeders";
@@ -222,6 +223,7 @@ function getRecordCounts(size: CLIFlags["size"]): Record<string, number> {
       products: 20,
       batches: 30,
       orders: 50,
+      client_transactions: 0, // Auto-generated from orders
       invoices: 50,
       payments: 30,
     },
@@ -231,6 +233,7 @@ function getRecordCounts(size: CLIFlags["size"]): Record<string, number> {
       products: 100,
       batches: 200,
       orders: 400,
+      client_transactions: 0, // Auto-generated from orders
       invoices: 400,
       payments: 200,
     },
@@ -240,6 +243,7 @@ function getRecordCounts(size: CLIFlags["size"]): Record<string, number> {
       products: 500,
       batches: 1000,
       orders: 2000,
+      client_transactions: 0, // Auto-generated from orders
       invoices: 2000,
       payments: 1000,
     },
@@ -294,6 +298,7 @@ const SEEDERS: Record<string, (count: number, validator: SchemaValidator, masker
   products: seedProducts,
   batches: seedBatches,
   orders: seedOrders,
+  client_transactions: seedClientTransactions,
   invoices: seedInvoices,
   payments: seedPayments,
 };
