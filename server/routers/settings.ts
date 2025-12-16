@@ -4,7 +4,7 @@ import { getDb } from "../db";
 import { grades, categories, subcategories, locations } from "../../drizzle/schema";
 import { eq, isNull, and } from "drizzle-orm";
 // Static import - esbuild bundles this at build time, solving path resolution and TypeScript compilation
-import { seedRealisticData } from "../../scripts/seed-realistic-main";
+import { seedRealisticData } from "../../scripts/legacy/seed-realistic-main";
 
 // Track if seeding is in progress
 let isSeeding = false;
