@@ -1,15 +1,25 @@
 import { test, expect } from '@playwright/test';
-import { argosScreenshot } from '@argos-ci/playwright';
 import { checkAccessibility } from './utils/accessibility';
+import { loginAsAdmin } from './fixtures/auth';
+
+// Conditionally import argos - may not be available in all environments
+let argosScreenshot: ((page: unknown, name: string) => Promise<void>) | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  argosScreenshot = require('@argos-ci/playwright').argosScreenshot;
+} catch {
+  // Argos not available, screenshots will be skipped
+}
+
+async function takeScreenshot(page: unknown, name: string): Promise<void> {
+  if (argosScreenshot) {
+    await takeScreenshot(page, name);
+  }
+}
 
 test.describe('Live Catalog - Admin Workflows', () => {
   test.beforeEach(async ({ page }) => {
-    // Sign in as admin
-    await page.goto('/sign-in');
-    await page.getByLabel('Email').fill('admin@terp.local');
-    await page.getByLabel('Password').fill('password');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await expect(page).toHaveURL('/');
+    await loginAsAdmin(page);
   });
 
   test('should configure Live Catalog for client', async ({ page }) => {
@@ -23,7 +33,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     await checkAccessibility(page);
 
     // Take initial screenshot
-    await argosScreenshot(page, 'live-catalog-admin-config-initial');
+    await takeScreenshot(page, 'live-catalog-admin-config-initial');
 
     // Enable Live Catalog
     await page.getByLabel('Enable Live Catalog').check();
@@ -38,7 +48,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     await page.getByLabel('Enable Price Alerts').check();
 
     // Take configured screenshot
-    await argosScreenshot(page, 'live-catalog-admin-config-enabled');
+    await takeScreenshot(page, 'live-catalog-admin-config-enabled');
 
     // Save configuration
     await page.getByRole('button', { name: 'Save Configuration' }).click();
@@ -62,7 +72,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     expect(rows).toBeGreaterThan(1); // Header + at least one data row
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-admin-interest-lists');
+    await takeScreenshot(page, 'live-catalog-admin-interest-lists');
   });
 
   test('should view interest list details with change detection', async ({ page }) => {
@@ -90,7 +100,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     }
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-admin-interest-list-details');
+    await takeScreenshot(page, 'live-catalog-admin-interest-list-details');
 
     // Check accessibility
     await checkAccessibility(page);
@@ -117,7 +127,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     await expect(page.getByText(/Order #\d+/)).toBeVisible();
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-admin-order-created');
+    await takeScreenshot(page, 'live-catalog-admin-order-created');
   });
 
   test('should add interest list items to existing draft order', async ({ page }) => {
@@ -145,7 +155,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     await expect(page.getByText(/Items added to order successfully/i)).toBeVisible();
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-admin-items-added-to-draft');
+    await takeScreenshot(page, 'live-catalog-admin-items-added-to-draft');
   });
 
   test('should update interest list status', async ({ page }) => {
@@ -163,7 +173,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     await expect(page.getByText('Status: REVIEWED')).toBeVisible();
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-admin-status-updated');
+    await takeScreenshot(page, 'live-catalog-admin-status-updated');
   });
 
   test('should view client draft interests', async ({ page }) => {
@@ -180,7 +190,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     await expect(page.getByTestId('draft-total-value')).toBeVisible();
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-admin-current-draft');
+    await takeScreenshot(page, 'live-catalog-admin-current-draft');
 
     // Check accessibility
     await checkAccessibility(page);
@@ -197,7 +207,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     await expect(page.getByRole('table')).toBeVisible();
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-admin-price-alerts');
+    await takeScreenshot(page, 'live-catalog-admin-price-alerts');
 
     // Deactivate an alert
     const deactivateButtons = await page.getByRole('button', { name: 'Deactivate' }).count();
@@ -236,7 +246,7 @@ test.describe('Live Catalog - Admin Workflows', () => {
     await expect(page.getByText(/2 items added to order/i)).toBeVisible();
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-admin-partial-selection');
+    await takeScreenshot(page, 'live-catalog-admin-partial-selection');
   });
 
   test('should disable configuration when Live Catalog is off', async ({ page }) => {
@@ -252,6 +262,6 @@ test.describe('Live Catalog - Admin Workflows', () => {
     await expect(page.getByLabel('Show Grade')).toBeDisabled();
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-admin-config-disabled');
+    await takeScreenshot(page, 'live-catalog-admin-config-disabled');
   });
 });

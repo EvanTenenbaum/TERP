@@ -1,15 +1,25 @@
 import { test, expect } from '@playwright/test';
-import { argosScreenshot } from '@argos-ci/playwright';
 import { checkAccessibility } from './utils/accessibility';
+import { loginAsVipClient } from './fixtures/auth';
+
+// Conditionally import argos - may not be available in all environments
+let argosScreenshot: ((page: unknown, name: string) => Promise<void>) | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  argosScreenshot = require('@argos-ci/playwright').argosScreenshot;
+} catch {
+  // Argos not available, screenshots will be skipped
+}
+
+async function takeScreenshot(page: unknown, name: string): Promise<void> {
+  if (argosScreenshot) {
+    await takeScreenshot(page, name);
+  }
+}
 
 test.describe('Live Catalog - Client Workflows', () => {
   test.beforeEach(async ({ page }) => {
-    // Sign in as VIP portal client
-    await page.goto('/vip-portal/sign-in');
-    await page.getByLabel('Email').fill('client@greenleaf.com');
-    await page.getByLabel('Password').fill('password');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await expect(page).toHaveURL('/vip-portal/dashboard');
+    await loginAsVipClient(page);
   });
 
   test('should browse catalog with filters', async ({ page }) => {
@@ -21,7 +31,7 @@ test.describe('Live Catalog - Client Workflows', () => {
     await checkAccessibility(page);
 
     // Take initial screenshot
-    await argosScreenshot(page, 'live-catalog-initial');
+    await takeScreenshot(page, 'live-catalog-initial');
 
     // Verify products are displayed
     await expect(page.getByTestId('product-card')).toHaveCount(await page.getByTestId('product-card').count());
@@ -34,7 +44,7 @@ test.describe('Live Catalog - Client Workflows', () => {
     await page.waitForTimeout(500);
 
     // Take filtered screenshot
-    await argosScreenshot(page, 'live-catalog-filtered-flower');
+    await takeScreenshot(page, 'live-catalog-filtered-flower');
 
     // Verify filtered results
     const productCards = await page.getByTestId('product-card').all();
@@ -57,7 +67,7 @@ test.describe('Live Catalog - Client Workflows', () => {
     await expect(page.getByTestId('interest-list-fab-badge')).toHaveText('2');
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-items-added');
+    await takeScreenshot(page, 'live-catalog-items-added');
   });
 
   test('should view and manage interest list draft', async ({ page }) => {
@@ -77,7 +87,7 @@ test.describe('Live Catalog - Client Workflows', () => {
     await expect(page.getByTestId('interest-list-item')).toHaveCount(2);
 
     // Take screenshot of interest list
-    await argosScreenshot(page, 'live-catalog-interest-list-panel');
+    await takeScreenshot(page, 'live-catalog-interest-list-panel');
 
     // Remove one item
     await page.getByTestId('interest-list-item').first().getByRole('button', { name: 'Remove' }).click();
@@ -124,7 +134,7 @@ test.describe('Live Catalog - Client Workflows', () => {
     
     // Take screenshot showing change indicators
     if (changeIndicators > 0) {
-      await argosScreenshot(page, 'live-catalog-change-indicators');
+      await takeScreenshot(page, 'live-catalog-change-indicators');
       
       // Verify red bold text for changes
       const changedPrice = await page.getByTestId('changed-price').first();
@@ -163,7 +173,7 @@ test.describe('Live Catalog - Client Workflows', () => {
     await expect(page.getByText('Grade: A')).toBeVisible();
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-saved-view-applied');
+    await takeScreenshot(page, 'live-catalog-saved-view-applied');
   });
 
   test('should create price alert for product', async ({ page }) => {
@@ -189,7 +199,7 @@ test.describe('Live Catalog - Client Workflows', () => {
     await expect(page.getByTestId('price-alert-item')).toHaveCount(1);
 
     // Take screenshot
-    await argosScreenshot(page, 'live-catalog-price-alert-created');
+    await takeScreenshot(page, 'live-catalog-price-alert-created');
   });
 
   test('should support mobile responsive layout', async ({ page }) => {
@@ -202,7 +212,7 @@ test.describe('Live Catalog - Client Workflows', () => {
     await expect(page.getByTestId('product-grid')).toHaveCSS('grid-template-columns', /1fr/);
 
     // Take mobile screenshot
-    await argosScreenshot(page, 'live-catalog-mobile-view');
+    await takeScreenshot(page, 'live-catalog-mobile-view');
 
     // Add item to interest list
     await page.getByTestId('product-card').first().getByRole('button', { name: 'Add to Interest' }).click();
@@ -214,7 +224,7 @@ test.describe('Live Catalog - Client Workflows', () => {
     await page.getByTestId('interest-list-fab').click();
 
     // Take mobile interest list screenshot
-    await argosScreenshot(page, 'live-catalog-mobile-interest-list');
+    await takeScreenshot(page, 'live-catalog-mobile-interest-list');
 
     // Check accessibility on mobile
     await checkAccessibility(page);
