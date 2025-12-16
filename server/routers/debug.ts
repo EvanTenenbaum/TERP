@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import { publicProcedure, router } from '../_core/trpc.js';
-import { db } from '../db.js';
+import { getDb } from '../db.js';
 import { vendors, clients, products, batches, orders, invoices, payments } from '../../drizzle/schema.js';
 
 export const debugRouter = router({
@@ -14,6 +14,9 @@ export const debugRouter = router({
    */
   getCounts: publicProcedure.query(async () => {
     try {
+      const db = await getDb();
+      if (!db) throw new Error('Database not available');
+      
       const [
         vendorsList,
         clientsList,
