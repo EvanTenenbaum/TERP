@@ -18,6 +18,7 @@ import {
 export async function seedDefaultLocations() {
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
+    console.warn("⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead.");
     console.log("⏭️  SKIP_SEEDING is set - skipping location seeding");
     return;
   }

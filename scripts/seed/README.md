@@ -352,6 +352,151 @@ const audit = masker.getAuditSummary();
 // { clients: ['email', 'phone', 'name'], orders: ['contactEmail'] }
 ```
 
+## Production Usage
+
+### Railway Deployment (Current Production)
+
+**Production URL**: https://terp-app-production.up.railway.app
+
+Execute seeding commands in Railway production environment:
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login and link to project
+railway login
+railway link
+
+# Execute seeding commands
+railway run pnpm seed:new --dry-run --size=small
+railway run pnpm seed:new --clean --size=small --force
+```
+
+**Important Notes:**
+- Always run dry-run first in production
+- Start with small data volumes for testing
+- Monitor logs in real-time during seeding
+- Verify application health after seeding
+- See `docs/deployment/SEEDING_RUNBOOK.md` for detailed procedures
+
+### DigitalOcean Deployment (Legacy)
+
+**Legacy URL**: https://terp-app-b9s35.ondigitalocean.app  
+**Status**: Deprecated (migrated to Railway 2025-12-03)
+
+For legacy DigitalOcean deployments:
+
+```bash
+# Access console via doctl CLI
+doctl apps list  # Get APP_ID
+doctl apps console <APP_ID>
+
+# Execute seeding commands
+pnpm seed:new --dry-run --size=small
+```
+
+### Environment-Specific Behavior
+
+| Environment | PII Masking | Confirmation Prompts | Logging |
+|-------------|-------------|---------------------|----------|
+| Development | Enabled | Enabled | Standard |
+| Staging | Enabled | Enabled | Standard |
+| Production | Disabled | Enabled | Enhanced JSON |
+
+**Production Safety:**
+- PII masking is disabled to preserve real data integrity
+- Confirmation prompts prevent accidental data modification
+- Enhanced JSON logging for log aggregation and monitoring
+- Always create database backups before production seeding
+
+### Monitoring Production Seeding
+
+Monitor seeding operations in real-time:
+
+```bash
+# Railway
+railway logs --follow
+
+# DigitalOcean
+doctl apps logs <APP_ID> --type run --follow
+```
+
+Watch for structured JSON logs:
+
+```json
+{"level":"info","operation":"seed-vendors","phase":"start","msg":"Starting seeding operation: seed-vendors"}
+{"level":"info","operation":"seed-vendors","phase":"complete","duration":150,"records":5,"msg":"Completed seeding operation: seed-vendors"}
+```
+
+### Production Verification
+
+After seeding, verify data quality and application health:
+
+```sql
+-- Verify record counts
+SELECT 'vendors' as tbl, COUNT(*) as cnt FROM vendors
+UNION ALL SELECT 'clients', COUNT(*) FROM clients
+UNION ALL SELECT 'products', COUNT(*) FROM products
+UNION ALL SELECT 'batches', COUNT(*) FROM batches
+UNION ALL SELECT 'orders', COUNT(*) FROM orders
+UNION ALL SELECT 'invoices', COUNT(*) FROM invoices
+UNION ALL SELECT 'payments', COUNT(*) FROM payments;
+
+-- Verify foreign key integrity
+SELECT COUNT(*) as orphaned_orders 
+FROM orders o 
+LEFT JOIN clients c ON o.client_id = c.id 
+WHERE c.id IS NULL;
+-- Expected: 0
+```
+
+Check application health:
+
+```bash
+# Railway
+curl https://terp-app-production.up.railway.app/health
+
+# DigitalOcean (legacy)
+curl https://terp-app-b9s35.ondigitalocean.app/health
+
+# Expected: {"status":"healthy",...}
+```
+
+### Production Rollback
+
+If seeding fails or produces incorrect data:
+
+```bash
+# Automatic rollback
+railway run pnpm seed:new --rollback
+
+# Manual rollback (SQL)
+# Execute in database console:
+DELETE FROM payments;
+DELETE FROM invoices;
+DELETE FROM orders;
+DELETE FROM batches;
+DELETE FROM products;
+DELETE FROM clients;
+DELETE FROM vendors;
+
+# Release stuck lock if needed
+SELECT RELEASE_LOCK('terp_seeding_global');
+```
+
+### Production Best Practices
+
+1. **Always dry-run first**: Preview changes before executing
+2. **Start small**: Use `--size=small` for initial production tests
+3. **Create backups**: Backup database before seeding
+4. **Monitor closely**: Watch logs in real-time during seeding
+5. **Verify thoroughly**: Check record counts, FK integrity, and application health
+6. **Coordinate with team**: Ensure no one else is modifying the database
+7. **Schedule maintenance**: Seed during low-traffic periods if possible
+
+For comprehensive production procedures, see **`docs/deployment/SEEDING_RUNBOOK.md`**.
+
 ## Related Files
 
 | File | Purpose |
