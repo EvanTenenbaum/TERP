@@ -136,6 +136,9 @@ async function startServer() {
     // Check SKIP_SEEDING (case-insensitive)
     const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
     if (skipSeeding === "true" || skipSeeding === "1") {
+      logger.warn(
+        "⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead."
+      );
       logger.info(
         "⏭️  SKIP_SEEDING is set - skipping all default data seeding"
       );

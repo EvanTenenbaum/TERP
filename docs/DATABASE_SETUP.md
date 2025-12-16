@@ -357,7 +357,7 @@ pnpm seed myCustom
 
 - **Environment Variables**: `docs/ENVIRONMENT_VARIABLES.md`
 - **Database Schema**: `drizzle/schema.ts`
-- **Seed Scripts**: `scripts/seed-realistic-main.ts`
+- **Seed Scripts**: `scripts/seed/seed-main.ts` (new system), `scripts/legacy/seed-realistic-main.ts` (deprecated)
 - **Deployment Guide**: `DEPLOY.md`
 
 ---
