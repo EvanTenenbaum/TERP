@@ -12,7 +12,7 @@
 
 | Session ID | Task | Branch | Module | Status | Started | ETA |
 | ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| _(none)_   | -    | -      | -      | -      | -       | -   |
+| Session-20251215-DATA-011-5d08d4 | DATA-011: Production Seeding System Rollout | main | seeding | In Progress | 2025-12-15 | 2h |
 
 ## ⏸️ Paused / Waiting
 
