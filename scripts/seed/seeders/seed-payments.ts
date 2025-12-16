@@ -7,7 +7,6 @@
 
 import { db } from "../../db-sync";
 import { payments, invoices, clients } from "../../../drizzle/schema";
-import { eq, and, ne } from "drizzle-orm";
 import type { SchemaValidator } from "../lib/validation";
 import type { PIIMasker } from "../lib/data-masking";
 import { seedLogger, withPerformanceLogging } from "../lib/logging";
@@ -18,15 +17,17 @@ import { faker } from "@faker-js/faker";
 // Payment Generation Utilities
 // ============================================================================
 
-const PAYMENT_METHODS = ["CASH", "CHECK", "WIRE", "ACH", "CREDIT_CARD", "DEBIT_CARD", "OTHER"] as const;
-const PAYMENT_TYPES = ["RECEIVED", "SENT"] as const;
+type PaymentMethod = PaymentMethod;
+const _PAYMENT_METHODS = ["CASH", "CHECK", "WIRE", "ACH", "CREDIT_CARD", "DEBIT_CARD", "OTHER"] as const;
+type PaymentType = PaymentType;
+const _PAYMENT_TYPES = ["RECEIVED", "SENT"] as const;
 
 interface PaymentData {
   paymentNumber: string;
-  paymentType: typeof PAYMENT_TYPES[number];
+  paymentType: PaymentType;
   paymentDate: Date;
   amount: string;
-  paymentMethod: typeof PAYMENT_METHODS[number];
+  paymentMethod: PaymentMethod;
   referenceNumber: string | null;
   customerId: number | null;
   vendorId: number | null;
@@ -36,6 +37,7 @@ interface PaymentData {
   notes: string | null;
   isReconciled: boolean;
   createdBy: number;
+  createdAt: Date;
 }
 
 /**
@@ -85,7 +87,7 @@ function generatePayment(
   }
 
   // Determine payment type: RECEIVED (from customers) or SENT (to vendors)
-  const paymentType: typeof PAYMENT_TYPES[number] = clientId ? "RECEIVED" : "SENT";
+  const paymentType: PaymentType = clientId ? "RECEIVED" : "SENT";
 
   return {
     paymentNumber: `PAY-${String(index + 1).padStart(6, "0")}`,
@@ -102,6 +104,7 @@ function generatePayment(
     notes: Math.random() < 0.1 ? faker.lorem.sentence() : null,
     isReconciled: Math.random() < 0.7, // 70% reconciled
     createdBy: 1,
+    createdAt: paymentDate,
   };
 }
 
@@ -112,12 +115,10 @@ function generatePayment(
 /**
  * Seed payments table
  */
-const now = new Date();
-
 export async function seedPayments(
   count: number,
   validator: SchemaValidator,
-  masker: PIIMasker
+  _masker: PIIMasker
 ): Promise<SeederResult> {
   const result = createSeederResult("payments");
   const startTime = Date.now();

@@ -46,6 +46,8 @@ interface VendorData {
   contactPhone: string | null;
   paymentTerms: string | null;
   notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -57,6 +59,7 @@ function generateVendor(index: number): VendorData {
   
   const contactFirstName = faker.person.firstName();
   const contactLastName = faker.person.lastName();
+  const now = new Date();
   
   return {
     name: `${template.name}${uniqueSuffix}`,
@@ -69,6 +72,8 @@ function generateVendor(index: number): VendorData {
     contactPhone: faker.phone.number(),
     paymentTerms: faker.helpers.arrayElement(["Net 30", "Net 15", "Net 60", "Due on Receipt", "COD"]),
     notes: `${template.specialty}. Located in ${template.region}.`,
+    createdAt: now,
+    updatedAt: now,
   };
 }
 

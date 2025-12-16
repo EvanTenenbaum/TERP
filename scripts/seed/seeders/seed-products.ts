@@ -7,7 +7,6 @@
 
 import { db } from "../../db-sync";
 import { products, brands, strains } from "../../../drizzle/schema";
-import { eq } from "drizzle-orm";
 import type { SchemaValidator } from "../lib/validation";
 import type { PIIMasker } from "../lib/data-masking";
 import { seedLogger, withPerformanceLogging } from "../lib/logging";
@@ -50,6 +49,8 @@ interface ProductData {
   subcategory: string | null;
   uomSellable: string;
   description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -67,6 +68,7 @@ function generateFlowerProduct(
     Math.floor(index / (GROW_TYPES.length * GRADES.length)) % PRODUCT_CATEGORIES.Flower.subcategories.length
   ];
 
+  const now = new Date();
   return {
     brandId,
     strainId,
@@ -75,6 +77,8 @@ function generateFlowerProduct(
     subcategory,
     uomSellable: PRODUCT_CATEGORIES.Flower.uom,
     description: `${grade} grade ${growType.toLowerCase()} grown ${strainName}. ${subcategory}.`,
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
@@ -92,6 +96,7 @@ function generateNonFlowerProduct(
   const categoryConfig = PRODUCT_CATEGORIES[category];
   const subcategory = categoryConfig.subcategories[index % categoryConfig.subcategories.length];
 
+  const now = new Date();
   return {
     brandId,
     strainId,
@@ -100,6 +105,8 @@ function generateNonFlowerProduct(
     subcategory,
     uomSellable: categoryConfig.uom,
     description: `${strainName} ${subcategory.toLowerCase()} ${category.toLowerCase()}.`,
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
@@ -113,7 +120,7 @@ function generateNonFlowerProduct(
 export async function seedProducts(
   count: number,
   validator: SchemaValidator,
-  masker: PIIMasker
+  _masker: PIIMasker
 ): Promise<SeederResult> {
   const result = createSeederResult("products");
   const startTime = Date.now();

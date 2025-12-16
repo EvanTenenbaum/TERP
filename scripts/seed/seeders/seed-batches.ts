@@ -7,7 +7,6 @@
 
 import { db } from "../../db-sync";
 import { batches, products, lots, vendors } from "../../../drizzle/schema";
-import { sql } from "drizzle-orm";
 import type { SchemaValidator } from "../lib/validation";
 import type { PIIMasker } from "../lib/data-masking";
 import { seedLogger, withPerformanceLogging } from "../lib/logging";
@@ -18,8 +17,10 @@ import { faker } from "@faker-js/faker";
 // Batch Generation Utilities
 // ============================================================================
 
-const PAYMENT_TERMS = ["COD", "NET_7", "NET_15", "NET_30", "CONSIGNMENT"] as const;
-const BATCH_STATUSES = ["AWAITING_INTAKE", "LIVE", "ON_HOLD", "SOLD_OUT"] as const;
+type PaymentTerm = PaymentTerm;
+const _PAYMENT_TERMS = ["COD", "NET_7", "NET_15", "NET_30", "CONSIGNMENT"] as const;
+type BatchStatus = BatchStatus;
+const _BATCH_STATUSES = ["AWAITING_INTAKE", "LIVE", "ON_HOLD", "SOLD_OUT"] as const;
 const GRADES = ["AAA", "AA", "A", null];
 
 interface BatchData {
@@ -27,7 +28,7 @@ interface BatchData {
   sku: string;
   productId: number;
   lotId: number;
-  batchStatus: typeof BATCH_STATUSES[number];
+  batchStatus: BatchStatus;
   grade: string | null;
   isSample: number;
   sampleOnly: number;
@@ -36,7 +37,7 @@ interface BatchData {
   unitCogs: string;
   unitCogsMin: string | null;
   unitCogsMax: string | null;
-  paymentTerms: typeof PAYMENT_TERMS[number];
+  paymentTerms: PaymentTerm;
   amountPaid: string;
   metadata: string | null;
   onHandQty: string;
@@ -47,6 +48,8 @@ interface BatchData {
   defectiveQty: string;
   publishEcom: number;
   publishB2b: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -109,6 +112,8 @@ function generateBatch(
     defectiveQty: "0",
     publishEcom: 0,
     publishB2b: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 }
 
@@ -122,7 +127,7 @@ function generateBatch(
 export async function seedBatches(
   count: number,
   validator: SchemaValidator,
-  masker: PIIMasker
+  _masker: PIIMasker
 ): Promise<SeederResult> {
   const result = createSeederResult("batches");
   const startTime = Date.now();
