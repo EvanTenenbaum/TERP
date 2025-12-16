@@ -4,7 +4,7 @@
  * Uses Node.js and mysql2 instead of mysql CLI
  */
 
-const mysql = require('mysql2/promise');
+import mysql from 'mysql2/promise';
 
 async function addPaymentTermsColumn() {
   console.log('Adding paymentTerms column to vendors table...');
