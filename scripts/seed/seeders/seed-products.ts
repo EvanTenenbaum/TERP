@@ -130,6 +130,8 @@ export async function seedProducts(
         const [insertedBrand] = await db.insert(brands).values({
           name: "TERP House Brand",
           description: "Default brand for all products",
+          vendorId: null,
+          deletedAt: null,
         });
         defaultBrandId = insertedBrand.insertId;
         seedLogger.foreignKeyResolved("products", "brandId", "brands", defaultBrandId);
