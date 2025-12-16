@@ -1452,6 +1452,55 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 ---
 
+### FEATURE-004: Clarify Vendor vs Buyer vs Client Distinction
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 8h  
+**Module:** Navigation, Database Schema, UI  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/FEATURE-004.md` (to be created)
+
+**Problem:** The application has unclear terminology and navigation around vendors, buyers, and clients. The vendor page exists but is not visible in the sidebar navigation, and the distinction between these entity types is confusing for users.
+
+**Objectives:**
+
+1. Clarify the business distinction between vendors (suppliers), buyers (purchasing entities), and clients (customers)
+2. Make the vendor page visible and accessible in the sidebar navigation
+3. Ensure consistent terminology throughout the application
+4. Update UI labels and documentation to reflect clear entity relationships
+
+**Deliverables:**
+
+- [ ] Audit current usage of vendor/buyer/client terminology across codebase
+- [ ] Document clear business definitions:
+  - **Vendor**: Entity that supplies products TO the business (upstream)
+  - **Buyer**: Entity that purchases products FROM the business (downstream) - may be same as client
+  - **Client**: Customer entity with account relationship
+- [ ] Add Vendor page link to sidebar navigation (`DashboardLayout.tsx`)
+- [ ] Review and update sidebar navigation structure for clarity
+- [ ] Update any confusing labels in the UI
+- [ ] Ensure database schema supports clear entity relationships
+- [ ] Update relevant documentation
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+**Technical Notes:**
+
+- Vendor page exists at `client/src/pages/VendorProfilePage.tsx`
+- Sidebar navigation defined in `client/src/components/DashboardLayout.tsx`
+- May need to review `server/routers/vendors.ts` for API consistency
+- Consider if vendors and clients should share a common base entity or remain separate
+
+**User Stories:**
+
+1. **As a user**, I want to easily access the vendor management page from the sidebar, so I can manage my suppliers efficiently.
+
+2. **As a user**, I want clear terminology distinguishing vendors from clients, so I understand who I'm buying from vs selling to.
+
+---
+
 ### 🔴 HIGH PRIORITY
 
 - [ ] **Complete Codebase Analysis** (Claude-Session-011CV4V)
