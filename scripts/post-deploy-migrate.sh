@@ -3,11 +3,12 @@
 # Post-Deploy Migration Script
 # Automatically runs database migrations after deployment
 #
-# This script should be called from the Dockerfile or as a post-deploy hook
-# to ensure the database schema is always in sync with the code.
+# This script is called from the Dockerfile CMD to ensure the database
+# schema is always in sync with the code before the server starts.
 #
 
-set -e  # Exit on error
+set -e  # Exit immediately on any error
+set -o pipefail  # Catch errors in pipes
 
 echo "=========================================="
 echo "Post-Deploy Database Migration"
@@ -23,26 +24,45 @@ fi
 echo "✓ DATABASE_URL is configured"
 echo ""
 
-# Run Drizzle migrations
-echo "Running database migrations..."
-echo "Command: pnpm drizzle-kit push"
+# Set Node.js memory limit for migration processes
+export NODE_OPTIONS="--max-old-space-size=512"
+echo "✓ Node memory limit set to 512MB for migrations"
 echo ""
 
-# Run the migration (generate creates migration files, migrate applies them)
-echo "Generating migration files..."
-if pnpm drizzle-kit generate 2>&1; then
-    echo "Applying migrations..."
-    if pnpm drizzle-kit migrate 2>&1; then
-        echo "Migrations applied successfully"
-    else
-        echo "Migration application failed"
-        exit 1
-    fi
+# Generate migration files
+echo "Step 1: Generating migration files..."
+echo "Command: pnpm drizzle-kit generate"
+echo ""
+
+if ! pnpm drizzle-kit generate 2>&1 | tee /tmp/drizzle-generate.log; then
     echo ""
-    echo "✅ Database migrations completed successfully"
-    exit 0
-else
-    echo ""
-    echo "❌ Database migrations failed"
+    echo "❌ ERROR: Migration generation failed"
+    echo "See logs above for details"
     exit 1
 fi
+
+echo ""
+echo "✅ Migration files generated successfully"
+echo ""
+
+# Apply migrations
+echo "Step 2: Applying migrations to database..."
+echo "Command: pnpm drizzle-kit migrate"
+echo ""
+
+if ! pnpm drizzle-kit migrate 2>&1 | tee /tmp/drizzle-migrate.log; then
+    echo ""
+    echo "❌ ERROR: Migration application failed"
+    echo "See logs above for details"
+    exit 1
+fi
+
+echo ""
+echo "✅ Migrations applied successfully"
+echo ""
+echo "=========================================="
+echo "Database schema is now in sync"
+echo "=========================================="
+echo ""
+
+exit 0
