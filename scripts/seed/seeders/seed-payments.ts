@@ -112,6 +112,8 @@ function generatePayment(
 /**
  * Seed payments table
  */
+const now = new Date();
+
 export async function seedPayments(
   count: number,
   validator: SchemaValidator,
