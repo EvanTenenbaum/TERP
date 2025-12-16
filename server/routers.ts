@@ -74,6 +74,7 @@ import { workflowQueueRouter } from "./routers/workflow-queue";
 import { deploymentsRouter } from "./routers/deployments";
 import { monitoringRouter } from "./routers/monitoring";
 import { searchRouter } from "./routers/search";
+import { debugRouter } from "./routers/debug";
 
 export const appRouter = router({
   system: systemRouter,
@@ -149,6 +150,7 @@ export const appRouter = router({
   deployments: deploymentsRouter,
   monitoring: monitoringRouter,
   search: searchRouter,
+  debug: debugRouter,
 });
 
 export type AppRouter = typeof appRouter;
