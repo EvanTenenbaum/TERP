@@ -17,7 +17,8 @@ import { faker } from "@faker-js/faker";
 // Invoice Generation Utilities
 // ============================================================================
 
-const INVOICE_STATUSES = ["DRAFT", "SENT", "VIEWED", "PARTIAL", "PAID", "OVERDUE", "VOID"] as const;
+type InvoiceStatus = InvoiceStatus;
+const _INVOICE_STATUSES = ["DRAFT", "SENT", "VIEWED", "PARTIAL", "PAID", "OVERDUE", "VOID"] as const;
 
 interface InvoiceData {
   invoiceNumber: string;
@@ -30,13 +31,14 @@ interface InvoiceData {
   totalAmount: string;
   amountPaid: string;
   amountDue: string;
-  status: typeof INVOICE_STATUSES[number];
+  status: InvoiceStatus;
   paymentTerms: string;
   notes: string | null;
   referenceType: string;
   referenceId: number;
   createdBy: number;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -58,7 +60,7 @@ function generateInvoice(
   const daysSinceDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
 
   // Determine status and amounts based on age
-  let status: typeof INVOICE_STATUSES[number];
+  let status: InvoiceStatus;
   let amountPaid: number;
   let amountDue: number;
 
@@ -125,6 +127,7 @@ function generateInvoice(
     referenceId: orderId || 0,
     createdBy: 1,
     createdAt: invoiceDate,
+    updatedAt: invoiceDate,
   };
 }
 
@@ -135,12 +138,10 @@ function generateInvoice(
 /**
  * Seed invoices table
  */
-const now = new Date();
-
 export async function seedInvoices(
   count: number,
   validator: SchemaValidator,
-  masker: PIIMasker
+  _masker: PIIMasker
 ): Promise<SeederResult> {
   const result = createSeederResult("invoices");
   const startTime = Date.now();

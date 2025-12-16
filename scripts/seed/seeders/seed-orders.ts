@@ -17,8 +17,10 @@ import { faker } from "@faker-js/faker";
 // Order Generation Utilities
 // ============================================================================
 
-const PAYMENT_TERMS = ["NET_7", "NET_15", "NET_30", "COD", "CONSIGNMENT"] as const;
-const SALE_STATUSES = ["PENDING", "PARTIAL", "PAID", "OVERDUE"] as const;
+type PaymentTerm = PaymentTerm;
+const _PAYMENT_TERMS = ["NET_7", "NET_15", "NET_30", "COD", "CONSIGNMENT"] as const;
+type SaleStatus = SaleStatus;
+const _SALE_STATUSES = ["PENDING", "PARTIAL", "PAID", "OVERDUE"] as const;
 
 interface OrderItem {
   batchId: number;
@@ -53,14 +55,15 @@ interface OrderData {
   avgMarginPercent: string;
   validUntil: Date | null;
   quoteStatus: null;
-  paymentTerms: typeof PAYMENT_TERMS[number];
+  paymentTerms: PaymentTerm;
   cashPayment: string;
   dueDate: Date;
-  saleStatus: typeof SALE_STATUSES[number];
+  saleStatus: SaleStatus;
   invoiceId: number | null;
   fulfillmentStatus: "PENDING" | "PACKED" | "SHIPPED";
   createdBy: number;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -145,7 +148,7 @@ function generateOrder(
 
   // Sale status based on date
   const daysSinceOrder = Math.floor((Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
-  let saleStatus: typeof SALE_STATUSES[number];
+  let saleStatus: SaleStatus;
   if (daysSinceOrder < 7) {
     saleStatus = "PENDING";
   } else if (daysSinceOrder > 30 && Math.random() < 0.15) {
@@ -180,6 +183,7 @@ function generateOrder(
     fulfillmentStatus: faker.helpers.arrayElement(["PENDING", "PACKED", "SHIPPED"]),
     createdBy: 1,
     createdAt: orderDate,
+    updatedAt: orderDate,
   };
 }
 
@@ -193,7 +197,7 @@ function generateOrder(
 export async function seedOrders(
   count: number,
   validator: SchemaValidator,
-  masker: PIIMasker
+  _masker: PIIMasker
 ): Promise<SeederResult> {
   const result = createSeederResult("orders");
   const startTime = Date.now();

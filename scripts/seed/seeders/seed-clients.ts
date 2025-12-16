@@ -87,6 +87,7 @@ interface ClientData {
   isBrand: boolean;
   tags: string[];
   createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -112,6 +113,7 @@ function generateWhaleClient(index: number): ClientData {
       from: new Date(2023, 0, 1),
       to: new Date(2024, 0, 1),
     }),
+    updatedAt: new Date(),
   };
 }
 
@@ -138,6 +140,7 @@ function generateRegularClient(index: number): ClientData {
       from: new Date(2023, 0, 1),
       to: new Date(2024, 6, 1),
     }),
+    updatedAt: new Date(),
   };
 }
 
@@ -175,6 +178,7 @@ function generateVendorClient(index: number): ClientData {
       from: new Date(2023, 0, 1),
       to: new Date(2023, 6, 1),
     }),
+    updatedAt: new Date(),
   };
 }
 
