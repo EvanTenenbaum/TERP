@@ -3,8 +3,9 @@
 # Post-Deploy Migration Script
 # Automatically runs database migrations after deployment
 #
-# This script is called from the Dockerfile CMD to ensure the database
-# schema is always in sync with the code before the server starts.
+# This script applies existing migration files to the database.
+# It does NOT generate new migrations - those should be created
+# during development and committed to the repository.
 #
 
 set -e  # Exit immediately on any error
@@ -29,31 +30,30 @@ export NODE_OPTIONS="--max-old-space-size=512"
 echo "✓ Node memory limit set to 512MB for migrations"
 echo ""
 
-# Generate migration files
-echo "Step 1: Generating migration files..."
-echo "Command: pnpm drizzle-kit generate"
-echo ""
-
-if ! pnpm drizzle-kit generate 2>&1 | tee /tmp/drizzle-generate.log; then
-    echo ""
-    echo "❌ ERROR: Migration generation failed"
-    echo "See logs above for details"
-    exit 1
-fi
-
-echo ""
-echo "✅ Migration files generated successfully"
-echo ""
-
-# Apply migrations
-echo "Step 2: Applying migrations to database..."
+# Apply migrations (do NOT generate - use committed migration files)
+echo "Applying database migrations..."
 echo "Command: pnpm drizzle-kit migrate"
+echo ""
+echo "NOTE: This applies existing migration files from drizzle/ directory."
+echo "New migrations should be generated during development, not deployment."
 echo ""
 
 if ! pnpm drizzle-kit migrate 2>&1 | tee /tmp/drizzle-migrate.log; then
     echo ""
     echo "❌ ERROR: Migration application failed"
     echo "See logs above for details"
+    echo ""
+    echo "Common causes:"
+    echo "  - Database connection issues"
+    echo "  - Schema conflicts (table already exists)"
+    echo "  - Permission issues"
+    echo ""
+    echo "Troubleshooting:"
+    echo "  1. Check DATABASE_URL is correct"
+    echo "  2. Verify database is accessible"
+    echo "  3. Check migration files in drizzle/ directory"
+    echo "  4. Review /tmp/drizzle-migrate.log for details"
+    echo ""
     exit 1
 fi
 

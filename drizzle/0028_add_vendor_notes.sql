@@ -2,7 +2,7 @@
 -- Feature: MF-016 Vendor Notes & History
 -- Date: 2025-11-05
 
-CREATE TABLE `vendorNotes` (
+CREATE TABLE IF NOT EXISTS `vendorNotes` (
   `id` int AUTO_INCREMENT PRIMARY KEY,
   `vendorId` int NOT NULL,
   `userId` int NOT NULL,
