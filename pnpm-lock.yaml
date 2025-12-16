@@ -28,6 +28,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.3)
+      '@faker-js/faker':
+        specifier: ^10.1.0
+        version: 10.1.0
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.68.0(react@19.2.3))
@@ -278,9 +281,6 @@ importers:
       '@eslint/js':
         specifier: ^9.38.0
         version: 9.39.2
-      '@faker-js/faker':
-        specifier: ^10.1.0
-        version: 10.1.0
       '@google/generative-ai':
         specifier: ^0.24.1
         version: 0.24.1

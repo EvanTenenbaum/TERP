@@ -135,6 +135,8 @@ function generateInvoice(
 /**
  * Seed invoices table
  */
+const now = new Date();
+
 export async function seedInvoices(
   count: number,
   validator: SchemaValidator,
