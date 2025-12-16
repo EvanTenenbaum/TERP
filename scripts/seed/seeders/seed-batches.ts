@@ -164,11 +164,14 @@ export async function seedBatches(
           });
           const vendorId = vendorIds[i % vendorIds.length];
 
+          const now = new Date();
           const [inserted] = await db.insert(lots).values({
             code: `LOT-${String(i + 1).padStart(5, "0")}`,
             vendorId,
             date: lotDate,
             notes: faker.lorem.sentence(),
+            createdAt: now,
+            updatedAt: now,
           });
           lotIds.push(inserted.insertId);
         }

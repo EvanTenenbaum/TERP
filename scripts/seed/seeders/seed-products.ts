@@ -127,11 +127,14 @@ export async function seedProducts(
       const existingBrands = await db.select({ id: brands.id }).from(brands).limit(1);
       
       if (existingBrands.length === 0) {
+        const now = new Date();
         const [insertedBrand] = await db.insert(brands).values({
           name: "TERP House Brand",
           description: "Default brand for all products",
           vendorId: null,
           deletedAt: null,
+          createdAt: now,
+          updatedAt: now,
         });
         defaultBrandId = insertedBrand.insertId;
         seedLogger.foreignKeyResolved("products", "brandId", "brands", defaultBrandId);
@@ -145,11 +148,14 @@ export async function seedProducts(
 
       if (existingStrains.length === 0) {
         // Create strains
+        const now = new Date();
         for (const strainName of STRAIN_NAMES) {
           const [inserted] = await db.insert(strains).values({
             name: strainName,
             standardizedName: strainName.toLowerCase().trim(),
             category: faker.helpers.arrayElement(["Indica", "Sativa", "Hybrid"]),
+            createdAt: now,
+            updatedAt: now,
           });
           strainMap.set(strainName, inserted.insertId);
         }
