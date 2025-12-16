@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { TEST_USERS, loginAsAdmin, loginAsStandardUser } from './fixtures/auth';
 
 /**
  * Seed Spec: Authentication & Base Setup
@@ -11,39 +12,21 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Seed: Authentication & Base Setup', () => {
   test('should authenticate as admin user', async ({ page }) => {
-    await page.goto('/login');
-    
-    // Login with admin credentials (from test database seeding)
-    await page.fill('input[name="email"], input[type="email"]', 'admin@terp.test');
-    await page.fill('input[name="password"], input[type="password"]', 'admin123');
-    await page.click('button[type="submit"]');
-    
-    // Verify successful login - should redirect to dashboard
-    await expect(page).toHaveURL(/\/(dashboard)?$/, { timeout: 10000 });
+    await loginAsAdmin(page);
     
     // Verify admin-specific UI elements are visible
     await expect(page.locator('[data-testid="admin-menu"], nav, .sidebar').first()).toBeVisible();
   });
 
   test('should authenticate as standard user', async ({ page }) => {
-    await page.goto('/login');
-    
-    // Login with standard user credentials
-    await page.fill('input[name="email"], input[type="email"]', 'test@example.com');
-    await page.fill('input[name="password"], input[type="password"]', 'password123');
-    await page.click('button[type="submit"]');
+    await loginAsStandardUser(page);
     
     // Verify successful login
-    await expect(page).toHaveURL(/\/(dashboard)?$/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/(dashboard)?$/);
   });
 
   test('should verify base data exists', async ({ page }) => {
-    // Login first
-    await page.goto('/login');
-    await page.fill('input[name="email"], input[type="email"]', 'admin@terp.test');
-    await page.fill('input[name="password"], input[type="password"]', 'admin123');
-    await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/\/(dashboard)?$/, { timeout: 10000 });
+    await loginAsAdmin(page);
     
     // Verify essential test data exists by checking key pages
     
@@ -57,12 +40,7 @@ test.describe('Seed: Authentication & Base Setup', () => {
   });
 
   test('should verify navigation is accessible', async ({ page }) => {
-    // Login
-    await page.goto('/login');
-    await page.fill('input[name="email"], input[type="email"]', 'admin@terp.test');
-    await page.fill('input[name="password"], input[type="password"]', 'admin123');
-    await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/\/(dashboard)?$/, { timeout: 10000 });
+    await loginAsAdmin(page);
     
     // Verify main navigation links are present
     const navLinks = page.locator('nav a, .sidebar a, [role="navigation"] a');

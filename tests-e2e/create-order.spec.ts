@@ -1,15 +1,25 @@
 import { test, expect } from '@playwright/test';
-import { argosScreenshot } from '@argos-ci/playwright';
 import { checkAccessibility } from './utils/accessibility';
+import { loginAsAdmin } from './fixtures/auth';
+
+// Conditionally import argos - may not be available in all environments
+let argosScreenshot: ((page: unknown, name: string) => Promise<void>) | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  argosScreenshot = require('@argos-ci/playwright').argosScreenshot;
+} catch {
+  // Argos not available, screenshots will be skipped
+}
+
+async function takeScreenshot(page: unknown, name: string): Promise<void> {
+  if (argosScreenshot) {
+    await argosScreenshot(page, name);
+  }
+}
 
 test.describe('Order Creation Flow', () => {
   test.beforeEach(async ({ page }) => {
-    // Sign in before each test
-    await page.goto('/sign-in');
-    await page.getByLabel('Email').fill('admin@terp.local');
-    await page.getByLabel('Password').fill('password');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await expect(page).toHaveURL('/');
+    await loginAsAdmin(page);
   });
 
   test('should create a multi-item order successfully', async ({ page }) => {
@@ -38,7 +48,7 @@ test.describe('Order Creation Flow', () => {
     expect(total).toMatch(/\$[\d,]+\.\d{2}/);
 
     // Take screenshot before submission
-    await argosScreenshot(page, 'order-form-filled');
+    await takeScreenshot(page, 'order-form-filled');
 
     // Submit order
     await page.getByRole('button', { name: 'Create Order' }).click();
