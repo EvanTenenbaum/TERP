@@ -67,9 +67,7 @@ RUN export VITE_CLERK_PUBLISHABLE_KEY="${VITE_CLERK_PUBLISHABLE_KEY}" && \
 # Expose default port
 EXPOSE 3000
 
-# Make migration script executable
-RUN chmod +x /app/scripts/post-deploy-migrate.sh
-
-# Start script that runs migrations then starts server
-CMD ["/bin/bash", "-c", "/app/scripts/post-deploy-migrate.sh && pnpm run start:production"]
+# Start server directly (no automatic migrations)
+# Run one-time setup manually: bash /app/scripts/one-time-setup.sh
+CMD ["pnpm", "run", "start:production"]
 
