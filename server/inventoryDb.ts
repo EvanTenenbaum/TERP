@@ -1353,3 +1353,37 @@ export async function getProfitabilitySummary() {
     batchesWithSales: batchIds.size,
   };
 }
+
+
+// ============================================================================
+// VENDOR BATCH QUERIES
+// ============================================================================
+
+/**
+ * Get all batches supplied by a specific vendor
+ * Joins batches → lots → filter by vendorId
+ * @param vendorId - The vendor ID to filter by
+ * @returns Array of batches with their associated lot and product data
+ * _Requirements: 7.1, 7.2_
+ */
+export async function getBatchesByVendor(vendorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Join batches → lots → filter by vendorId
+  const result = await db
+    .select({
+      batch: batches,
+      lot: lots,
+      product: products,
+      brand: brands,
+    })
+    .from(batches)
+    .innerJoin(lots, eq(batches.lotId, lots.id))
+    .leftJoin(products, eq(batches.productId, products.id))
+    .leftJoin(brands, eq(products.brandId, brands.id))
+    .where(eq(lots.vendorId, vendorId))
+    .orderBy(desc(batches.createdAt));
+
+  return result;
+}

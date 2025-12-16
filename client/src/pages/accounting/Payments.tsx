@@ -32,16 +32,15 @@ export default function Payments() {
     paymentType: selectedType !== "ALL" ? (selectedType as any) : undefined,
   });
 
-  // Filter payments
+  // Filter payments - extract from paginated response { payments: [], total: number }
   const filteredPayments = useMemo(() => {
-    if (!payments) return [];
-    
-    const paymentList = Array.isArray(payments) ? payments : [];
+    // Extract payments array from paginated response object
+    const paymentList = payments?.payments ?? [];
     
     if (!searchQuery) return paymentList;
 
     const query = searchQuery.toLowerCase();
-    return paymentList.filter((payment: any) =>
+    return paymentList.filter((payment) =>
       payment.paymentNumber.toLowerCase().includes(query)
     );
   }, [payments, searchQuery]);

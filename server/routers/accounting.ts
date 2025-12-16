@@ -204,7 +204,7 @@ export const accountingRouter = router({
       list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           customerId: z.number().optional(),
-          status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"]).optional(),
+          status: z.enum(["DRAFT", "SENT", "VIEWED", "PARTIAL", "PAID", "OVERDUE", "VOID"]).optional(),
           startDate: z.date().optional(),
           endDate: z.date().optional(),
           limit: z.number().optional(),
@@ -282,7 +282,7 @@ export const accountingRouter = router({
       updateStatus: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           id: z.number(),
-          status: z.enum(["DRAFT", "SENT", "PARTIAL", "PAID", "OVERDUE", "VOID"]),
+          status: z.enum(["DRAFT", "SENT", "VIEWED", "PARTIAL", "PAID", "OVERDUE", "VOID"]),
         }))
         .mutation(async ({ input }) => {
           return await arApDb.updateInvoiceStatus(input.id, input.status);

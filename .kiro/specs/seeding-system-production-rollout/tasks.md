@@ -1,0 +1,85 @@
+# Implementation Plan
+
+- [ ] 1. Phase 1: Production Environment Verification
+  - [x] 1.1 Run dry-run test in production
+    - Execute `pnpm seed:new --dry-run --size=small` via DigitalOcean console
+    - Verify preview shows 7 tables with correct record counts
+    - Confirm no errors in output
+    - _Requirements: 1.1, 1.2_
+  - [x] 1.2 Execute small seed test
+    - Run `pnpm seed:new --clean --size=small --force` in production
+    - Verify 195 records inserted (5 vendors, 10 clients, 20 products, 30 batches, 50 orders, 50 invoices, 30 payments)
+    - Check for 0 errors in summary
+    - _Requirements: 1.3, 4.1_
+  - [ ] 1.3 Validate seeded data quality
+    - Query each table to verify record counts match expected values
+    - Verify FK references are valid (orders reference existing clients/batches)
+    - Check PII masking audit shows masked fields
+    - _Requirements: 4.2, 4.3_
+  - [ ] 1.4 Test application with seeded data
+    - Navigate to production URL and verify pages load
+    - Check Clients page shows seeded clients
+    - Check Orders page shows seeded orders
+    - Verify no console errors or loading failures
+    - _Requirements: 4.4_
+
+- [ ] 2. Phase 2: Create Production Documentation
+  - [ ] 2.1 Create production seeding runbook
+    - Create `docs/deployment/SEEDING_RUNBOOK.md`
+    - Include step-by-step instructions for production seeding
+    - Document DigitalOcean-specific commands and considerations
+    - Add troubleshooting section with common errors
+    - _Requirements: 3.1, 3.2_
+  - [ ] 2.2 Document rollback procedures
+    - Add manual rollback SQL commands to runbook
+    - Document how to release stuck locks
+    - Include data cleanup procedures
+    - _Requirements: 3.3_
+  - [ ] 2.3 Document monitoring procedures
+    - Add section on monitoring seeding progress
+    - Document how to verify success via logs
+    - Include health check verification steps
+    - _Requirements: 3.4_
+  - [ ] 2.4 Update seed README with production section
+    - Add production usage section to `scripts/seed/README.md`
+    - Document environment-specific behavior
+    - Add DigitalOcean deployment notes
+    - _Requirements: 3.1_
+
+- [ ] 3. Phase 3: Legacy Code Cleanup
+  - [ ] 3.1 Add deprecation warnings to SKIP_SEEDING
+    - Update `server/services/seedDefaults.ts` with deprecation warning
+    - Update `server/_core/index.ts` with deprecation warning
+    - Ensure backward compatibility is maintained
+    - _Requirements: 5.1, 5.2_
+  - [ ] 3.2 Archive legacy seeding scripts
+    - Create `scripts/legacy/` directory
+    - Move `scripts/seed-realistic-main.ts` to legacy folder
+    - Update any import references
+    - _Requirements: 5.3_
+  - [ ] 3.3 Update documentation references
+    - Search for references to old seeding system
+    - Update all docs to point to new `pnpm seed:new` commands
+    - Remove outdated seeding documentation
+    - _Requirements: 5.4_
+
+- [ ] 4. Checkpoint - Verify all changes
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 5. Property-Based Tests
+  - [ ] 5.1 Write property test for PII masking completeness
+    - **Property 1: PII Masking Completeness**
+    - **Validates: Requirements 2.2**
+    - Use fast-check to generate random records with PII fields
+    - Verify all PII fields are masked in non-production
+  - [ ] 5.2 Write property test for record count accuracy
+    - **Property 2: Record Count Accuracy**
+    - **Validates: Requirements 4.1**
+    - Verify reported counts match actual database counts
+  - [ ] 5.3 Write property test for referential integrity
+    - **Property 3: Referential Integrity Preservation**
+    - **Validates: Requirements 4.2**
+    - Verify all FK references point to existing records
+
+- [ ] 6. Final Checkpoint - Production validation complete
+  - Ensure all tests pass, ask the user if questions arise.

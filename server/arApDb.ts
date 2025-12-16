@@ -27,7 +27,7 @@ import {
  */
 export async function getInvoices(filters?: {
   customerId?: number;
-  status?: "DRAFT" | "SENT" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
+  status?: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID";
   startDate?: Date;
   endDate?: Date;
   limit?: number;
@@ -155,7 +155,7 @@ export async function updateInvoice(id: number, data: Partial<InsertInvoice>) {
  */
 export async function updateInvoiceStatus(
   id: number,
-  status: "DRAFT" | "SENT" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
+  status: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -180,7 +180,7 @@ export async function recordInvoicePayment(invoiceId: number, amount: number) {
   const newAmountDue = totalAmount - newAmountPaid;
 
   // Determine new status
-  let newStatus: "DRAFT" | "SENT" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID" = "PARTIAL";
+  let newStatus: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID" = "PARTIAL";
   if (newAmountDue <= 0.01) {
     newStatus = "PAID";
   } else if (newAmountPaid > 0) {

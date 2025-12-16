@@ -1,0 +1,118 @@
+# Implementation Plan
+
+- [x] 1. Create Response Extraction Utility
+  - [x] 1.1 Create `client/src/lib/api-utils.ts` with `extractArray` function
+    - Implement type-safe utility that handles both array and object responses
+    - Handle undefined/null inputs gracefully
+    - Export function for use across frontend
+    - _Requirements: 1.1, 2.1, 3.1, 4.1, 10.2_
+  - [x] 1.2 Write property test for response extraction
+    - **Property 1: Paginated Response Extraction Consistency**
+    - **Validates: Requirements 1.1, 2.1, 3.1, 4.1, 5.1, 5.2, 5.3, 5.4, 10.2**
+    - Use fast-check to generate random arrays and object wrappers
+    - Verify extraction returns correct array in all cases
+
+- [x] 2. Fix Frontend Accounting Pages
+  - [x] 2.1 Fix Invoices.tsx response handling
+    - Change `Array.isArray(invoices) ? invoices : []` to `invoices?.invoices ?? []`
+    - Update filteredInvoices useMemo to use correct extraction
+    - _Requirements: 1.1, 1.2_
+  - [x] 2.2 Fix Bills.tsx response handling
+    - Change `Array.isArray(bills) ? bills : []` to `bills?.bills ?? []`
+    - Update filteredBills useMemo to use correct extraction
+    - _Requirements: 2.1, 2.2_
+  - [x] 2.3 Fix Payments.tsx response handling
+    - Change `Array.isArray(payments) ? payments : []` to `payments?.payments ?? []`
+    - Update filteredPayments useMemo to use correct extraction
+    - _Requirements: 3.1, 3.2_
+  - [x] 2.4 Fix Expenses.tsx response handling
+    - Change `Array.isArray(expenses) ? expenses : []` to `expenses?.expenses ?? []`
+    - Update filteredExpenses useMemo to use correct extraction
+    - _Requirements: 4.1, 4.2_
+  - [x] 2.5 Fix AccountingDashboard.tsx response handling
+    - Fix invoiceList, billList, receivablesList, payablesList extractions
+    - Use `response?.invoices ?? []` pattern for all
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+  - [x] 2.6 Fix BankTransactions.tsx response handling
+    - Update transaction list extraction if needed
+    - _Requirements: 10.2_
+
+- [x] 3. Checkpoint - Verify frontend fixes
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 4. Fix API Schema Validation
+  - [x] 4.1 Add "VIEWED" status to invoice Zod schema in accounting.ts
+    - Update `invoices.list` input schema to include "VIEWED"
+    - Update `invoices.updateStatus` input schema to include "VIEWED"
+    - _Requirements: 1.3, 10.3_
+  - [x] 4.2 Write property test for schema completeness
+    - **Property 2: Invoice Status Schema Completeness**
+    - **Validates: Requirements 1.3, 10.3**
+    - Verify all database enum values are accepted by Zod schema
+
+- [x] 5. Create Client Transactions Seeder
+  - [x] 5.1 Create `scripts/seed/seeders/seed-client-transactions.ts`
+    - Query all seeded orders
+    - Create clientTransaction for each order with matching data
+    - Handle transaction types and payment statuses
+    - _Requirements: 6.1, 9.1_
+  - [x] 5.2 Update seed-main.ts to include client transactions seeder
+    - Add import for new seeder
+    - Add to seeder execution order (after orders, before invoices)
+    - _Requirements: 9.1_
+  - [x] 5.3 Add client stats recalculation after seeding
+    - Call updateClientStats for each client with transactions
+    - Log stats update progress
+    - _Requirements: 6.2, 6.3_
+  - [x] 5.4 Write property test for client transaction creation
+    - **Property 3: Client Transaction Creation from Orders**
+    - **Validates: Requirements 6.1, 9.1**
+    - Verify each order has corresponding clientTransaction
+  - [x] 5.5 Write property test for client stats calculation
+    - **Property 4: Client Total Spent Calculation**
+    - **Property 5: Client Amount Owed Calculation**
+    - **Validates: Requirements 6.2, 6.3**
+    - Verify totalSpent and totalOwed match transaction sums
+
+- [x] 6. Checkpoint - Verify seeding fixes
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 7. Add Vendor Batch Query
+  - [x] 7.1 Add `getBatchesByVendor` function to inventoryDb.ts
+    - Join batches → lots → filter by vendorId
+    - Return batch and lot data
+    - _Requirements: 7.1, 7.2_
+  - [x] 7.2 Add `inventory.getBatchesByVendor` endpoint to inventory router
+    - Accept vendorId input
+    - Call inventoryDb function
+    - _Requirements: 7.1_
+  - [x] 7.3 Update VendorProfilePage.tsx to query actual data
+    - Add trpc query for vendor batches
+    - Add trpc query for vendor purchase orders (if endpoint exists)
+    - Replace hardcoded "0" with actual counts
+    - Display batch list in Products section
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+  - [x] 7.4 Write property test for vendor batch query
+    - **Property 6: Vendor Batch Query Completeness**
+    - **Validates: Requirements 7.1, 7.2**
+    - Verify all batches with matching lot.vendorId are returned
+
+- [x] 8. Update Payment-Invoice Linkage in Seeder
+  - [x] 8.1 Update seed-payments.ts to link payments to invoices
+    - Query seeded invoices
+    - Create payments linked to invoices via invoiceId
+    - Update invoice amountPaid and status after payment creation
+    - _Requirements: 9.3_
+  - [x] 8.2 Write property test for payment-invoice linkage
+    - **Property 7: Invoice-Payment Linkage Integrity**
+    - **Validates: Requirements 9.3**
+    - Verify invoice amountPaid increases by payment amount
+
+- [x] 9. Add Status Filter Tests
+  - [x] 9.1 Write property test for status filter correctness
+    - **Property 8: Status Filter Correctness**
+    - **Validates: Requirements 2.3**
+    - Verify filtered results only contain matching status
+
+- [x] 10. Final Checkpoint - Complete validation
+  - Ensure all tests pass, ask the user if questions arise.

@@ -102,6 +102,31 @@ export default function VendorProfilePage() {
     return undefined;
   }, [vendorResponse]);
 
+  // Fetch vendor batches (products supplied)
+  // _Requirements: 7.1, 7.2_
+  const { data: vendorBatches } = trpc.inventory.getBatchesByVendor.useQuery(
+    { vendorId: Number(id) },
+    { enabled: !!id }
+  );
+
+  // Fetch vendor purchase orders
+  // _Requirements: 7.3_
+  const { data: vendorPOs } = trpc.purchaseOrders.getByVendor.useQuery(
+    { vendorId: Number(id) },
+    { enabled: !!id }
+  );
+
+  // Calculate stats from actual data
+  const productsSuppliedCount = vendorBatches?.length ?? 0;
+  const purchaseOrdersCount = vendorPOs?.length ?? 0;
+  const lastOrderDate = useMemo(() => {
+    if (!vendorPOs || vendorPOs.length === 0) return null;
+    const sortedPOs = [...vendorPOs].sort((a, b) => 
+      new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+    );
+    return sortedPOs[0]?.orderDate ? new Date(sortedPOs[0].orderDate) : null;
+  }, [vendorPOs]);
+
   // Update vendor mutation
   const updateMutation = trpc.vendors.update.useMutation({
     onSuccess: () => {
@@ -282,7 +307,7 @@ export default function VendorProfilePage() {
             </Card>
           )}
 
-          {/* Purchase Orders Section (Placeholder for future) */}
+          {/* Purchase Orders Section */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -290,21 +315,52 @@ export default function VendorProfilePage() {
                 Purchase Orders
               </CardTitle>
               <CardDescription>
-                Recent purchase orders from this vendor
+                Recent purchase orders from this vendor ({purchaseOrdersCount} total)
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No purchase orders yet</p>
-                <p className="text-sm">
-                  Purchase orders will appear here once created
-                </p>
-              </div>
+              {vendorPOs && vendorPOs.length > 0 ? (
+                <div className="space-y-3">
+                  {vendorPOs.slice(0, 5).map((po) => (
+                    <div
+                      key={po.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium">{po.poNumber}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(po.orderDate).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">
+                          ${parseFloat(po.total || "0").toFixed(2)}
+                        </div>
+                        <div className="text-xs text-muted-foreground capitalize">
+                          {po.purchaseOrderStatus?.toLowerCase().replace("_", " ")}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {vendorPOs.length > 5 && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      +{vendorPOs.length - 5} more purchase orders
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No purchase orders yet</p>
+                  <p className="text-sm">
+                    Purchase orders will appear here once created
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Products Section (Placeholder for future) */}
+          {/* Products Section */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -312,17 +368,50 @@ export default function VendorProfilePage() {
                 Products
               </CardTitle>
               <CardDescription>
-                Products supplied by this vendor
+                Products supplied by this vendor ({productsSuppliedCount} batches)
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No products linked yet</p>
-                <p className="text-sm">
-                  Products will appear here once linked to this vendor
-                </p>
-              </div>
+              {vendorBatches && vendorBatches.length > 0 ? (
+                <div className="space-y-3">
+                  {vendorBatches.slice(0, 10).map((item) => (
+                    <div
+                      key={item.batch.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium">
+                          {item.product?.nameCanonical || "Unknown Product"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {item.batch.sku} • {item.brand?.name || "No Brand"}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">
+                          {parseFloat(item.batch.onHandQty || "0").toFixed(2)} units
+                        </div>
+                        <div className="text-xs text-muted-foreground capitalize">
+                          {item.batch.batchStatus?.toLowerCase().replace("_", " ")}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {vendorBatches.length > 10 && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      +{vendorBatches.length - 10} more batches
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No products linked yet</p>
+                  <p className="text-sm">
+                    Products will appear here once linked to this vendor
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -339,19 +428,23 @@ export default function VendorProfilePage() {
                 <div className="text-sm text-muted-foreground">
                   Total Purchase Orders
                 </div>
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">{purchaseOrdersCount}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">
                   Products Supplied
                 </div>
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">{productsSuppliedCount}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">
                   Last Order Date
                 </div>
-                <div className="text-sm">Never</div>
+                <div className="text-sm">
+                  {lastOrderDate 
+                    ? formatDistanceToNow(lastOrderDate, { addSuffix: true })
+                    : "Never"}
+                </div>
               </div>
             </CardContent>
           </Card>
