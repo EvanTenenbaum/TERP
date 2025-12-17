@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
 import { calendarViews } from "../../drizzle/schema";
@@ -15,14 +15,14 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const calendarViewsRouter = router({
   // Get user's calendar views
-  getViews: publicProcedure.query(async ({ ctx }) => {
-    const userId = ctx.user?.id || 1;
+  getViews: protectedProcedure.query(async ({ ctx }) => {
+    const userId = getAuthenticatedUserId(ctx);
     return await calendarDb.getUserViews(userId);
   }),
 
   // Get user's default view
-  getDefaultView: publicProcedure.query(async ({ ctx }) => {
-    const userId = ctx.user?.id || 1;
+  getDefaultView: protectedProcedure.query(async ({ ctx }) => {
+    const userId = getAuthenticatedUserId(ctx);
     const defaultView = await calendarDb.getUserDefaultView(userId);
 
     // If no default view, return a sensible default
@@ -48,7 +48,7 @@ export const calendarViewsRouter = router({
   }),
 
   // Create calendar view
-  createView: publicProcedure
+  createView: protectedProcedure
     .input(
       z.object({
         name: z.string().min(1).max(100),
@@ -67,7 +67,7 @@ export const calendarViewsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // If setting as default, unset other default views
       if (input.isDefault) {
@@ -121,7 +121,7 @@ export const calendarViewsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Verify ownership
       const db = await getDb();
@@ -156,10 +156,10 @@ export const calendarViewsRouter = router({
     }),
 
   // Delete calendar view
-  deleteView: publicProcedure
+  deleteView: protectedProcedure
     .input(z.object({ viewId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Verify ownership
       const db = await getDb();
@@ -181,10 +181,10 @@ export const calendarViewsRouter = router({
     }),
 
   // Set view as default
-  setAsDefault: publicProcedure
+  setAsDefault: protectedProcedure
     .input(z.object({ viewId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Verify ownership
       const db = await getDb();

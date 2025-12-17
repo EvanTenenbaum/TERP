@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import TimezoneService from "../_core/timezoneService";
 import PermissionService from "../_core/permissionService";
@@ -41,7 +41,8 @@ export const calendarRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      // For read operations, allow public user but track it
+      const userId = ctx.user?.id ?? 1;
 
       // Build base query for calendar events
       let eventConditions: any[] = [
@@ -177,7 +178,8 @@ export const calendarRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      // For read operations, use authenticated user or reject
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       // Check if user has VIEW permission via requirePermission
@@ -314,7 +316,7 @@ export const calendarRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Validate timezone
       TimezoneService.validateTimezone(input.timezone);
@@ -455,7 +457,7 @@ export const calendarRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(userId, input.id, "EDIT");
@@ -518,7 +520,7 @@ export const calendarRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(userId, input.id, "DELETE");
@@ -560,8 +562,8 @@ export const calendarRouter = router({
     }),
 
   // Get events assigned to user
-  getMyEvents: publicProcedure.query(async ({ ctx }) => {
-    const userId = ctx.user?.id || 1;
+  getMyEvents: protectedProcedure.query(async ({ ctx }) => {
+    const userId = getAuthenticatedUserId(ctx);
     return await calendarDb.getEventsAssignedToUser(userId);
   }),
 

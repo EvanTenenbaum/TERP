@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
 import { getDb } from "../db";
@@ -19,7 +19,7 @@ export const calendarRemindersRouter = router({
   getReminders: publicProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(
@@ -45,7 +45,7 @@ export const calendarRemindersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(
@@ -84,7 +84,7 @@ export const calendarRemindersRouter = router({
   deleteReminder: publicProcedure
     .input(z.object({ reminderId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Delete reminder
       const db = await getDb();
@@ -135,7 +135,7 @@ export const calendarRemindersRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
       const now = new Date();
       const future = new Date();
       future.setHours(future.getHours() + input.hoursAhead);

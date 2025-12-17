@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions, transactionLinks, returns } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -87,7 +87,8 @@ export const refundsRouter = router({
   }),
 
   // Process a refund for a return
-  create: publicProcedure
+  // SECURITY: createdBy is derived from authenticated context, not from input
+  create: protectedProcedure
     .input(
       z.object({
         returnId: z.number(),
@@ -95,10 +96,10 @@ export const refundsRouter = router({
         amount: z.string(),
         paymentMethod: z.enum(["CASH", "CHECK", "CREDIT_CARD", "DEBIT_CARD", "BANK_TRANSFER", "OTHER"]),
         notes: z.string().optional(),
-        createdBy: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const createdBy = getAuthenticatedUserId(ctx);
       const db = await getDb();
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
@@ -135,7 +136,7 @@ export const refundsRouter = router({
           transactionDate: new Date(),
           transactionStatus: "COMPLETED",
           notes: input.notes || `Refund for return #${input.returnId}`,
-          createdBy: input.createdBy,
+          createdBy,
         });
 
         // Link refund to original transaction
@@ -145,7 +146,7 @@ export const refundsRouter = router({
           transactionLinkType: "REFUND_OF",
           linkAmount: input.amount.toString(),
           notes: `Refund for return #${input.returnId}`,
-          createdBy: input.createdBy,
+          createdBy,
         });
 
         return { id: refundTx.insertId };

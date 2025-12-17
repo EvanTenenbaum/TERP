@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -16,7 +16,7 @@ export const calendarParticipantsRouter = router({
   getParticipants: publicProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission to view event
       const hasPermission = await PermissionService.hasPermission(
@@ -46,7 +46,7 @@ export const calendarParticipantsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const currentUserId = ctx.user?.id || 1;
+      const currentUserId = getAuthenticatedUserId(ctx);
 
       // Check permission to edit event
       const hasPermission = await PermissionService.hasPermission(
@@ -100,7 +100,7 @@ export const calendarParticipantsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Update response
       await calendarDb.updateParticipantResponse(
@@ -132,7 +132,7 @@ export const calendarParticipantsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const currentUserId = ctx.user?.id || 1;
+      const currentUserId = getAuthenticatedUserId(ctx);
 
       // Check permission to edit event
       const hasPermission = await PermissionService.hasPermission(
@@ -175,7 +175,7 @@ export const calendarParticipantsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const currentUserId = ctx.user?.id || 1;
+      const currentUserId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(

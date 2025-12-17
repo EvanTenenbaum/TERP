@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
 import * as calendarDb from "../calendarDb";
 import { calendarEvents } from "../../drizzle/schema";
@@ -116,7 +116,7 @@ export const calendarFinancialsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Create calendar event for sales sheet follow-up
       const reminderDate = new Date(input.reminderTime);
@@ -171,7 +171,7 @@ export const calendarFinancialsRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
       const db = await getDb();
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
@@ -209,7 +209,7 @@ export const calendarFinancialsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Calculate reminder date
       const dueDate = new Date(input.dueDate);

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as salesSheetsDb from "../salesSheetsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
 
@@ -68,9 +68,10 @@ export const salesSheetsRouter = router({
         throw new Error("Total value mismatch");
       }
 
+      const userId = getAuthenticatedUserId(ctx);
       return await salesSheetsDb.saveSalesSheet({
         ...input,
-        createdBy: ctx.user?.id || 1,
+        createdBy: userId,
       });
     }),
 
@@ -113,9 +114,10 @@ export const salesSheetsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
       return await salesSheetsDb.createTemplate({
         ...input,
-        createdBy: ctx.user?.id || 1,
+        createdBy: userId,
       });
     }),
 

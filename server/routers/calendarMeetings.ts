@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import { getDb } from "../db";
 import { calendarEvents, calendarEventParticipants, clientMeetingHistory } from "../../drizzle/schema";
@@ -16,7 +16,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
 export const calendarMeetingsRouter = router({
   // Get unconfirmed meetings for user
   getUnconfirmedMeetings: publicProcedure.query(async ({ ctx }) => {
-    const userId = ctx.user?.id || 1;
+    const userId = getAuthenticatedUserId(ctx);
     const db = await getDb();
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
@@ -74,7 +74,7 @@ export const calendarMeetingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get event
       const event = await calendarDb.getEventById(input.eventId);
@@ -204,7 +204,7 @@ export const calendarMeetingsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get meeting history entry
       const db = await getDb();

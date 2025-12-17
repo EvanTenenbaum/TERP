@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { pricingService } from "../services/pricingService";
 import { requirePermission } from "../_core/permissionMiddleware";
 
@@ -55,7 +55,7 @@ export const pricingDefaultsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       await pricingService.setDefaultMarginByCategory(
         input.productCategory,

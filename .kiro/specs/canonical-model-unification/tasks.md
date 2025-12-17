@@ -2,18 +2,18 @@
 
 ## Phase 0: Data Audit & Pre-Migration Validation
 
-- [ ] 1. Create data audit infrastructure
-  - [ ] 1.1 Create orphan detection script for customerId columns
+- [-] 1. Create data audit infrastructure
+  - [x] 1.1 Create orphan detection script for customerId columns
     - Write SQL queries to find customerId values not in clients table
     - Cover: invoices, sales, payments tables
     - Output: CSV report of orphaned records
     - _Requirements: 9.1, 9.2_
-  - [ ] 1.2 Create vendor-to-client collision detection script
+  - [x] 1.2 Create vendor-to-client collision detection script
     - Find vendors with names matching existing clients
     - Identify potential merge vs rename candidates
     - Output: Manual review queue
     - _Requirements: 7.1_
-  - [ ] 1.3 Create schema drift detection script
+  - [x] 1.3 Create schema drift detection script
     - Compare Drizzle schema to actual database structure
     - Identify missing columns, wrong types, missing FKs
     - Output: Drift report JSON
@@ -41,13 +41,13 @@
 
 ## Phase 1: Authentication Hardening (Critical Security Fix)
 
-- [ ] 4. Fix public user fallback vulnerability
-  - [ ] 4.1 Create `strictlyProtectedProcedure` middleware
+- [-] 4. Fix public user fallback vulnerability
+  - [x] 4.1 Create `strictlyProtectedProcedure` middleware
     - Reject requests where `ctx.user.id === -1`
     - Throw UNAUTHORIZED error for public user on mutations
     - Keep fallback for read-only operations if needed
     - _Requirements: 5.4_
-  - [ ] 4.2 Update `protectedProcedure` to reject public user for mutations
+  - [x] 4.2 Update `protectedProcedure` to reject public user for mutations
     - Add check in requireUser middleware
     - Log attempts to use public user for writes
     - _Requirements: 5.3, 5.4_
@@ -55,27 +55,27 @@
     - **Property 7: No Fallback User ID Pattern**
     - **Validates: Requirements 5.3, 5.4, 5.5**
 
-- [ ] 5. Remove `ctx.user?.id || 1` fallback patterns
-  - [ ] 5.1 Fix orders.ts router (8 occurrences)
+- [-] 5. Remove `ctx.user?.id || 1` fallback patterns
+  - [x] 5.1 Fix orders.ts router (8 occurrences)
     - Replace fallback with strict auth check
     - Throw error if user not authenticated
     - _Requirements: 5.3_
-  - [ ] 5.2 Fix calendar routers (34 occurrences total)
+  - [x] 5.2 Fix calendar routers (34 occurrences total)
     - calendar.ts, calendarViews.ts, calendarParticipants.ts
     - calendarMeetings.ts, calendarRecurrence.ts, calendarReminders.ts
     - calendarFinancials.ts, calendarInvitations.ts
     - _Requirements: 5.3_
-  - [ ] 5.3 Fix salesSheets.ts router (2 occurrences)
+  - [x] 5.3 Fix salesSheets.ts router (2 occurrences)
     - _Requirements: 5.3_
-  - [ ] 5.4 Fix pricingDefaults.ts router (1 occurrence)
+  - [x] 5.4 Fix pricingDefaults.ts router (1 occurrence)
     - _Requirements: 5.3_
   - [ ] 5.5 Write unit tests for auth rejection
     - Test that unauthenticated requests are rejected
     - Test that public user is rejected for mutations
     - _Requirements: 5.4_
 
-- [ ] 6. Secure public mutations
-  - [ ] 6.1 Convert salesSheetEnhancements.deactivateExpired to protectedProcedure
+- [-] 6. Secure public mutations
+  - [x] 6.1 Convert salesSheetEnhancements.deactivateExpired to protectedProcedure
     - Add RBAC permission check
     - Consider converting to scheduled job
     - _Requirements: 4.1, 4.2_
@@ -83,11 +83,11 @@
     - **Property 5: Public Mutation Restriction**
     - **Validates: Requirements 4.1, 4.2**
 
-- [ ] 7. Fix actor attribution from input
-  - [ ] 7.1 Remove createdBy from refunds.ts input schema
+- [-] 7. Fix actor attribution from input
+  - [x] 7.1 Remove createdBy from refunds.ts input schema
     - Derive from ctx.user.id instead
     - _Requirements: 5.1, 5.2_
-  - [ ] 7.2 Audit all routers for actor fields in input
+  - [x] 7.2 Audit all routers for actor fields in input
     - Search for createdBy, updatedBy, receivedBy, actorId in input schemas
     - Remove and derive from context
     - _Requirements: 5.1_

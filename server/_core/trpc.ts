@@ -8,6 +8,26 @@ import { createErrorHandlingMiddleware } from "./errorHandling";
 import { getUserByEmail, getUser, upsertUser } from "../db";
 import { env } from "./env";
 
+/**
+ * Helper to get authenticated user ID from context.
+ * Throws UNAUTHORIZED if user is not authenticated or is the public demo user.
+ * 
+ * Use this instead of `ctx.user?.id || 1` pattern to ensure proper authentication.
+ * 
+ * @param ctx - tRPC context
+ * @returns The authenticated user's ID
+ * @throws TRPCError with code UNAUTHORIZED if not authenticated
+ */
+export function getAuthenticatedUserId(ctx: { user?: { id: number } | null }): number {
+  if (!ctx.user || ctx.user.id === -1) {
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'Authentication required. Please log in to perform this action.',
+    });
+  }
+  return ctx.user.id;
+}
+
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
 });
@@ -130,7 +150,7 @@ async function getOrCreatePublicUserFallback() {
 }
 
 const requireUser = t.middleware(async opts => {
-  const { ctx, next } = opts;
+  const { ctx, next, type } = opts;
 
   // DEFENSIVE APPROACH: If context creation failed, provision public user here
   // This avoids the debug loop by ensuring we always have a user
@@ -142,6 +162,16 @@ const requireUser = t.middleware(async opts => {
       url: ctx.req.url 
     });
     user = await getOrCreatePublicUserFallback();
+  }
+
+  // Log warning if public user is being used for mutations
+  // This helps identify code paths that should use strictlyProtectedProcedure
+  if (user.id === -1 && type === 'mutation') {
+    logger.warn({
+      msg: "SECURITY: Public demo user used for mutation - consider using strictlyProtectedProcedure",
+      url: ctx.req.url,
+      type,
+    });
   }
 
   // Public demo user (id: -1) is allowed for read operations
@@ -158,6 +188,54 @@ export const protectedProcedure = t.procedure
   .use(errorHandlingMiddleware)
   .use(sanitizationMiddleware)
   .use(requireUser);
+
+/**
+ * Strictly protected procedure - rejects public/demo users
+ * 
+ * Use this for mutations that MUST have a real authenticated user.
+ * Unlike protectedProcedure, this will NOT fall back to the public demo user.
+ * 
+ * Security: This prevents the ctx.user?.id || 1 fallback pattern vulnerability
+ * where mutations could be attributed to a default user instead of requiring
+ * real authentication.
+ */
+const requireAuthenticatedUser = t.middleware(async opts => {
+  const { ctx, next } = opts;
+
+  // Reject if no user at all
+  if (!ctx.user) {
+    throw new TRPCError({ 
+      code: "UNAUTHORIZED", 
+      message: "Authentication required. Please log in to perform this action." 
+    });
+  }
+
+  // Reject public demo user (id: -1)
+  if (ctx.user.id === -1) {
+    logger.warn({
+      msg: "strictlyProtectedProcedure: Rejecting public demo user for mutation",
+      url: ctx.req.url,
+      userId: ctx.user.id,
+    });
+    throw new TRPCError({ 
+      code: "UNAUTHORIZED", 
+      message: "Authentication required. Please log in to perform this action." 
+    });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      user: ctx.user, // Guaranteed to be a real authenticated user
+      actorId: ctx.user.id, // Canonical actor attribution
+    },
+  });
+});
+
+export const strictlyProtectedProcedure = t.procedure
+  .use(errorHandlingMiddleware)
+  .use(sanitizationMiddleware)
+  .use(requireAuthenticatedUser);
 
 export const adminProcedure = t.procedure
   .use(errorHandlingMiddleware)

@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, adminProcedure, router } from "../_core/trpc";
+import { publicProcedure, adminProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   calendarEventInvitations,
@@ -191,7 +191,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission to edit event
       const hasPermission = await PermissionService.hasPermission(
@@ -300,7 +300,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get invitation
       const [invitation] = await db
@@ -388,7 +388,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get invitation
       const [invitation] = await db
@@ -455,7 +455,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
-    const userId = ctx.user?.id || 1;
+    const userId = getAuthenticatedUserId(ctx);
 
     // Get or create settings
     let [settings] = await db
@@ -505,7 +505,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get or create settings
       let [settings] = await db
@@ -592,7 +592,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const adminId = ctx.user?.id || 1;
+      const adminId = getAuthenticatedUserId(ctx);
 
       // Get invitation
       const [invitation] = await db
@@ -674,7 +674,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(
@@ -703,7 +703,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
-    const userId = ctx.user?.id || 1;
+    const userId = getAuthenticatedUserId(ctx);
 
     const invitations = await db
       .select()
@@ -745,7 +745,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(
@@ -856,7 +856,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get invitation
       const [invitation] = await db
@@ -915,7 +915,7 @@ export const calendarInvitationsRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get invitation to check permission
       const [invitation] = await db
