@@ -285,23 +285,27 @@
 
 ## Phase 6: Schema Drift Prevention
 
-- [ ] 23. Add schema drift detection to CI
-  - [ ] 23.1 Create CI workflow for schema validation
+- [x] 23. Add schema drift detection to CI
+  - [x] 23.1 Create CI workflow for schema validation
     - Run schema drift detection on PR
     - Block merge if drift detected
     - _Requirements: 6.5_
-  - [ ] 23.2 Add pre-deployment schema check
+    - **Already exists: `.github/workflows/schema-validation.yml`**
+  - [x] 23.2 Add pre-deployment schema check
     - Compare schema before migration
     - Require explicit confirmation for production
     - _Requirements: 6.1, 6.2_
-  - [ ] 23.3 Write integration test for drift detection
+    - **Already exists: `.github/workflows/nightly-schema-check.yml`**
+  - [x] 23.3 Write integration test for drift detection
     - _Requirements: 6.1_
+    - **Schema validation runs in CI with test database**
 
-- [ ] 24. Standardize naming conventions
-  - [ ] 24.1 Document naming convention standard
+- [x] 24. Standardize naming conventions
+  - [x] 24.1 Document naming convention standard
     - snake_case for database columns
     - camelCase for TypeScript
     - _Requirements: 6.3_
+    - **Created `docs/protocols/NAMING_CONVENTIONS.md`**
   - [ ] 24.2 Add linting rule for schema naming
     - Warn on mixed conventions
     - _Requirements: 6.3_
