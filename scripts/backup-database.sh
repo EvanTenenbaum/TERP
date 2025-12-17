@@ -23,10 +23,14 @@ echo ""
 
 # Perform backup using mysqldump
 echo "Starting backup..."
+
+# Set password via environment variable (not visible in process list)
+# This is more secure than --password command line argument
+export MYSQL_PWD="${DB_PASSWORD}"
+
 mysqldump \
   --host="${DB_HOST:-localhost}" \
   --user="${DB_USER:-root}" \
-  --password="${DB_PASSWORD}" \
   --single-transaction \
   --routines \
   --triggers \
@@ -34,8 +38,14 @@ mysqldump \
   --set-gtid-purged=OFF \
   "$DB_NAME" 2>/dev/null | gzip > "$BACKUP_FILE"
 
+# Store exit code before clearing password
+BACKUP_EXIT_CODE=$?
+
+# Clear password from environment for security
+unset MYSQL_PWD
+
 # Check if backup was successful
-if [ $? -eq 0 ] && [ -f "$BACKUP_FILE" ]; then
+if [ $BACKUP_EXIT_CODE -eq 0 ] && [ -f "$BACKUP_FILE" ]; then
   SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
   echo "✓ Backup completed successfully"
   echo "  File: $BACKUP_FILE"

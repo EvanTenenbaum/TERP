@@ -52,8 +52,8 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
 
   // REL-004: Increased pool size for production load
   const defaultConfig: PoolConfig = {
-    connectionLimit: 25, // Increased from 10 for production load
-    queueLimit: 100, // Limit queue to prevent memory issues (was 0/unlimited)
+    connectionLimit: 25, // Maximum number of connections in pool (increased for production load)
+    queueLimit: 100, // Bounded queue to prevent unbounded memory growth
     waitForConnections: true, // Wait for available connection
     enableKeepAlive: true, // Keep connections alive
     keepAliveInitialDelay: 0, // Start keep-alive immediately
@@ -150,14 +150,14 @@ export async function closeConnectionPool(): Promise<void> {
   if (statsInterval) {
     clearInterval(statsInterval);
     statsInterval = null;
-    logger.info("Connection pool stats interval cleared");
+    logger.info({ msg: "Stats interval cleared" });
   }
 
   if (pool) {
-    logger.info("Closing MySQL connection pool");
+    logger.info({ msg: "Closing MySQL connection pool" });
     await pool.end();
     pool = null;
-    logger.info("MySQL connection pool closed");
+    logger.info({ msg: "MySQL connection pool closed" });
   }
 }
 
