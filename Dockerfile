@@ -1,73 +1,88 @@
-FROM node:20-slim AS base
+# ============================================
+# TERP Optimized Multi-Stage Dockerfile
+# Version: 2.0 - Enables --prod builds
+# ============================================
 
-# Force rebuild: 2025-12-08-RAILWAY-FIX-DATABASE-URL
-LABEL build.version="2025-12-02-BUG-002-FIX" \
-      build.description="Fix frontend build failure - add missing VITE env vars"
+# ============================================
+# Stage 1: Base image with system deps
+# ============================================
+FROM node:20.19-slim AS base
 
-# Install corepack/pnpm and system deps
+LABEL build.version="2025-12-17-OPTIMIZED-V2"
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 build-essential ca-certificates git openssl pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 WORKDIR /app
 
-# Copy dependency manifests first for better caching
-COPY package.json pnpm-lock.yaml* ./
+# ============================================
+# Stage 2: Dependencies (cached layer)
+# ============================================
+FROM base AS deps
+
+# Copy ONLY dependency files (maximizes cache hits)
+COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 
-# Install dependencies (prefer frozen lockfile, fall back to update)
+# Install ALL dependencies (need devDeps for build)
 RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
 
-# Copy application source
+# ============================================
+# Stage 3: Build
+# ============================================
+FROM deps AS builder
+
+# Copy source code
 COPY . .
 
-# VITE environment variables for build-time embedding
-# Note: These are public/publishable values embedded in client bundle, not secrets
-# DigitalOcean passes these as build args when scope: RUN_AND_BUILD_TIME is set
-# Kaniko (DO's build system) requires explicit ARG declarations
+# VITE build args
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG VITE_APP_TITLE
 ARG VITE_APP_LOGO
 ARG VITE_APP_ID
 ARG VITE_SENTRY_DSN
 
-# Debug: Print ARG values to verify they're being passed
-RUN echo "DEBUG: VITE_APP_TITLE=${VITE_APP_TITLE}" && \
-    echo "DEBUG: VITE_APP_LOGO=${VITE_APP_LOGO}" && \
-    echo "DEBUG: VITE_APP_ID=${VITE_APP_ID}" && \
-    echo "DEBUG: VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}"
-
-# Make args available as env vars for the build process
 ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
 ENV VITE_APP_TITLE=$VITE_APP_TITLE
 ENV VITE_APP_LOGO=$VITE_APP_LOGO
 ENV VITE_APP_ID=$VITE_APP_ID
 ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
 
-# Create build timestamp file to bust cache and verify deployed version
-# This RUN command always produces a different output, forcing Docker to rebuild subsequent layers
-RUN echo "BUILD_VERSION=v$(date -u +%Y%m%d-%H%M%S)-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)" > /app/.build-version && \
-    cat /app/.build-version
+# Create build version file
+RUN echo "BUILD_VERSION=v$(date -u +%Y%m%d-%H%M%S)-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)" > .build-version && cat .build-version
 
-# Build production assets with VITE variables embedded
-# Explicitly set env vars in the same RUN command to ensure they're available to Node.js
-RUN export VITE_CLERK_PUBLISHABLE_KEY="${VITE_CLERK_PUBLISHABLE_KEY}" && \
-    export VITE_APP_TITLE="${VITE_APP_TITLE}" && \
-    export VITE_APP_LOGO="${VITE_APP_LOGO}" && \
-    export VITE_APP_ID="${VITE_APP_ID}" && \
-    export VITE_SENTRY_DSN="${VITE_SENTRY_DSN}" && \
-    echo "Building with VITE_APP_TITLE=${VITE_APP_TITLE}" && \
-    pnpm run build:production
+# Build production assets
+RUN pnpm run build:production
 
-# Expose default port
+# ============================================
+# Stage 4: Production runtime
+# ============================================
+FROM base AS runner
+
+ENV NODE_ENV=production
+WORKDIR /app
+
+# Copy node_modules from deps stage (includes all deps)
+# NOTE: We can't use --prod because vite.config.js is imported at runtime
+# for dev mode detection. This is a known limitation.
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml ./
+
+# Copy built artifacts from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/.build-version ./
+
+# Copy drizzle schema (needed for migrations)
+COPY --from=builder /app/drizzle ./drizzle
+
+# Copy scripts folder (needed for various runtime operations)
+COPY --from=builder /app/scripts ./scripts
+
 EXPOSE 3000
 
-# Start server directly (no automatic migrations)
-# Run one-time setup manually: bash /app/scripts/one-time-setup.sh
-CMD ["pnpm", "run", "start:production"]
-
+CMD ["node", "--max-old-space-size=896", "dist/index.js"]

@@ -1,5 +1,5 @@
 import express, { type Express } from "express";
-import fs, { readdirSync } from "fs";
+import fs from "fs";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
@@ -8,10 +8,21 @@ import { logger } from "./logger";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { createServer as createViteServer } from "vite";
-import viteConfig from "../../vite.config";
+
+// NOTE: vite and vite.config are now dynamically imported inside setupVite()
+// This allows production builds to use `pnpm install --prod` without vite
+// See: .kiro/specs/deployment-optimization/design.md
 
 export async function setupVite(app: Express, server: Server) {
+  // Dynamic imports - only loaded when this function is called (dev mode only)
+  // This is critical for enabling --prod builds in production
+  const { createServer: createViteServer } = await import("vite");
+
+  // Import vite config - works because esbuild processes this at build time
+  // The config file path is resolved relative to the source, not the bundle
+  const viteConfigModule = await import("../../vite.config.js");
+  const viteConfig = viteConfigModule.default;
+
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
@@ -60,72 +71,92 @@ export function serveStatic(app: Express) {
     process.env.NODE_ENV === "development"
       ? path.resolve(__dirname, "../..", "dist", "public")
       : path.resolve(process.cwd(), "dist", "public");
-  
+
   // Log the resolved path for debugging (critical for production issues)
   // Use try-catch to prevent logger errors from crashing server startup
   try {
     logger.info({ distPath, cwd: process.cwd() }, "Resolving static file path");
-  } catch (e) {
+  } catch {
     // Logger might not be initialized yet, use console as fallback
-    console.log(`[serveStatic] Resolving static file path: ${distPath} (cwd: ${process.cwd()})`);
+    console.log(
+      `[serveStatic] Resolving static file path: ${distPath} (cwd: ${process.cwd()})`
+    );
   }
-  
+
   // Only log errors if directory missing (critical startup issue)
   if (!fs.existsSync(distPath)) {
     const errorInfo = {
-      distPath, 
+      distPath,
       cwd: process.cwd(),
       exists: fs.existsSync(path.resolve(process.cwd(), "dist")),
-      distContents: fs.existsSync(path.resolve(process.cwd(), "dist")) 
+      distContents: fs.existsSync(path.resolve(process.cwd(), "dist"))
         ? fs.readdirSync(path.resolve(process.cwd(), "dist"))
-        : []
+        : [],
     };
     try {
-      logger.error(errorInfo, "Could not find the build directory - make sure to build the client first");
-    } catch (e) {
-      console.error("[serveStatic] ERROR: Could not find build directory:", errorInfo);
+      logger.error(
+        errorInfo,
+        "Could not find the build directory - make sure to build the client first"
+      );
+    } catch {
+      console.error(
+        "[serveStatic] ERROR: Could not find build directory:",
+        errorInfo
+      );
     }
   } else {
     try {
       const files = fs.readdirSync(distPath).slice(0, 10);
-      logger.info({ distPath, fileCount: files.length }, "Serving static files from build directory");
-    } catch (e) {
+      logger.info(
+        { distPath, fileCount: files.length },
+        "Serving static files from build directory"
+      );
+    } catch {
       console.log(`[serveStatic] Serving static files from: ${distPath}`);
     }
   }
 
   // Serve static files with proper cache headers
-  app.use(express.static(distPath, {
-    setHeaders: (res, filePath) => {
-      // HTML files: no cache (always check for updates)
-      if (filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-      }
-      // Hashed assets (JS, CSS with hash in filename): long-term cache (1 year)
-      else if (/\.(js|css)$/.test(filePath) && /-[a-zA-Z0-9]{8,}\.(js|css)$/.test(filePath)) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      }
-      // Other assets: short-term cache (1 day)
-      else {
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-      }
-    }
-  }));
+  app.use(
+    express.static(distPath, {
+      setHeaders: (res, filePath) => {
+        // HTML files: no cache (always check for updates)
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.setHeader("Pragma", "no-cache");
+          res.setHeader("Expires", "0");
+        }
+        // Hashed assets (JS, CSS with hash in filename): long-term cache (1 year)
+        else if (
+          /\.(js|css)$/.test(filePath) &&
+          /-[a-zA-Z0-9]{8,}\.(js|css)$/.test(filePath)
+        ) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+        // Other assets: short-term cache (1 day)
+        else {
+          res.setHeader("Cache-Control", "public, max-age=86400");
+        }
+      },
+    })
+  );
 
   // fall through to index.html if the file doesn't exist
   // but don't catch /health, /api, or /assets routes
   app.use((req, res, next) => {
     const reqPath = req.path;
     // Skip health check, API routes, and assets - let them 404 if not handled
-    if (reqPath.startsWith('/health') || reqPath.startsWith('/api') || reqPath.startsWith('/assets')) {
+    if (
+      reqPath.startsWith("/health") ||
+      reqPath.startsWith("/api") ||
+      reqPath.startsWith("/assets")
+    ) {
       return next();
     }
     // Only serve index.html for non-API, non-asset routes
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

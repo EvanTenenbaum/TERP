@@ -20,7 +20,8 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerSimpleAuthRoutes } from "./simpleAuth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
+import { serveStatic } from "./vite";
+// setupVite is imported dynamically in dev mode only to avoid bundling vite deps
 import { apiLimiter, authLimiter } from "./rateLimiter";
 import { initMonitoring, setupErrorHandler } from "./monitoring";
 import { requestLogger } from "./requestLogger";
@@ -87,10 +88,13 @@ async function startServer() {
   // Run auto-migrations to fix schema drift (adds missing columns/tables)
   // Load environment variables and log DATABASE_URL for debugging
   const { env } = await import("./env");
-  logger.info(`🔗 DATABASE_URL configured: ${env.databaseUrl ? 'YES' : 'NO'}`);
+  logger.info(`🔗 DATABASE_URL configured: ${env.databaseUrl ? "YES" : "NO"}`);
   if (env.databaseUrl) {
     // Log sanitized version (hide password)
-    const sanitized = env.databaseUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://$1:****@');
+    const sanitized = env.databaseUrl.replace(
+      /:\/\/([^:]+):([^@]+)@/,
+      "://$1:****@"
+    );
     logger.info(`📊 Database connection: ${sanitized}`);
   }
 
@@ -99,7 +103,9 @@ async function startServer() {
   const runMigrationsWithRetry = async (maxRetries = 2) => {
     for (let i = 0; i < maxRetries; i++) {
       try {
-        logger.info(`🔄 Running auto-migrations (attempt ${i + 1}/${maxRetries})...`);
+        logger.info(
+          `🔄 Running auto-migrations (attempt ${i + 1}/${maxRetries})...`
+        );
         await runAutoMigrations();
         logger.info("✅ Auto-migrations complete");
         return; // Success, exit the loop
@@ -107,12 +113,15 @@ async function startServer() {
         logger.warn({ msg: `Auto-migration attempt ${i + 1} failed`, error });
         if (i === maxRetries - 1) {
           // Non-fatal: log error but allow server to start
-          logger.error({ msg: "Auto-migrations failed after retries - server starting in degraded mode", error });
+          logger.error({
+            msg: "Auto-migrations failed after retries - server starting in degraded mode",
+            error,
+          });
           return; // Don't throw, allow server to start
         }
         // Reduced backoff: 2s, 4s
         const delay = Math.pow(2, i + 1) * 1000;
-        logger.info(`⏳ Waiting ${delay/1000}s before retry...`);
+        logger.info(`⏳ Waiting ${delay / 1000}s before retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -121,8 +130,13 @@ async function startServer() {
   try {
     await runMigrationsWithRetry();
   } catch (error) {
-    logger.warn({ msg: "Auto-migration failed after all retries (non-fatal) - app may still work", error });
-    logger.warn("Some features may not work correctly if schema is out of sync");
+    logger.warn({
+      msg: "Auto-migration failed after all retries (non-fatal) - app may still work",
+      error,
+    });
+    logger.warn(
+      "Some features may not work correctly if schema is out of sync"
+    );
     // Continue - app may still work depending on what failed
     // The server will start in degraded mode and can be fixed later
   }
@@ -194,8 +208,13 @@ async function startServer() {
           logger.info(`Admin user already exists: ${env.initialAdminUsername}`);
         }
       } catch (error) {
-        logger.error({ msg: "Failed to create admin user (database schema mismatch?) - server will start without admin user", error });
-        logger.info("💡 You can create the first admin user via /api/auth/create-first-user endpoint");
+        logger.error({
+          msg: "Failed to create admin user (database schema mismatch?) - server will start without admin user",
+          error,
+        });
+        logger.info(
+          "💡 You can create the first admin user via /api/auth/create-first-user endpoint"
+        );
         // Don't re-throw - allow server to start
       }
     } else {
@@ -323,7 +342,9 @@ async function startServer() {
     // Debug endpoint to test createContext directly
     app.get("/api/debug/context", async (req, res) => {
       try {
-        const context = await createContext({ req, res } as Parameters<typeof createContext>[0]);
+        const context = await createContext({ req, res } as Parameters<
+          typeof createContext
+        >[0]);
         res.json({
           success: true,
           user: {
@@ -363,6 +384,8 @@ async function startServer() {
 
     // development mode uses Vite, production mode uses static files
     if (process.env.NODE_ENV === "development") {
+      // Dynamic import to avoid bundling vite and its plugins in production
+      const { setupVite } = await import("./vite.js");
       await setupVite(app, server);
     } else {
       serveStatic(app);
@@ -398,7 +421,7 @@ async function startServer() {
     server.listen(port, "0.0.0.0", () => {
       logger.info(`Server running on http://0.0.0.0:${port}/`);
       logger.info(`Health check available at http://localhost:${port}/health`);
-      
+
       // Start price alerts cron job
       try {
         startPriceAlertsCron();
@@ -411,7 +434,7 @@ async function startServer() {
   } catch (error) {
     logger.error({ error }, "❌ CRITICAL ERROR during Express server setup:");
     if (error instanceof Error && error.stack) {
-      logger.error({ stack: error.stack }, "Stack trace")
+      logger.error({ stack: error.stack }, "Stack trace");
     }
     process.exit(1);
   }
@@ -421,4 +444,3 @@ startServer().catch(error => {
   logger.error({ error }, "Failed to start server");
   process.exit(1);
 });
-

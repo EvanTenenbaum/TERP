@@ -61,3 +61,19 @@ temp/
 .next/
 .nuxt/
 
+# Additional exclusions for faster builds
+agent-prompts/
+product-management/
+audit-results/
+qa-results/
+.kiro/
+.cursor/
+.vercel/
+dashboard.html
+playwright-report/
+test-results/
+# NOTE: Do NOT exclude:
+# - *.patch (needed for pnpm patches)
+# - drizzle/meta/ (needed for migrations)
+# - specs/ (may be referenced)
+
