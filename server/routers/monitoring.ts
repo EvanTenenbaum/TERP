@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/trpc";
 import { getRecentMetrics, getSlowQueryStats } from "../_core/performanceMiddleware";
+import { getTrpcUsageSnapshot, getTrpcUsageSummary, resetTrpcUsage } from "../_core/usageTracker";
 
 /**
  * Monitoring Router
@@ -115,4 +116,71 @@ export const monitoringRouter = router({
         },
       };
     }),
+
+  /**
+   * Get usage stats (what procedures are actually being called).
+   *
+   * This is the key building block for identifying unused endpoints and flows.
+   * In-memory only (resets on deploy/restart), so you typically:
+   * - reset
+   * - use the app normally for a while
+   * - review least-used / never-seen procedures
+   */
+  getUsageStats: adminProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(500).optional(),
+          sortBy: z.enum(["count", "lastSeen", "errorRate", "avgDuration"]).optional(),
+          sortDirection: z.enum(["asc", "desc"]).optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const opts = {
+        limit: input?.limit ?? 200,
+        sortBy: input?.sortBy ?? "count",
+        sortDirection: input?.sortDirection ?? "desc",
+      };
+      const summary = getTrpcUsageSummary();
+      const snapshot = getTrpcUsageSnapshot();
+
+      const rows = snapshot.map((r) => {
+        const avgDurationMs = r.count > 0 ? r.totalDurationMs / r.count : 0;
+        const errorRatePercent = r.count > 0 ? (r.errorCount / r.count) * 100 : 0;
+        return {
+          ...r,
+          avgDurationMs,
+          errorRatePercent,
+        };
+      });
+
+      const dir = opts.sortDirection === "asc" ? 1 : -1;
+      const sorted = rows.sort((a, b) => {
+        switch (opts.sortBy) {
+          case "lastSeen":
+            return (a.lastSeenAt.getTime() - b.lastSeenAt.getTime()) * dir;
+          case "errorRate":
+            return (a.errorRatePercent - b.errorRatePercent) * dir;
+          case "avgDuration":
+            return (a.avgDurationMs - b.avgDurationMs) * dir;
+          case "count":
+          default:
+            return (a.count - b.count) * dir;
+        }
+      });
+
+      return {
+        summary,
+        procedures: sorted.slice(0, opts.limit),
+      };
+    }),
+
+  /**
+   * Reset in-memory usage stats.
+   * Useful to start a clean measurement window.
+   */
+  resetUsageStats: adminProcedure.mutation(async () => {
+    return resetTrpcUsage();
+  }),
 });

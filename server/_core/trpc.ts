@@ -10,6 +10,7 @@ import { env } from "./env";
 import { db } from "../db";
 import { vipPortalAuth } from "../../drizzle/schema-vip-portal";
 import { eq, and, gt } from "drizzle-orm";
+import { recordTrpcUsage, type TrpcCallerCategory } from "./usageTracker";
 
 /**
  * Helper to get authenticated user ID from context.
@@ -55,6 +56,47 @@ const errorHandlingMiddleware = t.middleware(async (opts) => {
 });
 
 export const publicProcedure = t.procedure.use(errorHandlingMiddleware);
+
+/**
+ * Usage tracking middleware (in-memory).
+ * Helps identify "what's actually used" with evidence (counts + last-seen).
+ */
+const usageTrackingMiddleware = t.middleware(async ({ ctx, next, path, type }) => {
+  const start = Date.now();
+  const procedure = `${type}.${path}`;
+
+  const inferCallerCategory = (): TrpcCallerCategory => {
+    // VIP portal uses actorId = `vip:${clientId}` (set in vipPortalProcedure)
+    const actorId = (ctx as any)?.actorId as string | undefined;
+    if (typeof actorId === "string" && actorId.startsWith("vip:")) return "vip-portal";
+
+    const user = (ctx as any)?.user as { id?: number; role?: string } | undefined;
+    if (!user || typeof user.id !== "number") return "unknown";
+    if (user.id === -1) return "public-demo";
+    if (user.role === "admin") return "admin";
+    return "authenticated";
+  };
+
+  try {
+    const result = await next();
+    recordTrpcUsage({
+      procedure,
+      durationMs: Date.now() - start,
+      success: true,
+      callerCategory: inferCallerCategory(),
+    });
+    return result;
+  } catch (error) {
+    recordTrpcUsage({
+      procedure,
+      durationMs: Date.now() - start,
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      callerCategory: inferCallerCategory(),
+    });
+    throw error;
+  }
+});
 
 /**
  * Recursively sanitize all string values in an object
@@ -189,6 +231,7 @@ const requireUser = t.middleware(async opts => {
 
 export const protectedProcedure = t.procedure
   .use(errorHandlingMiddleware)
+  .use(usageTrackingMiddleware)
   .use(sanitizationMiddleware)
   .use(requireUser);
 
@@ -237,11 +280,13 @@ const requireAuthenticatedUser = t.middleware(async opts => {
 
 export const strictlyProtectedProcedure = t.procedure
   .use(errorHandlingMiddleware)
+  .use(usageTrackingMiddleware)
   .use(sanitizationMiddleware)
   .use(requireAuthenticatedUser);
 
 export const adminProcedure = t.procedure
   .use(errorHandlingMiddleware)
+  .use(usageTrackingMiddleware)
   .use(sanitizationMiddleware)
   .use(
     t.middleware(async opts => {
@@ -413,6 +458,7 @@ const requireVipPortalSession = t.middleware(async opts => {
  */
 export const vipPortalProcedure = t.procedure
   .use(errorHandlingMiddleware)
+  .use(usageTrackingMiddleware)
   .use(sanitizationMiddleware)
   .use(requireVipPortalSession);
 
