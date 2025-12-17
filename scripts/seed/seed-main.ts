@@ -36,6 +36,8 @@ import {
   seedClientTransactions,
   seedInvoices,
   seedPayments,
+  seedVendorBills,
+  seedPurchaseOrders,
 } from "./seeders";
 
 // ============================================================================
@@ -52,6 +54,7 @@ interface CLIFlags {
   help: boolean;
   verbose: boolean;
   clean: boolean;
+  complete: boolean; // Seed all data types including bills, POs (Requirements: 10.1)
 }
 
 interface SeedingStats {
@@ -82,6 +85,7 @@ function parseArgs(): CLIFlags {
     help: false,
     verbose: false,
     clean: false,
+    complete: false,
   };
 
   for (const arg of args) {
@@ -97,6 +101,8 @@ function parseArgs(): CLIFlags {
       flags.verbose = true;
     } else if (arg === "--clean" || arg === "-c") {
       flags.clean = true;
+    } else if (arg === "--complete") {
+      flags.complete = true;
     } else if (arg.startsWith("--table=")) {
       flags.table = arg.split("=")[1];
     } else if (arg.startsWith("--size=")) {
@@ -214,9 +220,10 @@ async function promptConfirmation(message: string): Promise<boolean> {
 
 /**
  * Get record counts based on size flag
+ * Requirements: 10.1, 10.3
  */
-function getRecordCounts(size: CLIFlags["size"]): Record<string, number> {
-  const counts: Record<CLIFlags["size"], Record<string, number>> = {
+function getRecordCounts(size: CLIFlags["size"], complete: boolean = false): Record<string, number> {
+  const baseCounts: Record<CLIFlags["size"], Record<string, number>> = {
     small: {
       clients: 10,
       vendors: 5,
@@ -249,7 +256,28 @@ function getRecordCounts(size: CLIFlags["size"]): Record<string, number> {
     },
   };
 
-  return counts[size];
+  const counts = { ...baseCounts[size] };
+
+  // Add complete mode counts (Requirements: 10.1)
+  if (complete) {
+    const completeCounts: Record<CLIFlags["size"], Record<string, number>> = {
+      small: {
+        purchaseOrders: 10,
+        bills: 15,
+      },
+      medium: {
+        purchaseOrders: 50,
+        bills: 75,
+      },
+      large: {
+        purchaseOrders: 200,
+        bills: 300,
+      },
+    };
+    Object.assign(counts, completeCounts[size]);
+  }
+
+  return counts;
 }
 
 /**
@@ -291,16 +319,19 @@ async function cleanTables(tables: string[], dryRun: boolean): Promise<void> {
 
 /**
  * Seeder function map
+ * Requirements: 10.1
  */
 const SEEDERS: Record<string, (count: number, validator: SchemaValidator, masker: PIIMasker) => Promise<SeederResult>> = {
   vendors: seedVendors,
   clients: seedClients,
   products: seedProducts,
+  purchaseOrders: seedPurchaseOrders,
   batches: seedBatches,
   orders: seedOrders,
   client_transactions: seedClientTransactions,
   invoices: seedInvoices,
   payments: seedPayments,
+  bills: seedVendorBills,
 };
 
 /**
@@ -314,7 +345,7 @@ async function executeSeed(
   stats: SeedingStats
 ): Promise<void> {
   const tables = flags.table ? [flags.table] : SEEDABLE_TABLES;
-  const counts = getRecordCounts(flags.size);
+  const counts = getRecordCounts(flags.size, flags.complete);
 
   // Validate requested table exists
   if (flags.table && !SEEDABLE_TABLES.includes(flags.table)) {
@@ -450,7 +481,7 @@ async function main(): Promise<void> {
 
     // Confirmation prompt (unless --force or --dry-run)
     if (!flags.force && !flags.dryRun) {
-      const counts = getRecordCounts(flags.size);
+      const counts = getRecordCounts(flags.size, flags.complete);
       const tables = flags.table ? [flags.table] : SEEDABLE_TABLES;
       const totalRecords = tables.reduce(
         (sum, t) => sum + (counts[t] || 0),

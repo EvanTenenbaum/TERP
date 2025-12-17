@@ -1,0 +1,159 @@
+# Implementation Plan
+
+- [x] 1. Fix Order Items Product Metadata (Bug Fix #1)
+  - [x] 1.1 Update order items generator to include product metadata
+    - Modify `generateOrderItems` in `scripts/seed/seeders/seed-orders.ts`
+    - Query products table to get `nameCanonical`, `category`, `subcategory`, `strainId`
+    - Query strains table to get strain name for products with strainId
+    - Query batches table to get `grade`
+    - Add `strain`, `category`, `subcategory`, `grade` fields to order items
+    - _Requirements: 1.1, 3.1, 3.2, 3.3, 3.4_
+  - [x] 1.2 Write property test for order items metadata
+    - **Property 1: Order Items Product Metadata Completeness**
+    - **Validates: Requirements 1.1, 3.1, 3.2, 3.3**
+    - Verify all seeded order items have category (non-null) and strain (or null if no strain)
+
+- [x] 2. Fix Price Field Compatibility (Bug Fix #2)
+  - [x] 2.1 Add price field alias to order items
+    - Modify `generateOrderItems` to include `price` field equal to `unitPrice`
+    - Ensure both field names are present for compatibility
+    - _Requirements: 2.1_
+  - [x] 2.2 Write property test for price field compatibility
+    - **Property 2: Price Field Compatibility**
+    - **Validates: Requirements 2.1**
+    - Verify all seeded order items have `price` equal to `unitPrice`
+
+- [x] 3. Checkpoint - Verify bug fixes
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 4. Update Batch Seeder for Workflow Queue
+  - [x] 4.1 Modify batch status distribution
+    - Update `scripts/seed/seeders/seed-batches.ts`
+    - Change distribution: 60% LIVE, 15% SOLD_OUT, 15% AWAITING_INTAKE, 5% ON_HOLD, 3% QUARANTINED, 2% CLOSED
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [x] 4.2 Write property test for batch status distribution
+    - **Property 4: Batch Status Distribution**
+    - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
+    - Verify batch status percentages are within expected ranges
+
+- [x] 5. Update Order Seeder for Drafts and Today's Orders
+  - [x] 5.1 Add draft orders to seeder
+    - Modify `scripts/seed/seeders/seed-orders.ts`
+    - Create 10-15% of orders with `isDraft: true`, `saleStatus: null`
+    - _Requirements: 5.1, 5.2_
+  - [x] 5.2 Add today's orders to seeder
+    - Create 3-5 orders with `createdAt` set to today's date
+    - Distribute across different clients
+    - _Requirements: 8.1, 8.2_
+  - [x] 5.3 Write property test for draft orders
+    - **Property 5: Draft Orders Presence**
+    - **Validates: Requirements 5.1, 5.2**
+    - Verify 10-15% of orders are drafts with correct status fields
+  - [x] 5.4 Write property test for today's orders
+    - **Property 8: Today's Orders Presence**
+    - **Validates: Requirements 8.1, 8.2**
+    - Verify 3-5 orders have today's date, distributed across clients
+
+- [x] 6. Checkpoint - Verify seeder updates
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 7. Create Vendor Bills Seeder
+  - [x] 7.1 Create seed-vendor-bills.ts
+    - Create new file `scripts/seed/seeders/seed-vendor-bills.ts`
+    - Query existing vendors and lots
+    - Generate bills with various statuses (DRAFT, PENDING, APPROVED, PARTIAL, PAID, OVERDUE) matching schema enum
+    - Link bills to vendors via vendorId
+    - Link bills to lots via referenceType: "LOT", referenceId: lotId
+    - Set createdBy to 1 (system user)
+    - _Requirements: 6.1, 6.2_
+  - [x] 7.2 Create bill line items for each bill
+    - Generate billLineItems records linked to bills
+    - Include product/lot references, quantities, and prices
+    - _Requirements: 6.3_
+  - [x] 7.3 Create vendor payments for paid bills
+    - Generate payments for PAID and PARTIAL bills
+    - Link payments to bills via billId
+    - Update bill `amountPaid` and `amountDue` fields
+    - _Requirements: 6.4_
+  - [x] 7.4 Register vendor bills seeder in index
+    - Add to `scripts/seed/seeders/index.ts`
+    - Update SEEDING_ORDER constant to include "bills"
+    - Add to seeder execution order (after invoices)
+    - _Requirements: 6.1_
+  - [x] 7.5 Write property test for vendor bills
+    - **Property 6: Vendor Bills Completeness**
+    - **Validates: Requirements 6.1, 6.2, 6.3, 6.4**
+    - Verify bills exist with valid vendor refs, line items, and various statuses
+
+- [x] 8. Create Purchase Orders Seeder
+  - [x] 8.1 Create seed-purchase-orders.ts
+    - Create new file `scripts/seed/seeders/seed-purchase-orders.ts`
+    - Query existing vendors and products
+    - Generate POs with various statuses (DRAFT, SENT, CONFIRMED, RECEIVING, RECEIVED, CANCELLED) matching schema enum
+    - Link POs to vendors via vendorId
+    - Set createdBy to 1 (system user)
+    - Set orderDate, expectedDeliveryDate, actualDeliveryDate appropriately
+    - _Requirements: 7.1, 7.2_
+  - [x] 8.2 Create purchase order line items
+    - Generate purchaseOrderItems records linked to POs
+    - Link items to products via productId
+    - Include quantityOrdered, quantityReceived, unitCost, totalCost
+    - _Requirements: 7.3_
+  - [x] 8.3 Register purchase orders seeder in index
+    - Add to `scripts/seed/seeders/index.ts`
+    - Update SEEDING_ORDER constant to include "purchaseOrders"
+    - Add to seeder execution order (after products, before batches)
+    - _Requirements: 7.1_
+  - [x] 8.4 Write property test for purchase orders
+    - **Property 7: Purchase Orders Completeness**
+    - **Validates: Requirements 7.1, 7.2, 7.3**
+    - Verify POs exist with valid vendor refs and line items
+
+- [x] 9. Checkpoint - Verify new seeders
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 10. Add Reserved Quantity to Batch Seeder
+  - [x] 10.1 Update batch seeder to set reservedQty
+    - Modify `scripts/seed/seeders/seed-batches.ts`
+    - For 10-20% of LIVE batches, set reservedQty to 10-40% of onHandQty
+    - Ensure reservedQty <= onHandQty
+    - _Requirements: 9.1, 9.2_
+  - [x] 10.2 Write property test for reserved quantities
+    - **Property 9: Reserved Quantity Validity**
+    - **Validates: Requirements 9.1, 9.2**
+    - Verify reservedQty <= onHandQty for all batches
+    - Verify 10-20% of LIVE batches have non-zero reservedQty
+
+- [x] 11. Add --complete CLI Flag
+  - [x] 11.1 Update CLI to support --complete flag
+    - Modify `scripts/seed/lib/cli.ts`
+    - Add `complete` option to seed all data types
+    - Include bills and POs when flag is set
+    - _Requirements: 10.1_
+  - [x] 11.2 Update SEEDING_ORDER in index.ts
+    - Add "purchaseOrders" and "bills" to SEEDING_ORDER constant
+    - Ensure correct FK dependency order: vendors → products → purchaseOrders → batches → ... → bills
+    - _Requirements: 10.2_
+  - [x] 11.3 Update seed-main.ts for complete mode
+    - Modify `scripts/seed/seed-main.ts`
+    - Execute all seeders including new ones when --complete is set
+    - Report counts for all entity types in summary
+    - _Requirements: 10.1, 10.3_
+  - [x] 11.4 Write property test for referential integrity
+    - **Property 10: Referential Integrity**
+    - **Validates: Requirements 10.2**
+    - Verify no orphaned records after complete seed
+
+- [x] 12. Verify Purchase History Analysis
+  - [x] 12.1 Test analyzeClientPurchaseHistory with new data
+    - Run seed with updated order items
+    - Verify function returns strain/category names (not "Unknown Product")
+    - Verify avgPrice is non-zero
+    - _Requirements: 1.2, 2.2, 2.3_
+  - [x] 12.2 Write property test for purchase history analysis
+    - **Property 3: Purchase History Analysis Accuracy**
+    - **Validates: Requirements 1.2, 2.2, 2.3**
+    - Verify patterns have non-null strain/category and non-zero avgPrice
+
+- [x] 13. Final Checkpoint - Complete validation
+  - Ensure all tests pass, ask the user if questions arise.

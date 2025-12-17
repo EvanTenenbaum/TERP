@@ -20,6 +20,7 @@ export interface CLIFlags {
   help: boolean;
   verbose: boolean;
   clean: boolean;
+  complete: boolean; // Seed all data types including bills, POs (Requirements: 10.1)
 }
 
 // ============================================================================
@@ -42,6 +43,7 @@ export function parseArgs(): CLIFlags {
     help: false,
     verbose: false,
     clean: false,
+    complete: false,
   };
 
   for (const arg of args) {
@@ -57,6 +59,8 @@ export function parseArgs(): CLIFlags {
       flags.verbose = true;
     } else if (arg === "--clean" || arg === "-c") {
       flags.clean = true;
+    } else if (arg === "--complete") {
+      flags.complete = true;
     } else if (arg.startsWith("--table=")) {
       flags.table = arg.split("=")[1];
     } else if (arg.startsWith("--size=")) {
@@ -121,6 +125,7 @@ OPTIONS:
   --force, -f          Skip confirmation prompts (required for production)
   --clean, -c          Clear existing data before seeding (respects FK order)
   --rollback           Rollback seeded data (Phase 2 feature)
+  --complete           Seed all data types including bills, POs, reservations
   --verbose, -v        Enable verbose output
   --help, -h           Show this help message
 
@@ -150,8 +155,8 @@ For more information, see scripts/seed/README.md
 /**
  * Get record counts based on size flag
  */
-export function getRecordCounts(size: CLIFlags["size"]): Record<string, number> {
-  const counts: Record<CLIFlags["size"], Record<string, number>> = {
+export function getRecordCounts(size: CLIFlags["size"], complete: boolean = false): Record<string, number> {
+  const baseCounts: Record<CLIFlags["size"], Record<string, number>> = {
     small: {
       clients: 10,
       vendors: 5,
@@ -181,5 +186,26 @@ export function getRecordCounts(size: CLIFlags["size"]): Record<string, number> 
     },
   };
 
-  return counts[size];
+  const counts = { ...baseCounts[size] };
+
+  // Add complete mode counts (Requirements: 10.1)
+  if (complete) {
+    const completeCounts: Record<CLIFlags["size"], Record<string, number>> = {
+      small: {
+        purchaseOrders: 10,
+        bills: 15,
+      },
+      medium: {
+        purchaseOrders: 50,
+        bills: 75,
+      },
+      large: {
+        purchaseOrders: 200,
+        bills: 300,
+      },
+    };
+    Object.assign(counts, completeCounts[size]);
+  }
+
+  return counts;
 }
