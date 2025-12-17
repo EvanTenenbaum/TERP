@@ -42,7 +42,21 @@
     - Replace ~6 console.error calls with logger.error() structured format
     - _Requirements: 6.1, 6.2_
 
-- [x] 6. Final Validation Checkpoint
+- [x] 6. Extended QUAL-001: Replace console.error in ALL server/*.ts root-level files
+  - [x] 6.1 Converted 27 additional files to structured logging (~150+ replacements)
+    - inventoryMovementsDb.ts, creditsDb.ts, clientNeedsDb.ts, accountingHooks.ts
+    - badDebtDb.ts, alertConfigurationDb.ts, matchRecordsDb.ts, historicalAnalysis.ts
+    - matchingEngine.ts, cogsCalculation.ts, autoMigrate.ts, transactionsDb.ts
+    - paymentMethodsDb.ts, vendorSupplyDb.ts, productIntakeDb.ts, needsMatchingService.ts
+    - transactionHooks.ts, sequenceDb.ts, strainMatcher.ts, orderEnhancements.ts
+    - productRecommendations.ts, salesSheetsDb.ts, auditLogger.ts, dashboardHelpers.ts
+    - dbTransaction.ts, inventoryIntakeService.ts, matchingEngineReverseSimplified.ts
+    - db.ts, import_openthc_strains.ts, seedStrains.ts
+  - [x] 6.2 Skipped files (intentional console.error usage):
+    - advancedTagFeatures.test.ts (test file - console.error for test output)
+    - index.ts (deprecated entrypoint - critical startup errors)
+
+- [x] 7. Final Validation Checkpoint
   - Ensure all tests pass, run pnpm typecheck and pnpm lint
   - Verify no console.error remains in updated files
   - Commit all changes with appropriate messages
