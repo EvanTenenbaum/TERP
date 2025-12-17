@@ -842,3 +842,83 @@ export async function addCommunication(input: {
   
   return { success: true, id: result.id };
 }
+
+
+// ============================================================================
+// SUPPLIER PROFILE FUNCTIONS
+// Part of Canonical Model Unification - replaces vendor profile functionality
+// ============================================================================
+
+/**
+ * Get supplier profile for a client with isSeller=true
+ */
+export async function getSupplierProfile(clientId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { supplierProfiles } = await import('../drizzle/schema');
+  
+  const [profile] = await db
+    .select()
+    .from(supplierProfiles)
+    .where(eq(supplierProfiles.clientId, clientId))
+    .limit(1);
+  
+  return profile || null;
+}
+
+/**
+ * Update or create supplier profile for a client
+ */
+export async function updateSupplierProfile(
+  clientId: number,
+  data: {
+    contactName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    licenseNumber?: string;
+    taxId?: string;
+    paymentTerms?: string;
+    preferredPaymentMethod?: string;
+    supplierNotes?: string;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { supplierProfiles } = await import('../drizzle/schema');
+  
+  // Check if profile exists
+  const [existingProfile] = await db
+    .select()
+    .from(supplierProfiles)
+    .where(eq(supplierProfiles.clientId, clientId))
+    .limit(1);
+  
+  // Build update object, filtering out empty strings
+  const updateData: Record<string, string | null> = {};
+  if (data.contactName !== undefined) updateData.contactName = data.contactName || null;
+  if (data.contactEmail !== undefined) updateData.contactEmail = data.contactEmail || null;
+  if (data.contactPhone !== undefined) updateData.contactPhone = data.contactPhone || null;
+  if (data.licenseNumber !== undefined) updateData.licenseNumber = data.licenseNumber || null;
+  if (data.taxId !== undefined) updateData.taxId = data.taxId || null;
+  if (data.paymentTerms !== undefined) updateData.paymentTerms = data.paymentTerms || null;
+  if (data.preferredPaymentMethod !== undefined) updateData.preferredPaymentMethod = data.preferredPaymentMethod || null;
+  if (data.supplierNotes !== undefined) updateData.supplierNotes = data.supplierNotes || null;
+  
+  if (existingProfile) {
+    // Update existing profile
+    await db
+      .update(supplierProfiles)
+      .set(updateData)
+      .where(eq(supplierProfiles.clientId, clientId));
+  } else {
+    // Create new profile
+    await db.insert(supplierProfiles).values({
+      clientId,
+      ...updateData,
+    });
+  }
+  
+  return { success: true };
+}
