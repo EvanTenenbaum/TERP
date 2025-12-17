@@ -6,10 +6,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, TrendingUp, Users, Package } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Package, AlertCircle, Loader2 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
+import { trpc } from "@/lib/trpc";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AnalyticsPage() {
+  const { data, isLoading, error } = trpc.analytics.getSummary.useQuery();
   return (
     <div className="container mx-auto p-6 space-y-6">
       <BackButton label="Back to Dashboard" to="/" className="mb-4" />
@@ -31,6 +34,16 @@ export default function AnalyticsPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                Failed to load analytics data. Please try again later.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -40,9 +53,15 @@ export default function AnalyticsPage() {
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$0.00</div>
+                <div className="text-2xl font-bold">
+                  {isLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    `$${(data?.totalRevenue ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Analytics data coming soon
+                  Total from all orders
                 </p>
               </CardContent>
             </Card>
@@ -55,9 +74,15 @@ export default function AnalyticsPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">
+                  {isLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    (data?.totalOrders ?? 0).toLocaleString()
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Analytics data coming soon
+                  All orders in system
                 </p>
               </CardContent>
             </Card>
@@ -70,9 +95,15 @@ export default function AnalyticsPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">
+                  {isLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    (data?.totalClients ?? 0).toLocaleString()
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Analytics data coming soon
+                  Total clients in system
                 </p>
               </CardContent>
             </Card>
@@ -85,9 +116,15 @@ export default function AnalyticsPage() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">
+                  {isLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    (data?.totalInventoryItems ?? 0).toLocaleString()
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Analytics data coming soon
+                  Active batches in inventory
                 </p>
               </CardContent>
             </Card>
