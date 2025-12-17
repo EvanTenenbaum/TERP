@@ -312,21 +312,24 @@
 
 ## Phase 7: Documentation & Cleanup
 
-- [ ] 25. Create canonical dictionary document
-  - [ ] 25.1 Write canonical dictionary
+- [x] 25. Create canonical dictionary document
+  - [x] 25.1 Write canonical dictionary
     - Term definitions
     - Table mappings
     - ID field rules
     - Write authorization rules
     - _Requirements: 10.1_
-  - [ ] 25.2 Document secured routers
+    - **Created `docs/protocols/CANONICAL_DICTIONARY.md`**
+  - [x] 25.2 Document secured routers
     - List all routers with auth requirements
     - Document RBAC permissions
     - _Requirements: 10.2_
-  - [ ] 25.3 Document migration timeline
+    - **Included in CANONICAL_DICTIONARY.md**
+  - [x] 25.3 Document migration timeline
     - Deprecation schedule for vendors table
     - Removal timeline for customerId columns
     - _Requirements: 10.3_
+    - **Included in CANONICAL_DICTIONARY.md**
 
 - [ ] 26. Deprecate vendors table
   - [ ] 26.1 Mark vendors table as deprecated in schema
