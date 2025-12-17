@@ -2299,7 +2299,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Status:** blocked  
 **Priority:** MEDIUM  
 **Estimate:** 2-3d  
-**Module:** server/\_core/cache.ts  
+**Module:** `server/_core/cache.ts`  
 **Dependencies:** None  
 **Prompt:** [`docs/prompts/ST-010.md`](../prompts/ST-010.md)
 
