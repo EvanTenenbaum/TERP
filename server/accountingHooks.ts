@@ -12,6 +12,7 @@
 import { getDb } from "./db";
 import { ledgerEntries, accounts, type InsertLedgerEntry } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
+import { logger } from "./_core/logger";
 
 /**
  * Standard account codes (should be configurable in production)
@@ -44,7 +45,12 @@ async function getAccountIdByNumber(accountNumber: string): Promise<number | nul
     
     return account?.id || null;
   } catch (error) {
-    console.error(`Error fetching account ${accountNumber}:`, error);
+    logger.error({
+      msg: "Error fetching account",
+      accountNumber,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return null;
   }
 }
@@ -133,7 +139,12 @@ export async function createJournalEntry(entryData: {
       { account: entryData.creditAccountId, debit: 0, credit: amountNum }
     ];
   } catch (error) {
-    console.error("Error creating journal entry:", error);
+    logger.error({
+      msg: "Error creating journal entry",
+      entryNumber: entryData.entryNumber,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to create journal entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -177,9 +188,14 @@ export async function postSaleGLEntries(saleData: {
       createdBy: saleData.userId
     });
   } catch (error) {
-    console.error("Error posting sale GL entries:", error);
+    logger.error({
+      msg: "Error posting sale GL entries",
+      transactionId: saleData.transactionId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     // Don't throw - allow sale to complete even if GL posting fails
-    console.warn("Sale completed but GL entries failed");
+    logger.warn({ msg: "Sale completed but GL entries failed" });
     return [];
   }
 }
@@ -223,8 +239,13 @@ export async function postPaymentGLEntries(paymentData: {
       createdBy: paymentData.userId
     });
   } catch (error) {
-    console.error("Error posting payment GL entries:", error);
-    console.warn("Payment completed but GL entries failed");
+    logger.error({
+      msg: "Error posting payment GL entries",
+      transactionId: paymentData.transactionId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    logger.warn({ msg: "Payment completed but GL entries failed" });
     return [];
   }
 }
@@ -268,8 +289,13 @@ export async function postRefundGLEntries(refundData: {
       createdBy: refundData.userId
     });
   } catch (error) {
-    console.error("Error posting refund GL entries:", error);
-    console.warn("Refund completed but GL entries failed");
+    logger.error({
+      msg: "Error posting refund GL entries",
+      transactionId: refundData.transactionId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    logger.warn({ msg: "Refund completed but GL entries failed" });
     return [];
   }
 }
@@ -312,8 +338,13 @@ export async function postCOGSGLEntries(cogsData: {
       createdBy: cogsData.userId
     });
   } catch (error) {
-    console.error("Error posting COGS GL entries:", error);
-    console.warn("COGS calculation completed but GL entries failed");
+    logger.error({
+      msg: "Error posting COGS GL entries",
+      transactionId: cogsData.transactionId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    logger.warn({ msg: "COGS calculation completed but GL entries failed" });
     return [];
   }
 }
@@ -376,7 +407,13 @@ export async function reverseGLEntries(
     
     return originalEntries;
   } catch (error) {
-    console.error("Error reversing GL entries:", error);
+    logger.error({
+      msg: "Error reversing GL entries",
+      originalReferenceType,
+      originalReferenceId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to reverse GL entries: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -418,9 +455,13 @@ export async function seedStandardAccounts(): Promise<void> {
       }
     }
     
-    console.log("Standard accounts seeded successfully");
+    logger.info({ msg: "Standard accounts seeded successfully" });
   } catch (error) {
-    console.error("Error seeding standard accounts:", error);
+    logger.error({
+      msg: "Error seeding standard accounts",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to seed standard accounts: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

@@ -23,6 +23,7 @@ import {
   type InsertInventoryMovement,
 } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { logger } from "./_core/logger";
 
 /**
  * Record an inventory movement
@@ -56,7 +57,11 @@ export async function recordInventoryMovement(
 
     return record;
   } catch (error) {
-    console.error("Error recording inventory movement:", error);
+    logger.error({
+      msg: "Error recording inventory movement",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to record inventory movement: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -157,7 +162,13 @@ export async function decreaseInventory(
 
     return movement;
   } catch (error) {
-    console.error("Error decreasing inventory:", error);
+    logger.error({
+      msg: "Error decreasing inventory",
+      batchId,
+      quantity,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to decrease inventory: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -251,7 +262,13 @@ export async function increaseInventory(
 
     return movement;
   } catch (error) {
-    console.error("Error increasing inventory:", error);
+    logger.error({
+      msg: "Error increasing inventory",
+      batchId,
+      quantity,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to increase inventory: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -343,7 +360,13 @@ export async function adjustInventory(
 
     return movement;
   } catch (error) {
-    console.error("Error adjusting inventory:", error);
+    logger.error({
+      msg: "Error adjusting inventory",
+      batchId,
+      newQuantity,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to adjust inventory: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -373,7 +396,12 @@ export async function getBatchMovements(
 
     return movements;
   } catch (error) {
-    console.error("Error fetching batch movements:", error);
+    logger.error({
+      msg: "Error fetching batch movements",
+      batchId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to fetch batch movements: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -407,7 +435,13 @@ export async function getMovementsByReference(
 
     return movements;
   } catch (error) {
-    console.error("Error fetching movements by reference:", error);
+    logger.error({
+      msg: "Error fetching movements by reference",
+      referenceType,
+      referenceId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to fetch movements by reference: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -459,7 +493,13 @@ export async function validateInventoryAvailability(
       shortfall,
     };
   } catch (error) {
-    console.error("Error validating inventory availability:", error);
+    logger.error({
+      msg: "Error validating inventory availability",
+      batchId,
+      requestedQuantity,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to validate inventory availability: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -567,7 +607,12 @@ export async function reverseInventoryMovement(
 
     return movement;
   } catch (error) {
-    console.error("Error reversing inventory movement:", error);
+    logger.error({
+      msg: "Error reversing inventory movement",
+      movementId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to reverse inventory movement: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -640,7 +685,12 @@ export async function getBatchMovementSummary(batchId: number): Promise<{
       currentQuantity: batch.onHandQty || "0",
     };
   } catch (error) {
-    console.error("Error fetching batch movement summary:", error);
+    logger.error({
+      msg: "Error fetching batch movement summary",
+      batchId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to fetch batch movement summary: ${error instanceof Error ? error.message : "Unknown error"}`
     );
