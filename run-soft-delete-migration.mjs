@@ -6,7 +6,7 @@
  * Run from within the app container: node run-soft-delete-migration.mjs
  */
 
-import { getDb } from './server/db.js';
+import { getDb } from './dist/server/db.js';
 import { sql } from 'drizzle-orm';
 
 async function runMigration() {
