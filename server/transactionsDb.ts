@@ -7,6 +7,7 @@
  */
 
 import { getDb } from "./db";
+import { logger } from "./_core/logger";
 import { 
   transactions, 
   transactionLinks,
@@ -46,7 +47,7 @@ export async function createTransaction(data: InsertTransaction): Promise<Transa
     
     return created;
   } catch (error) {
-    console.error("Error creating transaction:", error);
+    logger.error("Error creating transaction", { error });
     throw new Error(`Failed to create transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -69,7 +70,7 @@ export async function getTransactionById(id: number): Promise<Transaction | unde
     
     return transaction;
   } catch (error) {
-    console.error("Error fetching transaction:", error);
+    logger.error("Error fetching transaction", { error });
     throw new Error(`Failed to fetch transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -92,7 +93,7 @@ export async function getTransactionByNumber(transactionNumber: string): Promise
     
     return transaction;
   } catch (error) {
-    console.error("Error fetching transaction by number:", error);
+    logger.error("Error fetching transaction by number", { error });
     throw new Error(`Failed to fetch transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -118,7 +119,7 @@ export async function getTransactionsByClient(clientId: number, limit: number = 
     
     return results;
   } catch (error) {
-    console.error("Error fetching client transactions:", error);
+    logger.error("Error fetching client transactions", { error });
     throw new Error(`Failed to fetch client transactions: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -148,7 +149,7 @@ export async function updateTransaction(id: number, data: Partial<InsertTransact
     
     return updated;
   } catch (error) {
-    console.error("Error updating transaction:", error);
+    logger.error("Error updating transaction", { error });
     throw new Error(`Failed to update transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -249,7 +250,7 @@ export async function linkTransactions(
     
     return created;
   } catch (error) {
-    console.error("Error linking transactions:", error);
+    logger.error("Error linking transactions", { error });
     throw new Error(`Failed to link transactions: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -280,7 +281,7 @@ export async function getTransactionLinks(transactionId: number): Promise<{
     
     return { asParent, asChild };
   } catch (error) {
-    console.error("Error fetching transaction links:", error);
+    logger.error("Error fetching transaction links", { error });
     throw new Error(`Failed to fetch transaction links: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -337,7 +338,7 @@ export async function getTransactionWithRelationships(transactionId: number): Pr
       links
     };
   } catch (error) {
-    console.error("Error fetching transaction with relationships:", error);
+    logger.error("Error fetching transaction with relationships", { error });
     throw new Error(`Failed to fetch transaction relationships: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -373,7 +374,7 @@ export async function getClientTransactionHistory(clientId: number, limit: numbe
     
     return transactionsWithCounts;
   } catch (error) {
-    console.error("Error fetching client transaction history:", error);
+    logger.error("Error fetching client transaction history", { error });
     throw new Error(`Failed to fetch client transaction history: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -395,7 +396,7 @@ export async function removeTransactionLink(linkId: number): Promise<boolean> {
     
     return (result as any).rowsAffected > 0;
   } catch (error) {
-    console.error("Error removing transaction link:", error);
+    logger.error("Error removing transaction link", { error });
     throw new Error(`Failed to remove transaction link: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -436,7 +437,7 @@ export async function generateTransactionNumber(prefix: string): Promise<string>
     
     return `${prefix}-${paddedNumber}`;
   } catch (error) {
-    console.error("Error generating transaction number:", error);
+    logger.error("Error generating transaction number", { error });
     throw new Error(`Failed to generate transaction number: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

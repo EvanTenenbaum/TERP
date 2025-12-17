@@ -1,5 +1,6 @@
 import { getDb } from "./db";
 import { sql } from "drizzle-orm";
+import { logger } from "./_core/logger";
 
 let db: Awaited<ReturnType<typeof getDb>>;
 
@@ -23,7 +24,7 @@ export async function runAutoMigrations() {
   // Initialize database connection
   db = await getDb();
   if (!db) {
-    console.error("❌ Database connection failed");
+    logger.error("Database connection failed during auto-migration");
     return;
   }
 
@@ -363,9 +364,7 @@ export async function runAutoMigrations() {
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.statusId already exists");
       } else {
-        console.error("  ❌ batches.statusId FAILED:");
-        console.error("  Error message:", errMsg);
-        console.error("  Full error object:", JSON.stringify(error, null, 2));
+        logger.error("batches.statusId migration failed", { error: errMsg, fullError: error });
       }
     }
 
@@ -380,9 +379,7 @@ export async function runAutoMigrations() {
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.deleted_at already exists");
       } else {
-        console.error("  ❌ batches.deleted_at FAILED:");
-        console.error("  Error message:", errMsg);
-        console.error("  Full error:", JSON.stringify(error, null, 2));
+        logger.error("batches.deleted_at migration failed", { error: errMsg, fullError: error });
       }
     }
 
@@ -397,9 +394,7 @@ export async function runAutoMigrations() {
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.photo_session_event_id already exists");
       } else {
-        console.error("  ❌ batches.photo_session_event_id FAILED:");
-        console.error("  Error message:", errMsg);
-        console.error("  Full error:", JSON.stringify(error, null, 2));
+        logger.error("batches.photo_session_event_id migration failed", { error: errMsg, fullError: error });
       }
     }
 
@@ -610,10 +605,7 @@ export async function runAutoMigrations() {
     console.log(`✅ Auto-migrations completed in ${duration}ms`);
     migrationRun = true;
   } catch (error) {
-    console.error(
-      "❌ Auto-migration error:",
-      error instanceof Error ? error.message : String(error)
-    );
+    logger.error("Auto-migration error", { error: error instanceof Error ? error.message : String(error) });
     // Don't throw - allow app to start even if migrations fail
   }
 }
