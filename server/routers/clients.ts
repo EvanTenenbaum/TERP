@@ -297,5 +297,32 @@ export const clientsRouter = router({
         });
       }),
   }),
-});;
+
+  // Supplier profile endpoints (for clients with isSeller=true)
+  // Part of Canonical Model Unification - replaces vendor profile functionality
+  getSupplierProfile: protectedProcedure
+    .use(requirePermission("clients:read"))
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      return await clientsDb.getSupplierProfile(input.clientId);
+    }),
+
+  updateSupplierProfile: protectedProcedure
+    .use(requirePermission("clients:update"))
+    .input(z.object({
+      clientId: z.number(),
+      contactName: z.string().optional(),
+      contactEmail: z.string().email().optional().or(z.literal("")),
+      contactPhone: z.string().optional(),
+      licenseNumber: z.string().optional(),
+      taxId: z.string().optional(),
+      paymentTerms: z.string().optional(),
+      preferredPaymentMethod: z.enum(['CASH', 'CHECK', 'WIRE', 'ACH', 'CREDIT_CARD', 'OTHER']).optional().or(z.literal("")),
+      supplierNotes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      return await clientsDb.updateSupplierProfile(input.clientId, input);
+    }),
+});
 

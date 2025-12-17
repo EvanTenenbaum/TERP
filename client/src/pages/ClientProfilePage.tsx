@@ -46,6 +46,7 @@ import { CommunicationTimeline } from "@/components/clients/CommunicationTimelin
 import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
 import { PurchasePatternsWidget } from "@/components/clients/PurchasePatternsWidget";
 import { ClientCalendarTab } from "@/components/clients/ClientCalendarTab";
+import { SupplierProfileSection } from "@/components/clients/SupplierProfileSection";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
 import { BackButton } from "@/components/common/BackButton";
@@ -359,8 +360,9 @@ export default function ClientProfilePage() {
 
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className={`grid w-full ${client.isSeller ? 'grid-cols-10' : 'grid-cols-9'}`}>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          {client.isSeller && <TabsTrigger value="supplier">Supplier</TabsTrigger>}
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
@@ -490,6 +492,13 @@ export default function ClientProfilePage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Supplier Tab (only for sellers) */}
+        {client.isSeller && (
+          <TabsContent value="supplier" className="space-y-4">
+            <SupplierProfileSection clientId={clientId} clientName={client.name} />
+          </TabsContent>
+        )}
 
         {/* Transactions Tab */}
         <TabsContent value="transactions" className="space-y-4">
