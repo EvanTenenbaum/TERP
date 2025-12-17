@@ -1,0 +1,93 @@
+databases:
+- cluster_name: terp-mysql-db
+  engine: MYSQL
+  name: terp-mysql-db
+  production: true
+ingress:
+  rules:
+  - component:
+      name: web
+    match:
+      path:
+        prefix: /
+name: terp
+region: nyc
+services:
+- dockerfile_path: Dockerfile
+  envs:
+  - key: NODE_ENV
+    scope: RUN_AND_BUILD_TIME
+    value: production
+  - key: RATE_LIMIT_GET
+    scope: RUN_AND_BUILD_TIME
+    value: "1000"
+  - key: ENABLE_RBAC
+    scope: RUN_AND_BUILD_TIME
+    value: "true"
+  - key: ENABLE_QA_CRONS
+    scope: RUN_AND_BUILD_TIME
+    value: "true"
+  - key: UPLOAD_DIR
+    scope: RUN_AND_BUILD_TIME
+    value: /tmp/uploads
+  - key: VITE_APP_TITLE
+    scope: BUILD_TIME
+    value: TERP
+  - key: VITE_APP_LOGO
+    scope: BUILD_TIME
+    value: /logo.png
+  - key: VITE_APP_ID
+    scope: BUILD_TIME
+    value: terp-app
+  - key: VITE_CLERK_PUBLISHABLE_KEY
+    scope: BUILD_TIME
+    value: pk_test_Y2xlYXItY2FyZGluYWwtNjMuY2xlcmsuYWNjb3VudHMuZGV2JA
+  - key: CLERK_SECRET_KEY
+    scope: RUN_TIME
+    value: sk_test_gLGRGGDzMjmxvYMdxTfPuRQQeUMpvbOQkJBKBJCZBD
+  - key: DATABASE_URL
+    scope: RUN_AND_BUILD_TIME
+    value: ${terp-mysql-db.DATABASE_URL}
+  - key: JWT_SECRET
+    scope: RUN_AND_BUILD_TIME
+    type: SECRET
+    value: EV[1:6I3H5wMEwf4X5UIz93oc2VUgR5sdiHGl:tWX4F8qtQdFs4aap04bAVg==]
+  - key: NEXTAUTH_SECRET
+    scope: RUN_TIME
+    type: SECRET
+    value: EV[1:f7yLxDWAkxdAwNYXcNmx96zJD7NWfGpE:ORqOn1m4NdrTclzeXRjnkA==]
+  - key: NEXTAUTH_URL
+    scope: RUN_TIME
+    type: SECRET
+    value: EV[1:9HzWDnY57aZOC/E7abCMP0zvBmIJSqn2:SAvXUABJQPJNao9NU7JXnw==]
+  - key: SENTRY_DSN
+    scope: RUN_TIME
+    type: SECRET
+    value: EV[1:r0uiL13GBiZdwHCnxy1Jyivmwlbh7SFn:pOYf4WJtKvAV6KaV7mDSEg==]
+  - key: CRON_SECRET
+    scope: RUN_TIME
+    type: SECRET
+    value: EV[1:EtgynCB8/0CCA+xyL8X/jl8OGFaisYU8:2FpRm5w75yFuGZacVLlr+w==]
+  - key: PAPERTRAIL_ENDPOINT
+    scope: RUN_TIME
+    type: SECRET
+    value: EV[1:rhSvNetGEZ3IZwXsSg5kNaJ/s7Mwu0b+:vWlXuapTtZqPYSBnMX6rBw==]
+  github:
+    branch: main
+    deploy_on_push: true
+    repo: EvanTenenbaum/TERP
+  health_check:
+    failure_threshold: 5
+    http_path: /health/live
+    initial_delay_seconds: 180
+    period_seconds: 10
+    success_threshold: 1
+    timeout_seconds: 5
+  http_port: 3000
+  instance_count: 1
+  instance_size_slug: basic-xs
+  name: web
+
+
+
+

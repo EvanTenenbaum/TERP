@@ -1,0 +1,19 @@
+{
+  "collisions": [
+    {
+      "normalizedName": "norcal farms",
+      "vendors": [
+        {
+          "id": 1,
+          "name": "NorCal Farms"
+        }
+      ],
+      "clients": [
+        {
+          "id": 30,
+          "name": "NorCal Farms"
+        }
+      ]
+    }
+  ]
+}
