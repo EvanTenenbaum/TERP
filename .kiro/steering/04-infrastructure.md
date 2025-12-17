@@ -4,56 +4,35 @@ inclusion: always
 
 # ☁️ TERP Infrastructure
 
-**Version**: 2.1  
-**Last Updated**: 2025-12-04  
+**Version**: 2.2  
+**Last Updated**: 2025-12-16  
 **Status**: MANDATORY
 
 This document covers deployment, database, and infrastructure management.
 
 ---
 
-## Railway Deployment (Current)
-
-### Overview
-
-TERP is deployed on **Railway**.
-
-**Production URL**: https://terp-app-production.up.railway.app
-**Deployment**: Automatic on push to `main`
-**Configuration**: `railway.json`, `Dockerfile`
-
-**Key Documentation**:
-- [Railway Migration Guide](../../docs/RAILWAY_MIGRATION_GUIDE.md)
-- [Railway Docker Build Args](../../docs/RAILWAY_DOCKER_BUILD_ARGS.md)
-- [Deployment Documentation](../../docs/deployment/README.md)
-
-### VITE Build Configuration
-
-**CRITICAL**: Railway requires VITE environment variables to be passed as Docker build arguments.
-
-**Configuration Files**:
-- `Dockerfile` - Declares ARG and ENV for VITE variables
-- `railway.json` - Configures buildArgs to pass env vars during build
-
-**Required VITE Variables**:
-- `VITE_CLERK_PUBLISHABLE_KEY` - Clerk authentication (client-side)
-- `VITE_APP_TITLE` - Application title
-- `VITE_APP_ID` - Application identifier
-- `VITE_APP_LOGO` - Logo URL (optional)
-- `VITE_SENTRY_DSN` - Sentry DSN (optional)
-
-**See**: `docs/RAILWAY_DOCKER_BUILD_ARGS.md` for complete details.
+> ⚠️ **IMPORTANT: CURRENT DEPLOYMENT PLATFORM**
+> 
+> **TERP is deployed on DigitalOcean App Platform. NOT Railway.**
+> 
+> We briefly migrated to Railway in December 2025 but have since migrated back to DigitalOcean.
+> Any documentation mentioning Railway as the "current" platform is outdated.
+> 
+> - **Current Platform**: DigitalOcean App Platform
+> - **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+> - **Configuration**: `.do/app.yaml`
 
 ---
 
-## DigitalOcean Deployment (Legacy)
+## DigitalOcean Deployment (Current)
 
 ### Overview
 
-TERP was previously deployed on **DigitalOcean App Platform**.
+TERP is deployed on **DigitalOcean App Platform**.
 
-**Legacy URL**: https://terp-app-b9s35.ondigitalocean.app
-**Status**: Deprecated (migrated to Railway 2025-12-03)
+**Production URL**: https://terp-app-b9s35.ondigitalocean.app
+**Deployment**: Automatic on push to `main`
 **Configuration**: `.do/app.yaml`
 
 ### Automatic Deployment Process
@@ -195,6 +174,25 @@ bash scripts/watch-deploy.sh
 # 5. Verify rollback successful
 curl https://terp-app-b9s35.ondigitalocean.app/health
 ```
+
+---
+
+## Railway (DEPRECATED - DO NOT USE)
+
+> ⚠️ **Railway is NOT our current deployment platform.**
+> 
+> We briefly used Railway in December 2025 but migrated back to DigitalOcean.
+> The `railway.json` file and Railway-related docs exist for historical reference only.
+> 
+> **DO NOT**:
+> - Deploy to Railway
+> - Use `railway` CLI commands
+> - Reference Railway URLs (https://terp-app-production.up.railway.app)
+> 
+> **DO**:
+> - Use DigitalOcean App Platform
+> - Use `doctl` CLI commands
+> - Reference DigitalOcean URL (https://terp-app-b9s35.ondigitalocean.app)
 
 ---
 

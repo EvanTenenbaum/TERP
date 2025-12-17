@@ -354,38 +354,14 @@ const audit = masker.getAuditSummary();
 
 ## Production Usage
 
-### Railway Deployment (Current Production)
+> ⚠️ **IMPORTANT**: TERP is deployed on **DigitalOcean App Platform**, NOT Railway.
+> Any Railway references below are outdated.
 
-**Production URL**: https://terp-app-production.up.railway.app
+### DigitalOcean Deployment (Current Production)
 
-Execute seeding commands in Railway production environment:
+**Production URL**: https://terp-app-b9s35.ondigitalocean.app
 
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
-
-# Login and link to project
-railway login
-railway link
-
-# Execute seeding commands
-railway run pnpm seed:new --dry-run --size=small
-railway run pnpm seed:new --clean --size=small --force
-```
-
-**Important Notes:**
-- Always run dry-run first in production
-- Start with small data volumes for testing
-- Monitor logs in real-time during seeding
-- Verify application health after seeding
-- See `docs/deployment/SEEDING_RUNBOOK.md` for detailed procedures
-
-### DigitalOcean Deployment (Legacy)
-
-**Legacy URL**: https://terp-app-b9s35.ondigitalocean.app  
-**Status**: Deprecated (migrated to Railway 2025-12-03)
-
-For legacy DigitalOcean deployments:
+Execute seeding commands in DigitalOcean production environment:
 
 ```bash
 # Access console via doctl CLI
@@ -394,7 +370,15 @@ doctl apps console <APP_ID>
 
 # Execute seeding commands
 pnpm seed:new --dry-run --size=small
+pnpm seed:new --clean --size=small --force
 ```
+
+**Important Notes:**
+- Always run dry-run first in production
+- Start with small data volumes for testing
+- Monitor logs in real-time during seeding
+- Verify application health after seeding
+- See `docs/deployment/SEEDING_RUNBOOK.md` for detailed procedures
 
 ### Environment-Specific Behavior
 
@@ -415,11 +399,11 @@ pnpm seed:new --dry-run --size=small
 Monitor seeding operations in real-time:
 
 ```bash
-# Railway
-railway logs --follow
-
-# DigitalOcean
+# DigitalOcean (current platform)
 doctl apps logs <APP_ID> --type run --follow
+
+# Or use the terp-logs script
+./scripts/terp-logs.sh run --follow
 ```
 
 Watch for structured JSON logs:
@@ -454,10 +438,7 @@ WHERE c.id IS NULL;
 Check application health:
 
 ```bash
-# Railway
-curl https://terp-app-production.up.railway.app/health
-
-# DigitalOcean (legacy)
+# DigitalOcean (current platform)
 curl https://terp-app-b9s35.ondigitalocean.app/health
 
 # Expected: {"status":"healthy",...}
@@ -468,8 +449,8 @@ curl https://terp-app-b9s35.ondigitalocean.app/health
 If seeding fails or produces incorrect data:
 
 ```bash
-# Automatic rollback
-railway run pnpm seed:new --rollback
+# Automatic rollback (via doctl console)
+pnpm seed:new --rollback
 
 # Manual rollback (SQL)
 # Execute in database console:

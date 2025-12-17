@@ -1,3 +1,14 @@
+/**
+ * ComponentShowcase - Development Utility Page
+ * 
+ * This page displays all UI components from the design system for visual testing
+ * and development reference. It is NOT intended for production use.
+ * 
+ * Access: Only available in development mode at /dev/showcase
+ * 
+ * @see client/src/App.tsx for the conditional route configuration
+ */
+
 import {
   Accordion,
   AccordionContent,

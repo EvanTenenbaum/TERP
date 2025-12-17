@@ -1,9 +1,17 @@
 # Railway Seeding Bypass Guide
 
-**Date**: 2025-12-04  
-**Purpose**: Bypass database seeding to get app online for testing when seeding crashes due to schema drift
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
 
-**⚠️ NOTE:** This is a **temporary workaround**. See **ST-020** in the roadmap for hardening this into a proper production-ready solution.
+---
+
+**Date**: 2025-12-04  
+**Purpose**: (Historical) Bypass database seeding on Railway  
+**Status**: DEPRECATED - Migrated back to DigitalOcean
 
 ---
 

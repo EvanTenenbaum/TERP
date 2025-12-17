@@ -182,8 +182,8 @@ git commit -am "test: heal tests after UI refactor"
 ```bash
 # Comprehensive coverage for Orders module
 npx playwright ai plan http://localhost:5173/orders
-npx playwright ai plan http://localhost:5173/orders/new
-npx playwright ai plan http://localhost:5173/orders/123/edit
+npx playwright ai plan http://localhost:5173/orders/create
+npx playwright ai plan http://localhost:5173/quotes
 npx playwright ai generate specs/core/orders-*.md
 ```
 

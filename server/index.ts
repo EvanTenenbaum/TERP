@@ -1,3 +1,23 @@
+/**
+ * @deprecated This file is no longer used as the server entrypoint.
+ * The production entrypoint is server/_core/index.ts
+ * 
+ * This file is retained for historical reference only. All functionality has been
+ * migrated to the real entrypoint.
+ * 
+ * DO NOT USE THIS FILE FOR:
+ * - Development (use pnpm dev which runs server/_core/index.ts)
+ * - Production (DigitalOcean uses server/_core/index.ts)
+ * - Testing (tests use server/_core/index.ts)
+ * 
+ * WHY RETAINED:
+ * - Historical reference for debugging past issues (BUG-001)
+ * - Contains diagnostic logging patterns that may be useful
+ * - Safe to delete in future cleanup
+ * 
+ * @see server/_core/index.ts for the active entrypoint
+ */
+
 // Load environment variables from .env.production file FIRST
 // This ensures DATABASE_URL is available before any other imports
 import dotenv from 'dotenv';

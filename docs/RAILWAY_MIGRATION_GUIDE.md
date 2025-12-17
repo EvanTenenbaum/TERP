@@ -1,6 +1,20 @@
 # Railway Migration Guide - Simple Setup
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> We migrated to Railway in December 2025 but have since migrated back to DigitalOcean.
+> This document is kept for historical reference only.
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+> **See**: `.kiro/steering/04-infrastructure.md` for current deployment docs.
+
+---
+
 **Date**: 2025-12-03  
+**Status**: DEPRECATED - Migrated back to DigitalOcean  
 **Strategy**: Single environment (production only)  
 **Rationale**: No users yet, fast deploys, instant rollbacks
 

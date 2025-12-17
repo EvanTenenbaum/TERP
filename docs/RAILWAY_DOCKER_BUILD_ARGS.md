@@ -1,8 +1,19 @@
 # Railway Docker Build Arguments Configuration
 
-**Status**: Required for Frontend Build  
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> This document is kept for historical reference only.
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
+**Status**: DEPRECATED - No longer using Railway  
 **Last Updated**: 2025-12-03  
-**Priority**: HIGH
+**Priority**: N/A (Historical)
 
 ## Problem
 

@@ -1,8 +1,17 @@
 # Railway Deployment Status Report
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date**: 2025-12-04  
 **Commit**: 43878626  
-**Status**: ⚠️ Partial Success - Schema Drift Issue
+**Status**: DEPRECATED - Migrated back to DigitalOcean
 
 ---
 

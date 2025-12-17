@@ -1,8 +1,17 @@
 # Railway VITE Fix - Complete Summary
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date**: 2025-12-04  
 **Commit**: 43878626  
-**Agent**: Following all TERP protocols
+**Status**: DEPRECATED - Migrated back to DigitalOcean
 
 ---
 

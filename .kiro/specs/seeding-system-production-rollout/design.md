@@ -8,7 +8,7 @@ This document outlines the production rollout plan for the TERP Database Seeding
 
 The seeding system is already deployed as part of the codebase. The rollout focuses on:
 
-1. **Verification** - Confirming the system works in the Railway production environment
+1. **Verification** - Confirming the system works in the DigitalOcean production environment
 2. **Documentation** - Creating operational runbooks for production use
 3. **Legacy Cleanup** - Deprecating old seeding code
 
@@ -76,7 +76,7 @@ No new data models required. The seeding system uses existing schema tables:
 ### Connection Errors
 - **Symptom**: "Failed to connect to database after 3 attempts"
 - **Cause**: DATABASE_URL not set or database unreachable
-- **Resolution**: Verify Railway environment variables, check database status
+- **Resolution**: Verify DigitalOcean environment variables, check database status
 
 ### Lock Errors
 - **Symptom**: "Another seeding operation is in progress"
@@ -197,7 +197,7 @@ Each property-based test MUST include:
 
 2. **Update README**
    - Add production seeding section to `scripts/seed/README.md`
-   - Document Railway-specific considerations
+   - Document DigitalOcean-specific considerations
 
 ### Phase 3: Legacy Cleanup (30 minutes)
 

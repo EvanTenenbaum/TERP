@@ -104,7 +104,7 @@ export const searchRouter = router({
           type: "quote" as const,
           title: `Quote #${q.orderNumber || q.id}`,
           description: q.description || undefined,
-          url: `/orders/${q.id}`,
+          url: `/quotes?selected=${q.id}`,
           metadata: {
             orderNumber: q.orderNumber,
             total: q.total,

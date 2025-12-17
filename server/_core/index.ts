@@ -33,6 +33,7 @@ import {
 import { setupGracefulShutdown } from "./gracefulShutdown";
 // import { seedAllDefaults } from "../services/seedDefaults"; // TEMPORARILY DISABLED
 import { assignRoleToUser } from "../services/seedRBAC";
+import { startPriceAlertsCron } from "../cron/priceAlertsCron.js";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
 import { runAutoMigrations } from "../autoMigrate";
@@ -397,6 +398,15 @@ async function startServer() {
     server.listen(port, "0.0.0.0", () => {
       logger.info(`Server running on http://0.0.0.0:${port}/`);
       logger.info(`Health check available at http://localhost:${port}/health`);
+      
+      // Start price alerts cron job
+      try {
+        startPriceAlertsCron();
+        logger.info("✅ Price alerts cron job started");
+      } catch (error) {
+        logger.error({ msg: "Failed to start price alerts cron", error });
+        // Server continues - cron is non-critical
+      }
     });
   } catch (error) {
     logger.error({ error }, "❌ CRITICAL ERROR during Express server setup:");

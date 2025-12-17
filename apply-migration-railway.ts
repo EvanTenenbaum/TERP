@@ -1,7 +1,14 @@
 #!/usr/bin/env tsx
 /**
- * Apply RBAC migration to Railway database
- * Run with: railway run tsx apply-migration-railway.ts
+ * DEPRECATED - Apply RBAC migration to database
+ * 
+ * NOTE: TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.
+ * This script is kept for historical reference only.
+ * 
+ * Current Platform: DigitalOcean App Platform
+ * Production URL: https://terp-app-b9s35.ondigitalocean.app
+ * 
+ * For DigitalOcean, use: pnpm db:migrate
  */
 
 import { drizzle } from "drizzle-orm/mysql2";

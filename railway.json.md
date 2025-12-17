@@ -1,6 +1,21 @@
 # Railway Configuration Documentation
 
-This document explains the configuration choices in `railway.json`.
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> This file and `railway.json` are kept for historical reference only.
+> Do NOT use Railway CLI commands or deploy to Railway.
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+> **Configuration**: `.do/app.yaml`
+> 
+> See `.kiro/steering/04-infrastructure.md` for current deployment documentation.
+
+---
+
+This document explains the configuration choices in `railway.json` (DEPRECATED).
 
 ## Build Configuration
 

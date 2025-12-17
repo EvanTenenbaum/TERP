@@ -1,8 +1,17 @@
 # Railway VITE Build Fix - Summary
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date**: 2025-12-03  
-**Issue**: Frontend returns 502 because VITE variables not available during Docker build  
-**Status**: ✅ Fixed
+**Issue**: (Historical) VITE variables not available during Railway Docker build  
+**Status**: DEPRECATED - Migrated back to DigitalOcean
 
 ---
 
