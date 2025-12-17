@@ -668,13 +668,15 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 #### DATA-011: Production-Grade Database Seeding System
 
-**Status:** ready  
+**Status:** blocked  
 **Priority:** HIGH  
 **Estimate:** 17-24h  
 **Module:** `scripts/seed/`, `scripts/seed/lib/`  
 **Dependencies:** DATA-010 (complete)  
 **Spec:** `.kiro/specs/database-seeding-system/`  
 **Prompt:** `.kiro/specs/database-seeding-system/tasks.md`
+**Session:** `docs/sessions/completed/Session-20251215-DATA-011-5d08d4.md`
+**Key Commits:** `3a1cd4e1`, `315b135f`, `04c7a128`, `82fe192e`, `b40be175`
 
 **Problem:** Previous seeding approach embedded in app startup caused production crashes when database schemas drifted. After 6+ hours of debugging, rolled back to stable Nov 26 commit. Need production-grade CLI-based seeding system completely separate from application startup.
 
@@ -693,20 +695,20 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 **Deliverables:**
 
-- [ ] Create `scripts/seed/` directory structure with lib utilities
-- [ ] Implement database locking mechanism (`lib/locking.ts`)
-- [ ] Set up structured logging infrastructure (winston/pino)
-- [ ] Create CLI orchestrator (`seed-main.ts`) with argument parsing
-- [ ] Implement schema validation utilities (`lib/validation.ts`)
-- [ ] Create PII masking utilities (`lib/data-masking.ts`)
+- [x] Create `scripts/seed/` directory structure with lib utilities
+- [x] Implement database locking mechanism (`lib/locking.ts`)
+- [x] Set up structured logging infrastructure (winston/pino)
+- [x] Create CLI orchestrator (`seed-main.ts`) with argument parsing
+- [x] Implement schema validation utilities (`lib/validation.ts`)
+- [x] Create PII masking utilities (`lib/data-masking.ts`)
 - [ ] Implement base seeder class with idempotency checks
-- [ ] Create individual seeders (clients, batches, inventory, orders)
+- [x] Create individual seeders (clients, batches, inventory, orders)
 - [ ] Implement rollback script (`seed-rollback.ts`)
 - [ ] Add seeding metadata tracking table migration
 - [ ] Create performance benchmarks (1k, 10k, 50k records)
 - [ ] Write 26 property-based tests for correctness properties
 - [ ] Write integration tests for full workflow
-- [ ] Create comprehensive documentation (README, troubleshooting, runbook)
+- [x] Create comprehensive documentation (README, troubleshooting, runbook)
 - [ ] Create GDPR/CCPA compliance documentation
 - [ ] Add npm scripts: `seed`, `seed:rollback`, `seed:dry-run`
 - [ ] Validate in staging environment
@@ -2081,7 +2083,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 **Status:** complete  
 **Priority:** HIGH  
 **Estimate:** 4-8h  
-**Module:** `scripts/`, `package.json`, DigitalOcean App Platform  
+**Module:** `scripts/`, `package.json`, `.do/app.yaml`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/ST-023.md`  
 **Session:** Session-20251212-ST-023-8fd20c14
@@ -2115,7 +2117,7 @@ Deploys were failing/rolling back due to data mutation scripts being executed at
 **Status:** complete  
 **Priority:** HIGH  
 **Estimate:** 4-8h  
-**Module:** `client/`, `vite.config.ts`, `server/_core/index.ts`  
+**Module:** `client/src/main.tsx`, `vite.config.ts`, `server/_core/index.ts`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/BUG-024.md`  
 **Session:** Session-20251203-PROD-LOADING-dc6060
@@ -2150,7 +2152,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Status:** complete  
 **Priority:** HIGH  
 **Estimate:** 4-6h  
-**Module:** `server/db/schema/`  
+**Module:** `drizzle/schema.ts`  
 **Dependencies:** None  
 **Prompt:** [`docs/prompts/ST-005.md`](../prompts/ST-005.md)
 
@@ -2179,7 +2181,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 3-4d  
-**Module:** `server/routers/*` (all list endpoints)  
+**Module:** `server/routers/`  
 **Dependencies:** None  
 **Prompt:** [`docs/prompts/ST-007.md`](../prompts/ST-007.md)
 
@@ -2209,7 +2211,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 1-2d  
-**Module:** Root config, `src/_app.tsx`, `server/`  
+**Module:** `sentry.client.config.ts`, `sentry.server.config.ts`, `client/src/main.tsx`, `server/_core/index.ts`  
 **Dependencies:** None  
 **Prompt:** [`docs/prompts/ST-008.md`](../prompts/ST-008.md)
 
@@ -2240,7 +2242,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 2-3d  
-**Module:** `server/_core/`, tRPC middleware  
+**Module:** `server/_core/trpc.ts`  
 **Dependencies:** None  
 **Prompt:** [`docs/prompts/ST-009.md`](../prompts/ST-009.md)
 
@@ -2271,7 +2273,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Status:** blocked  
 **Priority:** MEDIUM  
 **Estimate:** 2-3d  
-**Module:** `server/_core/cache/`, `server/routers/*`  
+**Module:** `server/_core/cache.ts`, `server/routers/`  
 **Dependencies:** None  
 **Prompt:** [`docs/prompts/ST-010.md`](../prompts/ST-010.md)
 
@@ -2439,12 +2441,13 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 
 ### INFRA-008: Fix Migration Consolidation
 
-**Status:** ready  
+**Status:** complete  
 **Priority:** HIGH  
 **Estimate:** 3-4 hours  
 **Module:** `server/autoMigrate.ts`, `scripts/start.sh`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/INFRA-008.md` (to be created)
+**Key Commits:** `755b179b`, `bf1bdeb2`, `8c5e6acb`
 
 **Objectives:**
 
@@ -2456,14 +2459,14 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 
 **Deliverables:**
 
-- [ ] Migration audit completed (all tables in SQL file identified)
-- [ ] `server/autoMigrate.ts` updated (adds table creation for client_needs)
-- [ ] `server/autoMigrate.ts` updated (adds table creation for vendor_supply)
-- [ ] `server/autoMigrate.ts` updated (adds table creation for match_records)
-- [ ] Migrations tested (all tables created successfully)
-- [ ] `scripts/start.sh` updated (removes duplicate migrate.js call if safe)
-- [ ] Production deployment tested (verifies migrations work)
-- [ ] Rollback plan documented (if migration fails)
+- [x] Migration audit completed (all tables in SQL file identified)
+- [x] `server/autoMigrate.ts` updated (adds table creation for client_needs)
+- [x] `server/autoMigrate.ts` updated (adds table creation for vendor_supply)
+- [x] `server/autoMigrate.ts` updated (adds table creation for match_records)
+- [x] Migrations tested (all tables created successfully)
+- [x] `scripts/start.sh` updated (removes duplicate migrate.js call if safe)
+- [x] Production deployment tested (verifies migrations work)
+- [x] Rollback plan documented (if migration fails)
 - [ ] All tests passing
 - [ ] Zero TypeScript errors
 - [ ] Session archived
@@ -2878,7 +2881,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Priority:** HIGH
 **Estimate:** 4-8h
 **Actual Time:** 0h (already implemented)
-**Module:** `client/src/components/`, `client/src/pages/`
+**Module:** `client/src/components/layout/AppHeader.tsx`, `client/src/pages/SearchResultsPage.tsx`, `client/src/App.tsx`, `server/routers/search.ts`
 **Dependencies:** None
 **Prompt:** `docs/prompts/BUG-019.md`
 
@@ -2910,7 +2913,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Priority:** HIGH
 **Estimate:** 2-4h
 **Actual Time:** 0h (already implemented)
-**Module:** `client/src/pages/`, `client/src/components/layout/`
+**Module:** `client/src/pages/TodoListsPage.tsx`, `client/src/components/DashboardLayout.tsx`, `client/src/App.tsx`, `server/routers/todoLists.ts`
 **Dependencies:** None
 **Prompt:** `docs/prompts/BUG-020.md`
 
@@ -2974,7 +2977,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Priority:** MEDIUM
 **Estimate:** 4-8h
 **Actual Time:** 0h (already implemented)
-**Module:** `client/src/components/`, Settings page
+**Module:** `client/src/contexts/ThemeContext.tsx`, `client/src/components/layout/AppHeader.tsx`
 **Dependencies:** None
 **Prompt:** `docs/prompts/BUG-022.md`
 
@@ -4636,7 +4639,7 @@ Completes pricing feature set, enables price monitoring.
 - Restore /create-order route
 - Resolution: Fixed sidebar link in `DashboardLayout.tsx` to point to correct route `/orders/create`.
 
-- [ ] **BUG-010: Global Search Bar Returns 404 Error** (Created: 2025-11-22) 🔴 HIGH PRIORITY
+- [x] **BUG-010: Global Search Bar Returns 404 Error** (Created: 2025-11-22) 🔴 HIGH PRIORITY
   - Task ID: BUG-010
   - Priority: P1 (HIGH - BROKEN FEATURE)
   - Session: TBD
@@ -4666,7 +4669,8 @@ Completes pricing feature set, enables price monitoring.
     - `server/routers/*.ts` (search endpoints)
   - **Impact:** Core navigation feature broken - users cannot search for records
   - **Estimate:** 4-6 hours (depending on implementation approach)
-  - **Status:** ready
+  - **Status:** complete
+  - **Implementation:** `/search` route exists in `client/src/App.tsx` and is handled by `client/src/pages/SearchResultsPage.tsx`
   - **Discovered:** E2E Testing Session 2025-11-22
 
 - [ ] **BUG-011: Debug Dashboard Visible in Production** (Created: 2025-11-22) 🔴 HIGH PRIORITY
@@ -4749,7 +4753,7 @@ Completes pricing feature set, enables price monitoring.
     - Added id='inventory-browser-section' to InventoryBrowser Card
   - **Key Commits:** TBD (pending merge)
 
-- [ ] **BUG-013: Inventory Table Not Displaying Data** (Created: 2025-11-22) 🔴 CRITICAL
+- [x] **BUG-013: Inventory Table Not Displaying Data** (Created: 2025-11-22) 🔴 CRITICAL
   - Task ID: BUG-013
   - Priority: P0 (CRITICAL - BLOCKING FEATURE)
   - Session: TBD
@@ -4799,21 +4803,21 @@ Completes pricing feature set, enables price monitoring.
     - Users should be able to click rows for details
     - Search, filter, and sort should work
   - **Estimate:** 4-8 hours (requires investigation and fix)
-  - **Status:** ready
+  - **Status:** complete
+  - **Key Commits:** `b40be175`
   - **Discovered:** E2E Testing Session 2025-11-22
   - **Note:** This is a critical blocker for inventory management workflow
 
-- [ ] **BUG-014: Todo Lists Page Returns 404** (Created: 2025-11-22) 🔴 HIGH PRIORITY
+- [x] **BUG-014: Todo Lists Page Returns 404** (Created: 2025-11-22) 🔴 HIGH PRIORITY
   - Task ID: BUG-014
   - Priority: P1 (HIGH - MISSING FEATURE)
   - Session: TBD
   - **Problem:** Navigating to Todo Lists page returns 404 error
   - **Current State:**
     - Sidebar link "Todo Lists" exists and is clickable
-    - Link navigates to `/todo-lists`
-    - Route `/todo-lists` returns 404 "Page Not Found" error
-    - Error message: "Sorry, the page you are looking for doesn't exist. It may have been moved or deleted."
-  - **Root Cause:** Route not implemented in client routing
+    - Link navigates to `/todos`
+    - `TodoListsPage.tsx` renders and `/todos` route is defined
+  - **Root Cause:** Legacy route mismatch (sidebar route updated to `/todos`)
     - Possible reasons:
       1. Feature planned but not yet developed
       2. Route was removed but sidebar link remains
@@ -4841,11 +4845,12 @@ Completes pricing feature set, enables price monitoring.
     - Clicking "Todo Lists" in sidebar should navigate to functional todo lists page
     - Or sidebar link should be hidden if feature not ready
   - **Estimate:** 1-2 hours (if removing link) or 8-16 hours (if implementing feature)
-  - **Status:** ready
+  - **Status:** complete
+  - **Implementation:** `TodoListsPage.tsx` is routed for `/todo` and `/todos` in `client/src/App.tsx`
   - **Discovered:** E2E Testing Session 2025-11-22
   - **Note:** Decision needed: implement feature or remove link
 
-- [ ] **BUG-015: Cmd+K Command Palette Shortcut Not Working** (Created: 2025-11-22) 🟡 MEDIUM PRIORITY
+- [x] **BUG-015: Cmd+K Command Palette Shortcut Not Working** (Created: 2025-11-22) 🟡 MEDIUM PRIORITY
   - Task ID: BUG-015
   - Priority: P2 (MEDIUM - BROKEN FEATURE)
   - Session: TBD
@@ -4879,10 +4884,11 @@ Completes pricing feature set, enables price monitoring.
     - `client/src/App.tsx` (global keyboard handlers)
   - **Note:** Ctrl+Shift+T (Quick Add Task) works correctly, so keyboard shortcut infrastructure exists
   - **Estimate:** 2-4 hours
-  - **Status:** ready
+  - **Status:** complete
+  - **Implementation:** `useKeyboardShortcuts` treats Cmd+K as Ctrl+K (metaKey supported) and `CommandPalette` is mounted in `client/src/App.tsx`
   - **Discovered:** Gap Testing Session 2025-11-22 (TS-001)
 
-- [ ] **BUG-016: Theme Toggle Not Implemented** (Created: 2025-11-22) 🟡 MEDIUM PRIORITY
+- [x] **BUG-016: Theme Toggle Not Implemented** (Created: 2025-11-22) 🟡 MEDIUM PRIORITY
   - Task ID: BUG-016
   - Priority: P2 (MEDIUM - MISSING FEATURE)
   - Session: TBD
@@ -4917,11 +4923,12 @@ Completes pricing feature set, enables price monitoring.
     - `client/src/pages/SettingsPage.tsx`
     - CSS/styling files for dark mode definitions
   - **Estimate:** 4-8 hours (if implementing from scratch)
-  - **Status:** ready
+  - **Status:** complete
+  - **Implementation:** `ThemeProvider` and `useTheme` exist; theme toggle button is present in `client/src/components/layout/AppHeader.tsx`
   - **Discovered:** Gap Testing Session 2025-11-22 (TS-002)
   - **Note:** Decision needed: implement feature or remove from test suite if not planned
 
-- [ ] **BUG-017: Inconsistent Layout Between Dashboard and Module Pages** (Created: 2025-11-26) 🔴 HIGH PRIORITY
+- [x] **BUG-017: Inconsistent Layout Between Dashboard and Module Pages** (Created: 2025-11-26) 🔴 HIGH PRIORITY
   - Task ID: BUG-017
   - Priority: P1 (HIGH - INCONSISTENT UX)
   - Session: TBD
@@ -4954,7 +4961,8 @@ Completes pricing feature set, enables price monitoring.
     - `client/src/components/layout/AppHeader.tsx` (header component)
   - **Impact:** HIGH - Inconsistent UX across application, missing navigation features on dashboard, outdated nav on modules
   - **Estimate:** 4-8 hours
-  - **Status:** ready
+  - **Status:** complete
+  - **Implementation:** `DashboardLayout` includes `AppHeader` and centralizes navigation items (see `client/src/components/DashboardLayout.tsx`)
   - **Discovered:** Manual Testing Session 2025-11-26
   - **Related:** BUG-002 (Duplicate Navigation Bar - completed, caused this issue as side effect)
 
@@ -4974,7 +4982,7 @@ Completes pricing feature set, enables price monitoring.
     - ✅ Production build passes without JWT_SECRET set
     - ✅ 20/20 envValidator tests pass
     - ✅ TypeScript compilation passes
-  - **Status:** ✅ COMPLETE
+  - **Status:** complete
   - Test Status: ✅ Fully Tested
   - **Actual Time:** 30 minutes
   - **Impact:** Deployment now works - environment variables only validated at runtime when server starts
@@ -5296,7 +5304,7 @@ Completes pricing feature set, enables price monitoring.
 
 #### BUG-015: Cmd+K Command Palette Shortcut Not Working
 
-**Status:** ready  
+**Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 8h  
 **Module:** `client/src/components/CommandPalette.tsx`  
@@ -5327,10 +5335,10 @@ Completes pricing feature set, enables price monitoring.
 
 #### BUG-016: Theme Toggle Not Implemented
 
-**Status:** ready  
+**Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 8h  
-**Module:** Settings, User Profile  
+**Module:** `client/src/contexts/ThemeContext.tsx`, `client/src/components/layout/AppHeader.tsx`  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/BUG-016.md`
 
