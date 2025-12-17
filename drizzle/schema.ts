@@ -138,6 +138,19 @@ export const paymentTermsEnum = mysqlEnum("paymentTerms", [
 /**
  * Vendors table
  * Represents suppliers/vendors who provide products
+ * 
+ * @deprecated As of 2025-12-16, vendors have been migrated to the unified clients table.
+ * Use clients with isSeller=true and supplier_profiles for vendor data.
+ * 
+ * Migration mapping:
+ * - Vendor data → clients table (with isSeller=true)
+ * - Vendor-specific fields → supplier_profiles table
+ * - Legacy vendor ID → supplier_profiles.legacy_vendor_id
+ * 
+ * To get client ID for a vendor: 
+ *   SELECT client_id FROM supplier_profiles WHERE legacy_vendor_id = ?
+ * 
+ * This table will be removed in a future release after all references are updated.
  */
 export const vendors = mysqlTable("vendors", {
   id: int("id").autoincrement().primaryKey(),
@@ -575,22 +588,36 @@ export type InsertBatchLocation = typeof batchLocations.$inferInsert;
  * Sales table
  * Tracks all sales with COGS snapshot at time of sale
  */
-export const sales = mysqlTable("sales", {
-  id: int("id").autoincrement().primaryKey(),
-  batchId: int("batchId").notNull(),
-  productId: int("productId").notNull(),
-  quantity: varchar("quantity", { length: 20 }).notNull(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  cogsAtSale: varchar("cogsAtSale", { length: 20 }).notNull(), // COGS snapshot
-  salePrice: varchar("salePrice", { length: 20 }).notNull(),
-  cogsOverride: int("cogsOverride").notNull().default(0), // 0 = false, 1 = true
-  customerId: int("customerId"),
-  saleDate: timestamp("saleDate").notNull(),
-  notes: text("notes"),
-  createdBy: int("createdBy").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+// FK constraints added as part of Canonical Model Unification (Phase 2, Tasks 10.4, 10.5)
+export const sales = mysqlTable(
+  "sales",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    batchId: int("batchId").notNull(),
+    productId: int("productId").notNull(),
+    quantity: varchar("quantity", { length: 20 }).notNull(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+    cogsAtSale: varchar("cogsAtSale", { length: 20 }).notNull(), // COGS snapshot
+    salePrice: varchar("salePrice", { length: 20 }).notNull(),
+    cogsOverride: int("cogsOverride").notNull().default(0), // 0 = false, 1 = true
+    // FK added: customerId → clients.id (Task 10.4)
+    customerId: int("customerId").references(() => clients.id, {
+      onDelete: "restrict",
+    }),
+    saleDate: timestamp("saleDate").notNull(),
+    notes: text("notes"),
+    // FK added: createdBy → users.id (Task 10.5)
+    createdBy: int("createdBy")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    customerIdIdx: index("idx_sales_customer_id").on(table.customerId),
+    createdByIdx: index("idx_sales_created_by").on(table.createdBy),
+  })
+);
 
 export type Sale = typeof sales.$inferSelect;
 export type InsertSale = typeof sales.$inferInsert;
@@ -887,7 +914,10 @@ export const invoices = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     invoiceNumber: varchar("invoiceNumber", { length: 50 }).notNull().unique(),
     // NOTE: deletedAt removed - column does not exist in production database (DATA-010)
-    customerId: int("customerId").notNull(), // Will link to clients table when created
+    // FK added as part of Canonical Model Unification (Phase 2, Task 10.1)
+    customerId: int("customerId")
+      .notNull()
+      .references(() => clients.id, { onDelete: "restrict" }),
     invoiceDate: date("invoiceDate").notNull(),
     dueDate: date("dueDate").notNull(),
     subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
@@ -917,12 +947,16 @@ export const invoices = mysqlTable(
     notes: text("notes"),
     referenceType: varchar("referenceType", { length: 50 }), // SALE, ORDER, CONTRACT
     referenceId: int("referenceId"),
-    createdBy: int("createdBy").notNull(),
+    // FK added as part of Canonical Model Unification (Phase 2, Task 10.2)
+    createdBy: int("createdBy")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   table => ({
     customerIdIdx: index("idx_invoices_customer_id").on(table.customerId),
+    createdByIdx: index("idx_invoices_created_by").on(table.createdBy),
   })
 );
 
@@ -933,24 +967,39 @@ export type InsertInvoice = typeof invoices.$inferInsert;
  * Invoice Line Items
  * Individual items on an invoice
  */
-export const invoiceLineItems = mysqlTable("invoiceLineItems", {
-  id: int("id").autoincrement().primaryKey(),
-  invoiceId: int("invoiceId").notNull(),
-  productId: int("productId"),
-  batchId: int("batchId"),
-  description: text("description").notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013),
-  unitPrice: decimal("unitPrice", { precision: 12, scale: 2 }).notNull(),
-  taxRate: decimal("taxRate", { precision: 5, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 })
-    .default("0.00")
-    .notNull(),
-  lineTotal: decimal("lineTotal", { precision: 12, scale: 2 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+// FK constraints added as part of Canonical Model Unification (Phase 2, Task 10.3)
+export const invoiceLineItems = mysqlTable(
+  "invoiceLineItems",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    invoiceId: int("invoiceId")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    productId: int("productId").references(() => products.id, {
+      onDelete: "restrict",
+    }),
+    batchId: int("batchId").references(() => batches.id, {
+      onDelete: "restrict",
+    }),
+    description: text("description").notNull(),
+    quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013),
+    unitPrice: decimal("unitPrice", { precision: 12, scale: 2 }).notNull(),
+    taxRate: decimal("taxRate", { precision: 5, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    discountPercent: decimal("discountPercent", { precision: 5, scale: 2 })
+      .default("0.00")
+      .notNull(),
+    lineTotal: decimal("lineTotal", { precision: 12, scale: 2 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => ({
+    invoiceIdIdx: index("idx_invoice_line_items_invoice_id").on(table.invoiceId),
+    productIdIdx: index("idx_invoice_line_items_product_id").on(table.productId),
+    batchIdIdx: index("idx_invoice_line_items_batch_id").on(table.batchId),
+  })
+);
 
 export type InvoiceLineItem = typeof invoiceLineItems.$inferSelect;
 export type InsertInvoiceLineItem = typeof invoiceLineItems.$inferInsert;
@@ -1032,35 +1081,68 @@ export type InsertBillLineItem = typeof billLineItems.$inferInsert;
  * Unified payment tracking for both AR and AP
  */
 // SCHEMA DRIFT FIX: Updated to match actual database structure (SEED-001)
-export const payments = mysqlTable("payments", {
-  id: int("id").autoincrement().primaryKey(),
-  paymentNumber: varchar("paymentNumber", { length: 50 }).notNull().unique(),
-  // NOTE: deletedAt removed - column does not exist in production database (DATA-010)
-  paymentType: mysqlEnum("paymentType", ["RECEIVED", "SENT"]).notNull(), // RECEIVED = AR, SENT = AP
-  paymentDate: date("paymentDate").notNull(),
-  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
-  paymentMethod: mysqlEnum("paymentMethod", [
-    "CASH",
-    "CHECK",
-    "WIRE",
-    "ACH",
-    "CREDIT_CARD",
-    "DEBIT_CARD",
-    "OTHER",
-  ]).notNull(),
-  referenceNumber: varchar("referenceNumber", { length: 100 }),
-  bankAccountId: int("bankAccountId"),
-  customerId: int("customerId"), // For AR payments
-  vendorId: int("vendorId"), // For AP payments
-  invoiceId: int("invoiceId"), // For AR payments
-  billId: int("billId"), // For AP payments
-  notes: text("notes"),
-  isReconciled: boolean("isReconciled").default(false).notNull(),
-  reconciledAt: timestamp("reconciledAt"),
-  createdBy: int("createdBy").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+// FK constraints added as part of Canonical Model Unification (Phase 2, Tasks 11.1-11.5)
+export const payments = mysqlTable(
+  "payments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    paymentNumber: varchar("paymentNumber", { length: 50 }).notNull().unique(),
+    // NOTE: deletedAt removed - column does not exist in production database (DATA-010)
+    paymentType: mysqlEnum("paymentType", ["RECEIVED", "SENT"]).notNull(), // RECEIVED = AR, SENT = AP
+    paymentDate: date("paymentDate").notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    paymentMethod: mysqlEnum("paymentMethod", [
+      "CASH",
+      "CHECK",
+      "WIRE",
+      "ACH",
+      "CREDIT_CARD",
+      "DEBIT_CARD",
+      "OTHER",
+    ]).notNull(),
+    referenceNumber: varchar("referenceNumber", { length: 100 }),
+    // FK added: bankAccountId → bankAccounts.id (Task 11.3)
+    bankAccountId: int("bankAccountId").references(() => bankAccounts.id, {
+      onDelete: "restrict",
+    }),
+    // FK added: customerId → clients.id for AR payments (Task 11.1)
+    customerId: int("customerId").references(() => clients.id, {
+      onDelete: "restrict",
+    }),
+    // FK added: vendorId → clients.id for AP payments (Task 11.2)
+    // NOTE: This references clients.id (as supplier), NOT vendors.id
+    // The supplier should have isSeller=true in the clients table
+    vendorId: int("vendorId").references(() => clients.id, {
+      onDelete: "restrict",
+    }),
+    // FK added: invoiceId → invoices.id for AR payments (Task 11.4)
+    invoiceId: int("invoiceId").references(() => invoices.id, {
+      onDelete: "restrict",
+    }),
+    // FK added: billId → bills.id for AP payments (Task 11.5)
+    billId: int("billId").references(() => bills.id, {
+      onDelete: "restrict",
+    }),
+    notes: text("notes"),
+    isReconciled: boolean("isReconciled").default(false).notNull(),
+    reconciledAt: timestamp("reconciledAt"),
+    createdBy: int("createdBy")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    customerIdIdx: index("idx_payments_customer_id").on(table.customerId),
+    vendorIdIdx: index("idx_payments_vendor_id").on(table.vendorId),
+    bankAccountIdIdx: index("idx_payments_bank_account_id").on(
+      table.bankAccountId
+    ),
+    invoiceIdIdx: index("idx_payments_invoice_id").on(table.invoiceId),
+    billIdIdx: index("idx_payments_bill_id").on(table.billId),
+    createdByIdx: index("idx_payments_created_by").on(table.createdBy),
+  })
+);
 
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
@@ -1385,6 +1467,56 @@ export const clientCommunications = mysqlTable(
 export type ClientCommunication = typeof clientCommunications.$inferSelect;
 export type InsertClientCommunication =
   typeof clientCommunications.$inferInsert;
+
+/**
+ * Supplier Profiles Table
+ * Extension table for supplier-specific fields, keyed by clients.id
+ * Part of Canonical Model Unification - stores vendor-specific data for clients with isSeller=true
+ */
+export const supplierProfiles = mysqlTable(
+  "supplier_profiles",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    clientId: int("client_id")
+      .notNull()
+      .unique()
+      .references(() => clients.id, { onDelete: "cascade" }),
+
+    // Supplier-specific fields (migrated from vendors table)
+    contactName: varchar("contact_name", { length: 255 }),
+    contactEmail: varchar("contact_email", { length: 320 }),
+    contactPhone: varchar("contact_phone", { length: 50 }),
+    paymentTerms: varchar("payment_terms", { length: 100 }),
+    supplierNotes: text("supplier_notes"),
+
+    // Legacy vendor mapping (for migration tracking)
+    legacyVendorId: int("legacy_vendor_id"),
+
+    // Supplier-specific metadata
+    preferredPaymentMethod: mysqlEnum("preferred_payment_method", [
+      "CASH",
+      "CHECK",
+      "WIRE",
+      "ACH",
+      "CREDIT_CARD",
+      "OTHER",
+    ]),
+    taxId: varchar("tax_id", { length: 50 }),
+    licenseNumber: varchar("license_number", { length: 100 }),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    clientIdIdx: index("idx_supplier_profiles_client_id").on(table.clientId),
+    legacyVendorIdx: index("idx_supplier_profiles_legacy_vendor").on(
+      table.legacyVendorId
+    ),
+  })
+);
+
+export type SupplierProfile = typeof supplierProfiles.$inferSelect;
+export type InsertSupplierProfile = typeof supplierProfiles.$inferInsert;
 
 export const clientTransactions = mysqlTable(
   "client_transactions",

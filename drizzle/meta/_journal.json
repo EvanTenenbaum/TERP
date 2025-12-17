@@ -162,6 +162,13 @@
       "when": 1733779200000,
       "tag": "0022_create_rbac_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1765938241475,
+      "tag": "0023_redundant_bulldozer",
+      "breakpoints": true
     }
   ]
 }
