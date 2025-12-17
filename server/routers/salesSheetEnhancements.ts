@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import * as salesSheetEnhancements from "../salesSheetEnhancements";
 import { requirePermission } from "../_core/permissionMiddleware";
 
@@ -82,7 +82,9 @@ export const salesSheetEnhancementsRouter = router({
       return { success: true };
     }),
 
-  deactivateExpired: publicProcedure.mutation(async () => {
+  // SECURITY: This mutation modifies database state, requires admin access
+  // Consider converting to a scheduled cron job instead of API endpoint
+  deactivateExpired: adminProcedure.mutation(async () => {
     const count = await salesSheetEnhancements.deactivateExpiredSalesSheets();
     return { deactivatedCount: count };
   }),

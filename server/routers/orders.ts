@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
@@ -102,9 +102,10 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
       return await ordersDb.createOrder({
         ...input,
-        createdBy: ctx.user?.id || 1,
+        createdBy: userId,
       });
     }),
 
@@ -260,9 +261,10 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
       return await ordersDb.confirmDraftOrder({
         ...input,
-        confirmedBy: ctx.user?.id || 1,
+        confirmedBy: userId,
       });
     }),
 
@@ -325,7 +327,7 @@ export const ordersRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Calculate line item prices and totals
       const lineItemsWithPrices = await Promise.all(
@@ -493,7 +495,7 @@ export const ordersRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get existing order
       const existingOrder = await db.query.orders.findFirst({
@@ -650,7 +652,7 @@ export const ordersRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get existing order
       const existingOrder = await db.query.orders.findFirst({
@@ -812,7 +814,7 @@ export const ordersRouter = router({
         if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Get existing line item
       const lineItem = await db.query.orderLineItems.findFirst({
@@ -883,9 +885,10 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
       return await ordersDb.updateOrderStatus({
         ...input,
-        userId: ctx.user?.id || 1,
+        userId,
       });
     }),
 
@@ -928,9 +931,10 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
       return await ordersDb.processReturn({
         ...input,
-        userId: ctx.user?.id || 1,
+        userId,
       });
     }),
 

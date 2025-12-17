@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import InstanceGenerationService from "../_core/instanceGenerationService";
 import PermissionService from "../_core/permissionService";
@@ -17,7 +17,7 @@ export const calendarRecurrenceRouter = router({
   getRecurrenceRule: publicProcedure
     .input(z.object({ eventId: z.number() }))
     .query(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "VIEW");
@@ -39,7 +39,7 @@ export const calendarRecurrenceRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "VIEW");
@@ -72,7 +72,7 @@ export const calendarRecurrenceRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
@@ -112,7 +112,7 @@ export const calendarRecurrenceRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
@@ -150,7 +150,7 @@ export const calendarRecurrenceRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "MANAGE");
@@ -187,7 +187,7 @@ export const calendarRecurrenceRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // TODO: Check admin permission
       // For now, allow any user (will be restricted in production)
@@ -216,7 +216,7 @@ export const calendarRecurrenceRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
@@ -255,7 +255,7 @@ export const calendarRecurrenceRouter = router({
   deleteRecurrenceRule: publicProcedure
     .input(z.object({ eventId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const userId = ctx.user?.id || 1;
+      const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
       const hasPermission = await PermissionService.hasPermission(userId, input.eventId, "EDIT");
