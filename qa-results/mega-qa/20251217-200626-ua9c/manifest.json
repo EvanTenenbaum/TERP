@@ -1,0 +1,25 @@
+{
+  "runId": "20251217-200626-ua9c",
+  "gitSha": "cf150769c9be6fa7b6090b814b22d731bfa177be",
+  "gitBranch": "cursor/mega-qa-test-summary-58b7",
+  "timestamp": "2025-12-17T20:06:57.979Z",
+  "config": {
+    "scenario": "full",
+    "journeyCount": 100,
+    "seed": 118239,
+    "baseURL": "http://localhost:5173",
+    "outputDir": "qa-results/mega-qa",
+    "mode": "unit",
+    "soakDuration": 30,
+    "headless": true,
+    "ci": false
+  },
+  "environment": {
+    "nodeVersion": "v22.21.1",
+    "platform": "linux",
+    "ci": false
+  },
+  "durationMs": 31845,
+  "result": "fail",
+  "exitCode": 1
+}
