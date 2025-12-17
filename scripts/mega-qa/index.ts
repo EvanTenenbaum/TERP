@@ -340,9 +340,10 @@ async function runMegaQA(): Promise<void> {
     const { result, failures } = runVitestSuite(
       "Property-Based Tests",
       "tests/property/",
-      config
+      config,
+      "property"
     );
-    suiteResults.push({ ...result, category: "property" });
+    suiteResults.push(result);
     allFailures.push(...failures);
     allCoveredTags.push(...result.coveredTags);
   }
@@ -352,9 +353,10 @@ async function runMegaQA(): Promise<void> {
     const { result, failures } = runVitestSuite(
       "Contract Tests",
       "tests/contracts/",
-      config
+      config,
+      "contract"
     );
-    suiteResults.push({ ...result, category: "contract" });
+    suiteResults.push(result);
     allFailures.push(...failures);
     allCoveredTags.push(...result.coveredTags);
   }

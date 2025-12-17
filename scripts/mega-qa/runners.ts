@@ -13,10 +13,76 @@ import type { MegaQAConfig, SuiteResult, Failure } from "./types";
 // Vitest Suite Runner (for property tests, contract tests)
 // ============================================================================
 
+/**
+ * Parse vitest JSON output, handling mixed output with pino logger lines.
+ * Vitest JSON output starts with {"numTotalTestSuites": so we look for that.
+ */
+function parseVitestJsonOutput(output: string): {
+  numTotalTests: number;
+  numPassedTests: number;
+  numFailedTests: number;
+  numPendingTests: number;
+} | null {
+  // Find the vitest JSON - it starts with {"numTotalTestSuites" and may end with }]} or }
+  // Use greedy match from the start pattern to end of string
+  const vitestJsonMatch = output.match(/\{"numTotalTestSuites"[\s\S]+$/);
+  if (vitestJsonMatch) {
+    try {
+      return JSON.parse(vitestJsonMatch[0]);
+    } catch {
+      // JSON parsing failed, try trimming
+      const trimmed = vitestJsonMatch[0].trim();
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        // Still failed
+      }
+    }
+  }
+
+  // Alternative: look for lines containing numTotalTests
+  const lines = output.split("\n");
+  for (const line of lines) {
+    if (line.includes('"numTotalTests"') && line.startsWith("{")) {
+      try {
+        return JSON.parse(line);
+      } catch {
+        // Continue to next line
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Fallback parsing using regex on human-readable output
+ */
+function parseVitestFallback(output: string): {
+  testsRun: number;
+  testsPassed: number;
+  testsFailed: number;
+  testsSkipped: number;
+} {
+  const passMatch = output.match(/(\d+) passed/);
+  const failMatch = output.match(/(\d+) failed/);
+  const skipMatch = output.match(/(\d+) skipped/);
+  const testsPassed = passMatch ? parseInt(passMatch[1]) : 0;
+  const testsFailed = failMatch ? parseInt(failMatch[1]) : 0;
+  const testsSkipped = skipMatch ? parseInt(skipMatch[1]) : 0;
+  return {
+    testsRun: testsPassed + testsFailed + testsSkipped,
+    testsPassed,
+    testsFailed,
+    testsSkipped,
+  };
+}
+
 export function runVitestSuite(
   suiteName: string,
   testPath: string,
-  _config: MegaQAConfig
+  _config: MegaQAConfig,
+  category: SuiteResult["category"] = "property"
 ): { result: SuiteResult; failures: Failure[] } {
   console.log(`\n🧪 Running ${suiteName}...`);
 
@@ -28,59 +94,55 @@ export function runVitestSuite(
     testsFailed = 0,
     testsSkipped = 0;
 
+  let output = "";
   try {
-    const output = execSync(`pnpm vitest run ${testPath} --reporter=json`, {
+    output = execSync(`pnpm vitest run ${testPath} --reporter=json`, {
       encoding: "utf-8",
       stdio: "pipe",
     });
-
-    // Parse JSON output from vitest
-    const jsonMatch = output.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const results = JSON.parse(jsonMatch[0]);
-      testsRun = results.numTotalTests || 0;
-      testsPassed = results.numPassedTests || 0;
-      testsFailed = results.numFailedTests || 0;
-      testsSkipped = results.numPendingTests || 0;
-    }
   } catch (error) {
-    // Test failures cause non-zero exit, parse output anyway
-    const output = (error as { stdout?: string }).stdout || "";
-    const jsonMatch = output.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        const results = JSON.parse(jsonMatch[0]);
-        testsRun = results.numTotalTests || 0;
-        testsPassed = results.numPassedTests || 0;
-        testsFailed = results.numFailedTests || 0;
-        testsSkipped = results.numPendingTests || 0;
-      } catch {
-        // Fallback: try to extract from console output
-        const passMatch = output.match(/(\d+) passed/);
-        const failMatch = output.match(/(\d+) failed/);
-        const skipMatch = output.match(/(\d+) skipped/);
-        testsPassed = passMatch ? parseInt(passMatch[1]) : 0;
-        testsFailed = failMatch ? parseInt(failMatch[1]) : 0;
-        testsSkipped = skipMatch ? parseInt(skipMatch[1]) : 0;
-        testsRun = testsPassed + testsFailed + testsSkipped;
-      }
-    }
+    // Test failures cause non-zero exit, capture output anyway
+    output = (error as { stdout?: string }).stdout || "";
+  }
+
+  // Parse JSON output from vitest
+  const parsed = parseVitestJsonOutput(output);
+  if (parsed) {
+    testsRun = parsed.numTotalTests || 0;
+    testsPassed = parsed.numPassedTests || 0;
+    testsFailed = parsed.numFailedTests || 0;
+    testsSkipped = parsed.numPendingTests || 0;
+  } else {
+    // Fallback: try to extract from console output
+    const fallback = parseVitestFallback(output);
+    testsRun = fallback.testsRun;
+    testsPassed = fallback.testsPassed;
+    testsFailed = fallback.testsFailed;
+    testsSkipped = fallback.testsSkipped;
   }
 
   const durationMs = Date.now() - startTime;
   console.log(`   ${testsPassed}/${testsRun} passed (${durationMs}ms)`);
 
+  // Determine covered tags based on category
+  const coveredTags: string[] = [];
+  if (category === "property") {
+    coveredTags.push("property-tests", "business-logic", "invariants");
+  } else if (category === "contract") {
+    coveredTags.push("contract-tests", "api-schema", "trpc-procedures");
+  }
+
   return {
     result: {
       name: suiteName,
-      category: "property",
+      category,
       testsRun,
       testsPassed,
       testsFailed,
       testsSkipped,
       durationMs,
       failureIds: failures.map(f => f.id),
-      coveredTags: ["property-tests"],
+      coveredTags,
     },
     failures,
   };
