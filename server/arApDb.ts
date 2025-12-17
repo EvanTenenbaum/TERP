@@ -102,7 +102,10 @@ export async function getInvoiceById(id: number) {
   const db = await getDb();
   if (!db) return null;
 
-  const invoice = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+  const invoice = await db.select().from(invoices).where(and(
+    eq(invoices.id, id),
+    sql`${invoices.deletedAt} IS NULL`
+  )).limit(1);
 
   if (!invoice[0]) return null;
 
@@ -173,9 +176,12 @@ export async function recordInvoicePayment(invoiceId: number, amount: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const invoice = await db.select().from(invoices).where(eq(invoices.id, invoiceId)).limit(1);
+  const invoice = await db.select().from(invoices).where(and(
+    eq(invoices.id, invoiceId),
+    sql`${invoices.deletedAt} IS NULL`
+  )).limit(1);
 
-  if (!invoice[0]) throw new Error("Invoice not found");
+  if (!invoice[0]) throw new Error("Invoice not found or deleted");
 
   const currentAmountPaid = Number(invoice[0].amountPaid);
   const newAmountPaid = currentAmountPaid + amount;
@@ -213,7 +219,8 @@ export async function getOutstandingReceivables() {
     .where(
       and(
         inArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
-        sql`${invoices.amountDue} > 0`
+        sql`${invoices.amountDue} > 0`,
+        sql`${invoices.deletedAt} IS NULL`
       )
     )
     .orderBy(asc(invoices.dueDate));
@@ -243,7 +250,8 @@ export async function calculateARAging() {
     .where(
       and(
         inArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
-        sql`${invoices.amountDue} > 0`
+        sql`${invoices.amountDue} > 0`,
+        sql`${invoices.deletedAt} IS NULL`
       )
     );
 
@@ -283,7 +291,8 @@ export async function generateInvoiceNumber(): Promise<string> {
 
   const result = await db
     .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
-    .from(invoices);
+    .from(invoices)
+    .where(sql`${invoices.deletedAt} IS NULL`);
 
   const nextId = (Number(result[0]?.maxId) || 0) + 1;
   const year = new Date().getFullYear();
@@ -310,6 +319,9 @@ export async function getBills(filters?: {
   if (!db) return { bills: [], total: 0 };
 
   const conditions = [];
+
+  // Filter out soft-deleted records
+  conditions.push(sql`${bills.deletedAt} IS NULL`);
 
   if (filters?.vendorId) {
     conditions.push(eq(bills.vendorId, filters.vendorId));
@@ -371,7 +383,10 @@ export async function getBillById(id: number) {
   const db = await getDb();
   if (!db) return null;
 
-  const bill = await db.select().from(bills).where(eq(bills.id, id)).limit(1);
+  const bill = await db.select().from(bills).where(and(
+    eq(bills.id, id),
+    sql`${bills.deletedAt} IS NULL`
+  )).limit(1);
 
   if (!bill[0]) return null;
 
@@ -442,9 +457,12 @@ export async function recordBillPayment(billId: number, amount: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const bill = await db.select().from(bills).where(eq(bills.id, billId)).limit(1);
+  const bill = await db.select().from(bills).where(and(
+    eq(bills.id, billId),
+    sql`${bills.deletedAt} IS NULL`
+  )).limit(1);
 
-  if (!bill[0]) throw new Error("Bill not found");
+  if (!bill[0]) throw new Error("Bill not found or deleted");
 
   const currentAmountPaid = Number(bill[0].amountPaid);
   const newAmountPaid = currentAmountPaid + amount;
@@ -482,7 +500,8 @@ export async function getOutstandingPayables() {
     .where(
       and(
         inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
-        sql`${bills.amountDue} > 0`
+        sql`${bills.amountDue} > 0`,
+        sql`${bills.deletedAt} IS NULL`
       )
     )
     .orderBy(asc(bills.dueDate));
@@ -511,7 +530,8 @@ export async function calculateAPAging() {
     .where(
       and(
         inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
-        sql`${bills.amountDue} > 0`
+        sql`${bills.amountDue} > 0`,
+        sql`${bills.deletedAt} IS NULL`
       )
     );
 
@@ -551,7 +571,8 @@ export async function generateBillNumber(): Promise<string> {
 
   const result = await db
     .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
-    .from(bills);
+    .from(bills)
+    .where(sql`${bills.deletedAt} IS NULL`);
 
   const nextId = (Number(result[0]?.maxId) || 0) + 1;
   const year = new Date().getFullYear();
@@ -645,7 +666,10 @@ export async function getPaymentById(id: number) {
   const db = await getDb();
   if (!db) return null;
 
-  const result = await db.select().from(payments).where(eq(payments.id, id)).limit(1);
+  const result = await db.select().from(payments).where(and(
+    eq(payments.id, id),
+    sql`${payments.deletedAt} IS NULL`
+  )).limit(1);
   return result[0] || null;
 }
 
@@ -669,7 +693,8 @@ export async function generatePaymentNumber(type: "RECEIVED" | "SENT"): Promise<
 
   const result = await db
     .select({ maxId: sql<number>`COALESCE(MAX(id), 0)` })
-    .from(payments);
+    .from(payments)
+    .where(sql`${payments.deletedAt} IS NULL`);
 
   const nextId = (Number(result[0]?.maxId) || 0) + 1;
   const year = new Date().getFullYear();
