@@ -97,7 +97,7 @@ export async function getInventoryWithPricing(
         quantity: item.quantity || 0,
       }));
     } catch (pricingError) {
-      logger.error("Pricing engine error, using fallback pricing", { error: pricingError });
+      logger.error({ error: pricingError }, "Pricing engine error, using fallback pricing");
 
       // Return items with base prices as fallback
       return inventoryItems.map(item => ({
@@ -108,7 +108,7 @@ export async function getInventoryWithPricing(
       }));
     }
   } catch (error) {
-    logger.error("Error fetching inventory", { error });
+    logger.error({ error }, "Error fetching inventory");
     throw new Error("Failed to fetch inventory");
   }
 }

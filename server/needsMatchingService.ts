@@ -127,7 +127,7 @@ export async function createQuoteFromMatch(matchData: {
       message: `Quote ${orderNumber} created successfully`,
     };
   } catch (error) {
-    logger.error("Error creating quote from match", { error });
+    logger.error({ error }, "Error creating quote from match");
     throw new Error(`Failed to create quote: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -186,7 +186,7 @@ export async function convertQuoteToSale(
       message: "Quote converted to sale successfully",
     };
   } catch (error) {
-    logger.error("Error converting quote to sale", { error });
+    logger.error({ error }, "Error converting quote to sale");
     throw new Error(`Failed to convert quote: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -210,7 +210,7 @@ export async function dismissMatch(
       message: "Match dismissed",
     };
   } catch (error) {
-    logger.error("Error dismissing match", { error });
+    logger.error({ error }, "Error dismissing match");
     throw new Error(`Failed to dismiss match: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -252,7 +252,7 @@ export async function createNeedAndFindMatches(needData: any): Promise<any> {
       message: `Need created. Found ${matches.matches.length} potential matches.`,
     };
   } catch (error) {
-    logger.error("Error creating need and finding matches", { error });
+    logger.error({ error }, "Error creating need and finding matches");
     throw new Error(`Failed to create need and find matches: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -282,7 +282,7 @@ export async function bulkCreateQuotesFromMatches(
       });
       quotes.push(quote);
     } catch (error) {
-      logger.error("Error creating quote for client", { clientId: group.clientId, error });
+      logger.error({ clientId: group.clientId, error }, "Error creating quote for client");
       quotes.push({
         success: false,
         clientId: group.clientId,
@@ -320,7 +320,7 @@ export async function getSmartOpportunities(limit: number = 5): Promise<any[]> {
 
     return opportunities;
   } catch (error) {
-    logger.error("Error getting smart opportunities", { error });
+    logger.error({ error }, "Error getting smart opportunities");
     throw new Error(`Failed to get smart opportunities: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

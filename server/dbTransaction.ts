@@ -35,7 +35,7 @@ export async function withTransaction<T>(
     const result = await callback(db);
     return result;
   } catch (error) {
-    logger.error("Transaction error", { error });
+    logger.error({ error }, "Transaction error");
     throw error;
   }
 }

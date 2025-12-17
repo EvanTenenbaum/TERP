@@ -90,8 +90,8 @@ function DatabaseManager() {
   const [isOpen, setIsOpen] = useState(false);
 
   const seedMutation = trpc.settings.seedDatabase.useMutation({
-    onSuccess: (data) => {
-      toast.success(data.message || "Database seeded successfully");
+    onSuccess: () => {
+      toast.success("Database seeded successfully");
       setIsOpen(false);
     },
     onError: (error) => {

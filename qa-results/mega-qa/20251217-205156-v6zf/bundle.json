@@ -1,0 +1,260 @@
+{
+  "manifest": {
+    "runId": "20251217-205156-v6zf",
+    "gitSha": "3fa47ddbbd89965cb983938fe5d2a24b9513643f",
+    "gitBranch": "cursor/mega-qa-test-summary-58b7",
+    "timestamp": "2025-12-17T20:52:33.368Z",
+    "config": {
+      "scenario": "full",
+      "journeyCount": 100,
+      "seed": 826263,
+      "baseURL": "http://localhost:5173",
+      "outputDir": "qa-results/mega-qa",
+      "mode": "unit",
+      "soakDuration": 30,
+      "headless": true,
+      "ci": false
+    },
+    "environment": {
+      "nodeVersion": "v22.21.1",
+      "platform": "linux",
+      "ci": false
+    },
+    "durationMs": 37097,
+    "result": "fail",
+    "exitCode": 1
+  },
+  "coverage": {
+    "required": [
+      {
+        "id": "TS-001",
+        "category": "ts-protocol",
+        "description": "User authentication flow",
+        "required": true
+      },
+      {
+        "id": "TS-002",
+        "category": "ts-protocol",
+        "description": "Dashboard loads correctly",
+        "required": true
+      },
+      {
+        "id": "TS-1.1",
+        "category": "ts-protocol",
+        "description": "Orders list view",
+        "required": true
+      },
+      {
+        "id": "TS-2.1",
+        "category": "ts-protocol",
+        "description": "Clients list view",
+        "required": true
+      },
+      {
+        "id": "TS-11.1",
+        "category": "ts-protocol",
+        "description": "Inventory management",
+        "required": true
+      },
+      {
+        "id": "route:/login",
+        "category": "route",
+        "description": "Login page accessible",
+        "required": true
+      },
+      {
+        "id": "route:/dashboard",
+        "category": "route",
+        "description": "Dashboard accessible",
+        "required": true
+      },
+      {
+        "id": "route:/orders",
+        "category": "route",
+        "description": "Orders page accessible",
+        "required": true
+      },
+      {
+        "id": "route:/clients",
+        "category": "route",
+        "description": "Clients page accessible",
+        "required": true
+      },
+      {
+        "id": "route:/inventory",
+        "category": "route",
+        "description": "Inventory page accessible",
+        "required": true
+      },
+      {
+        "id": "api:auth.login",
+        "category": "api",
+        "description": "Login API works",
+        "required": true
+      },
+      {
+        "id": "api:auth.me",
+        "category": "api",
+        "description": "Current user API works",
+        "required": true
+      },
+      {
+        "id": "api:orders.list",
+        "category": "api",
+        "description": "Orders list API works",
+        "required": true
+      },
+      {
+        "id": "api:clients.list",
+        "category": "api",
+        "description": "Clients list API works",
+        "required": true
+      },
+      {
+        "id": "api:batches.list",
+        "category": "api",
+        "description": "Batches list API works",
+        "required": true
+      },
+      {
+        "id": "regression:cmd-k",
+        "category": "regression",
+        "description": "Cmd+K command palette works",
+        "required": true
+      },
+      {
+        "id": "regression:theme-toggle",
+        "category": "regression",
+        "description": "Theme toggle works",
+        "required": true
+      },
+      {
+        "id": "regression:no-spinner",
+        "category": "regression",
+        "description": "No infinite loading spinners",
+        "required": true
+      },
+      {
+        "id": "regression:layout-consistency",
+        "category": "regression",
+        "description": "Layout remains consistent",
+        "required": true
+      }
+    ],
+    "covered": [
+      "TS-001",
+      "TS-002",
+      "TS-1.1",
+      "TS-2.1",
+      "TS-11.1",
+      "route:/login",
+      "route:/dashboard",
+      "route:/orders",
+      "route:/clients",
+      "route:/inventory",
+      "api:auth.login",
+      "api:auth.me",
+      "api:orders.list",
+      "api:clients.list",
+      "api:batches.list",
+      "regression:cmd-k",
+      "regression:theme-toggle",
+      "regression:no-spinner",
+      "regression:layout-consistency"
+    ],
+    "missing": [],
+    "waivers": [],
+    "coveragePercent": 100,
+    "passed": true
+  },
+  "suites": [
+    {
+      "name": "Unit Tests (Vitest)",
+      "category": "must-hit",
+      "testsRun": 1459,
+      "testsPassed": 1356,
+      "testsFailed": 10,
+      "testsSkipped": 93,
+      "durationMs": 30958,
+      "failureIds": [],
+      "coveredTags": [
+        "TS-001",
+        "TS-002",
+        "TS-1.1",
+        "TS-2.1",
+        "TS-11.1",
+        "api:auth.login",
+        "api:auth.me",
+        "api:orders.list",
+        "api:clients.list",
+        "api:batches.list"
+      ]
+    },
+    {
+      "name": "Type Check (TypeScript)",
+      "category": "must-hit",
+      "testsRun": 1,
+      "testsPassed": 1,
+      "testsFailed": 0,
+      "testsSkipped": 0,
+      "durationMs": 2763,
+      "failureIds": [],
+      "coveredTags": []
+    },
+    {
+      "name": "Schema Validation",
+      "category": "must-hit",
+      "testsRun": 3,
+      "testsPassed": 2,
+      "testsFailed": 1,
+      "testsSkipped": 0,
+      "durationMs": 0,
+      "failureIds": [],
+      "coveredTags": []
+    },
+    {
+      "name": "Property-Based Tests",
+      "category": "property",
+      "testsRun": 0,
+      "testsPassed": 0,
+      "testsFailed": 0,
+      "testsSkipped": 0,
+      "durationMs": 2354,
+      "failureIds": [],
+      "coveredTags": [
+        "property-tests"
+      ]
+    },
+    {
+      "name": "Contract Tests",
+      "category": "contract",
+      "testsRun": 5,
+      "testsPassed": 5,
+      "testsFailed": 0,
+      "testsSkipped": 0,
+      "durationMs": 1017,
+      "failureIds": [],
+      "coveredTags": [
+        "property-tests"
+      ]
+    }
+  ],
+  "failures": [],
+  "artifacts": {
+    "traces": [],
+    "screenshots": [],
+    "videos": [],
+    "visualDiffs": [],
+    "other": []
+  },
+  "summary": {
+    "totalTests": 1468,
+    "passed": 1364,
+    "failed": 11,
+    "skipped": 93,
+    "flaky": 0,
+    "coveragePercent": 100,
+    "newFailures": 0,
+    "knownFailures": 0
+  }
+}

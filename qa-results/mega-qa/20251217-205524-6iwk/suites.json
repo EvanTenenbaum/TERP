@@ -1,0 +1,72 @@
+[
+  {
+    "name": "Unit Tests (Vitest)",
+    "category": "must-hit",
+    "testsRun": 1471,
+    "testsPassed": 1357,
+    "testsFailed": 9,
+    "testsSkipped": 105,
+    "durationMs": 32309,
+    "failureIds": [],
+    "coveredTags": [
+      "TS-001",
+      "TS-002",
+      "TS-1.1",
+      "TS-2.1",
+      "TS-11.1",
+      "api:auth.login",
+      "api:auth.me",
+      "api:orders.list",
+      "api:clients.list",
+      "api:batches.list"
+    ]
+  },
+  {
+    "name": "Type Check (TypeScript)",
+    "category": "must-hit",
+    "testsRun": 1,
+    "testsPassed": 1,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 2727,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Schema Validation",
+    "category": "must-hit",
+    "testsRun": 3,
+    "testsPassed": 2,
+    "testsFailed": 1,
+    "testsSkipped": 0,
+    "durationMs": 1,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Property-Based Tests",
+    "category": "property",
+    "testsRun": 0,
+    "testsPassed": 0,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 2344,
+    "failureIds": [],
+    "coveredTags": [
+      "property-tests"
+    ]
+  },
+  {
+    "name": "Contract Tests",
+    "category": "contract",
+    "testsRun": 5,
+    "testsPassed": 5,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 1011,
+    "failureIds": [],
+    "coveredTags": [
+      "property-tests"
+    ]
+  }
+]

@@ -134,7 +134,7 @@ export async function findClientNeedsForBatch(batchId: number) {
 
     return matches;
   } catch (error) {
-    logger.error("Error finding client needs for batch", { error });
+    logger.error({ error }, "Error finding client needs for batch");
     return []; // Return empty array instead of throwing
   }
 }

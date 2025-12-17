@@ -70,7 +70,7 @@ describe("Credits Router", () => {
         ...input,
         amountRemaining: "100.00",
         amountUsed: "0",
-        status: "ACTIVE",
+        creditStatus: "ACTIVE",
         createdBy: 1,
       };
 
@@ -88,7 +88,7 @@ describe("Credits Router", () => {
           creditNumber: "CR-001",
           clientId: 1,
           creditAmount: "100.00",
-          status: "ACTIVE",
+          creditStatus: "ACTIVE",
         })
       );
     });

@@ -375,9 +375,10 @@ describe("Orders Router", () => {
     it("should soft delete an order", async () => {
       // Arrange
       // Mock the database update to return affected rows
+      // MySQL returns [ResultSetHeader, FieldPacket[]] format
       const mockUpdate = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue({ rowsAffected: 1 }),
+        where: vi.fn().mockResolvedValue([{ affectedRows: 1 }]),
       });
       vi.mocked(db.update).mockReturnValue(mockUpdate() as any);
 

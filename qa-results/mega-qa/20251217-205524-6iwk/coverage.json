@@ -1,5 +1,5 @@
 {
-  "tags": [
+  "required": [
     {
       "id": "TS-001",
       "category": "ts-protocol",
@@ -115,6 +115,29 @@
       "required": true
     }
   ],
-  "gate": 70,
-  "generatedAt": "2025-12-17T20:55:24.664Z"
+  "covered": [
+    "TS-001",
+    "TS-002",
+    "TS-1.1",
+    "TS-2.1",
+    "TS-11.1",
+    "route:/login",
+    "route:/dashboard",
+    "route:/orders",
+    "route:/clients",
+    "route:/inventory",
+    "api:auth.login",
+    "api:auth.me",
+    "api:orders.list",
+    "api:clients.list",
+    "api:batches.list",
+    "regression:cmd-k",
+    "regression:theme-toggle",
+    "regression:no-spinner",
+    "regression:layout-consistency"
+  ],
+  "missing": [],
+  "waivers": [],
+  "coveragePercent": 100,
+  "passed": true
 }

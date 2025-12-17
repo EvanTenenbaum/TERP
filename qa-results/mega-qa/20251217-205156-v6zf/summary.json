@@ -1,0 +1,10 @@
+{
+  "totalTests": 1468,
+  "passed": 1364,
+  "failed": 11,
+  "skipped": 93,
+  "flaky": 0,
+  "coveragePercent": 100,
+  "newFailures": 0,
+  "knownFailures": 0
+}
