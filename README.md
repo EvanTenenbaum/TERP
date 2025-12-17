@@ -61,6 +61,24 @@ pnpm dev
 git push origin main  # Auto-deploys to DigitalOcean
 ```
 
+### 🧪 Testing
+
+```bash
+# Run the full Mega QA suite (E2E + property + contracts)
+pnpm mega:qa
+
+# Quick QA run (~3 min)
+pnpm mega:qa:quick
+
+# Property-based tests only (~2s)
+pnpm test:property
+
+# Unit tests
+pnpm test
+```
+
+See `MEGA_QA.md` for full testing documentation.
+
 ---
 
 ## 📋 Current Status
