@@ -7,6 +7,7 @@
  */
 
 import { getDb } from "./db";
+import { logger } from "./_core/logger";
 
 /**
  * Execute a function within a database transaction
@@ -34,7 +35,7 @@ export async function withTransaction<T>(
     const result = await callback(db);
     return result;
   } catch (error) {
-    console.error("Transaction error:", error);
+    logger.error("Transaction error", { error });
     throw error;
   }
 }
