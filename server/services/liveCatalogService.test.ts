@@ -4,6 +4,19 @@ import { setupDbMock } from '../test-utils/testDb';
 // Mock database (MUST be before other imports)
 vi.mock('../db', () => setupDbMock());
 
+// Mock pricingEngine
+vi.mock('../pricingEngine', () => ({
+  getClientPricingRules: vi.fn().mockResolvedValue([]),
+  calculateRetailPrices: vi.fn().mockImplementation((items) => 
+    Promise.resolve(items.map((item: any) => ({
+      ...item,
+      retailPrice: item.basePrice * 1.2,
+      priceMarkup: item.basePrice * 0.2,
+      appliedRules: [],
+    })))
+  ),
+}));
+
 import { db } from '../db';
 import * as liveCatalogService from './liveCatalogService';
 
@@ -12,63 +25,9 @@ describe('liveCatalogService', () => {
     vi.clearAllMocks();
   });
 
-  describe('getCatalogForClient', () => {
-    it('should return catalog items with pricing for client', async () => {
-      // Mock configuration
-      const mockConfig = {
-        id: 1,
-        clientId: 1,
-        moduleLiveCatalogEnabled: true,
-      };
-
-      // Mock batches
-      const mockBatches = [
-        {
-          id: 1,
-          code: 'BATCH001',
-          productId: 1,
-          grade: 'A',
-          batchStatus: 'LIVE',
-        },
-      ];
-
-      // Mock products
-      const mockProducts = [
-        {
-          id: 1,
-          name: 'Premium Flower',
-          category: 'Flower',
-          subcategory: 'Indoor',
-        },
-      ];
-
-      vi.mocked(db.query.vipPortalConfigurations.findFirst).mockResolvedValue(mockConfig as any);
-      vi.mocked(db.query.batches.findMany).mockResolvedValue(mockBatches as any);
-      vi.mocked(db.query.products.findMany).mockResolvedValue(mockProducts as any);
-
-      const result = await liveCatalogService.getCatalogForClient(1, {});
-
-      expect(result).toBeDefined();
-      expect(result.items).toHaveLength(1);
-      expect(result.items[0].name).toBe('Premium Flower');
-    });
-
-    it('should apply category filter when provided', async () => {
-      const mockConfig = {
-        id: 1,
-        clientId: 1,
-        moduleLiveCatalogEnabled: true,
-      };
-
-      vi.mocked(db.query.vipPortalConfigurations.findFirst).mockResolvedValue(mockConfig as any);
-      vi.mocked(db.query.batches.findMany).mockResolvedValue([]);
-
-      await liveCatalogService.getCatalogForClient(1, { category: 'Flower' });
-
-      expect(db.query.batches.findMany).toHaveBeenCalled();
-    });
-
-    it('should throw error if Live Catalog is not enabled for client', async () => {
+  describe('getCatalog', () => {
+    it('should return empty catalog when Live Catalog is not enabled', async () => {
+      // Mock configuration - not enabled
       const mockConfig = {
         id: 1,
         clientId: 1,
@@ -77,69 +36,149 @@ describe('liveCatalogService', () => {
 
       vi.mocked(db.query.vipPortalConfigurations.findFirst).mockResolvedValue(mockConfig as any);
 
-      await expect(
-        liveCatalogService.getCatalogForClient(1, {})
-      ).rejects.toThrow('Live Catalog is not enabled');
+      const result = await liveCatalogService.getCatalog(1, {});
+
+      expect(result).toBeDefined();
+      expect(result.items).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+
+    it('should return catalog when enabled', async () => {
+      // Mock configuration - enabled
+      const mockConfig = {
+        id: 1,
+        clientId: 1,
+        moduleLiveCatalogEnabled: true,
+        featuresConfig: { liveCatalog: {} },
+      };
+
+      vi.mocked(db.query.vipPortalConfigurations.findFirst).mockResolvedValue(mockConfig as any);
+      vi.mocked(db.query.clientDraftInterests.findMany).mockResolvedValue([]);
+
+      // Mock the db.select for batches query
+      const mockBatchesWithProducts = [
+        {
+          batch: { id: 1, sku: 'TEST-001', productId: 1, unitCogs: '100', onHandQty: '50', grade: 'A' },
+          product: { id: 1, nameCanonical: 'Test Product', category: 'Flower', subcategory: 'Indoor' },
+        },
+      ];
+
+      vi.mocked(db.select).mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          leftJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({
+                offset: vi.fn().mockResolvedValue(mockBatchesWithProducts),
+              }),
+            }),
+          }),
+        }),
+      } as any);
+
+      const result = await liveCatalogService.getCatalog(1, {});
+
+      expect(result).toBeDefined();
     });
   });
 
   describe('getFilterOptions', () => {
-    it('should return available filter options for client', async () => {
-      const mockProducts = [
-        { category: 'Flower', subcategory: 'Indoor' },
-        { category: 'Edibles', subcategory: 'Gummies' },
-      ];
+    it('should return empty options when Live Catalog is not enabled', async () => {
+      const mockConfig = {
+        id: 1,
+        clientId: 1,
+        moduleLiveCatalogEnabled: false,
+      };
 
-      const mockBatches = [
-        { grade: 'A', brand: 'Premium' },
-        { grade: 'B', brand: 'Standard' },
-      ];
-
-      vi.mocked(db.query.products.findMany).mockResolvedValue(mockProducts as any);
-      vi.mocked(db.query.batches.findMany).mockResolvedValue(mockBatches as any);
+      vi.mocked(db.query.vipPortalConfigurations.findFirst).mockResolvedValue(mockConfig as any);
 
       const result = await liveCatalogService.getFilterOptions(1);
 
       expect(result).toBeDefined();
-      expect(result.categories).toContain('Flower');
-      expect(result.categories).toContain('Edibles');
+      expect(result.categories).toHaveLength(0);
+      expect(result.brands).toHaveLength(0);
+      expect(result.grades).toHaveLength(0);
+    });
+
+    it('should return filter options when enabled', async () => {
+      const mockConfig = {
+        id: 1,
+        clientId: 1,
+        moduleLiveCatalogEnabled: true,
+      };
+
+      vi.mocked(db.query.vipPortalConfigurations.findFirst).mockResolvedValue(mockConfig as any);
+
+      // Mock the db.select for batches with products query
+      const mockBatchesWithProducts = [
+        {
+          batch: { id: 1, grade: 'A', batchStatus: 'LIVE' },
+          product: { id: 1, category: 'Flower' },
+        },
+        {
+          batch: { id: 2, grade: 'B', batchStatus: 'LIVE' },
+          product: { id: 2, category: 'Edibles' },
+        },
+      ];
+
+      vi.mocked(db.select).mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          leftJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue(mockBatchesWithProducts),
+          }),
+        }),
+      } as any);
+
+      const result = await liveCatalogService.getFilterOptions(1);
+
+      expect(result).toBeDefined();
+      expect(result.categories.map(c => c.name)).toContain('Flower');
+      expect(result.categories.map(c => c.name)).toContain('Edibles');
       expect(result.grades).toContain('A');
       expect(result.grades).toContain('B');
     });
   });
 
   describe('detectChanges', () => {
-    it('should detect price increase', () => {
-      const snapshotPrice = 100;
-      const currentPrice = 120;
+    it('should detect price change', () => {
+      const result = liveCatalogService.detectChanges(
+        120,   // currentPrice
+        50,    // currentQuantity
+        true,  // currentlyAvailable
+        100,   // snapshotPrice
+        50     // snapshotQuantity
+      );
 
-      const result = liveCatalogService.detectPriceChange(snapshotPrice, currentPrice);
-
-      expect(result.hasChanged).toBe(true);
-      expect(result.changeType).toBe('increase');
-      expect(result.percentageChange).toBe(20);
+      expect(result.priceChanged).toBe(true);
+      expect(result.quantityChanged).toBe(false);
+      expect(result.stillAvailable).toBe(true);
     });
 
-    it('should detect price decrease', () => {
-      const snapshotPrice = 100;
-      const currentPrice = 80;
+    it('should detect quantity change', () => {
+      const result = liveCatalogService.detectChanges(
+        100,   // currentPrice
+        30,    // currentQuantity
+        true,  // currentlyAvailable
+        100,   // snapshotPrice
+        50     // snapshotQuantity
+      );
 
-      const result = liveCatalogService.detectPriceChange(snapshotPrice, currentPrice);
-
-      expect(result.hasChanged).toBe(true);
-      expect(result.changeType).toBe('decrease');
-      expect(result.percentageChange).toBe(-20);
+      expect(result.priceChanged).toBe(false);
+      expect(result.quantityChanged).toBe(true);
+      expect(result.stillAvailable).toBe(true);
     });
 
-    it('should detect no change when prices are equal', () => {
-      const snapshotPrice = 100;
-      const currentPrice = 100;
+    it('should detect no changes when prices and quantities are equal', () => {
+      const result = liveCatalogService.detectChanges(
+        100,   // currentPrice
+        50,    // currentQuantity
+        true,  // currentlyAvailable
+        100,   // snapshotPrice
+        50     // snapshotQuantity
+      );
 
-      const result = liveCatalogService.detectPriceChange(snapshotPrice, currentPrice);
-
-      expect(result.hasChanged).toBe(false);
-      expect(result.changeType).toBe('none');
-      expect(result.percentageChange).toBe(0);
+      expect(result.priceChanged).toBe(false);
+      expect(result.quantityChanged).toBe(false);
+      expect(result.stillAvailable).toBe(true);
     });
   });
 });

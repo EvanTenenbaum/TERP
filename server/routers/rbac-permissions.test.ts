@@ -124,24 +124,40 @@ describe("RBAC Permissions Router", () => {
         },
       ];
 
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      const mockLimit = vi.fn().mockReturnThis();
-      const mockOffset = vi.fn().mockResolvedValue(mockPermissions);
+      const mockRoleCounts: { permissionId: number; count: number }[] = [];
 
-      vi.mocked(db.select).mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
-        limit: mockLimit,
-        offset: mockOffset,
-      } as any);
+      let callCount = 0;
+      vi.mocked(db.select).mockImplementation(() => {
+        callCount++;
+        const mockFrom = vi.fn().mockReturnThis();
+        const mockWhere = vi.fn().mockReturnThis();
+        const mockLimit = vi.fn().mockReturnThis();
+        const mockOffset = vi.fn();
+        const mockGroupBy = vi.fn();
+
+        if (callCount === 1) {
+          // First call: get permissions
+          mockOffset.mockResolvedValue(mockPermissions);
+        } else {
+          // Second call: get role counts
+          mockGroupBy.mockResolvedValue(mockRoleCounts);
+        }
+
+        return {
+          from: mockFrom,
+          where: mockWhere,
+          limit: mockLimit,
+          offset: mockOffset,
+          groupBy: mockGroupBy,
+        } as any;
+      });
 
       // Act
-      await caller.rbacPermissions.list({ module: "orders" });
+      const result = await caller.rbacPermissions.list({ module: "orders" });
 
       // Assert
-      expect(mockWhere).toHaveBeenCalled();
+      expect(result.permissions.length).toBe(1);
+      expect(result.permissions[0].name).toBe("orders:create");
     });
 
     it("should filter permissions by search term", async () => {
@@ -163,16 +179,33 @@ describe("RBAC Permissions Router", () => {
         },
       ];
 
-      const mockSelect = vi.fn().mockReturnThis();
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockLimit = vi.fn().mockReturnThis();
-      const mockOffset = vi.fn().mockResolvedValue(mockPermissions);
+      const mockRoleCounts: { permissionId: number; count: number }[] = [];
 
-      vi.mocked(db.select).mockReturnValue({
-        from: mockFrom,
-        limit: mockLimit,
-        offset: mockOffset,
-      } as any);
+      let callCount = 0;
+      vi.mocked(db.select).mockImplementation(() => {
+        callCount++;
+        const mockFrom = vi.fn().mockReturnThis();
+        const mockWhere = vi.fn().mockReturnThis();
+        const mockLimit = vi.fn().mockReturnThis();
+        const mockOffset = vi.fn();
+        const mockGroupBy = vi.fn();
+
+        if (callCount === 1) {
+          // First call: get permissions
+          mockOffset.mockResolvedValue(mockPermissions);
+        } else {
+          // Second call: get role counts
+          mockGroupBy.mockResolvedValue(mockRoleCounts);
+        }
+
+        return {
+          from: mockFrom,
+          where: mockWhere,
+          limit: mockLimit,
+          offset: mockOffset,
+          groupBy: mockGroupBy,
+        } as any;
+      });
 
       // Act
       const result = await caller.rbacPermissions.list({ search: "orders" });
@@ -308,7 +341,8 @@ describe("RBAC Permissions Router", () => {
       } as any);
 
       const mockInsert = vi.fn().mockReturnThis();
-      const mockValues = vi.fn().mockResolvedValue({ insertId: 100 });
+      // Router expects array format: [{ insertId: number }]
+      const mockValues = vi.fn().mockResolvedValue([{ insertId: 100 }]);
 
       vi.mocked(db.insert).mockReturnValue({
         values: mockValues,

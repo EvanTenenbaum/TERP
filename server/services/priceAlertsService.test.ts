@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getDb } from '../db';
 import * as priceAlertsService from './priceAlertsService';
-import { calculateRetailPrice } from '../pricingEngine';
+import { calculateRetailPrice, getClientPricingRules } from '../pricingEngine';
 
 // Mock getDb
 vi.mock('../db', () => ({
@@ -11,6 +11,7 @@ vi.mock('../db', () => ({
 // Mock pricing engine
 vi.mock('../pricingEngine', () => ({
   calculateRetailPrice: vi.fn(),
+  getClientPricingRules: vi.fn().mockResolvedValue([]),
 }));
 
 describe('priceAlertsService', () => {
@@ -64,21 +65,9 @@ describe('priceAlertsService', () => {
       // Mock no existing alert
       mockDb.query.clientPriceAlerts.findFirst.mockResolvedValue(null);
       
-      // Mock insert returning new alert
-      const mockAlert = {
-        id: 1,
-        clientId: 1,
-        batchId: 1,
-        targetPrice: 90,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
+      // Mock insert - service expects array format: [{ insertId: number }]
       mockDb.insert.mockReturnValue({
-        values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([mockAlert]),
-        }),
+        values: vi.fn().mockResolvedValue([{ insertId: 1 }]),
       });
 
       const result = await priceAlertsService.createPriceAlert(1, 1, 90);
@@ -106,11 +95,11 @@ describe('priceAlertsService', () => {
           id: 1,
           clientId: 1,
           batchId: 1,
-          targetPrice: 110,
+          targetPrice: '110',  // String as returned from DB
           clientName: 'Test Client',
           clientEmail: 'test@example.com',
           productName: 'Test Product',
-          basePrice: 100,
+          unitCogs: '100',
         },
       ];
 
@@ -127,7 +116,7 @@ describe('priceAlertsService', () => {
       });
 
       // Mock pricing engine to return price below target
-      vi.mocked(calculateRetailPrice).mockResolvedValue(95);
+      vi.mocked(calculateRetailPrice).mockResolvedValue({ retailPrice: 95 } as any);
 
       const triggeredAlerts = await priceAlertsService.checkPriceAlerts();
 
@@ -143,11 +132,11 @@ describe('priceAlertsService', () => {
           id: 1,
           clientId: 1,
           batchId: 1,
-          targetPrice: 80,
+          targetPrice: '80',  // String as returned from DB
           clientName: 'Test Client',
           clientEmail: 'test@example.com',
           productName: 'Test Product',
-          basePrice: 100,
+          unitCogs: '100',
         },
       ];
 
@@ -164,7 +153,7 @@ describe('priceAlertsService', () => {
       });
 
       // Mock pricing engine to return price above target
-      vi.mocked(calculateRetailPrice).mockResolvedValue(100);
+      vi.mocked(calculateRetailPrice).mockResolvedValue({ retailPrice: 100 } as any);
 
       const triggeredAlerts = await priceAlertsService.checkPriceAlerts();
 
