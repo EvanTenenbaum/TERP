@@ -33,8 +33,10 @@ pnpm mega:qa:ci
 | **Security**      | 10    | Auth, RBAC, XSS/SQLi protection                      |
 | **Concurrency**   | 6     | Race conditions, parallel user sessions              |
 | **Visual**        | 14    | Visual regression snapshots                          |
+| **Property**      | 231   | Business logic invariants (fast-check fuzzing)       |
+| **Contract**      | TBD   | API schema validation                                |
 
-**Total: 175 E2E tests + 17 unit tests (contracts + property-based)**
+**Total: 175 E2E tests + 231 property tests**
 
 ---
 
