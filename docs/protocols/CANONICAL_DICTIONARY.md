@@ -164,12 +164,16 @@ expenses.vendorId → vendors.id        // Will become supplierClientId → clie
 
 ### Phase 1: Vendor Migration (Current)
 
-**Status**: In Progress
+**Status**: Complete ✅
 
 1. Create `supplier_profiles` table ✅
-2. Migrate vendors to clients with `isSeller=true`
-3. Create supplier profile for each migrated vendor
-4. Update FK references to use `clients.id`
+2. Migrate vendors to clients with `isSeller=true` ✅
+3. Create supplier profile for each migrated vendor ✅
+4. Update FK references to use `clients.id` ✅
+5. Backend: vendors router facades over clients table ✅
+6. Frontend: /vendors routes redirect to /clients?clientTypes=seller ✅
+7. Frontend: PurchaseOrdersPage uses clients with supplierClientId ✅
+8. Frontend: "Vendor" terminology updated to "Supplier" ✅
 
 ### Phase 2: Column Normalization (Planned)
 
