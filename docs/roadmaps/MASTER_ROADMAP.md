@@ -2175,6 +2175,70 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 
 ---
 
+### BUG-026: Fix Pino Logger API Signature Errors (87 TypeScript Errors)
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 4h  
+**Module:** Multiple server files (22 files affected)  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/BUG-026.md`
+
+**Problem:** 87 TypeScript errors (84 TS2769, 2 TS2353, 1 TS2339) across the codebase. The majority (97%) are caused by incorrect Pino logger API usage - passing context object as second argument instead of first.
+
+**Root Cause:** Pino logger expects `logger.error({ context }, "message")` but code uses `logger.error("message", { context })`.
+
+**Affected Files (by error count):**
+
+- `server/transactionsDb.ts` (11 errors)
+- `server/vendorSupplyDb.ts` (10 errors)
+- `server/paymentMethodsDb.ts` (10 errors)
+- `server/productIntakeDb.ts` (9 errors)
+- `server/transactionHooks.ts` (6 errors)
+- `server/needsMatchingService.ts` (6 errors)
+- `server/strainMatcher.ts` (5 errors)
+- `server/sequenceDb.ts` (5 errors)
+- `server/orderEnhancements.ts` (4 errors)
+- `server/autoMigrate.ts` (4 errors)
+- `server/productRecommendations.ts` (3 errors)
+- Plus 11 more files with 1-2 errors each
+- `client/src/components/vip-portal/MarketplaceNeeds.tsx` (1 error - TS2353)
+- `client/src/components/vip-portal/MarketplaceSupply.tsx` (1 error - TS2353)
+- `client/src/pages/Settings.tsx` (1 error - TS2339)
+
+**Objectives:**
+
+- Fix all 84 Pino logger API signature errors by swapping argument order
+- Fix 2 VIP Portal type errors (clientId property mismatch)
+- Fix 1 Settings page type error (message property on never type)
+- Achieve zero TypeScript errors in codebase
+- Ensure all affected files pass TypeScript strict mode checks
+
+**Deliverables:**
+
+- [ ] Fix logger calls in all 19 server files (swap argument order)
+- [ ] Fix VIP Portal MarketplaceNeeds.tsx type error
+- [ ] Fix VIP Portal MarketplaceSupply.tsx type error
+- [ ] Fix Settings.tsx type error
+- [ ] Run `npx tsc --noEmit` and verify 0 errors
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+**Fix Pattern:**
+
+```typescript
+// ❌ Before (wrong)
+logger.error("Error message", { error: unknown });
+
+// ✅ After (correct Pino API)
+logger.error({ err: error }, "Error message");
+```
+
+**Note:** This task complements QUAL-001 (Standardize Error Handling) but focuses specifically on fixing the TypeScript compilation errors caused by incorrect API usage.
+
+---
+
 ### ST-005: Add Missing Database Indexes
 
 **Status:** complete  
