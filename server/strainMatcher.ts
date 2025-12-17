@@ -19,6 +19,7 @@ import { strains } from "../drizzle/schema";
 import { eq, sql, like, or } from "drizzle-orm";
 import { generateStrainULID } from "./ulid";
 import { extractBaseStrainName, suggestParentStrain } from "./strainFamilyDetector";
+import { logger } from "./_core/logger";
 
 /**
  * Normalize strain name for matching
@@ -181,7 +182,7 @@ export async function findExactStrainMatch(inputName: string): Promise<StrainMat
     
     return null;
   } catch (error) {
-    console.error('Error finding exact strain match:', error);
+    logger.error("Error finding exact strain match", { error });
     throw error;
   }
 }
@@ -245,7 +246,7 @@ export async function findFuzzyStrainMatches(
     
     return matches.slice(0, limit);
   } catch (error) {
-    console.error('Error finding fuzzy strain matches:', error);
+    logger.error("Error finding fuzzy strain matches", { error });
     throw error;
   }
 }
@@ -290,7 +291,7 @@ export async function matchStrainForAssignment(
     // No matches found, suggest creating new strain
     return { action: 'create', normalized: normalizeStrainName(inputName) };
   } catch (error) {
-    console.error('Error matching strain for assignment:', error);
+    logger.error("Error matching strain for assignment", { error });
     throw error;
   }
 }
@@ -342,7 +343,7 @@ export async function searchStrains(
     
     return matches.slice(0, limit);
   } catch (error) {
-    console.error('Error searching strains:', error);
+    logger.error("Error searching strains", { error });
     throw error;
   }
 }
@@ -482,7 +483,7 @@ export async function getOrCreateStrain(
       matches: [],
     };
   } catch (error) {
-    console.error('Error getting or creating strain:', error);
+    logger.error("Error getting or creating strain", { error });
     throw new Error(`Failed to process strain: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
