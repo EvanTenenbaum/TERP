@@ -2,6 +2,7 @@ import { getDb } from "./db";
 import { strains } from "../drizzle/schema";
 import * as fs from "fs";
 import * as path from "path";
+import { logger } from "./_core/logger";
 
 interface StrainCSVRow {
   id: string;
@@ -19,7 +20,7 @@ export async function seedStrainsFromCSV() {
   const csvPath = "/home/ubuntu/cannabis-dataset/Dataset/Strains/strains-kushy_api.2017-11-14.csv";
   
   if (!fs.existsSync(csvPath)) {
-    console.error("CSV file not found:", csvPath);
+    logger.error("CSV file not found", { csvPath });
     return { success: false, message: "CSV file not found" };
   }
 
