@@ -5,6 +5,7 @@
 
 import * as clientsDb from "./clientsDb";
 import type { Invoice, Payment } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 /**
  * Fetch actual client names for customer IDs and return as a Map
@@ -22,7 +23,7 @@ export async function fetchClientNamesMap(
           clientMap.set(customerId, client.name);
         }
       } catch (error) {
-        console.error(`Failed to fetch client ${customerId}:`, error);
+        logger.error("Failed to fetch client", { customerId, error });
       }
     })
   );
