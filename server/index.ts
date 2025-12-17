@@ -130,4 +130,6 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((error) => {
+  console.error("Server startup failed:", error);
+});

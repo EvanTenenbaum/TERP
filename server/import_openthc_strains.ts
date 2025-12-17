@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { logger } from "./_core/logger";
 
 // ES module compatibility
 const __filename = fileURLToPath(import.meta.url);
@@ -69,7 +70,7 @@ export async function importOpenTHCStrainsFromJSON() {
   }
   
   if (!jsonPath) {
-    console.error("OpenTHC strains JSON file not found in any of these paths:", possiblePaths);
+    logger.error("OpenTHC strains JSON file not found", { possiblePaths });
     return { success: false, message: "JSON file not found", imported: 0, skipped: 0 };
   }
 
@@ -133,7 +134,7 @@ export async function importOpenTHCStrainsFromJSON() {
         strainsToInsert.length = 0; // Clear array
       }
     } catch (error) {
-      console.error(`Error processing strain: ${strain.name}`, error);
+      logger.error("Error processing strain", { strainName: strain.name, error });
       skippedCount++;
       continue;
     }
