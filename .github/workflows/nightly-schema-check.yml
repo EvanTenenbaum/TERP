@@ -67,8 +67,8 @@ jobs:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
         run: pnpm db:push
 
-      - name: Run schema validation
-        id: validate
+      - name: Run schema validation (test DB)
+        id: validate_test
         env:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
         run: |
@@ -79,12 +79,85 @@ jobs:
 
           if [ -f schema-validation-report.json ]; then
             TOTAL_ISSUES=$(jq '.totalIssues // 0' schema-validation-report.json)
-            echo "total_issues=$TOTAL_ISSUES" >> $GITHUB_OUTPUT
+            echo "test_issues=$TOTAL_ISSUES" >> $GITHUB_OUTPUT
           else
-            echo "total_issues=-1" >> $GITHUB_OUTPUT
+            echo "test_issues=-1" >> $GITHUB_OUTPUT
           fi
 
-          echo "exit_code=$VALIDATION_EXIT" >> $GITHUB_OUTPUT
+          echo "test_exit_code=$VALIDATION_EXIT" >> $GITHUB_OUTPUT
+
+      - name: Run schema drift detection v2 (test DB)
+        id: drift_test
+        env:
+          DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
+        run: |
+          set +e
+          pnpm audit:schema-drift
+          DRIFT_EXIT=$?
+          set -e
+
+          if [ -f docs/audits/schema-drift-v2.json ]; then
+            DRIFT_ISSUES=$(jq '.totalIssues // 0' docs/audits/schema-drift-v2.json)
+            CRITICAL=$(jq '.criticalIssues // 0' docs/audits/schema-drift-v2.json)
+            HIGH=$(jq '.highIssues // 0' docs/audits/schema-drift-v2.json)
+            echo "drift_issues=$DRIFT_ISSUES" >> $GITHUB_OUTPUT
+            echo "critical_issues=$CRITICAL" >> $GITHUB_OUTPUT
+            echo "high_issues=$HIGH" >> $GITHUB_OUTPUT
+          else
+            echo "drift_issues=-1" >> $GITHUB_OUTPUT
+            echo "critical_issues=0" >> $GITHUB_OUTPUT
+            echo "high_issues=0" >> $GITHUB_OUTPUT
+          fi
+
+          echo "drift_exit_code=$DRIFT_EXIT" >> $GITHUB_OUTPUT
+
+      # Production comparison (if secrets available)
+      - name: Run schema drift detection (production DB)
+        id: drift_prod
+        if: ${{ secrets.PROD_DATABASE_URL != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          set +e
+          echo "🔍 Comparing against PRODUCTION database..."
+          pnpm audit:schema-drift --strict 2>&1 | tee prod-drift-output.txt
+          DRIFT_EXIT=$?
+          set -e
+
+          # Rename report to distinguish from test
+          if [ -f docs/audits/schema-drift-v2.json ]; then
+            mv docs/audits/schema-drift-v2.json docs/audits/schema-drift-v2-prod.json
+            PROD_ISSUES=$(jq '.totalIssues // 0' docs/audits/schema-drift-v2-prod.json)
+            PROD_CRITICAL=$(jq '.criticalIssues // 0' docs/audits/schema-drift-v2-prod.json)
+            echo "prod_issues=$PROD_ISSUES" >> $GITHUB_OUTPUT
+            echo "prod_critical=$PROD_CRITICAL" >> $GITHUB_OUTPUT
+          else
+            echo "prod_issues=-1" >> $GITHUB_OUTPUT
+            echo "prod_critical=0" >> $GITHUB_OUTPUT
+          fi
+
+          echo "prod_exit_code=$DRIFT_EXIT" >> $GITHUB_OUTPUT
+
+      - name: Combine validation results
+        id: validate
+        run: |
+          TEST_ISSUES="${{ steps.validate_test.outputs.test_issues }}"
+          DRIFT_ISSUES="${{ steps.drift_test.outputs.drift_issues }}"
+          PROD_ISSUES="${{ steps.drift_prod.outputs.prod_issues || '0' }}"
+          
+          TOTAL=$((TEST_ISSUES + DRIFT_ISSUES + PROD_ISSUES))
+          echo "total_issues=$TOTAL" >> $GITHUB_OUTPUT
+          
+          # Fail if any critical issues in production
+          PROD_CRITICAL="${{ steps.drift_prod.outputs.prod_critical || '0' }}"
+          if [ "$PROD_CRITICAL" -gt 0 ]; then
+            echo "❌ CRITICAL: Production schema drift detected!"
+            echo "exit_code=2" >> $GITHUB_OUTPUT
+          elif [ "$TOTAL" -gt 0 ]; then
+            echo "exit_code=1" >> $GITHUB_OUTPUT
+          else
+            echo "exit_code=0" >> $GITHUB_OUTPUT
+          fi
 
       - name: Upload validation report
         if: always()
@@ -94,6 +167,9 @@ jobs:
           path: |
             schema-validation-report.json
             SCHEMA_VALIDATION_REPORT.md
+            docs/audits/schema-drift-v2.json
+            docs/audits/schema-drift-v2-prod.json
+            prod-drift-output.txt
           retention-days: 30
 
       - name: Create issue on failure
@@ -102,8 +178,17 @@ jobs:
         with:
           script: |
             const totalIssues = '${{ steps.validate.outputs.total_issues }}';
+            const testIssues = '${{ steps.validate_test.outputs.test_issues }}';
+            const driftIssues = '${{ steps.drift_test.outputs.drift_issues }}';
+            const criticalIssues = '${{ steps.drift_test.outputs.critical_issues }}';
+            const highIssues = '${{ steps.drift_test.outputs.high_issues }}';
+            const prodIssues = '${{ steps.drift_prod.outputs.prod_issues || 'N/A' }}';
+            const prodCritical = '${{ steps.drift_prod.outputs.prod_critical || '0' }}';
             const runId = '${{ github.run_id }}';
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
+            const isProdDrift = prodCritical !== '0' && prodCritical !== 'N/A';
+            const severity = isProdDrift ? '🔴 PRODUCTION DRIFT' : (criticalIssues !== '0' ? '🔴 CRITICAL' : '🟠 HIGH');
 
             // Check if there's already an open issue for schema drift
             const issues = await github.rest.issues.listForRepo({
@@ -113,6 +198,58 @@ jobs:
               state: 'open'
             });
 
+            const issueBody = `## ${severity} Schema Drift Detected
+
+The nightly schema validation has detected drift between the Drizzle schema and the database.
+
+**Date:** ${new Date().toISOString()}
+**Workflow Run:** [View Details](${runUrl})
+
+### Issue Summary
+
+| Check | Issues |
+|-------|--------|
+| Schema Validation (test) | ${testIssues} |
+| Drift Detection v2 (test) | ${driftIssues} |
+| Production Drift | ${prodIssues} |
+| **Total** | **${totalIssues}** |
+
+### Severity Breakdown
+- 🔴 Critical: ${criticalIssues}
+- 🟠 High: ${highIssues}
+- Production Critical: ${prodCritical}
+
+${isProdDrift ? `
+### ⚠️ PRODUCTION DATABASE AFFECTED
+
+The production database schema does not match the Drizzle schema definition.
+This requires immediate attention!
+` : ''}
+
+## Action Required
+
+1. Download the validation reports from the workflow artifacts
+2. Review \`schema-drift-v2.json\` for detailed issue breakdown
+3. ${isProdDrift ? 'URGENT: Review `schema-drift-v2-prod.json` for production issues' : 'Identify the source of the drift'}
+4. Create appropriate migration: \`pnpm db:generate\`
+5. Verify locally: \`pnpm audit:schema-drift\`
+
+## Commands
+
+\`\`\`bash
+# Check schema drift locally
+pnpm audit:schema-drift
+
+# Strict mode (fails on any issue)
+pnpm audit:schema-drift:strict
+
+# Get fix suggestions
+pnpm audit:schema-drift:fix
+\`\`\`
+
+---
+*This issue was automatically created by the nightly schema validation workflow.*`;
+
             if (issues.data.length > 0) {
               // Update existing issue
               const issue = issues.data[0];
@@ -120,41 +257,20 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                body: `## 🚨 Schema Drift Still Detected
-
-                **Date:** ${new Date().toISOString()}
-                **Issues Found:** ${totalIssues}
-                **Workflow Run:** [View Details](${runUrl})
-
-                Please investigate and resolve the schema drift.`
+                body: issueBody
               });
             } else {
               // Create new issue
+              const labels = ['schema-drift', 'database'];
+              if (isProdDrift || criticalIssues !== '0') {
+                labels.push('critical');
+              }
+              
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: '🚨 Schema Drift Detected - Nightly Check',
-                labels: ['schema-drift', 'critical', 'database'],
-                body: `## Schema Drift Detected
-
-                The nightly schema validation has detected drift between the Drizzle schema and the database.
-
-                **Date:** ${new Date().toISOString()}
-                **Issues Found:** ${totalIssues}
-                **Workflow Run:** [View Details](${runUrl})
-
-                ## Action Required
-
-                1. Download the validation report from the workflow artifacts
-                2. Identify the source of the drift
-                3. Create appropriate migration or schema fix
-                4. Verify with \`pnpm validate:schema\` locally
-
-                ## Escalation
-
-                If not resolved within 24 hours, escalate to the database team.
-
-                ---
-                *This issue was automatically created by the nightly schema validation workflow.*`
+                title: `${severity} Schema Drift Detected - Nightly Check`,
+                labels: labels,
+                body: issueBody
               });
             }

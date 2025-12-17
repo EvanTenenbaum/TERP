@@ -1,6 +1,22 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Check for schema changes without migrations
+if git diff --cached --name-only | grep -q "drizzle/schema.ts"; then
+  if ! git diff --cached --name-only | grep -q "drizzle/migrations/"; then
+    echo ""
+    echo "⚠️  WARNING: drizzle/schema.ts changed but no migration file found!"
+    echo ""
+    echo "   If you modified the database schema, you need to generate a migration:"
+    echo "   $ pnpm db:generate"
+    echo ""
+    echo "   If this is a non-breaking change (comments, types only), you can skip with:"
+    echo "   $ git commit --no-verify"
+    echo ""
+    # Don't block, just warn (some schema changes don't need migrations)
+  fi
+fi
+
 # Run QA standards check first
 .husky/pre-commit-qa-check.sh || exit 1
 
