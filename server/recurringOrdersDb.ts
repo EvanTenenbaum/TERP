@@ -1,6 +1,7 @@
 import { eq, and, lte, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { recurringOrders, clients, users } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 /**
  * Create a recurring order
@@ -46,7 +47,11 @@ export async function createRecurringOrder(data: {
 
     return { success: true, recurringOrderId: result.insertId };
   } catch (error) {
-    console.error("Error creating recurring order:", error);
+    logger.error({
+      msg: "Error creating recurring order",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -108,7 +113,11 @@ export async function updateRecurringOrder(
 
     return { success: true };
   } catch (error) {
-    console.error("Error updating recurring order:", error);
+    logger.error({
+      msg: "Error updating recurring order",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -128,7 +137,11 @@ export async function pauseRecurringOrder(recurringOrderId: number) {
 
     return { success: true };
   } catch (error) {
-    console.error("Error pausing recurring order:", error);
+    logger.error({
+      msg: "Error pausing recurring order",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -168,7 +181,11 @@ export async function resumeRecurringOrder(recurringOrderId: number) {
 
     return { success: true };
   } catch (error) {
-    console.error("Error resuming recurring order:", error);
+    logger.error({
+      msg: "Error resuming recurring order",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -188,7 +205,11 @@ export async function cancelRecurringOrder(recurringOrderId: number) {
 
     return { success: true };
   } catch (error) {
-    console.error("Error cancelling recurring order:", error);
+    logger.error({
+      msg: "Error cancelling recurring order",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -219,7 +240,11 @@ export async function getDueRecurringOrders() {
 
     return { success: true, dueOrders };
   } catch (error) {
-    console.error("Error getting due recurring orders:", error);
+    logger.error({
+      msg: "Error getting due recurring orders",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -259,7 +284,11 @@ export async function markRecurringOrderGenerated(recurringOrderId: number) {
 
     return { success: true, nextGenerationDate };
   } catch (error) {
-    console.error("Error marking recurring order as generated:", error);
+    logger.error({
+      msg: "Error marking recurring order as generated",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -280,7 +309,11 @@ export async function listRecurringOrdersForClient(clientId: number) {
 
     return { success: true, orders };
   } catch (error) {
-    console.error("Error listing recurring orders for client:", error);
+    logger.error({
+      msg: "Error listing recurring orders for client",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -308,7 +341,11 @@ export async function listAllRecurringOrders(status?: string) {
 
     return { success: true, orders };
   } catch (error) {
-    console.error("Error listing all recurring orders:", error);
+    logger.error({
+      msg: "Error listing all recurring orders",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

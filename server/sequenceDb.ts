@@ -12,6 +12,7 @@
 import { getDb } from "./db";
 import { sequences, type Sequence } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "./_core/logger";
 
 /**
  * Get the next sequence value atomically
@@ -58,7 +59,7 @@ export async function getNextSequence(
 
     return result;
   } catch (error) {
-    console.error(`Error getting next sequence for '${sequenceName}':`, error);
+    logger.error("Error getting next sequence", { sequenceName, error });
     throw new Error(
       `Failed to generate sequence: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -86,7 +87,7 @@ export async function getCurrentSequence(
 
     return sequence || null;
   } catch (error) {
-    console.error(`Error fetching sequence '${sequenceName}':`, error);
+    logger.error("Error fetching sequence", { sequenceName, error });
     throw new Error(
       `Failed to fetch sequence: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -145,7 +146,7 @@ export async function initializeSequence(
       return sequence;
     }
   } catch (error) {
-    console.error(`Error initializing sequence '${sequenceName}':`, error);
+    logger.error("Error initializing sequence", { sequenceName, error });
     throw new Error(
       `Failed to initialize sequence: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -172,7 +173,7 @@ export async function resetSequence(
       .set({ currentValue: newValue })
       .where(eq(sequences.name, sequenceName));
   } catch (error) {
-    console.error(`Error resetting sequence '${sequenceName}':`, error);
+    logger.error("Error resetting sequence", { sequenceName, error });
     throw new Error(
       `Failed to reset sequence: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -191,7 +192,7 @@ export async function getAllSequences(): Promise<Sequence[]> {
     const allSequences = await db.select().from(sequences);
     return allSequences;
   } catch (error) {
-    console.error("Error fetching all sequences:", error);
+    logger.error("Error fetching all sequences", { error });
     throw new Error(
       `Failed to fetch sequences: ${error instanceof Error ? error.message : "Unknown error"}`
     );

@@ -9,6 +9,7 @@ import { logger } from "./logger";
  */
 
 let pool: mysql.Pool | null = null;
+let statsInterval: NodeJS.Timeout | null = null;
 
 export interface PoolConfig {
   connectionLimit?: number;
@@ -49,9 +50,10 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
     hasSSLParam: databaseUrl.includes('ssl-mode') || databaseUrl.includes('sslmode'),
   });
 
+  // REL-004: Increased pool size for production load
   const defaultConfig: PoolConfig = {
-    connectionLimit: 10, // Maximum number of connections in pool
-    queueLimit: 0, // Unlimited queue
+    connectionLimit: 25, // Maximum number of connections in pool (increased for production load)
+    queueLimit: 100, // Bounded queue to prevent unbounded memory growth
     waitForConnections: true, // Wait for available connection
     enableKeepAlive: true, // Keep connections alive
     keepAliveInitialDelay: 0, // Start keep-alive immediately
@@ -123,7 +125,8 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
     });
 
   // Log pool statistics periodically (every 5 minutes)
-  setInterval(() => {
+  // REL-003: Store interval reference for cleanup on pool close
+  statsInterval = setInterval(() => {
     if (pool) {
       logger.info({
         msg: "Connection pool statistics",
@@ -143,11 +146,18 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
  * Close the connection pool gracefully
  */
 export async function closeConnectionPool(): Promise<void> {
+  // REL-003: Clear the stats interval to prevent memory leak
+  if (statsInterval) {
+    clearInterval(statsInterval);
+    statsInterval = null;
+    logger.info({ msg: "Stats interval cleared" });
+  }
+
   if (pool) {
-    logger.info("Closing MySQL connection pool");
+    logger.info({ msg: "Closing MySQL connection pool" });
     await pool.end();
     pool = null;
-    logger.info("MySQL connection pool closed");
+    logger.info({ msg: "MySQL connection pool closed" });
   }
 }
 

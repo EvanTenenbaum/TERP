@@ -2,6 +2,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { orders, clients } from "../drizzle/schema";
 import type { Match } from "./matchingEngine";
+import { logger } from "./_core/logger";
 
 /**
  * Purchase pattern analysis result
@@ -112,7 +113,12 @@ export async function analyzeClientPurchaseHistory(
 
     return patterns;
   } catch (error) {
-    console.error("Error analyzing client purchase history:", error);
+    logger.error({
+      msg: "Error analyzing client purchase history",
+      clientId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to analyze purchase history: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -220,7 +226,12 @@ export async function findHistoricalBuyers(
 
     return matches;
   } catch (error) {
-    console.error("Error finding historical buyers:", error);
+    logger.error({
+      msg: "Error finding historical buyers",
+      batchData,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to find historical buyers: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -285,7 +296,12 @@ export async function getLapsedBuyers(daysThreshold: number = 90): Promise<
 
     return lapsedBuyers;
   } catch (error) {
-    console.error("Error getting lapsed buyers:", error);
+    logger.error({
+      msg: "Error getting lapsed buyers",
+      daysThreshold,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to get lapsed buyers: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -344,7 +360,12 @@ export async function getProactiveOpportunities(
 
     return opportunities;
   } catch (error) {
-    console.error("Error getting proactive opportunities:", error);
+    logger.error({
+      msg: "Error getting proactive opportunities",
+      daysThreshold,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to get proactive opportunities: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -537,7 +558,14 @@ export async function predictReorder(
       reasons,
     };
   } catch (error) {
-    console.error("Error predicting reorder:", error);
+    logger.error({
+      msg: "Error predicting reorder",
+      clientId,
+      strain,
+      category,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return null;
   }
 }
@@ -590,7 +618,13 @@ export async function getPredictiveReorderOpportunities(
 
     return predictions;
   } catch (error) {
-    console.error("Error getting predictive reorder opportunities:", error);
+    logger.error({
+      msg: "Error getting predictive reorder opportunities",
+      lookAheadDays,
+      minOrderCount,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to get predictive reorder opportunities: ${error instanceof Error ? error.message : "Unknown error"}`
     );

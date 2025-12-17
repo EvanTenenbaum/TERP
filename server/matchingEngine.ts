@@ -8,6 +8,7 @@ import {
   normalizeCategory,
 } from "./utils/strainAliases";
 import { findHistoricalBuyers } from "./historicalAnalysis";
+import { logger } from "./_core/logger";
 
 /**
  * Match types and confidence levels
@@ -303,7 +304,12 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
         }
       } catch (error) {
         // Don't fail the whole match if historical fails
-        console.error("Error finding historical matches:", error);
+        logger.error({
+          msg: "Error finding historical matches",
+          needId,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
       }
     }
 
@@ -316,7 +322,12 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
       matches,
     };
   } catch (error) {
-    console.error("Error finding matches for need:", error);
+    logger.error({
+      msg: "Error finding matches for need",
+      needId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to find matches: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -386,7 +397,12 @@ export async function findBuyersForInventory(
 
     return results;
   } catch (error) {
-    console.error("Error finding buyers for inventory:", error);
+    logger.error({
+      msg: "Error finding buyers for inventory",
+      batchId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to find buyers: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -456,7 +472,12 @@ export async function findBuyersForVendorSupply(
 
     return results;
   } catch (error) {
-    console.error("Error finding buyers for vendor supply:", error);
+    logger.error({
+      msg: "Error finding buyers for vendor supply",
+      supplyId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to find buyers: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -496,7 +517,11 @@ export async function getAllActiveNeedsWithMatches(): Promise<MatchResult[]> {
 
     return results;
   } catch (error) {
-    console.error("Error getting all active needs with matches:", error);
+    logger.error({
+      msg: "Error getting all active needs with matches",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
       `Failed to get active needs with matches: ${error instanceof Error ? error.message : "Unknown error"}`
     );

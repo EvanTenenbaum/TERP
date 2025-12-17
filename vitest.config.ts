@@ -15,12 +15,16 @@ export default defineConfig({
       "client/**/*.test.{ts,tsx}",
       "client/**/*.spec.{ts,tsx}",
       "scripts/**/*.test.ts",
+      "tests/property/**/*.test.ts",
+      "tests/contracts/**/*.test.ts",
     ],
     environmentMatchGlobs: [
-      ['server/**/*.test.ts', 'node'],
-      ['server/**/*.spec.ts', 'node'],
-      ['client/**/*.test.{ts,tsx}', 'jsdom'],
-      ['client/**/*.spec.{ts,tsx}', 'jsdom'],
+      ["server/**/*.test.ts", "node"],
+      ["server/**/*.spec.ts", "node"],
+      ["client/**/*.test.{ts,tsx}", "jsdom"],
+      ["client/**/*.spec.{ts,tsx}", "jsdom"],
+      ["tests/property/**/*.test.ts", "node"],
+      ["tests/contracts/**/*.test.ts", "node"],
     ],
     setupFiles: ["./tests/setup.ts"],
     coverage: {
@@ -44,4 +48,3 @@ export default defineConfig({
     },
   },
 });
-

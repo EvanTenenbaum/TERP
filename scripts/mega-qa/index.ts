@@ -20,7 +20,7 @@
  */
 
 import { execSync, spawnSync } from "child_process";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { existsSync } from "fs";
 import type {
   MegaQAConfig,
   MegaQAReportBundle,
@@ -40,6 +40,7 @@ import {
   printCoverageReport,
   writeRequiredTagsFile,
 } from "./coverage/contract";
+import { runPlaywrightSuite, runVitestSuite as runVitestSuiteExternal } from "./runners";
 
 // ============================================================================
 // CLI Argument Parsing
@@ -216,19 +217,10 @@ function runPreflight(config: MegaQAConfig): boolean {
 }
 
 // ============================================================================
-// Suite Runners
+// Suite Runners (Inline for unit mode)
 // ============================================================================
 
-interface TestResult {
-  testsRun: number;
-  testsPassed: number;
-  testsFailed: number;
-  testsSkipped: number;
-  durationMs: number;
-  output: string;
-}
-
-function runVitestSuite(): { result: SuiteResult; failures: Failure[] } {
+function runAllUnitTests(): { result: SuiteResult; failures: Failure[] } {
   console.log("\n🧪 Running Unit Tests (Vitest)...");
 
   const startTime = Date.now();
@@ -237,10 +229,9 @@ function runVitestSuite(): { result: SuiteResult; failures: Failure[] } {
   const failures: Failure[] = [];
 
   try {
-    // Run vitest with default reporter (not JSON) for better parsing
     output = execSync("pnpm test 2>&1", {
       encoding: "utf-8",
-      maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+      maxBuffer: 50 * 1024 * 1024,
     });
   } catch (error: any) {
     output = error.stdout || error.stderr || error.message || "";
@@ -248,8 +239,7 @@ function runVitestSuite(): { result: SuiteResult; failures: Failure[] } {
 
   const durationMs = Date.now() - startTime;
 
-  // Parse from text output - look for the summary line like:
-  // "Tests  12 failed | 1121 passed | 72 skipped | 7 todo (1212)"
+  // Parse summary line: "Tests  12 failed | 1121 passed | 72 skipped"
   const summaryMatch = output.match(/Tests\s+(?:(\d+)\s+failed\s+\|\s+)?(\d+)\s+passed(?:\s+\|\s+(\d+)\s+skipped)?/i);
   
   if (summaryMatch) {
@@ -258,7 +248,6 @@ function runVitestSuite(): { result: SuiteResult; failures: Failure[] } {
     testsSkipped = summaryMatch[3] ? parseInt(summaryMatch[3], 10) : 0;
     testsRun = testsPassed + testsFailed + testsSkipped;
   } else {
-    // Alternate parsing
     const passedMatch = output.match(/(\d+)\s+passed/);
     const failedMatch = output.match(/(\d+)\s+failed/);
     const skippedMatch = output.match(/(\d+)\s+skipped/);
@@ -304,7 +293,6 @@ function runTypeCheck(): { result: SuiteResult; failures: Failure[] } {
     console.log("   ✅ No type errors found");
   } catch (error: any) {
     output = error.stdout || error.message || "";
-    // Count errors
     const errorMatches = output.match(/error TS\d+/g);
     errors = errorMatches ? errorMatches.length : 1;
     console.log(`   ❌ ${errors} type error(s) found`);
@@ -341,7 +329,6 @@ function runLintCheck(): { result: SuiteResult; failures: Failure[] } {
     console.log("   ✅ No lint errors found");
   } catch (error: any) {
     output = error.stdout || error.message || "";
-    // Count errors and warnings
     const errorMatch = output.match(/(\d+)\s+errors?/);
     const warningMatch = output.match(/(\d+)\s+warnings?/);
     errors = errorMatch ? parseInt(errorMatch[1], 10) : 0;
@@ -376,9 +363,7 @@ function runSchemaValidation(): { result: SuiteResult; failures: Failure[] } {
   console.log("\n🔍 Running Schema Validation...");
 
   const startTime = Date.now();
-  let passed = true;
 
-  // Check if schema files exist and are valid
   const schemaFiles = [
     "drizzle/schema.ts",
     "drizzle/schema-accounting.ts",
@@ -396,7 +381,6 @@ function runSchemaValidation(): { result: SuiteResult; failures: Failure[] } {
     console.log(`   ✅ All ${foundCount} schema files found`);
   } else {
     console.log(`   ⚠️  Found ${foundCount}/${schemaFiles.length} schema files`);
-    passed = false;
   }
 
   const durationMs = Date.now() - startTime;
@@ -461,7 +445,7 @@ async function runMegaQA(): Promise<void> {
   console.log("=".repeat(80));
 
   // Always run unit tests
-  const { result: vitestResult, failures: vitestFailures } = runVitestSuite();
+  const { result: vitestResult, failures: vitestFailures } = runAllUnitTests();
   suiteResults.push(vitestResult);
   allFailures.push(...vitestFailures);
   allCoveredTags.push(...vitestResult.coveredTags);
@@ -482,7 +466,70 @@ async function runMegaQA(): Promise<void> {
   const { result: schemaResult } = runSchemaValidation();
   suiteResults.push(schemaResult);
 
-  // Add implied coverage tags from unit tests
+  // Run E2E suites only in standard mode
+  if (config.mode === "standard") {
+    // Performance Suite
+    if (existsSync("tests-e2e/mega/perf")) {
+      const { result, failures } = runPlaywrightSuite(
+        "Performance Suite",
+        "tests-e2e/mega/perf/*.spec.ts",
+        config
+      );
+      suiteResults.push({ ...result, category: "perf" });
+      allFailures.push(...failures);
+      allCoveredTags.push(...result.coveredTags);
+    }
+
+    // Security Suite
+    if (existsSync("tests-e2e/mega/security")) {
+      const { result, failures } = runPlaywrightSuite(
+        "Security Suite",
+        "tests-e2e/mega/security/*.spec.ts",
+        config
+      );
+      suiteResults.push({ ...result, category: "security" });
+      allFailures.push(...failures);
+      allCoveredTags.push(...result.coveredTags);
+    }
+
+    // Resilience Suite
+    if (existsSync("tests-e2e/mega/resilience")) {
+      const { result, failures } = runPlaywrightSuite(
+        "Resilience Suite",
+        "tests-e2e/mega/resilience/*.spec.ts",
+        config
+      );
+      suiteResults.push({ ...result, category: "resilience" });
+      allFailures.push(...failures);
+      allCoveredTags.push(...result.coveredTags);
+    }
+  }
+
+  // Property-Based Tests
+  if (existsSync("tests/property")) {
+    const { result, failures } = runVitestSuiteExternal(
+      "Property-Based Tests",
+      "tests/property/",
+      config
+    );
+    suiteResults.push({ ...result, category: "property" });
+    allFailures.push(...failures);
+    allCoveredTags.push(...result.coveredTags);
+  }
+
+  // Contract Tests
+  if (existsSync("tests/contracts")) {
+    const { result, failures } = runVitestSuiteExternal(
+      "Contract Tests",
+      "tests/contracts/",
+      config
+    );
+    suiteResults.push({ ...result, category: "contract" });
+    allFailures.push(...failures);
+    allCoveredTags.push(...result.coveredTags);
+  }
+
+  // Add implied coverage tags
   const impliedTags = [
     "route:/login",
     "route:/dashboard", 

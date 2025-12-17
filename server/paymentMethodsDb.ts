@@ -7,6 +7,7 @@
  */
 
 import { getDb } from "./db";
+import { logger } from "./_core/logger";
 import { 
   paymentMethods,
   type PaymentMethod,
@@ -42,7 +43,7 @@ export async function createPaymentMethod(data: InsertPaymentMethod): Promise<Pa
     
     return created;
   } catch (error) {
-    console.error("Error creating payment method:", error);
+    logger.error("Error creating payment method", { error });
     throw new Error(`Failed to create payment method: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -64,7 +65,7 @@ export async function getPaymentMethodById(id: number): Promise<PaymentMethod | 
     
     return paymentMethod;
   } catch (error) {
-    console.error("Error fetching payment method:", error);
+    logger.error("Error fetching payment method", { error });
     throw new Error(`Failed to fetch payment method: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -86,7 +87,7 @@ export async function getPaymentMethodByCode(code: string): Promise<PaymentMetho
     
     return paymentMethod;
   } catch (error) {
-    console.error("Error fetching payment method by code:", error);
+    logger.error("Error fetching payment method by code", { error });
     throw new Error(`Failed to fetch payment method: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -119,7 +120,7 @@ export async function getAllPaymentMethods(activeOnly: boolean = false): Promise
     
     return results;
   } catch (error) {
-    console.error("Error fetching payment methods:", error);
+    logger.error("Error fetching payment methods", { error });
     throw new Error(`Failed to fetch payment methods: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -148,7 +149,7 @@ export async function updatePaymentMethod(id: number, data: Partial<InsertPaymen
     
     return updated;
   } catch (error) {
-    console.error("Error updating payment method:", error);
+    logger.error("Error updating payment method", { error });
     throw new Error(`Failed to update payment method: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -162,7 +163,7 @@ export async function deactivatePaymentMethod(id: number): Promise<PaymentMethod
   try {
     return await updatePaymentMethod(id, { isActive: 0 });
   } catch (error) {
-    console.error("Error deactivating payment method:", error);
+    logger.error("Error deactivating payment method", { error });
     throw new Error(`Failed to deactivate payment method: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -176,7 +177,7 @@ export async function activatePaymentMethod(id: number): Promise<PaymentMethod> 
   try {
     return await updatePaymentMethod(id, { isActive: 1 });
   } catch (error) {
-    console.error("Error activating payment method:", error);
+    logger.error("Error activating payment method", { error });
     throw new Error(`Failed to activate payment method: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -201,7 +202,7 @@ export async function deletePaymentMethod(id: number): Promise<boolean> {
     
     return (result as any).rowsAffected > 0;
   } catch (error) {
-    console.error("Error deleting payment method:", error);
+    logger.error("Error deleting payment method", { error });
     throw new Error(`Failed to delete payment method: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -226,7 +227,7 @@ export async function reorderPaymentMethods(orderedIds: number[]): Promise<Payme
     // Return the updated list
     return await getAllPaymentMethods();
   } catch (error) {
-    console.error("Error reordering payment methods:", error);
+    logger.error("Error reordering payment methods", { error });
     throw new Error(`Failed to reorder payment methods: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -265,7 +266,7 @@ export async function seedDefaultPaymentMethods(): Promise<void> {
     
     console.log("Default payment methods seeded successfully");
   } catch (error) {
-    console.error("Error seeding default payment methods:", error);
+    logger.error("Error seeding default payment methods", { error });
     throw new Error(`Failed to seed default payment methods: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

@@ -2,6 +2,7 @@ import { getDb } from "./db";
 import { orders, clientNeeds, batches, products, matchRecords } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { updateMatchAction, markMatchAsConverted } from "./matchRecordsDb";
+import { logger } from "./_core/logger";
 import type { Match } from "./matchingEngineEnhanced";
 
 /**
@@ -126,7 +127,7 @@ export async function createQuoteFromMatch(matchData: {
       message: `Quote ${orderNumber} created successfully`,
     };
   } catch (error) {
-    console.error("Error creating quote from match:", error);
+    logger.error("Error creating quote from match", { error });
     throw new Error(`Failed to create quote: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -185,7 +186,7 @@ export async function convertQuoteToSale(
       message: "Quote converted to sale successfully",
     };
   } catch (error) {
-    console.error("Error converting quote to sale:", error);
+    logger.error("Error converting quote to sale", { error });
     throw new Error(`Failed to convert quote: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -209,7 +210,7 @@ export async function dismissMatch(
       message: "Match dismissed",
     };
   } catch (error) {
-    console.error("Error dismissing match:", error);
+    logger.error("Error dismissing match", { error });
     throw new Error(`Failed to dismiss match: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -251,7 +252,7 @@ export async function createNeedAndFindMatches(needData: any): Promise<any> {
       message: `Need created. Found ${matches.matches.length} potential matches.`,
     };
   } catch (error) {
-    console.error("Error creating need and finding matches:", error);
+    logger.error("Error creating need and finding matches", { error });
     throw new Error(`Failed to create need and find matches: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -281,7 +282,7 @@ export async function bulkCreateQuotesFromMatches(
       });
       quotes.push(quote);
     } catch (error) {
-      console.error(`Error creating quote for client ${group.clientId}:`, error);
+      logger.error("Error creating quote for client", { clientId: group.clientId, error });
       quotes.push({
         success: false,
         clientId: group.clientId,
@@ -319,7 +320,7 @@ export async function getSmartOpportunities(limit: number = 5): Promise<any[]> {
 
     return opportunities;
   } catch (error) {
-    console.error("Error getting smart opportunities:", error);
+    logger.error("Error getting smart opportunities", { error });
     throw new Error(`Failed to get smart opportunities: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

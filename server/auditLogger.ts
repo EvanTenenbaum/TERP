@@ -12,6 +12,7 @@
 import { getDb } from "./db";
 import { auditLogs } from "../drizzle/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { logger } from "./_core/logger";
 
 /**
  * Audit event types
@@ -102,7 +103,7 @@ export async function logAuditEvent(entry: AuditEntry): Promise<number> {
 
     return result?.id || 0;
   } catch (error) {
-    console.error("Error logging audit event:", error);
+    logger.error("Error logging audit event", { error });
     // Don't throw - audit logging should never break the main operation
     return 0;
   }
@@ -407,7 +408,7 @@ export async function queryAuditLogs(filters: {
 
     return results;
   } catch (error) {
-    console.error("Error querying audit logs:", error);
+    logger.error("Error querying audit logs", { error });
     throw new Error(
       `Failed to query audit logs: ${error instanceof Error ? error.message : "Unknown error"}`
     );

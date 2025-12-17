@@ -12,6 +12,7 @@ import * as inventoryMovementsDb from "./inventoryMovementsDb";
 import * as transactionsDb from "./transactionsDb";
 import * as accountingHooks from "./accountingHooks";
 import * as cogsCalculation from "./cogsCalculation";
+import { logger } from "./_core/logger";
 
 /**
  * Process a sale transaction - decrease inventory
@@ -59,7 +60,7 @@ export async function processSaleInventory(
       
       movements.push(movement);
     } catch (error) {
-      console.error(`Error processing inventory for batch ${item.batchId}:`, error);
+      logger.error("Error processing inventory for batch", { batchId: item.batchId, error });
       // Rollback previous movements if any item fails
       for (const prevMovement of movements) {
         try {
@@ -69,7 +70,7 @@ export async function processSaleInventory(
             userId
           );
         } catch (rollbackError) {
-          console.error("Error during rollback:", rollbackError);
+          logger.error("Error during rollback", { error: rollbackError });
         }
       }
       throw error;
@@ -104,7 +105,7 @@ export async function processSaleInventory(
       });
     }
   } catch (error) {
-    console.error("Error posting accounting entries:", error);
+    logger.error("Error posting accounting entries", { error });
     // Don't fail the sale if GL posting fails
   }
   
@@ -144,7 +145,7 @@ export async function processRefundInventory(
       
       movements.push(movement);
     } catch (error) {
-      console.error(`Error processing refund inventory for batch ${item.batchId}:`, error);
+      logger.error("Error processing refund inventory for batch", { batchId: item.batchId, error });
       // Rollback previous movements if any item fails
       for (const prevMovement of movements) {
         try {
@@ -154,7 +155,7 @@ export async function processRefundInventory(
             userId
           );
         } catch (rollbackError) {
-          console.error("Error during rollback:", rollbackError);
+          logger.error("Error during refund rollback", { error: rollbackError });
         }
       }
       throw error;
@@ -249,7 +250,7 @@ export async function getTransactionInventoryImpact(
       totalQuantity
     };
   } catch (error) {
-    console.error("Error getting transaction inventory impact:", error);
+    logger.error("Error getting transaction inventory impact", { error });
     return {
       movements: [],
       totalItems: 0,
