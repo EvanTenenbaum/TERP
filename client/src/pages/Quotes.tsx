@@ -38,14 +38,6 @@ export default function Quotes() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   
-  // Apply URL params on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const status = params.get('status');
-    if (status) {
-      setStatusFilter(status);
-    }
-  }, []);
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
 
   // Fetch clients for name lookup
@@ -62,6 +54,29 @@ export default function Quotes() {
     orderType: 'QUOTE',
     quoteStatus: statusFilter === 'ALL' ? undefined : statusFilter,
   });
+  
+  // Apply URL params on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status');
+    if (status) {
+      setStatusFilter(status);
+    }
+  }, []);
+  
+  // Handle URL selection parameter (from search results)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const selectedId = params.get('selected');
+    if (selectedId && quotes) {
+      const quote = quotes.find(q => q.id === parseInt(selectedId, 10));
+      if (quote) {
+        setSelectedQuote(quote);
+      } else {
+        toast.error(`Quote #${selectedId} not found`);
+      }
+    }
+  }, [quotes]);
 
   // Convert quote to sale mutation
   const convertToSale = trpc.orders.convertQuoteToSale.useMutation();

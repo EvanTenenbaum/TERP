@@ -1,8 +1,18 @@
 # Platform Comparison: DigitalOcean vs Railway vs Vercel
 
+> ⚠️ **NOTE: TERP is deployed on DigitalOcean App Platform**
+> 
+> We briefly migrated to Railway in December 2025 but have since migrated back to DigitalOcean.
+> This analysis is kept for historical reference.
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date**: 2025-12-03  
-**Context**: Evaluating platforms for TERP development environment  
-**Current State**: Production on DigitalOcean, frequent env var issues, app currently broken
+**Context**: Historical analysis - evaluating platforms for TERP  
+**Current State**: Production on DigitalOcean (as of 2025-12-16)
 
 ---
 

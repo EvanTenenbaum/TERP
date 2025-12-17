@@ -26,6 +26,7 @@ const navigation = [
   { name: "Todo Lists", href: "/todos", icon: ListTodo },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
+  { name: "Quotes", href: "/quotes", icon: FileText },
   { name: "Sales Sheets", href: "/sales-sheets", icon: Layers },
   { name: "Create Order", href: "/orders/create", icon: FileText },
   { name: "Inventory", href: "/inventory", icon: Package },

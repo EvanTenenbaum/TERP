@@ -1,10 +1,21 @@
 # Railway Atomic Migration Plan
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> This migration was executed but later reverted. We are back on DigitalOcean.
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date**: 2025-12-03  
-**Status**: READY TO EXECUTE  
-**Risk Level**: LOW (Full rollback capability)  
-**Estimated Time**: 2-3 hours total  
-**Your Involvement**: ~15 minutes (approvals only)
+**Status**: DEPRECATED - Migration was reverted  
+**Risk Level**: N/A  
+**Estimated Time**: N/A  
+**Your Involvement**: N/A
 
 ---
 

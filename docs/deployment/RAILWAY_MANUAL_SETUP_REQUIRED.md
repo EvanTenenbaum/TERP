@@ -1,8 +1,17 @@
 # Railway Manual Setup Required
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date**: 2025-12-06  
-**Issue**: Railway CLI requires browser authentication  
-**Solution**: Set SKIP_SEEDING manually via Railway Dashboard
+**Issue**: (Historical) Railway CLI authentication issues  
+**Solution**: N/A - We migrated back to DigitalOcean
 
 ---
 

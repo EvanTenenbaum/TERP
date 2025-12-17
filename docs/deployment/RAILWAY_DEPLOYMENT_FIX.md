@@ -1,8 +1,17 @@
 # Railway Deployment Fix Guide
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date**: 2025-12-04  
-**Issue**: App returning 502 (likely seeding crash)  
-**Solution**: Set SKIP_SEEDING=true and verify deployment
+**Issue**: (Historical) App returning 502 on Railway  
+**Solution**: N/A - We migrated back to DigitalOcean
 
 ---
 

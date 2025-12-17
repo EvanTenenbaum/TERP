@@ -27,6 +27,8 @@ import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import Orders from "@/pages/Orders";
 import OrdersDebug from "@/pages/OrdersDebug";
+import Quotes from "@/pages/Quotes";
+import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
@@ -109,6 +111,7 @@ function Router() {
               <Route path="/orders" component={Orders} />
               <Route path="/orders-debug" component={OrdersDebug} />
               <Route path="/orders/create" component={OrderCreatorPage} />
+              <Route path="/quotes" component={Quotes} />
               <Route path="/settings/cogs" component={CogsSettingsPage} />
               <Route path="/settings" component={Settings} />
               <Route path="/credit-settings" component={CreditSettingsPage} />
@@ -134,6 +137,8 @@ function Router() {
               <Route path="/workflow-queue" component={WorkflowQueuePage} />
               <Route path="/analytics" component={AnalyticsPage} />
               <Route path="/search" component={SearchResultsPage} />
+              {/* Dev-only route for component showcase - only renders in development mode */}
+              {import.meta.env.DEV && <Route path="/dev/showcase" component={ComponentShowcase} />}
               <Route path="/404" component={NotFound} />
               {/* Final fallback route */}
               <Route component={NotFound} />

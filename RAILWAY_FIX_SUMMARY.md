@@ -1,11 +1,20 @@
 ```markdown
 # TERP Railway Deployment Fix: Technical Summary
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date:** October 26, 2023 (Example Date - Replace with Actual Date)
 
-**Status:** Backend Working, Railway Caching Prevents Full Deployment
+**Status:** DEPRECATED - Migrated back to DigitalOcean
 
-**Objective:** Resolve Railway deployment crash and ensure full application functionality.
+**Objective:** (Historical) Resolve Railway deployment crash and ensure full application functionality.
 
 ## 1. Problem Statement
 

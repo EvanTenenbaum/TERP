@@ -450,10 +450,10 @@ const triggerRef = useRef<HTMLButtonElement>(null);
   <span className="sr-only">Add to favorites</span>
 </button>
 
-// Additional context
-<a href="/orders/123">
-  View order
-  <span className="sr-only">number 123</span>
+// Additional context - link to orders list (details shown in sheet)
+<a href="/orders">
+  View orders
+  <span className="sr-only">list</span>
 </a>
 ```
 

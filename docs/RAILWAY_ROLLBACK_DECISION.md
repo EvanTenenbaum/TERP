@@ -1,5 +1,16 @@
 # Railway Deployment Rollback Decision
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> This document describes issues that led to our decision to migrate back to DigitalOcean.
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date:** 2025-12-08  
 **Session:** External Agent (Manus)  
 **Decision:** Rollback to commit f705e123 (Nov 26, 2025)

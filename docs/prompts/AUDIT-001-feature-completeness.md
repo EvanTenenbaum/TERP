@@ -210,10 +210,11 @@ grepSearch("TODO|FIXME|XXX|HACK")
 - **Priority:** CRITICAL
 
 ### Order Detail Page
-- **Route:** `/orders/:id`
-- **File:** `client/src/pages/OrderDetail.tsx`
-- **Components:** OrderHeader, OrderItems, OrderTimeline
-- **API Calls:** `orders.getById`, `orders.update`
+- **Route:** `/orders` (list view with detail sheet) or `/quotes?selected=:id` (for quotes)
+- **File:** `client/src/pages/Orders.tsx`, `client/src/pages/Quotes.tsx`
+- **Components:** Order list with detail sheet, Quote list with detail sheet
+- **API Calls:** `orders.getAll`, `orders.getOrderWithLineItems`
+- **Note:** Order details are shown in a slide-out sheet, not a separate page
 - **Completion:** 85%
 - **Missing:**
   - Print functionality

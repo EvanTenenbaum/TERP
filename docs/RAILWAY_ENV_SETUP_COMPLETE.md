@@ -1,9 +1,20 @@
 # Railway Environment Setup Complete ✅
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> This document is kept for historical reference only.
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date**: 2025-12-03  
-**Status**: COMPLETE  
-**Railway Project**: TERP System  
-**Railway URL**: https://terp-app-production.up.railway.app
+**Status**: DEPRECATED - Migrated back to DigitalOcean  
+**Railway Project**: TERP System (NO LONGER ACTIVE)  
+**Railway URL**: https://terp-app-production.up.railway.app (DEPRECATED)
 
 ---
 

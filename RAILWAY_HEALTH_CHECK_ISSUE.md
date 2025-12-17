@@ -1,8 +1,20 @@
 # Railway Health Check Deployment Issue - Status Report
 
+> ⚠️ **DEPRECATED - HISTORICAL REFERENCE ONLY**
+> 
+> **TERP is NO LONGER deployed on Railway. We use DigitalOcean App Platform.**
+> 
+> This document describes issues we encountered during our brief Railway deployment.
+> It is kept for historical reference only.
+> 
+> **Current Platform**: DigitalOcean App Platform
+> **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+
+---
+
 **Date**: 2025-12-09  
-**Status**: Partially Resolved - App Starting But Deployment Failing  
-**Platform**: Railway (MySQL database)
+**Status**: DEPRECATED - Migrated back to DigitalOcean  
+**Platform**: Railway (MySQL database) - NO LONGER IN USE
 
 ---
 
