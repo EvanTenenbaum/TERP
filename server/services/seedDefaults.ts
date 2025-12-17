@@ -13,12 +13,17 @@ import {
  * Seed default storage locations
  * Creates a main warehouse with zones, racks, shelves, and bins
  *
+ * @deprecated This function uses the legacy SKIP_SEEDING bypass.
+ * Use `pnpm seed:new` for production seeding instead.
+ * See docs/deployment/SEEDING_RUNBOOK.md for production procedures.
+ *
  * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedDefaultLocations() {
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
     console.warn("⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead.");
+    console.warn("   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures.");
     console.log("⏭️  SKIP_SEEDING is set - skipping location seeding");
     return;
   }
@@ -420,12 +425,18 @@ export async function seedDefaultChartOfAccounts() {
  * IMPORTANT: This function is NON-FATAL - it will not crash the server if seeding fails.
  * This ensures the health check endpoints are always available during deployment.
  *
+ * @deprecated This function uses the legacy SKIP_SEEDING bypass.
+ * Use `pnpm seed:new` for production seeding instead.
+ * See docs/deployment/SEEDING_RUNBOOK.md for production procedures.
+ *
  * Can be bypassed by setting SKIP_SEEDING=true environment variable.
  */
 export async function seedAllDefaults() {
   // Bypass seeding if SKIP_SEEDING environment variable is set (case-insensitive)
   const skipSeeding = process.env.SKIP_SEEDING?.toLowerCase();
   if (skipSeeding === "true" || skipSeeding === "1") {
+    console.warn("⚠️  DEPRECATED: SKIP_SEEDING is deprecated. Use `pnpm seed:new` instead.");
+    console.warn("   See docs/deployment/SEEDING_RUNBOOK.md for production seeding procedures.");
     console.log("⏭️  SKIP_SEEDING is set - skipping all default data seeding");
     return;
   }

@@ -913,7 +913,8 @@ export const invoices = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     invoiceNumber: varchar("invoiceNumber", { length: 50 }).notNull().unique(),
-    // NOTE: deletedAt removed - column does not exist in production database (DATA-010)
+    // SCHEMA DRIFT FIX: Re-added deletedAt - column exists in production database
+    deletedAt: timestamp("deleted_at"),
     // FK added as part of Canonical Model Unification (Phase 2, Task 10.1)
     customerId: int("customerId")
       .notNull()
@@ -1087,7 +1088,8 @@ export const payments = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     paymentNumber: varchar("paymentNumber", { length: 50 }).notNull().unique(),
-    // NOTE: deletedAt removed - column does not exist in production database (DATA-010)
+    // SCHEMA DRIFT FIX: Re-added deletedAt - column exists in production database
+    deletedAt: timestamp("deleted_at"),
     paymentType: mysqlEnum("paymentType", ["RECEIVED", "SENT"]).notNull(), // RECEIVED = AR, SENT = AP
     paymentDate: date("paymentDate").notNull(),
     amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
