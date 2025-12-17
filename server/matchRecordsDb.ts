@@ -2,6 +2,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { matchRecords } from "../drizzle/schema";
 import type { MatchRecord, InsertMatchRecord } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 /**
  * Record a match for tracking and learning
@@ -21,7 +22,11 @@ export async function recordMatch(match: InsertMatchRecord): Promise<MatchRecord
     
     return created;
   } catch (error) {
-    console.error("Error recording match:", error);
+    logger.error({
+      msg: "Error recording match",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to record match: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -43,7 +48,12 @@ export async function getMatchRecordById(id: number): Promise<MatchRecord | null
     
     return record || null;
   } catch (error) {
-    console.error("Error fetching match record:", error);
+    logger.error({
+      msg: "Error fetching match record",
+      matchRecordId: id,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to fetch match record: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -86,7 +96,12 @@ export async function getMatchRecords(filters?: {
     const records = await query.orderBy(desc(matchRecords.createdAt));
     return records;
   } catch (error) {
-    console.error("Error fetching match records:", error);
+    logger.error({
+      msg: "Error fetching match records",
+      filters,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to fetch match records: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -127,7 +142,13 @@ export async function updateMatchAction(
     
     return updated;
   } catch (error) {
-    console.error("Error updating match action:", error);
+    logger.error({
+      msg: "Error updating match action",
+      matchRecordId: id,
+      action,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to update match action: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -165,7 +186,13 @@ export async function markMatchAsConverted(
     
     return updated;
   } catch (error) {
-    console.error("Error marking match as converted:", error);
+    logger.error({
+      msg: "Error marking match as converted",
+      matchRecordId: id,
+      saleOrderId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to mark match as converted: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -234,7 +261,11 @@ export async function getMatchAnalytics(): Promise<{
       avgConfidenceScore,
     };
   } catch (error) {
-    console.error("Error getting match analytics:", error);
+    logger.error({
+      msg: "Error getting match analytics",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to get match analytics: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -257,7 +288,12 @@ export async function getMatchesForNeed(clientNeedId: number): Promise<MatchReco
     
     return matches;
   } catch (error) {
-    console.error("Error fetching matches for need:", error);
+    logger.error({
+      msg: "Error fetching matches for need",
+      clientNeedId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to fetch matches for need: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -312,7 +348,12 @@ export async function getTopPerformingMatches(limit: number = 10): Promise<Array
 
     return results.slice(0, limit);
   } catch (error) {
-    console.error("Error getting top performing matches:", error);
+    logger.error({
+      msg: "Error getting top performing matches",
+      limit,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to get top performing matches: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

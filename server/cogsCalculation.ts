@@ -11,6 +11,7 @@
 import { getDb } from "./db";
 import { batches, clients, type Batch, type Client } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "./_core/logger";
 
 /**
  * COGS calculation result
@@ -96,7 +97,12 @@ export async function calculateSaleCOGS(
     
     return result;
   } catch (error) {
-    console.error("Error calculating COGS:", error);
+    logger.error({
+      msg: "Error calculating COGS",
+      clientId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to calculate COGS: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -188,7 +194,12 @@ export async function calculateWeightedAverageCOGS(batchIds: number[]): Promise<
     
     return totalQuantity > 0 ? totalCost / totalQuantity : 0;
   } catch (error) {
-    console.error("Error calculating weighted average COGS:", error);
+    logger.error({
+      msg: "Error calculating weighted average COGS",
+      batchIds,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to calculate weighted average COGS: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -222,7 +233,11 @@ export async function calculateTotalInventoryValue(): Promise<number> {
     
     return totalValue;
   } catch (error) {
-    console.error("Error calculating total inventory value:", error);
+    logger.error({
+      msg: "Error calculating total inventory value",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to calculate total inventory value: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -275,7 +290,12 @@ export async function getCOGSBreakdownByProduct(productId: number): Promise<{
       totalValue: totalCost
     };
   } catch (error) {
-    console.error("Error getting COGS breakdown by product:", error);
+    logger.error({
+      msg: "Error getting COGS breakdown by product",
+      productId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(`Failed to get COGS breakdown: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
