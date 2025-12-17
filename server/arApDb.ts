@@ -39,6 +39,9 @@ export async function getInvoices(filters?: {
 
   const conditions = [];
 
+  // Filter out soft-deleted records
+  conditions.push(sql`${invoices.deletedAt} IS NULL`);
+
   if (filters?.customerId) {
     conditions.push(eq(invoices.customerId, filters.customerId));
   }
@@ -578,6 +581,9 @@ export async function getPayments(filters?: {
 
   const conditions = [];
 
+  // Filter out soft-deleted records
+  conditions.push(sql`${payments.deletedAt} IS NULL`);
+
   if (filters?.paymentType) {
     conditions.push(eq(payments.paymentType, filters.paymentType));
   }
@@ -681,7 +687,10 @@ export async function getPaymentsForInvoice(invoiceId: number) {
   return db
     .select()
     .from(payments)
-    .where(eq(payments.invoiceId, invoiceId))
+    .where(and(
+      eq(payments.invoiceId, invoiceId),
+      sql`${payments.deletedAt} IS NULL`
+    ))
     .orderBy(desc(payments.paymentDate));
 }
 
@@ -691,11 +700,13 @@ export async function getPaymentsForInvoice(invoiceId: number) {
 export async function getPaymentsForBill(billId: number) {
   const db = await getDb();
   if (!db) return [];
-
   return db
     .select()
     .from(payments)
-    .where(eq(payments.billId, billId))
+    .where(and(
+      eq(payments.billId, billId),
+      sql`${payments.deletedAt} IS NULL`
+    ))
     .orderBy(desc(payments.paymentDate));
 }
 
