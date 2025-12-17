@@ -5,6 +5,7 @@ Welcome! This document outlines essential information for Claude Code agents wor
 ## Overview
 
 TERP is a [brief description of project]. This project is configured with:
+
 - ✅ Automatic deployment to Digital Ocean App Platform when code is pushed to `main`
 - ✅ Zero-configuration Claude Code auto-deploy with monitoring
 - ✅ Digital Ocean API integration for real-time deployment tracking
@@ -66,12 +67,14 @@ When you push to `main`, deployment monitoring starts automatically via the `.hu
 ### Configuration
 
 **Important**: The system is fully automatic. You don't need to:
+
 - ❌ Provide an app ID
 - ❌ Manually configure anything
 - ❌ Set up per-session
 - ❌ Ask the user for information
 
 **Already set up for you**:
+
 - ✅ `DIGITALOCEAN_TOKEN` - Set in user's shell config (~/.bashrc, ~/.zshrc)
 - ✅ App name - Read from `.do/app.yaml` (app name: "terp")
 - ✅ App ID caching - Stored in `.git/config` after first discovery
@@ -79,7 +82,7 @@ When you push to `main`, deployment monitoring starts automatically via the `.hu
 
 ## Workflow Example
 
-```
+````
 User: "Add dark mode feature and deploy it"
 
 You:
@@ -92,18 +95,19 @@ You:
    - Starts deployment monitoring in background
    - Monitors DigitalOcean API, database, and health checks
    - Writes status to `.deployment-status-{commit}.log`
-   
+
 6. Check deployment status:
    ```bash
    bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
-   ```
-   
+````
+
 7. If deployment fails:
    - Review logs: `cat .deployment-status-*.log`
    - Fix the issue and push again
    - **DO NOT mark task complete until deployment succeeds**
 
 User sees the feature live on production once deployment completes.
+
 ```
 
 ## Environment Variables
@@ -138,18 +142,20 @@ The Digital Ocean App Platform is already configured:
 ## Key Files to Know
 
 ```
+
 /TERP
 ├── .do/
-│   ├── app.yaml              # Digital Ocean configuration (DO NOT MODIFY)
-│   └── SETUP.md              # Quick reference for DO setup
+│ ├── app.yaml # Digital Ocean configuration (DO NOT MODIFY)
+│ └── SETUP.md # Quick reference for DO setup
 ├── scripts/
-│   ├── do-auto-discover.ts   # App ID auto-discovery
-│   ├── deploy-and-monitor.ts # Main deployment monitoring
-│   └── validate-deployment-setup.ts  # Setup validation
+│ ├── do-auto-discover.ts # App ID auto-discovery
+│ ├── deploy-and-monitor.ts # Main deployment monitoring
+│ └── validate-deployment-setup.ts # Setup validation
 ├── docs/
-│   └── CLAUDE_AUTO_DEPLOY.md # Detailed auto-deploy documentation
-├── QUICKSTART_CLAUDE_DEPLOY.md  # User's quick start guide
-└── AGENT_ONBOARDING.md       # This file
+│ └── CLAUDE_AUTO_DEPLOY.md # Detailed auto-deploy documentation
+├── QUICKSTART_CLAUDE_DEPLOY.md # User's quick start guide
+└── AGENT_ONBOARDING.md # This file
+
 ```
 
 ## Troubleshooting
@@ -201,12 +207,14 @@ The monitoring script polls every 5 seconds. If it seems stuck:
 
 ✅ **Write clear commit messages** - Use conventional commit format:
 ```
+
 feat: add feature name
 fix: fix bug description
 docs: update documentation
 refactor: reorganize code
 chore: dependencies, config, etc
-```
+
+````
 
 ✅ **Push to main for any production changes** - This triggers auto-deployment
 
@@ -230,11 +238,12 @@ npm run build
 
 # Start locally (if you need to verify)
 npm start
-```
+````
 
 ## Common Tasks
 
 ### Deploy a bug fix
+
 ```bash
 # 1. Fix the bug
 # 2. Test it: npm test
@@ -246,6 +255,7 @@ git push origin main
 ```
 
 ### Deploy a new feature
+
 ```bash
 # 1. Implement feature
 # 2. Test thoroughly: npm test
@@ -257,6 +267,7 @@ git push origin main
 ```
 
 ### Deploy a hotfix
+
 ```bash
 # Same process, but explain urgency in commit message:
 git commit -m "fix: critical security issue in password reset endpoint"
@@ -279,6 +290,7 @@ A: No. Only `main` is configured for auto-deployment. Use feature branches for d
 
 **Q: What happens if my commit message has multiple lines?**
 A: That's fine! Use the format:
+
 ```bash
 git commit -m "feat: add feature name
 
@@ -293,12 +305,14 @@ A: Absolutely. Always run `npm test` locally and verify all tests pass before pu
 ## Deployment Success Indicators
 
 You'll see these messages when deployment succeeds:
+
 ```
 ✅ Deployment successful!
 🚀 Production URL: [app-url]
 ```
 
 When deployment fails, you'll see:
+
 ```
 ❌ Build failed: [error details]
 or
@@ -310,6 +324,7 @@ or
 ### Standard Workflow
 
 **Merge-then-push workflow:**
+
 ```bash
 # After completing work on your branch
 git checkout main
@@ -323,6 +338,7 @@ git push origin main
 **If push is rejected (another agent pushed first):**
 
 1. **Auto-resolution (recommended):**
+
    ```bash
    git pull --rebase origin main
    # If conflicts occur, use auto-resolution:
@@ -359,14 +375,50 @@ git push origin main
 See `docs/DEPLOYMENT_CONFLICT_INTEGRATION_PLAN_FINAL.md` for complete conflict resolution guide.
 
 ### Check status
+
 ```bash
 git status
 ```
 
 ### See recent commits
+
 ```bash
 git log --oneline -10
 ```
+
+## 🧪 Mega QA (Comprehensive Testing)
+
+**Run the full Mega QA suite from anywhere:**
+
+```bash
+# Clone and setup (if not already done)
+git clone https://github.com/EvanTenenbaum/TERP.git
+cd TERP
+pnpm install
+
+# Run the full Mega QA (E2E + property tests + contracts)
+pnpm mega:qa
+```
+
+**What it runs:**
+
+- 175 E2E Playwright tests (auth, navigation, CRUD, security, a11y, perf)
+- 231 property-based tests (business logic invariants)
+- 5 contract tests (API schema validation)
+
+**Quick commands:**
+
+```bash
+pnpm mega:qa           # Full suite (~10-15 min)
+pnpm mega:qa:quick     # Quick run (~3 min)
+pnpm test:property     # Property tests only (~2s)
+```
+
+**Report location:** `qa-results/mega-qa/latest/bundle.json`
+
+**Full documentation:** See `MEGA_QA.md` in project root.
+
+---
 
 ## Support
 
