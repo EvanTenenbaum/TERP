@@ -4,7 +4,7 @@ inclusion: always
 
 # ☁️ TERP Infrastructure
 
-**Version**: 2.2  
+**Version**: 2.3  
 **Last Updated**: 2025-12-16  
 **Status**: MANDATORY
 
@@ -256,6 +256,42 @@ git push origin main
 # 8. Verify migration succeeded
 ./scripts/terp-logs.sh deploy | grep -i "migration"
 ```
+
+### Production Database Query Tool
+
+You have direct access to query the production database using:
+
+```bash
+# List all tables
+npx tsx scripts/prod-db-query.ts tables
+
+# Get row counts for all tables
+npx tsx scripts/prod-db-query.ts counts
+
+# Run any SQL query
+npx tsx scripts/prod-db-query.ts "SELECT * FROM users LIMIT 5"
+npx tsx scripts/prod-db-query.ts "SELECT id, name, email FROM clients"
+npx tsx scripts/prod-db-query.ts "SELECT COUNT(*) FROM orders WHERE status = 'pending'"
+```
+
+**Current Production Data Summary** (as of 2025-12-16):
+- 1 user, 10 clients, 15 vendors
+- 200 batches, 120 products, 400 orders
+- 50 invoices with 20,681 line items
+- 332 calendar events, 170 comments
+- 16,268 ledger entries
+
+**Use Cases**:
+- Verify data after migrations
+- Debug production issues
+- Check data integrity
+- Validate seeding results
+- Investigate user-reported bugs
+
+**⚠️ CAUTION**: This connects to the LIVE production database. Be careful with:
+- Large queries (add LIMIT)
+- UPDATE/DELETE statements (prefer read-only operations)
+- Sensitive data (don't log PII)
 
 ### Database Best Practices
 
@@ -662,10 +698,15 @@ bash scripts/manage-deployment-monitors.sh status
 ./scripts/terp-logs.sh deploy --follow
 ./scripts/terp-logs.sh run 100
 
-# Database
+# Database Migrations
 pnpm db:generate
 pnpm db:migrate
 pnpm db:push  # Dev only
+
+# Production Database Queries
+npx tsx scripts/prod-db-query.ts tables
+npx tsx scripts/prod-db-query.ts counts
+npx tsx scripts/prod-db-query.ts "SELECT * FROM users"
 
 # DigitalOcean CLI
 doctl apps list

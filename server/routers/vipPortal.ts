@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, router, vipPortalProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { 
   clients, 
@@ -523,9 +523,9 @@ export const vipPortalRouter = router({
       }),
 
     // Create client need
-    createNeed: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    createNeed: vipPortalProcedure
       .input(z.object({
-        clientId: z.number(),
         strain: z.string().optional(),
         category: z.string(),
         quantity: z.number(),
@@ -534,35 +534,38 @@ export const vipPortalRouter = router({
         notes: z.string().optional(),
         expiresInDays: z.number().default(5),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        // Get clientId from verified VIP portal session (not from input)
+        const clientId = ctx.clientId;
+        
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + input.expiresInDays);
 
         const [result] = await db.insert(clientNeeds).values({
-          clientId: input.clientId,
+          clientId,
           strain: input.strain,
           category: input.category,
           quantityMin: input.quantity?.toString(),
           quantityMax: input.quantity?.toString(),
           priceMax: input.priceMax?.toString(),
           notes: input.notes,
-          expiresAt: expiresAt, // timestamp type expects Date object
+          expiresAt: expiresAt,
           status: "ACTIVE",
           priority: "MEDIUM",
-          createdBy: 1, // TODO: Get from session
+          createdBy: clientId, // Use clientId for actor attribution
         });
 
         return { needId: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
       }),
 
     // Update client need
-    updateNeed: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    updateNeed: vipPortalProcedure
       .input(z.object({
         id: z.number(),
-        clientId: z.number(),
         strain: z.string().optional(),
         category: z.string(),
         quantity: z.number(),
@@ -570,11 +573,13 @@ export const vipPortalRouter = router({
         priceMax: z.number().optional(),
         notes: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        const { id, clientId, ...updateData } = input;
+        
+        // Get clientId from verified VIP portal session (not from input)
+        const clientId = ctx.clientId;
+        const { id, ...updateData } = input;
 
         await db.update(clientNeeds)
           .set({
@@ -594,20 +599,23 @@ export const vipPortalRouter = router({
       }),
 
     // Cancel client need
-    cancelNeed: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    cancelNeed: vipPortalProcedure
       .input(z.object({
         id: z.number(),
-        clientId: z.number(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        // Get clientId from verified VIP portal session (not from input)
+        const clientId = ctx.clientId;
+        
         await db.update(clientNeeds)
           .set({ status: "CANCELLED" })
           .where(and(
             eq(clientNeeds.id, input.id),
-            eq(clientNeeds.clientId, input.clientId)
+            eq(clientNeeds.clientId, clientId)
           ));
 
         return { success: true };
@@ -629,9 +637,9 @@ export const vipPortalRouter = router({
       }),
 
     // Create supply listing
-    createSupply: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    createSupply: vipPortalProcedure
       .input(z.object({
-        clientId: z.number(),
         strain: z.string(),
         category: z.string(),
         quantity: z.number(),
@@ -641,19 +649,19 @@ export const vipPortalRouter = router({
         notes: z.string().optional(),
         expiresInDays: z.number().default(5),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        // clientId available from ctx.clientId via vipPortalProcedure
         // TODO: Implement supply creation when schema is updated
         return { supplyId: 0 };
       }),
 
     // Update supply listing
-    updateSupply: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    updateSupply: vipPortalProcedure
       .input(z.object({
         id: z.number(),
-        clientId: z.number(),
         strain: z.string(),
         category: z.string(),
         quantity: z.number(),
@@ -662,24 +670,24 @@ export const vipPortalRouter = router({
         priceMax: z.number().optional(),
         notes: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        // clientId available from ctx.clientId via vipPortalProcedure
         // TODO: Implement supply update when schema is updated
         return { success: true };
       }),
 
     // Cancel supply listing
-    cancelSupply: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    cancelSupply: vipPortalProcedure
       .input(z.object({
         id: z.number(),
-        clientId: z.number(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        // clientId available from ctx.clientId via vipPortalProcedure
         // TODO: Implement supply cancellation when schema is updated
         return { success: true };
       }),
@@ -1092,22 +1100,17 @@ export const vipPortalRouter = router({
       }),
     
     // Add to draft
-    addToDraft: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    addToDraft: vipPortalProcedure
       .input(z.object({
         batchId: z.number(),
       }))
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         
-        const clientId = ctx.vipPortalClientId;
-        if (!clientId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Not authenticated",
-          });
-        }
+        // clientId is guaranteed by vipPortalProcedure
+        const clientId = ctx.clientId;
         
         // Check if batch exists
         const batch = await db.query.batches.findFirst({
@@ -1149,22 +1152,17 @@ export const vipPortalRouter = router({
       }),
     
     // Remove from draft
-    removeFromDraft: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    removeFromDraft: vipPortalProcedure
       .input(z.object({
         draftId: z.number(),
       }))
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         
-        const clientId = ctx.vipPortalClientId;
-        if (!clientId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Not authenticated",
-          });
-        }
+        // clientId is guaranteed by vipPortalProcedure
+        const clientId = ctx.clientId;
         
         // Check if draft exists and belongs to client
         const draft = await db.query.clientDraftInterests.findFirst({
@@ -1191,19 +1189,14 @@ export const vipPortalRouter = router({
       }),
     
     // Clear draft
-    clearDraft: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    clearDraft: vipPortalProcedure
       .mutation(async ({ ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         
-        const clientId = ctx.vipPortalClientId;
-        if (!clientId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Not authenticated",
-          });
-        }
+        // clientId is guaranteed by vipPortalProcedure
+        const clientId = ctx.clientId;
         
         const result = await db.delete(clientDraftInterests).where(eq(clientDraftInterests.clientId, clientId));
         
@@ -1214,19 +1207,14 @@ export const vipPortalRouter = router({
       }),
     
     // Submit interest list
-    submitInterestList: publicProcedure
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+    submitInterestList: vipPortalProcedure
       .mutation(async ({ ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         
-        const clientId = ctx.vipPortalClientId;
-        if (!clientId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Not authenticated",
-          });
-        }
+        // clientId is guaranteed by vipPortalProcedure
+        const clientId = ctx.clientId;
         
         // Get draft items
         const drafts = await db.query.clientDraftInterests.findMany({
@@ -1358,7 +1346,8 @@ export const vipPortalRouter = router({
         }),
       
       // Save a view
-      save: publicProcedure
+      // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+      save: vipPortalProcedure
         .input(z.object({
           name: z.string().min(1).max(100),
           filters: z.object({
@@ -1373,16 +1362,10 @@ export const vipPortalRouter = router({
         }))
         .mutation(async ({ input, ctx }) => {
           const db = await getDb();
-        if (!db) throw new Error("Database not available");
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
           
-          const clientId = ctx.vipPortalClientId;
-          if (!clientId) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message: "Not authenticated",
-            });
-          }
+          // clientId is guaranteed by vipPortalProcedure
+          const clientId = ctx.clientId;
           
           // Check if name already exists
           const existing = await db.query.clientCatalogViews.findFirst({
@@ -1412,22 +1395,17 @@ export const vipPortalRouter = router({
         }),
       
       // Delete a view
-      delete: publicProcedure
+      // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
+      delete: vipPortalProcedure
         .input(z.object({
           viewId: z.number(),
         }))
         .mutation(async ({ input, ctx }) => {
           const db = await getDb();
-        if (!db) throw new Error("Database not available");
           if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
           
-          const clientId = ctx.vipPortalClientId;
-          if (!clientId) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message: "Not authenticated",
-            });
-          }
+          // clientId is guaranteed by vipPortalProcedure
+          const clientId = ctx.clientId;
           
           // Check if view exists and belongs to client
           const view = await db.query.clientCatalogViews.findFirst({
@@ -1456,24 +1434,20 @@ export const vipPortalRouter = router({
 
     // ============================================================================
     // PRICE ALERTS
+    // Updated to use vipPortalProcedure for proper session verification (Task 21.2)
     // ============================================================================
     priceAlerts: router({
       // Get all active price alerts for the client
-      list: publicProcedure.query(async ({ ctx }) => {
-        const clientId = ctx.vipPortalClientId;
-        if (!clientId) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Not authenticated",
-          });
-        }
+      list: vipPortalProcedure.query(async ({ ctx }) => {
+        // clientId is guaranteed by vipPortalProcedure
+        const clientId = ctx.clientId;
 
         const alerts = await priceAlertsService.getClientPriceAlerts(clientId);
         return alerts;
       }),
 
       // Create a new price alert
-      create: publicProcedure
+      create: vipPortalProcedure
         .input(
           z.object({
             batchId: z.number(),
@@ -1481,13 +1455,8 @@ export const vipPortalRouter = router({
           })
         )
         .mutation(async ({ ctx, input }) => {
-          const clientId = ctx.vipPortalClientId;
-          if (!clientId) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message: "Not authenticated",
-            });
-          }
+          // clientId is guaranteed by vipPortalProcedure
+          const clientId = ctx.clientId;
 
           const result = await priceAlertsService.createPriceAlert(
             clientId,
@@ -1506,16 +1475,11 @@ export const vipPortalRouter = router({
         }),
 
       // Deactivate a price alert
-      deactivate: publicProcedure
+      deactivate: vipPortalProcedure
         .input(z.object({ alertId: z.number() }))
         .mutation(async ({ ctx, input }) => {
-          const clientId = ctx.vipPortalClientId;
-          if (!clientId) {
-            throw new TRPCError({
-              code: "UNAUTHORIZED",
-              message: "Not authenticated",
-            });
-          }
+          // clientId is guaranteed by vipPortalProcedure
+          const clientId = ctx.clientId;
 
           const result = await priceAlertsService.deactivatePriceAlert(
             input.alertId,

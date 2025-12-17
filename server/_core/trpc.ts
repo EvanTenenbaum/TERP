@@ -7,6 +7,9 @@ import { logger } from "./logger";
 import { createErrorHandlingMiddleware } from "./errorHandling";
 import { getUserByEmail, getUser, upsertUser } from "../db";
 import { env } from "./env";
+import { db } from "../db";
+import { vipPortalAuth } from "../../drizzle/schema-vip-portal";
+import { eq, and, gt } from "drizzle-orm";
 
 /**
  * Helper to get authenticated user ID from context.
@@ -269,4 +272,147 @@ export const adminProcedure = t.procedure
       });
     }),
   );
+
+// ============================================================================
+// VIP PORTAL AUTHENTICATION
+// Part of Canonical Model Unification - Phase 5, Task 21
+// ============================================================================
+
+/**
+ * VIP Portal Session interface
+ * Represents a verified VIP portal session
+ */
+export interface VipPortalSession {
+  clientId: number;
+  email: string;
+  sessionToken: string;
+  expiresAt: Date;
+}
+
+/**
+ * Verify VIP portal session token
+ * 
+ * @param sessionToken - The session token from the x-vip-session-token header
+ * @returns The VIP portal session if valid, null otherwise
+ */
+async function verifyVipPortalSession(sessionToken: string): Promise<VipPortalSession | null> {
+  if (!sessionToken || !db) {
+    return null;
+  }
+
+  try {
+    const now = new Date();
+    
+    // Find valid session (not expired)
+    const authRecord = await db.query.vipPortalAuth.findFirst({
+      where: and(
+        eq(vipPortalAuth.sessionToken, sessionToken),
+        gt(vipPortalAuth.sessionExpiresAt, now)
+      ),
+      columns: {
+        clientId: true,
+        email: true,
+        sessionToken: true,
+        sessionExpiresAt: true,
+      },
+    });
+
+    if (!authRecord || !authRecord.sessionExpiresAt) {
+      return null;
+    }
+
+    return {
+      clientId: authRecord.clientId,
+      email: authRecord.email,
+      sessionToken: authRecord.sessionToken!,
+      expiresAt: authRecord.sessionExpiresAt,
+    };
+  } catch (error) {
+    logger.error({
+      error: error instanceof Error ? error.message : String(error),
+      msg: "Failed to verify VIP portal session",
+    });
+    return null;
+  }
+}
+
+/**
+ * VIP Portal procedure middleware
+ * 
+ * Use this for VIP portal endpoints that require authenticated portal sessions.
+ * Verifies the session token from the x-vip-session-token header and resolves
+ * to a clientId for authorization.
+ * 
+ * Security: This ensures VIP portal writes are properly authenticated and
+ * attributed to the correct client for audit purposes.
+ * 
+ * @example
+ * ```typescript
+ * export const vipPortalRouter = router({
+ *   updateProfile: vipPortalProcedure
+ *     .input(z.object({ ... }))
+ *     .mutation(async ({ ctx, input }) => {
+ *       // ctx.vipSession.clientId is guaranteed to be valid
+ *       // ctx.actorId is set to "vip:{clientId}" for audit
+ *     }),
+ * });
+ * ```
+ */
+const requireVipPortalSession = t.middleware(async opts => {
+  const { ctx, next } = opts;
+
+  // Get session token from header
+  const sessionToken = ctx.req.headers['x-vip-session-token'] as string | undefined;
+  
+  if (!sessionToken) {
+    logger.warn({
+      msg: "VIP portal request missing session token",
+      url: ctx.req.url,
+    });
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'VIP portal session required. Please log in to the portal.',
+    });
+  }
+
+  // Verify session
+  const session = await verifyVipPortalSession(sessionToken);
+  
+  if (!session) {
+    logger.warn({
+      msg: "VIP portal session invalid or expired",
+      url: ctx.req.url,
+    });
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'Your VIP portal session has expired. Please log in again.',
+    });
+  }
+
+  logger.info({
+    msg: "VIP portal session verified",
+    clientId: session.clientId,
+    email: session.email,
+  });
+
+  return next({
+    ctx: {
+      ...ctx,
+      vipSession: session,
+      clientId: session.clientId,
+      actorId: `vip:${session.clientId}`, // VIP portal actor attribution for audit
+    },
+  });
+});
+
+/**
+ * VIP Portal protected procedure
+ * 
+ * Use this for all VIP portal endpoints that modify data.
+ * Ensures proper session verification and actor attribution.
+ */
+export const vipPortalProcedure = t.procedure
+  .use(errorHandlingMiddleware)
+  .use(sanitizationMiddleware)
+  .use(requireVipPortalSession);
 
