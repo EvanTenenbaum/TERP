@@ -18,17 +18,20 @@ This guide provides step-by-step instructions for executing the strategic sprint
 ### Environment Setup
 
 1. **Verify swarm manager is available:**
+
    ```bash
    cd /Users/evan/spec-erp-docker/TERP/TERP
    ls scripts/manager.ts
    ```
 
 2. **Check package manager:**
+
    ```bash
    which pnpm || which npm
    ```
 
 3. **Verify roadmap is up to date:**
+
    ```bash
    git pull origin main
    ```
@@ -43,6 +46,7 @@ This guide provides step-by-step instructions for executing the strategic sprint
 ### Required Environment Variables
 
 Ensure these are set (swarm manager will check):
+
 - `GOOGLE_GEMINI_API_KEY` or `GEMINI_API_KEY`
 
 ---
@@ -54,6 +58,7 @@ Ensure these are set (swarm manager will check):
 **Estimated Time:** 2-4 hours
 
 ### Task
+
 - **BUG-007:** Missing Permissions & Safety Checks
 
 ### Execution
@@ -63,6 +68,7 @@ npm run swarm execute --batch=BUG-007
 ```
 
 **Or manually:**
+
 ```bash
 npx tsx scripts/manager.ts execute --batch=BUG-007
 ```
@@ -81,6 +87,7 @@ BUG-007: SUCCESS
 ### Verification
 
 After completion:
+
 1. Check roadmap: BUG-007 should be marked complete
 2. Verify code changes pushed to `agent/BUG-007` branch
 3. Test the changes in production
@@ -95,6 +102,7 @@ After completion:
 **Estimated Time:** 4-8 hours (parallel)
 
 ### Tasks
+
 - **WF-001:** End-to-End Order Creation Workflow
 - **WF-002:** End-to-End Inventory Intake Workflow
 - **BUG-010:** Global Search Bar Returns 404 Error
@@ -106,6 +114,7 @@ npm run swarm execute --batch=WF-001,WF-002,BUG-010
 ```
 
 **Or manually:**
+
 ```bash
 npx tsx scripts/manager.ts execute --batch=WF-001,WF-002,BUG-010
 ```
@@ -132,6 +141,7 @@ BUG-010: SUCCESS
 ### Verification
 
 After completion:
+
 1. Check roadmap: All tasks should be marked complete
 2. Verify branches created: `agent/WF-001`, `agent/WF-002`, `agent/BUG-010`
 3. Review verification reports for WF-001 and WF-002
@@ -147,6 +157,7 @@ After completion:
 **Estimated Time:** 6-8 hours (parallel)
 
 ### Tasks
+
 - **WF-003:** End-to-End Returns Workflow
 - **DATA-002-AUGMENT:** Augment Seeded Data for Realistic Relationships
 
@@ -157,6 +168,7 @@ npm run swarm execute --batch=WF-003,DATA-002-AUGMENT
 ```
 
 **Or manually:**
+
 ```bash
 npx tsx scripts/manager.ts execute --batch=WF-003,DATA-002-AUGMENT
 ```
@@ -179,6 +191,7 @@ DATA-002-AUGMENT: SUCCESS
 ### Verification
 
 After completion:
+
 1. Check roadmap: All tasks should be marked complete
 2. Verify branches created: `agent/WF-003`, `agent/DATA-002-AUGMENT`
 3. Review verification report for WF-003
@@ -194,6 +207,7 @@ After completion:
 **Estimated Time:** 6-8 hours
 
 ### Task
+
 - **WF-004:** Data Integrity Verification
 
 ### Execution
@@ -203,6 +217,7 @@ npm run swarm execute --batch=WF-004
 ```
 
 **Or manually:**
+
 ```bash
 npx tsx scripts/manager.ts execute --batch=WF-004
 ```
@@ -221,6 +236,7 @@ WF-004: SUCCESS
 ### Verification
 
 After completion:
+
 1. Check roadmap: WF-004 should be marked complete
 2. Verify branch created: `agent/WF-004`
 3. Review comprehensive verification report
@@ -238,10 +254,19 @@ npm run swarm status
 ```
 
 **Output:**
+
 ```json
 {
   "phase": "Phase 2.5 Completion & Phase 3 Workflow Verification",
-  "pending": ["BUG-007", "WF-001", "WF-002", "BUG-010", "WF-003", "DATA-002-AUGMENT", "WF-004"],
+  "pending": [
+    "BUG-007",
+    "WF-001",
+    "WF-002",
+    "BUG-010",
+    "WF-003",
+    "DATA-002-AUGMENT",
+    "WF-004"
+  ],
   "recommended": ["BUG-007"]
 }
 ```
@@ -267,6 +292,7 @@ grep -A 5 "BUG-007\|WF-001\|WF-002\|BUG-010\|WF-003\|DATA-002-AUGMENT\|WF-004" d
 **Error:** `command not found: pnpm` or `npm not found`
 
 **Solution:**
+
 ```bash
 # Install dependencies first
 npm install
@@ -282,6 +308,7 @@ npm run swarm status
 **Error:** `GOOGLE_GEMINI_API_KEY not set`
 
 **Solution:**
+
 ```bash
 export GOOGLE_GEMINI_API_KEY="your-key-here"
 # or add to .env file
@@ -294,6 +321,7 @@ echo "GOOGLE_GEMINI_API_KEY=your-key-here" >> .env
 
 **Solution:**
 The swarm manager auto-retries up to 3 times. If persistent:
+
 ```bash
 rm .git/index.lock
 git pull origin main
@@ -305,6 +333,7 @@ git pull origin main
 **Error:** `TIMEOUT` in execution results
 
 **Solution:**
+
 - Check if task is actually complete (may have finished but timed out)
 - Review branch for changes
 - Manually verify and update roadmap if needed
@@ -315,6 +344,7 @@ git pull origin main
 **Error:** `Module not found` when running swarm manager
 
 **Solution:**
+
 ```bash
 npm install
 # or
@@ -350,21 +380,26 @@ After sprint completion:
 If swarm manager is unavailable, deploy agents manually using prompts:
 
 ### Wave 1
-- `docs/prompts/BUG-007-PERMISSIONS.md`
+
+- `docs/prompts/BUG-007.md`
 
 ### Wave 2
+
 - `docs/prompts/WF-001.md`
 - `docs/prompts/WF-002.md`
 - `docs/prompts/BUG-010.md`
 
 ### Wave 3
+
 - `docs/prompts/WF-003.md`
 - `docs/prompts/DATA-002-AUGMENT.md`
 
 ### Wave 4
+
 - `docs/prompts/WF-004.md`
 
 **Instructions:**
+
 1. Copy prompt content
 2. Provide to AI agent (Claude, ChatGPT, etc.)
 3. Agent will follow prompt instructions
@@ -375,11 +410,13 @@ If swarm manager is unavailable, deploy agents manually using prompts:
 ## 📞 Support
 
 **Issues:**
+
 - Check `docs/SPRINT_PLAN_2025-11-22.md` for detailed plan
 - Review `docs/ROADMAP_AGENT_GUIDE.md` for agent protocols
 - Check `scripts/manager.ts` for swarm manager implementation
 
 **Questions:**
+
 - Refer to roadmap: `docs/roadmaps/MASTER_ROADMAP.md`
 - Check task prompts: `docs/prompts/[TASK_ID].md`
 
@@ -387,5 +424,3 @@ If swarm manager is unavailable, deploy agents manually using prompts:
 
 **Last Updated:** November 22, 2025  
 **Status:** Ready for Execution
-
-

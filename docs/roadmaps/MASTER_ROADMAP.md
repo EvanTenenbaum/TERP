@@ -1707,8 +1707,8 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
   - Cost: $0/month (free tier sufficient)
   - Note: Without this configuration, Sentry will log errors but NOT send alerts
 
-- [ ] **ST-010: Add Integration Tests** (Session-20251114-testing-infra-687ceb) 🟡 MEDIUM
-  - Task ID: ST-010
+- [ ] **ST-025: Add Integration Tests** (Session-20251114-testing-infra-687ceb) 🟡 MEDIUM
+  - Task ID: ST-025
   - Action: Write integration tests for critical paths
   - **Coverage Required:**
     - All accounting operations (GL entries, invoices, payments)
@@ -1752,8 +1752,8 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
   - Estimate: 1-2 days
   - Note: Addresses Kimi AI's finding about missing rate limiting
 
-- [ ] **ST-020: Harden SKIP_SEEDING Bypass** (Unassigned) 🟡 MEDIUM
-  - Task ID: ST-020
+- [ ] **ST-024: Harden SKIP_SEEDING Bypass** (Unassigned) 🟡 MEDIUM
+  - Task ID: ST-024
   - **Status:** ready
   - **Priority:** MEDIUM
   - **Estimate:** 4-8h
@@ -2083,7 +2083,7 @@ Agents sometimes mark tasks complete but forget to archive sessions and remove t
 **Status:** complete  
 **Priority:** HIGH  
 **Estimate:** 4-8h  
-**Module:** `scripts/`, `package.json`, `.do/app.yaml`  
+**Module:** scripts/  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/ST-023.md`  
 **Session:** Session-20251212-ST-023-8fd20c14
@@ -2117,7 +2117,7 @@ Deploys were failing/rolling back due to data mutation scripts being executed at
 **Status:** complete  
 **Priority:** HIGH  
 **Estimate:** 4-8h  
-**Module:** `client/src/main.tsx`, `vite.config.ts`, `server/_core/index.ts`  
+**Module:** client/src/main.tsx  
 **Dependencies:** None  
 **Prompt:** `docs/prompts/BUG-024.md`  
 **Session:** Session-20251203-PROD-LOADING-dc6060
@@ -2144,6 +2144,34 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 - `41de73e8` - Fix: production build crash (disable Manus runtime) + trust proxy
 - `450261e2` - Fix: remove stray jsx tokens causing production crash
 - `0a8087b7` - Fix: remove stray 'javascript' tokens causing frontend crash
+
+---
+
+### BUG-025: Analytics Data Not Populated
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 4-8h  
+**Module:** client/src/pages/AnalyticsPage.tsx  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/BUG-025.md`
+
+**Problem:** Analytics page shows $0.00 / 0 metrics even when data exists; it is not connected to real backend aggregates.
+
+**Objectives:**
+
+- Implement backend aggregation endpoints for core analytics metrics (orders, clients, inventory, revenue)
+- Wire the Analytics UI to those endpoints and remove placeholder values
+- Ensure correct permissions and safe defaults (empty DB returns zeros without crashing)
+
+**Deliverables:**
+
+- [ ] Analytics API exposes core metric aggregates with stable types and permission checks
+- [ ] Analytics page renders real values (no hardcoded 0s) and has loading/empty/error states
+- [ ] Numbers are consistent with database reality (spot-check against DB counts)
+- [ ] Basic tests added (router unit tests and/or smoke check script)
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
 
 ---
 
@@ -2211,7 +2239,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 1-2d  
-**Module:** `sentry.client.config.ts`, `sentry.server.config.ts`, `client/src/main.tsx`, `server/_core/index.ts`  
+**Module:** sentry.client.config.ts  
 **Dependencies:** None  
 **Prompt:** [`docs/prompts/ST-008.md`](../prompts/ST-008.md)
 
@@ -2237,7 +2265,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 
 ---
 
-### ST-009: Implement API Monitoring (Datadog)
+### ST-009: Implement API Monitoring
 
 **Status:** complete  
 **Priority:** MEDIUM  
@@ -2248,19 +2276,17 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 
 **Objectives:**
 
-- Set up Datadog for API performance monitoring
-- Add performance metrics to all tRPC procedures
-- Create alerts for slow queries (>1s response time)
-- Build monitoring dashboard for key metrics
+- Implement API performance monitoring via Sentry Performance
+- Add baseline performance visibility for core API procedures
+- Configure alerting/triage workflow for slow endpoints (via Sentry)
+- Ensure monitoring does not crash production if DSN is missing/misconfigured
 
 **Deliverables:**
 
-- [ ] Datadog SDK installed and configured
-- [ ] Performance middleware added to tRPC
-- [ ] Custom metrics for database queries
-- [ ] Alerts configured for slow queries
-- [ ] Monitoring dashboard created
-- [ ] Documentation of monitoring setup
+- [ ] Sentry Performance enabled and configured (traces sample rate set appropriately for prod)
+- [ ] Core API endpoints generate traces/transactions in production
+- [ ] Slow endpoint alerting/triage documented (thresholds + where to look)
+- [ ] Monitoring documentation updated
 - [ ] All tests passing (no regressions)
 - [ ] Zero TypeScript errors
 - [ ] Session file archived
@@ -2273,7 +2299,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Status:** blocked  
 **Priority:** MEDIUM  
 **Estimate:** 2-3d  
-**Module:** `server/_core/cache.ts`, `server/routers/`  
+**Module:** server/\_core/cache.ts  
 **Dependencies:** None  
 **Prompt:** [`docs/prompts/ST-010.md`](../prompts/ST-010.md)
 
@@ -2881,7 +2907,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Priority:** HIGH
 **Estimate:** 4-8h
 **Actual Time:** 0h (already implemented)
-**Module:** `client/src/components/layout/AppHeader.tsx`, `client/src/pages/SearchResultsPage.tsx`, `client/src/App.tsx`, `server/routers/search.ts`
+**Module:** client/src/pages/SearchResultsPage.tsx
 **Dependencies:** None
 **Prompt:** `docs/prompts/BUG-019.md`
 
@@ -2913,7 +2939,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Priority:** HIGH
 **Estimate:** 2-4h
 **Actual Time:** 0h (already implemented)
-**Module:** `client/src/pages/TodoListsPage.tsx`, `client/src/components/DashboardLayout.tsx`, `client/src/App.tsx`, `server/routers/todoLists.ts`
+**Module:** client/src/pages/TodoListsPage.tsx
 **Dependencies:** None
 **Prompt:** `docs/prompts/BUG-020.md`
 
@@ -2977,7 +3003,7 @@ Production rendered the HTML shell but stayed stuck on the loading spinner becau
 **Priority:** MEDIUM
 **Estimate:** 4-8h
 **Actual Time:** 0h (already implemented)
-**Module:** `client/src/contexts/ThemeContext.tsx`, `client/src/components/layout/AppHeader.tsx`
+**Module:** client/src/contexts/ThemeContext.tsx
 **Dependencies:** None
 **Prompt:** `docs/prompts/BUG-022.md`
 
@@ -4429,14 +4455,12 @@ Successfully created three comprehensive agent prompts following the proven 4-ph
 
 ---
 
-#### DATA-004: Seed Orders & Line Items
+#### Seed Orders & Line Items (Seeding Subtask)
 
 **Status:** in-progress  
 **Priority:** HIGH  
 **Estimate:** 1-2h  
 **Depends On:** DATA-002, DATA-003
-
-**Prompt:** `docs/prompts/DATA-004.md`
 
 **Objective:**  
 Seed 20-30 realistic orders with line items to enable sales workflow testing.
@@ -4453,12 +4477,12 @@ Enables order management, invoicing, sales reporting, and revenue analytics test
 
 ---
 
-#### DATA-005: Seed Order Fulfillment
+#### Seed Order Fulfillment (Seeding Subtask)
 
 **Status:** ready  
 **Priority:** MEDIUM  
 **Estimate:** 1-2h  
-**Depends On:** DATA-004
+**Depends On:** Seed Orders & Line Items (Seeding Subtask)
 
 **Objective:**  
 Seed fulfillment data (shipments, tracking) for orders created in DATA-004.
@@ -4560,49 +4584,7 @@ Completes pricing feature set, enables price monitoring.
 
 ---
 
-#### BUG-005: Command Palette (Cmd+K) Not Responding
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 2-3h
-**Module:** Navigation
-**Dependencies:** None
-**Prompt:** [`docs/prompts/BUG-005.md`](../prompts/BUG-005.md)
-
-**Objectives:**
-
-- Fix keyboard shortcut event listener
-- Ensure palette opens reliably
-
----
-
-#### BUG-006: Debug Dashboard Visible in Production
-
-**Status:** ready
-**Priority:** LOW
-**Estimate:** 1h
-**Module:** Orders
-**Dependencies:** None
-**Prompt:** [`docs/prompts/BUG-006.md`](../prompts/BUG-006.md)
-
-**Objectives:**
-
-- Hide debug info in production environment
-
----
-
-#### BUG-007: Analytics Data Not Populated
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 4-6h
-**Module:** Analytics
-**Dependencies:** None
-**Prompt:** [`docs/prompts/BUG-007.md`](../prompts/BUG-007.md)
-
-**Objectives:**
-
-- Connect analytics page to real backend data
+_Deprecated duplicate entries removed:_ Command palette, debug dashboard, and analytics tracking are handled elsewhere (see Phase 2.5/2.6 bug tasks and the dedicated analytics task entry).
 
 ---
 
@@ -4683,20 +4665,17 @@ Completes pricing feature set, enables price monitoring.
     - Shows internal component state, query status, data arrays
     - Displays test endpoint results
     - Exposes implementation details to users
-  - **Root Cause:** Debug component not wrapped in development-only conditional
-  - **Location:** `/orders` page
+  - **Root Cause:** Debug/diagnostic page is still routed in production without a dev-only guard
+  - **Location:** `/orders-debug` route
   - **Debug Info Exposed:**
-    - Component mounted status
-    - Active tab state
-    - Status filter values and types
-    - Query status (isDraft, isLoading, data)
-    - First order object with full data structure
-    - Test endpoint responses with timestamps
+    - Database connection metadata (host/database presence)
+    - Sample orders and raw query outputs
   - **Solution:**
     - Wrap debug dashboard in `process.env.NODE_ENV === 'development'` check
     - Or remove debug dashboard entirely if no longer needed
   - **Files to Modify:**
-    - `client/src/pages/OrdersPage.tsx` (or similar)
+    - `client/src/pages/OrdersDebug.tsx` (diagnostic UI)
+    - `client/src/App.tsx` (route definition for `/orders-debug`)
   - **Security Impact:** MEDIUM - Exposes internal implementation details
   - **User Experience Impact:** HIGH - Unprofessional appearance, confusing for users
   - **Estimate:** 15-30 minutes
@@ -4928,23 +4907,22 @@ Completes pricing feature set, enables price monitoring.
   - **Discovered:** Gap Testing Session 2025-11-22 (TS-002)
   - **Note:** Decision needed: implement feature or remove from test suite if not planned
 
-- [x] **BUG-017: Inconsistent Layout Between Dashboard and Module Pages** (Created: 2025-11-26) 🔴 HIGH PRIORITY
+- [ ] **BUG-017: Inconsistent Layout Between Dashboard and Module Pages** (Created: 2025-11-26) 🔴 HIGH PRIORITY
   - Task ID: BUG-017
   - Priority: P1 (HIGH - INCONSISTENT UX)
   - Session: TBD
   - **Problem:** Dashboard page and other module pages use different layout configurations, causing inconsistent navigation experience
   - **Current State:**
-    - Dashboard page: Uses updated/complete sidebar navigation BUT has NO header
-    - Other module pages (Orders, Inventory, Clients, etc.): Have header BUT use older/incomplete sidebar navigation
-    - This creates a jarring UX where the sidebar menu items change as users navigate between sections
-  - **Root Cause:** BUG-002 fix modified `AppShell` to conditionally render `AppSidebar` and `AppHeader` only for non-dashboard routes. Dashboard uses `DashboardLayout` which has its own sidebar but no header implementation.
+    - Dashboard routes use `DashboardLayout` (its own sidebar; header shown for desktop users)
+    - Non-dashboard routes use `AppShell` + `AppSidebar` + `AppHeader`
+    - Sidebar menu items are not identical between `DashboardLayout` and `AppSidebar` (some modules appear in one but not the other)
+  - **Root Cause:** Two separate navigation definitions (`client/src/components/DashboardLayout.tsx` vs `client/src/components/layout/AppSidebar.tsx`) drifted over time.
   - **Expected Behavior:**
     - ALL pages should have consistent header presence
     - ALL pages should use the same updated sidebar navigation with all modules included
     - Unified layout across the entire application
   - **Affected Areas:**
-    - Dashboard page: Missing header component
-    - All other modules: Using outdated `AppSidebar` instead of newer `DashboardLayout` sidebar
+    - Sidebar navigation consistency (Dashboard vs non-dashboard routes)
   - **Investigation Steps:**
     1. Review `AppShell` conditional rendering logic
     2. Compare `DashboardLayout` sidebar with `AppSidebar` - identify missing modules
@@ -4961,8 +4939,8 @@ Completes pricing feature set, enables price monitoring.
     - `client/src/components/layout/AppHeader.tsx` (header component)
   - **Impact:** HIGH - Inconsistent UX across application, missing navigation features on dashboard, outdated nav on modules
   - **Estimate:** 4-8 hours
-  - **Status:** complete
-  - **Implementation:** `DashboardLayout` includes `AppHeader` and centralizes navigation items (see `client/src/components/DashboardLayout.tsx`)
+  - **Status:** ready
+  - **Partial Fix:** BUG-023 added `AppHeader` to `DashboardLayout` for desktop; remaining work is to unify sidebar nav items across layouts
   - **Discovered:** Manual Testing Session 2025-11-26
   - **Related:** BUG-002 (Duplicate Navigation Bar - completed, caused this issue as side effect)
 

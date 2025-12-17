@@ -49,14 +49,17 @@ Independent High-Priority Tasks
 ### Critical Path
 
 **Must Complete First:**
+
 - ✅ BUG-007 (Phase 2.5 completion) - **BLOCKS** Phase 3
 
 **Can Run in Parallel (After Phase 2.5):**
+
 - ✅ WF-001, WF-002, WF-003 (all dependencies met)
 - ✅ BUG-010 (independent)
 - ✅ DATA-002-AUGMENT (independent)
 
 **Must Complete Last:**
+
 - ✅ WF-004 (depends on all workflow verifications)
 
 ---
@@ -68,11 +71,13 @@ Independent High-Priority Tasks
 **Objective:** Complete the last critical bug to unblock Phase 3
 
 **Task:** BUG-007 - Missing Permissions & Safety Checks
+
 - **Priority:** P0 (CRITICAL - SAFETY)
 - **Estimate:** 2-4 hours
 - **Impact:** Completes Phase 2.5, unblocks Phase 3
 
 **Execution:**
+
 ```bash
 npm run swarm execute --batch=BUG-007
 ```
@@ -84,21 +89,25 @@ npm run swarm execute --batch=BUG-007
 **Objective:** Execute independent high-priority tasks
 
 **Agent 1:** WF-001 - End-to-End Order Creation Workflow
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 4-6 hours
 - **Dependencies:** BUG-003 ✅
 
 **Agent 2:** WF-002 - End-to-End Inventory Intake Workflow
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 6-8 hours
 - **Dependencies:** BUG-004 ✅, BUG-006 ✅
 
 **Agent 3:** BUG-010 - Global Search Bar Returns 404
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 2-4 hours
 - **Dependencies:** None
 
 **Execution:**
+
 ```bash
 npm run swarm execute --batch=WF-001,WF-002,BUG-010
 ```
@@ -110,16 +119,19 @@ npm run swarm execute --batch=WF-001,WF-002,BUG-010
 **Objective:** Complete remaining workflow verification and data augmentation
 
 **Agent 1:** WF-003 - End-to-End Returns Workflow
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 4-6 hours
 - **Dependencies:** BUG-005 ✅
 
 **Agent 2:** DATA-002-AUGMENT - Augment Seeded Data
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 6-8 hours
 - **Dependencies:** None
 
 **Execution:**
+
 ```bash
 npm run swarm execute --batch=WF-003,DATA-002-AUGMENT
 ```
@@ -131,11 +143,13 @@ npm run swarm execute --batch=WF-003,DATA-002-AUGMENT
 **Objective:** Comprehensive data integrity verification
 
 **Task:** WF-004 - Data Integrity Verification
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 6-8 hours
 - **Dependencies:** ST-019 ✅, WF-001, WF-002, WF-003
 
 **Execution:**
+
 ```bash
 npm run swarm execute --batch=WF-004
 ```
@@ -145,18 +159,22 @@ npm run swarm execute --batch=WF-004
 ## 📅 Timeline
 
 ### Day 1 (Nov 22-23)
+
 - **Wave 1:** BUG-007 (2-4h) - **1 agent**
 - **Wave 2 Start:** If BUG-007 completes early, start WF-001, WF-002, BUG-010 - **3 agents**
 
 ### Day 2 (Nov 23-24)
+
 - **Wave 2 Continue:** WF-001, WF-002, BUG-010 - **3 agents**
 - **Wave 3 Start:** If Wave 2 completes, start WF-003, DATA-002-AUGMENT - **2 agents**
 
 ### Day 3 (Nov 24-25)
+
 - **Wave 3 Continue:** WF-003, DATA-002-AUGMENT - **2 agents**
 - **Wave 4 Start:** If Wave 3 completes, start WF-004 - **1 agent**
 
 ### Day 4 (Nov 25-26)
+
 - **Wave 4 Continue:** WF-004 - **1 agent**
 - **Buffer:** For any delays or issues
 
@@ -167,12 +185,14 @@ npm run swarm execute --batch=WF-004
 ## 📋 Documentation Created
 
 ### Strategic Planning
+
 - ✅ `docs/SPRINT_PLAN_2025-11-22.md` - Complete strategic plan
 - ✅ `docs/SWARM_EXECUTION_GUIDE_2025-11-22.md` - Execution instructions
 - ✅ `docs/SPRINT_EXECUTION_SUMMARY.md` - Quick reference
 
 ### Prompts Created
-- ✅ `docs/prompts/BUG-007-PERMISSIONS.md` - Missing Permissions & Safety Checks
+
+- ✅ `docs/prompts/BUG-007.md` - Missing Permissions & Safety Checks
 - ✅ `docs/prompts/BUG-010.md` - Global Search Bar 404 Fix
 - ✅ `docs/prompts/WF-001.md` - Order Creation Workflow Verification
 - ⚠️ `docs/prompts/WF-002.md` - Inventory Intake Workflow Verification (to be created)
@@ -184,15 +204,18 @@ npm run swarm execute --batch=WF-004
 ## 🎯 Success Metrics
 
 ### Phase 2.5 Completion
+
 - ✅ 100% of Phase 2.5 tasks complete (8/8)
 - ✅ All critical workflow blockers resolved
 
 ### Phase 3 Completion
+
 - ✅ All workflows verified end-to-end
 - ✅ Data integrity validated
 - ✅ Zero critical bugs in core workflows
 
 ### Quality Metrics
+
 - ✅ All tests passing
 - ✅ Zero TypeScript errors
 - ✅ 100% deployment success rate
@@ -272,5 +295,3 @@ After sprint completion:
 - **Agent Guide:** `docs/ROADMAP_AGENT_GUIDE.md`
 - **Sprint Plan:** `docs/SPRINT_PLAN_2025-11-22.md`
 - **Execution Guide:** `docs/SWARM_EXECUTION_GUIDE_2025-11-22.md`
-
-
