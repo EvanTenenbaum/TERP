@@ -17,10 +17,15 @@ import { faker } from "@faker-js/faker";
 // Batch Generation Utilities
 // ============================================================================
 
-type PaymentTerm = PaymentTerm;
+type PaymentTerm = "COD" | "NET_7" | "NET_15" | "NET_30" | "CONSIGNMENT";
 const _PAYMENT_TERMS = ["COD", "NET_7", "NET_15", "NET_30", "CONSIGNMENT"] as const;
-type BatchStatus = BatchStatus;
-const _BATCH_STATUSES = ["AWAITING_INTAKE", "LIVE", "ON_HOLD", "SOLD_OUT"] as const;
+
+/**
+ * Batch Status Enum - matches schema definition
+ * Requirements: 4.1, 4.2, 4.3
+ */
+type BatchStatus = "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED";
+const _BATCH_STATUSES = ["AWAITING_INTAKE", "LIVE", "PHOTOGRAPHY_COMPLETE", "ON_HOLD", "QUARANTINED", "SOLD_OUT", "CLOSED"] as const;
 const GRADES = ["AAA", "AA", "A", null];
 
 interface BatchData {
@@ -82,17 +87,32 @@ function generateBatch(
 
   const amountPaid = isConsignment ? 0 : unitCogs * onHandQty;
 
+  // Status distribution for workflow queue testing (Requirements 4.1, 4.2, 4.3)
+  // 60% LIVE, 15% SOLD_OUT, 15% AWAITING_INTAKE, 5% ON_HOLD, 3% QUARANTINED, 2% CLOSED
+  const batchStatus = faker.helpers.weightedArrayElement([
+    { value: "LIVE" as BatchStatus, weight: 60 },
+    { value: "SOLD_OUT" as BatchStatus, weight: 15 },
+    { value: "AWAITING_INTAKE" as BatchStatus, weight: 15 },
+    { value: "ON_HOLD" as BatchStatus, weight: 5 },
+    { value: "QUARANTINED" as BatchStatus, weight: 3 },
+    { value: "CLOSED" as BatchStatus, weight: 2 },
+  ]);
+
+  // Reserved quantity for LIVE batches (Requirements 9.1, 9.2)
+  // 15% of LIVE batches have reserved inventory (10-40% of onHandQty)
+  let reservedQty = 0;
+  if (batchStatus === "LIVE" && Math.random() < 0.15) {
+    // Reserve 10-40% of onHandQty, ensuring reservedQty <= onHandQty
+    const reservePercent = faker.number.float({ min: 0.1, max: 0.4 });
+    reservedQty = Math.min(Math.floor(onHandQty * reservePercent), onHandQty);
+  }
+
   return {
     code: `BATCH-${String(index + 1).padStart(6, "0")}`,
     sku: `SKU-${String(productId).padStart(4, "0")}-${String(lotId).padStart(4, "0")}-${String(index + 1).padStart(3, "0")}`,
     productId,
     lotId,
-    batchStatus: faker.helpers.weightedArrayElement([
-      { value: "LIVE", weight: 70 },
-      { value: "AWAITING_INTAKE", weight: 10 },
-      { value: "ON_HOLD", weight: 10 },
-      { value: "SOLD_OUT", weight: 10 },
-    ]),
+    batchStatus,
     grade: isFlower ? faker.helpers.arrayElement(GRADES) : null,
     isSample: 0,
     sampleOnly: 0,
@@ -106,7 +126,7 @@ function generateBatch(
     metadata: null,
     onHandQty: String(onHandQty),
     sampleQty: "0",
-    reservedQty: "0",
+    reservedQty: String(reservedQty),
     quarantineQty: "0",
     holdQty: "0",
     defectiveQty: "0",
@@ -244,3 +264,13 @@ export async function seedBatches(
 }
 
 
+
+// ============================================================================
+// Exports for Testing
+// ============================================================================
+
+// Export types for property-based testing
+export type { BatchData, BatchStatus };
+
+// Export pure function for property-based testing
+export { generateBatch };
