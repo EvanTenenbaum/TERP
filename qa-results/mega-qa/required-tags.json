@@ -1,0 +1,120 @@
+{
+  "tags": [
+    {
+      "id": "TS-001",
+      "category": "ts-protocol",
+      "description": "User authentication flow",
+      "required": true
+    },
+    {
+      "id": "TS-002",
+      "category": "ts-protocol",
+      "description": "Dashboard loads correctly",
+      "required": true
+    },
+    {
+      "id": "TS-1.1",
+      "category": "ts-protocol",
+      "description": "Orders list view",
+      "required": true
+    },
+    {
+      "id": "TS-2.1",
+      "category": "ts-protocol",
+      "description": "Clients list view",
+      "required": true
+    },
+    {
+      "id": "TS-11.1",
+      "category": "ts-protocol",
+      "description": "Inventory management",
+      "required": true
+    },
+    {
+      "id": "route:/login",
+      "category": "route",
+      "description": "Login page accessible",
+      "required": true
+    },
+    {
+      "id": "route:/dashboard",
+      "category": "route",
+      "description": "Dashboard accessible",
+      "required": true
+    },
+    {
+      "id": "route:/orders",
+      "category": "route",
+      "description": "Orders page accessible",
+      "required": true
+    },
+    {
+      "id": "route:/clients",
+      "category": "route",
+      "description": "Clients page accessible",
+      "required": true
+    },
+    {
+      "id": "route:/inventory",
+      "category": "route",
+      "description": "Inventory page accessible",
+      "required": true
+    },
+    {
+      "id": "api:auth.login",
+      "category": "api",
+      "description": "Login API works",
+      "required": true
+    },
+    {
+      "id": "api:auth.me",
+      "category": "api",
+      "description": "Current user API works",
+      "required": true
+    },
+    {
+      "id": "api:orders.list",
+      "category": "api",
+      "description": "Orders list API works",
+      "required": true
+    },
+    {
+      "id": "api:clients.list",
+      "category": "api",
+      "description": "Clients list API works",
+      "required": true
+    },
+    {
+      "id": "api:batches.list",
+      "category": "api",
+      "description": "Batches list API works",
+      "required": true
+    },
+    {
+      "id": "regression:cmd-k",
+      "category": "regression",
+      "description": "Cmd+K command palette works",
+      "required": true
+    },
+    {
+      "id": "regression:theme-toggle",
+      "category": "regression",
+      "description": "Theme toggle works",
+      "required": true
+    },
+    {
+      "id": "regression:no-spinner",
+      "category": "regression",
+      "description": "No infinite loading spinners",
+      "required": true
+    },
+    {
+      "id": "regression:layout-consistency",
+      "category": "regression",
+      "description": "Layout remains consistent",
+      "required": true
+    }
+  ],
+  "gate": 70,
+  "generatedAt": "2025-12-17T18:08:03.010Z"
+}
