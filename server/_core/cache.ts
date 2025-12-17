@@ -156,8 +156,14 @@ export default cache;
  * Cache key builders for common patterns
  */
 export const CacheKeys = {
+  // Deprecated - use suppliers instead
   vendors: () => "vendors:all",
   vendor: (id: number) => `vendor:${id}`,
+  // Canonical supplier cache keys (replaces vendors)
+  suppliers: () => "suppliers:all",
+  supplier: (clientId: number) => `supplier:${clientId}`,
+  supplierByLegacyVendor: (vendorId: number) => `supplier:legacy:${vendorId}`,
+  // Other cache keys
   brands: (vendorId?: number) =>
     vendorId ? `brands:vendor:${vendorId}` : "brands:all",
   brand: (id: number) => `brand:${id}`,

@@ -1,16 +1,20 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { purchaseOrders, purchaseOrderItems } from "../../drizzle/schema";
-import { eq, desc, sql } from "drizzle-orm";
-import { requirePermission } from "../_core/permissionMiddleware";
+import { purchaseOrders, purchaseOrderItems, supplierProfiles } from "../../drizzle/schema";
+import { eq, desc, sql, and } from "drizzle-orm";
+import { getSupplierByLegacyVendorId } from "../inventoryDb";
 
 export const purchaseOrdersRouter = router({
   // Create new purchase order
+  // Supports both supplierClientId (canonical) and vendorId (deprecated, for backward compat)
   create: publicProcedure
     .input(
       z.object({
-        vendorId: z.number(),
+        // Canonical: supplier client ID (preferred)
+        supplierClientId: z.number().optional(),
+        // Deprecated: vendor ID (for backward compatibility)
+        vendorId: z.number().optional(),
         intakeSessionId: z.number().optional(),
         orderDate: z.string(),
         expectedDeliveryDate: z.string().optional(),
@@ -25,14 +29,46 @@ export const purchaseOrdersRouter = router({
             unitCost: z.number(),
           })
         ),
-      })
+      }).refine(
+        (data) => data.supplierClientId !== undefined || data.vendorId !== undefined,
+        { message: "Either supplierClientId or vendorId must be provided" }
+      )
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const { items, ...poData } = input;
+
+      // Resolve supplier client ID
+      let resolvedSupplierClientId = poData.supplierClientId;
+      let resolvedVendorId = poData.vendorId;
+
+      // If only vendorId provided, resolve to supplierClientId via supplier_profiles
+      if (!resolvedSupplierClientId && resolvedVendorId) {
+        console.warn('[DEPRECATED] purchaseOrders.create called with vendorId - use supplierClientId instead');
+        const supplier = await getSupplierByLegacyVendorId(resolvedVendorId);
+        if (supplier) {
+          resolvedSupplierClientId = supplier.id;
+        }
+      }
+
+      // If only supplierClientId provided, try to resolve vendorId for backward compat
+      if (resolvedSupplierClientId && !resolvedVendorId) {
+        const [profile] = await db
+          .select()
+          .from(supplierProfiles)
+          .where(eq(supplierProfiles.clientId, resolvedSupplierClientId))
+          .limit(1);
+        if (profile?.legacyVendorId) {
+          resolvedVendorId = profile.legacyVendorId;
+        }
+      }
+
+      // Validate that we have at least vendorId (required by schema for now)
+      if (!resolvedVendorId) {
+        throw new Error("Unable to resolve vendor ID for purchase order. Supplier may not have a legacy vendor mapping.");
+      }
 
       // Generate PO number
       const poNumber = await generatePONumber(db);
@@ -40,9 +76,10 @@ export const purchaseOrdersRouter = router({
       // Calculate totals
       const subtotal = items.reduce((sum, item) => sum + item.quantityOrdered * item.unitCost, 0);
 
-      // Create PO
+      // Create PO with both IDs
       const [po] = await db.insert(purchaseOrders).values({
-        vendorId: poData.vendorId,
+        vendorId: resolvedVendorId,
+        supplierClientId: resolvedSupplierClientId || null,
         intakeSessionId: poData.intakeSessionId,
         orderDate: new Date(poData.orderDate),
         expectedDeliveryDate: poData.expectedDeliveryDate ? new Date(poData.expectedDeliveryDate) : null,
@@ -69,15 +106,17 @@ export const purchaseOrdersRouter = router({
         );
       }
 
-      return { id: po.insertId, poNumber };
+      return { id: po.insertId, poNumber, supplierClientId: resolvedSupplierClientId };
     }),
 
   // Get all purchase orders
+  // Supports filtering by supplierClientId (canonical) or vendorId (deprecated)
   getAll: publicProcedure
     .input(
       z
         .object({
-          vendorId: z.number().optional(),
+          supplierClientId: z.number().optional(), // Canonical filter
+          vendorId: z.number().optional(), // Deprecated filter (backward compat)
           status: z.string().optional(),
           limit: z.number().min(1).max(1000).default(100),
           offset: z.number().min(0).default(0),
@@ -86,18 +125,23 @@ export const purchaseOrdersRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
       
-      let query = db.select().from(purchaseOrders).orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
+      // Build conditions array
+      const conditions = [];
 
-      if (input?.vendorId) {
-        query = query.where(eq(purchaseOrders.vendorId, input.vendorId)) as typeof query;
+      // Filter by supplier (canonical) or vendor (deprecated)
+      if (input?.supplierClientId) {
+        conditions.push(eq(purchaseOrders.supplierClientId, input.supplierClientId));
+      } else if (input?.vendorId) {
+        console.warn('[DEPRECATED] purchaseOrders.getAll called with vendorId filter - use supplierClientId instead');
+        conditions.push(eq(purchaseOrders.vendorId, input.vendorId));
       }
 
+      // Filter by status
       if (input?.status) {
         // Map PARTIALLY_RECEIVED to RECEIVING for schema compatibility
         const statusMap: Record<string, string> = {
@@ -106,17 +150,22 @@ export const purchaseOrdersRouter = router({
         const mappedStatus = statusMap[input.status] || input.status;
         const validStatuses = ["DRAFT", "SENT", "CONFIRMED", "RECEIVING", "RECEIVED", "CANCELLED"] as const;
         if (validStatuses.includes(mappedStatus as typeof validStatuses[number])) {
-          query = query.where(eq(purchaseOrders.purchaseOrderStatus, mappedStatus as typeof validStatuses[number])) as typeof query;
+          conditions.push(eq(purchaseOrders.purchaseOrderStatus, mappedStatus as typeof validStatuses[number]));
         }
       }
 
-      return await query;
+      // Execute query with conditions
+      const baseQuery = db.select().from(purchaseOrders);
+      const query = conditions.length > 0 
+        ? baseQuery.where(and(...conditions))
+        : baseQuery;
+      
+      return await query.orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
     }),
 
   // Get purchase order by ID with items
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
-        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const [po] = await db
@@ -141,6 +190,7 @@ export const purchaseOrdersRouter = router({
     .input(
       z.object({
         id: z.number(),
+        supplierClientId: z.number().optional(), // Allow updating supplier
         expectedDeliveryDate: z.string().optional(),
         paymentTerms: z.string().optional(),
         notes: z.string().optional(),
@@ -150,14 +200,19 @@ export const purchaseOrdersRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const { id, ...data } = input;
+      const { id, expectedDeliveryDate, ...rest } = input;
+
+      // Build update object with proper types
+      const updateData: Record<string, unknown> = { ...rest };
+      if (expectedDeliveryDate) {
+        updateData.expectedDeliveryDate = new Date(expectedDeliveryDate);
+      }
 
       await db
         .update(purchaseOrders)
-        .set(data as any)
+        .set(updateData)
         .where(eq(purchaseOrders.id, id));
 
       return { success: true };
@@ -166,7 +221,6 @@ export const purchaseOrdersRouter = router({
   // Delete purchase order
   delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
-        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     await db.delete(purchaseOrders).where(eq(purchaseOrders.id, input.id));
@@ -183,10 +237,9 @@ export const purchaseOrdersRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
-      const updateData: Record<string, unknown> = { status: input.status };
+      const updateData: Record<string, unknown> = { purchaseOrderStatus: input.status };
 
       if (input.status === "SENT") {
         updateData.sentAt = new Date();
@@ -214,7 +267,6 @@ export const purchaseOrdersRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const totalCost = input.quantityOrdered * input.unitCost;
@@ -246,7 +298,6 @@ export const purchaseOrdersRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const { id, ...data } = input;
@@ -284,7 +335,6 @@ export const purchaseOrdersRouter = router({
   // Delete PO item
   deleteItem: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
-        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const [item] = await db
@@ -304,30 +354,46 @@ export const purchaseOrdersRouter = router({
     return { success: true };
   }),
 
-  // Get PO history for a vendor
-  getByVendor: publicProcedure.input(z.object({ vendorId: z.number() })).query(async ({ input }) => {
-    const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) throw new Error("Database not available");
+  // Get PO history for a supplier (canonical)
+  getBySupplier: publicProcedure
+    .input(z.object({ supplierClientId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    return await db
-      .select()
-      .from(purchaseOrders)
-      .where(eq(purchaseOrders.vendorId, input.vendorId))
-      .orderBy(desc(purchaseOrders.createdAt));
-  }),
+      return await db
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.supplierClientId, input.supplierClientId))
+        .orderBy(desc(purchaseOrders.createdAt));
+    }),
+
+  // Get PO history for a vendor (DEPRECATED - use getBySupplier instead)
+  getByVendor: publicProcedure
+    .input(z.object({ vendorId: z.number() }))
+    .query(async ({ input }) => {
+      console.warn('[DEPRECATED] purchaseOrders.getByVendor - use getBySupplier with supplierClientId instead');
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      return await db
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.vendorId, input.vendorId))
+        .orderBy(desc(purchaseOrders.createdAt));
+    }),
 
   // Get PO history for a product
   getByProduct: publicProcedure.input(z.object({ productId: z.number() })).query(async ({ input }) => {
     const db = await getDb();
-        if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
 
     const items = await db
       .select({
         poId: purchaseOrders.id,
         poNumber: purchaseOrders.poNumber,
-        vendorId: purchaseOrders.vendorId,
+        supplierClientId: purchaseOrders.supplierClientId, // Canonical
+        vendorId: purchaseOrders.vendorId, // Deprecated but included for backward compat
         purchaseOrderStatus: purchaseOrders.purchaseOrderStatus,
         orderDate: purchaseOrders.orderDate,
         quantityOrdered: purchaseOrderItems.quantityOrdered,

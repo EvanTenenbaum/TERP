@@ -33,14 +33,16 @@ import {
 } from "../drizzle/schema";
 
 // ============================================================================
-// VENDOR QUERIES
+// VENDOR QUERIES (DEPRECATED - Use Supplier functions below)
 // ============================================================================
 
 /**
  * Create vendor and invalidate cache
  * ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cache invalidation
+ * @deprecated Use createSupplier() instead - vendors table is deprecated
  */
 export async function createVendor(vendor: InsertVendor) {
+  console.warn('[DEPRECATED] createVendor() - use createSupplier() instead. Vendors table is deprecated.');
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -52,7 +54,11 @@ export async function createVendor(vendor: InsertVendor) {
   return result;
 }
 
+/**
+ * @deprecated Use getSupplierByClientId() or getSupplierByLegacyVendorId() instead
+ */
 export async function getVendorById(id: number) {
+  console.warn('[DEPRECATED] getVendorById() - use getSupplierByLegacyVendorId() instead. Vendors table is deprecated.');
   const db = await getDb();
   if (!db) return null;
 
@@ -67,8 +73,10 @@ export async function getVendorById(id: number) {
 /**
  * Get all vendors with caching
  * ✅ ENHANCED: TERP-INIT-005 Phase 4 - Caching for frequently accessed data
+ * @deprecated Use getAllSuppliers() instead - vendors table is deprecated
  */
 export async function getAllVendors() {
+  console.warn('[DEPRECATED] getAllVendors() - use getAllSuppliers() instead. Vendors table is deprecated.');
   return await cache.getOrSet(
     CacheKeys.vendors(),
     async () => {
@@ -80,7 +88,11 @@ export async function getAllVendors() {
   );
 }
 
+/**
+ * @deprecated Use searchSuppliers() instead - vendors table is deprecated
+ */
 export async function searchVendors(query: string) {
+  console.warn('[DEPRECATED] searchVendors() - use searchSuppliers() instead. Vendors table is deprecated.');
   const db = await getDb();
   if (!db) return [];
 
@@ -89,6 +101,310 @@ export async function searchVendors(query: string) {
     .from(vendors)
     .where(like(vendors.name, `%${query}%`))
     .limit(20);
+}
+
+// ============================================================================
+// SUPPLIER QUERIES (Canonical - uses clients table with isSeller=true)
+// Part of Canonical Model Unification - replaces deprecated vendor queries
+// ============================================================================
+
+import { clients, supplierProfiles, type Client, type SupplierProfile } from "../drizzle/schema";
+import { asc } from "drizzle-orm";
+
+/**
+ * Supplier with profile - the canonical type for supplier data
+ */
+export interface SupplierWithProfile extends Client {
+  supplierProfile: SupplierProfile | null;
+}
+
+/**
+ * Get all suppliers (clients with isSeller=true)
+ * Replaces deprecated getAllVendors()
+ */
+export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
+  return await cache.getOrSet(
+    CacheKeys.suppliers(),
+    async () => {
+      const db = await getDb();
+      if (!db) return [];
+      
+      // Get all clients with isSeller=true
+      const supplierClients = await db
+        .select()
+        .from(clients)
+        .where(eq(clients.isSeller, true))
+        .orderBy(asc(clients.name));
+      
+      // Get all supplier profiles
+      const profiles = await db
+        .select()
+        .from(supplierProfiles);
+      
+      // Map profiles to clients
+      const profileMap = new Map<number, SupplierProfile>();
+      for (const profile of profiles) {
+        profileMap.set(profile.clientId, profile);
+      }
+      
+      // Combine clients with their profiles
+      return supplierClients.map(client => ({
+        ...client,
+        supplierProfile: profileMap.get(client.id) || null,
+      }));
+    },
+    CacheTTL.LONG // 15 minutes
+  );
+}
+
+/**
+ * Get supplier by client ID
+ */
+export async function getSupplierByClientId(clientId: number): Promise<SupplierWithProfile | null> {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(and(eq(clients.id, clientId), eq(clients.isSeller, true)))
+    .limit(1);
+  
+  if (!client) return null;
+  
+  const [profile] = await db
+    .select()
+    .from(supplierProfiles)
+    .where(eq(supplierProfiles.clientId, clientId))
+    .limit(1);
+  
+  return {
+    ...client,
+    supplierProfile: profile || null,
+  };
+}
+
+/**
+ * Get supplier by legacy vendor ID (for backward compatibility during migration)
+ */
+export async function getSupplierByLegacyVendorId(vendorId: number): Promise<SupplierWithProfile | null> {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Find supplier profile with this legacy vendor ID
+  const [profile] = await db
+    .select()
+    .from(supplierProfiles)
+    .where(eq(supplierProfiles.legacyVendorId, vendorId))
+    .limit(1);
+  
+  if (!profile) return null;
+  
+  // Get the associated client
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.id, profile.clientId))
+    .limit(1);
+  
+  if (!client) return null;
+  
+  return {
+    ...client,
+    supplierProfile: profile,
+  };
+}
+
+/**
+ * Search suppliers by name
+ */
+export async function searchSuppliers(query: string): Promise<SupplierWithProfile[]> {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Search clients with isSeller=true
+  const supplierClients = await db
+    .select()
+    .from(clients)
+    .where(and(
+      eq(clients.isSeller, true),
+      like(clients.name, `%${query}%`)
+    ))
+    .limit(20);
+  
+  if (supplierClients.length === 0) return [];
+  
+  // Get profiles for these clients
+  const clientIds = supplierClients.map(c => c.id);
+  const profiles = await db
+    .select()
+    .from(supplierProfiles)
+    .where(sql`${supplierProfiles.clientId} IN (${sql.join(clientIds.map(id => sql`${id}`), sql`, `)})`);
+  
+  // Map profiles to clients
+  const profileMap = new Map<number, SupplierProfile>();
+  for (const profile of profiles) {
+    profileMap.set(profile.clientId, profile);
+  }
+  
+  return supplierClients.map(client => ({
+    ...client,
+    supplierProfile: profileMap.get(client.id) || null,
+  }));
+}
+
+/**
+ * Create a new supplier (client with isSeller=true + supplier_profile)
+ * Uses transaction to ensure atomicity - prevents orphaned clients if profile insert fails
+ */
+export async function createSupplier(data: {
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  paymentTerms?: string;
+  notes?: string;
+  licenseNumber?: string;
+  taxId?: string;
+  preferredPaymentMethod?: 'CASH' | 'CHECK' | 'WIRE' | 'ACH' | 'CREDIT_CARD' | 'OTHER';
+}): Promise<{ clientId: number; profileId: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Generate TERI code for new supplier
+  const teriCode = `SUP-${Date.now().toString(36).toUpperCase()}`;
+  
+  // Use transaction to ensure both client and profile are created atomically
+  const result = await db.transaction(async (tx) => {
+    // Create client with isSeller=true
+    const [clientResult] = await tx.insert(clients).values({
+      teriCode,
+      name: data.name,
+      email: data.email || null,
+      phone: data.phone || null,
+      address: data.address || null,
+      isSeller: true,
+      isBuyer: false,
+    }).$returningId();
+    
+    const clientId = clientResult.id;
+    
+    // Create supplier profile
+    const [profileResult] = await tx.insert(supplierProfiles).values({
+      clientId,
+      contactName: data.contactName || null,
+      contactEmail: data.contactEmail || null,
+      contactPhone: data.contactPhone || null,
+      paymentTerms: data.paymentTerms || null,
+      supplierNotes: data.notes || null,
+      licenseNumber: data.licenseNumber || null,
+      taxId: data.taxId || null,
+      preferredPaymentMethod: data.preferredPaymentMethod || null,
+    }).$returningId();
+    
+    return { clientId, profileId: profileResult.id };
+  });
+  
+  // Invalidate cache after successful transaction
+  cache.delete(CacheKeys.suppliers());
+  
+  return result;
+}
+
+/**
+ * Update supplier (client + supplier_profile)
+ * Uses transaction to ensure atomicity - prevents partial updates
+ */
+export async function updateSupplier(
+  clientId: number,
+  data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    contactName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    paymentTerms?: string;
+    notes?: string;
+    licenseNumber?: string;
+    taxId?: string;
+    preferredPaymentMethod?: 'CASH' | 'CHECK' | 'WIRE' | 'ACH' | 'CREDIT_CARD' | 'OTHER';
+  }
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Build update objects outside transaction for clarity
+  const clientUpdates: Partial<Client> = {};
+  if (data.name !== undefined) clientUpdates.name = data.name;
+  if (data.email !== undefined) clientUpdates.email = data.email;
+  if (data.phone !== undefined) clientUpdates.phone = data.phone;
+  if (data.address !== undefined) clientUpdates.address = data.address;
+  
+  const profileUpdates: Partial<SupplierProfile> = {};
+  if (data.contactName !== undefined) profileUpdates.contactName = data.contactName;
+  if (data.contactEmail !== undefined) profileUpdates.contactEmail = data.contactEmail;
+  if (data.contactPhone !== undefined) profileUpdates.contactPhone = data.contactPhone;
+  if (data.paymentTerms !== undefined) profileUpdates.paymentTerms = data.paymentTerms;
+  if (data.notes !== undefined) profileUpdates.supplierNotes = data.notes;
+  if (data.licenseNumber !== undefined) profileUpdates.licenseNumber = data.licenseNumber;
+  if (data.taxId !== undefined) profileUpdates.taxId = data.taxId;
+  if (data.preferredPaymentMethod !== undefined) profileUpdates.preferredPaymentMethod = data.preferredPaymentMethod;
+  
+  // Use transaction to ensure both updates succeed or both fail
+  await db.transaction(async (tx) => {
+    // Update client fields if provided
+    if (Object.keys(clientUpdates).length > 0) {
+      await tx.update(clients).set(clientUpdates).where(eq(clients.id, clientId));
+    }
+    
+    // Update supplier profile fields if provided
+    if (Object.keys(profileUpdates).length > 0) {
+      // Check if profile exists
+      const [existingProfile] = await tx
+        .select()
+        .from(supplierProfiles)
+        .where(eq(supplierProfiles.clientId, clientId))
+        .limit(1);
+      
+      if (existingProfile) {
+        await tx.update(supplierProfiles).set(profileUpdates).where(eq(supplierProfiles.clientId, clientId));
+      } else {
+        // Create profile if it doesn't exist (upsert pattern)
+        await tx.insert(supplierProfiles).values({
+          clientId,
+          ...profileUpdates,
+        });
+      }
+    }
+  });
+  
+  // Invalidate cache after successful transaction
+  cache.delete(CacheKeys.suppliers());
+  
+  return true;
+}
+
+/**
+ * Soft-delete supplier (sets deletedAt on client)
+ * Note: clients table doesn't have deletedAt yet, so we'll just mark isSeller=false for now
+ */
+export async function deleteSupplier(clientId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // For now, just mark as not a seller (soft disable)
+  // TODO: Add deletedAt column to clients table for proper soft delete
+  await db.update(clients).set({ isSeller: false }).where(eq(clients.id, clientId));
+  
+  // Invalidate cache
+  cache.delete(CacheKeys.suppliers());
+  
+  return true;
 }
 
 // ============================================================================
