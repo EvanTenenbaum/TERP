@@ -215,7 +215,13 @@ export const purchaseOrders = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     poNumber: varchar("poNumber", { length: 50 }).notNull().unique(),
 
-    // Vendor relationship
+    // Supplier relationship (canonical - uses clients table)
+    supplierClientId: int("supplier_client_id").references(() => clients.id, {
+      onDelete: "restrict",
+    }),
+
+    // Vendor relationship (DEPRECATED - use supplierClientId instead)
+    // Kept for backward compatibility during migration
     vendorId: int("vendorId")
       .notNull()
       .references(() => vendors.id, { onDelete: "restrict" }),
@@ -257,6 +263,9 @@ export const purchaseOrders = mysqlTable(
     confirmedAt: timestamp("confirmedAt"),
   },
   table => ({
+    supplierClientIdIdx: index("idx_po_supplier_client_id").on(
+      table.supplierClientId
+    ),
     vendorIdIdx: index("idx_po_vendor_id").on(table.vendorId),
     statusIdx: index("idx_po_status").on(table.purchaseOrderStatus),
     orderDateIdx: index("idx_po_order_date").on(table.orderDate),
@@ -469,16 +478,33 @@ export type InsertProductTag = typeof productTags.$inferInsert;
  * Represents a single vendor intake event (system-only, not client-facing)
  * REMOVED: siteCode (moved to settings-based location management)
  */
-export const lots = mysqlTable("lots", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  vendorId: int("vendorId").notNull(),
-  date: timestamp("date").notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const lots = mysqlTable(
+  "lots",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 50 }).notNull().unique(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+
+    // Supplier reference (canonical - uses clients table)
+    // Added via backfill-supplier-client-ids.ts script
+    supplierClientId: int("supplier_client_id").references(() => clients.id, {
+      onDelete: "restrict",
+    }),
+
+    // Vendor reference (DEPRECATED - use supplierClientId instead)
+    vendorId: int("vendorId").notNull(),
+
+    date: timestamp("date").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    supplierClientIdIdx: index("idx_lots_supplier_client_id").on(
+      table.supplierClientId
+    ),
+  })
+);
 
 export type Lot = typeof lots.$inferSelect;
 export type InsertLot = typeof lots.$inferInsert;
