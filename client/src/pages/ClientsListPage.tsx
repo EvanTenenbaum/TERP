@@ -46,7 +46,7 @@ export default function ClientsListPage() {
     { id: 'all', name: 'All Clients', search: '', clientTypes: [], hasDebt: undefined },
     { id: 'debt', name: 'Clients with Debt', search: '', clientTypes: [], hasDebt: true },
     { id: 'buyers', name: 'Buyers Only', search: '', clientTypes: ['buyer'], hasDebt: undefined },
-    { id: 'sellers', name: 'Sellers Only', search: '', clientTypes: ['seller'], hasDebt: undefined },
+    { id: 'sellers', name: 'Suppliers', search: '', clientTypes: ['seller'], hasDebt: undefined },
   ];
   
   const [savedViews, setSavedViews] = useState<FilterView[]>(() => {
@@ -286,7 +286,7 @@ export default function ClientsListPage() {
   const getClientTypeBadges = (client: any) => {
     const badges: { label: string; variant: "default" | "secondary" | "outline" | "destructive" }[] = [];
     if (client.isBuyer) badges.push({ label: "Buyer", variant: "default" });
-    if (client.isSeller) badges.push({ label: "Seller", variant: "secondary" });
+    if (client.isSeller) badges.push({ label: "Supplier", variant: "secondary" });
     if (client.isBrand) badges.push({ label: "Brand", variant: "outline" });
     if (client.isReferee) badges.push({ label: "Referee", variant: "secondary" });
     if (client.isContractor) badges.push({ label: "Contractor", variant: "outline" });
@@ -465,7 +465,7 @@ export default function ClientsListPage() {
                   checked={clientTypes.includes("seller")}
                   onCheckedChange={() => toggleClientType("seller")}
                 >
-                  Seller
+                  Supplier
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   checked={clientTypes.includes("brand")}

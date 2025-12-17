@@ -66,7 +66,7 @@ export default function VendorSupplyPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <BackButton label="Back to Vendors" to="/vendors" className="mb-4" />
+      <BackButton label="Back to Suppliers" to="/clients?clientTypes=seller" className="mb-4" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

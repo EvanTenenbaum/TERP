@@ -32,8 +32,11 @@ import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
-import VendorsPage from "@/pages/VendorsPage";
-import VendorProfilePage from "@/pages/VendorProfilePage";
+// DEPRECATED: VendorsPage and VendorProfilePage are replaced by redirects
+// import VendorsPage from "@/pages/VendorsPage";
+// import VendorProfilePage from "@/pages/VendorProfilePage";
+import VendorRedirect from "@/components/VendorRedirect";
+import { Redirect } from "wouter";
 import PurchaseOrdersPage from "@/pages/PurchaseOrdersPage";
 import ReturnsPage from "@/pages/ReturnsPage";
 import LocationsPage from "@/pages/LocationsPage";
@@ -117,8 +120,11 @@ function Router() {
               <Route path="/credit-settings" component={CreditSettingsPage} />
               <Route path="/needs" component={NeedsManagementPage} />
               <Route path="/vendor-supply" component={VendorSupplyPage} />
-              <Route path="/vendors/:id" component={VendorProfilePage} />
-              <Route path="/vendors" component={VendorsPage} />
+              {/* DEPRECATED: /vendors routes redirect to /clients with supplier filter */}
+              <Route path="/vendors/:id" component={VendorRedirect} />
+              <Route path="/vendors">
+                {() => <Redirect to="/clients?clientTypes=seller" />}
+              </Route>
               <Route path="/purchase-orders" component={PurchaseOrdersPage} />
               <Route path="/returns" component={ReturnsPage} />
               <Route path="/locations" component={LocationsPage} />
