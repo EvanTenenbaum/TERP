@@ -11,11 +11,11 @@
     - Modify `server/routers/search.ts` to return `/quotes?selected=${q.id}` instead of `/orders/${q.id}`
     - Ensure URL format is consistent with client routing
     - _Requirements: 1.1, 1.2, 1.3_
-  - [ ]* 1.3 Write property test for search URL validity
+  - [x]\* 1.3 Write property test for search URL validity
     - **Property 1: Search Result URLs Match Declared Routes**
     - **Validates: Requirements 1.1, 1.2, 1.3**
-    - Create `server/routers/search.property.test.ts`
-    - Use fast-check to verify all returned URLs match declared routes
+    - Created `server/routers/search.property.test.ts`
+    - Uses fast-check to verify all returned URLs match declared routes
   - [x] 1.4 Add `/quotes` route to client router
     - Import Quotes component in `client/src/App.tsx`
     - Add `<Route path="/quotes" component={Quotes} />` after Orders route
@@ -25,7 +25,7 @@
     - Auto-open quote detail sheet when `selected` param is present
     - Use `useEffect` to fetch and select quote by ID from URL param
     - _Requirements: 1.4_
-  - [ ]* 1.6 Write unit tests for Quotes route and selection
+  - [ ]\* 1.6 Write unit tests for Quotes route and selection
     - Test route renders Quotes component
     - Test URL param triggers quote selection
     - _Requirements: 1.4, 2.1_
@@ -36,7 +36,7 @@
     - Add `FileText` to lucide-react imports
     - Add `{ name: "Quotes", href: "/quotes", icon: FileText }` after Orders entry in navigation array
     - _Requirements: 2.2_
-  - [ ]* 2.2 Write unit test for navigation entry
+  - [ ]\* 2.2 Write unit test for navigation entry
     - Verify Quotes appears in navigation
     - _Requirements: 2.2_
 
@@ -49,7 +49,7 @@
     - Call `startPriceAlertsCron()` inside `server.listen()` callback after server starts
     - Wrap in try-catch with proper error logging using `logger.error()`
     - _Requirements: 3.1, 3.2, 3.3_
-  - [ ]* 4.2 Write unit test for cron initialization
+  - [ ]\* 4.2 Write unit test for cron initialization
     - Test cron is started on server startup (mock node-cron)
     - Test cron failure doesn't crash server (verify try-catch works)
     - Verify cron schedule string is `'0 * * * *'` (hourly at minute 0)
@@ -63,7 +63,7 @@
 - [x] 6. Deprecate legacy server entrypoint
   - [x] 6.1 Add deprecation notice to server/index.ts
     - Add JSDoc deprecation comment at top of file
-    - Document that server/_core/index.ts is the real entrypoint
+    - Document that server/\_core/index.ts is the real entrypoint
     - List what NOT to use this file for
     - _Requirements: 4.1_
   - [x] 6.2 Verify no deployment scripts reference legacy entrypoint
@@ -87,10 +87,10 @@
     - Delete `client/src/pages/DebugOrders.tsx`
     - Verify no imports reference it (grep for 'DebugOrders')
     - _Requirements: 5.2, 5.3_
-  - [ ]* 7.3 Create validation script for dangling imports
-    - Create `scripts/validate-no-dangling-imports.ts`
+  - [x]\* 7.3 Create validation script for dangling imports
+    - Created `scripts/validate-no-dangling-imports.ts`
     - Script searches for imports of deleted files
-    - Add to package.json scripts as `validate:imports`
+    - Added to package.json scripts as `validate:imports`
     - **Validates: Requirements 5.3**
   - [x] 7.4 Document orphan page decisions
     - Add JSDoc comment to ComponentShowcase.tsx explaining it's a dev utility
@@ -129,11 +129,11 @@
     - Update `/orders/123/edit` to `/orders/create` (order creation)
     - Remove references that are no longer applicable
     - _Requirements: 7.1, 7.2, 7.3_
-  - [ ]* 10.3 Create validation script for documentation routes
-    - Create `scripts/validate-doc-routes.ts`
+  - [x]\* 10.3 Create validation script for documentation routes
+    - Created `scripts/validate-doc-routes.ts`
     - Script extracts route references from markdown files
     - Validates against declared routes in App.tsx
-    - Add to package.json scripts as `validate:doc-routes`
+    - Added to package.json scripts as `validate:doc-routes`
     - **Property 5: Documentation Route References Are Valid**
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 

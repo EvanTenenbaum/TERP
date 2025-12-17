@@ -48,6 +48,8 @@
     "validate:sessions": "tsx scripts/validate-session-cleanup.ts",
     "validate:schema": "tsx scripts/validate-schema-comprehensive.ts",
     "validate:schema:fixes": "tsx scripts/validate-schema-fixes.ts",
+    "validate:imports": "tsx scripts/validate-no-dangling-imports.ts",
+    "validate:doc-routes": "tsx scripts/validate-doc-routes.ts",
     "fix:schema:report": "tsx scripts/fix-schema-drift.ts",
     "augment:data": "pnpm tsx scripts/fix-temporal-coherence.ts && pnpm tsx scripts/augment-orders.ts && pnpm tsx scripts/augment-inventory-movements.ts && pnpm tsx scripts/augment-financial-chains.ts && pnpm tsx scripts/augment-client-relationships.ts && pnpm tsx scripts/validate-data-quality.ts",
     "augment:temporal": "tsx scripts/fix-temporal-coherence.ts",

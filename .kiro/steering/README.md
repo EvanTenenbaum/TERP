@@ -10,15 +10,17 @@ These files are **automatically included** in every Kiro AI agent session. They 
 
 ## File Structure
 
-| File | Purpose | Inclusion |
-|------|---------|-----------|
-| `00-core-identity.md` | Core identity, Kiro best practices, universal rules | Always |
-| `01-development-standards.md` | TypeScript, React, testing, database, accessibility standards | Always |
-| `02-workflows.md` | Git, deployment, testing, session management workflows | Always |
-| `03-agent-coordination.md` | Multi-agent synchronization and conflict prevention | Always |
-| `04-infrastructure.md` | DigitalOcean deployment, database, monitoring | Always |
-| `05-external-agent-handoff.md` | Protocol for agents from other platforms (Claude, ChatGPT, etc.) | Manual |
-| `terp-master-protocol.md` | Roadmap Manager specific protocols | Always |
+| File                           | Purpose                                                           | Inclusion |
+| ------------------------------ | ----------------------------------------------------------------- | --------- |
+| `00-core-identity.md`          | Core identity, Kiro best practices, universal rules               | Always    |
+| `01-development-standards.md`  | TypeScript, React, testing, database, accessibility standards     | Always    |
+| `02-workflows.md`              | Git, deployment, testing, session management workflows            | Always    |
+| `03-agent-coordination.md`     | Multi-agent synchronization and conflict prevention               | Always    |
+| `04-infrastructure.md`         | DigitalOcean deployment, database, monitoring                     | Always    |
+| `05-external-agent-handoff.md` | Protocol for agents from other platforms (Claude, ChatGPT, etc.)  | Manual    |
+| `06-architecture-guide.md`     | **CRITICAL** - System architecture, structure, canonical patterns | Always    |
+| `07-deprecated-systems.md`     | **CRITICAL** - Deprecated systems registry, what NOT to use       | Always    |
+| `terp-master-protocol.md`      | Roadmap Manager specific protocols                                | Always    |
 
 ---
 
@@ -37,16 +39,20 @@ inclusion: always
 ### Reading Order
 
 Agents should understand protocols in this order:
+
 1. **00-core-identity.md** - Who you are, what Kiro is
-2. **01-development-standards.md** - How to write code
-3. **02-workflows.md** - How to work (git, deploy, test)
-4. **03-agent-coordination.md** - How to coordinate with other agents
-5. **04-infrastructure.md** - How to deploy and monitor
-6. **terp-master-protocol.md** - Role-specific (Roadmap Manager)
+2. **06-architecture-guide.md** - **CRITICAL** - System structure (READ BEFORE CODING)
+3. **07-deprecated-systems.md** - **CRITICAL** - What NOT to use (READ BEFORE CODING)
+4. **01-development-standards.md** - How to write code
+5. **02-workflows.md** - How to work (git, deploy, test)
+6. **03-agent-coordination.md** - How to coordinate with other agents
+7. **04-infrastructure.md** - How to deploy and monitor
+8. **terp-master-protocol.md** - Role-specific (Roadmap Manager)
 
 ### Role-Specific Protocols
 
 After reading steering files, agents should read their role-specific guide:
+
 - **Roadmap Manager**: `terp-master-protocol.md` (in steering)
 - **Implementation Agent**: `agent-prompts/implementation-agent.md`
 - **PM Agent**: `agent-prompts/pm-agent.md`
@@ -56,6 +62,7 @@ After reading steering files, agents should read their role-specific guide:
 ### External Agent Handoff
 
 For agents working from **other platforms** (Claude, ChatGPT, etc.):
+
 - **Quick Start**: `EXTERNAL_AGENT_QUICK_START.md` (root directory)
 - **Full Protocol**: `.kiro/steering/05-external-agent-handoff.md`
 - **Onboarding Script**: `bash scripts/external-agent-onboard.sh`
@@ -69,6 +76,7 @@ For agents working from **other platforms** (Claude, ChatGPT, etc.):
 ### When to Update
 
 Update steering files when:
+
 - Protocols change
 - New best practices emerge
 - Tools or infrastructure change
@@ -106,6 +114,7 @@ git push origin main
 ### Version 2.0 (2025-12-02)
 
 **Consolidated from**:
+
 - `AGENT_ONBOARDING.md` → workflows and infrastructure
 - `docs/NEW_AGENT_PROMPT.md` → workflows
 - `docs/AGENT_MONITORING_GUIDE.md` → coordination
@@ -114,12 +123,14 @@ git push origin main
 - `.github/CONTRIBUTING.md` → standards and workflows
 
 **Archived**:
+
 - `AGENT_EXECUTION_PROMPTS.md` → `docs/archive/agent-prompts/`
 - `AGENT_EXECUTION_PROMPTS_V2.md` → `docs/archive/agent-prompts/`
 - `docs/AGENT_COPY_PASTE_PROMPTS.md` → `docs/archive/agent-prompts/`
 - `docs/AGENT_PROMPTS_PARALLEL_BATCH*.md` → `docs/archive/agent-prompts/`
 
 **Benefits**:
+
 - Single source of truth for protocols
 - No duplication or version confusion
 - Automatic inclusion in all agent sessions
@@ -130,19 +141,36 @@ git push origin main
 
 ## Quick Reference
 
+### 🚨 BEFORE WRITING ANY CODE
+
+**Every agent MUST review these two files:**
+
+1. `06-architecture-guide.md` - Understand the system structure
+2. `07-deprecated-systems.md` - Know what NOT to use
+
+**If your task requires architectural changes:**
+
+- Flag to user BEFORE making changes
+- Get explicit approval
+- Document the change
+
 ### For New Agents
 
 Read in order:
+
 1. `00-core-identity.md` - Start here
-2. `01-development-standards.md` - Code quality
-3. `02-workflows.md` - How to work
-4. `03-agent-coordination.md` - Multi-agent work
-5. `04-infrastructure.md` - Deployment
-6. Your role-specific guide in `agent-prompts/`
+2. `06-architecture-guide.md` - **CRITICAL** - System architecture
+3. `07-deprecated-systems.md` - **CRITICAL** - Deprecated systems
+4. `01-development-standards.md` - Code quality
+5. `02-workflows.md` - How to work
+6. `03-agent-coordination.md` - Multi-agent work
+7. `04-infrastructure.md` - Deployment
+8. Your role-specific guide in `agent-prompts/`
 
 ### For Experienced Agents
 
 Quick refreshers:
+
 - **Git workflow**: `02-workflows.md` → Git Workflow
 - **Testing**: `01-development-standards.md` → Testing Standards
 - **Deployment**: `04-infrastructure.md` → DigitalOcean Deployment
@@ -151,6 +179,7 @@ Quick refreshers:
 ### For Roadmap Manager
 
 Primary files:
+
 - `terp-master-protocol.md` - Your specific protocols
 - `03-agent-coordination.md` - Coordinating other agents
 - `02-workflows.md` → Roadmap Management Workflow
@@ -166,6 +195,7 @@ They're automatically included - you don't need to read them manually. Just foll
 ### "Protocols conflict with each other"
 
 Hierarchy:
+
 1. Role-specific protocols (e.g., `terp-master-protocol.md`)
 2. Steering files (`.kiro/steering/`)
 3. Documentation (` docs/`)
@@ -210,6 +240,7 @@ If conflict exists, higher in hierarchy wins.
 ## Contact
 
 Questions about steering files? Check:
+
 - This README
 - Individual file documentation
 - `docs/protocols/` for detailed guides

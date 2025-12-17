@@ -6,6 +6,14 @@ inclusion: always
 
 **MANDATORY**: Before every commit, verify:
 
+## Architecture Compliance
+
+- [ ] No deprecated systems used (see `07-deprecated-systems.md`)
+- [ ] No `vendors` table queries (use `clients` with `isSeller=true`)
+- [ ] No `ctx.user?.id || 1` patterns (use `getAuthenticatedUserId`)
+- [ ] Soft deletes used (not hard deletes)
+- [ ] FK indexes added for new foreign keys
+
 ## Code Quality
 
 - [ ] No `any` types (run: `pnpm typecheck`)
