@@ -3,8 +3,57 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../_core/trpc";
 import { strainService } from "../services/strainService";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { db } from "../db";
+import { orders, clients, batches } from "../../drizzle/schema";
+import { count, sum, isNull } from "drizzle-orm";
 
 export const analyticsRouter = router({
+  // Get summary analytics for dashboard
+  getSummary: protectedProcedure.use(requirePermission("analytics:read"))
+    .query(async () => {
+      try {
+        if (!db) {
+          return {
+            totalRevenue: 0,
+            totalOrders: 0,
+            totalClients: 0,
+            totalInventoryItems: 0,
+          };
+        }
+
+        // Get order stats (total revenue and count)
+        const [orderStats] = await db
+          .select({
+            totalOrders: count(),
+            totalRevenue: sum(orders.total),
+          })
+          .from(orders);
+
+        // Get client count
+        const [clientStats] = await db
+          .select({ totalClients: count() })
+          .from(clients);
+
+        // Get inventory count (batches not soft-deleted)
+        const [inventoryStats] = await db
+          .select({ totalInventoryItems: count() })
+          .from(batches)
+          .where(isNull(batches.deletedAt));
+
+        return {
+          totalRevenue: Number(orderStats?.totalRevenue || 0),
+          totalOrders: Number(orderStats?.totalOrders || 0),
+          totalClients: Number(clientStats?.totalClients || 0),
+          totalInventoryItems: Number(inventoryStats?.totalInventoryItems || 0),
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to get analytics summary',
+          cause: error,
+        });
+      }
+    }),
   // Get client's strain family preferences
   clientStrainPreferences: protectedProcedure.use(requirePermission("analytics:read"))
     .input(z.object({ clientId: z.number() }))

@@ -54,6 +54,84 @@ describe("Analytics Router", () => {
     caller = await createCaller();
   });
 
+  describe("getSummary", () => {
+    it("should retrieve summary analytics with real data", async () => {
+      // Arrange - mock database responses
+      const mockDb = db as any;
+      mockDb.select = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ totalInventoryItems: 150 }]),
+        }),
+      });
+
+      // For orders
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockResolvedValue([{ totalOrders: 100, totalRevenue: "50000.00" }]),
+      });
+
+      // For clients
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockResolvedValue([{ totalClients: 25 }]),
+      });
+
+      // For batches
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ totalInventoryItems: 150 }]),
+        }),
+      });
+
+      // Act
+      const result = await caller.analytics.getSummary();
+
+      // Assert
+      expect(result).toHaveProperty("totalRevenue");
+      expect(result).toHaveProperty("totalOrders");
+      expect(result).toHaveProperty("totalClients");
+      expect(result).toHaveProperty("totalInventoryItems");
+      expect(typeof result.totalRevenue).toBe("number");
+      expect(typeof result.totalOrders).toBe("number");
+      expect(typeof result.totalClients).toBe("number");
+      expect(typeof result.totalInventoryItems).toBe("number");
+    });
+
+    it("should handle empty database gracefully", async () => {
+      // Arrange - mock empty database
+      const mockDb = db as any;
+      mockDb.select = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ totalInventoryItems: 0 }]),
+        }),
+      });
+
+      // For orders
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockResolvedValue([{ totalOrders: 0, totalRevenue: null }]),
+      });
+
+      // For clients
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockResolvedValue([{ totalClients: 0 }]),
+      });
+
+      // For batches
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ totalInventoryItems: 0 }]),
+        }),
+      });
+
+      // Act
+      const result = await caller.analytics.getSummary();
+
+      // Assert - should return zeros, not throw
+      expect(result.totalRevenue).toBe(0);
+      expect(result.totalOrders).toBe(0);
+      expect(result.totalClients).toBe(0);
+      expect(result.totalInventoryItems).toBe(0);
+    });
+  });
+
   describe("clientStrainPreferences", () => {
     it("should retrieve client strain preferences", async () => {
       // Arrange
