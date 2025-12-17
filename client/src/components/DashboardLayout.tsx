@@ -37,7 +37,7 @@ import {
   HelpCircle,
   CalendarDays,
   ClipboardList,
-  Truck,
+  // Truck, // DEPRECATED: Vendors menu item removed
   RefreshCw,
   Warehouse,
   Workflow,
@@ -57,7 +57,8 @@ const menuItems = [
   { icon: TrendingUp, label: "Matchmaking", path: "/matchmaking" },
   { icon: DollarSign, label: "Accounting", path: "/accounting" },
   { icon: Users, label: "Clients", path: "/clients" },
-  { icon: Truck, label: "Vendors", path: "/vendors" },
+  // DEPRECATED: Vendors menu item removed - use Clients with "Suppliers" filter
+  // { icon: Truck, label: "Vendors", path: "/vendors" },
   { icon: FileText, label: "Purchase Orders", path: "/purchase-orders" },
   { icon: RefreshCw, label: "Returns", path: "/returns" },
   { icon: Warehouse, label: "Locations", path: "/locations" },

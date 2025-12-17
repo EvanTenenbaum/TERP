@@ -42,15 +42,22 @@ export default function PurchaseOrdersPage() {
 
   // Fetch data
   const { data: pos = [], refetch } = trpc.purchaseOrders.getAll.useQuery();
-  const { data: vendorsResponse } = trpc.vendors.getAll.useQuery();
-  const vendors: Array<{ id: number; name: string; contactName?: string | null; contactEmail?: string | null; contactPhone?: string | null; paymentTerms?: string | null }> = useMemo(() => {
-    if (!vendorsResponse) return [];
-    if ('success' in vendorsResponse && vendorsResponse.success && 'data' in vendorsResponse) {
-      return vendorsResponse.data as Array<{ id: number; name: string; contactName?: string | null; contactEmail?: string | null; contactPhone?: string | null; paymentTerms?: string | null }>;
-    }
-    if (Array.isArray(vendorsResponse)) return vendorsResponse;
-    return [];
-  }, [vendorsResponse]);
+  // Use clients with isSeller=true (suppliers) instead of deprecated vendors
+  const { data: suppliersData } = trpc.clients.list.useQuery({ 
+    clientTypes: ['seller'],
+    limit: 1000,
+  });
+  const suppliers: Array<{ id: number; name: string; contactName: string | null; contactEmail: string | null; contactPhone: string | null; paymentTerms: string | null }> = useMemo(() => {
+    if (!suppliersData) return [];
+    return suppliersData.map(client => ({
+      id: client.id,
+      name: client.name,
+      contactName: null, // Contact name not in clients table
+      contactEmail: client.email ?? null,
+      contactPhone: client.phone ?? null,
+      paymentTerms: null, // Payment terms are in supplier_profile, fetched separately if needed
+    }));
+  }, [suppliersData]);
   const { data: productsData } = trpc.inventory.list.useQuery({});
   const products = productsData?.items ?? [];
 
@@ -103,23 +110,23 @@ export default function PurchaseOrdersPage() {
 
   // Form state
   const [formData, setFormData] = useState({
-    vendorId: "",
+    supplierClientId: "",
     orderDate: new Date().toISOString().split("T")[0],
     expectedDeliveryDate: "",
     paymentTerms: "",
     notes: "",
-    vendorNotes: "",
+    supplierNotes: "",
     items: [{ productId: "", quantityOrdered: "", unitCost: "" }],
   });
 
   const resetForm = () => {
     setFormData({
-      vendorId: "",
+      supplierClientId: "",
       orderDate: new Date().toISOString().split("T")[0],
       expectedDeliveryDate: "",
       paymentTerms: "",
       notes: "",
-      vendorNotes: "",
+      supplierNotes: "",
       items: [{ productId: "", quantityOrdered: "", unitCost: "" }],
     });
   };
@@ -139,10 +146,12 @@ export default function PurchaseOrdersPage() {
   const filteredPOs = useMemo(() => {
     if (!pos) return [];
     return pos.filter(po => {
+      // Search by PO number or supplier name (check both supplierClientId and legacy vendorId)
+      const supplierId = po.supplierClientId ?? po.vendorId;
       const matchesSearch =
         (po.poNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vendors
-          .find((v: { id: number; name: string }) => v.id === po.vendorId)
+        suppliers
+          .find((s: { id: number; name: string }) => s.id === supplierId)
           ?.name.toLowerCase()
           .includes(searchQuery.toLowerCase());
 
@@ -151,7 +160,7 @@ export default function PurchaseOrdersPage() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [pos, searchQuery, statusFilter, vendors]);
+  }, [pos, searchQuery, statusFilter, suppliers]);
 
   const handleCreatePO = () => {
     const items = formData.items
@@ -162,7 +171,7 @@ export default function PurchaseOrdersPage() {
         unitCost: parseFloat(item.unitCost),
       }));
 
-    if (!formData.vendorId || items.length === 0) {
+    if (!formData.supplierClientId || items.length === 0) {
       toast({
         title: "Please fill in all required fields",
         variant: "destructive",
@@ -171,12 +180,12 @@ export default function PurchaseOrdersPage() {
     }
 
     createPO.mutate({
-      vendorId: parseInt(formData.vendorId),
+      supplierClientId: parseInt(formData.supplierClientId),
       orderDate: formData.orderDate,
       expectedDeliveryDate: formData.expectedDeliveryDate || undefined,
       paymentTerms: formData.paymentTerms || undefined,
       notes: formData.notes || undefined,
-      vendorNotes: formData.vendorNotes || undefined,
+      vendorNotes: formData.supplierNotes || undefined,
       createdBy: 1, // TODO: Get from auth context
       items,
     });
@@ -205,8 +214,9 @@ export default function PurchaseOrdersPage() {
     setFormData({ ...formData, items: newItems });
   };
 
-  const getVendorName = (vendorId: number) => {
-    return vendors.find((v: { id: number; name: string }) => v.id === vendorId)?.name || "Unknown";
+  const getSupplierName = (supplierId: number | null | undefined) => {
+    if (!supplierId) return "Unknown";
+    return suppliers.find((s: { id: number; name: string }) => s.id === supplierId)?.name || "Unknown";
   };
 
   const getStatusBadge = (status: string) => {
@@ -234,7 +244,7 @@ export default function PurchaseOrdersPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Purchase Orders</h1>
         <p className="text-gray-600">
-          Manage purchase orders for vendor inventory
+          Manage purchase orders for supplier inventory
         </p>
       </div>
 
@@ -243,7 +253,7 @@ export default function PurchaseOrdersPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
-            placeholder="Search by PO number or vendor..."
+            placeholder="Search by PO number or supplier..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -277,7 +287,7 @@ export default function PurchaseOrdersPage() {
           <TableHeader>
             <TableRow>
               <TableHead>PO Number</TableHead>
-              <TableHead>Vendor</TableHead>
+              <TableHead>Supplier</TableHead>
               <TableHead>Order Date</TableHead>
               <TableHead>Expected Delivery</TableHead>
               <TableHead>Status</TableHead>
@@ -299,7 +309,7 @@ export default function PurchaseOrdersPage() {
               filteredPOs.map(po => (
                 <TableRow key={po.id}>
                   <TableCell className="font-medium">{po.poNumber}</TableCell>
-                  <TableCell>{getVendorName(po.vendorId)}</TableCell>
+                  <TableCell>{getSupplierName(po.supplierClientId ?? po.vendorId)}</TableCell>
                   <TableCell>
                     {formatDate(po.orderDate)}
                   </TableCell>
@@ -347,20 +357,20 @@ export default function PurchaseOrdersPage() {
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="vendor">Vendor *</Label>
+              <Label htmlFor="supplier">Supplier *</Label>
               <Select
-                value={formData.vendorId}
+                value={formData.supplierClientId}
                 onValueChange={value =>
-                  setFormData({ ...formData, vendorId: value })
+                  setFormData({ ...formData, supplierClientId: value })
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select vendor" />
+                  <SelectValue placeholder="Select supplier" />
                 </SelectTrigger>
                 <SelectContent>
-                  {vendors.map(vendor => (
-                    <SelectItem key={vendor.id} value={vendor.id.toString()}>
-                      {vendor.name}
+                  {suppliers.map(supplier => (
+                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                      {supplier.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -500,12 +510,12 @@ export default function PurchaseOrdersPage() {
             </div>
 
             <div>
-              <Label htmlFor="vendorNotes">Vendor Notes</Label>
+              <Label htmlFor="supplierNotes">Supplier Notes</Label>
               <Textarea
-                id="vendorNotes"
-                value={formData.vendorNotes}
+                id="supplierNotes"
+                value={formData.supplierNotes}
                 onChange={e =>
-                  setFormData({ ...formData, vendorNotes: e.target.value })
+                  setFormData({ ...formData, supplierNotes: e.target.value })
                 }
                 rows={3}
               />
