@@ -6,10 +6,11 @@
   - Implement type normalization utilities
   - _Requirements: 2.3, 2.4, 7.1, 7.2_
 
-- [ ]\* 1.1 Write property test for naming convention conversions
+- [x]\* 1.1 Write property test for naming convention conversions
   - **Property 8: CamelCase to Snake_case Conversion Consistency**
   - **Property 30: Snake_case to CamelCase Conversion Consistency**
   - **Validates: Requirements 2.3, 7.1, 7.2**
+  - Created `scripts/utils/schema-validation.property.test.ts`
 
 - [x] 2. Implement database introspection utilities
   - Create `scripts/utils/schema-introspection.ts`
@@ -49,17 +50,20 @@
   - Implement foreign key comparison
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ]\* 3.1 Write property test for data type equivalence detection
+- [x]\* 3.1 Write property test for data type equivalence detection
   - **Property 12: Data Type Equivalence Detection**
   - **Validates: Requirements 3.2**
+  - Implemented in `scripts/utils/schema-validation.property.test.ts`
 
-- [ ]\* 3.2 Write property test for enum set difference detection
+- [x]\* 3.2 Write property test for enum set difference detection
   - **Property 13: Enum Set Difference Detection**
   - **Validates: Requirements 3.3**
+  - Implemented in `scripts/utils/schema-validation.property.test.ts`
 
-- [ ]\* 3.3 Write property test for column name mismatch detection
+- [x]\* 3.3 Write property test for column name mismatch detection
   - **Property 11: Column Name Mismatch Detection**
   - **Validates: Requirements 3.1, 7.3**
+  - Implemented in `scripts/utils/schema-validation.property.test.ts`
 
 - [x] 4. Implement comprehensive validation tool
   - Create `scripts/validate-schema-comprehensive.ts`
@@ -75,13 +79,15 @@
   - **Property 7: Column Definition Extraction Completeness**
   - **Validates: Requirements 2.1, 2.2**
 
-- [ ]\* 4.2 Write property test for critical table prioritization
+- [x]\* 4.2 Write property test for critical table prioritization
   - **Property 17: Critical Table Prioritization**
   - **Validates: Requirements 4.1**
+  - Implemented in `scripts/utils/schema-validation.property.test.ts`
 
-- [ ]\* 4.3 Write property test for severity assignment consistency
+- [x]\* 4.3 Write property test for severity assignment consistency
   - **Property 18: Severity Assignment Consistency**
   - **Validates: Requirements 4.2**
+  - Implemented in `scripts/utils/schema-validation.property.test.ts`
 
 - [x] 5. Implement report generation
   - Implement JSON report generation (schema-validation-report.json)
@@ -90,9 +96,10 @@
   - Implement summary statistics calculation and display
   - _Requirements: 4.3, 4.4, 4.5, 9.4_
 
-- [ ]\* 5.1 Write property test for JSON report validity
+- [x]\* 5.1 Write property test for JSON report validity
   - **Property 19: JSON Report Validity**
   - **Validates: Requirements 4.3**
+  - Implemented in `scripts/utils/schema-validation.property.test.ts`
 
 - [ ]\* 5.2 Write property test for markdown report generation
   - **Property 20: Markdown Report Generation**
@@ -232,10 +239,11 @@
   - Implement direct comparison for RBAC and VIP Portal schemas
   - _Requirements: 7.4, 7.5_
 
-- [ ]\* 12.1 Write property test for schema-specific conversion
+- [x]\* 12.1 Write property test for schema-specific conversion
   - **Property 31: Schema-Specific Conversion Behavior**
   - **Property 32: Schema-Specific Direct Comparison**
   - **Validates: Requirements 7.4, 7.5**
+  - Implemented in `scripts/utils/schema-validation.property.test.ts`
 
 - [x] 13. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
