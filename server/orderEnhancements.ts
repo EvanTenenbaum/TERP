@@ -1,6 +1,7 @@
 import { eq, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { orders, clients } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 /**
  * Reorder from a previous order
@@ -87,7 +88,7 @@ export async function reorderFromPrevious(data: {
       originalOrderId: data.originalOrderId,
     };
   } catch (error) {
-    console.error("Error reordering from previous:", error);
+    logger.error("Error reordering from previous", { error });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -112,7 +113,7 @@ export async function getRecentOrdersForReorder(clientId: number, limit: number 
       orders: recentOrders,
     };
   } catch (error) {
-    console.error("Error getting recent orders for reorder:", error);
+    logger.error("Error getting recent orders for reorder", { error });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -155,7 +156,7 @@ export async function updateClientPaymentTerms(
 
     return { success: true };
   } catch (error) {
-    console.error("Error updating client payment terms:", error);
+    logger.error("Error updating client payment terms", { error });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -226,7 +227,7 @@ export async function getClientPaymentTerms(clientId: number) {
       creditLimit,
     };
   } catch (error) {
-    console.error("Error getting client payment terms:", error);
+    logger.error("Error getting client payment terms", { error });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

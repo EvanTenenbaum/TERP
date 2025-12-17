@@ -1,6 +1,7 @@
 import { eq, inArray, and, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { orders, products, productTags, tags } from "../drizzle/schema";
+import { logger } from "./_core/logger";
 
 /**
  * Get product recommendations for a client based on order history
@@ -116,7 +117,7 @@ export async function getProductRecommendations(
 
     return { success: true, recommendations };
   } catch (error) {
-    console.error("Error getting product recommendations:", error);
+    logger.error("Error getting product recommendations", { error });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -183,7 +184,7 @@ export async function getSimilarProducts(productId: number, limit: number = 10) 
 
     return { success: true, similarProducts: similar };
   } catch (error) {
-    console.error("Error getting similar products:", error);
+    logger.error("Error getting similar products", { error });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -261,7 +262,7 @@ export async function getFrequentlyBoughtTogether(
 
     return { success: true, frequentlyBoughtTogether: frequentlyBought };
   } catch (error) {
-    console.error("Error getting frequently bought together:", error);
+    logger.error("Error getting frequently bought together", { error });
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

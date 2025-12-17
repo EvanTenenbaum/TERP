@@ -8,6 +8,7 @@ import {
   type SalesSheetTemplate,
 } from "../drizzle/schema";
 import * as pricingEngine from "./pricingEngine";
+import { logger } from "./_core/logger";
 
 // ============================================================================
 // TYPES
@@ -96,10 +97,7 @@ export async function getInventoryWithPricing(
         quantity: item.quantity || 0,
       }));
     } catch (pricingError) {
-      console.error(
-        "Pricing engine error, using fallback pricing:",
-        pricingError
-      );
+      logger.error("Pricing engine error, using fallback pricing", { error: pricingError });
 
       // Return items with base prices as fallback
       return inventoryItems.map(item => ({
@@ -110,7 +108,7 @@ export async function getInventoryWithPricing(
       }));
     }
   } catch (error) {
-    console.error("Error fetching inventory:", error);
+    logger.error("Error fetching inventory", { error });
     throw new Error("Failed to fetch inventory");
   }
 }
