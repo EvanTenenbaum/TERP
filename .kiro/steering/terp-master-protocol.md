@@ -58,8 +58,193 @@ Before any roadmap operation, read:
 - **Objectives**: 3+ specific goals
 - **Deliverables**: 5+ concrete outputs
 - **Priority**: `HIGH` | `MEDIUM` | `LOW`
-- **Estimate**: `4h` | `8h` | `16h` | `1d` | `2d` | `1w`
+- **Estimate**: `4h` | `8h` | `16h` | `1d` | `2d` | `1w` (use Smart Calibration Protocol below)
 - **Status**: `ready` | `in-progress` | `complete` | `blocked`
+
+---
+
+# ⏱️ SMART CALIBRATION ESTIMATION PROTOCOL (MANDATORY)
+
+**Purpose**: Produce realistic, consistently accurate implementation time estimates by replacing intuition with operation counting and automatic calibration.
+
+## 1. Estimation Mode Activation
+
+When creating or estimating a task, you MUST enter Estimation Mode.
+
+**In Estimation Mode:**
+
+- You are forbidden from guessing time directly
+- You must derive time mechanically from operations
+
+## 2. Atomic Operation Definition
+
+An atomic operation is one of the following:
+
+- Editing an existing file
+- Creating a new file
+- Modifying an existing function
+- Adding or updating a test
+- Running a verification step
+- Performing a repo-wide scan/search
+
+**You must enumerate all atomic operations before estimating time.**
+
+## 3. Required Breakdown (No Exceptions)
+
+Before any time estimate, you MUST output:
+
+```
+ATOMIC OPERATION LIST
+- Operation #
+- Operation type
+- File(s) affected
+- Description
+```
+
+If you cannot enumerate operations, you MUST say why and stop.
+
+## 4. Fixed Time Cost Model (Non-Negotiable)
+
+You MUST use this model unless explicitly overridden:
+
+| Operation Type                            | Time      |
+| ----------------------------------------- | --------- |
+| Edit existing file (≤100 LOC)             | 5–10 min  |
+| Edit existing file (>100 LOC)             | 10–20 min |
+| Create new small file                     | 10–15 min |
+| Modify shared abstraction (≤5 call sites) | 15–25 min |
+| Add/update unit test                      | 5–10 min  |
+| Add/update integration test               | 10–20 min |
+| Repo-wide scan/search                     | 2–3 min   |
+| Manual verification step                  | 5 min     |
+
+❌ **You may NOT inflate times "to be safe."**
+
+## 5. Mechanical Estimation (Required Format)
+
+You MUST compute time as:
+
+```
+TIME CALCULATION
+- Operation 1: X min
+- Operation 2: Y min
+…
+TOTAL AI EXECUTION TIME: Z minutes
+```
+
+No ranges larger than 2× are allowed.
+
+## 6. Dual Estimate Requirement
+
+You MUST provide:
+
+1. **AI Execution Time** - Assuming full repo access, no meetings, no context switching
+2. **Human-in-the-loop Time** - Review, merge, deploy oversight
+
+You MUST explain the delta.
+
+## 7. Smart Calibration Loop (Critical)
+
+You MUST maintain a running calibration table within the conversation.
+
+**Calibration Memory Format:**
+
+```
+CALIBRATION LOG
+Task | Estimated AI Time | Actual AI Time | Error Factor
+```
+
+**Error Factor Definition:**
+
+```
+Error Factor = Actual / Estimated
+```
+
+## 8. Calibration Adjustment Rules
+
+Before producing any new estimate:
+
+1. Compute the mean error factor from completed tasks
+2. Adjust future estimates by that factor
+
+**Example:**
+
+- Previous estimates averaged 1.6× too high
+- → Multiply new estimates by 0.6
+
+You MUST state when calibration is applied.
+
+## 9. Confidence Classification
+
+Every estimate MUST include one of:
+
+- **High** – all operations known, patterns established
+- **Medium** – minor unknowns, no architectural risk
+- **Low** – missing critical info or novel system work
+
+Low confidence requires explicit explanation.
+
+## 10. Estimate Invalidation Rules (Strict)
+
+Your estimate is INVALID if:
+
+- You give "days" or "weeks" without >25 atomic operations
+- You skip the atomic list
+- You fail to apply calibration when data exists
+- You rely on "complexity" instead of counting work
+
+If invalid, you MUST restate the estimate correctly.
+
+## 11. Final Output Format (Mandatory)
+
+```
+ESTIMATION SUMMARY
+
+Atomic Operations:
+1. …
+2. …
+
+Time Calculation:
+- …
+
+TOTAL AI EXECUTION TIME: XX minutes (~X.X hours)
+
+Human Review Time: XX minutes
+
+Calibration Applied:
+- Yes / No
+- Current error factor: X.XX
+
+Confidence Level: High / Medium / Low
+Rationale: …
+```
+
+## 12. Internal Sanity Check
+
+Before finalizing, ask yourself:
+
+> "If this touches fewer than 10 files and uses no novel algorithms, would this realistically take more than 2–4 hours for an AI?"
+
+If yes, you must justify explicitly.
+
+## 13. Failure Mode Acknowledgment
+
+If this protocol contradicts your instinct, **the protocol wins**.
+
+Your job is arithmetic, not storytelling.
+
+## 14. Converting to Roadmap Estimate Format
+
+After calculating total time, convert to roadmap format:
+
+- < 4 hours → `4h`
+- 4-8 hours → `8h`
+- 8-16 hours → `16h`
+- 16-24 hours → `1d`
+- 24-48 hours → `2d`
+- > 48 hours → `1w` (consider splitting task)
+
+---
 
 **Procedure**:
 
