@@ -31,7 +31,7 @@ env:
 jobs:
   run-e2e-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45  # Full Mega QA suite can take 20-35 minutes
     
     services:
       mysql:
@@ -83,7 +83,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
@@ -143,16 +143,19 @@ jobs:
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           # Stage bugs for approval (don't auto-add to roadmap)
           pnpm tsx scripts/qa/stage-pending-bugs.ts || true
           
-          # Send interactive Slack report
-          pnpm tsx scripts/qa/send-interactive-report.ts || true
+          # Skip Slack if requested
+          if [ "${{ inputs.skip_slack }}" != "true" ]; then
+            pnpm tsx scripts/qa/send-interactive-report.ts || true
+          fi
           
           # Check if new bugs were found
           if [ -f qa-results/pending-bugs.json ]; then
-            NEW_BUGS=$(jq '.bugs | length' qa-results/pending-bugs.json)
+            NEW_BUGS=$(jq '.bugs | length' qa-results/pending-bugs.json 2>/dev/null || echo "0")
             echo "new_bugs=$NEW_BUGS" >> $GITHUB_OUTPUT
           else
             echo "new_bugs=0" >> $GITHUB_OUTPUT
@@ -190,31 +193,53 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const report = JSON.parse(fs.readFileSync('qa-results/latest-report.json', 'utf-8'));
-            
-            const newBugs = report.newBugs || [];
             const runUrl = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             
-            let body = `## 🤖 Automated QA Report - ${new Date().toLocaleDateString()}\n\n`;
-            body += `**Test Results:** ${report.passed}/${report.totalTests} passed\n`;
-            body += `**New Bugs Found:** ${newBugs.length}\n\n`;
+            // Read from Mega QA pending bugs (not legacy report)
+            let pendingBugs = { bugs: [] };
+            let bundle = null;
             
-            if (newBugs.length > 0) {
-              body += `### New Bugs Added to Roadmap\n\n`;
-              for (const bugId of newBugs) {
-                body += `- [ ] \`${bugId}\`\n`;
+            try {
+              if (fs.existsSync('qa-results/pending-bugs.json')) {
+                pendingBugs = JSON.parse(fs.readFileSync('qa-results/pending-bugs.json', 'utf-8'));
               }
-              body += `\n`;
+            } catch (e) {
+              console.log('Could not read pending bugs:', e.message);
             }
             
-            body += `### Details\n\n`;
-            body += `- Duration: ${Math.round(report.duration / 60000)}m\n`;
-            body += `- Failed: ${report.failed}\n`;
-            body += `- Skipped: ${report.skipped}\n`;
-            body += `- Flaky: ${report.flaky}\n\n`;
+            try {
+              if (fs.existsSync('qa-results/mega-qa/latest/bundle.json')) {
+                bundle = JSON.parse(fs.readFileSync('qa-results/mega-qa/latest/bundle.json', 'utf-8'));
+              }
+            } catch (e) {
+              console.log('Could not read bundle:', e.message);
+            }
             
-            body += `[View Full Report](${runUrl})\n\n`;
-            body += `---\n*This issue was automatically created by the Daily QA Pipeline.*`;
+            const bugCount = pendingBugs.bugs?.length || 0;
+            
+            let body = `## 🤖 Mega QA Report - ${new Date().toLocaleDateString()}\n\n`;
+            
+            if (bundle && bundle.summary) {
+              body += `**Test Results:** ${bundle.summary.passed}/${bundle.summary.totalTests} passed\n`;
+              body += `**Duration:** ${Math.round((bundle.manifest?.durationMs || 0) / 60000)}m\n`;
+            }
+            
+            body += `**Bugs Staged for Approval:** ${bugCount}\n\n`;
+            
+            if (bugCount > 0) {
+              body += `### Pending Bugs (Awaiting Slack Approval)\n\n`;
+              for (const bug of pendingBugs.bugs.slice(0, 10)) {
+                const emoji = bug.priority === 'HIGH' ? '🔴' : bug.priority === 'MEDIUM' ? '🟡' : '🟢';
+                body += `- ${emoji} \`${bug.id}\`: ${bug.title}\n`;
+              }
+              if (bugCount > 10) {
+                body += `\n_...and ${bugCount - 10} more_\n`;
+              }
+              body += `\n💡 **Approve via Slack:** Say \`approve all\` or click the approval button.\n`;
+            }
+            
+            body += `\n[View Full Report](${runUrl})\n\n`;
+            body += `---\n*This issue was automatically created by the Nightly Mega QA Pipeline.*`;
             
             // Check for existing open QA issue
             const issues = await github.rest.issues.listForRepo({
@@ -237,8 +262,8 @@ jobs:
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: `🤖 QA Report: ${newBugs.length} new bugs found`,
-                labels: ['automated-qa', 'bug'],
+                title: `🤖 Mega QA: ${bugCount} bugs staged for approval`,
+                labels: ['automated-qa', 'needs-review'],
                 body: body
               });
             }

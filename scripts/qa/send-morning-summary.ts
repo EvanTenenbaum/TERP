@@ -115,6 +115,40 @@ function getRecentCommits(): string[] {
   }
 }
 
+// Get tasks completed yesterday (from git commit messages)
+function getYesterdayCompletedTasks(): string[] {
+  try {
+    const output = execSync(
+      'git log --since="24 hours ago" --pretty=format:"%s" --max-count=50',
+      { encoding: "utf-8" }
+    );
+
+    const completed: string[] = [];
+
+    for (const line of output.split("\n")) {
+      // Look for task IDs in commit messages
+      const taskMatch = line.match(
+        /\b(ST-\d+|BUG-\d+|FEATURE-\d+|PROP-\d+|CL-\d+)\b/i
+      );
+      if (taskMatch) {
+        const taskId = taskMatch[1].toUpperCase();
+        // Extract the description after the task ID
+        const desc = line
+          .replace(taskMatch[0], "")
+          .replace(/^[:\s-]+/, "")
+          .trim();
+        if (desc && !completed.includes(`*${taskId}*: ${desc}`)) {
+          completed.push(`*${taskId}*: ${desc.substring(0, 50)}`);
+        }
+      }
+    }
+
+    return completed.slice(0, 5);
+  } catch {
+    return [];
+  }
+}
+
 // Get pending bugs
 function getPendingBugs(): PendingBug[] {
   try {
@@ -218,6 +252,22 @@ function buildMorningSummaryBlocks(): object[] {
     blocks.push({
       type: "section",
       text: { type: "mrkdwn", text: ipText },
+    });
+  }
+
+  // Yesterday's Completed (from git log)
+  const yesterdayCompleted = getYesterdayCompletedTasks();
+  if (yesterdayCompleted.length > 0) {
+    let completedText = "*✨ COMPLETED YESTERDAY:*\n\n";
+    for (const task of yesterdayCompleted.slice(0, 3)) {
+      completedText += `✅ ${task}\n`;
+    }
+    if (yesterdayCompleted.length > 3) {
+      completedText += `\n_...and ${yesterdayCompleted.length - 3} more_`;
+    }
+    blocks.push({
+      type: "section",
+      text: { type: "mrkdwn", text: completedText },
     });
   }
 

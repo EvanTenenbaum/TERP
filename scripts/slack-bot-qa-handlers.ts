@@ -129,13 +129,22 @@ ${bug.replayCommand}
 }
 
 export async function commitAndPush(message: string): Promise<boolean> {
+  // Note: This function only works when the bot has git credentials
+  // On DigitalOcean App Platform, you may need to configure deploy keys
+  // or use GitHub Actions to commit approved bugs
   try {
+    // Check if we're in a git repo and have credentials
+    await execAsync("git status");
+
     await execAsync("git add docs/roadmaps/MASTER_ROADMAP.md qa-results/");
     await execAsync(`git commit -m "${message}" --no-verify`);
     await execAsync("git push");
     return true;
   } catch (e) {
-    console.error("Git operation failed:", e);
+    // This is expected to fail on hosted environments without git credentials
+    console.warn("Git operation failed (expected on hosted environments):", e);
+    console.log("💡 Roadmap updated locally. Manual push may be required.");
+    console.log("   Or trigger GitHub Actions workflow to sync changes.");
     return false;
   }
 }

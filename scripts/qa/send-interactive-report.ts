@@ -75,12 +75,15 @@ function buildSlackBlocks(
     },
   });
 
+  const shortSha = pendingBugs.gitSha
+    ? pendingBugs.gitSha.substring(0, 7)
+    : "unknown";
   blocks.push({
     type: "context",
     elements: [
       {
         type: "mrkdwn",
-        text: `📅 ${date} | 🔗 Commit: \`${pendingBugs.gitSha.substring(0, 7)}\``,
+        text: `📅 ${date} | 🔗 Commit: \`${shortSha}\``,
       },
     ],
   });
