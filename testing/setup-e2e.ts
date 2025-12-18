@@ -7,7 +7,7 @@ async function globalSetup() {
   execSync('pnpm test:env:up', { stdio: 'inherit' });
 
   // Reset the database with the 'full' scenario for E2E tests
-  execSync('pnpm db:reset:test --scenario=full', { stdio: 'inherit' });
+  execSync('pnpm test:db:reset:full', { stdio: 'inherit' });
 
   console.log('✅ E2E test environment ready.\n');
 }

@@ -220,7 +220,7 @@ Session state is stored in `playwright/.auth/` for reuse.
 
 AI-generated tests use the same global setup:
 - `testing/setup-e2e.ts` runs before all tests
-- Database reset with `pnpm db:reset:test --scenario=full`
+- Database reset with `pnpm test:db:reset:full`
 - No special configuration needed
 
 ---
