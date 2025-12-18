@@ -180,7 +180,26 @@ function main(): void {
 
   console.log(`🐛 Found ${failures.length} failures\n`);
 
-  // Convert failures to pending bugs
+  // Load existing pending bugs for deduplication
+  let existingBugs: PendingBug[] = [];
+  const existingPendingPath = "qa-results/pending-bugs.json";
+  if (existsSync(existingPendingPath)) {
+    try {
+      const existing: PendingBugsFile = JSON.parse(
+        readFileSync(existingPendingPath, "utf-8")
+      );
+      existingBugs = existing.bugs || [];
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  // Create a set of existing bug signatures for deduplication
+  const existingSignatures = new Set(
+    existingBugs.map(b => `${b.specFile}:${b.title.substring(0, 50)}`)
+  );
+
+  // Convert failures to pending bugs (with deduplication)
   const bugs: PendingBug[] = failures.map((failure, index) => {
     const priority = determinePriority(failure.category, failure.testName);
     const title = createTitle(failure.testName, failure.category);
@@ -204,9 +223,29 @@ function main(): void {
     };
   });
 
+  // Filter out duplicates (same spec file + similar title)
+  const newBugs = bugs.filter(bug => {
+    const signature = `${bug.specFile}:${bug.title.substring(0, 50)}`;
+    return !existingSignatures.has(signature);
+  });
+
+  // Merge with existing unapproved bugs
+  const mergedBugs = [
+    ...existingBugs.filter(b => !b.approved && !b.dismissed),
+    ...newBugs,
+  ];
+
+  if (newBugs.length < bugs.length) {
+    console.log(
+      `ℹ️  Deduplicated ${bugs.length - newBugs.length} already-staged bugs`
+    );
+  }
+
   // Sort by priority
   const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
-  bugs.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  mergedBugs.sort(
+    (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
+  );
 
   // Create pending bugs file
   const pendingBugsFile: PendingBugsFile = {
@@ -214,7 +253,7 @@ function main(): void {
     runId: process.env.GITHUB_RUN_ID || "local",
     gitSha: process.env.GITHUB_SHA || "unknown",
     totalFailures: failures.length,
-    bugs,
+    bugs: mergedBugs,
   };
 
   // Write to file
@@ -228,28 +267,31 @@ function main(): void {
   console.log("📋 Pending Bugs Summary:");
   console.log("=".repeat(60));
 
-  const highCount = bugs.filter(b => b.priority === "HIGH").length;
-  const mediumCount = bugs.filter(b => b.priority === "MEDIUM").length;
-  const lowCount = bugs.filter(b => b.priority === "LOW").length;
+  const highCount = mergedBugs.filter(b => b.priority === "HIGH").length;
+  const mediumCount = mergedBugs.filter(b => b.priority === "MEDIUM").length;
+  const lowCount = mergedBugs.filter(b => b.priority === "LOW").length;
 
   console.log(`   🔴 HIGH:   ${highCount}`);
   console.log(`   🟡 MEDIUM: ${mediumCount}`);
   console.log(`   🟢 LOW:    ${lowCount}`);
+  console.log(`   📊 New this run: ${newBugs.length}`);
   console.log("");
 
-  for (const bug of bugs.slice(0, 10)) {
+  for (const bug of mergedBugs.slice(0, 10)) {
     const emoji =
       bug.priority === "HIGH" ? "🔴" : bug.priority === "MEDIUM" ? "🟡" : "🟢";
     console.log(`   ${emoji} ${bug.id}: ${bug.title}`);
   }
 
-  if (bugs.length > 10) {
-    console.log(`   ... and ${bugs.length - 10} more`);
+  if (mergedBugs.length > 10) {
+    console.log(`   ... and ${mergedBugs.length - 10} more`);
   }
 
   console.log("");
   console.log("=".repeat(60));
-  console.log(`✅ Staged ${bugs.length} bugs in qa-results/pending-bugs.json`);
+  console.log(
+    `✅ Staged ${mergedBugs.length} bugs in qa-results/pending-bugs.json`
+  );
   console.log("   Awaiting approval via Slack...");
 }
 
