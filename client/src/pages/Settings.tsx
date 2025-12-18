@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Building2 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
+import { useAppMutation } from "@/hooks/useAppMutation";
+import { FormSubmitButton } from "@/components/ui/FormSubmitButton";
 import { toast } from "sonner";
 import { UserManagement } from "@/components/UserManagement";
 import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagement";
@@ -37,7 +39,8 @@ export default function Settings() {
 
       <Tabs defaultValue="users" className="space-y-3 sm:space-y-4">
         <div className="overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4 md:mx-0 md:px-0 scrollbar-hide">
-          <TabsList className="inline-flex w-full min-w-max md:w-auto md:grid md:grid-cols-8 gap-1 h-auto">
+          <TabsList className="inline-flex w-full min-w-max md:w-auto md:grid md:grid-cols-9 gap-1 h-auto">
+            <TabsTrigger value="system" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">System</TabsTrigger>
             <TabsTrigger value="users" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Users</TabsTrigger>
             <TabsTrigger value="rbac" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">User Roles</TabsTrigger>
             <TabsTrigger value="roles" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Roles</TabsTrigger>
@@ -48,6 +51,10 @@ export default function Settings() {
             <TabsTrigger value="database" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Database</TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="system" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          <SystemSettingsManager />
+        </TabsContent>
 
         <TabsContent value="users" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
           <UserManagement />
@@ -83,6 +90,203 @@ export default function Settings() {
       </Tabs>
     </div>
   );
+}
+
+function SystemSettingsManager() {
+  const { data: settings, isLoading, refetch } = trpc.settings.system.getAll.useQuery();
+
+  // Initialize form with setting values
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Populate form when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      const initialData: Record<string, string> = {};
+      settings.forEach((setting) => {
+        initialData[setting.key] = setting.value || "";
+      });
+      setFormData(initialData);
+    }
+  }, [settings]);
+
+  // Initialize defaults mutation
+  const initDefaultsMutation = trpc.settings.system.initializeDefaults.useMutation();
+  const { mutate: initDefaults, isPending: isInitializing } = useAppMutation(
+    initDefaultsMutation,
+    {
+      successMessage: "Default settings initialized",
+      onSuccess: () => refetch(),
+      context: { component: "SystemSettingsManager" },
+    }
+  );
+
+  // Update settings mutation
+  const updateManyMutation = trpc.settings.system.updateMany.useMutation();
+  const { mutate: saveSettings, isPending: isSaving } = useAppMutation(
+    updateManyMutation,
+    {
+      successMessage: "Settings saved successfully",
+      onSuccess: () => {
+        setHasChanges(false);
+        refetch();
+      },
+      context: { component: "SystemSettingsManager" },
+    }
+  );
+
+  const handleChange = (key: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  };
+
+  const handleSave = () => {
+    const updates = Object.entries(formData).map(([key, value]) => ({
+      key,
+      value: value || null,
+    }));
+    saveSettings(updates);
+  };
+
+  // Group settings by category
+  const settingsByCategory = settings?.reduce((acc, setting) => {
+    const category = setting.category || "general";
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(setting);
+    return acc;
+  }, {} as Record<string, typeof settings>);
+
+  const categoryLabels: Record<string, { title: string; description: string }> = {
+    general: {
+      title: "Company Information",
+      description: "Basic company details displayed throughout the application",
+    },
+    defaults: {
+      title: "System Defaults",
+      description: "Default values used across the application",
+    },
+    financial: {
+      title: "Financial Settings",
+      description: "Settings related to invoicing and financial calculations",
+    },
+    quotes: {
+      title: "Quote Settings",
+      description: "Settings for quote generation and management",
+    },
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center text-muted-foreground">
+          Loading settings...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If no settings exist, show initialize button
+  if (!settings || settings.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            System Settings
+          </CardTitle>
+          <CardDescription>
+            System settings have not been initialized yet. Click the button below to set up default settings.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FormSubmitButton
+            onClick={() => initDefaults()}
+            isPending={isInitializing}
+            loadingText="Initializing..."
+          >
+            Initialize Default Settings
+          </FormSubmitButton>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header with Save Button */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            System Settings
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Configure company information and system defaults
+          </p>
+        </div>
+        <FormSubmitButton
+          onClick={handleSave}
+          isPending={isSaving}
+          loadingText="Saving..."
+          disabled={!hasChanges}
+        >
+          <Save className="h-4 w-4 mr-2" />
+          Save Changes
+        </FormSubmitButton>
+      </div>
+
+      {/* Settings Cards by Category */}
+      {Object.entries(categoryLabels).map(([category, { title, description }]) => {
+        const categorySettings = settingsByCategory?.[category];
+        if (!categorySettings || categorySettings.length === 0) return null;
+
+        return (
+          <Card key={category}>
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">{description}</CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 sm:px-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {categorySettings.map((setting) => (
+                  <div key={setting.key} className="space-y-2">
+                    <Label htmlFor={setting.key} className="text-sm">
+                      {setting.description || formatKeyAsLabel(setting.key)}
+                    </Label>
+                    {setting.dataType === "number" ? (
+                      <Input
+                        id={setting.key}
+                        type="number"
+                        value={formData[setting.key] || ""}
+                        onChange={(e) => handleChange(setting.key, e.target.value)}
+                        placeholder={`Enter ${formatKeyAsLabel(setting.key).toLowerCase()}`}
+                      />
+                    ) : (
+                      <Input
+                        id={setting.key}
+                        type="text"
+                        value={formData[setting.key] || ""}
+                        onChange={(e) => handleChange(setting.key, e.target.value)}
+                        placeholder={`Enter ${formatKeyAsLabel(setting.key).toLowerCase()}`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// Helper function to format setting keys as human-readable labels
+function formatKeyAsLabel(key: string): string {
+  return key
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 function DatabaseManager() {

@@ -765,6 +765,25 @@ export const grades = mysqlTable("grades", {
 export type Grade = typeof grades.$inferSelect;
 export type InsertGrade = typeof grades.$inferInsert;
 
+/**
+ * System Settings table
+ * Stores global system configuration settings (company info, defaults, financial settings)
+ * Key-value store pattern allows flexible addition of new settings without schema changes
+ */
+export const systemSettings = mysqlTable("system_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  value: text("value"),
+  dataType: varchar("dataType", { length: 50 }).notNull().default("string"), // string, number, boolean, json
+  category: varchar("category", { length: 50 }).notNull().default("general"), // general, defaults, financial, quotes
+  description: varchar("description", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = typeof systemSettings.$inferInsert;
+
 // ============================================================================
 // DASHBOARD MODULE SCHEMA
 // ============================================================================
