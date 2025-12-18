@@ -87,7 +87,7 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
 
   const handleCancel = (needId: number) => {
     if (window.confirm("Are you sure you want to cancel this need?")) {
-      cancelMutation.mutate({ id: needId, clientId });
+      cancelMutation.mutate({ id: needId });
     }
   };
 

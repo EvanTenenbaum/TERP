@@ -38,7 +38,7 @@ import {
   calculateCoverage,
   printCoverageReport,
   writeRequiredTagsFile,
-} from "./coverage/contract";
+} from "./lib/contract";
 import { runPlaywrightSuite, runVitestSuite } from "./runners";
 
 // ============================================================================

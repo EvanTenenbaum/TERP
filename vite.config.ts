@@ -51,7 +51,7 @@ export default defineConfig(async ({ mode }) => {
       emptyOutDir: true,
       rollupOptions: {
         output: {
-          manualChunks(id) {
+          manualChunks(id: string) {
             // Split vendor chunks aggressively to keep chunks under 500KB
             if (id.includes("node_modules")) {
               // React core libraries
