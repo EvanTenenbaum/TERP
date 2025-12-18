@@ -121,7 +121,7 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
 
   const handleCancel = (id: number) => {
     if (window.confirm("Are you sure you want to cancel this listing?")) {
-      cancelSupply.mutate({ id, clientId });
+      cancelSupply.mutate({ id });
     }
   };
 
