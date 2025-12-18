@@ -7,7 +7,7 @@ export default async () => {
   execSync('pnpm test:env:up', { stdio: 'inherit' });
 
   // Reset the database to a clean state
-  execSync('pnpm db:reset:test --scenario=light', { stdio: 'inherit' });
+  execSync('pnpm test:db:reset', { stdio: 'inherit' });
 
   console.log('✅ Integration test environment ready.\n');
 

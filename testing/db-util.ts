@@ -117,7 +117,57 @@ export async function resetTestDatabase(scenario: string = 'light') {
     console.log('✅ Test database reset complete!');
     console.log('='.repeat(50) + '\n');
   } catch (error) {
-    console.error('\n❌ Database reset failed:', error);
+    console.error('❌ Database reset failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Run preflight checks to verify database state
+ */
+export async function runPreflight() {
+  console.log('🔍 Running preflight checks...');
+  
+  try {
+    const connection = await mysql.createConnection({
+      host: TEST_DB_CONFIG.host,
+      port: TEST_DB_CONFIG.port,
+      user: TEST_DB_CONFIG.user,
+      password: TEST_DB_CONFIG.password,
+      database: TEST_DB_CONFIG.database,
+    });
+
+    // Tables that should have data after a basic seed
+    const tablesToCheck = ['users', 'products', 'strains', 'brands'];
+    let allPassed = true;
+
+    for (const table of tablesToCheck) {
+      try {
+        const [rows] = await connection.execute(`SELECT COUNT(*) as count FROM \`${table}\``);
+        const count = (rows as any)[0].count;
+        
+        if (count > 0) {
+          console.log(`  ✅ ${table}: ${count} rows`);
+        } else {
+          console.error(`  ❌ ${table}: 0 rows (Expected > 0)`);
+          allPassed = false;
+        }
+      } catch (err: any) {
+        // If table doesn't exist, it will throw
+        console.error(`  ❌ ${table}: Error checking table - ${err.message}`);
+        allPassed = false;
+      }
+    }
+
+    await connection.end();
+
+    if (!allPassed) {
+      throw new Error('Preflight checks failed: Some tables are empty or missing.');
+    }
+
+    console.log('✅ Preflight checks passed!');
+  } catch (error) {
+    console.error('❌ Preflight checks failed:', error);
     throw error;
   }
 }
@@ -145,6 +195,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         case 'seed':
           seedDatabase(scenario);
           break;
+        case 'preflight':
+          await runPreflight();
+          break;
         default:
           console.log('Usage: tsx testing/db-util.ts <command> [scenario]');
           console.log('Commands:');
@@ -153,6 +206,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           console.log('  reset [scenario] - Reset database (default: light)');
           console.log('  migrate       - Run migrations');
           console.log('  seed [scenario]  - Seed database (default: light)');
+          console.log('  preflight     - Run preflight checks');
           console.log('\nScenarios: light, full, edge, chaos');
           process.exit(1);
       }

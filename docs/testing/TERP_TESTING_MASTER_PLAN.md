@@ -90,12 +90,12 @@ Establish a reproducible, isolated testing environment with realistic test data.
 - **New Scripts**:
   - `test:env:up` - Start test database
   - `test:env:down` - Stop test database
-  - `db:reset:test` - Reset and seed database
+  - `test:db:reset` - Reset and seed database
 - **Status**: ✅ Already delivered
 
 ### Success Criteria
 
-- [ ] Any developer can run `pnpm test:env:up && pnpm db:reset:test` and have a clean database in <60 seconds
+- [ ] Any developer can run `pnpm test:env:up && pnpm test:db:reset` and have a clean database in <60 seconds
 - [ ] All four scenarios generate without errors
 - [ ] Test database is completely isolated from development database
 
