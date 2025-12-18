@@ -42,24 +42,189 @@ Before any roadmap operation, read:
 
 ## 1. Adding New Tasks
 
-**Task ID Format**:
+### Step 0: Check for Duplicates FIRST
 
-- `ST-XXX` - Stabilization tasks
-- `BUG-XXX` - Bug fixes
-- `FEATURE-XXX` - New features
-- `QA-XXX` - Quality assurance
-- `DATA-XXX` - Data tasks
-- `INFRA-XXX` - Infrastructure
-- `PERF-XXX` - Performance
+Before creating any task, search for existing similar tasks:
 
-**Required Fields**:
+```bash
+# Search roadmap for similar problems
+grep -i "[keyword]" docs/roadmaps/MASTER_ROADMAP.md
 
-- **Problem**: What needs to be solved
-- **Objectives**: 3+ specific goals
-- **Deliverables**: 5+ concrete outputs
-- **Priority**: `HIGH` | `MEDIUM` | `LOW`
-- **Estimate**: `4h` | `8h` | `16h` | `1d` | `2d` | `1w` (use Smart Calibration Protocol below)
-- **Status**: `ready` | `in-progress` | `complete` | `blocked`
+# Or search for similar titles
+grep "### .*[keyword]" docs/roadmaps/MASTER_ROADMAP.md
+```
+
+**If similar task exists**: Update it instead of creating a duplicate.
+
+### Task ID Format
+
+| Prefix        | Use For                  | Examples                     |
+| ------------- | ------------------------ | ---------------------------- |
+| `ST-XXX`      | Stabilization, tech debt | ST-015: Fix memory leak      |
+| `BUG-XXX`     | Bug fixes                | BUG-027: Login timeout       |
+| `FEATURE-XXX` | New features             | FEATURE-006: Export to CSV   |
+| `QA-XXX`      | Quality assurance        | QA-003: E2E test coverage    |
+| `DATA-XXX`    | Data tasks, seeding      | DATA-012: Seed invoices      |
+| `INFRA-XXX`   | Infrastructure           | INFRA-014: SSL renewal       |
+| `PERF-XXX`    | Performance              | PERF-004: Query optimization |
+
+### Required Fields (Validator Enforced)
+
+| Field            | Format                                                            | Notes                   |
+| ---------------- | ----------------------------------------------------------------- | ----------------------- |
+| **Status**       | `ready` &#124; `in-progress` &#124; `complete` &#124; `blocked`   | Exact lowercase         |
+| **Priority**     | `HIGH` &#124; `MEDIUM` &#124; `LOW`                               | Exact uppercase         |
+| **Estimate**     | `4h` &#124; `8h` &#124; `16h` &#124; `1d` &#124; `2d` &#124; `1w` | Use estimation protocol |
+| **Module**       | File or directory path                                            | For conflict detection  |
+| **Dependencies** | Task IDs or `None`                                                | No descriptions         |
+| **Prompt**       | `docs/prompts/PREFIX-XXX.md`                                      | Must exist              |
+| **Objectives**   | 3+ bullet points                                                  | Use `- ` format         |
+| **Deliverables** | 5+ checkboxes                                                     | Use `- [ ]` format      |
+
+### Priority Assignment Guide
+
+| Assign     | When                                                                        |
+| ---------- | --------------------------------------------------------------------------- |
+| **HIGH**   | Blocks other work, user-facing bug, security issue, >50% performance impact |
+| **MEDIUM** | Important but not blocking, technical debt, 10-50% performance impact       |
+| **LOW**    | Nice-to-have, minor improvements, <10% impact                               |
+
+### Task Sizing Rules
+
+| Estimate | Appropriate For                        |
+| -------- | -------------------------------------- |
+| `4h`     | Single file fix, simple bug            |
+| `8h`     | Multi-file change, moderate complexity |
+| `16h`    | Feature spanning 3-5 files             |
+| `1d`     | Small feature, multiple components     |
+| `2d`     | Medium feature, needs testing          |
+| `1w`     | Large feature - **consider splitting** |
+
+**Split triggers** (task too large):
+
+- More than 3 modules affected
+- More than 10 files to edit
+- Multiple unrelated objectives
+- Estimate exceeds 2 days
+
+### Module Field Format
+
+```markdown
+# Single file
+
+**Module:** server/routers/calendar.ts
+
+# Directory (trailing slash)
+
+**Module:** server/routers/
+
+# Multiple (comma-separated)
+
+**Module:** server/routers/, client/src/pages/
+
+# Cross-cutting
+
+**Module:** server/, client/
+```
+
+**Be specific** - Module is used for conflict detection between parallel agents.
+
+### Procedure: Single Task
+
+```bash
+# 1. Check for duplicates (Step 0)
+grep -i "[problem keywords]" docs/roadmaps/MASTER_ROADMAP.md
+
+# 2. Find next available ID
+grep "### PREFIX-" docs/roadmaps/MASTER_ROADMAP.md | tail -1
+
+# 3. Estimate using Smart Calibration Protocol (below)
+
+# 4. Add task to roadmap using template
+
+# 5. Validate BEFORE committing
+pnpm roadmap:validate
+
+# 6. Only commit if validation passes
+git add docs/roadmaps/MASTER_ROADMAP.md
+git commit -m "roadmap: add TASK-ID - description"
+git push origin main
+```
+
+---
+
+## 1b. Creating Sprints (Batch Task Creation)
+
+When creating multiple related tasks for parallel execution:
+
+### Sprint Planning Process
+
+```
+1. Define sprint theme (e.g., "TypeScript Error Reduction")
+2. List all candidate tasks
+3. Check module conflicts between tasks
+4. Assign sequential IDs
+5. Add all tasks in single commit
+6. Validate once after all additions
+```
+
+### Conflict Detection for Parallel Tasks
+
+Tasks can run in parallel ONLY if their modules don't conflict:
+
+```
+✅ PARALLEL SAFE (different modules):
+- BUG-027: server/routers/calendar.ts
+- BUG-028: server/routers/inventory.ts
+- BUG-029: client/src/pages/Dashboard.tsx
+
+❌ CONFLICT (same module):
+- BUG-027: server/routers/calendar.ts
+- BUG-028: server/routers/calendar.ts  ← Same file!
+
+❌ CONFLICT (parent/child):
+- BUG-027: server/routers/
+- BUG-028: server/routers/calendar.ts  ← Inside directory!
+```
+
+### Sprint Batch Procedure
+
+```bash
+# 1. Plan sprint tasks (don't add yet)
+# List: TASK-A, TASK-B, TASK-C
+
+# 2. Check for module conflicts
+# Ensure no two tasks touch same module
+
+# 3. Reserve sequential IDs
+# BUG-027, BUG-028, BUG-029
+
+# 4. Add ALL tasks to roadmap
+
+# 5. Validate ONCE after all additions
+pnpm roadmap:validate
+
+# 6. Commit as single batch
+git add docs/roadmaps/MASTER_ROADMAP.md
+git commit -m "roadmap: add sprint - [theme] (BUG-027, BUG-028, BUG-029)"
+git push origin main
+
+# 7. Verify capacity
+pnpm roadmap:capacity
+```
+
+### Using Capacity Tools
+
+```bash
+# Check how many agents can work in parallel
+pnpm roadmap:capacity
+
+# Get recommended next batch (auto-detects conflicts)
+pnpm roadmap:next-batch
+
+# List all tasks by status
+pnpm roadmap:list
+```
 
 ---
 
@@ -266,34 +431,69 @@ git push origin main
 
 ## 2. Updating Task Status
 
-**Valid Status Values**:
+### Valid Status Transitions
 
-- `ready` - Task is ready to start
-- `in-progress` - Agent is working on it
-- `complete` - Task is finished
-- `blocked` - Task is blocked by dependency
+```
+ready → in-progress    (agent claims task)
+in-progress → complete (work finished)
+in-progress → blocked  (dependency discovered)
+in-progress → ready    (agent abandons task)
+blocked → ready        (blocker resolved)
+```
 
-**Procedure**:
+### Status Update Requirements
+
+| Transition          | Required Actions                                   |
+| ------------------- | -------------------------------------------------- |
+| → `in-progress`     | Register session in `docs/ACTIVE_SESSIONS.md`      |
+| → `complete`        | Add `Key Commits`, `Completed` date, `Actual Time` |
+| → `blocked`         | Add note explaining what's blocking                |
+| → `ready` (abandon) | Remove from `ACTIVE_SESSIONS.md`, add note         |
+
+### Completion Evidence (MANDATORY)
+
+When marking a task complete, you MUST add:
+
+```markdown
+**Status:** complete
+**Completed:** 2025-12-17
+**Key Commits:** `abc1234`, `def5678`
+**Actual Time:** 6h
+```
+
+**Why**: Enables audit trail and calibration of future estimates.
+
+### Procedure
 
 ```bash
-# 1. Update status field
-# **Status:** in-progress
+# Starting a task
+# 1. Update status to in-progress
+# 2. Register in docs/ACTIVE_SESSIONS.md
+# 3. Validate and commit
 
-# 2. Add progress notes (if in-progress)
-# **Progress:**
-# - [x] Phase 1 complete
-# - [ ] Phase 2 in progress
+# Completing a task
+# 1. Update status to complete
+# 2. Add Key Commits, Completed date, Actual Time
+# 3. Remove from docs/ACTIVE_SESSIONS.md
+# 4. Validate and commit
 
-# 3. Add completion details (if complete)
-# **Key Commits:** abc123, def456
-# **Actual Time:** 6h
-
-# 4. Validate
 pnpm roadmap:validate
-
-# 5. Commit
-git commit -m "roadmap: update TASK-ID status to complete"
+git add docs/roadmaps/MASTER_ROADMAP.md docs/ACTIVE_SESSIONS.md
+git commit -m "roadmap: complete TASK-ID - [brief description]"
 git push origin main
+```
+
+### Adding Progress Notes
+
+For long-running tasks, add progress tracking:
+
+```markdown
+**Progress:**
+
+- [x] Phase 1: Database schema
+- [x] Phase 2: API endpoints
+- [ ] Phase 3: Frontend components
+- [ ] Phase 4: Testing
 ```
 
 ## 3. Critical Format Requirements
@@ -648,7 +848,7 @@ Before committing ANY roadmap change, verify:
 
 # 📋 TASK TEMPLATES
 
-## New Bug Task Template
+## Bug Task Template
 
 ```markdown
 ### BUG-XXX: [Brief Description]
@@ -676,9 +876,19 @@ Before committing ANY roadmap change, verify:
 - [ ] Unit tests added
 - [ ] Manual testing completed
 - [ ] No new TypeScript errors introduced
+
+**Acceptance Criteria:**
+
+- Bug no longer reproducible
+- All existing tests pass
+- No performance regression
+
+**Notes:**
+
+- [Add context, links to related issues, etc.]
 ```
 
-## New Feature Task Template
+## Feature Task Template
 
 ```markdown
 ### FEATURE-XXX: [Feature Name]
@@ -707,6 +917,98 @@ Before committing ANY roadmap change, verify:
 - [ ] Unit tests (80%+ coverage)
 - [ ] Integration tests
 - [ ] Documentation updated
+
+**Acceptance Criteria:**
+
+- Feature works as specified
+- Accessible (WCAG 2.1 AA)
+- No performance regression
+
+**Notes:**
+
+- [Add context, design decisions, etc.]
+```
+
+## Stabilization Task Template
+
+```markdown
+### ST-XXX: [Technical Improvement]
+
+**Status:** ready
+**Priority:** [HIGH|MEDIUM|LOW]
+**Estimate:** [4h|8h|16h|1d]
+**Module:** [path/to/affected/code]
+**Dependencies:** None
+**Prompt:** docs/prompts/ST-XXX.md
+
+**Problem:**
+[What technical debt or stability issue needs addressing?]
+
+**Objectives:**
+
+- [Specific technical goal 1]
+- [Specific technical goal 2]
+- [Specific technical goal 3]
+
+**Deliverables:**
+
+- [ ] Code refactored/improved
+- [ ] Tests updated/added
+- [ ] Documentation updated
+- [ ] No regressions introduced
+- [ ] TypeScript errors reduced (if applicable)
+
+**Acceptance Criteria:**
+
+- Technical improvement verified
+- All tests pass
+- No new issues introduced
+
+**Notes:**
+
+- [Technical context, approach, etc.]
+```
+
+## Complete Example (Filled In)
+
+```markdown
+### BUG-027: Calendar Events Not Saving Timezone
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** server/routers/calendar.ts
+**Dependencies:** None
+**Prompt:** docs/prompts/BUG-027.md
+
+**Problem:**
+Calendar events created in non-UTC timezones are being saved with incorrect times.
+Users in PST see events shifted by 8 hours when viewing after creation.
+
+**Objectives:**
+
+- Identify where timezone conversion is failing
+- Implement proper UTC storage with timezone metadata
+- Add timezone handling to event retrieval
+
+**Deliverables:**
+
+- [ ] Root cause documented in PR description
+- [ ] Server-side timezone conversion fixed
+- [ ] Client-side display timezone handling added
+- [ ] Unit tests for timezone edge cases
+- [ ] Manual testing across PST, EST, UTC timezones
+
+**Acceptance Criteria:**
+
+- Events display at correct local time for all users
+- Existing events not corrupted by fix
+- All calendar tests pass
+
+**Notes:**
+
+- Related to user report #1234
+- May need database migration for timezone metadata
 ```
 
 ---
