@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAppMutation } from '@/hooks/useAppMutation';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { FormSubmitButton } from '@/components/ui/FormSubmitButton';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -18,10 +20,10 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Search, 
-  FileText, 
-  CheckCircle2, 
+import {
+  Search,
+  FileText,
+  CheckCircle2,
   XCircle,
   Clock,
   Eye,
@@ -78,8 +80,19 @@ export default function Quotes() {
     }
   }, [quotes]);
 
-  // Convert quote to sale mutation
-  const convertToSale = trpc.orders.convertQuoteToSale.useMutation();
+  // Convert quote to sale mutation with standardized error handling
+  const convertToSaleMutation = trpc.orders.convertQuoteToSale.useMutation();
+  const { mutate: convertToSale, isPending: isConverting } = useAppMutation(
+    convertToSaleMutation,
+    {
+      successMessage: 'Quote converted to sale successfully',
+      onSuccess: () => {
+        refetch();
+        setSelectedQuote(null);
+      },
+      context: { component: 'Quotes' },
+    }
+  );
 
   // Filter quotes by search query
   const filteredQuotes = quotes?.filter((quote) => {
@@ -103,20 +116,11 @@ export default function Quotes() {
     setSelectedQuote(quote);
   };
 
-  const handleConvertToSale = async (quoteId: number) => {
+  const handleConvertToSale = (quoteId: number) => {
     if (!confirm('Convert this quote to a sale order? This will create a new sales order and mark the quote as ACCEPTED.')) {
       return;
     }
-
-    try {
-      await convertToSale.mutateAsync({ quoteId });
-      toast.success('Quote converted to sale successfully');
-      refetch();
-      setSelectedQuote(null);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to convert quote');
-      console.error(error);
-    }
+    convertToSale({ quoteId });
   };
 
   const getStatusBadge = (status: string) => {
@@ -271,10 +275,14 @@ export default function Quotes() {
                   <div className="flex items-center justify-between">
                     {getStatusBadge(selectedQuote.quoteStatus)}
                     {selectedQuote.quoteStatus === 'ACCEPTED' && (
-                      <Button onClick={() => handleConvertToSale(selectedQuote.id)}>
-                        <ArrowRight className="h-4 w-4 mr-2" />
+                      <FormSubmitButton
+                        onClick={() => handleConvertToSale(selectedQuote.id)}
+                        isPending={isConverting}
+                        loadingText="Converting..."
+                        icon={<ArrowRight className="h-4 w-4" />}
+                      >
                         Convert to Sale
-                      </Button>
+                      </FormSubmitButton>
                     )}
                   </div>
                 </div>

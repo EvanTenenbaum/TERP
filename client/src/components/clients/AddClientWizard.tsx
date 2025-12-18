@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAppMutation } from "@/hooks/useAppMutation";
 import { Button } from "@/components/ui/button";
+import { FormSubmitButton } from "@/components/ui/FormSubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,14 +45,20 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   // Fetch all existing tags for autocomplete
   const { data: existingTags } = trpc.clients.tags.getAll.useQuery();
 
-  // Create client mutation
-  const createClientMutation = trpc.clients.create.useMutation({
-    onSuccess: (data) => {
-      onOpenChange(false);
-      resetForm();
-      if (onSuccess && data) onSuccess(data as number);
-    },
-  });
+  // Create client mutation with standardized error handling
+  const createClientMutation = trpc.clients.create.useMutation();
+  const { mutate: createClient, isPending, fieldErrors } = useAppMutation(
+    createClientMutation,
+    {
+      successMessage: "Client created successfully",
+      onSuccess: (data) => {
+        onOpenChange(false);
+        resetForm();
+        if (onSuccess && data) onSuccess(data as number);
+      },
+      context: { component: "AddClientWizard" },
+    }
+  );
 
   const resetForm = () => {
     setStep(1);
@@ -78,8 +86,8 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     if (step > 1) setStep(step - 1);
   };
 
-  const handleSubmit = async () => {
-    await createClientMutation.mutateAsync({
+  const handleSubmit = () => {
+    createClient({
       ...formData,
       tags: formData.tags.length > 0 ? formData.tags : undefined,
     });
@@ -124,10 +132,15 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 value={formData.teriCode}
                 onChange={(e) => setFormData({ ...formData, teriCode: e.target.value })}
                 required
+                className={fieldErrors?.teriCode ? "border-destructive" : ""}
               />
-              <p className="text-xs text-muted-foreground">
-                This is the unique identifier for the client (e.g., "KJ", "FO1")
-              </p>
+              {fieldErrors?.teriCode ? (
+                <p className="text-xs text-destructive">{fieldErrors.teriCode}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  This is the unique identifier for the client (e.g., "KJ", "FO1")
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -140,10 +153,15 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                className={fieldErrors?.name ? "border-destructive" : ""}
               />
-              <p className="text-xs text-muted-foreground">
-                Full name is kept private and only visible in the client profile
-              </p>
+              {fieldErrors?.name ? (
+                <p className="text-xs text-destructive">{fieldErrors.name}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Full name is kept private and only visible in the client profile
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -403,13 +421,14 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 Next
               </Button>
             ) : (
-              <Button
+              <FormSubmitButton
                 type="button"
                 onClick={handleSubmit}
-                disabled={createClientMutation.isPending}
+                isPending={isPending}
+                loadingText="Creating..."
               >
-                {createClientMutation.isPending ? "Creating..." : "Create Client"}
-              </Button>
+                Create Client
+              </FormSubmitButton>
             )}
           </div>
         </DialogFooter>

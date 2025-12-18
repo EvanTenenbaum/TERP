@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { trpc } from "../lib/trpc";
+import { useAppMutation } from "../hooks/useAppMutation";
 import { Button } from "../components/ui/button";
+import { FormSubmitButton } from "../components/ui/FormSubmitButton";
 import { Input } from "../components/ui/input";
 import {
   Table,
@@ -26,13 +28,12 @@ import {
 } from "../components/ui/select";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 import { Plus, Search, FileText, Trash2 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 
 export default function PurchaseOrdersPage() {
-  const { toast } = useToast();
   const [, _setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -61,52 +62,46 @@ export default function PurchaseOrdersPage() {
   const { data: productsData } = trpc.inventory.list.useQuery({});
   const products = productsData?.items ?? [];
 
-  // Mutations
-  const createPO = trpc.purchaseOrders.create.useMutation({
-    onSuccess: () => {
-      toast({ title: "Purchase order created successfully" });
-      refetch();
-      setIsCreateDialogOpen(false);
-      resetForm();
-    },
-    onError: error => {
-      toast({
-        title: "Error creating purchase order",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  // Mutations with standardized error handling
+  const createPOMutation = trpc.purchaseOrders.create.useMutation();
+  const { mutate: createPO, isPending: isCreating, fieldErrors } = useAppMutation(
+    createPOMutation,
+    {
+      successMessage: "Purchase order created successfully",
+      onSuccess: () => {
+        refetch();
+        setIsCreateDialogOpen(false);
+        resetForm();
+      },
+      context: { component: "PurchaseOrdersPage" },
+    }
+  );
 
-  const deletePO = trpc.purchaseOrders.delete.useMutation({
-    onSuccess: () => {
-      toast({ title: "Purchase order deleted successfully" });
-      refetch();
-      setIsDeleteDialogOpen(false);
-      setSelectedPO(null);
-    },
-    onError: error => {
-      toast({
-        title: "Error deleting purchase order",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const deletePOMutation = trpc.purchaseOrders.delete.useMutation();
+  const { mutate: deletePO, isPending: isDeleting } = useAppMutation(
+    deletePOMutation,
+    {
+      successMessage: "Purchase order deleted successfully",
+      onSuccess: () => {
+        refetch();
+        setIsDeleteDialogOpen(false);
+        setSelectedPO(null);
+      },
+      context: { component: "PurchaseOrdersPage" },
+    }
+  );
 
-  const _updateStatus = trpc.purchaseOrders.updateStatus.useMutation({
-    onSuccess: () => {
-      toast({ title: "Status updated successfully" });
-      refetch();
-    },
-    onError: error => {
-      toast({
-        title: "Error updating status",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const updateStatusMutation = trpc.purchaseOrders.updateStatus.useMutation();
+  const { mutate: _updateStatus } = useAppMutation(
+    updateStatusMutation,
+    {
+      successMessage: "Status updated successfully",
+      onSuccess: () => {
+        refetch();
+      },
+      context: { component: "PurchaseOrdersPage" },
+    }
+  );
 
   // Form state
   const [formData, setFormData] = useState({
@@ -172,14 +167,11 @@ export default function PurchaseOrdersPage() {
       }));
 
     if (!formData.supplierClientId || items.length === 0) {
-      toast({
-        title: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast.error("Please fill in all required fields");
       return;
     }
 
-    createPO.mutate({
+    createPO({
       supplierClientId: parseInt(formData.supplierClientId),
       orderDate: formData.orderDate,
       expectedDeliveryDate: formData.expectedDeliveryDate || undefined,
@@ -529,9 +521,13 @@ export default function PurchaseOrdersPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleCreatePO} disabled={createPO.isPending}>
-              {createPO.isPending ? "Creating..." : "Create Purchase Order"}
-            </Button>
+            <FormSubmitButton
+              onClick={handleCreatePO}
+              isPending={isCreating}
+              loadingText="Creating..."
+            >
+              Create Purchase Order
+            </FormSubmitButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -553,15 +549,14 @@ export default function PurchaseOrdersPage() {
             >
               Cancel
             </Button>
-            <Button
+            <FormSubmitButton
               variant="destructive"
-              onClick={() =>
-                selectedPO && deletePO.mutate({ id: selectedPO.id })
-              }
-              disabled={deletePO.isPending}
+              onClick={() => selectedPO && deletePO({ id: selectedPO.id })}
+              isPending={isDeleting}
+              loadingText="Deleting..."
             >
-              {deletePO.isPending ? "Deleting..." : "Delete"}
-            </Button>
+              Delete
+            </FormSubmitButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

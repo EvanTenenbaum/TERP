@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAppMutation } from "@/hooks/useAppMutation";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { FormSubmitButton } from "@/components/ui/FormSubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { StrainInput } from "@/components/inventory/StrainInput";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -76,18 +78,23 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   const { data: grades } = trpc.settings.grades.list.useQuery();
   const { data: locations } = trpc.settings.locations.list.useQuery();
 
+  // Media upload mutation (raw mutation for Promise.all usage)
   const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
-  const createPurchaseMutation = trpc.inventory.intake.useMutation({
-    onSuccess: () => {
-      toast.success("Product purchase created successfully!");
-      resetForm();
-      onClose();
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error(`Failed to create purchase: ${error.message}`);
-    },
-  });
+
+  // Create purchase mutation with standardized error handling
+  const createPurchaseMutationRaw = trpc.inventory.intake.useMutation();
+  const { mutate: createPurchase, isPending, fieldErrors } = useAppMutation(
+    createPurchaseMutationRaw,
+    {
+      successMessage: "Product purchase created successfully!",
+      onSuccess: () => {
+        resetForm();
+        onClose();
+        onSuccess?.();
+      },
+      context: { component: "PurchaseModal" },
+    }
+  );
 
   const resetForm = () => {
     setFormData({
@@ -200,8 +207,8 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
       }
     }
 
-    // Create purchase with media URLs
-    createPurchaseMutation.mutate({
+    // Create purchase with media URLs using standardized mutation
+    createPurchase({
       vendorName: formData.vendorName,
       brandName: formData.brandName,
       productName: formData.productName,
@@ -587,10 +594,13 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={createPurchaseMutation.isPending}>
-              {createPurchaseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <FormSubmitButton
+              type="submit"
+              isPending={isPending || uploadMediaMutation.isPending}
+              loadingText={uploadMediaMutation.isPending ? "Uploading..." : "Creating..."}
+            >
               Create Purchase
-            </Button>
+            </FormSubmitButton>
           </DialogFooter>
         </form>
       </DialogContent>
