@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams } from "wouter";
 import { useLocation } from "wouter";
-import { BackButton } from "@/components/common/BackButton";
 import { Plus, MoreVertical, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc";
 import { TaskCard } from "@/components/todos/TaskCard";
 import { TaskForm } from "@/components/todos/TaskForm";
@@ -21,6 +21,8 @@ export function TodoListDetailPage() {
   const [, setLocation] = useLocation();
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isEditListOpen, setIsEditListOpen] = useState(false);
+  const [showDeleteListConfirm, setShowDeleteListConfirm] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
   const [editingTask, setEditingTask] = useState<{
     id: number;
     title: string;
@@ -85,20 +87,15 @@ export function TodoListDetailPage() {
     }
   };
 
-  const handleDeleteTask = (taskId: number) => {
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      deleteTask.mutate({ taskId });
+  const handleDeleteTask = () => {
+    if (taskToDelete !== null) {
+      deleteTask.mutate({ taskId: taskToDelete });
+      setTaskToDelete(null);
     }
   };
 
   const handleDeleteList = () => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this list? All tasks will be deleted."
-      )
-    ) {
-      deleteList.mutate({ listId: Number(listId) });
-    }
+    deleteList.mutate({ listId: Number(listId) });
   };
 
   if (listLoading) {
@@ -175,7 +172,7 @@ export function TodoListDetailPage() {
                   Edit List
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={handleDeleteList}
+                  onClick={() => setShowDeleteListConfirm(true)}
                   className="text-destructive"
                 >
                   Delete List
@@ -211,7 +208,7 @@ export function TodoListDetailPage() {
               onClick={() => setEditingTask(task)}
               onToggleComplete={() => handleToggleComplete({ id: task.id, status: task.status })}
               onEdit={() => setEditingTask(task)}
-              onDelete={() => handleDeleteTask(task.id)}
+              onDelete={() => setTaskToDelete(task.id)}
             />
           ))}
         </div>
@@ -235,6 +232,30 @@ export function TodoListDetailPage() {
         list={list}
         isOpen={isEditListOpen}
         onClose={() => setIsEditListOpen(false)}
+      />
+
+      {/* Delete Task Confirmation */}
+      <ConfirmDialog
+        open={taskToDelete !== null}
+        onOpenChange={(open) => !open && setTaskToDelete(null)}
+        title="Delete Task"
+        description="Are you sure you want to delete this task? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDeleteTask}
+        isLoading={deleteTask.isPending}
+      />
+
+      {/* Delete List Confirmation */}
+      <ConfirmDialog
+        open={showDeleteListConfirm}
+        onOpenChange={setShowDeleteListConfirm}
+        title="Delete List"
+        description="Are you sure you want to delete this list? All tasks will be deleted. This action cannot be undone."
+        confirmLabel="Delete List"
+        variant="destructive"
+        onConfirm={handleDeleteList}
+        isLoading={deleteList.isPending}
       />
     </div>
   );

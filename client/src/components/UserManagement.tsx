@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Trash2, Key, UserPlus } from "lucide-react";
 
 export function UserManagement() {
@@ -12,6 +13,7 @@ export function UserManagement() {
   const [newName, setNewName] = useState("");
   const [resetUsername, setResetUsername] = useState("");
   const [resetPassword, setResetPassword] = useState("");
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
   const { data: users, isLoading } = trpc.userManagement.listUsers.useQuery();
@@ -63,9 +65,10 @@ export function UserManagement() {
     });
   };
 
-  const handleDeleteUser = (username: string) => {
-    if (confirm(`Are you sure you want to delete user "${username}"?`)) {
-      deleteUser.mutate({ username });
+  const handleDeleteUser = () => {
+    if (userToDelete) {
+      deleteUser.mutate({ username: userToDelete });
+      setUserToDelete(null);
     }
   };
 
@@ -208,7 +211,7 @@ export function UserManagement() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleDeleteUser(user.email || "")}
+                      onClick={() => setUserToDelete(user.email || "")}
                       disabled={deleteUser.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -224,6 +227,18 @@ export function UserManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete User Confirmation */}
+      <ConfirmDialog
+        open={userToDelete !== null}
+        onOpenChange={(open) => !open && setUserToDelete(null)}
+        title="Delete User"
+        description={`Are you sure you want to delete user "${userToDelete}"? This action cannot be undone.`}
+        confirmLabel="Delete User"
+        variant="destructive"
+        onConfirm={handleDeleteUser}
+        isLoading={deleteUser.isPending}
+      />
     </div>
   );
 }

@@ -29,17 +29,19 @@ Executing UX Polish Sprint with 3 waves of tasks.
 
 ## Progress
 
-### Wave 1: Quick Wins
-- [ ] UX-003: Rename "Lifetime" to "All Time"
-- [ ] UX-004: Rename "Customize Metrics" button
-- [ ] UX-005: Remove version number from header
-- [ ] UX-008: Fix "Oldest Debt" abbreviation
+### Wave 1: Quick Wins ✅ COMPLETE
+- [x] UX-003: Rename "Lifetime" to "All Time"
+- [x] UX-004: Rename "Customize Metrics" to "Configure Display"
+- [x] UX-005: Remove version number from header
+- [x] UX-008: Fix "Oldest Debt" abbreviation (d -> days)
 
-### Wave 2: Medium Tasks
-- [ ] UX-002: Replace browser confirm() dialogs
-- [ ] UX-010: Add empty states to widgets
-- [ ] UX-011: Add skeleton loaders
-- [ ] UX-012: Add "Clear Filters" button
+### Wave 2: Medium Tasks ✅ COMPLETE
+- [x] UX-002: Replace browser confirm() dialogs
+  - Created reusable ConfirmDialog component
+  - Updated CommentItem, CustomizationPanel, TodoListDetailPage, UserManagement
+- [x] UX-012: Add "Clear Filters" button to Quotes page
+- [ ] UX-010: Add empty states to widgets (deferred)
+- [ ] UX-011: Add skeleton loaders (deferred)
 
 ## Notes
 
