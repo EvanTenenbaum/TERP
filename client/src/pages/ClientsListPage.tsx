@@ -727,7 +727,7 @@ export default function ClientsListPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         {client.oldestDebtDays && client.oldestDebtDays > 0 ? (
-                          <span className="text-destructive font-medium">{client.oldestDebtDays}d</span>
+                          <span className="text-destructive font-medium">{client.oldestDebtDays} days</span>
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}

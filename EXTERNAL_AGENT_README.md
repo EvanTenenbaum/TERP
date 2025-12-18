@@ -69,7 +69,8 @@ bash scripts/validate-external-agent-work.sh
 ## ⚠️ Critical Rules They Must Follow
 
 External agents MUST:
-- ✅ Read all 6 steering files before starting
+- ✅ Read all 6 steering files before starting (using `cat` commands)
+- ✅ Use standard tools (`grep`, `find`, `cat`) - NOT Kiro tools
 - ✅ Register session in `docs/sessions/active/`
 - ✅ Check `docs/ACTIVE_SESSIONS.md` for conflicts
 - ✅ Use NO `any` types in TypeScript
@@ -77,6 +78,12 @@ External agents MUST:
 - ✅ Run `pnpm typecheck && pnpm lint && pnpm test` before committing
 - ✅ Verify deployment succeeds
 - ✅ Archive session when complete
+
+**Tool Note**: External agents don't have access to Kiro-specific tools like `readFile`, `strReplace`, `grepSearch`, or `getDiagnostics`. They should use:
+- `cat` instead of `readFile`
+- `grep -r` instead of `grepSearch`
+- `find` instead of `fileSearch`
+- `pnpm typecheck` instead of `getDiagnostics`
 
 If they skip ANY of these, they'll break things or conflict with other agents.
 

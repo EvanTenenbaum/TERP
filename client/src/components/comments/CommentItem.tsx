@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ export const CommentItem = memo(function CommentItem({
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const utils = trpc.useContext();
   const { data: currentUser } = trpc.auth.me.useQuery();
@@ -85,9 +87,7 @@ export const CommentItem = memo(function CommentItem({
   };
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this comment?")) {
-      deleteComment.mutate({ commentId: comment.id });
-    }
+    deleteComment.mutate({ commentId: comment.id });
   };
 
   const handleToggleResolve = () => {
@@ -146,7 +146,7 @@ export const CommentItem = memo(function CommentItem({
                     Edit
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={handleDelete}
+                    onClick={() => setShowDeleteConfirm(true)}
                     className="text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -186,6 +186,18 @@ export const CommentItem = memo(function CommentItem({
       ) : (
         <MentionRenderer content={comment.content} />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Comment"
+        description="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDelete}
+        isLoading={deleteComment.isPending}
+      />
     </div>
   );
 });

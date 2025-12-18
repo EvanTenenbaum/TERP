@@ -875,18 +875,46 @@ docs/sessions/completed/         - Archived sessions
 
 # Platform-Specific Notes
 
+## Determine Your Environment
+
+**You are in Kiro IDE if:**
+- You have access to tools like `readFile`, `strReplace`, `grepSearch`, `getDiagnostics`
+- Steering files are automatically included in your context
+- You see a token budget indicator
+
+**You are an External Agent if:**
+- You're working from Claude, ChatGPT, Cursor, Copilot, or another platform
+- You need to use bash commands to read files
+- You must manually read steering files
+
+## If You're in Kiro IDE
+
+Use Kiro's specialized tools - they're optimized for this codebase:
+
+| Task | Kiro Tool | Why |
+|------|-----------|-----|
+| Read files | `readFile`, `readMultipleFiles` | Optimized, provides context |
+| Search content | `grepSearch` | Faster, integrated results |
+| Find files | `fileSearch` | Fuzzy matching, efficient |
+| Edit files | `strReplace` | Safe, atomic edits |
+| Check errors | `getDiagnostics` | Real-time TypeScript/lint errors |
+| Run commands | `executeBash` | For git, npm, scripts |
+
 ## If You're NOT in Kiro IDE
 
-Since you don't have Kiro's specialized tools, use these bash equivalents:
+Use these standard bash equivalents:
 
-| Kiro Tool           | Your Equivalent            |
-| ------------------- | -------------------------- |
-| `readFile`          | `cat file.ts`              |
-| `readMultipleFiles` | `cat file1.ts file2.ts`    |
-| `grepSearch`        | `grep -r "pattern" src/`   |
-| `fileSearch`        | `find . -name "*pattern*"` |
-| `strReplace`        | Manual editing or `sed`    |
-| `getDiagnostics`    | `pnpm typecheck`           |
+| Task | Command | Example |
+|------|---------|---------|
+| Read file | `cat` | `cat server/routers/calendar.ts` |
+| Read multiple | `cat` | `cat file1.ts file2.ts` |
+| Search content | `grep -r` | `grep -r "pattern" src/` |
+| Search TypeScript | `grep -r --include` | `grep -r --include="*.ts" "pattern" .` |
+| Find files | `find` | `find . -name "*.ts" -path "*/routers/*"` |
+| Edit files | Manual or `sed` | Use your IDE's editor |
+| Check errors | `pnpm typecheck` | Run after every change |
+| Run tests | `pnpm test` | Run before commit |
+| Lint check | `pnpm lint` | Run before commit |
 
 ## Session Registration for External Agents
 

@@ -1,10 +1,12 @@
-import { X, ChevronUp, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   Sheet,
   SheetContent,
@@ -16,6 +18,7 @@ import { useDashboardPreferences } from '@/contexts/DashboardPreferencesContext'
 import { LAYOUT_PRESETS, WIDGET_METADATA } from '@/lib/constants/dashboardPresets';
 
 export function CustomizationPanel() {
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const {
     isCustomizing,
     setIsCustomizing,
@@ -29,9 +32,8 @@ export function CustomizationPanel() {
   } = useDashboardPreferences();
 
   const handleReset = () => {
-    if (confirm('Reset dashboard to default layout? This will undo all customizations.')) {
-      resetToDefault();
-    }
+    resetToDefault();
+    setShowResetConfirm(false);
   };
 
   return (
@@ -139,13 +141,24 @@ export function CustomizationPanel() {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={handleReset}
+                onClick={() => setShowResetConfirm(true)}
               >
                 Reset to Default
               </Button>
             </div>
           </div>
         </ScrollArea>
+
+        {/* Reset Confirmation Dialog */}
+        <ConfirmDialog
+          open={showResetConfirm}
+          onOpenChange={setShowResetConfirm}
+          title="Reset Dashboard"
+          description="Reset dashboard to default layout? This will undo all customizations."
+          confirmLabel="Reset"
+          variant="destructive"
+          onConfirm={handleReset}
+        />
       </SheetContent>
     </Sheet>
   );

@@ -12,15 +12,15 @@ This document is for AI agents working on TERP from **other platforms** (Claude,
 
 ---
 
-## ⚠️ CRITICAL: You Are Not in Kiro
+## ⚠️ CRITICAL: You Are Not in Kiro IDE
 
-You're working in a different environment. This means:
+You're working in a different environment (Claude, ChatGPT, Cursor, etc.). This means:
 
-- ❌ You don't have Kiro's specialized tools (readFile, strReplace, etc.)
+- ❌ You don't have Kiro's specialized tools (`readFile`, `strReplace`, `grepSearch`, `getDiagnostics`)
 - ❌ Steering files are NOT automatically included in your context
-- ✅ You MUST read all protocol files manually
-- ✅ You MUST use standard bash/git commands
-- ✅ You MUST follow the same standards as Kiro agents
+- ✅ You MUST read all protocol files manually using `cat`
+- ✅ You MUST use standard bash/git commands (see tool reference below)
+- ✅ You MUST follow the same code standards as Kiro agents
 
 ---
 
@@ -123,19 +123,62 @@ git push origin main
 
 ---
 
-## 🔧 Tool Differences
+## 🔧 Standard Tools Reference
 
-Since you're not in Kiro, use these bash equivalents:
+Since you're not in Kiro IDE, use these standard tools:
 
-| Kiro Tool | Your Equivalent |
-|-----------|-----------------|
-| `readFile` | `cat file.ts` |
-| `readMultipleFiles` | `cat file1.ts file2.ts` |
-| `grepSearch` | `grep -r "pattern" src/` |
-| `fileSearch` | `find . -name "*pattern*"` |
-| `strReplace` | Manual editing or `sed` |
-| `getDiagnostics` | `pnpm typecheck` |
-| `executeBash` | Direct bash commands |
+### File Operations
+
+| Task | Command | Example |
+|------|---------|---------|
+| Read single file | `cat` | `cat server/routers/calendar.ts` |
+| Read multiple files | `cat` | `cat file1.ts file2.ts` |
+| Read with line numbers | `cat -n` | `cat -n server/db.ts` |
+| Read specific lines | `sed -n` | `sed -n '10,20p' file.ts` |
+| View file head | `head` | `head -50 file.ts` |
+| View file tail | `tail` | `tail -50 file.ts` |
+
+### Search Operations
+
+| Task | Command | Example |
+|------|---------|---------|
+| Search in files | `grep -r` | `grep -r "pattern" src/` |
+| Search with context | `grep -B2 -A2` | `grep -B2 -A2 "function" file.ts` |
+| Search TypeScript files | `grep -r --include` | `grep -r --include="*.ts" "pattern" .` |
+| Find files by name | `find` | `find . -name "*.ts" -path "*/routers/*"` |
+| Find files by content | `grep -l` | `grep -rl "pattern" src/` |
+
+### Code Quality Checks
+
+| Task | Command | Notes |
+|------|---------|-------|
+| TypeScript errors | `pnpm typecheck` | Run after every change |
+| Linting | `pnpm lint` | Run before commit |
+| All tests | `pnpm test` | Run before commit |
+| Specific test | `pnpm test calendar` | Test specific file |
+| Format check | `pnpm format:check` | Check formatting |
+
+### Git Operations
+
+| Task | Command | Example |
+|------|---------|---------|
+| Pull latest | `git pull origin main` | Always do first |
+| Check status | `git status` | See changed files |
+| View diff | `git diff` | See changes |
+| Commit | `git commit -m "msg"` | Use conventional commits |
+| Push | `git push origin main` | After each phase |
+
+### File Editing
+
+For editing files, use your IDE's native editing capabilities or:
+
+| Task | Command | Example |
+|------|---------|---------|
+| Simple replace | `sed -i` | `sed -i 's/old/new/g' file.ts` |
+| Create file | `cat >` | `cat > newfile.ts << 'EOF'` |
+| Append to file | `echo >>` | `echo "text" >> file.ts` |
+
+**Note**: For complex edits, use your IDE's editor rather than sed.
 
 ---
 

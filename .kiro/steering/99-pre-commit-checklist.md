@@ -19,7 +19,7 @@ inclusion: always
 - [ ] No `any` types (run: `pnpm typecheck`)
 - [ ] All tests pass (run: `pnpm test`)
 - [ ] No linting errors (run: `pnpm lint`)
-- [ ] Diagnostics clear (use: `getDiagnostics`)
+- [ ] Diagnostics clear (Kiro: `getDiagnostics` | External: `pnpm typecheck`)
 
 ## Roadmap Compliance
 

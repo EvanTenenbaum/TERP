@@ -47,134 +47,95 @@ This means:
 - ✅ Coordinate with other agents to avoid conflicts
 - ✅ Verify deployment success before marking tasks complete
 
-## Critical: You Are Working in Kiro IDE
+## Tool Usage: IDE-Specific Guidance
 
-Kiro is an AI-native IDE with specific capabilities and workflows. Understanding these is essential:
+Different AI agents work on TERP from different environments. Use the tools appropriate for your environment.
 
-### Kiro-Specific Best Practices
+### Determine Your Environment
 
-#### 1. Use Kiro Tools, Not Bash Equivalents
+**You are in Kiro IDE if:**
+- You have access to tools like `readFile`, `strReplace`, `grepSearch`, `getDiagnostics`
+- Steering files are automatically included in your context
+- You see a token budget indicator
 
-**DO** ✅:
+**You are an External Agent if:**
+- You're working from Claude, ChatGPT, Cursor, or another platform
+- You need to use bash commands to read files
+- You must manually read steering files
 
+---
+
+### 🔷 If You're in Kiro IDE
+
+Kiro provides specialized tools optimized for this codebase. **Use them instead of bash equivalents.**
+
+#### Kiro Tools Reference
+
+| Task | Kiro Tool | Why |
+|------|-----------|-----|
+| Read files | `readFile`, `readMultipleFiles` | Optimized, provides context |
+| Search content | `grepSearch` | Faster, integrated results |
+| Find files | `fileSearch` | Fuzzy matching, efficient |
+| Edit files | `strReplace` | Safe, atomic edits |
+| Check errors | `getDiagnostics` | Real-time TypeScript/lint errors |
+| Run commands | `executeBash` | For git, npm, scripts |
+| Long processes | `controlBashProcess` | Dev servers, watchers |
+
+#### Kiro Best Practices
+
+1. **Read files efficiently**: Use `readMultipleFiles` for related files
+2. **Use context references**: `#File`, `#Folder`, `#Problems`, `#Terminal`, `#Git Diff`, `#Codebase`
+3. **Parallel edits**: Multiple `strReplace` calls in same turn
+4. **Check after editing**: Always run `getDiagnostics` after changes
+5. **No `cd` command**: Use `path` parameter instead
+6. **Background processes**: Use `controlBashProcess` for dev servers
+7. **Steering files**: Automatically included - don't read manually
+
+---
+
+### 🔶 If You're an External Agent (Claude, ChatGPT, Cursor, etc.)
+
+You don't have Kiro tools. Use standard bash commands and follow the external agent protocol.
+
+**FIRST**: Read `.kiro/steering/05-external-agent-handoff.md` for complete instructions.
+
+#### Standard Tools Reference
+
+| Task | Command | Example |
+|------|---------|---------|
+| Read file | `cat` | `cat server/routers/calendar.ts` |
+| Read multiple | `cat` | `cat file1.ts file2.ts` |
+| Search content | `grep -r` | `grep -r "pattern" src/` |
+| Find files | `find` | `find . -name "*.ts" -path "*/routers/*"` |
+| Edit files | Manual or `sed` | Direct editing in your IDE |
+| Check errors | `pnpm typecheck` | Run after changes |
+| Run commands | Direct bash | `pnpm test`, `git status` |
+
+#### External Agent Requirements
+
+1. **Read steering files manually**: `cat .kiro/steering/*.md`
+2. **Register session**: Create file in `docs/sessions/active/`
+3. **Check active sessions**: `cat docs/ACTIVE_SESSIONS.md`
+4. **Validate before commit**: `pnpm typecheck && pnpm lint && pnpm test`
+5. **Archive session when done**: Move to `docs/sessions/completed/`
+
+#### Quick Start for External Agents
+
+```bash
+# 1. Read all protocols
+cat .kiro/steering/00-core-identity.md
+cat .kiro/steering/01-development-standards.md
+cat .kiro/steering/02-workflows.md
+cat .kiro/steering/03-agent-coordination.md
+cat .kiro/steering/04-infrastructure.md
+cat .kiro/steering/05-external-agent-handoff.md
+
+# 2. Check current state
+cat docs/ACTIVE_SESSIONS.md
+cat docs/roadmaps/MASTER_ROADMAP.md
+
+# 3. Register your session (see 05-external-agent-handoff.md)
 ```
-Use readFile, readMultipleFiles for reading code
-Use grepSearch for searching content
-Use fileSearch for finding files
-Use strReplace for editing files
-Use getDiagnostics for checking errors
-```
-
-**DON'T** ❌:
-
-```
-cat, grep, find, sed, awk (use Kiro tools instead)
-```
-
-**Why**: Kiro tools are optimized, provide better context, and integrate with the IDE.
-
-#### 2. Read Files Efficiently
-
-**Prefer**:
-
-- `readMultipleFiles` over multiple `readFile` calls
-- Read entire files unless they're very large (>1000 lines)
-- Use `getDiagnostics` after editing to verify correctness
-
-**Example**:
-
-```
-# Good: Read multiple related files at once
-readMultipleFiles(["server/routers/calendar.ts", "server/services/calendarService.ts"])
-
-# Bad: Multiple separate reads
-readFile("server/routers/calendar.ts")
-readFile("server/services/calendarService.ts")
-```
-
-#### 3. Use Context References
-
-Kiro supports special context references in chat:
-
-- `#File` - Reference a specific file
-- `#Folder` - Reference a folder
-- `#Problems` - See current diagnostics
-- `#Terminal` - See terminal output
-- `#Git Diff` - See current changes
-- `#Codebase` - Search entire codebase (once indexed)
-
-**Use these** to provide context without copying large amounts of text.
-
-#### 4. Leverage Kiro's Multi-File Editing
-
-When making related changes across files:
-
-- Use `strReplace` in parallel (multiple invocations in same turn)
-- Kiro will apply them simultaneously
-- More efficient than sequential edits
-
-#### 5. Check Diagnostics, Don't Guess
-
-After editing code:
-
-```
-getDiagnostics(["path/to/edited/file.ts"])
-```
-
-This shows TypeScript errors, linting issues, etc. **Fix them immediately**.
-
-#### 6. Understand Kiro's Execution Model
-
-- **Bash commands**: Use for git, npm, deployment scripts
-- **File operations**: Use Kiro tools (readFile, strReplace, etc.)
-- **Long-running processes**: Use `controlBashProcess` (start/stop)
-- **Never use**: `cd` command (use `path` parameter instead)
-
-#### 7. Work with Kiro Steering Files
-
-These files (in `.kiro/steering/`) are **automatically included** in your context:
-
-- You don't need to read them manually
-- They're always present
-- Update them when protocols change
-- Use frontmatter to control inclusion:
-  ```yaml
-  ---
-  inclusion: always # Always included
-  ---
-  ```
-
-#### 8. Respect Kiro's Token Budget
-
-- You have a token budget per interaction
-- Read files strategically (don't read everything)
-- Use `grepSearch` to find relevant code before reading
-- Use `fileSearch` to locate files by name
-- Be concise in responses
-
-#### 9. Use Kiro's Background Processes
-
-For long-running tasks (dev servers, watchers):
-
-```
-controlBashProcess(action="start", command="npm run dev")
-# Later...
-getProcessOutput(processId=X)
-# When done...
-controlBashProcess(action="stop", processId=X)
-```
-
-**Don't** use `executeBash` for long-running commands - they'll timeout.
-
-#### 10. Leverage Kiro's MCP Integration
-
-Kiro supports Model Context Protocol (MCP) servers:
-
-- DigitalOcean MCP: Check deployment status, view logs
-- Available tools are automatically exposed
-- Use them instead of manual API calls
-
-**Example**: Instead of `curl` to DigitalOcean API, use MCP tools if available.
 
 ## Universal Protocols (ALL Agents Must Follow)
 
@@ -300,10 +261,18 @@ pnpm test
 
 ## When You're Stuck
 
+### In Kiro IDE:
 1. **Check diagnostics**: `getDiagnostics(["file.ts"])`
 2. **Search codebase**: `grepSearch` for similar patterns
 3. **Read protocols**: Review relevant `.kiro/steering/` files
 4. **Check sessions**: See what other agents are doing
+5. **Ask user**: When truly uncertain, ask for clarification
+
+### External Agents:
+1. **Check errors**: `pnpm typecheck`
+2. **Search codebase**: `grep -r "pattern" src/`
+3. **Read protocols**: `cat .kiro/steering/*.md`
+4. **Check sessions**: `cat docs/ACTIVE_SESSIONS.md`
 5. **Ask user**: When truly uncertain, ask for clarification
 
 ## Success Criteria

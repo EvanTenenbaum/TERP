@@ -4,6 +4,8 @@
 
 **Estimated Time**: 8-12 hours (can be done in phases)
 
+> **Note**: This workflow is optimized for **Kiro IDE**. If you're using a different environment (Claude, ChatGPT, Cursor, etc.), see the "External Agent Alternatives" section at the end of this document.
+
 ---
 
 ## Why This Approach Works with Kiro
@@ -459,3 +461,71 @@ You can complete this over multiple sessions. Each phase is independent and can 
 ```bash
 pnpm tsx scripts/comprehensive-code-review.ts
 ```
+
+
+---
+
+## External Agent Alternatives
+
+If you're **not** using Kiro IDE (e.g., Claude, ChatGPT, Cursor), use these standard tools instead:
+
+### Tool Mapping
+
+| Kiro Tool | External Alternative | Example |
+|-----------|---------------------|---------|
+| `readFile` | `cat` | `cat server/routers/orders.ts` |
+| `readMultipleFiles` | `cat` (multiple) | `cat file1.ts file2.ts` |
+| `grepSearch` | `grep -r` | `grep -r "pattern" src/` |
+| `fileSearch` | `find` | `find . -name "*.ts" -path "*/routers/*"` |
+| `getDiagnostics` | `pnpm typecheck` | Run after changes |
+| `listDirectory` | `ls -la` or `tree` | `ls -la server/routers/` |
+
+### Example Conversions
+
+**Kiro**:
+```
+readMultipleFiles(["server/routers/orders.ts", "server/routers/batches.ts"])
+```
+
+**External**:
+```bash
+cat server/routers/orders.ts server/routers/batches.ts
+```
+
+---
+
+**Kiro**:
+```
+grepSearch("useState|useContext", includePattern="client/src/**/*.tsx")
+```
+
+**External**:
+```bash
+grep -r --include="*.tsx" "useState\|useContext" client/src/
+```
+
+---
+
+**Kiro**:
+```
+getDiagnostics(["server/routers/orders.ts"])
+```
+
+**External**:
+```bash
+pnpm typecheck
+# Or for specific file issues:
+npx tsc --noEmit server/routers/orders.ts
+```
+
+### External Agent Workflow
+
+1. **Read steering files first**: `cat .kiro/steering/*.md`
+2. **Register your session**: See `.kiro/steering/05-external-agent-handoff.md`
+3. **Use bash commands** for all file operations
+4. **Run `pnpm typecheck`** after any code changes
+5. **Archive session** when complete
+
+For complete external agent instructions, see:
+- `.kiro/steering/05-external-agent-handoff.md`
+- `EXTERNAL_AGENT_README.md`

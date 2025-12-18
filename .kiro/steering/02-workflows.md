@@ -586,17 +586,17 @@ bash scripts/handle-push-conflict.sh
 When working in Kiro IDE:
 
 ```bash
-# Use Kiro tools for file operations
-# readFile, readMultipleFiles, strReplace, etc.
+# In Kiro IDE:
+# - Use Kiro tools: readFile, readMultipleFiles, strReplace
+# - Use getDiagnostics after editing
+# - Use grepSearch for finding code
+# - Use fileSearch for locating files
 
-# Use getDiagnostics after editing
-# Check for TypeScript/linting errors
-
-# Use grepSearch for finding code
-# More efficient than bash grep
-
-# Use fileSearch for locating files
-# Faster than bash find
+# External Agents (Claude, ChatGPT, Cursor, etc.):
+# - Use cat to read files
+# - Use pnpm typecheck after editing
+# - Use grep -r for finding code
+# - Use find for locating files
 ```
 
 ---
