@@ -68,7 +68,8 @@ const FormSubmitButton = React.memo(function FormSubmitButton({
   size = "default",
   icon,
   type = "submit",
-  ...props
+  onClick,  // HIGH-002 FIX: Destructure onClick explicitly for stable dependency
+  ...restProps
 }: FormSubmitButtonProps) {
   // Support both isSubmitting and isPending for flexibility
   const isLoading = isSubmitting || isPending;
@@ -76,6 +77,7 @@ const FormSubmitButton = React.memo(function FormSubmitButton({
   // Track click to prevent double-clicks
   const lastClickRef = React.useRef<number>(0);
 
+  // HIGH-002 FIX: Use destructured onClick for stable callback
   const handleClick = React.useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       // Prevent rapid double-clicks (within 500ms)
@@ -87,9 +89,9 @@ const FormSubmitButton = React.memo(function FormSubmitButton({
       lastClickRef.current = now;
 
       // Call original onClick if provided
-      props.onClick?.(e);
+      onClick?.(e);
     },
-    [props.onClick]
+    [onClick]
   );
 
   return (
@@ -106,7 +108,7 @@ const FormSubmitButton = React.memo(function FormSubmitButton({
       onClick={handleClick}
       aria-busy={isLoading}
       aria-disabled={disabled || isLoading}
-      {...props}
+      {...restProps}
     >
       {/* Loading spinner */}
       {isLoading && (
