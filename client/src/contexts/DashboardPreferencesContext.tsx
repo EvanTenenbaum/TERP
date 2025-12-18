@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import type { DashboardLayout, WidgetState } from '@/types/dashboard';
-import { LAYOUT_PRESETS, DEFAULT_LAYOUT_ID } from '@/lib/constants/dashboardPresets';
+import { LAYOUT_PRESETS, DEFAULT_LAYOUT_ID, WIDGET_METADATA } from '@/lib/constants/dashboardPresets';
 import { trpc } from '@/lib/trpc';
 
 interface DashboardPreferencesState {
@@ -186,6 +186,21 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
         // Special handling for 'custom' layout: preserve current widgets
         // instead of replacing with empty array
         if (layoutId === 'custom') {
+          // If current widgets array is empty, initialize with all widgets hidden
+          // so users can selectively enable them via Widget Visibility panel
+          if (prev.widgets.length === 0) {
+            const allWidgetsHidden: WidgetState[] = Object.keys(WIDGET_METADATA).map((id, index) => ({
+              id,
+              isVisible: false,
+              isExpanded: false,
+              order: index,
+            }));
+            return {
+              ...prev,
+              activeLayoutId: layoutId,
+              widgets: allWidgetsHidden,
+            };
+          }
           return {
             ...prev,
             activeLayoutId: layoutId,
@@ -205,11 +220,30 @@ export function DashboardPreferencesProvider({ children }: { children: ReactNode
 
   const toggleWidgetVisibility = useCallback((widgetId: string) => {
     setState((prev) => {
-      const newWidgets = prev.widgets.map((widget) =>
-        widget.id === widgetId
-          ? { ...widget, isVisible: !widget.isVisible }
-          : widget
-      );
+      const existingWidget = prev.widgets.find((w) => w.id === widgetId);
+      
+      let newWidgets: WidgetState[];
+      
+      if (existingWidget) {
+        // Widget exists, toggle its visibility
+        newWidgets = prev.widgets.map((widget) =>
+          widget.id === widgetId
+            ? { ...widget, isVisible: !widget.isVisible }
+            : widget
+        );
+      } else {
+        // Widget doesn't exist in array (e.g., custom layout with empty widgets)
+        // Add it with visibility set to true
+        newWidgets = [
+          ...prev.widgets,
+          {
+            id: widgetId,
+            isVisible: true,
+            isExpanded: false,
+            order: prev.widgets.length,
+          },
+        ];
+      }
       
       // If we're modifying a preset, switch to custom
       const newLayoutId = 'custom';
