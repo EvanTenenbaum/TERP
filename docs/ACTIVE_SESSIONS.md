@@ -12,7 +12,7 @@
 
 | Session ID | Task | Branch | Module | Status | Started | ETA |
 | ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| _(none)_   | -    | -      | -      | -      | -       | -   |
+| Session-20251218-FIX-IMPL-db9dd2 | Master Fix Spec v2 Implementation | claude/setup-terp-system-zEpor | Multiple | In Progress | 2025-12-18 | - |
 
 ## ⏸️ Paused / Waiting
 
