@@ -5969,3 +5969,20 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 - `docs/reviews/TESTING_COVERAGE_REPORT.md` - Test coverage
 - `docs/reviews/TECHNICAL_DEBT_INVENTORY.md` - Debt catalog
 - `docs/reviews/IMPROVEMENT_ROADMAP.md` - Prioritized plan
+
+
+## Sprint (Dec 18-25, 2025): Critical Gap Remediation
+
+**Strategic Focus:** Address the critical functional gaps identified in the comprehensive usability analysis.
+
+- [ ] **QA-051: Implement Analytics & Reporting Backend** (P0)
+  - **Status:** Not Started
+  - **Effort:** 40-60h
+
+- [ ] **QA-052: Implement System Settings Backend** (P0)
+  - **Status:** Not Started
+  - **Effort:** 20-30h
+
+- [ ] **QA-053: Retrofit Architectural Fixes to Core Workflows** (P0)
+  - **Status:** Not Started
+  - **Effort:** 30-40h
