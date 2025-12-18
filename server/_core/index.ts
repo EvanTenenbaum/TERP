@@ -34,6 +34,7 @@ import {
 import { setupGracefulShutdown } from "./gracefulShutdown";
 // import { seedAllDefaults } from "../services/seedDefaults"; // TEMPORARILY DISABLED
 import { assignRoleToUser } from "../services/seedRBAC";
+import { performRBACStartupCheck } from "../services/rbacValidation";
 import { startPriceAlertsCron } from "../cron/priceAlertsCron.js";
 import { simpleAuth } from "./simpleAuth";
 import { getUserByEmail } from "../db";
@@ -139,6 +140,19 @@ async function startServer() {
     );
     // Continue - app may still work depending on what failed
     // The server will start in degraded mode and can be fixed later
+  }
+
+  // ARCH-003: Perform RBAC startup validation
+  // This ensures required roles and permissions exist
+  // If RBAC_AUTO_SEED=true, missing RBAC config will be auto-seeded
+  try {
+    await performRBACStartupCheck();
+  } catch (error) {
+    logger.warn({
+      msg: "RBAC startup check failed (non-fatal)",
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Continue - RBAC issues will be handled gracefully at runtime
   }
 
   // Seed default data and create admin user on first startup
