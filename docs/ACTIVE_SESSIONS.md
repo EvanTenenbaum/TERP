@@ -12,7 +12,7 @@
 
 | Session ID | Task | Branch | Module | Status | Started | ETA |
 | ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| Session-20251217-INFRA-SPRINT-84d2b1 | Infrastructure Sprint (8 tasks) | main | Multiple | 🟢 Active | 2025-12-17 | 8-12h |
+| _(none)_   | -    | -      | -      | -      | -       | -   |
 
 ## ⏸️ Paused / Waiting
 
@@ -30,5 +30,6 @@
 
 | Session ID                            | Task                             | Status      |
 | ------------------------------------- | -------------------------------- | ----------- |
+| Session-20251218-UX-SPRINT-a7c3d2 | UX Polish Sprint (Wave 1 & 2) | ✅ Complete |
 | Session-20251218-FIX-IMPL-db9dd2 | Master Fix Spec v2 Implementation | ✅ Complete |
 | Session-20251217-DASHBOARD-FIX-90d4e2 | Dashboard Soft-Delete Filter Fix | ✅ Complete |
