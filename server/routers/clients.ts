@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../_core/trpc";
 import * as clientsDb from "../clientsDb";
 import * as transactionsDb from "../transactionsDb";
@@ -45,7 +46,32 @@ export const clientsRouter = router({
       return await clientsDb.getClientByTeriCode(input.teriCode);
     }),
 
+  // Check if a TERI code is available (for real-time validation)
+  // BLOCK-001: Added for proactive duplicate detection
+  checkTeriCodeAvailable: protectedProcedure.use(requirePermission("clients:read"))
+    .input(z.object({
+      teriCode: z.string().min(1).max(50),
+      excludeClientId: z.number().optional(), // For edit mode - exclude current client
+    }))
+    .query(async ({ input }) => {
+      const existing = await clientsDb.getClientByTeriCode(input.teriCode);
+      // If no existing client, code is available
+      if (!existing) {
+        return { available: true, message: null };
+      }
+      // If editing and the found client is the same as excludeClientId, it's available
+      if (input.excludeClientId && existing.id === input.excludeClientId) {
+        return { available: true, message: null };
+      }
+      // Otherwise, code is taken
+      return {
+        available: false,
+        message: `TERI code "${input.teriCode}" is already used by ${existing.name}`,
+      };
+    }),
+
   // Create new client
+  // BLOCK-001: Enhanced error handling for duplicate TERI codes
   create: protectedProcedure.use(requirePermission("clients:create"))
     .input(z.object({
       teriCode: z.string().min(1).max(50),
@@ -61,8 +87,26 @@ export const clientsRouter = router({
       tags: z.array(z.string()).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Unauthorized");
-      return await clientsDb.createClient(ctx.user.id, input);
+      if (!ctx.user) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Authentication required to create a client.",
+        });
+      }
+      try {
+        return await clientsDb.createClient(ctx.user.id, input);
+      } catch (error) {
+        // Handle duplicate TERI code error with user-friendly message
+        if (error instanceof Error && error.message.includes("TERI code already exists")) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `A client with TERI code "${input.teriCode}" already exists. Please use a different code.`,
+            cause: error,
+          });
+        }
+        // Re-throw other errors
+        throw error;
+      }
     }),
 
   // Update client

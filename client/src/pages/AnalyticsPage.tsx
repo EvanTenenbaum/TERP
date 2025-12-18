@@ -162,12 +162,14 @@ export default function AnalyticsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Sales analytics features coming soon
-                </p>
-              </div>
+              <Alert className="bg-muted/50">
+                <TrendingUp className="h-4 w-4" />
+                <AlertTitle>Feature In Development</AlertTitle>
+                <AlertDescription>
+                  Sales analytics with revenue trends, order patterns, and performance metrics
+                  is currently being developed. View the Overview tab for current summary data.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </TabsContent>
@@ -181,12 +183,14 @@ export default function AnalyticsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Package className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Inventory analytics features coming soon
-                </p>
-              </div>
+              <Alert className="bg-muted/50">
+                <Package className="h-4 w-4" />
+                <AlertTitle>Feature In Development</AlertTitle>
+                <AlertDescription>
+                  Inventory analytics with stock levels, turnover rates, and product performance
+                  tracking is currently being developed. View the Overview tab for current summary data.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </TabsContent>
@@ -200,12 +204,14 @@ export default function AnalyticsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Client analytics features coming soon
-                </p>
-              </div>
+              <Alert className="bg-muted/50">
+                <Users className="h-4 w-4" />
+                <AlertTitle>Feature In Development</AlertTitle>
+                <AlertDescription>
+                  Client analytics with purchase patterns, strain preferences, and retention metrics
+                  is currently being developed. View the Overview tab for current summary data.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </TabsContent>
