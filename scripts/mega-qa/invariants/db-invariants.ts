@@ -14,13 +14,20 @@ export interface InvariantResult {
   evidence?: unknown;
 }
 
-const TEST_DB_CONFIG = {
-  host: process.env.DB_HOST || "127.0.0.1",
-  port: parseInt(process.env.DB_PORT || "3307", 10),
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "rootpassword",
-  database: process.env.DB_NAME || "terp-test",
-};
+function getDbConnectionConfig(): string | mysql.ConnectionOptions {
+  // Cloud/live DB mode: prefer DATABASE_URL (same as app)
+  const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL;
+  if (url) return url;
+
+  // Local docker DB fallback
+  return {
+    host: process.env.DB_HOST || "127.0.0.1",
+    port: parseInt(process.env.DB_PORT || "3307", 10),
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "rootpassword",
+    database: process.env.DB_NAME || "terp-test",
+  };
+}
 
 /**
  * Run all database invariants
@@ -31,7 +38,7 @@ export async function runInvariants(): Promise<InvariantResult[]> {
   let connection: mysql.Connection | null = null;
 
   try {
-    connection = await mysql.createConnection(TEST_DB_CONFIG);
+    connection = await mysql.createConnection(getDbConnectionConfig() as any);
 
     // Run all invariant checks
     results.push(await checkNoNegativeInventory(connection));
