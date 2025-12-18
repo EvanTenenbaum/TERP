@@ -364,7 +364,7 @@ export async function runAutoMigrations() {
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.statusId already exists");
       } else {
-        logger.error("batches.statusId migration failed", { error: errMsg, fullError: error });
+        logger.error({ error: errMsg, fullError: error }, "batches.statusId migration failed");
       }
     }
 
@@ -379,7 +379,7 @@ export async function runAutoMigrations() {
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.deleted_at already exists");
       } else {
-        logger.error("batches.deleted_at migration failed", { error: errMsg, fullError: error });
+        logger.error({ error: errMsg, fullError: error }, "batches.deleted_at migration failed");
       }
     }
 
@@ -394,7 +394,7 @@ export async function runAutoMigrations() {
       if (errMsg.includes("Duplicate column")) {
         console.log("  ℹ️  batches.photo_session_event_id already exists");
       } else {
-        logger.error("batches.photo_session_event_id migration failed", { error: errMsg, fullError: error });
+        logger.error({ error: errMsg, fullError: error }, "batches.photo_session_event_id migration failed");
       }
     }
 
@@ -605,7 +605,7 @@ export async function runAutoMigrations() {
     console.log(`✅ Auto-migrations completed in ${duration}ms`);
     migrationRun = true;
   } catch (error) {
-    logger.error("Auto-migration error", { error: error instanceof Error ? error.message : String(error) });
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, "Auto-migration error");
     // Don't throw - allow app to start even if migrations fail
   }
 }

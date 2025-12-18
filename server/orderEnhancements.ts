@@ -88,7 +88,7 @@ export async function reorderFromPrevious(data: {
       originalOrderId: data.originalOrderId,
     };
   } catch (error) {
-    logger.error("Error reordering from previous", { error });
+    logger.error({ error }, "Error reordering from previous");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -113,7 +113,7 @@ export async function getRecentOrdersForReorder(clientId: number, limit: number 
       orders: recentOrders,
     };
   } catch (error) {
-    logger.error("Error getting recent orders for reorder", { error });
+    logger.error({ error }, "Error getting recent orders for reorder");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -156,7 +156,7 @@ export async function updateClientPaymentTerms(
 
     return { success: true };
   } catch (error) {
-    logger.error("Error updating client payment terms", { error });
+    logger.error({ error }, "Error updating client payment terms");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -227,7 +227,7 @@ export async function getClientPaymentTerms(clientId: number) {
       creditLimit,
     };
   } catch (error) {
-    logger.error("Error getting client payment terms", { error });
+    logger.error({ error }, "Error getting client payment terms");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

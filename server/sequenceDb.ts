@@ -59,7 +59,7 @@ export async function getNextSequence(
 
     return result;
   } catch (error) {
-    logger.error("Error getting next sequence", { sequenceName, error });
+    logger.error({ sequenceName, error }, "Error getting next sequence");
     throw new Error(
       `Failed to generate sequence: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -87,7 +87,7 @@ export async function getCurrentSequence(
 
     return sequence || null;
   } catch (error) {
-    logger.error("Error fetching sequence", { sequenceName, error });
+    logger.error({ sequenceName, error }, "Error fetching sequence");
     throw new Error(
       `Failed to fetch sequence: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -146,7 +146,7 @@ export async function initializeSequence(
       return sequence;
     }
   } catch (error) {
-    logger.error("Error initializing sequence", { sequenceName, error });
+    logger.error({ sequenceName, error }, "Error initializing sequence");
     throw new Error(
       `Failed to initialize sequence: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -173,7 +173,7 @@ export async function resetSequence(
       .set({ currentValue: newValue })
       .where(eq(sequences.name, sequenceName));
   } catch (error) {
-    logger.error("Error resetting sequence", { sequenceName, error });
+    logger.error({ sequenceName, error }, "Error resetting sequence");
     throw new Error(
       `Failed to reset sequence: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -192,7 +192,7 @@ export async function getAllSequences(): Promise<Sequence[]> {
     const allSequences = await db.select().from(sequences);
     return allSequences;
   } catch (error) {
-    logger.error("Error fetching all sequences", { error });
+    logger.error({ error }, "Error fetching all sequences");
     throw new Error(
       `Failed to fetch sequences: ${error instanceof Error ? error.message : "Unknown error"}`
     );

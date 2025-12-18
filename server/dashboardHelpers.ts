@@ -23,7 +23,7 @@ export async function fetchClientNamesMap(
           clientMap.set(customerId, client.name);
         }
       } catch (error) {
-        logger.error("Failed to fetch client", { customerId, error });
+        logger.error({ customerId, error }, "Failed to fetch client");
       }
     })
   );

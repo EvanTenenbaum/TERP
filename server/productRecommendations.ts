@@ -117,7 +117,7 @@ export async function getProductRecommendations(
 
     return { success: true, recommendations };
   } catch (error) {
-    logger.error("Error getting product recommendations", { error });
+    logger.error({ error }, "Error getting product recommendations");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -184,7 +184,7 @@ export async function getSimilarProducts(productId: number, limit: number = 10) 
 
     return { success: true, similarProducts: similar };
   } catch (error) {
-    logger.error("Error getting similar products", { error });
+    logger.error({ error }, "Error getting similar products");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -262,7 +262,7 @@ export async function getFrequentlyBoughtTogether(
 
     return { success: true, frequentlyBoughtTogether: frequentlyBought };
   } catch (error) {
-    logger.error("Error getting frequently bought together", { error });
+    logger.error({ error }, "Error getting frequently bought together");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

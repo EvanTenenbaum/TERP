@@ -36,7 +36,7 @@ export async function createIntakeSession(data: {
 
     return { success: true, sessionId: session.insertId, sessionNumber };
   } catch (error) {
-    logger.error("Error creating intake session", { error });
+    logger.error({ error }, "Error creating intake session");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -88,7 +88,7 @@ export async function addBatchToIntakeSession(data: {
 
     return { success: true };
   } catch (error) {
-    logger.error("Error adding batch to intake session", { error });
+    logger.error({ error }, "Error adding batch to intake session");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -153,7 +153,7 @@ export async function updateIntakeSessionBatch(
 
     return { success: true };
   } catch (error) {
-    logger.error("Error updating intake session batch", { error });
+    logger.error({ error }, "Error updating intake session batch");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -199,7 +199,7 @@ export async function removeBatchFromIntakeSession(intakeSessionBatchId: number)
 
     return { success: true };
   } catch (error) {
-    logger.error("Error removing batch from intake session", { error });
+    logger.error({ error }, "Error removing batch from intake session");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -268,7 +268,7 @@ export async function completeIntakeSession(intakeSessionId: number) {
 
     return { success: true };
   } catch (error) {
-    logger.error("Error completing intake session", { error });
+    logger.error({ error }, "Error completing intake session");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -349,7 +349,7 @@ export async function generateVendorReceipt(intakeSessionId: number) {
 
     return { success: true, receipt };
   } catch (error) {
-    logger.error("Error generating vendor receipt", { error });
+    logger.error({ error }, "Error generating vendor receipt");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -396,7 +396,7 @@ export async function getIntakeSession(intakeSessionId: number) {
       },
     };
   } catch (error) {
-    logger.error("Error getting intake session", { error });
+    logger.error({ error }, "Error getting intake session");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -429,7 +429,7 @@ export async function listIntakeSessions(filters?: {
 
     return { success: true, sessions };
   } catch (error) {
-    logger.error("Error listing intake sessions", { error });
+    logger.error({ error }, "Error listing intake sessions");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -462,7 +462,7 @@ export async function cancelIntakeSession(intakeSessionId: number) {
 
     return { success: true };
   } catch (error) {
-    logger.error("Error cancelling intake session", { error });
+    logger.error({ error }, "Error cancelling intake session");
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

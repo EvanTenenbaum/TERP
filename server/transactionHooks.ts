@@ -60,7 +60,7 @@ export async function processSaleInventory(
       
       movements.push(movement);
     } catch (error) {
-      logger.error("Error processing inventory for batch", { batchId: item.batchId, error });
+      logger.error({ batchId: item.batchId, error }, "Error processing inventory for batch");
       // Rollback previous movements if any item fails
       for (const prevMovement of movements) {
         try {
@@ -70,7 +70,7 @@ export async function processSaleInventory(
             userId
           );
         } catch (rollbackError) {
-          logger.error("Error during rollback", { error: rollbackError });
+          logger.error({ error: rollbackError }, "Error during rollback");
         }
       }
       throw error;
@@ -105,7 +105,7 @@ export async function processSaleInventory(
       });
     }
   } catch (error) {
-    logger.error("Error posting accounting entries", { error });
+    logger.error({ error }, "Error posting accounting entries");
     // Don't fail the sale if GL posting fails
   }
   
@@ -145,7 +145,7 @@ export async function processRefundInventory(
       
       movements.push(movement);
     } catch (error) {
-      logger.error("Error processing refund inventory for batch", { batchId: item.batchId, error });
+      logger.error({ batchId: item.batchId, error }, "Error processing refund inventory for batch");
       // Rollback previous movements if any item fails
       for (const prevMovement of movements) {
         try {
@@ -155,7 +155,7 @@ export async function processRefundInventory(
             userId
           );
         } catch (rollbackError) {
-          logger.error("Error during refund rollback", { error: rollbackError });
+          logger.error({ error: rollbackError }, "Error during refund rollback");
         }
       }
       throw error;
@@ -250,7 +250,7 @@ export async function getTransactionInventoryImpact(
       totalQuantity
     };
   } catch (error) {
-    logger.error("Error getting transaction inventory impact", { error });
+    logger.error({ error }, "Error getting transaction inventory impact");
     return {
       movements: [],
       totalItems: 0,

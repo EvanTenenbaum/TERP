@@ -20,7 +20,7 @@ export async function seedStrainsFromCSV() {
   const csvPath = "/home/ubuntu/cannabis-dataset/Dataset/Strains/strains-kushy_api.2017-11-14.csv";
   
   if (!fs.existsSync(csvPath)) {
-    logger.error("CSV file not found", { csvPath });
+    logger.error({ csvPath }, "CSV file not found");
     return { success: false, message: "CSV file not found" };
   }
 
