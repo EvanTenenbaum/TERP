@@ -1,6 +1,6 @@
 import pkg from "@slack/bolt";
 const { App, LogLevel } = pkg;
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -17,9 +17,9 @@ import {
 dotenv.config();
 const execAsync = promisify(exec);
 
-// Initialize Gemini client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+// Initialize Gemini 3.5 Pro client (latest model)
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const MODEL_NAME = "gemini-3.5-pro";
 
 // Initialize Slack app
 const app = new App({
@@ -123,7 +123,7 @@ async function getRecentActivity(): Promise<string> {
   }
 }
 
-// Chat with Gemini
+// Chat with Gemini 3.5 Pro
 async function chatWithGemini(
   userMessage: string,
   _userId: string
@@ -155,18 +155,20 @@ running commands on the server (which can be set up).
 
 Be conversational, helpful, and concise. Format responses for mobile readability.`;
 
-    const chat = model.startChat({
-      history: [],
-      generationConfig: {
+    // Use new Gemini 3.5 Pro API with system instruction
+    const response = await genAI.models.generateContent({
+      model: MODEL_NAME,
+      contents: userMessage,
+      config: {
+        systemInstruction,
         maxOutputTokens: 2000,
         temperature: 0.7,
       },
-      systemInstruction,
     });
 
-    const result = await chat.sendMessage(userMessage);
-    const response = result.response;
-    return response.text();
+    // Handle thought signatures if present (Gemini 3.x feature)
+    const text = response.text || "";
+    return text;
   } catch (error) {
     console.error("Gemini API Error:", error);
     return `Sorry, I encountered an error: ${error instanceof Error ? error.message : String(error)}`;
