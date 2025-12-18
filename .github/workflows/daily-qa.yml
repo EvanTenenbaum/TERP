@@ -1,9 +1,9 @@
-name: Daily QA Pipeline
+name: Nightly Mega QA Pipeline
 
 on:
   schedule:
-    # Run every day at 6:00 AM UTC
-    - cron: '0 6 * * *'
+    # Run every day at 2:00 AM UTC (more time for full suite)
+    - cron: '0 2 * * *'
   
   workflow_dispatch:
     inputs:
@@ -13,6 +13,10 @@ on:
         default: false
       force_run:
         description: 'Force run even if no changes'
+        type: boolean
+        default: false
+      quick_mode:
+        description: 'Run in quick mode (fewer tests)'
         type: boolean
         default: false
 
@@ -114,30 +118,41 @@ jobs:
           sleep 10
           curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:5173/health || true
 
-      - name: Run E2E tests
-        id: e2e_tests
+      - name: Run Mega QA Suite
+        id: mega_qa
         env:
           DATABASE_URL: mysql://root:testpassword@127.0.0.1:3306/terp_test
           CI: true
+          MEGA_QA_MODE: ${{ inputs.quick_mode && 'quick' || 'ci' }}
         run: |
-          # Playwright config already has JSON reporter configured to output test-results.json
-          pnpm exec playwright test || true
+          # Run full Mega QA (E2E + property tests + contracts)
+          if [ "${{ inputs.quick_mode }}" = "true" ]; then
+            pnpm mega:qa:quick || true
+          else
+            pnpm mega:qa:ci || true
+          fi
           echo "tests_completed=true" >> $GITHUB_OUTPUT
         continue-on-error: true
 
-      - name: Run QA Pipeline
+      - name: Process Results & Stage Bugs
         id: qa_pipeline
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
-          pnpm tsx scripts/qa/index.ts test-results.json || true
+          # Stage bugs for approval (don't auto-add to roadmap)
+          pnpm tsx scripts/qa/stage-pending-bugs.ts || true
+          
+          # Send interactive Slack report
+          pnpm tsx scripts/qa/send-interactive-report.ts || true
           
           # Check if new bugs were found
-          if [ -f qa-results/latest-report.json ]; then
-            NEW_BUGS=$(jq '.newBugs | length' qa-results/latest-report.json)
+          if [ -f qa-results/pending-bugs.json ]; then
+            NEW_BUGS=$(jq '.bugs | length' qa-results/pending-bugs.json)
             echo "new_bugs=$NEW_BUGS" >> $GITHUB_OUTPUT
           else
             echo "new_bugs=0" >> $GITHUB_OUTPUT
@@ -148,28 +163,25 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: qa-results-${{ github.run_id }}
+          name: mega-qa-results-${{ github.run_id }}
           path: |
-            test-results.json
             qa-results/
             playwright-report/
+            test-results/
           retention-days: 30
 
-      - name: Commit roadmap updates
+      - name: Commit pending bugs (staged, not roadmap)
         if: steps.qa_pipeline.outputs.new_bugs != '0'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Check if there are changes to commit
-          if git diff --quiet docs/roadmaps/MASTER_ROADMAP.md qa-results/ docs/prompts/; then
-            echo "No changes to commit"
-          else
-            git add docs/roadmaps/MASTER_ROADMAP.md
-            git add qa-results/
-            git add docs/prompts/
-            git commit -m "chore(qa): add ${{ steps.qa_pipeline.outputs.new_bugs }} new bugs from automated QA [skip ci]"
-            git push
+          # Only commit the pending bugs file (roadmap updated via Slack approval)
+          if [ -f qa-results/pending-bugs.json ]; then
+            git add qa-results/pending-bugs.json
+            git add qa-results/mega-qa/
+            git commit -m "chore(qa): stage ${{ steps.qa_pipeline.outputs.new_bugs }} bugs for approval [skip ci]" || true
+            git push || true
           fi
 
       - name: Create summary issue
