@@ -12,7 +12,7 @@
 
 | Session ID | Task | Branch | Module | Status | Started | ETA |
 | ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| _(none)_   | -    | -      | -      | -      | -       | -   |
+| Session-20251217-INFRA-SPRINT-84d2b1 | Infrastructure Sprint (8 tasks) | main | Multiple | 🟢 Active | 2025-12-17 | 8-12h |
 
 ## ⏸️ Paused / Waiting
 

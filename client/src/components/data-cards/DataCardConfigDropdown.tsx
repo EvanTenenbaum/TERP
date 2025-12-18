@@ -98,7 +98,7 @@ export function DataCardConfigDropdown({
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Settings className="h-4 w-4" />
-          Customize Metrics
+          Configure Display
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-80 max-h-[500px] overflow-y-auto" align="end">

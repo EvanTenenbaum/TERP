@@ -24,7 +24,6 @@ import {
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
-import versionInfo from "../../../version.json";
 import { formatDistanceToNow } from "date-fns";
 
 interface AppHeaderProps {
@@ -90,15 +89,8 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         <Menu className="h-5 w-5" />
       </Button>
 
-      {/* Version Display */}
-      <div className="flex items-center gap-2 mr-4">
-        <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
-          v{versionInfo.version}
-        </span>
-        <span className="text-xs text-muted-foreground font-mono">
-          {versionInfo.commit}
-        </span>
-      </div>
+      {/* Spacer for layout balance */}
+      <div className="hidden md:block w-4" />
 
       {/* Search bar */}
       <form

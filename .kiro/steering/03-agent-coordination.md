@@ -210,7 +210,8 @@ cat docs/ACTIVE_SESSIONS.md | grep "$SESSION_ID"
 pnpm test
 
 # 2. Check diagnostics
-# (use getDiagnostics in Kiro)
+# Kiro: getDiagnostics(["file.ts"])
+# External: pnpm typecheck
 
 # 3. Commit changes
 git add .

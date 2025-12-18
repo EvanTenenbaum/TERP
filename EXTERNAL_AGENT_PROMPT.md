@@ -8,34 +8,43 @@
 
 I'm working on the TERP project (cannabis ERP system). I need to follow strict protocols to avoid breaking things or conflicting with other agents.
 
+**IMPORTANT**: You are NOT in Kiro IDE. This means:
+- You don't have Kiro-specific tools (readFile, strReplace, grepSearch, getDiagnostics)
+- Use standard bash commands: `cat`, `grep`, `find`, `pnpm typecheck`, etc.
+- You must read protocol files manually
+
 **CRITICAL**: Before doing ANYTHING, you must read these protocol files from the codebase:
 
 ### Step 1: Read External Agent Handoff (MANDATORY - READ FIRST)
-```
-Read file: .kiro/steering/05-external-agent-handoff.md
+```bash
+cat .kiro/steering/05-external-agent-handoff.md
 ```
 
 This tells you:
 - How to work outside of Kiro IDE
 - Session registration (mandatory)
-- Tool differences (no Kiro tools available)
+- Standard tools reference (grep, find, cat, etc.)
 - All critical rules
 
 ### Step 2: Read Core Protocols (ALL MANDATORY)
-```
-Read these files IN ORDER:
-1. .kiro/steering/00-core-identity.md
-2. .kiro/steering/01-development-standards.md
-3. .kiro/steering/02-workflows.md
-4. .kiro/steering/03-agent-coordination.md
-5. .kiro/steering/04-infrastructure.md
+```bash
+# Read these files IN ORDER:
+cat .kiro/steering/00-core-identity.md
+cat .kiro/steering/01-development-standards.md
+cat .kiro/steering/02-workflows.md
+cat .kiro/steering/03-agent-coordination.md
+cat .kiro/steering/04-infrastructure.md
 ```
 
+**Note**: Skip the "Kiro IDE" sections - use the "External Agent" sections instead.
+
 ### Step 3: Check Current State
-```
-Read these files to understand current work:
-- docs/ACTIVE_SESSIONS.md (who else is working)
-- docs/roadmaps/MASTER_ROADMAP.md (current tasks)
+```bash
+# Check who else is working
+cat docs/ACTIVE_SESSIONS.md
+
+# Check current tasks
+cat docs/roadmaps/MASTER_ROADMAP.md
 ```
 
 ### Step 4: Confirm Understanding

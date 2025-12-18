@@ -61,13 +61,24 @@ After reading steering files, agents should read their role-specific guide:
 
 ### External Agent Handoff
 
-For agents working from **other platforms** (Claude, ChatGPT, etc.):
+For agents working from **other platforms** (Claude, ChatGPT, Cursor, etc.):
 
 - **Quick Start**: `EXTERNAL_AGENT_QUICK_START.md` (root directory)
 - **Full Protocol**: `.kiro/steering/05-external-agent-handoff.md`
 - **Onboarding Script**: `bash scripts/external-agent-onboard.sh`
 
-**Why needed**: External agents don't have automatic access to Kiro steering files, so they must read them manually and follow special handoff procedures.
+**Why needed**: External agents don't have automatic access to Kiro steering files or Kiro-specific tools, so they must:
+1. Read steering files manually using `cat` commands
+2. Use standard bash tools (`grep`, `find`, `cat`) instead of Kiro tools
+3. Follow special handoff procedures for session management
+
+**Tool Differences**:
+| Kiro Tool | External Equivalent |
+|-----------|---------------------|
+| `readFile` | `cat file.ts` |
+| `grepSearch` | `grep -r "pattern" src/` |
+| `fileSearch` | `find . -name "*.ts"` |
+| `getDiagnostics` | `pnpm typecheck` |
 
 ---
 

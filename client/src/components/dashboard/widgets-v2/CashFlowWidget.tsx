@@ -38,7 +38,7 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="LIFETIME">Lifetime</SelectItem>
+              <SelectItem value="LIFETIME">All Time</SelectItem>
               <SelectItem value="YEAR">This Year</SelectItem>
               <SelectItem value="QUARTER">This Quarter</SelectItem>
               <SelectItem value="MONTH">This Month</SelectItem>
