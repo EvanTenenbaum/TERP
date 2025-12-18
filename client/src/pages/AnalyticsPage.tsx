@@ -357,7 +357,7 @@ function SalesAnalyticsTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data?.topProducts?.map((client, index) => (
+                  {data?.topClients?.map((client, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{client.clientName}</TableCell>
                       <TableCell className="text-right">{client.orderCount}</TableCell>

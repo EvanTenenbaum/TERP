@@ -18,6 +18,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -35,12 +45,36 @@ import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { DataCardSection } from '@/components/data-cards';
 
+// Type for Quote from the API
+interface QuoteItem {
+  displayName: string;
+  quantity: number;
+  price: string;
+}
+
+interface Quote {
+  id: number;
+  orderNumber: string;
+  clientId: number;
+  quoteStatus: string | null;
+  createdAt: string | Date | null;
+  validUntil: string | Date | null;
+  subtotal: string;
+  tax: string;
+  discount: string;
+  total: string;
+  notes: string | null;
+  items: QuoteItem[];
+}
+
 export default function Quotes() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  
-  const [selectedQuote, setSelectedQuote] = useState<any>(null);
+
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [quoteToConvert, setQuoteToConvert] = useState<number | null>(null);
 
   // Fetch clients for name lookup
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -73,7 +107,7 @@ export default function Quotes() {
     if (selectedId && quotes) {
       const quote = quotes.find(q => q.id === parseInt(selectedId, 10));
       if (quote) {
-        setSelectedQuote(quote);
+        setSelectedQuote(quote as unknown as Quote);
       } else {
         toast.error(`Quote #${selectedId} not found`);
       }
@@ -112,15 +146,22 @@ export default function Quotes() {
     total: quotes?.length || 0,
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleViewQuote = (quote: any) => {
-    setSelectedQuote(quote);
+    setSelectedQuote(quote as Quote);
   };
 
   const handleConvertToSale = (quoteId: number) => {
-    if (!confirm('Convert this quote to a sale order? This will create a new sales order and mark the quote as ACCEPTED.')) {
-      return;
+    setQuoteToConvert(quoteId);
+    setConvertDialogOpen(true);
+  };
+
+  const confirmConvertToSale = () => {
+    if (quoteToConvert) {
+      convertToSale({ quoteId: quoteToConvert });
     }
-    convertToSale({ quoteId });
+    setConvertDialogOpen(false);
+    setQuoteToConvert(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -267,13 +308,13 @@ export default function Quotes() {
               <SheetHeader>
                 <SheetTitle>Quote {selectedQuote.orderNumber}</SheetTitle>
               </SheetHeader>
-              
+
               <div className="mt-6 space-y-6">
                 {/* Status Section */}
                 <div>
                   <h3 className="font-semibold mb-3">Quote Status</h3>
                   <div className="flex items-center justify-between">
-                    {getStatusBadge(selectedQuote.quoteStatus)}
+                    {getStatusBadge(selectedQuote.quoteStatus || 'DRAFT')}
                     {selectedQuote.quoteStatus === 'ACCEPTED' && (
                       <FormSubmitButton
                         onClick={() => handleConvertToSale(selectedQuote.id)}
@@ -304,7 +345,7 @@ export default function Quotes() {
                     {selectedQuote.validUntil && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Valid Until:</span>
-                        <span>{format(new Date(selectedQuote.validUntil as string), 'MMM d, yyyy')}</span>
+                        <span>{format(new Date(selectedQuote.validUntil), 'MMM d, yyyy')}</span>
                       </div>
                     )}
                   </div>
@@ -316,7 +357,7 @@ export default function Quotes() {
                 <div>
                   <h3 className="font-semibold mb-3">Items</h3>
                   <div className="space-y-2">
-                    {(selectedQuote.items as any[])?.map((item: any, index: number) => (
+                    {selectedQuote.items?.map((item: QuoteItem, index: number) => (
                       <div key={index} className="flex justify-between text-sm p-2 bg-muted/50 rounded">
                         <div>
                           <div className="font-medium">{item.displayName}</div>
@@ -376,6 +417,25 @@ export default function Quotes() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Convert to Sale Confirmation Dialog */}
+      <AlertDialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert Quote to Sale</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a new sales order from this quote and mark the quote as ACCEPTED.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setQuoteToConvert(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmConvertToSale} disabled={isConverting}>
+              {isConverting ? 'Converting...' : 'Convert to Sale'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

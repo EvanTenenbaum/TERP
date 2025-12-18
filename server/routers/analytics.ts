@@ -5,7 +5,32 @@ import { strainService } from "../services/strainService";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { db } from "../db";
 import { orders, clients, batches, products } from "../../drizzle/schema";
-import { count, sum, isNull, eq, gte, lte, and, sql, desc, asc } from "drizzle-orm";
+import { count, sum, isNull, eq, gte, lte, and, sql, desc, asc, inArray } from "drizzle-orm";
+
+/**
+ * RFC 4180 compliant CSV field escaping
+ * - Fields containing commas, quotes, or newlines must be quoted
+ * - Quotes within fields must be escaped by doubling them
+ */
+function escapeCSVField(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  // Check if field needs quoting
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    // Escape quotes by doubling them and wrap in quotes
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+/**
+ * Build a CSV string from headers and rows with proper escaping
+ */
+function buildCSV(headers: string[], rows: unknown[][]): string {
+  const headerLine = headers.map(escapeCSVField).join(',');
+  const dataLines = rows.map(row => row.map(escapeCSVField).join(','));
+  return [headerLine, ...dataLines].join('\n');
+}
 
 export const analyticsRouter = router({
   // Get summary analytics for dashboard
@@ -123,7 +148,7 @@ export const analyticsRouter = router({
             orderCount: 0,
             averageOrderValue: 0,
             revenueByDay: [],
-            topProducts: [],
+            topClients: [],
           };
         }
 
@@ -178,21 +203,21 @@ export const analyticsRouter = router({
           .orderBy(desc(sum(orders.total)))
           .limit(10);
 
-        // Get client names
+        // Get client names using parameterized query (prevents SQL injection)
         const clientIds = topClients.map(c => c.clientId);
         let clientNames: Record<number, string> = {};
         if (clientIds.length > 0) {
           const clientData = await db
             .select({ id: clients.id, name: clients.name })
             .from(clients)
-            .where(sql`${clients.id} IN (${sql.raw(clientIds.join(','))})`);
+            .where(inArray(clients.id, clientIds));
           clientNames = clientData.reduce((acc, c) => {
             acc[c.id] = c.name;
             return acc;
           }, {} as Record<number, string>);
         }
 
-        const topProducts = topClients.map(c => ({
+        const topClientsByRevenue = topClients.map(c => ({
           clientId: c.clientId,
           clientName: clientNames[c.clientId] || 'Unknown',
           totalSpent: Number(c.totalSpent || 0),
@@ -208,7 +233,7 @@ export const analyticsRouter = router({
             revenue: Number(d.revenue || 0),
             orders: Number(d.orders || 0),
           })),
-          topProducts,
+          topClients: topClientsByRevenue,
         };
       } catch (error) {
         throw new TRPCError({
@@ -264,14 +289,14 @@ export const analyticsRouter = router({
           .orderBy(asc(batches.quantity))
           .limit(20);
 
-        // Get product names for low stock items
+        // Get product names for low stock items using parameterized query
         const productIds = lowStockItems.map(i => i.productId).filter(Boolean) as number[];
         let productNames: Record<number, string> = {};
         if (productIds.length > 0) {
           const productData = await db
             .select({ id: products.id, nameCanonical: products.nameCanonical })
             .from(products)
-            .where(sql`${products.id} IN (${sql.raw(productIds.join(','))})`);
+            .where(inArray(products.id, productIds));
           productNames = productData.reduce((acc, p) => {
             acc[p.id] = p.nameCanonical || 'Unknown';
             return acc;
@@ -382,14 +407,14 @@ export const analyticsRouter = router({
           .orderBy(desc(sum(orders.total)))
           .limit(10);
 
-        // Get client names
+        // Get client names using parameterized query
         const clientIds = topClients.map(c => c.clientId);
         let clientData: Array<{ id: number; name: string; teriCode: string }> = [];
         if (clientIds.length > 0) {
           clientData = await db
             .select({ id: clients.id, name: clients.name, teriCode: clients.teriCode })
             .from(clients)
-            .where(sql`${clients.id} IN (${sql.raw(clientIds.join(','))})`);
+            .where(inArray(clients.id, clientIds));
         }
         const clientMap = clientData.reduce((acc, c) => {
           acc[c.id] = c;
@@ -475,21 +500,21 @@ export const analyticsRouter = router({
           .where(and(eq(orders.orderType, "SALE"), ...dateFilters))
           .orderBy(desc(orders.createdAt));
 
-        // Get client names
+        // Get client names using parameterized query
         const clientIds = [...new Set(salesData.map(s => s.clientId))];
         let clientNames: Record<number, string> = {};
         if (clientIds.length > 0) {
           const clientData = await db
             .select({ id: clients.id, name: clients.name })
             .from(clients)
-            .where(sql`${clients.id} IN (${sql.raw(clientIds.join(','))})`);
+            .where(inArray(clients.id, clientIds));
           clientNames = clientData.reduce((acc, c) => {
             acc[c.id] = c.name;
             return acc;
           }, {} as Record<number, string>);
         }
 
-        // Build CSV
+        // Build CSV with proper RFC 4180 escaping
         const headers = ['Order Number', 'Client', 'Subtotal', 'Tax', 'Discount', 'Total', 'Status', 'Date'];
         const rows = salesData.map(s => [
           s.orderNumber,
@@ -502,7 +527,7 @@ export const analyticsRouter = router({
           s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : 'N/A',
         ]);
 
-        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const csv = buildCSV(headers, rows);
         const filename = `sales_export_${new Date().toISOString().split('T')[0]}.csv`;
 
         return { csv, filename };
@@ -534,21 +559,21 @@ export const analyticsRouter = router({
           .where(isNull(batches.deletedAt))
           .orderBy(desc(batches.createdAt));
 
-        // Get product names
+        // Get product names using parameterized query
         const productIds = [...new Set(inventoryData.map(i => i.productId).filter(Boolean))] as number[];
         let productNames: Record<number, string> = {};
         if (productIds.length > 0) {
           const productData = await db
             .select({ id: products.id, nameCanonical: products.nameCanonical })
             .from(products)
-            .where(sql`${products.id} IN (${sql.raw(productIds.join(','))})`);
+            .where(inArray(products.id, productIds));
           productNames = productData.reduce((acc, p) => {
             acc[p.id] = p.nameCanonical || 'Unknown';
             return acc;
           }, {} as Record<number, string>);
         }
 
-        // Build CSV
+        // Build CSV with proper RFC 4180 escaping
         const headers = ['SKU', 'Product', 'Category', 'Quantity', 'Date Added'];
         const rows = inventoryData.map(i => [
           i.sku || 'N/A',
@@ -558,7 +583,7 @@ export const analyticsRouter = router({
           i.createdAt ? new Date(i.createdAt).toISOString().split('T')[0] : 'N/A',
         ]);
 
-        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const csv = buildCSV(headers, rows);
         const filename = `inventory_export_${new Date().toISOString().split('T')[0]}.csv`;
 
         return { csv, filename };
@@ -593,11 +618,11 @@ export const analyticsRouter = router({
           .where(isNull(clients.deletedAt))
           .orderBy(asc(clients.name));
 
-        // Build CSV
+        // Build CSV with proper RFC 4180 escaping
         const headers = ['TERI Code', 'Name', 'Email', 'Phone', 'Is Buyer', 'Is Seller', 'Is Brand', 'Created'];
         const rows = clientData.map(c => [
           c.teriCode,
-          `"${(c.name || '').replace(/"/g, '""')}"`, // Escape quotes in names
+          c.name || '',
           c.email || '',
           c.phone || '',
           c.isBuyer ? 'Yes' : 'No',
@@ -606,7 +631,7 @@ export const analyticsRouter = router({
           c.createdAt ? new Date(c.createdAt).toISOString().split('T')[0] : 'N/A',
         ]);
 
-        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const csv = buildCSV(headers, rows);
         const filename = `clients_export_${new Date().toISOString().split('T')[0]}.csv`;
 
         return { csv, filename };

@@ -268,6 +268,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 onFocus={() => setShowVendorDropdown(true)}
                 placeholder="Start typing vendor name..."
                 required
+                className={fieldErrors?.vendorName ? "border-destructive" : ""}
               />
               {showVendorDropdown && vendors && vendors.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
@@ -287,6 +288,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 </div>
               )}
             </div>
+            {fieldErrors?.vendorName && (
+              <p className="text-xs text-destructive">{fieldErrors.vendorName}</p>
+            )}
           </div>
 
           {/* Brand Autocomplete */}
@@ -304,6 +308,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 onFocus={() => setShowBrandDropdown(true)}
                 placeholder="Start typing brand name..."
                 required
+                className={fieldErrors?.brandName ? "border-destructive" : ""}
               />
               {showBrandDropdown && brands && brands.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
@@ -323,6 +328,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 </div>
               )}
             </div>
+            {fieldErrors?.brandName && (
+              <p className="text-xs text-destructive">{fieldErrors.brandName}</p>
+            )}
           </div>
 
           {/* Conditional: Flower = Strain Only, Others = Product + Strain */}
@@ -424,7 +432,11 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
               placeholder="Enter quantity"
               required
+              className={fieldErrors?.quantity ? "border-destructive" : ""}
             />
+            {fieldErrors?.quantity && (
+              <p className="text-xs text-destructive">{fieldErrors.quantity}</p>
+            )}
           </div>
 
           {/* COGS Mode */}

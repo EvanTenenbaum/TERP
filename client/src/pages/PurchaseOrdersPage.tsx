@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { trpc } from "../lib/trpc";
 import { useAppMutation } from "../hooks/useAppMutation";
+import { useAuth } from "../hooks/useAuth";
 import { Button } from "../components/ui/button";
 import { FormSubmitButton } from "../components/ui/FormSubmitButton";
 import { Input } from "../components/ui/input";
@@ -33,13 +34,26 @@ import { Plus, Search, FileText, Trash2 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 
+// Type for Purchase Order from the API
+interface PurchaseOrder {
+  id: number;
+  poNumber: string;
+  supplierClientId: number | null;
+  vendorId?: number | null; // legacy field
+  orderDate: string | Date | null;
+  expectedDeliveryDate: string | Date | null;
+  purchaseOrderStatus: string;
+  total: string | null;
+}
+
 export default function PurchaseOrdersPage() {
   const [, _setLocation] = useLocation();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedPO, setSelectedPO] = useState<any>(null);
+  const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
 
   // Fetch data
   const { data: pos = [], refetch } = trpc.purchaseOrders.getAll.useQuery();
@@ -171,6 +185,9 @@ export default function PurchaseOrdersPage() {
       return;
     }
 
+    // Get user ID from auth context, fallback to 1 for backwards compatibility
+    const createdByUserId = user?.id ?? 1;
+
     createPO({
       supplierClientId: parseInt(formData.supplierClientId),
       orderDate: formData.orderDate,
@@ -178,7 +195,7 @@ export default function PurchaseOrdersPage() {
       paymentTerms: formData.paymentTerms || undefined,
       notes: formData.notes || undefined,
       vendorNotes: formData.supplierNotes || undefined,
-      createdBy: 1, // TODO: Get from auth context
+      createdBy: createdByUserId,
       items,
     });
   };
@@ -348,7 +365,7 @@ export default function PurchaseOrdersPage() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="supplier">Supplier *</Label>
               <Select
                 value={formData.supplierClientId}
@@ -356,7 +373,7 @@ export default function PurchaseOrdersPage() {
                   setFormData({ ...formData, supplierClientId: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className={fieldErrors?.supplierClientId ? "border-destructive" : ""}>
                   <SelectValue placeholder="Select supplier" />
                 </SelectTrigger>
                 <SelectContent>
@@ -367,6 +384,9 @@ export default function PurchaseOrdersPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {fieldErrors?.supplierClientId && (
+                <p className="text-xs text-destructive">{fieldErrors.supplierClientId}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
