@@ -26,7 +26,6 @@ import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import Orders from "@/pages/Orders";
-import OrdersDebug from "@/pages/OrdersDebug";
 import Quotes from "@/pages/Quotes";
 import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
@@ -112,7 +111,6 @@ function Router() {
               <Route path="/pricing/profiles" component={PricingProfilesPage} />
               <Route path="/sales-sheets" component={SalesSheetCreatorPage} />
               <Route path="/orders" component={Orders} />
-              <Route path="/orders-debug" component={OrdersDebug} />
               <Route path="/orders/create" component={OrderCreatorPage} />
               <Route path="/quotes" component={Quotes} />
               <Route path="/settings/cogs" component={CogsSettingsPage} />
