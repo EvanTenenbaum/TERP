@@ -6015,3 +6015,52 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 - [ ] **QA-053: Retrofit Architectural Fixes to Core Workflows** (P0)
   - **Status:** Not Started
   - **Effort:** 30-40h
+
+
+- [ ] **QA-054: Implement Vendor Supply Management Backend** (P1)
+  - **Status:** Not Started
+  - **Effort:** 25-35h
+
+- [ ] **QA-055: Fix Help & Documentation Search** (P2)
+  - **Status:** Not Started
+  - **Effort:** 8-12h
+
+- [ ] **QA-056: Implement Advanced Todo List Features** (P2)
+  - **Status:** Not Started
+  - **Effort:** 15-20h
+
+- [ ] **QA-057: Implement CRM Sub-Features** (P1)
+  - **Status:** Not Started
+  - **Effort:** 20-30h
+
+- [ ] **QA-058: Fix Quote Creation and Implement Sales Features** (P1)
+  - **Status:** Not Started
+  - **Effort:** 25-35h
+
+- [ ] **QA-059: Implement Missing Accounting Pages** (P1)
+  - **Status:** Not Started
+  - **Effort:** 20-30h
+
+- [ ] **QA-060: Implement VIP Portal Configuration** (P2)
+  - **Status:** Not Started
+  - **Effort:** 10-15h
+
+- [ ] **QA-061: Fix Returns Processing Modal** (P1)
+  - **Status:** Not Started
+  - **Effort:** 8-12h
+
+- [ ] **QA-062: Implement Sales Sheet Save Functionality** (P3)
+  - **Status:** Not Started
+  - **Effort:** 4-6h
+
+- [ ] **QA-063: Implement Location & Warehouse Management** (P2)
+  - **Status:** Not Started
+  - **Effort:** 15-20h
+
+- [ ] **QA-064: Fix Credit Management Dashboard Widgets** (P2)
+  - **Status:** Not Started
+  - **Effort:** 8-12h
+
+- [ ] **QA-065: Implement Missing Dashboard Features** (P3)
+  - **Status:** Not Started
+  - **Effort:** 6-8h
