@@ -64,9 +64,10 @@ export const clientsRouter = router({
         return { available: true, message: null };
       }
       // Otherwise, code is taken
+      // MEDIUM-006 FIX: Don't disclose existing client name for security
       return {
         available: false,
-        message: `TERI code "${input.teriCode}" is already used by ${existing.name}`,
+        message: `TERI code "${input.teriCode}" is already in use.`,
       };
     }),
 

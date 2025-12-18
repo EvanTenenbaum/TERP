@@ -11,12 +11,10 @@
  * - Double-submit prevention
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   normalizeError,
-  getErrorMessage,
-  extractFieldErrors,
   logError,
   type AppErrorInfo,
 } from "@/lib/errorHandling";
@@ -83,12 +81,12 @@ export interface UseAppMutationResult<TData, TVariables> {
  * {fieldErrors?.teriCode && <span className="error">{fieldErrors.teriCode[0]}</span>}
  * ```
  */
-export function useAppMutation<TData, TError, TVariables>(
+export function useAppMutation<TData, TVariables>(
   mutation: {
     mutateAsync: (variables: TVariables) => Promise<TData>;
     reset?: () => void;
   },
-  options: UseAppMutationOptions<TData, TError, TVariables> = {}
+  options: UseAppMutationOptions<TData, unknown, TVariables> = {}
 ): UseAppMutationResult<TData, TVariables> {
   const [state, setState] = useState<{
     isPending: boolean;
@@ -104,8 +102,28 @@ export function useAppMutation<TData, TError, TVariables>(
     data: undefined,
   });
 
+  // CRITICAL-001 FIX: Track mounted state to prevent setState on unmounted component
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Prevent double-submits
   const isSubmittingRef = useRef(false);
+
+  // HIGH-001 FIX: Destructure options to create stable dependencies
+  const {
+    onSuccess,
+    onError,
+    onSettled,
+    successMessage,
+    errorMessage,
+    disableErrorToast,
+    context,
+  } = options;
 
   const reset = useCallback(() => {
     isSubmittingRef.current = false;
@@ -127,75 +145,85 @@ export function useAppMutation<TData, TError, TVariables>(
       }
 
       isSubmittingRef.current = true;
-      setState(prev => ({
-        ...prev,
-        isPending: true,
-        isSuccess: false,
-        isError: false,
-        error: null,
-      }));
+
+      // Only update state if mounted
+      if (isMountedRef.current) {
+        setState(prev => ({
+          ...prev,
+          isPending: true,
+          isSuccess: false,
+          isError: false,
+          error: null,
+        }));
+      }
 
       try {
         const data = await mutation.mutateAsync(variables);
 
-        setState({
-          isPending: false,
-          isSuccess: true,
-          isError: false,
-          error: null,
-          data,
-        });
+        // CRITICAL-001 FIX: Check mounted before setState
+        if (isMountedRef.current) {
+          setState({
+            isPending: false,
+            isSuccess: true,
+            isError: false,
+            error: null,
+            data,
+          });
+        }
 
         // Show success toast if configured
-        if (options.successMessage) {
+        if (successMessage) {
           const message =
-            typeof options.successMessage === "function"
-              ? options.successMessage(data, variables)
-              : options.successMessage;
+            typeof successMessage === "function"
+              ? successMessage(data, variables)
+              : successMessage;
           toast.success(message);
         }
 
-        options.onSuccess?.(data, variables);
-        options.onSettled?.(data, undefined, variables);
+        onSuccess?.(data, variables);
+        onSettled?.(data, undefined, variables);
 
         isSubmittingRef.current = false;
         return data;
       } catch (err) {
         const errorInfo = normalizeError(err);
 
-        setState({
-          isPending: false,
-          isSuccess: false,
-          isError: true,
-          error: errorInfo,
-          data: undefined,
-        });
+        // CRITICAL-001 FIX: Check mounted before setState
+        if (isMountedRef.current) {
+          setState({
+            isPending: false,
+            isSuccess: false,
+            isError: true,
+            error: errorInfo,
+            data: undefined,
+          });
+        }
 
         // Log the error
         logError(err, {
-          ...options.context,
+          ...context,
           variables,
         });
 
         // Show error toast unless disabled
-        if (!options.disableErrorToast) {
+        if (!disableErrorToast) {
           const message =
-            options.errorMessage
-              ? typeof options.errorMessage === "function"
-                ? options.errorMessage(err)
-                : options.errorMessage
+            errorMessage
+              ? typeof errorMessage === "function"
+                ? errorMessage(err)
+                : errorMessage
               : errorInfo.message;
           toast.error(message);
         }
 
-        options.onError?.(errorInfo, variables);
-        options.onSettled?.(undefined, errorInfo, variables);
+        onError?.(errorInfo, variables);
+        onSettled?.(undefined, errorInfo, variables);
 
         isSubmittingRef.current = false;
         throw err;
       }
     },
-    [mutation, options]
+    [mutation, onSuccess, onError, onSettled, successMessage, errorMessage, disableErrorToast, context]
   );
 
   const mutate = useCallback(
