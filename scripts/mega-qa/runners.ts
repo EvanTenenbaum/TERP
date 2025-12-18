@@ -165,13 +165,19 @@ export function runPlaywrightSuite(
     MEGA_QA_SEED: String(config.seed),
     MEGA_QA_MODE: config.mode,
     MEGA_QA_JOURNEYS: String(config.journeyCount),
+    // Ensure Playwright points at the configured target (cloud or local)
+    PLAYWRIGHT_BASE_URL: config.baseURL,
+    MEGA_QA_BASE_URL: config.baseURL,
+    // If we're not targeting localhost, treat as CI to prevent Playwright webServer usage.
+    ...(config.baseURL.includes("localhost") || config.baseURL.includes("127.0.0.1")
+      ? {}
+      : { CI: "1" }),
   };
 
   const playwrightArgs = [
     "playwright",
     "test",
     testPath,
-    "--reporter=json",
     "--output=test-results",
     config.headless ? "" : "--headed",
     config.ci ? "--retries=0" : "",
@@ -188,7 +194,7 @@ export function runPlaywrightSuite(
 
   const durationMs = Date.now() - startTime;
 
-  // Parse results from test-results.json
+  // Parse results from test-results.json (written by playwright.config.ts json reporter)
   const resultsPath = "test-results.json";
   let testsRun = 0,
     testsPassed = 0,
