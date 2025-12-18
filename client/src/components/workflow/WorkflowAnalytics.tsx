@@ -7,7 +7,8 @@
 
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
-import { BarChart3, Clock, TrendingUp, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { BarChart3, Clock, TrendingUp, AlertCircle, LineChart } from "lucide-react";
 
 export function WorkflowAnalytics() {
   const { data: statuses } = trpc.workflowQueue.listStatuses.useQuery();
@@ -108,14 +109,16 @@ export function WorkflowAnalytics() {
         </div>
       </Card>
 
-      {/* Placeholder for future charts */}
-      <Card className="p-6 mt-6 text-center text-gray-500">
-        <BarChart3 className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-        <p>Additional analytics charts coming soon</p>
-        <p className="text-sm mt-1">
-          Average time per status, throughput trends, and more
-        </p>
-      </Card>
+      {/* Advanced analytics - in development */}
+      <Alert className="mt-6 bg-muted/50">
+        <LineChart className="h-4 w-4" />
+        <AlertTitle>Advanced Analytics In Development</AlertTitle>
+        <AlertDescription>
+          Time-series charts showing average time per status, throughput trends, and bottleneck
+          analysis are being developed. The current distribution overview above provides a real-time
+          snapshot of your workflow queue status.
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }

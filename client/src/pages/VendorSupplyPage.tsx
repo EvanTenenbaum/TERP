@@ -12,7 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Plus, Loader2, Package, TrendingUp } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Search, Plus, Loader2, Package, TrendingUp, Construction } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { DataCardSection } from "@/components/data-cards";
 
@@ -89,9 +90,14 @@ export default function VendorSupplyPage() {
                 Record a new item available from a vendor
               </DialogDescription>
             </DialogHeader>
-            <div className="text-sm text-muted-foreground py-4">
-              Form implementation coming soon...
-            </div>
+            <Alert className="bg-muted/50 my-4">
+              <Construction className="h-4 w-4" />
+              <AlertTitle>Feature In Development</AlertTitle>
+              <AlertDescription>
+                The vendor supply creation form is currently being developed.
+                For now, you can view and manage existing supply items in the list below.
+              </AlertDescription>
+            </Alert>
           </DialogContent>
         </Dialog>
       </div>
