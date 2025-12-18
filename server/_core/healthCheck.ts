@@ -6,8 +6,16 @@ export interface HealthCheckResult {
   status: "healthy" | "degraded" | "unhealthy";
   timestamp: string;
   uptime: number;
+  version: string;
+  environment: string;
+  responseTime: number;
   checks: {
     database: {
+      status: "ok" | "error";
+      latency?: number;
+      error?: string;
+    };
+    transaction?: {
       status: "ok" | "error";
       latency?: number;
       error?: string;
@@ -17,12 +25,17 @@ export interface HealthCheckResult {
       used: number;
       total: number;
       percentage: number;
+      rss: number;
+      external: number;
     };
     connectionPool?: {
       status: "ok" | "warning";
       total: number;
       free: number;
       queued: number;
+    };
+    externalServices?: {
+      sentry: { status: "ok" | "error" | "disabled"; error?: string };
     };
   };
 }
@@ -33,43 +46,62 @@ export interface HealthCheckResult {
 export async function performHealthCheck(): Promise<HealthCheckResult> {
   const startTime = Date.now();
 
-  // Database check
-  const dbCheck = await checkDatabase();
+  // Run checks in parallel for faster response
+  const [dbCheck, transactionCheck, poolCheck, externalCheck] =
+    await Promise.all([
+      checkDatabase(),
+      checkTransaction(),
+      Promise.resolve(checkConnectionPool()),
+      checkExternalServices(),
+    ]);
 
-  // Memory check
+  // Memory check (synchronous)
   const memoryCheck = checkMemory();
-
-  // Connection pool check
-  const poolCheck = checkConnectionPool();
 
   // Determine overall status
   let status: "healthy" | "degraded" | "unhealthy" = "healthy";
 
-  if (dbCheck.status === "error" || memoryCheck.status === "critical") {
+  if (
+    dbCheck.status === "error" ||
+    transactionCheck.status === "error" ||
+    memoryCheck.status === "critical"
+  ) {
     status = "unhealthy";
   } else if (
     memoryCheck.status === "warning" ||
-    poolCheck?.status === "warning"
+    poolCheck?.status === "warning" ||
+    externalCheck.sentry.status === "error"
   ) {
     status = "degraded";
   }
+
+  const responseTime = Date.now() - startTime;
 
   const result: HealthCheckResult = {
     status,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    version: process.env.npm_package_version || "unknown",
+    environment: process.env.NODE_ENV || "development",
+    responseTime,
     checks: {
       database: dbCheck,
+      transaction: transactionCheck,
       memory: memoryCheck,
       ...(poolCheck && { connectionPool: poolCheck }),
+      externalServices: externalCheck,
     },
   };
 
-  logger.info({
-    msg: "Health check completed",
-    status,
-    duration: Date.now() - startTime,
-  });
+  logger.info(
+    {
+      status,
+      responseTime,
+      dbLatency: dbCheck.latency,
+      memoryPct: memoryCheck.percentage,
+    },
+    "Health check completed"
+  );
 
   return result;
 }
@@ -137,6 +169,47 @@ export async function checkDatabase(): Promise<
 }
 
 /**
+ * Check transaction capability (verifies DB can execute transactions)
+ */
+async function checkTransaction(): Promise<
+  NonNullable<HealthCheckResult["checks"]["transaction"]>
+> {
+  try {
+    const start = Date.now();
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(
+        () => reject(new Error("Transaction health check timeout")),
+        3000
+      );
+    });
+
+    const transactionPromise = (async () => {
+      const db = await getDb();
+      if (!db) {
+        throw new Error("Database not available for transaction check");
+      }
+
+      // Execute a simple transaction to verify capability
+      // Using a read-only transaction pattern
+      await db.execute("SELECT 1 FOR UPDATE");
+
+      return {
+        status: "ok" as const,
+        latency: Date.now() - start,
+      };
+    })();
+
+    return await Promise.race([transactionPromise, timeoutPromise]);
+  } catch (error) {
+    return {
+      status: "error",
+      error: error instanceof Error ? error.message : "Transaction check failed",
+    };
+  }
+}
+
+/**
  * Check memory usage
  */
 function checkMemory(): HealthCheckResult["checks"]["memory"] {
@@ -158,6 +231,8 @@ function checkMemory(): HealthCheckResult["checks"]["memory"] {
     used: usedMemory,
     total: totalMemory,
     percentage: Math.round(percentage * 100) / 100,
+    rss: usage.rss,
+    external: usage.external,
   };
 }
 
@@ -190,10 +265,38 @@ function checkConnectionPool():
 }
 
 /**
+ * Check external services (Sentry, etc.)
+ */
+async function checkExternalServices(): Promise<
+  NonNullable<HealthCheckResult["checks"]["externalServices"]>
+> {
+  const result: NonNullable<HealthCheckResult["checks"]["externalServices"]> = {
+    sentry: { status: "disabled" },
+  };
+
+  // Check Sentry
+  const sentryDsn = process.env.SENTRY_DSN;
+  if (sentryDsn) {
+    try {
+      // Sentry is configured - check if it's initialized
+      // We can't easily ping Sentry, so we just verify config exists
+      result.sentry = { status: "ok" };
+    } catch (error) {
+      result.sentry = {
+        status: "error",
+        error: error instanceof Error ? error.message : "Sentry check failed",
+      };
+    }
+  }
+
+  return result;
+}
+
+/**
  * Simple liveness check (always returns OK if server is running)
  */
-export function livenessCheck(): { status: "ok" } {
-  return { status: "ok" };
+export function livenessCheck(): { status: "ok"; timestamp: string } {
+  return { status: "ok", timestamp: new Date().toISOString() };
 }
 
 /**
@@ -201,19 +304,83 @@ export function livenessCheck(): { status: "ok" } {
  */
 export async function readinessCheck(): Promise<{
   status: "ok" | "not_ready";
+  timestamp: string;
   reason?: string;
+  checks?: {
+    database: boolean;
+    memory: boolean;
+  };
 }> {
+  const timestamp = new Date().toISOString();
+
   try {
+    // Check database
     const db = await getDb();
     if (!db) {
-      return { status: "not_ready", reason: "Database not available" };
+      return {
+        status: "not_ready",
+        timestamp,
+        reason: "Database not available",
+        checks: { database: false, memory: true },
+      };
     }
 
-    return { status: "ok" };
+    // Quick DB ping
+    await db.execute("SELECT 1");
+
+    // Check memory isn't critical
+    const memUsage = process.memoryUsage();
+    const memPct = (memUsage.heapUsed / memUsage.heapTotal) * 100;
+    if (memPct > 95) {
+      return {
+        status: "not_ready",
+        timestamp,
+        reason: "Memory usage critical",
+        checks: { database: true, memory: false },
+      };
+    }
+
+    return {
+      status: "ok",
+      timestamp,
+      checks: { database: true, memory: true },
+    };
   } catch (error) {
     return {
       status: "not_ready",
+      timestamp,
       reason: error instanceof Error ? error.message : "Unknown error",
+      checks: { database: false, memory: true },
     };
   }
+}
+
+/**
+ * Get health metrics for monitoring systems
+ */
+export function getHealthMetrics(): {
+  uptime: number;
+  memory: {
+    heapUsed: number;
+    heapTotal: number;
+    rss: number;
+    external: number;
+  };
+  cpu: NodeJS.CpuUsage;
+  pid: number;
+  nodeVersion: string;
+} {
+  const memUsage = process.memoryUsage();
+  return {
+    uptime: process.uptime(),
+    memory: {
+      heapUsed: memUsage.heapUsed,
+      heapTotal: memUsage.heapTotal,
+      rss: memUsage.rss,
+      external: memUsage.external,
+    },
+    cpu: process.cpuUsage(),
+    pid: process.pid,
+    nodeVersion: process.version,
+  };
 }

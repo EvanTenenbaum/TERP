@@ -30,6 +30,7 @@ import {
   performHealthCheck,
   livenessCheck,
   readinessCheck,
+  getHealthMetrics,
 } from "./healthCheck";
 import { setupGracefulShutdown } from "./gracefulShutdown";
 // import { seedAllDefaults } from "../services/seedDefaults"; // TEMPORARILY DISABLED
@@ -326,6 +327,34 @@ async function startServer() {
       const ready = await readinessCheck();
       const statusCode = ready.status === "ok" ? 200 : 503;
       res.status(statusCode).json(ready);
+    });
+
+    // Metrics endpoint for monitoring systems (Prometheus-compatible format available)
+    app.get("/health/metrics", (req, res) => {
+      const metrics = getHealthMetrics();
+      const format = req.query.format;
+
+      if (format === "prometheus") {
+        // Prometheus text format
+        const lines = [
+          `# HELP terp_uptime_seconds Server uptime in seconds`,
+          `# TYPE terp_uptime_seconds gauge`,
+          `terp_uptime_seconds ${metrics.uptime}`,
+          `# HELP terp_memory_heap_used_bytes Heap memory used`,
+          `# TYPE terp_memory_heap_used_bytes gauge`,
+          `terp_memory_heap_used_bytes ${metrics.memory.heapUsed}`,
+          `# HELP terp_memory_heap_total_bytes Total heap memory`,
+          `# TYPE terp_memory_heap_total_bytes gauge`,
+          `terp_memory_heap_total_bytes ${metrics.memory.heapTotal}`,
+          `# HELP terp_memory_rss_bytes Resident set size`,
+          `# TYPE terp_memory_rss_bytes gauge`,
+          `terp_memory_rss_bytes ${metrics.memory.rss}`,
+        ];
+        res.set("Content-Type", "text/plain");
+        res.send(lines.join("\n"));
+      } else {
+        res.json(metrics);
+      }
     });
 
     // Version check endpoint to verify deployed code
