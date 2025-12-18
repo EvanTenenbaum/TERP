@@ -103,7 +103,7 @@ export async function logAuditEvent(entry: AuditEntry): Promise<number> {
 
     return result?.id || 0;
   } catch (error) {
-    logger.error("Error logging audit event", { error });
+    logger.error({ error }, "Error logging audit event");
     // Don't throw - audit logging should never break the main operation
     return 0;
   }
@@ -408,7 +408,7 @@ export async function queryAuditLogs(filters: {
 
     return results;
   } catch (error) {
-    logger.error("Error querying audit logs", { error });
+    logger.error({ error }, "Error querying audit logs");
     throw new Error(
       `Failed to query audit logs: ${error instanceof Error ? error.message : "Unknown error"}`
     );

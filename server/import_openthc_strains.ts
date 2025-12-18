@@ -70,7 +70,7 @@ export async function importOpenTHCStrainsFromJSON() {
   }
   
   if (!jsonPath) {
-    logger.error("OpenTHC strains JSON file not found", { possiblePaths });
+    logger.error({ possiblePaths }, "OpenTHC strains JSON file not found");
     return { success: false, message: "JSON file not found", imported: 0, skipped: 0 };
   }
 
@@ -134,7 +134,7 @@ export async function importOpenTHCStrainsFromJSON() {
         strainsToInsert.length = 0; // Clear array
       }
     } catch (error) {
-      logger.error("Error processing strain", { strainName: strain.name, error });
+      logger.error({ strainName: strain.name, error }, "Error processing strain");
       skippedCount++;
       continue;
     }

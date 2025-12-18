@@ -22,7 +22,7 @@ export async function createVendorSupply(supply: InsertVendorSupply): Promise<Ve
     
     return created;
   } catch (error) {
-    logger.error("Error creating vendor supply", { error });
+    logger.error({ error }, "Error creating vendor supply");
     throw new Error(`Failed to create vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -44,7 +44,7 @@ export async function getVendorSupplyById(id: number): Promise<VendorSupply | nu
     
     return supply || null;
   } catch (error) {
-    logger.error("Error fetching vendor supply", { error });
+    logger.error({ error }, "Error fetching vendor supply");
     throw new Error(`Failed to fetch vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -87,7 +87,7 @@ export async function getVendorSupply(filters?: {
     const supplies = await query.orderBy(desc(vendorSupply.createdAt));
     return supplies;
   } catch (error) {
-    logger.error("Error fetching vendor supply list", { error });
+    logger.error({ error }, "Error fetching vendor supply list");
     throw new Error(`Failed to fetch vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -116,7 +116,7 @@ export async function getAvailableVendorSupply(vendorId?: number): Promise<Vendo
     
     return supplies;
   } catch (error) {
-    logger.error("Error fetching available vendor supply", { error });
+    logger.error({ error }, "Error fetching available vendor supply");
     throw new Error(`Failed to fetch available vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -151,7 +151,7 @@ export async function updateVendorSupply(
     
     return updated;
   } catch (error) {
-    logger.error("Error updating vendor supply", { error });
+    logger.error({ error }, "Error updating vendor supply");
     throw new Error(`Failed to update vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -171,7 +171,7 @@ export async function reserveVendorSupply(id: number): Promise<VendorSupply> {
       reservedAt: new Date(),
     });
   } catch (error) {
-    logger.error("Error reserving vendor supply", { error });
+    logger.error({ error }, "Error reserving vendor supply");
     throw new Error(`Failed to reserve vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -191,7 +191,7 @@ export async function purchaseVendorSupply(id: number): Promise<VendorSupply> {
       purchasedAt: new Date(),
     });
   } catch (error) {
-    logger.error("Error purchasing vendor supply", { error });
+    logger.error({ error }, "Error purchasing vendor supply");
     throw new Error(`Failed to purchase vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -209,7 +209,7 @@ export async function deleteVendorSupply(id: number): Promise<boolean> {
     await db.delete(vendorSupply).where(eq(vendorSupply.id, id));
     return true;
   } catch (error) {
-    logger.error("Error deleting vendor supply", { error });
+    logger.error({ error }, "Error deleting vendor supply");
     throw new Error(`Failed to delete vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -236,7 +236,7 @@ export async function getVendorSupplyWithMatches(filters?: {
       matchCount: 0,
     }));
   } catch (error) {
-    logger.error("Error fetching vendor supply with matches", { error });
+    logger.error({ error }, "Error fetching vendor supply with matches");
     throw new Error(`Failed to fetch vendor supply with matches: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
@@ -262,7 +262,7 @@ export async function expireOldVendorSupply(): Promise<number> {
     
     return result[0].affectedRows || 0;
   } catch (error) {
-    logger.error("Error expiring old vendor supply", { error });
+    logger.error({ error }, "Error expiring old vendor supply");
     throw new Error(`Failed to expire old vendor supply: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

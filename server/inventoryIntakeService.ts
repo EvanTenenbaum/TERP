@@ -261,7 +261,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
 
     return result;
   } catch (error) {
-    logger.error("Error processing intake", { error });
+    logger.error({ error }, "Error processing intake");
     throw new Error(
       `Failed to process intake: ${error instanceof Error ? error.message : "Unknown error"}`
     );

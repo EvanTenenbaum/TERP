@@ -182,7 +182,7 @@ export async function findExactStrainMatch(inputName: string): Promise<StrainMat
     
     return null;
   } catch (error) {
-    logger.error("Error finding exact strain match", { error });
+    logger.error({ error }, "Error finding exact strain match");
     throw error;
   }
 }
@@ -246,7 +246,7 @@ export async function findFuzzyStrainMatches(
     
     return matches.slice(0, limit);
   } catch (error) {
-    logger.error("Error finding fuzzy strain matches", { error });
+    logger.error({ error }, "Error finding fuzzy strain matches");
     throw error;
   }
 }
@@ -291,7 +291,7 @@ export async function matchStrainForAssignment(
     // No matches found, suggest creating new strain
     return { action: 'create', normalized: normalizeStrainName(inputName) };
   } catch (error) {
-    logger.error("Error matching strain for assignment", { error });
+    logger.error({ error }, "Error matching strain for assignment");
     throw error;
   }
 }
@@ -343,7 +343,7 @@ export async function searchStrains(
     
     return matches.slice(0, limit);
   } catch (error) {
-    logger.error("Error searching strains", { error });
+    logger.error({ error }, "Error searching strains");
     throw error;
   }
 }
@@ -483,7 +483,7 @@ export async function getOrCreateStrain(
       matches: [],
     };
   } catch (error) {
-    logger.error("Error getting or creating strain", { error });
+    logger.error({ error }, "Error getting or creating strain");
     throw new Error(`Failed to process strain: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
