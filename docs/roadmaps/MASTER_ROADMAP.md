@@ -5363,6 +5363,563 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 ---
 
+
+---
+
+## 🎨 UI/UX IMPROVEMENTS (P2)
+
+> **Analysis Report:** `TERP_UIUX_Analysis_Report.md`  
+> **QA Validation:** `TERP_UIUX_QA_Validation.md`  
+> **Session:** Session-20251217-UIUX-ROADMAP-cb92a7  
+> **Total Issues Identified:** 85  
+> **Quick Wins:** 44  
+> **High Priority:** 22
+
+### Phase 1: Critical Quick Wins (Low Effort, High Impact)
+
+#### UX-001: Fix Floating Point Display Error
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 30min  
+**Module:** `server/inventoryDb.ts`, `client/src/components/inventory/DashboardStats.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** Inventory KPI card shows "57119.26999999999 total units" due to JavaScript floating point precision issue.
+
+**Objectives:**
+
+1. Round totalUnits before returning from server
+2. Ensure consistent number formatting across all KPI displays
+
+**Deliverables:**
+
+- [ ] Add `Math.round(totalUnits * 100) / 100` at `server/inventoryDb.ts:1300`
+- [ ] Verify all KPI cards display properly formatted numbers
+- [ ] Test with various inventory quantities
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+#### UX-002: Replace Browser confirm() Dialogs
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 2h  
+**Module:** Multiple components (10 instances)  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** Native browser `confirm()` dialogs break the design system and provide poor UX.
+
+**Affected Files:**
+
+- `client/src/components/UserManagement.tsx:67`
+- `client/src/components/comments/CommentItem.tsx:88`
+- `client/src/components/dashboard/v3/CustomizationPanel.tsx:32`
+- `client/src/components/inbox/InboxItem.tsx:107`
+- `client/src/components/inventory/SavedViewsDropdown.tsx:30`
+- `client/src/components/settings/rbac/PermissionAssignment.tsx:468`
+- `client/src/components/settings/rbac/RoleManagement.tsx:128`
+- `client/src/components/settings/rbac/UserRoleManagement.tsx:110`
+- `client/src/components/todos/ShareListModal.tsx:82`
+- `client/src/components/vip-portal/LiveCatalog.tsx:263`
+
+**Objectives:**
+
+1. Create reusable ConfirmationDialog component using AlertDialog
+2. Replace all 10 instances of native confirm()
+3. Maintain consistent styling with design system
+
+**Deliverables:**
+
+- [ ] Create `client/src/components/ui/confirmation-dialog.tsx`
+- [ ] Replace all 10 confirm() instances
+- [ ] Test all deletion/destructive action flows
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+#### UX-003: Rename "Lifetime" to "All Time"
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 15min  
+**Module:** `client/src/components/dashboard/widgets-v2/`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** "Lifetime" filter terminology is ambiguous; "All Time" is clearer.
+
+**Affected Files:**
+
+- `client/src/components/dashboard/widgets-v2/CashFlowWidget.tsx:41`
+- `client/src/components/dashboard/widgets-v2/SalesByClientWidget.tsx:46`
+
+**Deliverables:**
+
+- [ ] Change "Lifetime" to "All Time" in both files
+- [ ] Verify filter functionality unchanged
+- [ ] All tests passing
+
+---
+
+#### UX-004: Rename "Customize Metrics" Button
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 15min  
+**Module:** Multiple pages  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** "Customize Metrics" button purpose is unclear.
+
+**Objectives:**
+
+1. Rename to "Customize Dashboard" or "Manage Widgets"
+2. Apply consistently across all pages
+
+**Deliverables:**
+
+- [ ] Rename button text in Orders, Clients, Inventory pages
+- [ ] Ensure consistent terminology
+- [ ] All tests passing
+
+---
+
+#### UX-005: Remove Version Number from Header
+
+**Status:** ready  
+**Priority:** LOW  
+**Estimate:** 10min  
+**Module:** `client/src/components/DashboardLayout.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** "v1.0.0 build-mjaq3uvy" visible in header is not user-relevant.
+
+**Deliverables:**
+
+- [ ] Remove version display from header
+- [ ] Optionally move to Help/About section
+- [ ] All tests passing
+
+---
+
+#### UX-006: Clarify Dual Status Badges on Orders
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 1h  
+**Module:** `client/src/pages/OrdersPage.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** Orders show two status badges (e.g., "Packed" + "PENDING") without clear distinction.
+
+**Objectives:**
+
+1. Add labels or tooltips distinguishing fulfillment status from payment status
+2. Consider visual differentiation (colors, icons)
+
+**Deliverables:**
+
+- [ ] Add "Fulfillment:" and "Payment:" labels or tooltips
+- [ ] Test order list display
+- [ ] All tests passing
+
+---
+
+#### UX-007: Add Tooltip for TERI Code
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 30min  
+**Module:** `client/src/pages/ClientsListPage.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** "TERI Code" column header is unexplained; users don't know what it means.
+
+**Deliverables:**
+
+- [ ] Add tooltip explaining TERI Code format and purpose
+- [ ] Consider adding help icon next to column header
+- [ ] All tests passing
+
+---
+
+#### UX-008: Fix Oldest Debt Abbreviation
+
+**Status:** ready  
+**Priority:** LOW  
+**Estimate:** 15min  
+**Module:** `client/src/pages/ClientsListPage.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** "Oldest Debt" column shows "716d" which is unclear.
+
+**Deliverables:**
+
+- [ ] Change format to "716 days" or "1y 351d"
+- [ ] Test with various debt ages
+- [ ] All tests passing
+
+---
+
+### Phase 2: Core UX Improvements (Medium Effort, High Impact)
+
+#### UX-009: Implement Breadcrumb Navigation
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 4h  
+**Module:** `client/src/components/DashboardLayout.tsx`, all pages  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** No breadcrumb navigation; users lose context when navigating deep.
+
+**Note:** Breadcrumb component already exists at `client/src/components/ui/breadcrumb.tsx` but is unused.
+
+**Objectives:**
+
+1. Integrate existing breadcrumb component into DashboardLayout
+2. Add breadcrumb data to each page/route
+3. Support dynamic breadcrumbs for detail pages
+
+**Deliverables:**
+
+- [ ] Create breadcrumb context/provider
+- [ ] Add breadcrumbs to DashboardLayout
+- [ ] Configure breadcrumb paths for all routes
+- [ ] Test navigation flows
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+#### UX-010: Add Empty States to All Widgets/Lists
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 4h  
+**Module:** `client/src/components/dashboard/widgets-v2/`, list pages  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** Empty widgets/lists show blank space without guidance.
+
+**Objectives:**
+
+1. Create reusable EmptyState component
+2. Add informative empty states with CTAs
+3. Apply to all widgets and list views
+
+**Deliverables:**
+
+- [ ] Create `client/src/components/ui/empty-state.tsx`
+- [ ] Add empty states to dashboard widgets
+- [ ] Add empty states to list pages (Orders, Clients, Inventory)
+- [ ] Include helpful CTAs (e.g., "Create your first order")
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+#### UX-011: Add Skeleton Loaders
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 3h  
+**Module:** `client/src/components/`, pages  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** No loading indicators during data fetch; users see blank screens.
+
+**Objectives:**
+
+1. Create skeleton loader components matching existing UI
+2. Add to all data-fetching components
+3. Ensure smooth loading transitions
+
+**Deliverables:**
+
+- [ ] Create skeleton components for cards, tables, lists
+- [ ] Add to dashboard widgets
+- [ ] Add to list pages
+- [ ] Test loading states
+- [ ] All tests passing
+
+---
+
+#### UX-012: Add "Clear Filters" Button
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 1h  
+**Module:** `client/src/pages/Inventory.tsx`, `ClientsListPage.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** No easy way to reset all applied filters.
+
+**Deliverables:**
+
+- [ ] Add "Clear Filters" button to Inventory page
+- [ ] Add "Clear Filters" button to Clients page
+- [ ] Show button only when filters are active
+- [ ] All tests passing
+
+---
+
+#### UX-013: Add Search to Client Dropdown
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 2h  
+**Module:** `client/src/pages/OrderCreatorPage.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** Client dropdown in order creator lacks search; difficult with many clients.
+
+**Objectives:**
+
+1. Replace basic dropdown with searchable combobox
+2. Support typeahead filtering
+3. Show recent/frequent clients first
+
+**Deliverables:**
+
+- [ ] Implement searchable client selector
+- [ ] Add typeahead filtering
+- [ ] Test with large client lists
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+#### UX-014: Fix Chart of Accounts Edit Button
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 1h  
+**Module:** `client/src/pages/ChartOfAccountsPage.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** Edit button in Actions column is not rendering properly.
+
+**Deliverables:**
+
+- [ ] Fix Edit button rendering
+- [ ] Verify all action buttons work
+- [ ] All tests passing
+
+---
+
+### Phase 3: Enhanced Features (Higher Effort)
+
+#### UX-015: Group Sidebar Menu Items
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 4h  
+**Module:** `client/src/components/DashboardLayout.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** 22 menu items in flat list without grouping; hard to scan.
+
+**Objectives:**
+
+1. Group related items (Sales, Inventory, Settings, etc.)
+2. Add collapsible sections
+3. Maintain current navigation paths
+
+**Proposed Grouping:**
+
+- **Sales:** Orders, Quotes, Sales Sheets, Create Order
+- **Inventory:** Inventory, Workflow Queue, Matchmaking
+- **Clients:** Clients, Pricing Rules, Pricing Profiles, Credit Settings
+- **Finance:** Accounting, COGS Settings
+- **System:** Settings, Analytics, Help
+
+**Deliverables:**
+
+- [ ] Restructure menuItems array with groups
+- [ ] Implement collapsible menu sections
+- [ ] Preserve current URL paths
+- [ ] Test navigation
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+#### UX-016: Convert Settings to Vertical Navigation
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 3h  
+**Module:** `client/src/pages/SettingsPage.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** 8 horizontal tabs overflow and are hard to scan.
+
+**Objectives:**
+
+1. Convert horizontal tabs to vertical sidebar navigation
+2. Improve mobile responsiveness
+3. Add section descriptions
+
+**Deliverables:**
+
+- [ ] Create vertical navigation layout for Settings
+- [ ] Migrate all 8 tab contents
+- [ ] Test responsive behavior
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+#### UX-017: Implement Password Reset Flow (VIP Portal)
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 8h  
+**Module:** `client/src/pages/vip-portal/`, `server/routers/vipPortal.ts`  
+**Dependencies:** Email service integration  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** "Forgot password" shows "contact support" instead of actual reset flow.
+
+**Objectives:**
+
+1. Implement password reset request endpoint
+2. Send reset email with secure token
+3. Create password reset form
+4. Handle token expiration
+
+**Deliverables:**
+
+- [ ] Create password reset request API
+- [ ] Implement email sending with reset link
+- [ ] Create reset password page
+- [ ] Handle token validation and expiration
+- [ ] Add rate limiting to prevent abuse
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+#### UX-018: Add Drag-and-Drop to Todo Lists
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 6h  
+**Module:** `client/src/components/todos/`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** Cannot reorder tasks by dragging; must use manual position editing.
+
+**Objectives:**
+
+1. Implement drag-and-drop reordering
+2. Persist order changes to database
+3. Support keyboard accessibility
+
+**Deliverables:**
+
+- [ ] Add drag-and-drop library (react-beautiful-dnd or dnd-kit)
+- [ ] Implement drag handlers for todo items
+- [ ] Create reorder API endpoint
+- [ ] Test drag-and-drop functionality
+- [ ] Ensure accessibility
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+#### UX-019: Implement Filter Persistence
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 3h  
+**Module:** `client/src/pages/Inventory.tsx`, `ClientsListPage.tsx`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** Filter selections reset on page navigation; users must re-apply filters.
+
+**Objectives:**
+
+1. Store filter state in URL query parameters
+2. Optionally persist to localStorage
+3. Restore filters on page load
+
+**Deliverables:**
+
+- [ ] Add URL query parameter sync for filters
+- [ ] Implement filter state restoration
+- [ ] Test navigation with filters
+- [ ] All tests passing
+
+---
+
+#### UX-020: Add Configurable Low Stock Threshold
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 2h  
+**Module:** `client/src/pages/Inventory.tsx`, `server/inventoryDb.ts`  
+**Dependencies:** None  
+**Session:** Session-20251217-UIUX-ROADMAP-cb92a7
+
+**Problem:** Low stock threshold is hardcoded at ≤100 units.
+
+**Objectives:**
+
+1. Add user-configurable threshold setting
+2. Store in user preferences or system settings
+3. Apply to inventory filtering
+
+**Deliverables:**
+
+- [ ] Add low stock threshold to settings
+- [ ] Update inventory filtering to use configurable value
+- [ ] Update KPI card description dynamically
+- [ ] All tests passing
+
+---
+
+### Summary
+
+| Phase | Tasks | Total Estimate |
+|-------|-------|----------------|
+| Phase 1: Quick Wins | 8 tasks | ~5 hours |
+| Phase 2: Core UX | 6 tasks | ~15 hours |
+| Phase 3: Enhanced | 6 tasks | ~26 hours |
+| **Total** | **20 tasks** | **~46 hours** |
+
+**Recommended Implementation Order:**
+
+1. UX-001 (floating point) - immediate fix
+2. UX-002 (confirm dialogs) - improves all destructive actions
+3. UX-010 (empty states) - major UX improvement
+4. UX-011 (skeleton loaders) - improves perceived performance
+5. UX-012 (clear filters) - quick win for usability
+6. UX-013 (client search) - critical for order creation
+7. Remaining tasks by priority
+
 ## 📊 AUDIT TASKS
 
 ### AUDIT-001: Comprehensive System Code Review
