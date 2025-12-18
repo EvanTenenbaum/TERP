@@ -1,7 +1,7 @@
 # 🤖 TERP Universal Agent Rules
 
-**Version**: 1.0  
-**Last Updated**: 2025-12-16  
+**Version**: 1.1  
+**Last Updated**: 2025-12-17  
 **Purpose**: Provide identical context to ALL AI agents regardless of platform
 
 ---
@@ -25,7 +25,8 @@
 4. [Agent Coordination](#4-agent-coordination)
 5. [Infrastructure](#5-infrastructure)
 6. [Pre-Commit Checklist](#6-pre-commit-checklist)
-7. [Quick Reference](#7-quick-reference)
+7. [Adaptive Expert QA Protocol](#7-adaptive-expert-qa-protocol)
+8. [Quick Reference](#8-quick-reference)
 
 ---
 
@@ -665,7 +666,155 @@ bash scripts/watch-deploy.sh
 
 ---
 
-# 7. Quick Reference
+# 7. Adaptive Expert QA Protocol
+
+> ⚠️ **MANDATORY**: Before delivering ANY output, you must run an Adaptive Expert QA pass.
+>
+> Your responsibility is to improve quality WITHOUT unnecessarily reducing velocity.
+>
+> **Failure modes:**
+>
+> - Over-reviewing low-risk work = failure
+> - Under-reviewing high-risk work = failure
+>
+> You must explicitly classify the work, select the minimum sufficient QA severity, then execute it.
+
+## STEP 1 — Work Classification (MANDATORY)
+
+Classify the work along ALL dimensions below:
+
+### 1) Work Type (choose one primary)
+
+- Exploratory / draft / throwaway
+- Iterative implementation
+- Production code
+- System architecture or specification
+- Financial, compliance, or safety logic
+- UX / design / creative
+- Strategic or decision-making document
+
+### 2) Persistence
+
+- Ephemeral (likely discarded)
+- Iterative (will evolve)
+- Durable (intended to persist or be built upon)
+
+### 3) Risk of Error
+
+- Low (minor inconvenience only)
+- Medium (rework, confusion, wasted time or money)
+- High (data loss, financial impact, safety, reputation)
+
+### 4) Downstream Consumers
+
+- Only the author
+- Internal collaborators
+- External builders, users, or stakeholders
+
+**State this classification explicitly before continuing.**
+
+## STEP 2 — QA Severity Selection (AUTOMATIC)
+
+Select the MINIMUM sufficient QA level based on the classification above.
+
+### 🟢 LEVEL 1 — FAST SANITY CHECK (DEFAULT)
+
+**Use when:**
+
+- Exploratory or early iterative work
+- Low risk
+- Ephemeral or author-only
+- Speed and momentum matter more than rigor
+
+### 🟡 LEVEL 2 — EXPERT SKEPTICAL QA
+
+**Use when:**
+
+- Work is durable or handed to collaborators
+- Medium risk
+- Logic, assumptions, or clarity materially matter
+- Rework would be annoying or costly
+
+### 🔴 LEVEL 3 — FULL RED HAT QE / RED TEAM
+
+**Use when:**
+
+- Production code or formal specs
+- High-risk domains (financial, data, safety, compliance)
+- External delivery or irreversible decisions
+- Failure would be costly, embarrassing, or dangerous
+
+### Selection Rules
+
+- Level 1 is the default
+- Escalate ONLY when justified by risk or persistence
+- If choosing Level 2 or 3, briefly justify the escalation
+- If unsure between two levels, choose the LOWER level unless the cost of failure is high
+
+## STEP 3 — Execute QA (Severity-Specific)
+
+### 🟢 LEVEL 1 — Fast Sanity Check
+
+- Identify obvious errors, gaps, or unsafe assumptions
+- Fix issues directly
+- Do NOT refactor heavily
+- Do NOT add features
+- Do NOT over-explain
+
+**Goal**: Improve quality without killing velocity.
+
+### 🟡 LEVEL 2 — Expert Skeptical QA
+
+Act as a clean-room senior reviewer who did NOT create the work.
+
+**Perform:**
+
+1. **Assumption audit** — what is being taken for granted?
+2. **Logic and edge-case review**
+3. **Clarity and handoff readiness check**
+4. **Structural improvements** where necessary
+
+**Guidelines:**
+
+- Prefer clarity over cleverness
+- Prefer robustness over minimalism
+- Rewrite sections if needed
+
+### 🔴 LEVEL 3 — Full Red Hat QE / Red Team
+
+Assume the work will fail unless proven otherwise.
+
+**Perform:**
+
+1. **Requirements and intent validation**
+2. **Failure-mode and edge-case enumeration**
+3. **Domain-expert skepticism**
+4. **State, lifecycle, and data integrity analysis** (if applicable)
+5. **Structural rewrite or redesign** where necessary
+
+**Rules:**
+
+- If something is ambiguous, treat it as incorrect
+- If something is assumed, surface it explicitly
+- Velocity is secondary to correctness
+
+## STEP 4 — Delivery Format
+
+Output the following, in order:
+
+1. **The improved / corrected version** (primary output)
+2. **A short bullet list** including:
+   - QA level used
+   - Key risks or issues identified
+   - What was changed and why
+
+Do NOT include meta commentary beyond this.
+
+Your final output should be safe to hand directly to the intended human reviewer or stakeholder.
+
+---
+
+# 8. Quick Reference
 
 ## Essential Commands
 
