@@ -115,6 +115,92 @@ resolve_session_conflict() {
     fi
 }
 
+# Function to resolve individual session file conflicts
+resolve_session_file_conflict() {
+    local file=$1
+    if [[ "$file" != *"docs/sessions/"* ]]; then
+        return 1
+    fi
+    
+    echo -e "${YELLOW}📝 Resolving session file conflict: $file${NC}"
+    
+    # Get both versions
+    git show :2:"$file" > /tmp/ours_session.txt 2>/dev/null || return 1
+    git show :3:"$file" > /tmp/theirs_session.txt 2>/dev/null || return 1
+    
+    # Strategy: Use the version with more progress (more checkboxes completed)
+    OUR_COMPLETED=$(grep -c "\[x\]" /tmp/ours_session.txt || echo "0")
+    THEIR_COMPLETED=$(grep -c "\[x\]" /tmp/theirs_session.txt || echo "0")
+    
+    # Also check for more content (longer file = more progress notes)
+    OUR_LINES=$(wc -l < /tmp/ours_session.txt)
+    THEIR_LINES=$(wc -l < /tmp/theirs_session.txt)
+    
+    # Prefer version with more completed tasks, or more content if equal
+    if [ "$THEIR_COMPLETED" -gt "$OUR_COMPLETED" ]; then
+        git checkout --theirs "$file"
+        git add "$file"
+        echo -e "${GREEN}✅ Using their version (more progress: $THEIR_COMPLETED vs $OUR_COMPLETED completed)${NC}"
+        ((RESOLVED_COUNT++))
+        return 0
+    elif [ "$OUR_COMPLETED" -gt "$THEIR_COMPLETED" ]; then
+        git checkout --ours "$file"
+        git add "$file"
+        echo -e "${GREEN}✅ Using our version (more progress: $OUR_COMPLETED vs $THEIR_COMPLETED completed)${NC}"
+        ((RESOLVED_COUNT++))
+        return 0
+    elif [ "$THEIR_LINES" -gt "$OUR_LINES" ]; then
+        git checkout --theirs "$file"
+        git add "$file"
+        echo -e "${GREEN}✅ Using their version (more content: $THEIR_LINES vs $OUR_LINES lines)${NC}"
+        ((RESOLVED_COUNT++))
+        return 0
+    else
+        git checkout --ours "$file"
+        git add "$file"
+        echo -e "${GREEN}✅ Using our version (equal progress, defaulting to ours)${NC}"
+        ((RESOLVED_COUNT++))
+        return 0
+    fi
+}
+
+# Function to resolve lock file conflicts (package-lock.json, pnpm-lock.yaml)
+resolve_lockfile_conflict() {
+    local file=$1
+    if [[ "$file" != *"lock.json"* ]] && [[ "$file" != *"lock.yaml"* ]]; then
+        return 1
+    fi
+    
+    echo -e "${YELLOW}🔒 Resolving lockfile conflict: $file${NC}"
+    
+    # Strategy: Accept theirs (remote) and regenerate
+    # Lock files should be regenerated from package.json
+    git checkout --theirs "$file" 2>/dev/null || git checkout --ours "$file"
+    git add "$file"
+    
+    echo -e "${GREEN}✅ Accepted remote lockfile (will regenerate on install)${NC}"
+    ((RESOLVED_COUNT++))
+    return 0
+}
+
+# Function to resolve generated file conflicts (dist/, build/)
+resolve_generated_conflict() {
+    local file=$1
+    if [[ "$file" != "dist/"* ]] && [[ "$file" != "build/"* ]]; then
+        return 1
+    fi
+    
+    echo -e "${YELLOW}🏗️  Resolving generated file conflict: $file${NC}"
+    
+    # Strategy: Accept theirs (will be regenerated on build)
+    git checkout --theirs "$file" 2>/dev/null || git checkout --ours "$file"
+    git add "$file"
+    
+    echo -e "${GREEN}✅ Accepted remote version (will regenerate on build)${NC}"
+    ((RESOLVED_COUNT++))
+    return 0
+}
+
 # Function to resolve documentation merge conflicts
 resolve_doc_conflict() {
     local file=$1
@@ -227,6 +313,12 @@ while IFS= read -r file; do
     if resolve_roadmap_conflict "$file"; then
         continue
     elif resolve_session_conflict "$file"; then
+        continue
+    elif resolve_session_file_conflict "$file"; then
+        continue
+    elif resolve_lockfile_conflict "$file"; then
+        continue
+    elif resolve_generated_conflict "$file"; then
         continue
     elif resolve_doc_conflict "$file"; then
         continue
