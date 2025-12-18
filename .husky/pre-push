@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-. "$(dirname -- "$0")/_/husky.sh"
+# Pre-push hook for TERP
+# Validates branch names and checks for conflicts before push
 
 # Source shared config
 . "$(dirname -- "$0")/qa-config.sh"

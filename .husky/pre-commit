@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+# Pre-commit hook for TERP
+# Runs QA checks, linting, and validation before commits
 
 # Check for schema changes without migrations
 if git diff --cached --name-only | grep -q "drizzle/schema.ts"; then
