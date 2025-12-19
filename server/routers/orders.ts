@@ -173,6 +173,7 @@ export const ordersRouter = router({
 
   /**
    * Get all orders with filtering
+   * BUG-034: Uses cursor-based pagination from DB layer
    */
   getAll: protectedProcedure
     .use(requirePermission("orders:read"))
@@ -184,34 +185,24 @@ export const ordersRouter = router({
           quoteStatus: z.string().optional(),
           saleStatus: z.string().optional(),
           fulfillmentStatus: z.string().optional(),
-          limit: z.number().optional(),
-          offset: z.number().optional(),
-          includeDeleted: z.boolean().optional(), // ST-013: Option to include soft-deleted records
+          limit: z.number().min(1).max(100).optional(),
+          cursor: z.string().nullish(),
+          includeDeleted: z.boolean().optional(),
         })
         .optional()
     )
     .query(async ({ input }) => {
-      // Debug logging removed - use structured logging middleware for API debugging
-      const orders = await ordersDb.getAllOrders(input);
-
-      // HOTFIX (BUG-033): Wrap raw array in paginated response structure
-      // The frontend was refactored to expect a paginated object, but this endpoint
-      // still returns a raw array. This minimal fix restores data flow.
-      const limit = input?.limit || 50;
-      const offset = input?.offset || 0;
-
-      // NOTE: We cannot calculate total or hasMore without a separate count query,
-      // but for a hotfix, we assume no more pages if the result is less than the limit.
-      return {
-        items: orders,
-        nextCursor: null, // No cursor support yet
-        hasMore: orders.length === limit,
-        pagination: {
-          total: -1, // Unknown without a count query
-          limit: limit,
-          offset: offset,
-        }
-      };
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await ordersDb.getAllOrders({
+        orderType: input?.orderType,
+        isDraft: input?.isDraft,
+        quoteStatus: input?.quoteStatus,
+        saleStatus: input?.saleStatus,
+        fulfillmentStatus: input?.fulfillmentStatus,
+        limit: input?.limit,
+        cursor: input?.cursor,
+        includeDeleted: input?.includeDeleted,
+      });
     }),
 
   /**

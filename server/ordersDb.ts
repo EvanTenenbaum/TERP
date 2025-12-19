@@ -14,6 +14,11 @@ import {
   type Order,
 } from "../drizzle/schema";
 import { calculateCogs, calculateDueDate, type CogsCalculationInput } from "./cogsCalculator";
+import {
+  PaginatedResult,
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+} from "./_core/pagination";
 
 // ============================================================================
 // TYPES
@@ -408,27 +413,29 @@ export async function getOrdersByClient(
 
 /**
  * Get all orders with optional filters
+ * BUG-034: Returns PaginatedResult with cursor-based pagination
  */
 export async function getAllOrders(filters?: {
-  orderType?: 'QUOTE' | 'SALE';
+  orderType?: "QUOTE" | "SALE";
   isDraft?: boolean;
   quoteStatus?: string;
   saleStatus?: string;
   fulfillmentStatus?: string;
   limit?: number;
-  offset?: number;
-}): Promise<Order[]> {
+  cursor?: string | null;
+  includeDeleted?: boolean;
+}): Promise<PaginatedResult<Order>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
+  const limit = Math.min(filters?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
   const {
     orderType,
     isDraft,
     quoteStatus,
     saleStatus,
     fulfillmentStatus,
-    limit = 50,
-    offset = 0,
+    cursor,
   } = filters || {};
   
   const conditions: ReturnType<typeof eq>[] = [];
@@ -464,56 +471,91 @@ export async function getAllOrders(filters?: {
   }
   
   if (fulfillmentStatus) {
-    const validFulfillmentStatuses = ['PENDING', 'PACKED', 'SHIPPED'] as const;
-    if (validFulfillmentStatuses.includes(fulfillmentStatus as typeof validFulfillmentStatuses[number])) {
-      conditions.push(eq(orders.fulfillmentStatus, fulfillmentStatus as typeof validFulfillmentStatuses[number]));
+    const validFulfillmentStatuses = ["PENDING", "PACKED", "SHIPPED"] as const;
+    if (
+      validFulfillmentStatuses.includes(
+        fulfillmentStatus as (typeof validFulfillmentStatuses)[number]
+      )
+    ) {
+      conditions.push(
+        eq(
+          orders.fulfillmentStatus,
+          fulfillmentStatus as (typeof validFulfillmentStatuses)[number]
+        )
+      );
     }
   }
-  
+
+  // Get total count (without cursor filter)
+  const countConditions = [...conditions];
+  const countQuery = db.select({ count: sql<number>`count(*)` }).from(orders);
+  const [countResult] =
+    countConditions.length > 0
+      ? await countQuery.where(and(...countConditions))
+      : await countQuery;
+  const total = Number(countResult?.count ?? 0);
+
+  // Apply cursor for pagination
+  if (cursor) {
+    const cursorId = parseInt(cursor, 10);
+    if (!isNaN(cursorId)) {
+      conditions.push(sql`${orders.id} < ${cursorId}`);
+    }
+  }
+
   let results;
-  
+
   if (conditions.length > 0) {
     results = await db
       .select()
       .from(orders)
       .leftJoin(clients, eq(orders.clientId, clients.id))
       .where(and(...conditions))
-      .orderBy(desc(orders.createdAt))
-      .limit(limit)
-      .offset(offset);
+      .orderBy(desc(orders.id))
+      .limit(limit + 1);
   } else {
     results = await db
       .select()
       .from(orders)
       .leftJoin(clients, eq(orders.clientId, clients.id))
-      .orderBy(desc(orders.createdAt))
-      .limit(limit)
-      .offset(offset);
+      .orderBy(desc(orders.id))
+      .limit(limit + 1);
   }
-  
+
   // Transform results to include client data and parse JSON items
-  const transformed: Order[] = results.map(row => {
+  const transformed: Order[] = results.map((row) => {
     // Parse items JSON string to array
     let parsedItems: OrderItem[] = [];
     if (row.orders.items) {
       try {
-        parsedItems = typeof row.orders.items === 'string' 
-          ? JSON.parse(row.orders.items) 
-          : row.orders.items;
+        parsedItems =
+          typeof row.orders.items === "string"
+            ? JSON.parse(row.orders.items)
+            : row.orders.items;
       } catch (e) {
         console.error(`Failed to parse items for order ${row.orders.id}:`, e);
         parsedItems = [];
       }
     }
-    
+
     return {
       ...row.orders,
       items: parsedItems,
       client: row.clients,
     } as Order;
   });
-  
-  return transformed;
+
+  const hasMore = transformed.length > limit;
+  const items = hasMore ? transformed.slice(0, limit) : transformed;
+  const lastItem = items[items.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+  return {
+    items,
+    nextCursor,
+    hasMore,
+    total,
+  };
 }
 
 // ============================================================================
