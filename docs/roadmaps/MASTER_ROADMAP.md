@@ -945,6 +945,7 @@ pnpm seed --dry-run
 **Problem:** List endpoints return all records, causing performance issues.
 
 **Implementation Summary:**
+
 - Created `server/_core/pagination.ts` with reusable pagination utilities
 - Created `client/src/components/ui/pagination-controls.tsx` with mobile-optimized UI
 - Added pagination to: accounting.accounts.list, comments.getEntityComments, inbox.getMyItems, todoTasks.getListTasks, todoTasks.getMyTasks
@@ -6318,6 +6319,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] Zero TypeScript errors
 
 ### 🔴 CRITICAL PRIORITY (P0) - Performance & Data Integrity
+
 - [ ] **PERF-004**: Refactor inventoryDb.getDashboardStats to use SQL Aggregation
   - **Status:** ready
   - **Priority:** CRITICAL
@@ -6431,3 +6433,16 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] Create todo dashboard widget showing upcoming/overdue tasks
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
+
+## Future Architectural Enhancements
+
+### PERF-005: Adopt Standardized DB-Layer Pagination
+
+- **Status:** Not Started
+- **Priority:** Medium
+- **Summary:** This initiative will refactor the application to use a standardized, DB-layer pagination approach, leveraging the clean architecture proposed in the now-closed BUG-034. This will improve code maintainability, reduce boilerplate, and provide a more robust foundation for future development.
+- **Key Actions:**
+  1.  **Adopt `PaginatedResult<T>`:** Integrate the standardized `PaginatedResult<T>` type definition across the backend.
+  2.  **Implement `createPaginatedResult()` Helper:** Use the generic helper function to create consistent paginated responses.
+  3.  **Refactor DB Functions:** Modify database-layer functions (e.g., `clientsDb.getClients`) to return `PaginatedResult<T>` directly, moving pagination logic out of the router layer.
+  4.  **Create `usePaginatedQuery()` Hook:** Develop a custom React hook for the frontend that automatically handles the `PaginatedResult<T>` structure, extracting the `.items` array and providing pagination controls. This will eliminate the need for manual `.items` extraction in every component.
