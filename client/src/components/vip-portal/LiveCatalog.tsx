@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface LiveCatalogProps {
   clientId: number;
@@ -80,6 +81,8 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   const [priceAlertDialogOpen, setPriceAlertDialogOpen] = useState(false);
   const [selectedProductForAlert, setSelectedProductForAlert] = useState<any>(null);
   const [targetPrice, setTargetPrice] = useState<string>("");
+  const [showClearDraftConfirm, setShowClearDraftConfirm] = useState(false);
+  const [deleteViewId, setDeleteViewId] = useState<number | null>(null);
 
   // Fetch client configuration to check if price alerts are enabled
   const { data: clientConfig } = trpc.vipPortal.config.get.useQuery({ clientId });
@@ -260,9 +263,12 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   };
 
   const handleClearDraft = () => {
-    if (confirm("Are you sure you want to clear all items from your interest list?")) {
-      clearDraftMutation.mutate();
-    }
+    setShowClearDraftConfirm(true);
+  };
+
+  const confirmClearDraft = () => {
+    clearDraftMutation.mutate();
+    setShowClearDraftConfirm(false);
   };
 
   const handleSubmitInterestList = () => {
@@ -599,11 +605,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                                 size="icon"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (confirm("Delete this view?")) {
-                                    deleteViewMutation.mutate({
-                                      viewId: view.id,
-                                    });
-                                  }
+                                  setDeleteViewId(view.id);
                                 }}
                               >
                                 <X className="h-4 w-4" />
@@ -1121,6 +1123,33 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={showClearDraftConfirm}
+        onOpenChange={setShowClearDraftConfirm}
+        title="Clear Interest List"
+        description="Are you sure you want to clear all items from your interest list? This action cannot be undone."
+        confirmLabel="Clear All"
+        variant="destructive"
+        onConfirm={confirmClearDraft}
+        isLoading={clearDraftMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!deleteViewId}
+        onOpenChange={(open) => !open && setDeleteViewId(null)}
+        title="Delete View"
+        description="Are you sure you want to delete this saved view?"
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteViewId) {
+            deleteViewMutation.mutate({ viewId: deleteViewId });
+            setDeleteViewId(null);
+          }
+        }}
+        isLoading={deleteViewMutation.isPending}
+      />
     </div>
   );
 }
@@ -1128,6 +1157,7 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
 // My Price Alerts Component
 function MyPriceAlerts() {
   const { toast } = useToast();
+  const [removeAlertId, setRemoveAlertId] = useState<number | null>(null);
 
   // Fetch price alerts
   const {
@@ -1155,8 +1185,13 @@ function MyPriceAlerts() {
   });
 
   const handleRemoveAlert = (alertId: number) => {
-    if (confirm("Are you sure you want to remove this price alert?")) {
-      deactivateAlertMutation.mutate({ alertId });
+    setRemoveAlertId(alertId);
+  };
+
+  const confirmRemoveAlert = () => {
+    if (removeAlertId) {
+      deactivateAlertMutation.mutate({ alertId: removeAlertId });
+      setRemoveAlertId(null);
     }
   };
 
@@ -1237,6 +1272,17 @@ function MyPriceAlerts() {
           </div>
         );
       })}
+
+      <ConfirmDialog
+        open={!!removeAlertId}
+        onOpenChange={(open) => !open && setRemoveAlertId(null)}
+        title="Remove Price Alert"
+        description="Are you sure you want to remove this price alert?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={confirmRemoveAlert}
+        isLoading={deactivateAlertMutation.isPending}
+      />
     </div>
   );
 }

@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface WorkflowSettingsProps {
   statuses: Array<{
@@ -34,6 +35,7 @@ interface WorkflowSettingsProps {
 export function WorkflowSettings({ statuses }: WorkflowSettingsProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingStatus, setEditingStatus] = useState<number | null>(null);
+  const [deleteStatusId, setDeleteStatusId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -119,8 +121,13 @@ export function WorkflowSettings({ statuses }: WorkflowSettingsProps) {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this workflow status?")) {
-      deleteStatus.mutate({ id });
+    setDeleteStatusId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteStatusId) {
+      deleteStatus.mutate({ id: deleteStatusId });
+      setDeleteStatusId(null);
     }
   };
 
@@ -274,6 +281,17 @@ export function WorkflowSettings({ statuses }: WorkflowSettingsProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteStatusId}
+        onOpenChange={(open) => !open && setDeleteStatusId(null)}
+        title="Delete Workflow Status"
+        description="Are you sure you want to delete this workflow status? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        isLoading={deleteStatus.isPending}
+      />
     </div>
   );
 }

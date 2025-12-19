@@ -32,6 +32,7 @@ import {
 import { UserPlus, Shield, X, Plus, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
  * User Role Management Component
@@ -47,6 +48,7 @@ export function UserRoleManagement() {
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [removeRoleInfo, setRemoveRoleInfo] = useState<{ userId: string; roleId: number; roleName: string } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -107,8 +109,13 @@ export function UserRoleManagement() {
   };
 
   const handleRemoveRole = (userId: string, roleId: number, roleName: string) => {
-    if (confirm(`Are you sure you want to remove the "${roleName}" role from this user?`)) {
-      removeRoleMutation.mutate({ userId, roleId });
+    setRemoveRoleInfo({ userId, roleId, roleName });
+  };
+
+  const confirmRemoveRole = () => {
+    if (removeRoleInfo) {
+      removeRoleMutation.mutate({ userId: removeRoleInfo.userId, roleId: removeRoleInfo.roleId });
+      setRemoveRoleInfo(null);
     }
   };
 
@@ -343,6 +350,17 @@ export function UserRoleManagement() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!removeRoleInfo}
+        onOpenChange={(open) => !open && setRemoveRoleInfo(null)}
+        title="Remove Role"
+        description={`Are you sure you want to remove the "${removeRoleInfo?.roleName}" role from this user?`}
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={confirmRemoveRole}
+        isLoading={removeRoleMutation.isPending}
+      />
     </div>
   );
 }

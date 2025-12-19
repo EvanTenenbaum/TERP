@@ -7,6 +7,7 @@
 
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Card,
   CardContent,
@@ -51,6 +52,7 @@ export default function OrderCreatorPageV2() {
   const [showAdjustmentOnDocument, setShowAdjustmentOnDocument] =
     useState(true);
   const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
   // Queries
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -161,13 +163,13 @@ export default function OrderCreatorPageV2() {
     }
 
     // Show confirmation dialog for finalize
-    const confirmed = window.confirm(
-      `Are you sure you want to finalize this ${orderType.toLowerCase()}?\n\n` +
-        `Total: $${totals.total.toFixed(2)}\n` +
-        `This will create the order and cannot be undone.`
-    );
+    setShowFinalizeConfirm(true);
+  };
 
-    if (!confirmed) return;
+  const confirmFinalize = () => {
+    setShowFinalizeConfirm(false);
+    
+    if (!clientId) return;
 
     // First create the draft, then finalize it
     createDraftMutation.mutate({
@@ -454,6 +456,17 @@ export default function OrderCreatorPageV2() {
           </CardContent>
         </Card>
       )}
+
+      {/* Finalize Confirmation Dialog */}
+      <ConfirmDialog
+        open={showFinalizeConfirm}
+        onOpenChange={setShowFinalizeConfirm}
+        title={`Finalize ${orderType === 'QUOTE' ? 'Quote' : 'Sale'}?`}
+        description={`Are you sure you want to finalize this ${orderType.toLowerCase()}? Total: $${totals.total.toFixed(2)}. This will create the order and cannot be undone.`}
+        confirmLabel="Finalize"
+        variant="default"
+        onConfirm={confirmFinalize}
+      />
     </div>
   );
 }
