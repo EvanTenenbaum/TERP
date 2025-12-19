@@ -16,37 +16,77 @@ import { eq, and, desc, asc, isNotNull, sql } from "drizzle-orm";
 // ============================================================================
 
 /**
- * Get all tasks in a list
+ * Get all tasks in a list with pagination
+ * PERF-003: Added pagination support
  */
-export async function getListTasks(listId: number): Promise<TodoTask[]> {
+export async function getListTasks(
+  listId: number,
+  limit: number = 50,
+  offset: number = 0
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Get total count for pagination
+  const [countResult] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(todoTasks)
+    .where(eq(todoTasks.listId, listId));
+  const total = Number(countResult?.count ?? 0);
+
+  // Get paginated tasks
   const tasks = await db
     .select()
     .from(todoTasks)
     .where(eq(todoTasks.listId, listId))
-    .orderBy(asc(todoTasks.position), desc(todoTasks.createdAt));
+    .orderBy(asc(todoTasks.position), desc(todoTasks.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  return tasks;
+  return {
+    items: tasks,
+    total,
+    limit,
+    offset,
+    hasMore: offset + tasks.length < total,
+  };
 }
 
 /**
- * Get tasks assigned to a specific user
+ * Get tasks assigned to a specific user with pagination
+ * PERF-003: Added pagination support
  */
 export async function getUserAssignedTasks(
-  userId: number
-): Promise<TodoTask[]> {
+  userId: number,
+  limit: number = 50,
+  offset: number = 0
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Get total count for pagination
+  const [countResult] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(todoTasks)
+    .where(eq(todoTasks.assignedTo, userId));
+  const total = Number(countResult?.count ?? 0);
+
+  // Get paginated tasks
   const tasks = await db
     .select()
     .from(todoTasks)
     .where(eq(todoTasks.assignedTo, userId))
-    .orderBy(desc(todoTasks.dueDate), desc(todoTasks.createdAt));
+    .orderBy(desc(todoTasks.dueDate), desc(todoTasks.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  return tasks;
+  return {
+    items: tasks,
+    total,
+    limit,
+    offset,
+    hasMore: offset + tasks.length < total,
+  };
 }
 
 /**

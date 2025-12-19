@@ -16,27 +16,45 @@ import { eq, and, desc, sql } from "drizzle-orm";
 // ============================================================================
 
 /**
- * Get all inbox items for a user
+ * Get all inbox items for a user with pagination
+ * PERF-003: Added pagination support
  */
 export async function getUserInboxItems(
   userId: number,
-  includeArchived = false
-): Promise<InboxItem[]> {
+  includeArchived = false,
+  limit: number = 50,
+  offset: number = 0
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const query = db
+  const whereCondition = includeArchived
+    ? eq(inboxItems.userId, userId)
+    : and(eq(inboxItems.userId, userId), eq(inboxItems.isArchived, false));
+
+  // Get total count for pagination
+  const [countResult] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(inboxItems)
+    .where(whereCondition);
+  const total = Number(countResult?.count ?? 0);
+
+  // Get paginated items
+  const items = await db
     .select()
     .from(inboxItems)
-    .where(
-      includeArchived
-        ? eq(inboxItems.userId, userId)
-        : and(eq(inboxItems.userId, userId), eq(inboxItems.isArchived, false))
-    )
-    .orderBy(desc(inboxItems.createdAt));
+    .where(whereCondition)
+    .orderBy(desc(inboxItems.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  const items = await query;
-  return items;
+  return {
+    items,
+    total,
+    limit,
+    offset,
+    hasMore: offset + items.length < total,
+  };
 }
 
 /**

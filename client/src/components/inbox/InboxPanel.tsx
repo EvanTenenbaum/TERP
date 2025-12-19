@@ -12,10 +12,13 @@ export function InboxPanel() {
 
   const utils = trpc.useContext();
 
-  // Fetch inbox items
-  const { data: allItems = [], isLoading } = trpc.inbox.getMyItems.useQuery({
+  // Fetch inbox items - PERF-003: Handle paginated response
+  const { data: allItemsData, isLoading } = trpc.inbox.getMyItems.useQuery({
     includeArchived: selectedTab === "archived",
   });
+  
+  // Extract items from paginated response
+  const allItems = allItemsData?.items ?? [];
 
   const { data: unreadItems = [] } = trpc.inbox.getUnread.useQuery();
 

@@ -41,11 +41,15 @@ export function TodoListDetailPage() {
       { enabled: !!listId }
     );
 
-  const { data: tasks = [], isLoading: tasksLoading } =
+  // PERF-003: Handle paginated response
+  const { data: tasksData, isLoading: tasksLoading } =
     trpc.todoTasks.getListTasks.useQuery(
       { listId: Number(listId) },
       { enabled: !!listId }
     );
+  
+  // Extract items from paginated response
+  const tasks = tasksData?.items ?? [];
 
   const { data: stats } = trpc.todoTasks.getListStats.useQuery(
     { listId: Number(listId) },

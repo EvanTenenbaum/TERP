@@ -1,6 +1,8 @@
 /**
  * Todo Tasks Router
  * API endpoints for task management within lists
+ * 
+ * PERF-003: Added pagination support
  */
 
 import { z } from "zod";
@@ -10,13 +12,17 @@ import * as todoActivityDb from "../todoActivityDb";
 import * as inboxDb from "../inboxDb";
 import * as permissions from "../services/todoPermissions";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { DEFAULT_PAGE_SIZE } from "../_core/pagination";
 
 export const todoTasksRouter = router({
-  // Get all tasks in a list
+  // Get all tasks in a list with pagination
+  // PERF-003: Added pagination support
   getListTasks: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
+        limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
+        offset: z.number().min(0).default(0).optional(),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -24,14 +30,29 @@ export const todoTasksRouter = router({
 
       await permissions.assertCanViewList(ctx.user.id, input.listId);
 
-      return await todoTasksDb.getListTasks(input.listId);
+      const limit = input.limit ?? DEFAULT_PAGE_SIZE;
+      const offset = input.offset ?? 0;
+
+      return await todoTasksDb.getListTasks(input.listId, limit, offset);
     }),
 
-  // Get tasks assigned to current user
-  getMyTasks: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
-    return await todoTasksDb.getUserAssignedTasks(ctx.user.id);
-  }),
+  // Get tasks assigned to current user with pagination
+  // PERF-003: Added pagination support
+  getMyTasks: protectedProcedure.use(requirePermission("todos:read"))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
+        offset: z.number().min(0).default(0).optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      
+      const limit = input?.limit ?? DEFAULT_PAGE_SIZE;
+      const offset = input?.offset ?? 0;
+      
+      return await todoTasksDb.getUserAssignedTasks(ctx.user.id, limit, offset);
+    }),
 
   // Get a specific task by ID
   getById: protectedProcedure.use(requirePermission("todos:read"))
