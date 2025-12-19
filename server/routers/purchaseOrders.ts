@@ -111,6 +111,7 @@ export const purchaseOrdersRouter = router({
 
   // Get all purchase orders
   // Supports filtering by supplierClientId (canonical) or vendorId (deprecated)
+  // BUG-034: Uses cursor-based pagination
   getAll: publicProcedure
     .input(
       z
@@ -118,8 +119,8 @@ export const purchaseOrdersRouter = router({
           supplierClientId: z.number().optional(), // Canonical filter
           vendorId: z.number().optional(), // Deprecated filter (backward compat)
           status: z.string().optional(),
-          limit: z.number().min(1).max(1000).default(100),
-          offset: z.number().min(0).default(0),
+          limit: z.number().min(1).max(100).optional(),
+          cursor: z.string().nullish(),
         })
         .optional()
     )
@@ -127,17 +128,18 @@ export const purchaseOrdersRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const limit = input?.limit ?? 100;
-      const offset = input?.offset ?? 0;
-      
+      const limit = Math.min(input?.limit ?? 50, 100);
+
       // Build conditions array
-      const conditions = [];
+      const conditions: ReturnType<typeof eq>[] = [];
 
       // Filter by supplier (canonical) or vendor (deprecated)
       if (input?.supplierClientId) {
         conditions.push(eq(purchaseOrders.supplierClientId, input.supplierClientId));
       } else if (input?.vendorId) {
-        console.warn('[DEPRECATED] purchaseOrders.getAll called with vendorId filter - use supplierClientId instead');
+        console.warn(
+          "[DEPRECATED] purchaseOrders.getAll called with vendorId filter - use supplierClientId instead"
+        );
         conditions.push(eq(purchaseOrders.vendorId, input.vendorId));
       }
 
@@ -145,28 +147,62 @@ export const purchaseOrdersRouter = router({
       if (input?.status) {
         // Map PARTIALLY_RECEIVED to RECEIVING for schema compatibility
         const statusMap: Record<string, string> = {
-          "PARTIALLY_RECEIVED": "RECEIVING"
+          PARTIALLY_RECEIVED: "RECEIVING",
         };
         const mappedStatus = statusMap[input.status] || input.status;
-        const validStatuses = ["DRAFT", "SENT", "CONFIRMED", "RECEIVING", "RECEIVED", "CANCELLED"] as const;
-        if (validStatuses.includes(mappedStatus as typeof validStatuses[number])) {
-          conditions.push(eq(purchaseOrders.purchaseOrderStatus, mappedStatus as typeof validStatuses[number]));
+        const validStatuses = [
+          "DRAFT",
+          "SENT",
+          "CONFIRMED",
+          "RECEIVING",
+          "RECEIVED",
+          "CANCELLED",
+        ] as const;
+        if (validStatuses.includes(mappedStatus as (typeof validStatuses)[number])) {
+          conditions.push(
+            eq(
+              purchaseOrders.purchaseOrderStatus,
+              mappedStatus as (typeof validStatuses)[number]
+            )
+          );
+        }
+      }
+
+      // Get total count (without cursor)
+      const countConditions = [...conditions];
+      const countQuery = db.select({ count: sql<number>`count(*)` }).from(purchaseOrders);
+      const [countResult] =
+        countConditions.length > 0
+          ? await countQuery.where(and(...countConditions))
+          : await countQuery;
+      const total = Number(countResult?.count ?? 0);
+
+      // Apply cursor for pagination
+      if (input?.cursor) {
+        const cursorId = parseInt(input.cursor, 10);
+        if (!isNaN(cursorId)) {
+          conditions.push(sql`${purchaseOrders.id} < ${cursorId}`);
         }
       }
 
       // Execute query with conditions
       const baseQuery = db.select().from(purchaseOrders);
-      const query = conditions.length > 0 
-        ? baseQuery.where(and(...conditions))
-        : baseQuery;
-      
-      const pos = await query.orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
+      const query =
+        conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
+
+      const pos = await query.orderBy(desc(purchaseOrders.id)).limit(limit + 1);
+
+      const hasMore = pos.length > limit;
+      const items = hasMore ? pos.slice(0, limit) : pos;
+      const lastItem = items[items.length - 1];
+      const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+      // BUG-034: Return PaginatedResult directly
       return {
-        items: pos,
-        nextCursor: null,
-        hasMore: pos.length === limit,
-        pagination: { total: -1, limit, offset }
+        items,
+        nextCursor,
+        hasMore,
+        total,
       };
     }),
 
