@@ -4,12 +4,13 @@ import * as accountingDb from "../accountingDb";
 import * as arApDb from "../arApDb";
 import * as cashExpensesDb from "../cashExpensesDb";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { 
-  paginationInputSchema, 
-  createPaginatedResponse, 
+import {
+  paginationInputSchema,
+  createPaginatedResponse,
   getPaginationParams,
   DEFAULT_PAGE_SIZE,
-  MAX_PAGE_SIZE 
+  MAX_PAGE_SIZE,
+  wrapArrayAsPaginatedResult
 } from "../_core/pagination";
 
 export const accountingRouter = router({
@@ -107,16 +108,10 @@ export const accountingRouter = router({
           offset: z.number().optional(),
         }))
         .query(async ({ input }) => {
-          const entries = await accountingDb.getLedgerEntries(input);
-          // HOTFIX (BUG-033): Wrap raw array in paginated response structure
-          const limit = input.limit || 50;
-          const offset = input.offset || 0;
-          return {
-            items: entries,
-            nextCursor: null,
-            hasMore: Array.isArray(entries) && entries.length === limit,
-            pagination: { total: -1, limit, offset }
-          };
+          const result = await accountingDb.getLedgerEntries(input);
+          // BUG-034: Use proper pagination wrapper
+          const limit = input.limit || DEFAULT_PAGE_SIZE;
+          return wrapArrayAsPaginatedResult(result.entries, limit, result.total);
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -242,16 +237,17 @@ export const accountingRouter = router({
         }))
         .query(async ({ input }) => {
           const result = await arApDb.getInvoices(input);
-          // HOTFIX (BUG-033): Wrap in paginated response structure
-          const limit = input.limit || 50;
-          const offset = input.offset || 0;
+          // BUG-034: Use proper pagination wrapper while preserving existing structure
+          const limit = input.limit || DEFAULT_PAGE_SIZE;
           const invoices = result.invoices || result;
+          const paginated = wrapArrayAsPaginatedResult(
+            Array.isArray(invoices) ? invoices : [],
+            limit,
+            result.total ?? -1
+          );
           return {
             ...result,
-            items: invoices,
-            nextCursor: null,
-            hasMore: Array.isArray(invoices) && invoices.length === limit,
-            pagination: { total: result.total || -1, limit, offset }
+            ...paginated,
           };
         }),
 
@@ -367,16 +363,17 @@ export const accountingRouter = router({
         }))
         .query(async ({ input }) => {
           const result = await arApDb.getBills(input);
-          // HOTFIX (BUG-033): Wrap in paginated response structure
-          const limit = input.limit || 50;
-          const offset = input.offset || 0;
+          // BUG-034: Use proper pagination wrapper while preserving existing structure
+          const limit = input.limit || DEFAULT_PAGE_SIZE;
           const bills = result.bills || result;
+          const paginated = wrapArrayAsPaginatedResult(
+            Array.isArray(bills) ? bills : [],
+            limit,
+            result.total ?? -1
+          );
           return {
             ...result,
-            items: bills,
-            nextCursor: null,
-            hasMore: Array.isArray(bills) && bills.length === limit,
-            pagination: { total: result.total || -1, limit, offset }
+            ...paginated,
           };
         }),
 
@@ -494,16 +491,17 @@ export const accountingRouter = router({
         }))
         .query(async ({ input }) => {
           const result = await arApDb.getPayments(input);
-          // HOTFIX (BUG-033): Wrap in paginated response structure
-          const limit = input.limit || 50;
-          const offset = input.offset || 0;
+          // BUG-034: Use proper pagination wrapper while preserving existing structure
+          const limit = input.limit || DEFAULT_PAGE_SIZE;
           const payments = result.payments || result;
+          const paginated = wrapArrayAsPaginatedResult(
+            Array.isArray(payments) ? payments : [],
+            limit,
+            result.total ?? -1
+          );
           return {
             ...result,
-            items: payments,
-            nextCursor: null,
-            hasMore: Array.isArray(payments) && payments.length === limit,
-            pagination: { total: result.total || -1, limit, offset }
+            ...paginated,
           };
         }),
 
@@ -566,12 +564,8 @@ export const accountingRouter = router({
         }))
         .query(async ({ input }) => {
           const accounts = await cashExpensesDb.getBankAccounts(input);
-          // HOTFIX (BUG-033): Wrap in paginated response structure
-          return {
-            items: accounts,
-            nextCursor: null,
-            hasMore: false,
-          };
+          // BUG-034: Use proper pagination wrapper
+          return wrapArrayAsPaginatedResult(accounts);
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -637,16 +631,10 @@ export const accountingRouter = router({
           searchTerm: z.string().optional(),
         }))
         .query(async ({ input }) => {
-          const transactions = await cashExpensesDb.getBankTransactions(input);
-          // HOTFIX (BUG-033): Wrap in paginated response structure
-          const limit = input.limit || 50;
-          const offset = input.offset || 0;
-          return {
-            items: transactions,
-            nextCursor: null,
-            hasMore: Array.isArray(transactions) && transactions.length === limit,
-            pagination: { total: -1, limit, offset }
-          };
+          const result = await cashExpensesDb.getBankTransactions(input);
+          // BUG-034: Use proper pagination wrapper
+          const limit = input.limit || DEFAULT_PAGE_SIZE;
+          return wrapArrayAsPaginatedResult(result.transactions, limit, result.total);
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -699,12 +687,8 @@ export const accountingRouter = router({
         }))
         .query(async ({ input }) => {
           const categories = await cashExpensesDb.getExpenseCategories(input);
-          // HOTFIX (BUG-033): Wrap in paginated response structure
-          return {
-            items: categories,
-            nextCursor: null,
-            hasMore: false,
-          };
+          // BUG-034: Use proper pagination wrapper
+          return wrapArrayAsPaginatedResult(categories);
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -751,16 +735,10 @@ export const accountingRouter = router({
           searchTerm: z.string().optional(),
         }))
         .query(async ({ input }) => {
-          const expenses = await cashExpensesDb.getExpenses(input);
-          // HOTFIX (BUG-033): Wrap in paginated response structure
-          const limit = input.limit || 50;
-          const offset = input.offset || 0;
-          return {
-            items: expenses,
-            nextCursor: null,
-            hasMore: Array.isArray(expenses) && expenses.length === limit,
-            pagination: { total: -1, limit, offset }
-          };
+          const result = await cashExpensesDb.getExpenses(input);
+          // BUG-034: Use proper pagination wrapper
+          const limit = input.limit || DEFAULT_PAGE_SIZE;
+          return wrapArrayAsPaginatedResult(result.expenses, limit, result.total);
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
