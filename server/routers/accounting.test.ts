@@ -84,9 +84,11 @@ describe("Accounting Router", () => {
         // Act
         const result = await caller.accounting.accounts.list({});
 
-        // Assert
-        expect(result).toEqual(mockAccounts);
-        expect(result).toHaveLength(2);
+        // Assert - PERF-003: Now returns paginated response
+        expect(result.items).toEqual(mockAccounts);
+        expect(result.items).toHaveLength(2);
+        expect(result.pagination.total).toBe(2);
+        expect(result.pagination.hasMore).toBe(false);
       });
 
       it("should filter accounts by type", async () => {
@@ -109,8 +111,9 @@ describe("Accounting Router", () => {
           accountType: "ASSET",
         });
 
-        // Assert
-        expect(result).toHaveLength(1);
+        // Assert - PERF-003: Now returns paginated response
+        expect(result.items).toHaveLength(1);
+        expect(result.pagination.total).toBe(1);
         expect(accountingDb.getAccounts).toHaveBeenCalledWith({
           accountType: "ASSET",
         });
