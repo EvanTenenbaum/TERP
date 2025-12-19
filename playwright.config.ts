@@ -5,6 +5,9 @@ import { dirname, resolve } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.MEGA_QA_BASE_URL || 'http://localhost:5173';
+const isRemoteBaseURL = !baseURL.includes('localhost') && !baseURL.includes('127.0.0.1');
+
 export default defineConfig({
   testDir: './tests-e2e',
   testMatch: ['**/*.spec.ts', '**/ai-generated/**/*.spec.ts'],
@@ -25,7 +28,7 @@ export default defineConfig({
     ],
   ],
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -42,7 +45,8 @@ export default defineConfig({
   ],
   // In CI, we start the server manually before running tests
   // In local dev, Playwright starts the dev server automatically
-  webServer: process.env.CI ? undefined : {
+  // In cloud/remote mode, never start a local dev server.
+  webServer: process.env.CI || isRemoteBaseURL ? undefined : {
     command: 'pnpm dev',
     url: 'http://localhost:5173',
     reuseExistingServer: true,
