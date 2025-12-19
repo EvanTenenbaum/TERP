@@ -24,6 +24,8 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Filter, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, Eye, Edit, FileText, DollarSign, MessageSquare, Archive, Save, Star, Check, X, AlertTriangle } from "lucide-react";
 import { DataCardSection } from "@/components/data-cards";
+import { TableSkeleton } from "@/components/ui/skeleton-loaders";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function ClientsListPage() {
   const [, setLocation] = useLocation();
@@ -550,12 +552,28 @@ export default function ClientsListPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading clients...</div>
+            <TableSkeleton rows={10} columns={10} />
           ) : !clients || clients.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="text-lg font-medium">No clients found</p>
-              <p className="text-sm mt-2">Try adjusting your filters or add a new client</p>
-            </div>
+            <EmptyState
+              variant="clients"
+              title="No clients found"
+              description={search || clientTypes.length > 0 || hasDebt !== undefined 
+                ? "Try adjusting your filters or search terms"
+                : "Add your first client to start building relationships"}
+              action={!search && clientTypes.length === 0 && hasDebt === undefined ? {
+                label: "Add Client",
+                onClick: () => setAddClientOpen(true),
+              } : {
+                label: "Clear Filters",
+                onClick: () => {
+                  setClientTypes([]);
+                  setHasDebt(undefined);
+                  setSearch("");
+                  setPage(0);
+                },
+                variant: "outline",
+              }}
+            />
           ) : (
             <div className="overflow-x-auto">
               <Table>

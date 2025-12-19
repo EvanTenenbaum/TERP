@@ -44,6 +44,8 @@ import { useLocation } from 'wouter';
 import { exportToCSVWithLabels } from '@/utils/exportToCSV';
 import { toast } from 'sonner';
 import { DataCardSection } from '@/components/data-cards';
+import { TableSkeleton } from '@/components/ui/skeleton-loaders';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export default function Orders() {
   const [, setLocation] = useLocation();
@@ -310,25 +312,19 @@ export default function Orders() {
             </CardHeader>
             <CardContent>
               {loadingDrafts ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  Loading draft orders...
-                </div>
+                <TableSkeleton rows={5} columns={4} />
               ) : filteredDrafts.length === 0 ? (
-                <div className="text-center py-12 px-4">
-                  <FileText className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No draft orders</h3>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    {searchQuery 
-                      ? 'No draft orders match your search. Try a different search term.'
-                      : 'Create a draft order to save work in progress without reducing inventory.'}
-                  </p>
-                  {!searchQuery && (
-                    <Button onClick={() => setLocation('/orders/create')}>
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Create Draft Order
-                    </Button>
-                  )}
-                </div>
+                <EmptyState
+                  variant="orders"
+                  title="No draft orders"
+                  description={searchQuery 
+                    ? 'No draft orders match your search. Try a different search term.'
+                    : 'Create a draft order to save work in progress without reducing inventory.'}
+                  action={!searchQuery ? {
+                    label: "Create Draft Order",
+                    onClick: () => setLocation('/orders/create')
+                  } : undefined}
+                />
               ) : (
                 <div className="space-y-3">
                   {filteredDrafts.map((order) => (
@@ -410,13 +406,15 @@ export default function Orders() {
             </CardHeader>
             <CardContent>
               {loadingConfirmed ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  Loading orders...
-                </div>
+                <TableSkeleton rows={10} columns={5} />
               ) : filteredConfirmed.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No confirmed orders found
-                </div>
+                <EmptyState
+                  variant="orders"
+                  title="No confirmed orders"
+                  description={searchQuery || statusFilter !== 'ALL'
+                    ? 'No orders match your current filters. Try adjusting your search or status filter.'
+                    : 'Confirmed orders will appear here once you confirm a draft order.'}
+                />
               ) : (
                 <div className="space-y-3">
                   {filteredConfirmed.map((order) => (
