@@ -1,0 +1,25 @@
+{
+  "runId": "20251218-192359-h9bh",
+  "gitSha": "1ca13529155c9d55007ba1eca63207817630b5ff",
+  "gitBranch": "cursor/mega-aa-protocol-execution-7daa",
+  "timestamp": "2025-12-18T19:31:11.691Z",
+  "config": {
+    "scenario": "full",
+    "journeyCount": 25,
+    "seed": 382999,
+    "baseURL": "http://localhost:5173",
+    "outputDir": "qa-results/mega-qa",
+    "mode": "quick",
+    "soakDuration": 30,
+    "headless": true,
+    "ci": false
+  },
+  "environment": {
+    "nodeVersion": "v22.21.1",
+    "platform": "linux",
+    "ci": false
+  },
+  "durationMs": 432352,
+  "result": "pass",
+  "exitCode": 0
+}

@@ -1,0 +1,25 @@
+[
+  {
+    "id": "invariant-1",
+    "classification": "backend",
+    "suite": "Backend Invariants",
+    "testName": "No Negative Inventory",
+    "errorMessage": "Query failed: Unknown column 'quantity' in 'field list'",
+    "replay": {
+      "seed": 657585,
+      "persona": "system",
+      "steps": [],
+      "urlHistory": [],
+      "replayCommand": "pnpm mega:qa --cloud --seed=657585"
+    },
+    "evidence": {
+      "consoleErrors": [],
+      "networkFailures": []
+    },
+    "timestamp": "2025-12-19T02:34:37.641Z",
+    "isKnown": false,
+    "coveredTags": [
+      "db-invariants"
+    ]
+  }
+]
