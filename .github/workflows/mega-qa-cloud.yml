@@ -1,0 +1,72 @@
+name: Mega QA (Cloud / Live DB)
+
+on:
+  workflow_dispatch:
+    inputs:
+      quick_mode:
+        description: "Run in quick mode (fewer tests)"
+        type: boolean
+        default: true
+  schedule:
+    # 03:00 UTC daily (after deploy window)
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  mega-qa-cloud:
+    runs-on: [self-hosted, do, mega-qa]
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright (Chromium)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Mega QA (cloud)
+        env:
+          CI: "true"
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MEGA_QA_BASE_URL: ${{ secrets.MEGA_QA_BASE_URL }}
+          MEGA_QA_CLOUD: "1"
+          MEGA_QA_USE_LIVE_DB: "1"
+        run: |
+          if [ "${{ inputs.quick_mode }}" = "true" ]; then
+            pnpm mega:qa --cloud --mode=quick --journeys=25
+          else
+            pnpm mega:qa --cloud --ci
+          fi
+
+      - name: Upload Mega QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mega-qa-cloud-results-${{ github.run_id }}
+          path: |
+            qa-results/mega-qa/
+            playwright-report/
+            test-results/
+            test-results.json
+          retention-days: 14
+
