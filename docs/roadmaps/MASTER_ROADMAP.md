@@ -72,6 +72,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 ### ✅ Recently Completed
 
 - **PERF-003**: Add Pagination - COMPLETE (2025-12-19)
+- **BUG-031**: Fix Pagination Data Contract Breakage - COMPLETE (2025-12-19)
 
 ### Previous Sprint (Dec 15-17, 2025): Code Quality & Bug Fixes
 
@@ -6311,6 +6312,21 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] Add location assignment UI to batch form
     - [ ] Implement location selection dropdown
     - [ ] Add location history tracking
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+### 🔴 CRITICAL PRIORITY (P0) - Performance & Data Integrity
+- [ ] **PERF-004**: Refactor inventoryDb.getDashboardStats to use SQL Aggregation
+  - **Status:** ready
+  - **Priority:** CRITICAL
+  - **Estimate:** 4h
+  - **Module:** `server/inventoryDb.ts`, `server/routers/inventory.ts`
+  - **Dependencies:** None
+  - **Problem:** `inventoryDb.getDashboardStats` fetches ALL batches into memory for calculation, causing performance issues as inventory grows.
+  - **Deliverables:**
+    - [ ] Rewrite `getDashboardStats` to use Drizzle/SQL aggregation functions (SUM, COUNT, GROUP BY)
+    - [ ] Remove in-memory calculation logic
+    - [ ] Verify dashboard stats remain accurate
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
 
