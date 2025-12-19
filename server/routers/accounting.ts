@@ -107,7 +107,16 @@ export const accountingRouter = router({
           offset: z.number().optional(),
         }))
         .query(async ({ input }) => {
-          return await accountingDb.getLedgerEntries(input);
+          const entries = await accountingDb.getLedgerEntries(input);
+          // HOTFIX (BUG-033): Wrap raw array in paginated response structure
+          const limit = input.limit || 50;
+          const offset = input.offset || 0;
+          return {
+            items: entries,
+            nextCursor: null,
+            hasMore: Array.isArray(entries) && entries.length === limit,
+            pagination: { total: -1, limit, offset }
+          };
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -232,7 +241,18 @@ export const accountingRouter = router({
           searchTerm: z.string().optional(),
         }))
         .query(async ({ input }) => {
-          return await arApDb.getInvoices(input);
+          const result = await arApDb.getInvoices(input);
+          // HOTFIX (BUG-033): Wrap in paginated response structure
+          const limit = input.limit || 50;
+          const offset = input.offset || 0;
+          const invoices = result.invoices || result;
+          return {
+            ...result,
+            items: invoices,
+            nextCursor: null,
+            hasMore: Array.isArray(invoices) && invoices.length === limit,
+            pagination: { total: result.total || -1, limit, offset }
+          };
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -346,7 +366,18 @@ export const accountingRouter = router({
           searchTerm: z.string().optional(),
         }))
         .query(async ({ input }) => {
-          return await arApDb.getBills(input);
+          const result = await arApDb.getBills(input);
+          // HOTFIX (BUG-033): Wrap in paginated response structure
+          const limit = input.limit || 50;
+          const offset = input.offset || 0;
+          const bills = result.bills || result;
+          return {
+            ...result,
+            items: bills,
+            nextCursor: null,
+            hasMore: Array.isArray(bills) && bills.length === limit,
+            pagination: { total: result.total || -1, limit, offset }
+          };
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -462,7 +493,18 @@ export const accountingRouter = router({
           offset: z.number().optional(),
         }))
         .query(async ({ input }) => {
-          return await arApDb.getPayments(input);
+          const result = await arApDb.getPayments(input);
+          // HOTFIX (BUG-033): Wrap in paginated response structure
+          const limit = input.limit || 50;
+          const offset = input.offset || 0;
+          const payments = result.payments || result;
+          return {
+            ...result,
+            items: payments,
+            nextCursor: null,
+            hasMore: Array.isArray(payments) && payments.length === limit,
+            pagination: { total: result.total || -1, limit, offset }
+          };
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -523,7 +565,13 @@ export const accountingRouter = router({
           isActive: z.boolean().optional(),
         }))
         .query(async ({ input }) => {
-          return await cashExpensesDb.getBankAccounts(input);
+          const accounts = await cashExpensesDb.getBankAccounts(input);
+          // HOTFIX (BUG-033): Wrap in paginated response structure
+          return {
+            items: accounts,
+            nextCursor: null,
+            hasMore: false,
+          };
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -589,7 +637,16 @@ export const accountingRouter = router({
           searchTerm: z.string().optional(),
         }))
         .query(async ({ input }) => {
-          return await cashExpensesDb.getBankTransactions(input);
+          const transactions = await cashExpensesDb.getBankTransactions(input);
+          // HOTFIX (BUG-033): Wrap in paginated response structure
+          const limit = input.limit || 50;
+          const offset = input.offset || 0;
+          return {
+            items: transactions,
+            nextCursor: null,
+            hasMore: Array.isArray(transactions) && transactions.length === limit,
+            pagination: { total: -1, limit, offset }
+          };
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -641,7 +698,13 @@ export const accountingRouter = router({
           isActive: z.boolean().optional(),
         }))
         .query(async ({ input }) => {
-          return await cashExpensesDb.getExpenseCategories(input);
+          const categories = await cashExpensesDb.getExpenseCategories(input);
+          // HOTFIX (BUG-033): Wrap in paginated response structure
+          return {
+            items: categories,
+            nextCursor: null,
+            hasMore: false,
+          };
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))
@@ -688,7 +751,16 @@ export const accountingRouter = router({
           searchTerm: z.string().optional(),
         }))
         .query(async ({ input }) => {
-          return await cashExpensesDb.getExpenses(input);
+          const expenses = await cashExpensesDb.getExpenses(input);
+          // HOTFIX (BUG-033): Wrap in paginated response structure
+          const limit = input.limit || 50;
+          const offset = input.offset || 0;
+          return {
+            items: expenses,
+            nextCursor: null,
+            hasMore: Array.isArray(expenses) && expenses.length === limit,
+            pagination: { total: -1, limit, offset }
+          };
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))

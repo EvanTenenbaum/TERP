@@ -74,7 +74,13 @@ export const samplesRouter = router({
   // Get all pending sample requests
   getPending: publicProcedure
     .query(async () => {
-      return await samplesDb.getPendingSampleRequests();
+      const requests = await samplesDb.getPendingSampleRequests();
+      // HOTFIX (BUG-033): Wrap in paginated response structure
+      return {
+        items: requests,
+        nextCursor: null,
+        hasMore: false,
+      };
     }),
 
   // Get monthly allocation for a client

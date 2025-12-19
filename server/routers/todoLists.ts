@@ -13,7 +13,13 @@ export const todoListsRouter = router({
   // Get all lists accessible by current user
   getMyLists: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
-    return await todoListsDb.getUserLists(ctx.user.id);
+    const lists = await todoListsDb.getUserLists(ctx.user.id);
+    // HOTFIX (BUG-033): Wrap in paginated response structure
+    return {
+      items: lists,
+      nextCursor: null,
+      hasMore: false,
+    };
   }),
 
   // Get a specific list by ID
@@ -98,7 +104,13 @@ export const todoListsRouter = router({
 
       await permissions.assertCanViewList(ctx.user.id, input.listId);
 
-      return await todoListsDb.getListMembers(input.listId);
+      const members = await todoListsDb.getListMembers(input.listId);
+      // HOTFIX (BUG-033): Wrap in paginated response structure
+      return {
+        items: members,
+        nextCursor: null,
+        hasMore: false,
+      };
     }),
 
   // Add a member to a list
