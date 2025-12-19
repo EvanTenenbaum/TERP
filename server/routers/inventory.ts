@@ -105,11 +105,25 @@ export const inventoryRouter = router({
   dashboardStats: protectedProcedure.use(requirePermission("inventory:read")).query(async () => {
     try {
       const stats = await inventoryDb.getDashboardStats();
-      if (!stats)
-        throw new AppError(
-          "Failed to fetch dashboard statistics",
-          "INTERNAL_SERVER_ERROR"
-        );
+      // If stats is null (e.g., DB connection issue), return a default empty object
+      // instead of throwing a hard error, which prevents the dashboard from crashing.
+      if (!stats) {
+        return {
+          totalInventoryValue: 0,
+          avgValuePerUnit: 0,
+          totalUnits: 0,
+          statusCounts: {
+            AWAITING_INTAKE: 0,
+            LIVE: 0,
+            ON_HOLD: 0,
+            QUARANTINED: 0,
+            SOLD_OUT: 0,
+            CLOSED: 0,
+          },
+          categoryStats: [],
+          subcategoryStats: [],
+        };
+      }
       return stats;
     } catch (error) {
       handleError(error, "inventory.dashboardStats");
