@@ -17,12 +17,13 @@ services:
     instance_count: 1
     instance_size_slug: basic-xs
     
-    # Health check (optimized for deployment stability)
+    # Health check (optimized for deployment speed - 2024-12-19)
     # Uses /health/live for liveness (no DB dependency, prevents premature restarts)
+    # Server startup takes ~55s including migrations, so 60s delay is safe with margin
     health_check:
       http_path: /health/live
-      initial_delay_seconds: 180  # Increased to allow time for migrations and DB connection
-      period_seconds: 10
+      initial_delay_seconds: 60   # Reduced from 180s - server ready in ~55s
+      period_seconds: 15          # Reduced probe frequency to minimize noise
       timeout_seconds: 5
       success_threshold: 1
       failure_threshold: 5

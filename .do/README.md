@@ -76,13 +76,37 @@ To disable Papertrail log forwarding:
 - Or remove the `log_destinations` section from `.do/app.yaml`
 - The app will continue to log to stdout (viewable in Digital Ocean Runtime Logs)
 
+## Health Check Configuration
+
+The health check settings have been optimized for faster deployments (updated 2024-12-19):
+
+| Setting | Value | Rationale |
+|---------|-------|----------|
+| `http_path` | `/health/live` | Simple liveness probe, no DB dependency |
+| `initial_delay_seconds` | `60` | Server startup takes ~55s including migrations |
+| `period_seconds` | `15` | Reduced probe frequency to minimize noise |
+| `failure_threshold` | `5` | Allows temporary hiccups without restart |
+
+### Why These Values?
+
+- **`/health/live`**: Returns immediately without checking database. This prevents false failures during DB connection issues.
+- **60-second delay**: Analysis of deploy logs shows the server is fully ready (including auto-migrations) in ~55 seconds. The 60s delay provides a safe margin.
+- **Previous 180s delay**: Was overly conservative and added ~2 minutes of unnecessary wait time to every deployment.
+
+### Reverting (if needed)
+
+If deployments start failing health checks, increase `initial_delay_seconds` back to `90` or `120`. This could happen if:
+- A new migration is added that takes longer to run
+- Database connection becomes slower
+- Additional startup tasks are added to the server
+
 ## App Spec Reference
 
 The `app.yaml` file defines:
 
 - **Build & Run Commands**: How to build and start the app
 - **Environment Variables**: Configuration values
-- **Health Checks**: How DO monitors app health
+- **Health Checks**: How DO monitors app health (see section above)
 - **Log Forwarding**: Where to send application logs (Papertrail)
 - **Instance Configuration**: Server size and scaling
 
