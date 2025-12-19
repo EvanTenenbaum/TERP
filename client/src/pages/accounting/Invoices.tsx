@@ -23,6 +23,8 @@ import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { StatusBadge, AgingBadge } from "@/components/accounting";
 import { PaginationControls, usePagination } from "@/components/ui/pagination-controls";
+import { TableSkeleton } from "@/components/ui/skeleton-loaders";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type Invoice = {
   id: number;
@@ -203,7 +205,26 @@ export default function Invoices() {
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading invoices...</div>
+            <TableSkeleton rows={10} columns={7} />
+          ) : filteredInvoices.length === 0 ? (
+            <EmptyState
+              variant="invoices"
+              title="No invoices found"
+              description={searchQuery || selectedStatus !== "ALL"
+                ? "Try adjusting your filters or search terms"
+                : "Create your first invoice to start tracking accounts receivable"}
+              action={!searchQuery && selectedStatus === "ALL" ? {
+                label: "Create Invoice",
+                onClick: () => console.log("Create invoice"), // TODO: Implement create invoice
+              } : {
+                label: "Clear Filters",
+                onClick: () => {
+                  setSearchQuery("");
+                  setSelectedStatus("ALL");
+                },
+                variant: "outline",
+              }}
+            />
           ) : (
             <>
               {/* Mobile-optimized scrollable table container */}
@@ -221,14 +242,7 @@ export default function Invoices() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredInvoices.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          No invoices found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredInvoices.map((invoice: any) => (
+                    {filteredInvoices.map((invoice: any) => (
                         <TableRow key={invoice.id}>
                           <TableCell className="font-mono font-medium text-xs sm:text-sm">
                             {invoice.invoiceNumber}
@@ -252,8 +266,7 @@ export default function Invoices() {
                             <StatusBadge status={invoice.status} type="invoice" />
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
+                      ))}
                   </TableBody>
                 </Table>
               </div>
