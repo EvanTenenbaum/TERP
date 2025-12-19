@@ -46,6 +46,11 @@ async function main(): Promise<void> {
   await ensureUser(standardUsername, standardPassword, `${standardUsername} (E2E Standard)`);
   await ensureUser(vipUsername, vipPassword, `${vipUsername} (E2E VIP)`);
 
+  // Ensure passwords match what the Playwright tests will use (even if users already existed).
+  await ensurePassword(adminUsername, adminPassword);
+  await ensurePassword(standardUsername, standardPassword);
+  await ensurePassword(vipUsername, vipPassword);
+
   // Ensure admin role for admin user
   await db.execute(
     sql`UPDATE users SET role='admin' WHERE openId = ${adminUsername} LIMIT 1`
@@ -71,6 +76,18 @@ async function ensureUser(username: string, password: string, name: string): Pro
     }
     throw e;
   }
+}
+
+async function ensurePassword(username: string, password: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const hash = await simpleAuth.hashPassword(password);
+  // Users created via simple auth use openId=username and email=username.
+  await db.execute(
+    sql`UPDATE users SET loginMethod = ${hash} WHERE openId = ${username} OR email = ${username}`
+  );
+  console.log(`  🔐 ensured password for ${username}`);
 }
 
 main().catch(err => {

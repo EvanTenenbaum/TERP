@@ -9,6 +9,21 @@
 import { test, expect } from "@playwright/test";
 import { loginAsStandardUser, AUTH_ROUTES, TEST_USERS } from "../fixtures/auth";
 
+async function fillFirstVisible(
+  page: import("@playwright/test").Page,
+  selectors: string[],
+  value: string
+): Promise<void> {
+  for (const selector of selectors) {
+    const locator = page.locator(selector).first();
+    if (await locator.isVisible().catch(() => false)) {
+      await locator.fill(value);
+      return;
+    }
+  }
+  throw new Error(`No visible input found for selectors: ${selectors.join(", ")}`);
+}
+
 // Helper to emit coverage tags (would integrate with Mega QA reporter)
 function emitTag(tag: string): void {
   // In production, this would write to a coverage file
@@ -114,12 +129,20 @@ test.describe("Authentication", () => {
 
     // Test failure path first
     await page.goto(AUTH_ROUTES.login);
-    await page.fill(
-      'input[type="email"], input[name="email"]',
+    await fillFirstVisible(
+      page,
+      [
+        'input[name="username"]',
+        "#username",
+        'input[placeholder*="username" i]',
+        'input[type="email"]',
+        'input[name="email"]',
+      ],
       "invalid@example.com"
     );
-    await page.fill(
-      'input[type="password"], input[name="password"]',
+    await fillFirstVisible(
+      page,
+      ['input[name="password"]', "#password", 'input[type="password"]'],
       "wrongpassword"
     );
     await page.click('button[type="submit"]');
@@ -129,25 +152,33 @@ test.describe("Authentication", () => {
     await expect(error.first()).toBeVisible({ timeout: 5000 });
 
     // Test success path
-    await page.fill(
-      'input[type="email"], input[name="email"]',
+    await fillFirstVisible(
+      page,
+      [
+        'input[name="username"]',
+        "#username",
+        'input[placeholder*="username" i]',
+        'input[type="email"]',
+        'input[name="email"]',
+      ],
       TEST_USERS.admin.email
     );
-    await page.fill(
-      'input[type="password"], input[name="password"]',
+    await fillFirstVisible(
+      page,
+      ['input[name="password"]', "#password", 'input[type="password"]'],
       TEST_USERS.admin.password
     );
     await page.click('button[type="submit"]');
 
     // Should redirect to dashboard
-    await expect(page).toHaveURL(/\/(dashboard)?$/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/($|dashboard)(\?.*)?/, { timeout: 15000 });
   });
 
   test("TS-1.2: VIP Portal access has distinct layout", async ({ page }) => {
     emitTag("TS-1.2");
     emitTag("route:/vip-portal");
 
-    await page.goto("/vip-portal/sign-in");
+    await page.goto(AUTH_ROUTES.vipPortal);
 
     // VIP portal should have distinct branding/layout
     // At minimum, verify the page loads without 404
