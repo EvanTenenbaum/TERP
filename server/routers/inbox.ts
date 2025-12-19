@@ -43,35 +43,42 @@ export const inboxRouter = router({
     }),
 
   // Get unread inbox items
-  getUnread: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
-
-    const items = await inboxDb.getUnreadInboxItems(ctx.user.id);
-    // HOTFIX (BUG-033): Wrap in paginated response structure
-    return {
-      items: items,
-      nextCursor: null,
-      hasMore: false,
-    };
-  }),
+  getUnread: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).optional(),
+          cursor: z.string().nullish(),
+        })
+        .optional()
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await inboxDb.getUnreadInboxItems(ctx.user.id, {
+        limit: input?.limit,
+        cursor: input?.cursor,
+      });
+    }),
 
   // Get inbox items by status
-  getByStatus: protectedProcedure.use(requirePermission("todos:read"))
+  getByStatus: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         status: z.enum(["unread", "seen", "completed"]),
+        limit: z.number().min(1).max(100).optional(),
+        cursor: z.string().nullish(),
       })
     )
     .query(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-
-      const items = await inboxDb.getInboxItemsByStatus(ctx.user.id, input.status);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
-      return {
-        items: items,
-        nextCursor: null,
-        hasMore: false,
-      };
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await inboxDb.getInboxItemsByStatus(ctx.user.id, input.status, {
+        limit: input.limit,
+        cursor: input.cursor,
+      });
     }),
 
   // Get a specific inbox item
