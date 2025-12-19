@@ -20,6 +20,9 @@ These files are **automatically included** in every Kiro AI agent session. They 
 | `05-external-agent-handoff.md` | Protocol for agents from other platforms (Claude, ChatGPT, etc.)  | Manual    |
 | `06-architecture-guide.md`     | **CRITICAL** - System architecture, structure, canonical patterns | Always    |
 | `07-deprecated-systems.md`     | **CRITICAL** - Deprecated systems registry, what NOT to use       | Always    |
+| `08-adaptive-qa-protocol.md`   | **CRITICAL** - Adaptive QA gate, run BEFORE every commit          | Always    |
+| `10-mvp-initiative.md`         | MVP initiative focus and priorities                               | Always    |
+| `99-pre-commit-checklist.md`   | Final pre-commit verification checklist                           | Always    |
 | `terp-master-protocol.md`      | Roadmap Manager specific protocols                                | Always    |
 
 ---
@@ -43,11 +46,13 @@ Agents should understand protocols in this order:
 1. **00-core-identity.md** - Who you are, what Kiro is
 2. **06-architecture-guide.md** - **CRITICAL** - System structure (READ BEFORE CODING)
 3. **07-deprecated-systems.md** - **CRITICAL** - What NOT to use (READ BEFORE CODING)
-4. **01-development-standards.md** - How to write code
-5. **02-workflows.md** - How to work (git, deploy, test)
-6. **03-agent-coordination.md** - How to coordinate with other agents
-7. **04-infrastructure.md** - How to deploy and monitor
-8. **terp-master-protocol.md** - Role-specific (Roadmap Manager)
+4. **08-adaptive-qa-protocol.md** - **CRITICAL** - QA gate (RUN BEFORE EVERY COMMIT)
+5. **01-development-standards.md** - How to write code
+6. **02-workflows.md** - How to work (git, deploy, test)
+7. **03-agent-coordination.md** - How to coordinate with other agents
+8. **04-infrastructure.md** - How to deploy and monitor
+9. **99-pre-commit-checklist.md** - Final verification before commit
+10. **terp-master-protocol.md** - Role-specific (Roadmap Manager)
 
 ### Role-Specific Protocols
 
@@ -68,6 +73,7 @@ For agents working from **other platforms** (Claude, ChatGPT, Cursor, etc.):
 - **Onboarding Script**: `bash scripts/external-agent-onboard.sh`
 
 **Why needed**: External agents don't have automatic access to Kiro steering files or Kiro-specific tools, so they must:
+
 1. Read steering files manually using `cat` commands
 2. Use standard bash tools (`grep`, `find`, `cat`) instead of Kiro tools
 3. Follow special handoff procedures for session management
@@ -154,10 +160,17 @@ git push origin main
 
 ### 🚨 BEFORE WRITING ANY CODE
 
-**Every agent MUST review these two files:**
+**Every agent MUST review these files:**
 
 1. `06-architecture-guide.md` - Understand the system structure
 2. `07-deprecated-systems.md` - Know what NOT to use
+
+### 🚨 BEFORE EVERY COMMIT
+
+**Every agent MUST run:**
+
+1. `08-adaptive-qa-protocol.md` - Classify work, run appropriate QA level
+2. `99-pre-commit-checklist.md` - Final verification checklist
 
 **If your task requires architectural changes:**
 
@@ -172,11 +185,12 @@ Read in order:
 1. `00-core-identity.md` - Start here
 2. `06-architecture-guide.md` - **CRITICAL** - System architecture
 3. `07-deprecated-systems.md` - **CRITICAL** - Deprecated systems
-4. `01-development-standards.md` - Code quality
-5. `02-workflows.md` - How to work
-6. `03-agent-coordination.md` - Multi-agent work
-7. `04-infrastructure.md` - Deployment
-8. Your role-specific guide in `agent-prompts/`
+4. `08-adaptive-qa-protocol.md` - **CRITICAL** - QA protocol
+5. `01-development-standards.md` - Code quality
+6. `02-workflows.md` - How to work
+7. `03-agent-coordination.md` - Multi-agent work
+8. `04-infrastructure.md` - Deployment
+9. Your role-specific guide in `agent-prompts/`
 
 ### For Experienced Agents
 
