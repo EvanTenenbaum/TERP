@@ -343,7 +343,25 @@ export async function getOrderById(id: number): Promise<Order | null> {
     .limit(1)
     .then(rows => rows[0] || null);
   
-  return order;
+  if (!order) return null;
+  
+  // Parse items JSON string to array
+  let parsedItems: OrderItem[] = [];
+  if (order.items) {
+    try {
+      parsedItems = typeof order.items === 'string' 
+        ? JSON.parse(order.items) 
+        : order.items;
+    } catch (e) {
+      console.error(`Failed to parse items for order ${order.id}:`, e);
+      parsedItems = [];
+    }
+  }
+  
+  return {
+    ...order,
+    items: parsedItems,
+  } as Order;
 }
 
 /**
@@ -367,7 +385,25 @@ export async function getOrdersByClient(
     .from(orders)
     .where(and(...conditions))
     .orderBy(desc(orders.createdAt));
-  return results;
+  
+  // Parse items JSON string to array for each order
+  return results.map(order => {
+    let parsedItems: OrderItem[] = [];
+    if (order.items) {
+      try {
+        parsedItems = typeof order.items === 'string' 
+          ? JSON.parse(order.items) 
+          : order.items;
+      } catch (e) {
+        console.error(`Failed to parse items for order ${order.id}:`, e);
+        parsedItems = [];
+      }
+    }
+    return {
+      ...order,
+      items: parsedItems,
+    };
+  }) as Order[];
 }
 
 /**
@@ -445,24 +481,27 @@ export async function getAllOrders(filters?: {
       .offset(offset);
   }
   
-  // Transform results to include client data
-  const transformed = results.map(row => ({
-    ...row.orders,
-    client: row.clients,
-  })) as any;
-  
-  // DEBUG: Log what we're returning
-  console.log('=== getAllOrders DEBUG ===');
-  console.log('Filters:', filters);
-  console.log('Raw results count:', results.length);
-  console.log('Transformed count:', transformed.length);
-  console.log('First 3 orders:', transformed.slice(0, 3).map((o: any) => ({
-    id: o.id,
-    orderNumber: o.orderNumber,
-    isDraft: o.isDraft,
-    orderType: o.orderType,
-  })));
-  console.log('========================');
+  // Transform results to include client data and parse JSON items
+  const transformed = results.map(row => {
+    // Parse items JSON string to array
+    let parsedItems: OrderItem[] = [];
+    if (row.orders.items) {
+      try {
+        parsedItems = typeof row.orders.items === 'string' 
+          ? JSON.parse(row.orders.items) 
+          : row.orders.items;
+      } catch (e) {
+        console.error(`Failed to parse items for order ${row.orders.id}:`, e);
+        parsedItems = [];
+      }
+    }
+    
+    return {
+      ...row.orders,
+      items: parsedItems,
+      client: row.clients,
+    };
+  }) as any;
   
   return transformed;
 }
