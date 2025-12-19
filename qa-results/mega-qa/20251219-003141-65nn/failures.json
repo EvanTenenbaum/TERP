@@ -1,0 +1,25 @@
+[
+  {
+    "id": "invariant-1",
+    "classification": "backend",
+    "suite": "Backend Invariants",
+    "testName": "Database Connection",
+    "errorMessage": "Failed to connect: connect ETIMEDOUT",
+    "replay": {
+      "seed": 786995,
+      "persona": "system",
+      "steps": [],
+      "urlHistory": [],
+      "replayCommand": "pnpm mega:qa --cloud --seed=786995"
+    },
+    "evidence": {
+      "consoleErrors": [],
+      "networkFailures": []
+    },
+    "timestamp": "2025-12-19T00:33:26.290Z",
+    "isKnown": false,
+    "coveredTags": [
+      "db-invariants"
+    ]
+  }
+]

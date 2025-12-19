@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Must-Hit Suite",
+    "category": "must-hit",
+    "testsRun": 0,
+    "testsPassed": 0,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 11792,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Core E2E Suite",
+    "category": "must-hit",
+    "testsRun": 0,
+    "testsPassed": 0,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 11408,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Randomized Journeys",
+    "category": "journey",
+    "testsRun": 0,
+    "testsPassed": 0,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 11395,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Accessibility Suite",
+    "category": "a11y",
+    "testsRun": 0,
+    "testsPassed": 0,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 11382,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Performance Suite",
+    "category": "perf",
+    "testsRun": 0,
+    "testsPassed": 0,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 11402,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Security Suite",
+    "category": "security",
+    "testsRun": 0,
+    "testsPassed": 0,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 11531,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Resilience Suite",
+    "category": "resilience",
+    "testsRun": 0,
+    "testsPassed": 0,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 11435,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Property-Based Tests",
+    "category": "property",
+    "testsRun": 231,
+    "testsPassed": 227,
+    "testsFailed": 0,
+    "testsSkipped": 4,
+    "durationMs": 2530,
+    "failureIds": [],
+    "coveredTags": [
+      "property-tests",
+      "business-logic",
+      "invariants"
+    ]
+  },
+  {
+    "name": "Contract Tests",
+    "category": "contract",
+    "testsRun": 5,
+    "testsPassed": 5,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 1027,
+    "failureIds": [],
+    "coveredTags": [
+      "contract-tests",
+      "api-schema",
+      "trpc-procedures"
+    ]
+  },
+  {
+    "name": "Backend Invariants",
+    "category": "invariant",
+    "testsRun": 1,
+    "testsPassed": 0,
+    "testsFailed": 1,
+    "testsSkipped": 0,
+    "durationMs": 10021,
+    "failureIds": [],
+    "coveredTags": [
+      "db-invariants"
+    ]
+  }
+]

@@ -14,10 +14,30 @@ export interface InvariantResult {
   evidence?: unknown;
 }
 
+function buildMySqlConnectionOptionsFromUrl(
+  databaseUrl: string
+): mysql.ConnectionOptions {
+  const needsSSL =
+    databaseUrl.includes("ssl-mode=REQUIRED") ||
+    databaseUrl.includes("sslmode=require") ||
+    databaseUrl.includes("ssl=true");
+
+  const cleanDatabaseUrl = databaseUrl
+    .replace(/[?&]ssl-mode=[^&]*/gi, "")
+    .replace(/[?&]sslmode=[^&]*/gi, "")
+    .replace(/[?&]ssl=true/gi, "");
+
+  return {
+    uri: cleanDatabaseUrl,
+    connectTimeout: 15000,
+    ...(needsSSL ? { ssl: { rejectUnauthorized: false } } : {}),
+  } as mysql.ConnectionOptions;
+}
+
 function getDbConnectionConfig(): string | mysql.ConnectionOptions {
   // Cloud/live DB mode: prefer DATABASE_URL (same as app)
   const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL;
-  if (url) return url;
+  if (url) return buildMySqlConnectionOptionsFromUrl(url);
 
   // Local docker DB fallback
   return {
@@ -26,6 +46,7 @@ function getDbConnectionConfig(): string | mysql.ConnectionOptions {
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "rootpassword",
     database: process.env.DB_NAME || "terp-test",
+    connectTimeout: 15000,
   };
 }
 
