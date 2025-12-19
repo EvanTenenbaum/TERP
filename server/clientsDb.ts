@@ -252,7 +252,11 @@ export async function createClient(userId: number, data: {
 }
 
 /**
- * Update client
+ * Update client (with optimistic locking support - DATA-005)
+ * @param clientId - Client ID to update
+ * @param userId - User performing the update
+ * @param data - Fields to update
+ * @param expectedVersion - Optional version for optimistic locking. If provided, update will fail if version doesn't match.
  */
 export async function updateClient(
   clientId: number,
@@ -268,12 +272,13 @@ export async function updateClient(
     isReferee?: boolean;
     isContractor?: boolean;
     tags?: string[];
-  }
+  },
+  expectedVersion?: number
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const updateData: any = {};
+  const updateData: Record<string, unknown> = {};
 
   if (data.name !== undefined) updateData.name = data.name;
   if (data.email !== undefined) updateData.email = data.email;
@@ -286,10 +291,18 @@ export async function updateClient(
   if (data.isContractor !== undefined) updateData.isContractor = data.isContractor;
   if (data.tags !== undefined) updateData.tags = data.tags;
 
-  await db
-    .update(clients)
-    .set(updateData)
-    .where(eq(clients.id, clientId));
+  // If version is provided, use optimistic locking
+  if (expectedVersion !== undefined) {
+    // Import optimistic locking utilities
+    const { updateWithVersion } = await import("./_core/optimisticLocking");
+    await updateWithVersion(db, clients, "Client", clientId, expectedVersion, updateData);
+  } else {
+    // Legacy update without version check (for backward compatibility)
+    await db
+      .update(clients)
+      .set(updateData)
+      .where(eq(clients.id, clientId));
+  }
 
   // Log activity
   await logActivity(clientId, userId, "UPDATED", { fields: Object.keys(updateData) });
