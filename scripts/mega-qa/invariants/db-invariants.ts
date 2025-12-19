@@ -91,31 +91,50 @@ async function checkNoNegativeInventory(
   const name = "No Negative Inventory";
 
   try {
+    // Canonical schema uses per-bucket qty fields stored as strings (varchar).
+    // We cast to DECIMAL for numeric comparisons.
     const [rows] = await connection.execute(`
-      SELECT id, quantity, quantityAvailable 
-      FROM batches 
-      WHERE quantity < 0 OR quantityAvailable < 0
+      SELECT
+        id,
+        onHandQty,
+        sampleQty,
+        reservedQty,
+        quarantineQty,
+        holdQty,
+        defectiveQty
+      FROM batches
+      WHERE
+        CAST(onHandQty AS DECIMAL(15,4)) < 0 OR
+        CAST(sampleQty AS DECIMAL(15,4)) < 0 OR
+        CAST(reservedQty AS DECIMAL(15,4)) < 0 OR
+        CAST(quarantineQty AS DECIMAL(15,4)) < 0 OR
+        CAST(holdQty AS DECIMAL(15,4)) < 0 OR
+        CAST(defectiveQty AS DECIMAL(15,4)) < 0
       LIMIT 10
     `);
 
     const violations = rows as Array<{
       id: number;
-      quantity: number;
-      quantityAvailable: number;
+      onHandQty: string;
+      sampleQty: string;
+      reservedQty: string;
+      quarantineQty: string;
+      holdQty: string;
+      defectiveQty: string;
     }>;
 
     if (violations.length === 0) {
       return {
         name,
         passed: true,
-        message: "All inventory quantities are non-negative",
+        message: "All batch quantity buckets are non-negative",
       };
     }
 
     return {
       name,
       passed: false,
-      message: `Found ${violations.length} batches with negative quantity`,
+      message: `Found ${violations.length} batches with negative quantity bucket(s)`,
       evidence: violations,
     };
   } catch (error) {
