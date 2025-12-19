@@ -277,9 +277,19 @@ export const inventoryRouter = router({
     .input(z.object({ query: z.string().optional() }))
     .query(async ({ input }) => {
       if (input.query) {
-        return await inventoryDb.searchVendors(input.query);
+        const result = await inventoryDb.searchVendors(input.query);
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
       }
-      return await inventoryDb.getAllVendors();
+      const result = await inventoryDb.getAllVendors();
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
     }),
 
   // Get brands (for autocomplete)
@@ -287,9 +297,19 @@ export const inventoryRouter = router({
     .input(z.object({ query: z.string().optional() }))
     .query(async ({ input }) => {
       if (input.query) {
-        return await inventoryDb.searchBrands(input.query);
+        const result = await inventoryDb.searchBrands(input.query);
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
       }
-      return await inventoryDb.getAllBrands();
+      const result = await inventoryDb.getAllBrands();
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
     }),
 
   // Get batches by vendor
@@ -303,6 +323,13 @@ export const inventoryRouter = router({
         });
 
         const result = await inventoryDb.getBatchesByVendor(input.vendorId);
+        
+        // Wrap the result in the expected paginated response structure
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
 
         inventoryLogger.operationSuccess("getBatchesByVendor", {
           vendorId: input.vendorId,
@@ -332,7 +359,12 @@ export const inventoryRouter = router({
       try {
         const userId = ctx.user?.id;
         if (!userId) throw new Error("User not authenticated");
-        return await inventoryDb.getUserInventoryViews(userId);
+        const result = await inventoryDb.getUserInventoryViews(userId);
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
       } catch (error) {
         handleError(error, "inventory.views.list");
         throw error;
@@ -442,7 +474,12 @@ export const inventoryRouter = router({
       .input(z.number().optional().default(10))
       .query(async ({ input }) => {
         try {
-          return await inventoryDb.getTopProfitableBatches(input);
+          const result = await inventoryDb.getTopProfitableBatches(input);
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
         } catch (error) {
           handleError(error, "inventory.profitability.top");
           throw error;

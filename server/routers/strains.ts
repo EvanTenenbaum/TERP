@@ -27,7 +27,12 @@ export const strainsRouter = router({
         limit: z.number().optional().default(100),
       }))
       .query(async ({ input }) => {
-        return await inventoryDb.getAllStrains(input.query, input.category, input.limit);
+        const result = await inventoryDb.getAllStrains(input.query, input.category, input.limit);
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
       }),
     // Get strain by ID
     getById: protectedProcedure.use(requirePermission("inventory:read"))
@@ -87,7 +92,12 @@ export const strainsRouter = router({
     search: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({ query: z.string() }))
       .query(async ({ input }) => {
-        return await inventoryDb.searchStrains(input.query);
+        const result = await inventoryDb.searchStrains(input.query);
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
       }),
     // Create custom strain
     create: protectedProcedure.use(requirePermission("inventory:create"))
@@ -191,7 +201,12 @@ export const strainsRouter = router({
       }))
       .query(async ({ input }) => {
         try {
-          return await fuzzySearchStrains(input.query, input.limit);
+          const result = await fuzzySearchStrains(input.query, input.limit);
+        return {
+          items: result,
+          nextCursor: null,
+          hasMore: false,
+        };
         } catch (error) {
           console.error('Error searching strains:', error);
           throw new TRPCError({
