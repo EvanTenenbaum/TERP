@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +20,83 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Plus } from "lucide-react";
 
+// ============================================================================
+// VALIDATION SCHEMA
+// ============================================================================
+
+/**
+ * Zod validation schema for client creation form
+ * Property 15: Required fields validation
+ * Property 16: Email format validation
+ * Property 17: Phone format validation
+ */
+// Base schema without refinements for react-hook-form compatibility
+const baseClientFormSchema = z.object({
+  teriCode: z
+    .string()
+    .min(1, "TERI Code is required")
+    .max(50, "TERI Code must be less than 50 characters")
+    .regex(/^[A-Za-z0-9_-]+$/, "TERI Code can only contain letters, numbers, underscores, and hyphens"),
+  name: z
+    .string()
+    .min(1, "Client name is required")
+    .max(200, "Name must be less than 200 characters")
+    .refine(s => s.trim().length > 0, "Client name cannot be only whitespace"),
+  email: z
+    .string()
+    .email("Please enter a valid email address")
+    .max(254, "Email must be less than 254 characters")
+    .optional()
+    .or(z.literal("")),
+  phone: z
+    .string()
+    .max(50, "Phone must be less than 50 characters")
+    .regex(/^[\d\s\-+()]*$/, "Phone can only contain digits, spaces, and common symbols (+, -, (, ))")
+    .optional()
+    .or(z.literal("")),
+  address: z
+    .string()
+    .max(500, "Address must be less than 500 characters")
+    .optional()
+    .or(z.literal("")),
+  isBuyer: z.boolean(),
+  isSeller: z.boolean(),
+  isBrand: z.boolean(),
+  isReferee: z.boolean(),
+  isContractor: z.boolean(),
+  tags: z.array(z.string()),
+});
+
+export const clientFormSchema = baseClientFormSchema.refine(
+  (data) => data.isBuyer || data.isSeller || data.isBrand || data.isReferee || data.isContractor,
+  {
+    message: "At least one client type must be selected",
+    path: ["isBuyer"], // Show error on first checkbox
+  }
+);
+
+export type ClientFormData = z.infer<typeof clientFormSchema>;
+
+// Step-specific validation schemas
+export const step1Schema = clientFormSchema.pick({
+  teriCode: true,
+  name: true,
+  email: true,
+  phone: true,
+  address: true,
+});
+
+export const step2Schema = z.object({
+  isBuyer: z.boolean(),
+  isSeller: z.boolean(),
+  isBrand: z.boolean(),
+  isReferee: z.boolean(),
+  isContractor: z.boolean(),
+}).refine(
+  (data) => data.isBuyer || data.isSeller || data.isBrand || data.isReferee || data.isContractor,
+  { message: "At least one client type must be selected" }
+);
+
 interface AddClientWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,20 +105,37 @@ interface AddClientWizardProps {
 
 export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWizardProps) {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    teriCode: "",
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    isBuyer: false,
-    isSeller: false,
-    isBrand: false,
-    isReferee: false,
-    isContractor: false,
-    tags: [] as string[],
-  });
   const [newTag, setNewTag] = useState("");
+
+  // React Hook Form with Zod resolver
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid, dirtyFields },
+    watch,
+    setValue,
+    reset,
+    trigger,
+  } = useForm<ClientFormData>({
+    resolver: zodResolver(clientFormSchema),
+    defaultValues: {
+      teriCode: "",
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      isBuyer: false,
+      isSeller: false,
+      isBrand: false,
+      isReferee: false,
+      isContractor: false,
+      tags: [],
+    },
+    mode: "onChange", // Validate on change for real-time feedback
+  });
+
+  // Watch form values for controlled components
+  const formData = watch();
 
   // Fetch all existing tags for autocomplete
   const { data: existingTags } = trpc.clients.tags.getAll.useQuery();
@@ -52,52 +149,54 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     },
   });
 
-  const resetForm = () => {
+  const resetForm = (): void => {
     setStep(1);
-    setFormData({
-      teriCode: "",
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      isBuyer: false,
-      isSeller: false,
-      isBrand: false,
-      isReferee: false,
-      isContractor: false,
-      tags: [],
-    });
+    reset();
     setNewTag("");
   };
 
-  const handleNext = () => {
+  const handleNext = async (): Promise<void> => {
+    // Validate current step before proceeding
+    if (step === 1) {
+      const isStep1Valid = await trigger(["teriCode", "name", "email", "phone", "address"]);
+      if (!isStep1Valid) return;
+    }
+    if (step === 2) {
+      const isStep2Valid = await trigger(["isBuyer", "isSeller", "isBrand", "isReferee", "isContractor"]);
+      if (!isStep2Valid) return;
+    }
     if (step < 3) setStep(step + 1);
   };
 
-  const handleBack = () => {
+  const handleBack = (): void => {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleSubmit = async () => {
+  const onSubmit = async (data: ClientFormData): Promise<void> => {
     await createClientMutation.mutateAsync({
-      ...formData,
-      tags: formData.tags.length > 0 ? formData.tags : undefined,
+      ...data,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
+      address: data.address || undefined,
+      tags: data.tags.length > 0 ? data.tags : undefined,
     });
   };
 
-  const addTag = (tag: string) => {
+  const addTag = (tag: string): void => {
     const trimmedTag = tag.trim();
     if (trimmedTag && !formData.tags.includes(trimmedTag)) {
-      setFormData({ ...formData, tags: [...formData.tags, trimmedTag] });
+      setValue("tags", [...formData.tags, trimmedTag]);
       setNewTag("");
     }
   };
 
-  const removeTag = (tag: string) => {
-    setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tag) });
+  const removeTag = (tag: string): void => {
+    setValue("tags", formData.tags.filter((t) => t !== tag));
   };
 
-  const canProceedStep1 = formData.teriCode.trim() !== "" && formData.name.trim() !== "";
+  // Step validation based on form state
+  const step1HasErrors = !!(errors.teriCode || errors.name || errors.email || errors.phone || errors.address);
+  const canProceedStep1 = formData.teriCode.trim() !== "" && formData.name.trim() !== "" && !step1HasErrors;
   const canProceedStep2 =
     formData.isBuyer || formData.isSeller || formData.isBrand || formData.isReferee || formData.isContractor;
 
@@ -121,13 +220,17 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
               <Input
                 id="teriCode"
                 placeholder="Enter unique TERI code"
-                value={formData.teriCode}
-                onChange={(e) => setFormData({ ...formData, teriCode: e.target.value })}
-                required
+                {...register("teriCode")}
+                aria-invalid={!!errors.teriCode}
+                className={errors.teriCode ? "border-destructive" : ""}
               />
-              <p className="text-xs text-muted-foreground">
-                This is the unique identifier for the client (e.g., "KJ", "FO1")
-              </p>
+              {errors.teriCode ? (
+                <p className="text-xs text-destructive">{errors.teriCode.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  This is the unique identifier for the client (e.g., "KJ", "FO1")
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -137,13 +240,17 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
               <Input
                 id="name"
                 placeholder="Enter client's full name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
+                {...register("name")}
+                aria-invalid={!!errors.name}
+                className={errors.name ? "border-destructive" : ""}
               />
-              <p className="text-xs text-muted-foreground">
-                Full name is kept private and only visible in the client profile
-              </p>
+              {errors.name ? (
+                <p className="text-xs text-destructive">{errors.name.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Full name is kept private and only visible in the client profile
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -152,9 +259,13 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 id="email"
                 type="email"
                 placeholder="client@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                {...register("email")}
+                aria-invalid={!!errors.email}
+                className={errors.email ? "border-destructive" : ""}
               />
+              {errors.email && (
+                <p className="text-xs text-destructive">{errors.email.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -163,9 +274,13 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                 id="phone"
                 type="tel"
                 placeholder="+1 (555) 123-4567"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                {...register("phone")}
+                aria-invalid={!!errors.phone}
+                className={errors.phone ? "border-destructive" : ""}
               />
+              {errors.phone && (
+                <p className="text-xs text-destructive">{errors.phone.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -173,10 +288,14 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
               <Textarea
                 id="address"
                 placeholder="Enter client's address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                {...register("address")}
+                aria-invalid={!!errors.address}
+                className={errors.address ? "border-destructive" : ""}
                 rows={3}
               />
+              {errors.address && (
+                <p className="text-xs text-destructive">{errors.address.message}</p>
+              )}
             </div>
           </div>
         )}
@@ -196,9 +315,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isBuyer"
                     checked={formData.isBuyer}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isBuyer: checked as boolean })
-                    }
+                    onCheckedChange={(checked) => setValue("isBuyer", checked as boolean)}
                   />
                   <div className="flex-1">
                     <Label htmlFor="isBuyer" className="text-base font-medium cursor-pointer">
@@ -214,9 +331,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isSeller"
                     checked={formData.isSeller}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isSeller: checked as boolean })
-                    }
+                    onCheckedChange={(checked) => setValue("isSeller", checked as boolean)}
                   />
                   <div className="flex-1">
                     <Label htmlFor="isSeller" className="text-base font-medium cursor-pointer">
@@ -232,9 +347,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isBrand"
                     checked={formData.isBrand}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isBrand: checked as boolean })
-                    }
+                    onCheckedChange={(checked) => setValue("isBrand", checked as boolean)}
                   />
                   <div className="flex-1">
                     <Label htmlFor="isBrand" className="text-base font-medium cursor-pointer">
@@ -250,9 +363,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isReferee"
                     checked={formData.isReferee}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isReferee: checked as boolean })
-                    }
+                    onCheckedChange={(checked) => setValue("isReferee", checked as boolean)}
                   />
                   <div className="flex-1">
                     <Label htmlFor="isReferee" className="text-base font-medium cursor-pointer">
@@ -268,9 +379,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
                   <Checkbox
                     id="isContractor"
                     checked={formData.isContractor}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isContractor: checked as boolean })
-                    }
+                    onCheckedChange={(checked) => setValue("isContractor", checked as boolean)}
                   />
                   <div className="flex-1">
                     <Label htmlFor="isContractor" className="text-base font-medium cursor-pointer">
@@ -405,8 +514,8 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
             ) : (
               <Button
                 type="button"
-                onClick={handleSubmit}
-                disabled={createClientMutation.isPending}
+                onClick={handleSubmit(onSubmit)}
+                disabled={createClientMutation.isPending || !isValid}
               >
                 {createClientMutation.isPending ? "Creating..." : "Create Client"}
               </Button>
