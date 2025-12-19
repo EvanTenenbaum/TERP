@@ -8,6 +8,7 @@ import React, { useState } from "react";
 import { X, UserPlus, Users, Send, Loader2 } from "lucide-react";
 import { trpc } from "../../lib/trpc";
 import InvitationStatusBadge from "./InvitationStatusBadge";
+import { ClientCombobox } from "@/components/ui/client-combobox";
 
 interface EventInvitationDialogProps {
   isOpen: boolean;
@@ -47,7 +48,9 @@ export default function EventInvitationDialog({
   // Queries
   const { data: users } = trpc.userManagement.listUsers.useQuery();
   const { data: clientsData } = trpc.clients.list.useQuery({});
-  const clients: Array<{ id: number; name: string }> = (clientsData as { clients?: Array<{ id: number; name: string }> })?.clients ?? [];
+  const clients: Array<{ id: number; name: string }> =
+    (clientsData as { clients?: Array<{ id: number; name: string }> })
+      ?.clients ?? [];
   const { data: existingInvitations, refetch: refetchInvitations } =
     trpc.calendarInvitations.getInvitationsByEvent.useQuery({ eventId });
 
@@ -136,7 +139,9 @@ export default function EventInvitationDialog({
       return user?.name || `User #${invitee.userId}`;
     }
     if (invitee.inviteeType === "CLIENT" && invitee.clientId) {
-      const client = clients?.find((c: { id: number; name: string }) => c.id === invitee.clientId);
+      const client = clients?.find(
+        (c: { id: number; name: string }) => c.id === invitee.clientId
+      );
       return client?.name || `Client #${invitee.clientId}`;
     }
     if (invitee.inviteeType === "EXTERNAL") {
@@ -273,18 +278,18 @@ export default function EventInvitationDialog({
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Select Client
                 </label>
-                <select
-                  value={selectedClientId || ""}
-                  onChange={e => setSelectedClientId(Number(e.target.value))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="">Choose a client...</option>
-                  {clients?.map((client: { id: number; name: string }) => (
-                    <option key={client.id} value={client.id}>
-                      {client.name}
-                    </option>
-                  ))}
-                </select>
+                <ClientCombobox
+                  value={selectedClientId}
+                  onValueChange={setSelectedClientId}
+                  clients={(clients ?? []).map(
+                    (client: { id: number; name: string }) => ({
+                      id: client.id,
+                      name: client.name,
+                    })
+                  )}
+                  placeholder="Choose a client..."
+                  emptyText="No clients found"
+                />
               </div>
             )}
 
