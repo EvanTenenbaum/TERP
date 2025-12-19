@@ -312,64 +312,69 @@ async function runMegaQA(): Promise<void> {
   allFailures.push(...e2eFailures);
   allCoveredTags.push(...e2eResult.coveredTags);
 
-  // 3. Journey Suite (if exists)
-  if (existsSync("tests-e2e/mega/journeys")) {
-    const { result, failures } = runPlaywrightSuite(
-      "Randomized Journeys",
-      "tests-e2e/mega/journeys/*.spec.ts",
-      config
-    );
-    suiteResults.push({ ...result, category: "journey" });
-    allFailures.push(...failures);
-    allCoveredTags.push(...result.coveredTags);
-  }
+  // 3-7. Mega E2E Suites (skip in quick mode to keep cloud runs fast/stable)
+  if (config.mode !== "quick") {
+    // 3. Journey Suite (if exists)
+    if (existsSync("tests-e2e/mega/journeys")) {
+      const { result, failures } = runPlaywrightSuite(
+        "Randomized Journeys",
+        "tests-e2e/mega/journeys/*.spec.ts",
+        config
+      );
+      suiteResults.push({ ...result, category: "journey" });
+      allFailures.push(...failures);
+      allCoveredTags.push(...result.coveredTags);
+    }
 
-  // 4. Accessibility Suite (if exists)
-  if (existsSync("tests-e2e/mega/a11y")) {
-    const { result, failures } = runPlaywrightSuite(
-      "Accessibility Suite",
-      "tests-e2e/mega/a11y/*.spec.ts",
-      config
-    );
-    suiteResults.push({ ...result, category: "a11y" });
-    allFailures.push(...failures);
-    allCoveredTags.push(...result.coveredTags);
-  }
+    // 4. Accessibility Suite (if exists)
+    if (existsSync("tests-e2e/mega/a11y")) {
+      const { result, failures } = runPlaywrightSuite(
+        "Accessibility Suite",
+        "tests-e2e/mega/a11y/*.spec.ts",
+        config
+      );
+      suiteResults.push({ ...result, category: "a11y" });
+      allFailures.push(...failures);
+      allCoveredTags.push(...result.coveredTags);
+    }
 
-  // 5. Performance Suite (if exists)
-  if (existsSync("tests-e2e/mega/perf")) {
-    const { result, failures } = runPlaywrightSuite(
-      "Performance Suite",
-      "tests-e2e/mega/perf/*.spec.ts",
-      config
-    );
-    suiteResults.push({ ...result, category: "perf" });
-    allFailures.push(...failures);
-    allCoveredTags.push(...result.coveredTags);
-  }
+    // 5. Performance Suite (if exists)
+    if (existsSync("tests-e2e/mega/perf")) {
+      const { result, failures } = runPlaywrightSuite(
+        "Performance Suite",
+        "tests-e2e/mega/perf/*.spec.ts",
+        config
+      );
+      suiteResults.push({ ...result, category: "perf" });
+      allFailures.push(...failures);
+      allCoveredTags.push(...result.coveredTags);
+    }
 
-  // 6. Security Suite (if exists)
-  if (existsSync("tests-e2e/mega/security")) {
-    const { result, failures } = runPlaywrightSuite(
-      "Security Suite",
-      "tests-e2e/mega/security/*.spec.ts",
-      config
-    );
-    suiteResults.push({ ...result, category: "security" });
-    allFailures.push(...failures);
-    allCoveredTags.push(...result.coveredTags);
-  }
+    // 6. Security Suite (if exists)
+    if (existsSync("tests-e2e/mega/security")) {
+      const { result, failures } = runPlaywrightSuite(
+        "Security Suite",
+        "tests-e2e/mega/security/*.spec.ts",
+        config
+      );
+      suiteResults.push({ ...result, category: "security" });
+      allFailures.push(...failures);
+      allCoveredTags.push(...result.coveredTags);
+    }
 
-  // 7. Resilience Suite (if exists)
-  if (existsSync("tests-e2e/mega/resilience")) {
-    const { result, failures } = runPlaywrightSuite(
-      "Resilience Suite",
-      "tests-e2e/mega/resilience/*.spec.ts",
-      config
-    );
-    suiteResults.push({ ...result, category: "resilience" });
-    allFailures.push(...failures);
-    allCoveredTags.push(...result.coveredTags);
+    // 7. Resilience Suite (if exists)
+    if (existsSync("tests-e2e/mega/resilience")) {
+      const { result, failures } = runPlaywrightSuite(
+        "Resilience Suite",
+        "tests-e2e/mega/resilience/*.spec.ts",
+        config
+      );
+      suiteResults.push({ ...result, category: "resilience" });
+      allFailures.push(...failures);
+      allCoveredTags.push(...result.coveredTags);
+    }
+  } else {
+    console.log("\n⚡ Quick mode: skipping journeys/a11y/perf/security/resilience suites");
   }
 
   // 8. Property-Based Tests (unit tests with fast-check)
