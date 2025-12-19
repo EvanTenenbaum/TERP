@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.6
-**Last Updated:** December 17, 2025
+**Version:** 2.7
+**Last Updated:** December 18, 2025
 **Status:** Active
 
 ---
@@ -26,25 +26,53 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ---
 
-## 🎯 Current Sprint (Dec 15-21, 2025): Code Quality & Bug Fixes
+## 🎯 Current Sprint (Dec 18-21, 2025): UX Polish Sprint
 
-**Strategic Focus:** Fix remaining TypeScript errors and complete pending bug fixes
-**Sprint Plan:** BUG-026 (TypeScript errors), Mobile fixes, QA-044 migration
+**Strategic Focus:** Complete UX quick wins and core improvements
+**Sprint Plan:** UX polish tasks (non-conflicting with active work)
 **Status:** Active
 
 ### 📊 Sprint Overview
 
-**Total Tasks:** 6 tasks
-**Estimated Time:** 24-40 hours
-**Execution Strategy:** Sequential priority-based execution
-**TypeScript Errors:** 88 remaining
+**Total Tasks:** 10 tasks
+**Estimated Time:** ~7 hours
+**Execution Strategy:** Parallel waves by module isolation
+**Active Work (DO NOT TOUCH):** UX-010, UX-011, PERF-003
 
-**Priority Tasks:**
+### 🌊 Wave 1: Quick Wins (Parallel - 5 agents, ~1.5h total)
 
-- BUG-026: Fix 88 TypeScript errors (Pino logger API)
-- BUG-M001: Mobile sidebar responsiveness (P0 blocker)
-- PREREQ-001: Apply QA-044 database migration
-- Clean up /orders-debug route
+| Task   | Description                       | Estimate | Module                  |
+| ------ | --------------------------------- | -------- | ----------------------- |
+| UX-001 | Fix Floating Point Display Error  | 30min    | `server/inventoryDb.ts` |
+| UX-003 | Rename "Lifetime" to "All Time"   | 15min    | `widgets-v2/`           |
+| UX-004 | Rename "Customize Metrics" Button | 15min    | Multiple pages          |
+| UX-005 | Remove Version Number from Header | 10min    | `DashboardLayout.tsx`   |
+| UX-008 | Fix Oldest Debt Abbreviation      | 15min    | `ClientsListPage.tsx`   |
+
+### 🌊 Wave 2: Medium Effort (Parallel - 4 agents, ~4.5h total)
+
+| Task   | Description                       | Estimate | Module                                 |
+| ------ | --------------------------------- | -------- | -------------------------------------- |
+| UX-002 | Replace Browser confirm() Dialogs | 2h       | Multiple components (10 files)         |
+| UX-006 | Clarify Dual Status Badges        | 1h       | `OrdersPage.tsx`                       |
+| UX-007 | Add Tooltip for TERI Code         | 30min    | `ClientsListPage.tsx`                  |
+| UX-012 | Add "Clear Filters" Button        | 1h       | `Inventory.tsx`, `ClientsListPage.tsx` |
+
+### 🌊 Wave 3: Accounting Fix (Sequential, ~1h)
+
+| Task   | Description                       | Estimate | Module                    |
+| ------ | --------------------------------- | -------- | ------------------------- |
+| UX-014 | Fix Chart of Accounts Edit Button | 1h       | `ChartOfAccountsPage.tsx` |
+
+### ⚠️ Excluded from Sprint (Active Work)
+
+- **UX-010**: Add Empty States - IN PROGRESS
+- **UX-011**: Add Skeleton Loaders - IN PROGRESS
+- **PERF-003**: Add Pagination - IN PROGRESS
+
+### Previous Sprint (Dec 15-17, 2025): Code Quality & Bug Fixes
+
+**Completed:** BUG-026, Mobile fixes, Dashboard soft-delete filter fix
 
 ### Previous Sprint Focus (Nov 22-29, 2025)
 
@@ -5392,7 +5420,6 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 ---
 
-
 ---
 
 ## 🎨 UI/UX IMPROVEMENTS (P2)
@@ -5932,12 +5959,12 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 ### Summary
 
-| Phase | Tasks | Total Estimate |
-|-------|-------|----------------|
-| Phase 1: Quick Wins | 8 tasks | ~5 hours |
-| Phase 2: Core UX | 6 tasks | ~15 hours |
-| Phase 3: Enhanced | 6 tasks | ~26 hours |
-| **Total** | **20 tasks** | **~46 hours** |
+| Phase               | Tasks        | Total Estimate |
+| ------------------- | ------------ | -------------- |
+| Phase 1: Quick Wins | 8 tasks      | ~5 hours       |
+| Phase 2: Core UX    | 6 tasks      | ~15 hours      |
+| Phase 3: Enhanced   | 6 tasks      | ~26 hours      |
+| **Total**           | **20 tasks** | **~46 hours**  |
 
 **Recommended Implementation Order:**
 
@@ -5999,7 +6026,6 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 - `docs/reviews/TECHNICAL_DEBT_INVENTORY.md` - Debt catalog
 - `docs/reviews/IMPROVEMENT_ROADMAP.md` - Prioritized plan
 
-
 ## Sprint (Dec 18-25, 2025): Critical Gap Remediation
 
 **Strategic Focus:** Address the critical functional gaps identified in the comprehensive usability analysis.
@@ -6015,7 +6041,6 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 - [ ] **QA-053: Retrofit Architectural Fixes to Core Workflows** (P0)
   - **Status:** Not Started
   - **Effort:** 30-40h
-
 
 - [ ] **QA-054: Implement Vendor Supply Management Backend** (P1)
   - **Status:** Not Started
