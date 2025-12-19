@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { MessageSquare, Send, Check, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface CommentsPanelProps {
   noteId: number;
@@ -77,10 +78,12 @@ export const CommentsPanel = memo(function CommentsPanel({ noteId }: CommentsPan
       {/* Comments List */}
       <div className="space-y-3">
         {topLevelComments.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>No comments yet. Start the conversation!</p>
-          </div>
+          <EmptyState
+            icon={MessageSquare}
+            title="No comments"
+            description="Be the first to add a comment"
+            className="py-8"
+          />
         ) : (
           topLevelComments.map((comment) => (
             <div key={comment.id}>

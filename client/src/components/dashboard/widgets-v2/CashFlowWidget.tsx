@@ -10,6 +10,9 @@ import {
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { DollarSign } from "lucide-react";
+import { TableSkeleton } from "@/components/ui/skeletons";
 
 type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
 
@@ -48,10 +51,7 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-          </div>
+          <TableSkeleton rowCount={2} columnCount={2} showHeader={false} />
         ) : data ? (
           <Table>
             <TableBody>
@@ -70,15 +70,12 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 space-y-2">
-            <p className="text-muted-foreground">No cash flow data available</p>
-            <p className="text-xs text-muted-foreground">
-              To see data here, seed the database with:{" "}
-              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-                pnpm seed
-              </code>
-            </p>
-          </div>
+          <EmptyState
+            icon={DollarSign}
+            title="No cash flow data"
+            description="Income and expenses will appear here"
+            className="py-8"
+          />
         )}
       </CardContent>
     </Card>

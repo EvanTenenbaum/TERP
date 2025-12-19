@@ -9,9 +9,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
+import { ChevronRight, ChevronDown, ExternalLink, Package } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { TableSkeleton } from "@/components/ui/skeletons";
 
 export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
   const [, setLocation] = useLocation();
@@ -46,11 +48,7 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-          </div>
+          <TableSkeleton rowCount={5} columnCount={3} />
         ) : data && data.categories.length > 0 ? (
           <div>
             <Table>
@@ -118,15 +116,14 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
             </Table>
           </div>
         ) : (
-          <div className="text-center py-8 space-y-2">
-            <p className="text-muted-foreground">No inventory data available</p>
-            <p className="text-xs text-muted-foreground">
-              To see data here, seed the database with:{" "}
-              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-                pnpm seed
-              </code>
-            </p>
-          </div>
+          <EmptyState
+            icon={Package}
+            title="No inventory"
+            description="Add inventory items to see a snapshot here"
+            actionLabel="View Inventory"
+            onAction={() => setLocation("/inventory")}
+            className="py-8"
+          />
         )}
       </CardContent>
     </Card>

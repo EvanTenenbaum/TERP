@@ -1448,6 +1448,56 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 ---
 
+### FEATURE-005: UX-010 Empty States
+
+**Status:** complete
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** UI Components
+**Dependencies:** None
+**Prompt:** N/A
+
+**Problem:** When widgets or lists have no data, they either show nothing or a plain "No data" text, which looks unfinished and doesn't guide users.
+
+**Objectives:**
+1. Implement visual designs for empty states when data is not available.
+2. Apply to Dashboard widgets, List pages, Detail pages, and Search results.
+
+**Deliverables:**
+- [x] Create reusable EmptyState component
+- [x] Implement empty states for Dashboard widgets (Sales, Cash Flow, Inventory)
+- [x] Implement empty states for Orders and Quotes lists
+- [x] Implement empty states for Comments section
+- [x] All tests passing
+- [x] Zero TypeScript errors
+
+---
+
+### FEATURE-006: UX-011 Skeleton Loaders
+
+**Status:** complete
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** UI Components
+**Dependencies:** None
+**Prompt:** N/A
+
+**Problem:** Pages show spinners or blank space while loading, which feels slow and jarring.
+
+**Objectives:**
+1. Implement loading placeholder designs that show content structure while data loads.
+2. Apply to Dashboard widgets, Table rows, Detail pages, and Card grids.
+
+**Deliverables:**
+- [x] Create reusable Skeleton component/patterns
+- [x] Implement skeletons for Dashboard widget cards
+- [x] Implement skeletons for Table rows
+- [x] Implement skeletons for Client profile page
+- [x] All tests passing
+- [x] Zero TypeScript errors
+
+---
+
 ### 🔴 HIGH PRIORITY
 
 - [ ] **Complete Codebase Analysis** (Claude-Session-011CV4V)

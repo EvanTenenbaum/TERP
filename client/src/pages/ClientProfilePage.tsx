@@ -13,14 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,13 +23,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
 import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
 import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
@@ -56,12 +41,13 @@ import {
   TrendingUp,
   AlertCircle,
   Calendar,
-  Search,
-  Plus,
-  CheckCircle,
   Settings,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { ClientProfileSkeleton } from "@/components/ui/skeletons";
+import { ClientTransactionsTab } from "@/components/clients/ClientTransactionsTab";
+import { ClientPaymentsTab } from "@/components/clients/ClientPaymentsTab";
+import { ClientOverviewTab } from "@/components/clients/ClientOverviewTab";
 
 export default function ClientProfilePage() {
   const params = useParams<{ id: string }>();
@@ -69,12 +55,6 @@ export default function ClientProfilePage() {
   const clientId = parseInt(params.id || "0", 10);
   const [activeTab, setActiveTab] = useState("overview");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
-  const [transactionSearch, setTransactionSearch] = useState("");
-  const [paymentSearch, setPaymentSearch] = useState("");
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
 
   // Fetch client data
@@ -82,16 +62,6 @@ export default function ClientProfilePage() {
     trpc.clients.getById.useQuery({
       clientId,
     });
-
-  // Fetch transactions
-  const {
-    data: transactions,
-    isLoading: transactionsLoading,
-    refetch: refetchTransactions,
-  } = trpc.clients.transactions.list.useQuery({
-    clientId,
-    search: transactionSearch || undefined,
-  });
 
   // Fetch activity log
   const { data: activities } = trpc.clients.activity.list.useQuery({
@@ -109,22 +79,11 @@ export default function ClientProfilePage() {
       setEditDialogOpen(false);
     },
   });
-  const createTransactionMutation =
-    trpc.clients.transactions.create.useMutation({
-      onSuccess: () => {
-        refetchTransactions();
-        setTransactionDialogOpen(false);
-      },
-    });
-  const recordPaymentMutation =
-    trpc.clients.transactions.recordPayment.useMutation();
 
   if (clientLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="text-lg font-medium">Loading client...</div>
-        </div>
+      <div className="p-6">
+        <ClientProfileSkeleton />
       </div>
     );
   }
@@ -178,73 +137,6 @@ export default function ClientProfilePage() {
       month: "short",
       day: "numeric",
     });
-  };
-
-  // Get payment status badge
-  const getPaymentStatusBadge = (status: string) => {
-    const variants: Record<
-      string,
-      "default" | "secondary" | "destructive" | "outline"
-    > = {
-      PAID: "default",
-      PENDING: "secondary",
-      OVERDUE: "destructive",
-      PARTIAL: "outline",
-    };
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
-  };
-
-  // Get transaction type badge
-  const getTransactionTypeBadge = (type: string) => {
-    const variants: Record<
-      string,
-      "default" | "secondary" | "destructive" | "outline"
-    > = {
-      INVOICE: "default",
-      PAYMENT: "default",
-      QUOTE: "secondary",
-      ORDER: "outline",
-      REFUND: "destructive",
-      CREDIT: "outline",
-    };
-    return <Badge variant={variants[type] || "outline"}>{type}</Badge>;
-  };
-
-  // Filter paid transactions for payment history
-  const paidTransactions =
-    transactions?.filter(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (txn: any) => txn.paymentStatus === "PAID" && txn.paymentDate
-    ) || [];
-
-  // Filter by payment search
-  const filteredPayments = paidTransactions.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (txn: any) => {
-      if (!paymentSearch) return true;
-      return (
-        txn.transactionNumber
-          ?.toLowerCase()
-          .includes(paymentSearch.toLowerCase()) ||
-        txn.transactionType?.toLowerCase().includes(paymentSearch.toLowerCase())
-      );
-    }
-  );
-
-  // Handle record payment
-  const handleRecordPayment = async (
-    transactionId: number,
-    paymentAmount: number,
-    paymentDate: Date
-  ) => {
-    await recordPaymentMutation.mutateAsync({
-      transactionId,
-      paymentAmount,
-      paymentDate,
-    });
-    refetchTransactions();
-    setPaymentDialogOpen(false);
-    setSelectedTransaction(null);
   };
 
   return (
@@ -375,122 +267,11 @@ export default function ClientProfilePage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
-          {/* Credit Limit Widget (only for buyers) */}
-          {client.isBuyer && (
-            <CreditLimitWidget clientId={clientId} showAdjustControls={false} />
-          )}
-
-          {/* Purchase Patterns Widget (only for buyers) */}
-          {client.isBuyer && <PurchasePatternsWidget clientId={clientId} />}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    TERI Code
-                  </Label>
-                  <p className="text-base">{client.teriCode}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Name
-                  </Label>
-                  <p className="text-base">{client.name}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Email
-                  </Label>
-                  <p className="text-base">{client.email || "-"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Phone
-                  </Label>
-                  <p className="text-base">{client.phone || "-"}</p>
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Address
-                  </Label>
-                  <p className="text-base">{client.address || "-"}</p>
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Tags
-                  </Label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {client.tags &&
-                    Array.isArray(client.tags) &&
-                    client.tags.length > 0 ? (
-                      (client.tags as string[]).map((tag, idx) => (
-                        <Badge key={idx} variant="outline">
-                          {tag}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground">No tags</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activities && activities.length > 0 ? (
-                <div className="space-y-3">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {activities.slice(0, 5).map((activity: any) => (
-                    <div
-                      key={activity.id}
-                      className="flex items-start gap-3 text-sm"
-                    >
-                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          {activity.activityType.replace(/_/g, " ")}
-                        </p>
-                        <p className="text-muted-foreground">
-                          by {activity.userName || "Unknown"} •{" "}
-                          {formatDate(activity.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  No activity yet
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Comments */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Comments</CardTitle>
-              <CardDescription>
-                Team notes and discussions about this client
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CommentWidget
-                commentableType="client"
-                commentableId={clientId}
-              />
-            </CardContent>
-          </Card>
+          <ClientOverviewTab
+            client={client}
+            clientId={clientId}
+            activities={activities || []}
+          />
         </TabsContent>
 
         {/* Supplier Tab (only for sellers) */}
@@ -502,205 +283,22 @@ export default function ClientProfilePage() {
 
         {/* Transactions Tab */}
         <TabsContent value="transactions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Transaction History</CardTitle>
-                  <CardDescription>
-                    All transactions (invoices, quotes, orders, etc.)
-                  </CardDescription>
-                </div>
-                <Button onClick={() => setTransactionDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Transaction
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search transactions..."
-                  value={transactionSearch}
-                  onChange={e => setTransactionSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-
-              {/* Transactions Table */}
-              {transactionsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Loading transactions...
-                </div>
-              ) : !transactions || transactions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-lg font-medium">No transactions found</p>
-                  <p className="text-sm mt-2">
-                    Add a transaction to get started
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Transaction #</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead>Payment Status</TableHead>
-                        <TableHead>Notes</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {transactions.map((txn: any) => (
-                        <TableRow key={txn.id}>
-                          <TableCell className="font-medium">
-                            {txn.transactionNumber || "-"}
-                          </TableCell>
-                          <TableCell>
-                            {getTransactionTypeBadge(txn.transactionType)}
-                          </TableCell>
-                          <TableCell>
-                            {formatDate(txn.transactionDate)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(txn.amount)}
-                          </TableCell>
-                          <TableCell>
-                            {getPaymentStatusBadge(txn.paymentStatus)}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {txn.notes || "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {txn.paymentStatus !== "PAID" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedTransaction(txn);
-                                  setPaymentDialogOpen(true);
-                                }}
-                              >
-                                Record Payment
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ClientTransactionsTab
+            clientId={clientId}
+            clientTeriCode={client.teriCode}
+          />
         </TabsContent>
 
         {/* Payments Tab */}
         <TabsContent value="payments" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div>
-                <CardTitle>Payment History</CardTitle>
-                <CardDescription>
-                  All completed payments for this client
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search payments..."
-                  value={paymentSearch}
-                  onChange={e => setPaymentSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-
-              {/* Payments Table */}
-              {transactionsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Loading payments...
-                </div>
-              ) : filteredPayments.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg font-medium">No payments found</p>
-                  <p className="text-sm mt-2">
-                    Payments will appear here once transactions are marked as
-                    paid
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Transaction #</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Transaction Date</TableHead>
-                        <TableHead>Payment Date</TableHead>
-                        <TableHead className="text-right">
-                          Amount Paid
-                        </TableHead>
-                        <TableHead className="text-right">
-                          Transaction Amount
-                        </TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {filteredPayments.map((txn: any) => (
-                        <TableRow key={txn.id}>
-                          <TableCell className="font-medium">
-                            {txn.transactionNumber || "-"}
-                          </TableCell>
-                          <TableCell>
-                            {getTransactionTypeBadge(txn.transactionType)}
-                          </TableCell>
-                          <TableCell>
-                            {formatDate(txn.transactionDate)}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {formatDate(txn.paymentDate)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-green-600">
-                            {formatCurrency(txn.paymentAmount || txn.amount)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(txn.amount)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                              <span className="text-green-600 font-medium">
-                                Paid
-                              </span>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ClientPaymentsTab clientId={clientId} />
         </TabsContent>
+
         {/* Pricing Tab */}
         <TabsContent value="pricing">
           <PricingConfigTab clientId={clientId} />
         </TabsContent>
 
-        {/* Notes Tab */}
         {/* Needs & History Tab */}
         <TabsContent value="needs" className="space-y-4">
           <ClientNeedsTab clientId={clientId} />
@@ -747,70 +345,6 @@ export default function ClientProfilePage() {
           // Refetch communications will happen automatically via tRPC
         }}
       />
-
-      {/* Record Payment Dialog */}
-      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
-            <DialogDescription>
-              Record a payment for transaction{" "}
-              {selectedTransaction?.transactionNumber}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const paymentAmount = parseFloat(
-                formData.get("paymentAmount") as string
-              );
-              const paymentDate = new Date(
-                formData.get("paymentDate") as string
-              );
-              handleRecordPayment(
-                selectedTransaction.id,
-                paymentAmount,
-                paymentDate
-              );
-            }}
-          >
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="paymentAmount">Payment Amount</Label>
-                <Input
-                  id="paymentAmount"
-                  name="paymentAmount"
-                  type="number"
-                  step="0.01"
-                  defaultValue={selectedTransaction?.amount || ""}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="paymentDate">Payment Date</Label>
-                <Input
-                  id="paymentDate"
-                  name="paymentDate"
-                  type="date"
-                  defaultValue={new Date().toISOString().split("T")[0]}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setPaymentDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit">Record Payment</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Edit Client Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -956,130 +490,6 @@ export default function ClientProfilePage() {
               </Button>
               <Button type="submit" disabled={updateClientMutation.isPending}>
                 {updateClientMutation.isPending ? "Saving..." : "Save Changes"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Transaction Dialog */}
-      <Dialog
-        open={transactionDialogOpen}
-        onOpenChange={setTransactionDialogOpen}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Add Transaction</DialogTitle>
-            <DialogDescription>
-              Create a new transaction for {client.teriCode}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              createTransactionMutation.mutate({
-                clientId: client.id,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                transactionType: formData.get("transactionType") as any,
-                transactionNumber:
-                  (formData.get("transactionNumber") as string) || undefined,
-                transactionDate: new Date(
-                  formData.get("transactionDate") as string
-                ),
-                amount: parseFloat(formData.get("amount") as string),
-                paymentStatus:
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (formData.get("paymentStatus") as any) || "PENDING",
-                notes: (formData.get("notes") as string) || undefined,
-              });
-            }}
-          >
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="transactionType">Transaction Type *</Label>
-                <Select name="transactionType" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INVOICE">Invoice</SelectItem>
-                    <SelectItem value="PAYMENT">Payment</SelectItem>
-                    <SelectItem value="QUOTE">Quote</SelectItem>
-                    <SelectItem value="ORDER">Order</SelectItem>
-                    <SelectItem value="REFUND">Refund</SelectItem>
-                    <SelectItem value="CREDIT">Credit</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="transactionNumber">Transaction Number</Label>
-                <Input
-                  id="transactionNumber"
-                  name="transactionNumber"
-                  placeholder="e.g., INV-001"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="transactionDate">Transaction Date *</Label>
-                <Input
-                  id="transactionDate"
-                  name="transactionDate"
-                  type="date"
-                  defaultValue={new Date().toISOString().split("T")[0]}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount *</Label>
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="paymentStatus">Payment Status</Label>
-                <Select name="paymentStatus" defaultValue="PENDING">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="PAID">Paid</SelectItem>
-                    <SelectItem value="OVERDUE">Overdue</SelectItem>
-                    <SelectItem value="PARTIAL">Partial</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  name="notes"
-                  placeholder="Additional notes..."
-                  rows={3}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setTransactionDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createTransactionMutation.isPending}
-              >
-                {createTransactionMutation.isPending
-                  ? "Creating..."
-                  : "Create Transaction"}
               </Button>
             </DialogFooter>
           </form>

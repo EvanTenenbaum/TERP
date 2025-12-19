@@ -17,11 +17,16 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { TrendingUp } from "lucide-react";
+import { useLocation } from "wouter";
+import { TableSkeleton } from "@/components/ui/skeletons";
 
 type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
 
 export const SalesByClientWidget = memo(function SalesByClientWidget() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
+  const [, setLocation] = useLocation();
 
   const { data: response, isLoading } = trpc.dashboard.getSalesByClient.useQuery(
     { timePeriod },
@@ -53,11 +58,7 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-          </div>
+          <TableSkeleton rowCount={5} columnCount={3} />
         ) : data.length > 0 ? (
           <Table>
             <TableHeader>
@@ -97,15 +98,14 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 space-y-2">
-            <p className="text-muted-foreground">No sales data available</p>
-            <p className="text-xs text-muted-foreground">
-              To see data here, seed the database with:{" "}
-              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-                pnpm seed
-              </code>
-            </p>
-          </div>
+          <EmptyState
+            icon={TrendingUp}
+            title="No sales data"
+            description="Sales will appear here once orders are placed"
+            actionLabel="Create Order"
+            onAction={() => setLocation("/orders/new")}
+            className="py-8"
+          />
         )}
       </CardContent>
     </Card>

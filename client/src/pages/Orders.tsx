@@ -1,16 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Sheet,
   SheetContent,
@@ -26,24 +17,19 @@ import { ProcessReturnModal } from '@/components/orders/ProcessReturnModal';
 import { ReturnHistorySection } from '@/components/orders/ReturnHistorySection';
 import { ConfirmDraftModal } from '@/components/orders/ConfirmDraftModal';
 import { DeleteDraftModal } from '@/components/orders/DeleteDraftModal';
+import { DraftOrdersTab } from '@/components/orders/DraftOrdersTab';
+import { ConfirmedOrdersTab } from '@/components/orders/ConfirmedOrdersTab';
 import { 
-  Search, 
-  Package, 
-  Truck, 
-  CheckCircle2, 
-  Clock,
-  Eye,
-  PlusCircle,
-  PackageX,
   Download,
   FileText,
-  CheckSquare
+  CheckSquare,
+  PlusCircle,
+  PackageX
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLocation } from 'wouter';
 import { exportToCSVWithLabels } from '@/utils/exportToCSV';
 import { toast } from 'sonner';
-import { DataCardSection } from '@/components/data-cards';
 
 export default function Orders() {
   const [, setLocation] = useLocation();
@@ -61,6 +47,7 @@ export default function Orders() {
   const [activeTab, setActiveTab] = useState<'draft' | 'confirmed'>('confirmed');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(getInitialStatusFilter);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showShipModal, setShowShipModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -76,8 +63,6 @@ export default function Orders() {
     return client?.name || 'Unknown';
   };
 
-  // Test endpoint removed - use browser DevTools for API debugging
-
   // Fetch draft orders
   const { data: draftOrders, isLoading: loadingDrafts, refetch: refetchDrafts } = trpc.orders.getAll.useQuery({
     isDraft: true,
@@ -92,8 +77,6 @@ export default function Orders() {
     staleTime: 0,
     gcTime: 0,
   });
-
-  // Debug logging removed - use browser DevTools Network tab for API debugging
 
   // Filter orders by search query
   const filteredDrafts = draftOrders?.filter((order) => {
@@ -140,6 +123,7 @@ export default function Orders() {
     total: confirmedOrders?.length || 0,
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleViewOrder = (order: any) => {
     setSelectedOrder(order);
   };
@@ -213,6 +197,7 @@ export default function Orders() {
         `${activeTab}-orders`
       );
       toast.success(`Exported ${ordersToExport.length} orders`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || 'Export failed');
     }
@@ -257,207 +242,31 @@ export default function Orders() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Draft Orders Tab */}
-        <TabsContent value="draft" className="space-y-6">
-          {/* Draft Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Draft Orders</p>
-                    <p className="text-2xl font-bold">{draftStats.total}</p>
-                  </div>
-                  <FileText className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Value</p>
-                    <p className="text-2xl font-bold">
-                      ${draftOrders?.reduce((sum, o) => sum + parseFloat(o.total), 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
-                    </p>
-                  </div>
-                  <CheckCircle2 className="h-8 w-8 text-gray-600" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Search */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search by order number or client name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                  aria-label="Search draft orders"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Draft Orders List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Draft Orders ({filteredDrafts.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingDrafts ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  Loading draft orders...
-                </div>
-              ) : filteredDrafts.length === 0 ? (
-                <div className="text-center py-12 px-4">
-                  <FileText className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No draft orders</h3>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    {searchQuery 
-                      ? 'No draft orders match your search. Try a different search term.'
-                      : 'Create a draft order to save work in progress without reducing inventory.'}
-                  </p>
-                  {!searchQuery && (
-                    <Button onClick={() => setLocation('/orders/create')}>
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Create Draft Order
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredDrafts.map((order) => (
-                    <div
-                      key={order.id}
-                      className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => handleViewOrder(order)}
-                    >
-                      <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
-                            <Badge variant="secondary">Draft</Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <div>Client: {getClientName(order.clientId)}</div>
-                            <div>
-                              Created: {order.createdAt ? format(new Date(order.createdAt), 'MMM d, yyyy h:mm a') : 'N/A'}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">
-                            ${parseFloat(order.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {(order.items as any[])?.length || 0} items
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="draft">
+          <DraftOrdersTab
+            draftStats={draftStats}
+            draftOrders={draftOrders || []}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            filteredDrafts={filteredDrafts}
+            loadingDrafts={loadingDrafts}
+            handleViewOrder={handleViewOrder}
+            setLocation={setLocation}
+            getClientName={getClientName}
+          />
         </TabsContent>
 
-        {/* Confirmed Orders Tab */}
-        <TabsContent value="confirmed" className="space-y-6">
-          {/* Confirmed Statistics Cards */}
-          <DataCardSection moduleId="orders" />
-
-          {/* Filters */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Search by order number or client name..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                      aria-label="Search confirmed orders"
-                    />
-                  </div>
-                </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]" aria-label="Filter by fulfillment status">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">All Statuses</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="PACKED">Packed</SelectItem>
-                    <SelectItem value="SHIPPED">Shipped</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Confirmed Orders List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Confirmed Orders ({filteredConfirmed.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingConfirmed ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  Loading orders...
-                </div>
-              ) : filteredConfirmed.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No confirmed orders found
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredConfirmed.map((order) => (
-                    <div
-                      key={order.id}
-                      className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => handleViewOrder(order)}
-                    >
-                      <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
-                            <OrderStatusBadge status={order.fulfillmentStatus || 'PENDING'} />
-                            {order.saleStatus && (
-                              <Badge variant="outline" className="text-xs">
-                                {order.saleStatus}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <div>Client: {getClientName(order.clientId)}</div>
-                            <div>
-                              Created: {order.createdAt ? format(new Date(order.createdAt), 'MMM d, yyyy h:mm a') : 'N/A'}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">
-                            ${parseFloat(order.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {(order.items as any[])?.length || 0} items
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="confirmed">
+          <ConfirmedOrdersTab
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            filteredConfirmed={filteredConfirmed}
+            loadingConfirmed={loadingConfirmed}
+            handleViewOrder={handleViewOrder}
+            getClientName={getClientName}
+          />
         </TabsContent>
       </Tabs>
 
@@ -499,6 +308,7 @@ export default function Orders() {
               <div>
                 <h3 className="font-semibold mb-2">Order Items</h3>
                 <div className="space-y-2">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(selectedOrder.items as any[])?.map((item: any, index: number) => (
                     <div key={index} className="flex justify-between text-sm">
                       <div>
