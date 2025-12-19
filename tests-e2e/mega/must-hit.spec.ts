@@ -379,16 +379,17 @@ test.describe("Layout Consistency", () => {
     for (const url of pagesToCheck) {
       await page.goto(url);
 
-      // Check for sidebar/navigation
-      const nav = page.locator('nav, aside, [role="navigation"]').first();
-      await expect(nav).toBeVisible({ timeout: 5000 });
+      // Sidebar is implemented as a list of buttons (not necessarily <nav>/<aside>).
+      // Verify key shell elements exist on every page.
+      await expect(
+        page.getByRole("button", { name: /dashboard/i }).first()
+      ).toBeVisible({ timeout: 5000 });
 
-      // Check for header (should be present on all pages)
-      const header = page.locator('header, [role="banner"]').first();
-      const _headerVisible = await header.isVisible().catch(() => false);
-
-      // At least nav should be consistent
-      expect(await nav.isVisible()).toBeTruthy();
+      await expect(
+        page.getByRole("searchbox", {
+          name: /search quotes, customers, products/i,
+        })
+      ).toBeVisible({ timeout: 5000 });
     }
   });
 });
