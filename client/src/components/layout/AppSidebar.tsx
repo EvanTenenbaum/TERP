@@ -1,47 +1,8 @@
 import { Link, useLocation } from "wouter";
-import {
-  LayoutDashboard,
-  FileText,
-  ShoppingCart,
-  Package,
-  Users,
-  Settings,
-  BarChart3,
-  DollarSign,
-  X,
-  TrendingUp,
-  Tag,
-  Layers,
-  HelpCircle,
-  Target,
-  ListTodo,
-  Calendar,
-  Workflow,
-} from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { APP_TITLE } from "@/const";
-
-const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Todo Lists", href: "/todos", icon: ListTodo },
-  { name: "Calendar", href: "/calendar", icon: Calendar },
-  { name: "Orders", href: "/orders", icon: ShoppingCart },
-  { name: "Quotes", href: "/quotes", icon: FileText },
-  { name: "Sales Sheets", href: "/sales-sheets", icon: Layers },
-  { name: "Create Order", href: "/orders/create", icon: FileText },
-  { name: "Inventory", href: "/inventory", icon: Package },
-  { name: "Workflow Queue", href: "/workflow-queue", icon: Workflow },
-  { name: "Matchmaking", href: "/matchmaking", icon: Target },
-  { name: "Accounting", href: "/accounting/dashboard", icon: DollarSign },
-  { name: "Clients", href: "/clients", icon: Users },
-  { name: "Pricing Rules", href: "/pricing/rules", icon: Tag },
-  { name: "Pricing Profiles", href: "/pricing/profiles", icon: TrendingUp },
-  { name: "Credit Settings", href: "/credit-settings", icon: TrendingUp },
-  { name: "COGS Settings", href: "/settings/cogs", icon: DollarSign },
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Settings", href: "/settings", icon: Settings },
-  { name: "Help", href: "/help", icon: HelpCircle },
-];
+import { navigationItems } from "@/config/navigation";
 
 interface AppSidebarProps {
   open?: boolean;
@@ -83,13 +44,13 @@ export function AppSidebar({ open = false, onClose }: AppSidebarProps) {
 
         <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-1">
-            {navigation.map(item => {
-              const isActive = location === item.href;
+            {navigationItems.map(item => {
+              const isActive = location === item.path;
               const Icon = item.icon;
 
               return (
-                <li key={item.name}>
-                  <Link href={item.href}>
+                <li key={item.path}>
+                  <Link href={item.path}>
                     <a
                       onClick={onClose}
                       className={cn(
