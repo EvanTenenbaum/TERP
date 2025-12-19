@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ClientCombobox } from "@/components/ui/client-combobox";
 
 import { toast } from "sonner";
 import { ShoppingCart, Save, CheckCircle, AlertCircle } from "lucide-react";
@@ -55,7 +56,7 @@ export default function OrderCreatorPageV2() {
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
   // Queries
-  const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
+  const { data: clients, isLoading: clientsLoading } = trpc.clients.list.useQuery({ limit: 1000 });
   const { data: clientDetails } = trpc.clients.getById.useQuery(
     { clientId: clientId || 0 },
     { enabled: !!clientId }
@@ -280,30 +281,30 @@ export default function OrderCreatorPageV2() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Client Selector */}
+          {/* Client Selector - UX-013: Searchable dropdown */}
           <div className="space-y-2">
             <Label htmlFor="client-select">Select Customer *</Label>
-            <Select
-              value={clientId?.toString() || ""}
-              onValueChange={value => {
-                setClientId(parseInt(value));
+            <ClientCombobox
+              value={clientId}
+              onValueChange={(id) => {
+                setClientId(id);
                 // Clear items when changing client
-                setItems([]);
+                if (id !== clientId) {
+                  setItems([]);
+                }
               }}
-            >
-              <SelectTrigger id="client-select">
-                <SelectValue placeholder="Choose a customer..." />
-              </SelectTrigger>
-              <SelectContent>
-                {clients
-                  ?.filter(c => c.isBuyer)
-                  .map(client => (
-                    <SelectItem key={client.id} value={client.id.toString()}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+              clients={(clients || [])
+                .filter((c) => c.isBuyer)
+                .map((client) => ({
+                  id: client.id,
+                  name: client.name,
+                  email: client.email,
+                  clientType: "buyer",
+                }))}
+              isLoading={clientsLoading}
+              placeholder="Search for a customer..."
+              emptyText="No customers found"
+            />
           </div>
         </CardContent>
       </Card>
