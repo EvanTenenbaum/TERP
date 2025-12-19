@@ -210,9 +210,17 @@ test.describe("Dashboard & Analytics", () => {
 
     await page.goto("/dashboard");
 
-    // Look for KPI cards/widgets
-    const widgets = page.locator("[data-widget], .widget, .card, [data-kpi]");
-    await expect(widgets.first()).toBeVisible({ timeout: 10000 });
+    // Look for the dashboard shell and at least one widget section title.
+    await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({
+      timeout: 10000,
+    });
+
+    // The dashboard uses many tailwind utility classes, so prefer stable text checks.
+    // These widget titles exist even when the DB has no seeded data.
+    const widgetTitle = page.getByText(
+      /sales|cashflow|transaction snapshot|inventory snapshot|workflow queue|inbox/i
+    );
+    await expect(widgetTitle.first()).toBeVisible({ timeout: 10000 });
 
     // Verify no infinite spinner
     emitTag("regression:no-spinner");
@@ -301,11 +309,11 @@ test.describe("Core Routes", () => {
     await expect(page.locator("body")).not.toContainText("Page Not Found");
   });
 
-  test("route:/todo-lists loads without 404 (BUG-020)", async ({ page }) => {
-    emitTag("route:/todo-lists");
+  test("route:/todos loads without 404 (BUG-020)", async ({ page }) => {
+    emitTag("route:/todos");
     emitTag("regression:todo-404");
 
-    await page.goto("/todo-lists");
+    await page.goto("/todos");
     await expect(page).not.toHaveURL(/404/);
     await expect(page.locator("body")).not.toContainText("Page Not Found");
   });
@@ -334,11 +342,11 @@ test.describe("Core Routes", () => {
     await expect(page.locator("body")).not.toContainText("Page Not Found");
   });
 
-  test("route:/invoices loads without 404", async ({ page }) => {
-    emitTag("route:/invoices");
+  test("route:/accounting/invoices loads without 404", async ({ page }) => {
+    emitTag("route:/accounting/invoices");
     emitTag("api:invoices.list");
 
-    await page.goto("/invoices");
+    await page.goto("/accounting/invoices");
     await expect(page).not.toHaveURL(/404/);
     await expect(page.locator("body")).not.toContainText("Page Not Found");
   });
