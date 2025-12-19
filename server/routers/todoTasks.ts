@@ -33,7 +33,14 @@ export const todoTasksRouter = router({
       const limit = input.limit ?? DEFAULT_PAGE_SIZE;
       const offset = input.offset ?? 0;
 
-      return await todoTasksDb.getListTasks(input.listId, limit, offset);
+      const tasks = await todoTasksDb.getListTasks(input.listId, limit, offset);
+      // HOTFIX (BUG-033): Wrap in paginated response structure
+      return {
+        items: tasks,
+        nextCursor: null,
+        hasMore: Array.isArray(tasks) && tasks.length === limit,
+        pagination: { total: -1, limit, offset }
+      };
     }),
 
   // Get tasks assigned to current user with pagination
@@ -51,7 +58,14 @@ export const todoTasksRouter = router({
       const limit = input?.limit ?? DEFAULT_PAGE_SIZE;
       const offset = input?.offset ?? 0;
       
-      return await todoTasksDb.getUserAssignedTasks(ctx.user.id, limit, offset);
+      const tasks = await todoTasksDb.getUserAssignedTasks(ctx.user.id, limit, offset);
+      // HOTFIX (BUG-033): Wrap in paginated response structure
+      return {
+        items: tasks,
+        nextCursor: null,
+        hasMore: Array.isArray(tasks) && tasks.length === limit,
+        pagination: { total: -1, limit, offset }
+      };
     }),
 
   // Get a specific task by ID
@@ -292,13 +306,25 @@ export const todoTasksRouter = router({
   // Get overdue tasks
   getOverdue: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
-    return await todoTasksDb.getOverdueTasks();
+    const tasks = await todoTasksDb.getOverdueTasks();
+    // HOTFIX (BUG-033): Wrap in paginated response structure
+    return {
+      items: tasks,
+      nextCursor: null,
+      hasMore: false,
+    };
   }),
 
   // Get tasks due soon
   getDueSoon: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
-    return await todoTasksDb.getTasksDueSoon();
+    const tasks = await todoTasksDb.getTasksDueSoon();
+    // HOTFIX (BUG-033): Wrap in paginated response structure
+    return {
+      items: tasks,
+      nextCursor: null,
+      hasMore: false,
+    };
   }),
 
   // Get task statistics for a list

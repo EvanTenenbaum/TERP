@@ -46,7 +46,13 @@ export const inboxRouter = router({
   getUnread: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
 
-    return await inboxDb.getUnreadInboxItems(ctx.user.id);
+    const items = await inboxDb.getUnreadInboxItems(ctx.user.id);
+    // HOTFIX (BUG-033): Wrap in paginated response structure
+    return {
+      items: items,
+      nextCursor: null,
+      hasMore: false,
+    };
   }),
 
   // Get inbox items by status
@@ -59,7 +65,13 @@ export const inboxRouter = router({
     .query(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
-      return await inboxDb.getInboxItemsByStatus(ctx.user.id, input.status);
+      const items = await inboxDb.getInboxItemsByStatus(ctx.user.id, input.status);
+      // HOTFIX (BUG-033): Wrap in paginated response structure
+      return {
+        items: items,
+        nextCursor: null,
+        hasMore: false,
+      };
     }),
 
   // Get a specific inbox item

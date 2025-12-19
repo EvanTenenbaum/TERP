@@ -17,7 +17,18 @@ export const clientsRouter = router({
       hasDebt: z.boolean().optional(),
     }))
     .query(async ({ input }) => {
-      return await clientsDb.getClients(input);
+      const clients = await clientsDb.getClients(input);
+      // HOTFIX (BUG-033): Wrap raw array in paginated response structure
+      return {
+        items: clients,
+        nextCursor: null,
+        hasMore: clients.length === input.limit,
+        pagination: {
+          total: -1,
+          limit: input.limit,
+          offset: input.offset,
+        }
+      };
     }),
 
   // Get total count for pagination

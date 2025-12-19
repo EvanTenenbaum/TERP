@@ -160,7 +160,14 @@ export const purchaseOrdersRouter = router({
         ? baseQuery.where(and(...conditions))
         : baseQuery;
       
-      return await query.orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
+      const pos = await query.orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
+      // HOTFIX (BUG-033): Wrap in paginated response structure
+      return {
+        items: pos,
+        nextCursor: null,
+        hasMore: pos.length === limit,
+        pagination: { total: -1, limit, offset }
+      };
     }),
 
   // Get purchase order by ID with items

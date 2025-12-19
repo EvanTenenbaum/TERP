@@ -42,9 +42,13 @@ export const vendorsRouter = router({
         _clientId: s.id,
       }));
       
+      // HOTFIX (BUG-033): Wrap in paginated response structure
       return {
         success: true,
         data: vendorData,
+        items: vendorData,
+        nextCursor: null,
+        hasMore: false,
       };
     } catch (error) {
       console.error("Error fetching vendors:", error);
