@@ -1,3 +1,8 @@
+/**
+ * CashFlow Widget
+ * SPRINT-A Task 10: Added EmptyState component integration
+ */
+
 import { useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -9,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { trpc } from "@/lib/trpc";
 
 type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
@@ -70,15 +76,12 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 space-y-2">
-            <p className="text-muted-foreground">No cash flow data available</p>
-            <p className="text-xs text-muted-foreground">
-              To see data here, seed the database with:{" "}
-              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-                pnpm seed
-              </code>
-            </p>
-          </div>
+          <EmptyState
+            variant="analytics"
+            size="sm"
+            title="No cash flow data"
+            description="Cash flow data will appear once transactions are recorded"
+          />
         )}
       </CardContent>
     </Card>
