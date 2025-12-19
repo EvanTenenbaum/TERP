@@ -3,7 +3,6 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -23,6 +22,7 @@ import { Search, Plus, FileText, DollarSign } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { StatusBadge, AgingBadge } from "@/components/accounting";
+import { PaginationControls, usePagination } from "@/components/ui/pagination-controls";
 
 type Invoice = {
   id: number;
@@ -40,10 +40,15 @@ export default function Invoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [showAging, setShowAging] = useState(false);
+  
+  // PERF-003: Pagination state
+  const { page, pageSize, offset, setPage, setPageSize } = usePagination(50);
 
-  // Fetch invoices
+  // Fetch invoices with pagination
   const { data: invoices, isLoading } = trpc.accounting.invoices.list.useQuery({
     status: selectedStatus !== "ALL" ? (selectedStatus as any) : undefined,
+    limit: pageSize,
+    offset,
   });
 
   // Fetch AR aging
@@ -154,13 +159,13 @@ export default function Invoices() {
         </Card>
       )}
 
-      {/* Filters */}
+      {/* Filters - mobile optimized */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -168,12 +173,12 @@ export default function Invoices() {
                   placeholder="Search invoices..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 h-10 sm:h-9"
                 />
               </div>
             </div>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px] h-10 sm:h-9">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -196,54 +201,76 @@ export default function Invoices() {
         <CardHeader>
           <CardTitle>All Invoices</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 sm:px-6">
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading invoices...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Invoice Date</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Paid</TableHead>
-                  <TableHead className="text-right">Due</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredInvoices.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No invoices found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredInvoices.map((invoice: any) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-mono font-medium">
-                        {invoice.invoiceNumber}
-                      </TableCell>
-                      <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
-                      <TableCell>{formatDate(invoice.dueDate)}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(invoice.totalAmount)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(invoice.amountPaid)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(invoice.amountDue)}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={invoice.status} type="invoice" />
-                      </TableCell>
+            <>
+              {/* Mobile-optimized scrollable table container */}
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Invoice #</TableHead>
+                      <TableHead className="whitespace-nowrap hidden sm:table-cell">Invoice Date</TableHead>
+                      <TableHead className="whitespace-nowrap">Due Date</TableHead>
+                      <TableHead className="text-right whitespace-nowrap hidden md:table-cell">Total</TableHead>
+                      <TableHead className="text-right whitespace-nowrap hidden lg:table-cell">Paid</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Due</TableHead>
+                      <TableHead className="whitespace-nowrap">Status</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredInvoices.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          No invoices found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredInvoices.map((invoice: any) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-mono font-medium text-xs sm:text-sm">
+                            {invoice.invoiceNumber}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-xs sm:text-sm">
+                            {formatDate(invoice.invoiceDate)}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-sm">
+                            {formatDate(invoice.dueDate)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono hidden md:table-cell text-xs sm:text-sm">
+                            {formatCurrency(invoice.totalAmount)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono hidden lg:table-cell text-xs sm:text-sm">
+                            {formatCurrency(invoice.amountPaid)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs sm:text-sm">
+                            {formatCurrency(invoice.amountDue)}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={invoice.status} type="invoice" />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {/* PERF-003: Pagination Controls - mobile optimized */}
+              {invoices?.total && invoices.total > 0 && (
+                <PaginationControls
+                  currentPage={page}
+                  totalPages={Math.ceil(invoices.total / pageSize)}
+                  totalItems={invoices.total}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                  isLoading={isLoading}
+                />
+              )}
+            </>
           )}
         </CardContent>
       </Card>

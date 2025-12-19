@@ -83,17 +83,20 @@ export default function ChartOfAccounts() {
     },
   });
 
+  // PERF-003: Extract items from paginated response
+  const accountsList = useMemo(() => accounts?.items ?? [], [accounts]);
+
   // Filter and group accounts
   const groupedAccounts = useMemo(() => {
-    if (!accounts) return {};
+    if (!accountsList.length) return {};
 
-    let filtered = accounts;
+    let filtered = accountsList;
 
     // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (acc) =>
+        (acc: Account) =>
           acc.accountNumber.toLowerCase().includes(query) ||
           acc.accountName.toLowerCase().includes(query)
       );
@@ -101,11 +104,11 @@ export default function ChartOfAccounts() {
 
     // Apply type filter
     if (selectedType !== "ALL") {
-      filtered = filtered.filter((acc) => acc.accountType === selectedType);
+      filtered = filtered.filter((acc: Account) => acc.accountType === selectedType);
     }
 
     // Group by account type
-    const grouped = filtered.reduce((acc: Partial<Record<AccountType, Account[]>>, account) => {
+    const grouped = filtered.reduce((acc: Partial<Record<AccountType, Account[]>>, account: Account) => {
       const type = account.accountType;
       if (!acc[type]) {
         acc[type] = [];
@@ -118,12 +121,12 @@ export default function ChartOfAccounts() {
     Object.keys(grouped).forEach((type) => {
       const accounts = grouped[type as AccountType];
       if (accounts) {
-        accounts.sort((a, b) => a.accountNumber.localeCompare(b.accountNumber));
+        accounts.sort((a: Account, b: Account) => a.accountNumber.localeCompare(b.accountNumber));
       }
     });
 
     return grouped;
-  }, [accounts, searchQuery, selectedType]);
+  }, [accountsList, searchQuery, selectedType]);
 
   const accountTypeLabels: Record<AccountType, string> = {
     ASSET: "Assets",
@@ -162,21 +165,22 @@ export default function ChartOfAccounts() {
     }
   };
 
-  const totalAccounts = accounts?.length || 0;
-  const activeAccounts = accounts?.filter((acc) => acc.isActive).length || 0;
+  // PERF-003: Use pagination total or items length
+  const totalAccounts = accounts?.pagination?.total ?? accountsList.length;
+  const activeAccounts = accountsList.filter((acc: Account) => acc.isActive).length;
 
   return (
     <div className="flex flex-col gap-6 p-6">
       <BackButton label="Back to Accounting" to="/accounting" />
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - mobile optimized */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Chart of Accounts</h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Manage your account structure and classifications
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
+        <Button onClick={() => setShowCreateDialog(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           New Account
         </Button>
@@ -213,21 +217,21 @@ export default function ChartOfAccounts() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters - mobile optimized */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by account number or name..."
+                  placeholder="Search accounts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 h-10 sm:h-9"
                 />
               </div>
             </div>
@@ -235,7 +239,7 @@ export default function ChartOfAccounts() {
               value={selectedType}
               onValueChange={(value) => setSelectedType(value as AccountType | "ALL")}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px] h-10 sm:h-9">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -290,55 +294,61 @@ export default function ChartOfAccounts() {
                       </div>
                     </button>
 
-                    {/* Accounts List */}
+                    {/* Accounts List - mobile optimized with horizontal scroll */}
                     {isExpanded && (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Account Number</TableHead>
-                            <TableHead>Account Name</TableHead>
-                            <TableHead>Normal Balance</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {typeAccounts.map((account: Account) => (
-                            <TableRow key={account.id}>
-                              <TableCell className="font-mono font-medium">
-                                {account.accountNumber}
-                              </TableCell>
-                              <TableCell>{account.accountName}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">
-                                  {account.normalBalance}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={
-                                    account.isActive
-                                      ? "bg-green-100 text-green-700 border-green-200"
-                                      : "bg-gray-100 text-gray-700 border-gray-200"
-                                  }
-                                >
-                                  {account.isActive ? "Active" : "Inactive"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEditingAccount(account)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="whitespace-nowrap">Account #</TableHead>
+                              <TableHead className="whitespace-nowrap">Name</TableHead>
+                              <TableHead className="whitespace-nowrap hidden sm:table-cell">Balance</TableHead>
+                              <TableHead className="whitespace-nowrap">Status</TableHead>
+                              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {typeAccounts.map((account: Account) => (
+                              <TableRow key={account.id}>
+                                <TableCell className="font-mono font-medium text-xs sm:text-sm">
+                                  {account.accountNumber}
+                                </TableCell>
+                                <TableCell className="text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">
+                                  {account.accountName}
+                                </TableCell>
+                                <TableCell className="hidden sm:table-cell">
+                                  <Badge variant="outline" className="text-xs">
+                                    {account.normalBalance}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${
+                                      account.isActive
+                                        ? "bg-green-100 text-green-700 border-green-200"
+                                        : "bg-gray-100 text-gray-700 border-gray-200"
+                                    }`}
+                                  >
+                                    {account.isActive ? "Active" : "Inactive"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditingAccount(account)}
+                                    className="h-8 w-8 p-0"
+                                    aria-label={`Edit ${account.accountName}`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     )}
                   </div>
                 );

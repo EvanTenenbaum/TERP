@@ -4,18 +4,38 @@ import * as accountingDb from "../accountingDb";
 import * as arApDb from "../arApDb";
 import * as cashExpensesDb from "../cashExpensesDb";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { 
+  paginationInputSchema, 
+  createPaginatedResponse, 
+  getPaginationParams,
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE 
+} from "../_core/pagination";
 
 export const accountingRouter = router({
     // Chart of Accounts
+    // PERF-003: Chart of Accounts with pagination
     accounts: router({
       list: protectedProcedure.use(requirePermission("accounting:read"))
         .input(z.object({
           accountType: z.enum(["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]).optional(),
           isActive: z.boolean().optional(),
           parentAccountId: z.number().optional(),
+          limit: z.number().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE).optional(),
+          offset: z.number().min(0).default(0).optional(),
         }))
         .query(async ({ input }) => {
-          return await accountingDb.getAccounts(input);
+          const { limit, offset } = getPaginationParams(input);
+          const { accountType, isActive, parentAccountId } = input;
+          
+          // Get all accounts (for now, until accountingDb supports pagination)
+          const allAccounts = await accountingDb.getAccounts({ accountType, isActive, parentAccountId });
+          
+          // Apply pagination in memory (for small datasets like chart of accounts)
+          const total = allAccounts.length;
+          const items = allAccounts.slice(offset, offset + limit);
+          
+          return createPaginatedResponse(items, total, limit, offset);
         }),
 
       getById: protectedProcedure.use(requirePermission("accounting:read"))

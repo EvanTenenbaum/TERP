@@ -47,10 +47,11 @@ export function AccountSelector({
     return <Skeleton className="h-10 w-full" />;
   }
 
-  // Sort accounts by account number
+  // PERF-003: Extract items from paginated response and sort by account number
   const sortedAccounts = React.useMemo(() => {
-    if (!accounts) return [];
-    return [...accounts].sort((a, b) => a.accountNumber.localeCompare(b.accountNumber));
+    const items = accounts?.items ?? [];
+    if (!items.length) return [];
+    return [...items].sort((a, b) => a.accountNumber.localeCompare(b.accountNumber));
   }, [accounts]);
 
   // Group accounts by type for better organization
