@@ -20,7 +20,9 @@ export function InboxPanel() {
   // Extract items from paginated response
   const allItems = allItemsData?.items ?? [];
 
-  const { data: unreadItems = [] } = trpc.inbox.getUnread.useQuery();
+  // Handle paginated response from inbox.getUnread
+  const { data: unreadItemsData } = trpc.inbox.getUnread.useQuery();
+  const unreadItems = Array.isArray(unreadItemsData) ? unreadItemsData : (unreadItemsData?.items ?? []);
 
   const { data: stats } = trpc.inbox.getStats.useQuery();
 
@@ -34,7 +36,7 @@ export function InboxPanel() {
   });
 
   const handleMarkAllAsSeen = () => {
-    const unreadIds = unreadItems.map((item) => item.id);
+    const unreadIds = unreadItems.map((item: any) => item.id);
     if (unreadIds.length > 0) {
       bulkMarkAsSeen.mutate({ itemIds: unreadIds });
     }

@@ -38,11 +38,12 @@ export function ShareListModal({
 
   const utils = trpc.useContext();
 
-  // Fetch list members
-  const { data: members = [] } = trpc.todoLists.getMembers.useQuery(
+  // Fetch list members - handle paginated response
+  const { data: membersData } = trpc.todoLists.getMembers.useQuery(
     { listId },
     { enabled: isOpen }
   );
+  const members = Array.isArray(membersData) ? membersData : (membersData?.items ?? []);
 
   // Fetch available users - using empty array for now since endpoint doesn't exist yet
   const users: any[] = [];

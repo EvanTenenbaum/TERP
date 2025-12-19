@@ -48,8 +48,8 @@ export function TodoListDetailPage() {
       { enabled: !!listId }
     );
   
-  // Extract items from paginated response
-  const tasks = tasksData?.items ?? [];
+  // Extract items from paginated response - handle both array and object formats
+  const tasks: any[] = tasksData ? (Array.isArray(tasksData) ? tasksData : ((tasksData as any)?.items ?? [])) : [];
 
   const { data: stats } = trpc.todoTasks.getListStats.useQuery(
     { listId: Number(listId) },

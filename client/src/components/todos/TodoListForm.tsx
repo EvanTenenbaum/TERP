@@ -41,19 +41,21 @@ export function TodoListForm({
 
   const utils = trpc.useContext();
 
-  // Fetch available users for sharing
-  const { data: availableUsers = [] } = trpc.users.list.useQuery();
+  // Fetch available users for sharing - handle paginated response
+  const { data: usersData } = trpc.users.list.useQuery();
+  const availableUsers: any[] = usersData ? (Array.isArray(usersData) ? usersData : ((usersData as any)?.items ?? [])) : [];
 
-  // Fetch current list members if editing
-  const { data: currentMembers = [] } = trpc.todoLists.getMembers.useQuery(
+  // Fetch current list members if editing - handle paginated response
+  const { data: membersData } = trpc.todoLists.getMembers.useQuery(
     { listId: list?.id || 0 },
     { enabled: !!list?.id }
   );
+  const currentMembers = Array.isArray(membersData) ? membersData : (membersData?.items ?? []);
 
   // Update selected users when editing and members are loaded
   useEffect(() => {
     if (list && currentMembers.length > 0) {
-      const memberUserIds = currentMembers.map(m => m.userId);
+      const memberUserIds = currentMembers.map((m: any) => m.userId);
       setSelectedUserIds(memberUserIds);
     }
   }, [list, currentMembers]);

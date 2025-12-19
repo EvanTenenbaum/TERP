@@ -39,9 +39,9 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   // Fetch inbox stats for unread count
   const { data: inboxStats } = trpc.inbox.getStats.useQuery();
 
-  // Fetch recent inbox items for dropdown preview
+  // Fetch recent inbox items for dropdown preview - handle paginated response
   const { data: recentItemsData } = trpc.inbox.getUnread.useQuery();
-  const recentItems = recentItemsData ?? [];
+  const recentItems = Array.isArray(recentItemsData) ? recentItemsData : (recentItemsData?.items ?? []);
 
   const utils = trpc.useContext();
 
@@ -55,7 +55,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   });
 
   const handleMarkAllAsSeen = () => {
-    const unreadIds = recentItems.map(item => item.id);
+    const unreadIds = recentItems.map((item: any) => item.id);
     if (unreadIds.length > 0) {
       bulkMarkAsSeen.mutate({ itemIds: unreadIds });
     }

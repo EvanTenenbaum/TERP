@@ -55,8 +55,9 @@ export default function OrderCreatorPageV2() {
   const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
-  // Queries
-  const { data: clients, isLoading: clientsLoading } = trpc.clients.list.useQuery({ limit: 1000 });
+  // Queries - handle paginated response
+  const { data: clientsData, isLoading: clientsLoading } = trpc.clients.list.useQuery({ limit: 1000 });
+  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
   const { data: clientDetails } = trpc.clients.getById.useQuery(
     { clientId: clientId || 0 },
     { enabled: !!clientId }

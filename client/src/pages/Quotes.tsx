@@ -41,20 +41,22 @@ export default function Quotes() {
   
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
 
-  // Fetch clients for name lookup
-  const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
+  // Fetch clients for name lookup - handle paginated response
+  const { data: clientsData } = trpc.clients.list.useQuery({ limit: 1000 });
+  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
   
   // Helper to get client name
   const getClientName = (clientId: number) => {
-    const client = clients?.find(c => c.id === clientId);
+    const client = clients.find(c => c.id === clientId);
     return client?.name || 'Unknown';
   };
 
-  // Fetch all QUOTE orders
-  const { data: quotes, isLoading, refetch } = trpc.orders.getAll.useQuery({
+  // Fetch all QUOTE orders - handle paginated response
+  const { data: quotesData, isLoading, refetch } = trpc.orders.getAll.useQuery({
     orderType: 'QUOTE',
     quoteStatus: statusFilter === 'ALL' ? undefined : statusFilter,
   });
+  const quotes = Array.isArray(quotesData) ? quotesData : (quotesData?.items ?? []);
   
   // Apply URL params on mount
   useEffect(() => {
@@ -70,7 +72,7 @@ export default function Quotes() {
     const params = new URLSearchParams(window.location.search);
     const selectedId = params.get('selected');
     if (selectedId && quotes) {
-      const quote = quotes.find(q => q.id === parseInt(selectedId, 10));
+      const quote = quotes?.find(q => q.id === parseInt(selectedId, 10));
       if (quote) {
         setSelectedQuote(quote);
       } else {
@@ -83,21 +85,21 @@ export default function Quotes() {
   const convertToSale = trpc.orders.convertQuoteToSale.useMutation();
 
   // Filter quotes by search query
-  const filteredQuotes = quotes?.filter((quote) => {
+  const filteredQuotes = quotes.filter((quote: any) => {
     const searchLower = searchQuery.toLowerCase();
     const clientName = getClientName(quote.clientId);
     return (
       quote.orderNumber.toLowerCase().includes(searchLower) ||
       clientName.toLowerCase().includes(searchLower)
     );
-  }) || [];
+  });
   
   // Calculate statistics
   const stats = {
-    draft: quotes?.filter(q => q.quoteStatus === 'DRAFT').length || 0,
-    sent: quotes?.filter(q => q.quoteStatus === 'SENT').length || 0,
-    accepted: quotes?.filter(q => q.quoteStatus === 'ACCEPTED').length || 0,
-    total: quotes?.length || 0,
+    draft: quotes.filter((q: any) => q.quoteStatus === 'DRAFT').length,
+    sent: quotes.filter((q: any) => q.quoteStatus === 'SENT').length,
+    accepted: quotes.filter((q: any) => q.quoteStatus === 'ACCEPTED').length,
+    total: quotes.length,
   };
 
   const handleViewQuote = (quote: any) => {

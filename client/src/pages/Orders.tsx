@@ -69,24 +69,26 @@ export default function Orders() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   
-  // Fetch clients for name lookup
-  const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
+  // Fetch clients for name lookup - handle paginated response
+  const { data: clientsData } = trpc.clients.list.useQuery({ limit: 1000 });
+  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
   
   // Helper to get client name
   const getClientName = (clientId: number) => {
-    const client = clients?.find(c => c.id === clientId);
+    const client = clients.find((c: any) => c.id === clientId);
     return client?.name || 'Unknown';
   };
 
   // Test endpoint removed - use browser DevTools for API debugging
 
-  // Fetch draft orders
-  const { data: draftOrders, isLoading: loadingDrafts, refetch: refetchDrafts } = trpc.orders.getAll.useQuery({
+  // Fetch draft orders - handle paginated response
+  const { data: draftOrdersData, isLoading: loadingDrafts, refetch: refetchDrafts } = trpc.orders.getAll.useQuery({
     isDraft: true,
   });
+  const draftOrders = Array.isArray(draftOrdersData) ? draftOrdersData : (draftOrdersData?.items ?? []);
 
-  // Fetch confirmed orders
-  const { data: confirmedOrders, isLoading: loadingConfirmed, refetch: refetchConfirmed } = trpc.orders.getAll.useQuery({
+  // Fetch confirmed orders - handle paginated response
+  const { data: confirmedOrdersData, isLoading: loadingConfirmed, refetch: refetchConfirmed } = trpc.orders.getAll.useQuery({
     isDraft: false,
     fulfillmentStatus: statusFilter === 'ALL' ? undefined : statusFilter,
   }, {
@@ -94,11 +96,12 @@ export default function Orders() {
     staleTime: 0,
     gcTime: 0,
   });
+  const confirmedOrders = Array.isArray(confirmedOrdersData) ? confirmedOrdersData : (confirmedOrdersData?.items ?? []);
 
   // Debug logging removed - use browser DevTools Network tab for API debugging
 
   // Filter orders by search query
-  const filteredDrafts = draftOrders?.filter((order) => {
+  const filteredDrafts = draftOrders.filter((order: any) => {
     if (!searchQuery) return true; // Show all if no search query
     try {
       const searchLower = searchQuery.toLowerCase();
@@ -112,9 +115,9 @@ export default function Orders() {
       console.error('Error filtering draft order:', error, order);
       return true; // Include order if filter fails
     }
-  }) || [];
+  });
 
-  const filteredConfirmed = confirmedOrders?.filter((order) => {
+  const filteredConfirmed = confirmedOrders.filter((order: any) => {
     if (!searchQuery) return true; // Show all if no search query
     try {
       const searchLower = searchQuery.toLowerCase();
@@ -128,18 +131,18 @@ export default function Orders() {
       console.error('Error filtering confirmed order:', error, order);
       return true; // Include order if filter fails
     }
-  }) || [];
+  });
   
   // Calculate statistics
   const draftStats = {
-    total: draftOrders?.length || 0,
+    total: draftOrders.length,
   };
 
   const confirmedStats = {
-    pending: confirmedOrders?.filter(o => o.fulfillmentStatus === 'PENDING').length || 0,
-    packed: confirmedOrders?.filter(o => o.fulfillmentStatus === 'PACKED').length || 0,
-    shipped: confirmedOrders?.filter(o => o.fulfillmentStatus === 'SHIPPED').length || 0,
-    total: confirmedOrders?.length || 0,
+    pending: confirmedOrders.filter((o: any) => o.fulfillmentStatus === 'PENDING').length,
+    packed: confirmedOrders.filter((o: any) => o.fulfillmentStatus === 'PACKED').length,
+    shipped: confirmedOrders.filter((o: any) => o.fulfillmentStatus === 'SHIPPED').length,
+    total: confirmedOrders.length,
   };
 
   const handleViewOrder = (order: any) => {
