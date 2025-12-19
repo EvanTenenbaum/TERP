@@ -1,14 +1,17 @@
 /**
  * Price Alerts Service
- * 
+ *
  * Handles price monitoring and alert notifications for VIP Portal Live Catalog.
  * Clients can set target prices for batches and receive notifications when prices drop.
+ *
+ * SPRINT-A: Updated to use structured Pino logging with PII masking (Task 5)
  */
 
 import { getDb } from '../db';
 import { batches, products, clientPriceAlerts, clients } from '../../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { calculateRetailPrice, getClientPricingRules, InventoryItem } from '../pricingEngine';
+import { vipPortalLogger, piiMasker } from '../_core/logger';
 
 export interface PriceAlert {
   id: number;
@@ -105,7 +108,12 @@ export async function createPriceAlert(
       message: 'Price alert created',
     };
   } catch (error) {
-    console.error('[PriceAlerts] Error creating price alert:', error);
+    vipPortalLogger.priceAlertEvent("created", 0, clientId, {
+      error: error instanceof Error ? error.message : String(error),
+      batchId,
+      targetPrice,
+      success: false,
+    });
     return { success: false, message: 'Failed to create price alert' };
   }
 }
@@ -183,7 +191,7 @@ export async function getClientPriceAlerts(clientId: number): Promise<PriceAlert
 
     return alertsWithPrices;
   } catch (error) {
-    console.error('[PriceAlerts] Error getting client price alerts:', error);
+    vipPortalLogger.operationFailure("getClientPriceAlerts", error, { clientId });
     return [];
   }
 }
@@ -213,7 +221,10 @@ export async function deactivatePriceAlert(
 
     return { success: true, message: 'Price alert deactivated' };
   } catch (error) {
-    console.error('[PriceAlerts] Error deactivating price alert:', error);
+    vipPortalLogger.priceAlertEvent("deactivated", alertId, clientId, {
+      error: error instanceof Error ? error.message : String(error),
+      success: false,
+    });
     return { success: false, message: 'Failed to deactivate price alert' };
   }
 }
@@ -290,7 +301,9 @@ export async function checkPriceAlerts(): Promise<PriceAlertNotification[]> {
 
     return triggeredAlerts;
   } catch (error) {
-    console.error('[PriceAlerts] Error checking price alerts:', error);
+    vipPortalLogger.operationFailure("checkPriceAlerts", error, {
+      alertCount: 0,
+    });
     return [];
   }
 }
@@ -304,17 +317,22 @@ export async function sendPriceAlertNotifications(
 ): Promise<void> {
   for (const notification of notifications) {
     try {
-      // TODO: Integrate with email service
-      console.log('[PriceAlerts] Sending notification:', {
-        to: notification.clientEmail,
-        subject: `Price Alert: ${notification.productName}`,
-        message: `The price for ${notification.productName} has dropped to ${notification.currentPrice.toFixed(2)} (your target: ${notification.targetPrice.toFixed(2)})`,
+      // Log notification with PII masking
+      vipPortalLogger.priceAlertEvent("notification_sent", notification.alertId, notification.clientId, {
+        email: piiMasker.email(notification.clientEmail),
+        productName: notification.productName,
+        targetPrice: notification.targetPrice,
+        currentPrice: notification.currentPrice,
+        priceDropPercentage: notification.priceDropPercentage,
       });
 
       // Deactivate the alert after notification is sent
       await deactivatePriceAlert(notification.alertId, notification.clientId);
     } catch (error) {
-      console.error('[PriceAlerts] Error sending notification:', error);
+      vipPortalLogger.operationFailure("sendPriceAlertNotification", error, {
+        alertId: notification.alertId,
+        clientId: notification.clientId,
+      });
     }
   }
 }
@@ -327,15 +345,20 @@ export async function runPriceAlertCheck(): Promise<{
   triggered: number;
 }> {
   try {
-    console.log('[PriceAlerts] Running price alert check...');
+    vipPortalLogger.operationStart("runPriceAlertCheck", {});
 
     const triggeredAlerts = await checkPriceAlerts();
 
     if (triggeredAlerts.length > 0) {
-      console.log(`[PriceAlerts] Found ${triggeredAlerts.length} triggered alerts`);
+      vipPortalLogger.operationSuccess("runPriceAlertCheck", {
+        triggeredCount: triggeredAlerts.length,
+      });
       await sendPriceAlertNotifications(triggeredAlerts);
     } else {
-      console.log('[PriceAlerts] No triggered alerts found');
+      vipPortalLogger.operationSuccess("runPriceAlertCheck", {
+        triggeredCount: 0,
+        message: "No triggered alerts found",
+      });
     }
 
     return {
@@ -343,7 +366,7 @@ export async function runPriceAlertCheck(): Promise<{
       triggered: triggeredAlerts.length,
     };
   } catch (error) {
-    console.error('[PriceAlerts] Error running price alert check:', error);
+    vipPortalLogger.operationFailure("runPriceAlertCheck", error, {});
     return { checked: 0, triggered: 0 };
   }
 }
