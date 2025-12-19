@@ -1,11 +1,12 @@
 /**
  * Database Utility for Testing
- * 
+ *
  * Provides functions to manage the test database lifecycle:
  * - Start/stop Docker test database
  * - Reset database (drop, recreate, migrate, seed)
  * - Run migrations
  * - Seed with different scenarios
+ * - Preflight connectivity check (local or remote)
  */
 
 import { execSync } from 'child_process';
@@ -20,13 +21,70 @@ const TEST_DB_CONFIG = {
   database: 'terp-test',
 };
 
+function isTruthy(value: string | undefined): boolean {
+  return value === '1' || value === 'true' || value === 'yes';
+}
+
+function getTestDatabaseUrl(): string {
+  // Prefer a dedicated test DB URL, but allow DATABASE_URL (cloud / live DB)
+  return process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || '';
+}
+
+function isRemoteDatabaseUrl(databaseUrl: string): boolean {
+  if (!databaseUrl) return false;
+  try {
+    const u = new URL(databaseUrl);
+    const host = u.hostname;
+    return host !== 'localhost' && host !== '127.0.0.1';
+  } catch {
+    return false;
+  }
+}
+
+function getComposeCommand(): string {
+  // Prefer Docker Compose v2 if available; fallback to docker-compose (v1)
+  try {
+    execSync('docker compose version', { stdio: 'ignore' });
+    return 'docker compose';
+  } catch {
+    return 'docker-compose';
+  }
+}
+
+function buildMySqlConnectionOptionsFromUrl(databaseUrl: string): mysql.ConnectionOptions {
+  const needsSSL =
+    databaseUrl.includes('ssl-mode=REQUIRED') ||
+    databaseUrl.includes('sslmode=require') ||
+    databaseUrl.includes('ssl=true');
+
+  // mysql2 does not understand ssl-mode/sslmode query params as connection options.
+  // Strip them from the URI and provide an explicit ssl config instead.
+  const cleanDatabaseUrl = databaseUrl
+    .replace(/[?&]ssl-mode=[^&]*/gi, '')
+    .replace(/[?&]sslmode=[^&]*/gi, '')
+    .replace(/[?&]ssl=true/gi, '');
+
+  return {
+    uri: cleanDatabaseUrl,
+    connectTimeout: 15000,
+    ...(needsSSL
+      ? {
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        }
+      : {}),
+  } as mysql.ConnectionOptions;
+}
+
 /**
  * Start the test database using Docker Compose
  */
 export function startTestDatabase() {
   console.log('🚀 Starting test database...');
   try {
-    execSync('docker-compose -f testing/docker-compose.yml up -d', { stdio: 'inherit' });
+    const compose = getComposeCommand();
+    execSync(`${compose} -f testing/docker-compose.yml up -d`, { stdio: 'inherit' });
     console.log('✅ Test database started successfully');
     
     // Wait for database to be ready
@@ -45,7 +103,8 @@ export function startTestDatabase() {
 export function stopTestDatabase() {
   console.log('🛑 Stopping test database...');
   try {
-    execSync('docker-compose -f testing/docker-compose.yml down', { stdio: 'inherit' });
+    const compose = getComposeCommand();
+    execSync(`${compose} -f testing/docker-compose.yml down`, { stdio: 'inherit' });
     console.log('✅ Test database stopped successfully');
   } catch (error) {
     console.error('❌ Failed to stop test database:', error);
@@ -89,6 +148,15 @@ export async function resetTestDatabase(scenario: string = 'light') {
   console.log('='.repeat(50));
   
   try {
+    const databaseUrl = getTestDatabaseUrl();
+    const remoteDb = isRemoteDatabaseUrl(databaseUrl);
+    const allowRemoteReset = isTruthy(process.env.ALLOW_REMOTE_DB_RESET);
+    if (remoteDb && !allowRemoteReset) {
+      throw new Error(
+        'Refusing to reset a remote database. Set ALLOW_REMOTE_DB_RESET=1 to override (dangerous).'
+      );
+    }
+
     // Connect to MySQL server (not specific database)
     const connection = await mysql.createConnection({
       host: TEST_DB_CONFIG.host,
@@ -196,7 +264,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           seedDatabase(scenario);
           break;
         case 'preflight':
-          await runPreflight();
+          await preflightTestDatabase();
           break;
         default:
           console.log('Usage: tsx testing/db-util.ts <command> [scenario]');
@@ -206,7 +274,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           console.log('  reset [scenario] - Reset database (default: light)');
           console.log('  migrate       - Run migrations');
           console.log('  seed [scenario]  - Seed database (default: light)');
-          console.log('  preflight     - Run preflight checks');
+          console.log('  preflight     - Verify database connectivity (local or remote)');
           console.log('\nScenarios: light, full, edge, chaos');
           process.exit(1);
       }
@@ -217,3 +285,42 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
   })();
 }
+
+/**
+ * Preflight check: verify we can connect to the configured test database.
+ *
+ * Cloud mode expectation:
+ * - TEST_DATABASE_URL or DATABASE_URL is set and points to the live/prod DB (your "test DB")
+ * - No Docker dependency
+ */
+export async function preflightTestDatabase(): Promise<void> {
+  const databaseUrl = getTestDatabaseUrl();
+
+  // Prefer URL-based connectivity if present (cloud / live DB)
+  if (databaseUrl) {
+    console.log('🔍 Preflight: checking DB via DATABASE_URL/TEST_DATABASE_URL...');
+    const isRemote = isRemoteDatabaseUrl(databaseUrl);
+    console.log(`   Target: ${isRemote ? 'remote' : 'local'} url`);
+    const masked = databaseUrl.replace(/:[^:@]+@/, ':****@');
+    console.log(`   URL:    ${masked}`);
+    const conn = await mysql.createConnection(buildMySqlConnectionOptionsFromUrl(databaseUrl));
+    try {
+      await conn.query('SELECT 1 as health_check');
+      console.log('✅ Database preflight passed');
+    } finally {
+      await conn.end();
+    }
+    return;
+  }
+
+  // Fallback to host/port defaults (local Docker)
+  console.log('🔍 Preflight: checking DB via host/port config...');
+  const conn = await mysql.createConnection({ ...TEST_DB_CONFIG, connectTimeout: 15000 });
+  try {
+    await conn.query('SELECT 1 as health_check');
+    console.log('✅ Database preflight passed');
+  } finally {
+    await conn.end();
+  }
+}
+

@@ -36,6 +36,19 @@ export interface MegaQAConfig {
 
   /** CI mode (stricter timeouts, no retries) */
   ci: boolean;
+
+  /**
+   * Cloud / remote execution mode.
+   * When true, Mega QA must not attempt to start local services (Docker DB, dev server),
+   * and should treat DATABASE_URL as the live/prod "test database".
+   */
+  cloud?: boolean;
+
+  /**
+   * Database mode hint for runners/preflight. In "live" mode, DB lifecycle actions
+   * (start/reset/seed) are never attempted automatically.
+   */
+  dbMode?: "local" | "live";
 }
 
 // ============================================================================

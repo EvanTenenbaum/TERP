@@ -1,0 +1,27 @@
+{
+  "runId": "20251219-003141-65nn",
+  "gitSha": "0dd62572b6a04c9742af027cd3914c7e93fd17de",
+  "gitBranch": "cursor/mega-aa-protocol-execution-7daa",
+  "timestamp": "2025-12-19T00:33:26.297Z",
+  "config": {
+    "scenario": "full",
+    "journeyCount": 25,
+    "seed": 786995,
+    "baseURL": "https://terp-app-b9s35.ondigitalocean.app",
+    "outputDir": "qa-results/mega-qa",
+    "mode": "quick",
+    "soakDuration": 30,
+    "headless": true,
+    "ci": false,
+    "cloud": true,
+    "dbMode": "live"
+  },
+  "environment": {
+    "nodeVersion": "v22.21.1",
+    "platform": "linux",
+    "ci": false
+  },
+  "durationMs": 104698,
+  "result": "fail",
+  "exitCode": 1
+}

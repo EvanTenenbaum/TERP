@@ -55,6 +55,10 @@ pids
 coverage/
 *.lcov
 
+# Mega QA coverage contract lives under scripts (keep tracked)
+!scripts/mega-qa/coverage/
+!scripts/mega-qa/coverage/**
+
 # nyc test coverage
 .nyc_output
 

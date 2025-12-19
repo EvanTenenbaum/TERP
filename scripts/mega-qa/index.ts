@@ -40,6 +40,7 @@ import {
   writeRequiredTagsFile,
 } from "./lib/contract";
 import { runPlaywrightSuite, runVitestSuite } from "./runners";
+import { runInvariants } from "./invariants/db-invariants";
 
 // ============================================================================
 // CLI Argument Parsing
@@ -52,12 +53,17 @@ function parseArgs(): MegaQAConfig {
     scenario: "full",
     journeyCount: 100,
     seed: undefined,
-    baseURL: "http://localhost:5173",
+    baseURL:
+      process.env.MEGA_QA_BASE_URL ||
+      process.env.PLAYWRIGHT_BASE_URL ||
+      "http://localhost:5173",
     outputDir: "qa-results/mega-qa",
     mode: "standard",
     soakDuration: 30,
     headless: true,
     ci: false,
+    cloud: false,
+    dbMode: "local",
   };
 
   for (const arg of args) {
@@ -69,6 +75,12 @@ function parseArgs(): MegaQAConfig {
       config.seed = parseInt(arg.split("=")[1], 10);
     } else if (arg.startsWith("--baseURL=")) {
       config.baseURL = arg.split("=")[1];
+    } else if (arg === "--cloud") {
+      config.cloud = true;
+      config.dbMode = "live";
+    } else if (arg.startsWith("--db=")) {
+      const v = arg.split("=")[1];
+      if (v === "local" || v === "live") config.dbMode = v;
     } else if (arg.startsWith("--output=")) {
       config.outputDir = arg.split("=")[1];
     } else if (arg.startsWith("--mode=")) {
@@ -90,6 +102,18 @@ function parseArgs(): MegaQAConfig {
     config.seed = Math.floor(Math.random() * 1000000);
   }
 
+  // Guardrails: cloud mode requires a non-local baseURL
+  if (config.cloud) {
+    const isLocal =
+      config.baseURL.includes("localhost") || config.baseURL.includes("127.0.0.1");
+    if (isLocal) {
+      console.error(
+        "❌ --cloud requires MEGA_QA_BASE_URL (or --baseURL=...) pointing to the deployed app"
+      );
+      process.exit(2);
+    }
+  }
+
   return config;
 }
 
@@ -105,6 +129,8 @@ OPTIONS:
   --journeys=<count>       Number of randomized journeys (default: 100)
   --seed=<number>          Master RNG seed for reproducibility
   --baseURL=<url>          Base URL for app under test (default: http://localhost:5173)
+  --cloud                  Cloud mode (remote baseURL + live DB; no Docker/dev server)
+  --db=<local|live>         DB mode hint (default: local; cloud sets live)
   --output=<dir>           Output directory (default: qa-results/mega-qa)
   --mode=<mode>            Run mode: standard, soak, quick (default: standard)
   --soak-duration=<min>    Soak duration in minutes (default: 30)
@@ -157,17 +183,23 @@ function runPreflight(config: MegaQAConfig): boolean {
   try {
     execSync("pnpm test:db:preflight", { stdio: "inherit" });
   } catch {
-    console.log("   ⚠️  Preflight check failed, attempting DB setup...");
-    try {
-      execSync("pnpm test:env:up", { stdio: "inherit" });
-      execSync(
-        `pnpm test:db:reset${config.scenario === "full" ? ":full" : ""}`,
-        { stdio: "inherit" }
-      );
-      execSync("pnpm test:db:preflight", { stdio: "inherit" });
-    } catch {
-      console.error("   ❌ Database setup failed");
+    // In cloud/live DB mode, never try to start/reset DB automatically.
+    if (config.cloud || config.dbMode === "live") {
+      console.error("   ❌ Database preflight failed (cloud/live DB mode)");
       passed = false;
+    } else {
+      console.log("   ⚠️  Preflight check failed, attempting DB setup...");
+      try {
+        execSync("pnpm test:env:up", { stdio: "inherit" });
+        execSync(
+          `pnpm test:db:reset${config.scenario === "full" ? ":full" : ""}`,
+          { stdio: "inherit" }
+        );
+        execSync("pnpm test:db:preflight", { stdio: "inherit" });
+      } catch {
+        console.error("   ❌ Database setup failed");
+        passed = false;
+      }
     }
   }
 
@@ -182,17 +214,20 @@ function runPreflight(config: MegaQAConfig): boolean {
       }
     );
     const statusCode = result.stdout?.toString().trim();
-    if (statusCode === "200" || statusCode === "304") {
+    // Treat any 2xx/3xx as "reachable" (remote deployments often redirect / -> /login, etc.)
+    if (statusCode && (statusCode.startsWith("2") || statusCode.startsWith("3"))) {
       console.log(`   ✅ App is running at ${config.baseURL}`);
     } else {
       console.log(
         `   ⚠️  App returned status ${statusCode} - may need to start dev server`
       );
+      if (config.cloud) passed = false;
     }
   } catch {
     console.log(
       `   ⚠️  Could not reach ${config.baseURL} - Playwright will start dev server`
     );
+    if (config.cloud) passed = false;
   }
 
   // 3. Write required tags file
@@ -226,6 +261,8 @@ async function runMegaQA(): Promise<void> {
   console.log(`Mode:       ${config.mode}`);
   console.log(`Base URL:   ${config.baseURL}`);
   console.log(`CI Mode:    ${config.ci}`);
+  console.log(`Cloud Mode: ${config.cloud}`);
+  console.log(`DB Mode:    ${config.dbMode}`);
   console.log("");
 
   // Initialize report bundle directory
@@ -359,6 +396,58 @@ async function runMegaQA(): Promise<void> {
     suiteResults.push(result);
     allFailures.push(...failures);
     allCoveredTags.push(...result.coveredTags);
+  }
+
+  // 10. Backend invariants (DB integrity checks)
+  if (existsSync("scripts/mega-qa/invariants/db-invariants.ts")) {
+    console.log(`\n🧪 Running Backend Invariants...`);
+    const start = Date.now();
+    const invariantResults = await runInvariants();
+    const testsRun = invariantResults.length;
+    const testsPassed = invariantResults.filter(r => r.passed).length;
+    const testsFailed = testsRun - testsPassed;
+    suiteResults.push({
+      name: "Backend Invariants",
+      category: "invariant",
+      testsRun,
+      testsPassed,
+      testsFailed,
+      testsSkipped: 0,
+      durationMs: Date.now() - start,
+      failureIds: [],
+      coveredTags: ["db-invariants"],
+    });
+    // If invariants fail, record them as failures for the bundle
+    if (testsFailed > 0) {
+      invariantResults
+        .filter(r => !r.passed)
+        .forEach((r, idx) => {
+          allFailures.push({
+            id: `invariant-${idx + 1}`,
+            classification: "backend",
+            suite: "Backend Invariants",
+            testName: r.name,
+            errorMessage: r.message,
+            errorStack: undefined,
+            replay: {
+              seed: config.seed ?? 0,
+              persona: "system",
+              steps: [],
+              urlHistory: [],
+              replayCommand: `pnpm mega:qa${config.cloud ? " --cloud" : ""} --seed=${
+                config.seed
+              }`,
+            },
+            evidence: {
+              consoleErrors: [],
+              networkFailures: [],
+            },
+            timestamp: new Date().toISOString(),
+            isKnown: false,
+            coveredTags: ["db-invariants"],
+          });
+        });
+    }
   }
 
   // ========================================================================
