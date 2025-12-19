@@ -3433,6 +3433,111 @@ logger.error({ err: error }, "Error message");
     - Full traceability from intake to delivery
   - Added: 2025-12-19
 
+- [ ] **FEATURE-006: VIP Portal Client Booking System**
+  - Phase: 3+
+  - Priority: MEDIUM
+  - Estimate: 3-4 weeks
+  - Context: Allow clients to book appointments via VIP Portal with configurable approval workflows and notifications
+  - **Scope:**
+    - **Booking Interface (VIP Portal):**
+      - Calendar view showing available time slots
+      - Appointment type selection (consultation, pickup, tour, etc.)
+      - Client can select preferred date/time
+      - Optional notes/reason for appointment
+      - Confirmation page with booking details
+    - **Approval Workflow:**
+      - Configurable per appointment type: auto-accept vs requires approval
+      - Admin settings to define which types need approval
+      - Pending requests queue for staff review
+      - Approve/decline with optional message to client
+      - Reschedule suggestion capability
+    - **Notifications & Alerts:**
+      - Email notification to staff on new booking/request
+      - In-app notification badge for pending approvals
+      - Email confirmation to client on booking
+      - Reminder emails (24h, 1h before appointment)
+      - Notification on approval/decline/reschedule
+    - **Calendar Integration:**
+      - Sync with existing calendar system
+      - Block off unavailable times
+      - Show client bookings in staff calendar view
+      - Prevent double-booking
+  - **Database Changes:**
+    - Appointment types table with approval settings
+    - Booking requests table with status tracking
+    - Notification preferences per user
+  - Added: 2025-12-19
+
+- [ ] **FEATURE-007: Calendar Buffer Times & Appointment Spacing**
+  - Phase: 3+
+  - Priority: LOW
+  - Estimate: 1-2 weeks
+  - Context: Automatically add buffer times between appointments with configurable durations per appointment type
+  - **Scope:**
+    - **Buffer Time Configuration:**
+      - Global default buffer time setting (e.g., 15 min)
+      - Per-appointment-type buffer override
+      - Before-buffer vs after-buffer options
+      - Different buffers for different appointment type transitions (e.g., consultation→pickup = 30min, pickup→pickup = 15min)
+    - **Calendar Logic:**
+      - Automatically block buffer time when appointment is created
+      - Show buffer as "unavailable" in booking interface
+      - Visual indicator in staff calendar (different color/pattern)
+      - Buffer time excluded from available slots calculation
+    - **Edge Cases:**
+      - Back-to-back same-type appointments (configurable: allow or enforce buffer)
+      - Manual override for staff (bypass buffer with confirmation)
+      - Buffer adjustment when appointment is moved/rescheduled
+  - **UI Components:**
+    - Settings page for buffer configuration
+    - Visual buffer display in calendar views
+    - Warning when manually scheduling into buffer time
+  - Added: 2025-12-19
+
+- [ ] **FEATURE-008: System-Wide Advanced Filtering & Sorting**
+  - Phase: 3+
+  - Priority: MEDIUM
+  - Estimate: 3-4 weeks
+  - Context: Improve and standardize filtering and sorting capabilities across all list views in the system
+  - **Scope:**
+    - **Filter Infrastructure:**
+      - Reusable filter component library
+      - Filter state persistence (remember user's last filters)
+      - URL-based filter state (shareable filtered views)
+      - Saved filter presets per user
+    - **Quick Filters:**
+      - One-click common filters (Today, This Week, Active, etc.)
+      - Filter chips showing active filters with easy removal
+      - "Clear All" functionality
+      - Recent/favorite filters quick access
+    - **Advanced Filters:**
+      - Multi-select dropdowns for categorical fields
+      - Date range pickers with presets
+      - Numeric range filters (price, quantity, etc.)
+      - Text search with field selection
+      - Boolean toggles (active/inactive, paid/unpaid)
+      - Compound filters (AND/OR logic)
+    - **Sorting:**
+      - Click-to-sort column headers
+      - Multi-column sort (shift+click)
+      - Sort direction indicators
+      - Default sort per view (configurable)
+      - Sort state persistence
+    - **Apply To:**
+      - Orders list
+      - Clients list
+      - Inventory/Batches list
+      - Invoices list
+      - Calendar events
+      - Products list
+      - All other list views
+  - **Technical:**
+    - Server-side filtering for large datasets
+    - Debounced filter inputs
+    - Loading states during filter application
+    - Filter validation and error handling
+  - Added: 2025-12-19
+
 ### Explicitly Excluded (Per User Feedback)
 
 These should **NOT** be built:
