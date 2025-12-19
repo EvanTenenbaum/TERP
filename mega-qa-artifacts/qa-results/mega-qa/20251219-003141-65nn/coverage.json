@@ -1,0 +1,149 @@
+{
+  "required": [
+    {
+      "id": "TS-001",
+      "category": "ts-protocol",
+      "description": "Core protocol 001",
+      "required": true
+    },
+    {
+      "id": "TS-002",
+      "category": "ts-protocol",
+      "description": "Core protocol 002",
+      "required": true
+    },
+    {
+      "id": "TS-1.1",
+      "category": "ts-protocol",
+      "description": "Protocol 1.1",
+      "required": true
+    },
+    {
+      "id": "TS-2.1",
+      "category": "ts-protocol",
+      "description": "Protocol 2.1",
+      "required": true
+    },
+    {
+      "id": "TS-11.1",
+      "category": "ts-protocol",
+      "description": "Protocol 11.1",
+      "required": true
+    },
+    {
+      "id": "route:/login",
+      "category": "route",
+      "description": "Login route loads",
+      "required": true
+    },
+    {
+      "id": "route:/dashboard",
+      "category": "route",
+      "description": "Dashboard route loads",
+      "required": true
+    },
+    {
+      "id": "route:/orders",
+      "category": "route",
+      "description": "Orders route loads",
+      "required": true
+    },
+    {
+      "id": "route:/clients",
+      "category": "route",
+      "description": "Clients route loads",
+      "required": true
+    },
+    {
+      "id": "route:/inventory",
+      "category": "route",
+      "description": "Inventory route loads",
+      "required": true
+    },
+    {
+      "id": "api:auth.login",
+      "category": "api",
+      "description": "Auth login works",
+      "required": true
+    },
+    {
+      "id": "api:auth.me",
+      "category": "api",
+      "description": "Auth me works",
+      "required": true
+    },
+    {
+      "id": "api:orders.list",
+      "category": "api",
+      "description": "Orders list procedure works",
+      "required": true
+    },
+    {
+      "id": "api:clients.list",
+      "category": "api",
+      "description": "Clients list procedure works",
+      "required": true
+    },
+    {
+      "id": "api:batches.list",
+      "category": "api",
+      "description": "Batches list procedure works",
+      "required": true
+    },
+    {
+      "id": "regression:cmd-k",
+      "category": "regression",
+      "description": "Cmd+K works",
+      "required": true
+    },
+    {
+      "id": "regression:theme-toggle",
+      "category": "regression",
+      "description": "Theme toggle works",
+      "required": true
+    },
+    {
+      "id": "regression:no-spinner",
+      "category": "regression",
+      "description": "No infinite spinner regression",
+      "required": true
+    },
+    {
+      "id": "regression:layout-consistency",
+      "category": "regression",
+      "description": "Layout consistency regression check",
+      "required": true
+    }
+  ],
+  "covered": [
+    "property-tests",
+    "business-logic",
+    "invariants",
+    "contract-tests",
+    "api-schema",
+    "trpc-procedures",
+    "route:/login",
+    "route:/dashboard",
+    "route:/orders",
+    "route:/clients",
+    "route:/inventory",
+    "api:auth.login",
+    "api:auth.me",
+    "api:orders.list",
+    "api:clients.list",
+    "api:batches.list",
+    "TS-001",
+    "TS-002",
+    "TS-1.1",
+    "TS-2.1",
+    "TS-11.1",
+    "regression:cmd-k",
+    "regression:theme-toggle",
+    "regression:no-spinner",
+    "regression:layout-consistency"
+  ],
+  "missing": [],
+  "waivers": [],
+  "coveragePercent": 100,
+  "passed": true
+}

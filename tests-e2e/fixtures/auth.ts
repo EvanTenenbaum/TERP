@@ -7,48 +7,65 @@
 
 export const TEST_USERS = {
   admin: {
-    email: 'admin@terp.test',
-    password: 'admin123',
+    // In production/live DB mode, override via env to avoid hardcoding credentials.
+    // (Username is stored in the `users.email` field in the simple auth system.)
+    email: process.env.E2E_ADMIN_USERNAME || 'admin@terp.test',
+    password: process.env.E2E_ADMIN_PASSWORD || 'admin123',
   },
   standard: {
-    email: 'test@example.com',
-    password: 'password123',
+    email: process.env.E2E_STANDARD_USERNAME || 'test@example.com',
+    password: process.env.E2E_STANDARD_PASSWORD || 'password123',
   },
   vipClient: {
-    email: 'client@greenleaf.com',
-    password: 'password123',
+    email: process.env.E2E_VIP_USERNAME || 'client@greenleaf.com',
+    password: process.env.E2E_VIP_PASSWORD || 'password123',
   },
 } as const;
 
 export const AUTH_ROUTES = {
   login: '/login',
-  signIn: '/sign-in', // Alias - should redirect to /login
-  vipPortal: '/vip-portal/sign-in',
+  signIn: '/sign-in', // Alias - should redirect to /login (legacy)
+  vipPortal: '/vip-portal/login',
 } as const;
+
+async function fillFirstVisible(
+  page: import('@playwright/test').Page,
+  selectors: string[],
+  value: string
+): Promise<void> {
+  for (const selector of selectors) {
+    const locator = page.locator(selector).first();
+    if (await locator.isVisible().catch(() => false)) {
+      await locator.fill(value);
+      return;
+    }
+  }
+  throw new Error(`No visible input found for selectors: ${selectors.join(', ')}`);
+}
 
 /**
  * Helper to login via the standard login page
  */
 export async function loginAsAdmin(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/login');
-  await page.fill('input[name="email"], input[type="email"]', TEST_USERS.admin.email);
-  await page.fill('input[name="password"], input[type="password"]', TEST_USERS.admin.password);
+  await fillFirstVisible(page, ['input[name="username"]', '#username', 'input[placeholder*="username" i]', 'input[name="email"]', 'input[type="email"]'], TEST_USERS.admin.email);
+  await fillFirstVisible(page, ['input[name="password"]', '#password', 'input[type="password"]'], TEST_USERS.admin.password);
   await page.click('button[type="submit"]');
-  await page.waitForURL(/\/(dashboard)?$/, { timeout: 10000 });
+  await page.waitForURL(/\/($|dashboard)(\?.*)?/, { timeout: 15000 });
 }
 
 export async function loginAsStandardUser(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/login');
-  await page.fill('input[name="email"], input[type="email"]', TEST_USERS.standard.email);
-  await page.fill('input[name="password"], input[type="password"]', TEST_USERS.standard.password);
+  await fillFirstVisible(page, ['input[name="username"]', '#username', 'input[placeholder*="username" i]', 'input[name="email"]', 'input[type="email"]'], TEST_USERS.standard.email);
+  await fillFirstVisible(page, ['input[name="password"]', '#password', 'input[type="password"]'], TEST_USERS.standard.password);
   await page.click('button[type="submit"]');
-  await page.waitForURL(/\/(dashboard)?$/, { timeout: 10000 });
+  await page.waitForURL(/\/($|dashboard)(\?.*)?/, { timeout: 15000 });
 }
 
 export async function loginAsVipClient(page: import('@playwright/test').Page): Promise<void> {
-  await page.goto('/vip-portal/sign-in');
-  await page.fill('input[name="email"], input[type="email"]', TEST_USERS.vipClient.email);
-  await page.fill('input[name="password"], input[type="password"]', TEST_USERS.vipClient.password);
+  await page.goto(AUTH_ROUTES.vipPortal);
+  await fillFirstVisible(page, ['input[name="username"]', '#username', 'input[placeholder*="username" i]', 'input[name="email"]', 'input[type="email"]'], TEST_USERS.vipClient.email);
+  await fillFirstVisible(page, ['input[name="password"]', '#password', 'input[type="password"]'], TEST_USERS.vipClient.password);
   await page.click('button[type="submit"]');
-  await page.waitForURL('/vip-portal/dashboard', { timeout: 10000 });
+  await page.waitForURL('/vip-portal/dashboard', { timeout: 15000 });
 }

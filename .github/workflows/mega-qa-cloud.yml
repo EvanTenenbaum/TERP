@@ -44,6 +44,20 @@ jobs:
       - name: Install Playwright (Chromium)
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Ensure live E2E users exist
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MEGA_QA_CLOUD: "1"
+          MEGA_QA_USE_LIVE_DB: "1"
+          # Optional overrides; if unset, defaults from fixtures/script are used.
+          E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_STANDARD_USERNAME: ${{ secrets.E2E_STANDARD_USERNAME }}
+          E2E_STANDARD_PASSWORD: ${{ secrets.E2E_STANDARD_PASSWORD }}
+          E2E_VIP_USERNAME: ${{ secrets.E2E_VIP_USERNAME }}
+          E2E_VIP_PASSWORD: ${{ secrets.E2E_VIP_PASSWORD }}
+        run: pnpm tsx scripts/mega-qa/ensure-e2e-users.ts
+
       - name: Run Mega QA (cloud)
         env:
           CI: "true"
@@ -51,6 +65,13 @@ jobs:
           MEGA_QA_BASE_URL: ${{ secrets.MEGA_QA_BASE_URL }}
           MEGA_QA_CLOUD: "1"
           MEGA_QA_USE_LIVE_DB: "1"
+          # Provide creds to Playwright tests (optional overrides)
+          E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_STANDARD_USERNAME: ${{ secrets.E2E_STANDARD_USERNAME }}
+          E2E_STANDARD_PASSWORD: ${{ secrets.E2E_STANDARD_PASSWORD }}
+          E2E_VIP_USERNAME: ${{ secrets.E2E_VIP_USERNAME }}
+          E2E_VIP_PASSWORD: ${{ secrets.E2E_VIP_PASSWORD }}
         run: |
           if [ "${{ inputs.quick_mode }}" = "true" ]; then
             pnpm mega:qa --cloud --mode=quick --journeys=25
