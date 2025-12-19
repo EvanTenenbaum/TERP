@@ -20,10 +20,17 @@ vi.mock("../services/permissionService", () => setupPermissionMock());
 // Mock the orders module
 vi.mock("../ordersDb");
 
+// Mock the soft delete utilities
+vi.mock("../utils/softDelete", () => ({
+  softDelete: vi.fn(),
+  restoreDeleted: vi.fn(),
+}));
+
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
 import { db } from "../db";
 import * as ordersDb from "../ordersDb";
+import { softDelete, restoreDeleted } from "../utils/softDelete";
 
 // Mock user for authenticated requests
 const mockUser = {
@@ -374,19 +381,15 @@ describe("Orders Router", () => {
   describe("delete", () => {
     it("should soft delete an order", async () => {
       // Arrange
-      // Mock the database update to return affected rows
-      const mockUpdate = vi.fn().mockReturnValue({
-        set: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue({ rowsAffected: 1 }),
-      });
-      vi.mocked(db.update).mockReturnValue(mockUpdate() as any);
+      // Mock softDelete to return 1 affected row
+      vi.mocked(softDelete).mockResolvedValue(1);
 
       // Act
       const result = await caller.orders.delete({ id: 1 });
 
       // Assert
       expect(result.success).toBe(true);
-      // Soft delete sets deletedAt instead of calling deleteOrder
+      expect(softDelete).toHaveBeenCalledWith(expect.anything(), 1);
     });
   });
 
