@@ -11,16 +11,24 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const todoListsRouter = router({
   // Get all lists accessible by current user
-  getMyLists: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
-    const lists = await todoListsDb.getUserLists(ctx.user.id);
-    // HOTFIX (BUG-033): Wrap in paginated response structure
-    return {
-      items: lists,
-      nextCursor: null,
-      hasMore: false,
-    };
-  }),
+  getMyLists: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).optional(),
+          cursor: z.string().nullish(),
+        })
+        .optional()
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await todoListsDb.getUserLists(ctx.user.id, {
+        limit: input?.limit,
+        cursor: input?.cursor,
+      });
+    }),
 
   // Get a specific list by ID
   getById: protectedProcedure.use(requirePermission("todos:read"))
@@ -93,10 +101,13 @@ export const todoListsRouter = router({
     }),
 
   // Get list members
-  getMembers: protectedProcedure.use(requirePermission("todos:read"))
+  getMembers: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
+        limit: z.number().min(1).max(100).optional(),
+        cursor: z.string().nullish(),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -104,13 +115,11 @@ export const todoListsRouter = router({
 
       await permissions.assertCanViewList(ctx.user.id, input.listId);
 
-      const members = await todoListsDb.getListMembers(input.listId);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
-      return {
-        items: members,
-        nextCursor: null,
-        hasMore: false,
-      };
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await todoListsDb.getListMembers(input.listId, {
+        limit: input.limit,
+        cursor: input.cursor,
+      });
     }),
 
   // Add a member to a list

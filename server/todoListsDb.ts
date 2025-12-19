@@ -8,7 +8,12 @@ import {
   type TodoListMember,
   type InsertTodoListMember,
 } from "../drizzle/schema";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, sql } from "drizzle-orm";
+import {
+  PaginatedResult,
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+} from "./_core/pagination";
 
 /**
  * Todo Lists Database Access Layer
@@ -20,14 +25,20 @@ import { eq, and, or, desc } from "drizzle-orm";
 // ============================================================================
 
 /**
- * Get all lists accessible by a user (owned + shared)
+ * Get all lists accessible by a user (owned + shared) with pagination
+ * BUG-034: Returns PaginatedResult instead of raw array
  */
-export async function getUserLists(userId: number): Promise<TodoList[]> {
+export async function getUserLists(
+  userId: number,
+  options?: { limit?: number; cursor?: string | null }
+): Promise<PaginatedResult<TodoList>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get lists where user is owner OR a member
-  const lists = await db
+  const limit = Math.min(options?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+
+  // Build base query
+  let baseQuery = db
     .selectDistinct({
       id: todoLists.id,
       name: todoLists.name,
@@ -41,10 +52,56 @@ export async function getUserLists(userId: number): Promise<TodoList[]> {
     .leftJoin(todoListMembers, eq(todoLists.id, todoListMembers.listId))
     .where(
       or(eq(todoLists.ownerId, userId), eq(todoListMembers.userId, userId))
-    )
-    .orderBy(desc(todoLists.updatedAt));
+    );
 
-  return lists as TodoList[];
+  // Apply cursor if provided
+  if (options?.cursor) {
+    const cursorId = parseInt(options.cursor, 10);
+    if (!isNaN(cursorId)) {
+      baseQuery = db
+        .selectDistinct({
+          id: todoLists.id,
+          name: todoLists.name,
+          description: todoLists.description,
+          ownerId: todoLists.ownerId,
+          isShared: todoLists.isShared,
+          createdAt: todoLists.createdAt,
+          updatedAt: todoLists.updatedAt,
+        })
+        .from(todoLists)
+        .leftJoin(todoListMembers, eq(todoLists.id, todoListMembers.listId))
+        .where(
+          and(
+            or(eq(todoLists.ownerId, userId), eq(todoListMembers.userId, userId)),
+            sql`${todoLists.id} < ${cursorId}`
+          )
+        );
+    }
+  }
+
+  const lists = await baseQuery.orderBy(desc(todoLists.updatedAt)).limit(limit + 1);
+
+  // Get total count
+  const countQuery = await db
+    .selectDistinct({ id: todoLists.id })
+    .from(todoLists)
+    .leftJoin(todoListMembers, eq(todoLists.id, todoListMembers.listId))
+    .where(
+      or(eq(todoLists.ownerId, userId), eq(todoListMembers.userId, userId))
+    );
+  const total = countQuery.length;
+
+  const hasMore = lists.length > limit;
+  const items = hasMore ? lists.slice(0, limit) : lists;
+  const lastItem = items[items.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+  return {
+    items: items as TodoList[],
+    nextCursor,
+    hasMore,
+    total,
+  };
 }
 
 /**
@@ -121,13 +178,33 @@ export async function deleteList(listId: number): Promise<void> {
 // ============================================================================
 
 /**
- * Get all members of a list
+ * Member with user info type for list members query
  */
-export async function getListMembers(listId: number) {
+type ListMemberWithUser = {
+  id: number;
+  listId: number;
+  userId: number;
+  role: "owner" | "editor" | "viewer";
+  addedAt: Date;
+  addedBy: number | null;
+  userName: string;
+  userEmail: string;
+};
+
+/**
+ * Get all members of a list with pagination
+ * BUG-034: Returns PaginatedResult instead of raw array
+ */
+export async function getListMembers(
+  listId: number,
+  options?: { limit?: number; cursor?: string | null }
+): Promise<PaginatedResult<ListMemberWithUser>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const members = await db
+  const limit = Math.min(options?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+
+  let query = db
     .select({
       id: todoListMembers.id,
       listId: todoListMembers.listId,
@@ -140,10 +217,54 @@ export async function getListMembers(listId: number) {
     })
     .from(todoListMembers)
     .innerJoin(users, eq(todoListMembers.userId, users.id))
-    .where(eq(todoListMembers.listId, listId))
-    .orderBy(todoListMembers.addedAt);
+    .where(eq(todoListMembers.listId, listId));
 
-  return members;
+  // Apply cursor if provided
+  if (options?.cursor) {
+    const cursorId = parseInt(options.cursor, 10);
+    if (!isNaN(cursorId)) {
+      query = db
+        .select({
+          id: todoListMembers.id,
+          listId: todoListMembers.listId,
+          userId: todoListMembers.userId,
+          role: todoListMembers.role,
+          addedAt: todoListMembers.addedAt,
+          addedBy: todoListMembers.addedBy,
+          userName: users.name,
+          userEmail: users.email,
+        })
+        .from(todoListMembers)
+        .innerJoin(users, eq(todoListMembers.userId, users.id))
+        .where(
+          and(
+            eq(todoListMembers.listId, listId),
+            sql`${todoListMembers.id} > ${cursorId}`
+          )
+        );
+    }
+  }
+
+  const members = await query.orderBy(todoListMembers.addedAt).limit(limit + 1);
+
+  // Get total count
+  const [countResult] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(todoListMembers)
+    .where(eq(todoListMembers.listId, listId));
+  const total = Number(countResult?.count ?? 0);
+
+  const hasMore = members.length > limit;
+  const items = hasMore ? members.slice(0, limit) : members;
+  const lastItem = items[items.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+  return {
+    items: items as ListMemberWithUser[],
+    nextCursor,
+    hasMore,
+    total,
+  };
 }
 
 /**
