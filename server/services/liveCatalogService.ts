@@ -1,8 +1,10 @@
 /**
  * Live Catalog Service
- * 
+ *
  * Business logic for the VIP Portal Live Catalog feature.
  * Handles inventory filtering, pricing, and change detection.
+ *
+ * SPRINT-A: Updated to use structured Pino logging (Task 5)
  */
 
 import { getDb } from "../db";
@@ -10,6 +12,7 @@ import { batches, products } from "../../drizzle/schema";
 import { vipPortalConfigurations, clientDraftInterests } from "../../drizzle/schema-vip-portal";
 import { eq, and, or, inArray, gte, lte, like, sql, desc, asc } from "drizzle-orm";
 import * as pricingEngine from "../pricingEngine";
+import { vipPortalLogger } from "../_core/logger";
 
 // ============================================================================
 // TYPES
@@ -171,7 +174,11 @@ export async function getCatalog(
   try {
     pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
   } catch (error) {
-    console.error("Pricing engine error:", error);
+    // SPRINT-A: Use structured logging instead of console.error
+    vipPortalLogger.operationFailure("calculateRetailPrices", error, {
+      clientId,
+      itemCount: inventoryItems.length,
+    });
     // Fallback: use base prices
     pricedItems = inventoryItems.map(item => ({
       ...item,

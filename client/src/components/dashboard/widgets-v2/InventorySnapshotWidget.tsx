@@ -1,3 +1,8 @@
+/**
+ * Inventory Snapshot Widget
+ * SPRINT-A Task 10: Added EmptyState component integration
+ */
+
 import { useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -9,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
@@ -118,15 +124,12 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
             </Table>
           </div>
         ) : (
-          <div className="text-center py-8 space-y-2">
-            <p className="text-muted-foreground">No inventory data available</p>
-            <p className="text-xs text-muted-foreground">
-              To see data here, seed the database with:{" "}
-              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-                pnpm seed
-              </code>
-            </p>
-          </div>
+          <EmptyState
+            variant="inventory"
+            size="sm"
+            title="No inventory data"
+            description="Inventory snapshot will appear once products are added"
+          />
         )}
       </CardContent>
     </Card>
