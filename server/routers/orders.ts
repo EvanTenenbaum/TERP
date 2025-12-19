@@ -192,7 +192,26 @@ export const ordersRouter = router({
     )
     .query(async ({ input }) => {
       // Debug logging removed - use structured logging middleware for API debugging
-      return await ordersDb.getAllOrders(input);
+      const orders = await ordersDb.getAllOrders(input);
+
+      // HOTFIX (BUG-033): Wrap raw array in paginated response structure
+      // The frontend was refactored to expect a paginated object, but this endpoint
+      // still returns a raw array. This minimal fix restores data flow.
+      const limit = input?.limit || 50;
+      const offset = input?.offset || 0;
+
+      // NOTE: We cannot calculate total or hasMore without a separate count query,
+      // but for a hotfix, we assume no more pages if the result is less than the limit.
+      return {
+        items: orders,
+        nextCursor: null, // No cursor support yet
+        hasMore: orders.length === limit,
+        pagination: {
+          total: -1, // Unknown without a count query
+          limit: limit,
+          offset: offset,
+        }
+      };
     }),
 
   /**
