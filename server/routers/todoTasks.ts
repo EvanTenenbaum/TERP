@@ -1,7 +1,7 @@
 /**
  * Todo Tasks Router
  * API endpoints for task management within lists
- * 
+ *
  * PERF-003: Added pagination support
  */
 
@@ -14,17 +14,83 @@ import * as permissions from "../services/todoPermissions";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { DEFAULT_PAGE_SIZE } from "../_core/pagination";
 
+// ============================================================================
+// ZOD SCHEMAS
+// ============================================================================
+
+/** Schema for task status */
+export const taskStatusSchema = z.enum(["todo", "in_progress", "done"]);
+export type TaskStatus = z.infer<typeof taskStatusSchema>;
+
+/** Schema for task priority */
+export const taskPrioritySchema = z.enum(["low", "medium", "high", "urgent"]);
+export type TaskPriority = z.infer<typeof taskPrioritySchema>;
+
+/** Schema for pagination input */
+export const paginationInputSchema = z.object({
+  limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
+  offset: z.number().min(0).default(0).optional(),
+});
+export type PaginationInput = z.infer<typeof paginationInputSchema>;
+
+/** Schema for list tasks input */
+export const listTasksInputSchema = paginationInputSchema.extend({
+  listId: z.number(),
+});
+export type ListTasksInput = z.infer<typeof listTasksInputSchema>;
+
+/** Schema for creating a task */
+export const createTaskInputSchema = z.object({
+  listId: z.number(),
+  title: z.string().min(1).max(500),
+  description: z.string().optional(),
+  status: taskStatusSchema.optional().default("todo"),
+  priority: taskPrioritySchema.optional(),
+  dueDate: z.date().optional(),
+  assignedTo: z.number().optional(),
+  position: z.number().optional(),
+});
+export type CreateTaskInput = z.infer<typeof createTaskInputSchema>;
+
+/** Schema for updating a task */
+export const updateTaskInputSchema = z.object({
+  taskId: z.number(),
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().optional(),
+  status: taskStatusSchema.optional(),
+  priority: taskPrioritySchema.optional(),
+  dueDate: z.date().optional().nullable(),
+  position: z.number().optional(),
+});
+export type UpdateTaskInput = z.infer<typeof updateTaskInputSchema>;
+
+/** Schema for task position in reorder operation */
+export const taskPositionSchema = z.object({
+  taskId: z.number(),
+  position: z.number(),
+});
+export type TaskPositionInput = z.infer<typeof taskPositionSchema>;
+
+/** Schema for reordering tasks */
+export const reorderTasksInputSchema = z.object({
+  listId: z.number(),
+  taskPositions: z.array(taskPositionSchema),
+});
+export type ReorderTasksInput = z.infer<typeof reorderTasksInputSchema>;
+
+// Re-export types from todoTasksDb
+export type {
+  PaginatedTasksResponse,
+  TaskListStats,
+  TaskPosition,
+} from "../todoTasksDb";
+
 export const todoTasksRouter = router({
   // Get all tasks in a list with pagination
   // PERF-003: Added pagination support
-  getListTasks: protectedProcedure.use(requirePermission("todos:read"))
-    .input(
-      z.object({
-        listId: z.number(),
-        limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
-        offset: z.number().min(0).default(0).optional(),
-      })
-    )
+  getListTasks: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .input(listTasksInputSchema)
     .query(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
@@ -38,19 +104,15 @@ export const todoTasksRouter = router({
 
   // Get tasks assigned to current user with pagination
   // PERF-003: Added pagination support
-  getMyTasks: protectedProcedure.use(requirePermission("todos:read"))
-    .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
-        offset: z.number().min(0).default(0).optional(),
-      }).optional()
-    )
+  getMyTasks: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .input(paginationInputSchema.optional())
     .query(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      
+
       const limit = input?.limit ?? DEFAULT_PAGE_SIZE;
       const offset = input?.offset ?? 0;
-      
+
       return await todoTasksDb.getUserAssignedTasks(ctx.user.id, limit, offset);
     }),
 
@@ -70,22 +132,9 @@ export const todoTasksRouter = router({
     }),
 
   // Create a new task
-  create: protectedProcedure.use(requirePermission("todos:create"))
-    .input(
-      z.object({
-        listId: z.number(),
-        title: z.string().min(1).max(500),
-        description: z.string().optional(),
-        status: z
-          .enum(["todo", "in_progress", "done"])
-          .optional()
-          .default("todo"),
-        priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
-        dueDate: z.date().optional(),
-        assignedTo: z.number().optional(),
-        position: z.number().optional(),
-      })
-    )
+  create: protectedProcedure
+    .use(requirePermission("todos:create"))
+    .input(createTaskInputSchema)
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
@@ -117,18 +166,9 @@ export const todoTasksRouter = router({
     }),
 
   // Update a task
-  update: protectedProcedure.use(requirePermission("todos:update"))
-    .input(
-      z.object({
-        taskId: z.number(),
-        title: z.string().min(1).max(500).optional(),
-        description: z.string().optional(),
-        status: z.enum(["todo", "in_progress", "done"]).optional(),
-        priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
-        dueDate: z.date().optional().nullable(),
-        position: z.number().optional(),
-      })
-    )
+  update: protectedProcedure
+    .use(requirePermission("todos:update"))
+    .input(updateTaskInputSchema)
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
@@ -268,18 +308,9 @@ export const todoTasksRouter = router({
     }),
 
   // Reorder tasks in a list
-  reorder: protectedProcedure.use(requirePermission("todos:read"))
-    .input(
-      z.object({
-        listId: z.number(),
-        taskPositions: z.array(
-          z.object({
-            taskId: z.number(),
-            position: z.number(),
-          })
-        ),
-      })
-    )
+  reorder: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .input(reorderTasksInputSchema)
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 

@@ -6,6 +6,34 @@ import {
 } from "../drizzle/schema";
 import { eq, and, desc, asc, isNotNull, sql } from "drizzle-orm";
 
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+/** Paginated response for task lists */
+export interface PaginatedTasksResponse {
+  items: TodoTask[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+/** Task statistics for a list */
+export interface TaskListStats {
+  total: number;
+  completed: number;
+  todo: number;
+  inProgress: number;
+  overdue: number;
+}
+
+/** Task position for reordering */
+export interface TaskPosition {
+  taskId: number;
+  position: number;
+}
+
 /**
  * Todo Tasks Database Access Layer
  * Handles CRUD operations for tasks within lists
@@ -23,7 +51,7 @@ export async function getListTasks(
   listId: number,
   limit: number = 50,
   offset: number = 0
-) {
+): Promise<PaginatedTasksResponse> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -60,7 +88,7 @@ export async function getUserAssignedTasks(
   userId: number,
   limit: number = 50,
   offset: number = 0
-) {
+): Promise<PaginatedTasksResponse> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -236,7 +264,7 @@ export async function deleteTask(taskId: number): Promise<void> {
  */
 export async function reorderTasks(
   listId: number,
-  taskPositions: Array<{ taskId: number; position: number }>
+  taskPositions: TaskPosition[]
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -329,7 +357,7 @@ export async function getTasksDueSoon(): Promise<TodoTask[]> {
 /**
  * Get task statistics for a list
  */
-export async function getListTaskStats(listId: number) {
+export async function getListTaskStats(listId: number): Promise<TaskListStats> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
