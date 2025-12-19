@@ -157,6 +157,215 @@ export function logPerformance<T>(
     });
 }
 
+// ============================================================================
+// PII MASKING UTILITIES (SPRINT-A Task 5.4)
+// ============================================================================
+
+/**
+ * PII masking utilities for logging
+ * Masks sensitive data to comply with privacy requirements
+ */
+export const piiMasker = {
+  /**
+   * Mask an email address (shows first 2 chars and domain)
+   * Example: john.doe@example.com -> jo***@example.com
+   */
+  email: (email: string): string => {
+    if (!email || typeof email !== "string") return "[REDACTED]";
+    const [local, domain] = email.split("@");
+    if (!local || !domain) return "[REDACTED]";
+    const maskedLocal = local.length > 2 ? local.slice(0, 2) + "***" : "***";
+    return `${maskedLocal}@${domain}`;
+  },
+
+  /**
+   * Mask a phone number (shows last 4 digits)
+   * Example: +1-555-123-4567 -> ***-4567
+   */
+  phone: (phone: string): string => {
+    if (!phone || typeof phone !== "string") return "[REDACTED]";
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 4) return "[REDACTED]";
+    return `***-${digits.slice(-4)}`;
+  },
+
+  /**
+   * Mask an address (shows city/state only)
+   * Example: 123 Main St, City, ST 12345 -> [ADDR], City, ST
+   */
+  address: (address: string): string => {
+    if (!address || typeof address !== "string") return "[REDACTED]";
+    // Try to extract city/state pattern
+    const parts = address.split(",").map(p => p.trim());
+    if (parts.length >= 2) {
+      // Keep last 2 parts (typically city, state)
+      const cityState = parts.slice(-2).join(", ");
+      // Remove zip code if present
+      return "[ADDR], " + cityState.replace(/\s+\d{5}(-\d{4})?$/, "");
+    }
+    return "[REDACTED]";
+  },
+
+  /**
+   * Mask a name (shows first initial and last name first initial)
+   * Example: John Doe -> J*** D***
+   */
+  name: (name: string): string => {
+    if (!name || typeof name !== "string") return "[REDACTED]";
+    const parts = name.trim().split(/\s+/);
+    return parts.map(p => (p.length > 0 ? p[0] + "***" : "***")).join(" ");
+  },
+
+  /**
+   * Mask an object's PII fields
+   * Automatically detects and masks common PII field names
+   */
+  object: <T extends Record<string, unknown>>(obj: T): Record<string, unknown> => {
+    if (!obj || typeof obj !== "object") return obj;
+
+    const piiFields: Record<string, (val: string) => string> = {
+      email: piiMasker.email,
+      userEmail: piiMasker.email,
+      clientEmail: piiMasker.email,
+      phone: piiMasker.phone,
+      phoneNumber: piiMasker.phone,
+      mobile: piiMasker.phone,
+      address: piiMasker.address,
+      streetAddress: piiMasker.address,
+      billingAddress: piiMasker.address,
+      shippingAddress: piiMasker.address,
+      name: piiMasker.name,
+      fullName: piiMasker.name,
+      firstName: piiMasker.name,
+      lastName: piiMasker.name,
+    };
+
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const lowerKey = key.toLowerCase();
+      const maskFn = Object.entries(piiFields).find(
+        ([fieldName]) => lowerKey.includes(fieldName.toLowerCase())
+      )?.[1];
+
+      if (maskFn && typeof value === "string") {
+        result[key] = maskFn(value);
+      } else if (value && typeof value === "object" && !Array.isArray(value)) {
+        result[key] = piiMasker.object(value as Record<string, unknown>);
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  },
+};
+
+// ============================================================================
+// VIP PORTAL LOGGING UTILITIES (SPRINT-A Task 5)
+// ============================================================================
+
+/**
+ * VIP Portal-specific logging utilities
+ * Provides structured logging with PII protection for VIP Portal operations
+ */
+export const vipPortalLogger = {
+  /**
+   * Log VIP portal operation start
+   */
+  operationStart: (operation: string, context: Record<string, unknown>): void => {
+    logger.info(
+      { operation, ...piiMasker.object(context) },
+      `VIP Portal: Starting ${operation}`
+    );
+  },
+
+  /**
+   * Log VIP portal operation success
+   */
+  operationSuccess: (operation: string, context: Record<string, unknown>): void => {
+    logger.info(
+      { operation, ...piiMasker.object(context) },
+      `VIP Portal: Completed ${operation}`
+    );
+  },
+
+  /**
+   * Log VIP portal operation failure
+   */
+  operationFailure: (
+    operation: string,
+    error: Error | unknown,
+    context: Record<string, unknown>
+  ): void => {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    logger.error(
+      { operation, error: errorMessage, stack: errorStack, ...piiMasker.object(context) },
+      `VIP Portal: Failed ${operation}`
+    );
+  },
+
+  /**
+   * Log authentication event
+   */
+  authEvent: (
+    eventType: "login" | "logout" | "session_verify" | "password_reset",
+    clientId: number,
+    success: boolean,
+    context?: Record<string, unknown>
+  ): void => {
+    const logFn = success ? logger.info : logger.warn;
+    logFn.call(
+      logger,
+      { eventType, clientId, success, ...piiMasker.object(context || {}) },
+      `VIP Portal Auth: ${eventType} ${success ? "succeeded" : "failed"} for client ${clientId}`
+    );
+  },
+
+  /**
+   * Log price alert event
+   */
+  priceAlertEvent: (
+    eventType: "created" | "triggered" | "deactivated" | "notification_sent",
+    alertId: number,
+    clientId: number,
+    context?: Record<string, unknown>
+  ): void => {
+    logger.info(
+      { eventType, alertId, clientId, ...piiMasker.object(context || {}) },
+      `VIP Portal Price Alert: ${eventType} (alert ${alertId}, client ${clientId})`
+    );
+  },
+
+  /**
+   * Log catalog access
+   */
+  catalogAccess: (
+    clientId: number,
+    action: "view" | "filter" | "add_to_draft" | "submit_interest",
+    context?: Record<string, unknown>
+  ): void => {
+    logger.info(
+      { clientId, action, ...piiMasker.object(context || {}) },
+      `VIP Portal Catalog: ${action} by client ${clientId}`
+    );
+  },
+
+  /**
+   * Log marketplace activity
+   */
+  marketplaceActivity: (
+    clientId: number,
+    action: "create_need" | "update_need" | "cancel_need" | "create_supply" | "update_supply" | "cancel_supply",
+    itemId?: number,
+    context?: Record<string, unknown>
+  ): void => {
+    logger.info(
+      { clientId, action, itemId, ...piiMasker.object(context || {}) },
+      `VIP Portal Marketplace: ${action} by client ${clientId}`
+    );
+  },
+};
+
 /**
  * Calendar-specific logging utilities
  * Following TERP Bible monitoring protocols
