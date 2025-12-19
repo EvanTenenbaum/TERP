@@ -79,6 +79,7 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
     updateBatchMutation.mutate({
       id: batchId,
       status: formData.status as any,
+      version: batch?.batch.version,
     });
   };
 

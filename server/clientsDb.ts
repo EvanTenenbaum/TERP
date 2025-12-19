@@ -4,7 +4,11 @@
  */
 
 import { eq, and, desc, like, or, sql, SQL } from "drizzle-orm";
+// Need to update import to include optimisticUpdate
+// Need to update import to include optimisticUpdate
 import { getDb } from "./db";
+import { optimisticUpdate } from "./utils/optimisticLock";
+import { optimisticUpdate } from "./utils/optimisticLock";
 import {
   clients,
   clientTransactions,
@@ -268,7 +272,8 @@ export async function updateClient(
     isReferee?: boolean;
     isContractor?: boolean;
     tags?: string[];
-  }
+  },
+  version: number
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -286,10 +291,7 @@ export async function updateClient(
   if (data.isContractor !== undefined) updateData.isContractor = data.isContractor;
   if (data.tags !== undefined) updateData.tags = data.tags;
 
-  await db
-    .update(clients)
-    .set(updateData)
-    .where(eq(clients.id, clientId));
+  await optimisticUpdate(clients, clientId, updateData, version, db);
 
   // Log activity
   await logActivity(clientId, userId, "UPDATED", { fields: Object.keys(updateData) });
@@ -349,6 +351,11 @@ export async function updateClientStats(clientId: number) {
 
   const avgProfitMargin = totalSpent > 0 ? (totalProfit / totalSpent) * 100 : 0;
 
+  // Optimistic update for stats? 
+  // Stats are usually computed values, so standard update is fine, 
+  // but if we want to be strict, we could fetch version first.
+  // However, stats updates are usually triggered by system events, not user edits directly.
+  // Let's stick to standard update for now to avoid complexity in automated triggers.
   await db
     .update(clients)
     .set({
@@ -357,6 +364,8 @@ export async function updateClientStats(clientId: number) {
       avgProfitMargin: avgProfitMargin.toFixed(2),
       totalOwed: totalOwed.toFixed(2),
       oldestDebtDays,
+      // Increment version on stats update too to invalidate stale client data on frontend
+      version: sql`${clients.version} + 1`
     })
     .where(eq(clients.id, clientId));
 
@@ -698,7 +707,7 @@ export async function addTag(clientId: number, userId: number, tag: string) {
 
   await db
     .update(clients)
-    .set({ tags: newTags })
+    .set({ tags: newTags, version: sql`${clients.version} + 1` })
     .where(eq(clients.id, clientId));
 
   // Log activity
@@ -722,7 +731,7 @@ export async function removeTag(clientId: number, userId: number, tag: string) {
 
   await db
     .update(clients)
-    .set({ tags: newTags })
+    .set({ tags: newTags, version: sql`${clients.version} + 1` })
     .where(eq(clients.id, clientId));
 
   // Log activity

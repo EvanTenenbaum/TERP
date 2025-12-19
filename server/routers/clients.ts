@@ -114,6 +114,7 @@ export const clientsRouter = router({
   update: protectedProcedure.use(requirePermission("clients:update"))
     .input(z.object({
       clientId: z.number(),
+      version: z.number(),
       name: z.string().min(1).max(255).optional(),
       email: z.string().email().optional(),
       phone: z.string().max(50).optional(),
@@ -127,8 +128,8 @@ export const clientsRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      const { clientId, ...data } = input;
-      return await clientsDb.updateClient(clientId, ctx.user.id, data);
+      const { clientId, version, ...data } = input;
+      return await clientsDb.updateClient(clientId, ctx.user.id, data, version);
     }),
 
   // Delete client
@@ -364,10 +365,11 @@ export const clientsRouter = router({
       paymentTerms: z.string().optional(),
       preferredPaymentMethod: z.enum(['CASH', 'CHECK', 'WIRE', 'ACH', 'CREDIT_CARD', 'OTHER']).optional().or(z.literal("")),
       supplierNotes: z.string().optional(),
+      version: z.number().optional(), // Optimistic locking
     }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      return await clientsDb.updateSupplierProfile(input.clientId, input);
+      return await clientsDb.updateSupplierProfile(input.clientId, input, input.version);
     }),
 });
 

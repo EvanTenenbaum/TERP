@@ -22,6 +22,7 @@ import { priceCalculationService } from "../services/priceCalculationService";
 import { orderValidationService } from "../services/orderValidationService";
 import { orderAuditService } from "../services/orderAuditService";
 import { cogsChangeIntegrationService } from "../services/cogsChangeIntegrationService";
+import { optimisticUpdate } from "../utils/optimisticLock";
 
 // ============================================================================
 // INPUT SCHEMAS
@@ -203,13 +204,14 @@ export const ordersRouter = router({
     .input(
       z.object({
         id: z.number(),
+        version: z.number(),
         notes: z.string().optional(),
         validUntil: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
-      const { id, ...updates } = input;
-      return await ordersDb.updateOrder(id, updates);
+      const { id, version, ...updates } = input;
+      return await ordersDb.updateOrder(id, updates, version);
     }),
 
   /**
@@ -584,16 +586,19 @@ export const ordersRouter = router({
         overallMarginPercent: totals.avgMarginPercent,
       });
 
-      // Update order
-      await db
-        .update(orders)
-        .set({
+      // Update order with optimistic locking
+      await optimisticUpdate(
+        orders,
+        input.orderId,
+        {
           total: totals.finalTotal.toString(),
           subtotal: totals.subtotal.toString(),
           avgMarginPercent: totals.avgMarginPercent.toString(),
           notes: input.notes,
-        })
-        .where(eq(orders.id, input.orderId));
+        },
+        input.version,
+        db
+      );
 
       // Delete existing line items
       await db
@@ -688,14 +693,17 @@ export const ordersRouter = router({
         throw new Error(`Cannot finalize: ${validation.errors.join(", ")}`);
       }
 
-      // Update order to finalized
-      await db
-        .update(orders)
-        .set({
+      // Update order to finalized with optimistic locking
+      await optimisticUpdate(
+        orders,
+        input.orderId,
+        {
           isDraft: false,
           confirmedAt: new Date(),
-        })
-        .where(eq(orders.id, input.orderId));
+        },
+        input.version,
+        db
+      );
 
       // Log audit entry
       await orderAuditService.logOrderFinalization(input.orderId, userId, {
@@ -881,6 +889,7 @@ export const ordersRouter = router({
       z.object({
         orderId: z.number(),
         newStatus: z.enum(["PENDING", "PACKED", "SHIPPED"]),
+        version: z.number().optional(),
         notes: z.string().optional(),
       })
     )

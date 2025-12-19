@@ -496,7 +496,11 @@ export default function ClientProfilePage() {
         {/* Supplier Tab (only for sellers) */}
         {client.isSeller && (
           <TabsContent value="supplier" className="space-y-4">
-            <SupplierProfileSection clientId={clientId} clientName={client.name} />
+            <SupplierProfileSection 
+              clientId={clientId} 
+              clientName={client.name} 
+              clientVersion={client.version}
+            />
           </TabsContent>
         )}
 
@@ -836,6 +840,7 @@ export default function ClientProfilePage() {
                 isBrand: formData.get("isBrand") === "on",
                 isReferee: formData.get("isReferee") === "on",
                 isContractor: formData.get("isContractor") === "on",
+                version: client.version, // Add version for optimistic locking
               });
             }}
           >

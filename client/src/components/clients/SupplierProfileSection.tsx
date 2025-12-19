@@ -49,6 +49,7 @@ import {
 interface SupplierProfileSectionProps {
   clientId: number;
   clientName: string;
+  clientVersion?: number;
 }
 
 /**
@@ -58,6 +59,7 @@ interface SupplierProfileSectionProps {
 export const SupplierProfileSection = React.memo(function SupplierProfileSection({
   clientId,
   clientName,
+  clientVersion,
 }: SupplierProfileSectionProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const utils = trpc.useUtils();
@@ -321,6 +323,7 @@ export const SupplierProfileSection = React.memo(function SupplierProfileSection
                 paymentTerms: (formData.get("paymentTerms") as string) || undefined,
                 preferredPaymentMethod: (validPaymentMethods.includes(paymentMethod as PaymentMethod) ? paymentMethod : undefined) as PaymentMethod | undefined,
                 supplierNotes: (formData.get("supplierNotes") as string) || undefined,
+                version: clientVersion, // Use client version for optimistic locking
               });
             }}
           >

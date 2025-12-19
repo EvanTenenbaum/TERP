@@ -1,5 +1,6 @@
 import { eq, and, gte, lte, desc, asc, sql, or, like, inArray } from "drizzle-orm";
 import { getDb } from "./db";
+import { optimisticUpdate } from "./utils/optimisticLock";
 import {
   invoices,
   invoiceLineItems,
@@ -149,11 +150,19 @@ export async function createInvoice(
 /**
  * Update invoice
  */
-export async function updateInvoice(id: number, data: Partial<InsertInvoice>) {
+export async function updateInvoice(
+  id: number,
+  data: Partial<InsertInvoice>,
+  version?: number
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(invoices).set(data).where(eq(invoices.id, id));
+  if (version !== undefined) {
+    await optimisticUpdate(invoices, id, data, version, db);
+  } else {
+    await db.update(invoices).set(data).where(eq(invoices.id, id));
+  }
 }
 
 /**
@@ -161,12 +170,17 @@ export async function updateInvoice(id: number, data: Partial<InsertInvoice>) {
  */
 export async function updateInvoiceStatus(
   id: number,
-  status: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID"
+  status: "DRAFT" | "SENT" | "VIEWED" | "PARTIAL" | "PAID" | "OVERDUE" | "VOID",
+  version?: number
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(invoices).set({ status }).where(eq(invoices.id, id));
+  if (version !== undefined) {
+    await optimisticUpdate(invoices, id, { status }, version, db);
+  } else {
+    await db.update(invoices).set({ status }).where(eq(invoices.id, id));
+  }
 }
 
 /**

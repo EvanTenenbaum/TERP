@@ -14,6 +14,7 @@ import {
   type Order,
 } from "../drizzle/schema";
 import { calculateCogs, calculateDueDate, type CogsCalculationInput } from "./cogsCalculator";
+import { optimisticUpdate } from "./utils/optimisticLock";
 
 // ============================================================================
 // TYPES
@@ -515,7 +516,8 @@ export async function getAllOrders(filters?: {
  */
 export async function updateOrder(
   id: number,
-  updates: Partial<CreateOrderInput>
+  updates: Partial<CreateOrderInput>,
+  version: number
 ): Promise<Order> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -544,10 +546,7 @@ export async function updateOrder(
   
   // TODO: Handle items updates (would require recalculating COGS, totals, etc.)
   
-  await db
-    .update(orders)
-    .set(updateData)
-    .where(eq(orders.id, id));
+  await optimisticUpdate(orders, id, updateData, version, db);
   
   const updatedOrder = await getOrderById(id);
   if (!updatedOrder) {
@@ -1116,6 +1115,7 @@ export async function updateOrderStatus(input: {
   newStatus: 'PENDING' | 'PACKED' | 'SHIPPED';
   notes?: string;
   userId: number;
+  version?: number;
 }): Promise<{ success: boolean; newStatus: string }> {
   const { orderId, newStatus, userId } = input;
   
@@ -1124,6 +1124,17 @@ export async function updateOrderStatus(input: {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   
+  // Check version first if provided
+  if (input.version !== undefined) {
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) {
+      throw new Error('Order not found');
+    }
+    if (order.version !== input.version) {
+      throw new Error('Concurrent modification detected. The order has been modified by another user. Please refresh and try again.');
+    }
+  }
+
   return await db.transaction(async (tx) => {
     // Get current order
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId));
@@ -1174,9 +1185,12 @@ export async function updateOrderStatus(input: {
       await decrementInventoryForOrder(tx, orderId, order.items as any);
     }
     
-    // Update order status
+    // Update order status with version increment
     await tx.update(orders)
-      .set(updateData)
+      .set({
+        ...updateData,
+        version: sql`${orders.version} + 1`
+      })
       .where(eq(orders.id, orderId));
     
     // Log status change in history

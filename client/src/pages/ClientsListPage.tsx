@@ -265,6 +265,7 @@ export default function ClientsListPage() {
       name: editForm.name,
       email: editForm.email || undefined,
       phone: editForm.phone || undefined,
+      version: client.version, // Add version for optimistic locking
     });
   };
 

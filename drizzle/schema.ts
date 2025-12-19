@@ -558,6 +558,7 @@ export const batches = mysqlTable(
       .default("0"),
     publishEcom: int("publishEcom").notNull().default(0), // 0 = false, 1 = true
     publishB2b: int("publishB2b").notNull().default(0), // 0 = false, 1 = true
+    version: int("version").notNull().default(1),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -978,6 +979,7 @@ export const invoices = mysqlTable(
     createdBy: int("createdBy")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
+    version: int("version").notNull().default(1),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -1442,6 +1444,7 @@ export const clients = mysqlTable(
     vipPortalEnabled: boolean("vip_portal_enabled").default(false),
     vipPortalLastLogin: timestamp("vip_portal_last_login"),
 
+    version: int("version").notNull().default(1),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },
@@ -1532,6 +1535,7 @@ export const supplierProfiles = mysqlTable(
     taxId: varchar("tax_id", { length: 50 }),
     licenseNumber: varchar("license_number", { length: 100 }),
 
+    version: int("version").notNull().default(1),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },
@@ -2138,6 +2142,7 @@ export const orders = mysqlTable(
     createdBy: int("created_by")
       .notNull()
       .references(() => users.id),
+    version: int("version").notNull().default(1),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },

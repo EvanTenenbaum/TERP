@@ -202,7 +202,7 @@ export const inventoryRouter = router({
       const before = inventoryUtils.createAuditSnapshot(
         batch as unknown as Record<string, unknown>
       );
-      await inventoryDb.updateBatchStatus(input.id, input.status);
+      await inventoryDb.updateBatchStatus(input.id, input.status, input.version);
       const after = await inventoryDb.getBatchById(input.id);
 
       // Create audit log
@@ -235,6 +235,7 @@ export const inventoryRouter = router({
         ]),
         adjustment: z.number(),
         reason: z.string(),
+        version: z.number().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -252,7 +253,8 @@ export const inventoryRouter = router({
       await inventoryDb.updateBatchQty(
         input.id,
         input.field,
-        inventoryUtils.formatQty(newQty)
+        inventoryUtils.formatQty(newQty),
+        input.version
       );
       const after = await inventoryDb.getBatchById(input.id);
 

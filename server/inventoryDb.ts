@@ -7,6 +7,7 @@ import { eq, and, or, like, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import cache, { CacheKeys, CacheTTL } from "./_core/cache";
 import { generateStrainULID } from "./ulid";
+import { optimisticUpdate } from "./utils/optimisticLock";
 import {
   vendors,
   brands,
@@ -591,15 +592,20 @@ export async function getBatchByCode(code: string) {
 
 export async function updateBatchStatus(
   id: number, 
-  status: "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED"
+  status: "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED",
+  version?: number
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db
-    .update(batches)
-    .set({ batchStatus: status })
-    .where(eq(batches.id, id));
+  if (version !== undefined) {
+    await optimisticUpdate(batches, id, { batchStatus: status }, version, db);
+  } else {
+    await db
+      .update(batches)
+      .set({ batchStatus: status })
+      .where(eq(batches.id, id));
+  }
 }
 
 export async function updateBatchQty(
@@ -610,15 +616,20 @@ export async function updateBatchQty(
     | "quarantineQty"
     | "holdQty"
     | "defectiveQty",
-  value: string
+  value: string,
+  version?: number
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db
-    .update(batches)
-    .set({ [field]: value })
-    .where(eq(batches.id, id));
+  if (version !== undefined) {
+    await optimisticUpdate(batches, id, { [field]: value }, version, db);
+  } else {
+    await db
+      .update(batches)
+      .set({ [field]: value })
+      .where(eq(batches.id, id));
+  }
 }
 
 export async function getAllBatches(limit: number = 100) {

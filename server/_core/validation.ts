@@ -245,6 +245,7 @@ export const intakeSchema = z
  */
 export const batchUpdateSchema = z.object({
   id: validators.positiveInt,
+  version: z.number().optional(),
   status: validators.batchStatus,
   reason: z
     .string()
@@ -257,6 +258,7 @@ export const batchUpdateSchema = z.object({
  */
 export const quantityAdjustmentSchema = z.object({
   batchId: validators.positiveInt,
+  version: z.number().optional(),
   quantity: validators.positiveDecimal,
   reason: z
     .string()
