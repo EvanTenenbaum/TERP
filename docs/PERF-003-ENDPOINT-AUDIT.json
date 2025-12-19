@@ -1,18 +1,6 @@
 {
   "needs_pagination": [
     {
-      "name": "accounting.accounts.list",
-      "has_pagination": false,
-      "returns": "An array of account objects, each containing id, accountNumber, accountName, and accountType.",
-      "file": "server/routers/accounting.test.ts"
-    },
-    {
-      "name": "accounts.list",
-      "has_pagination": false,
-      "returns": "An array of accounts, filtered by optional criteria (accountType, isActive, parentAccountId).",
-      "file": "server/routers/accounting.ts"
-    },
-    {
       "name": "accounts.getChartOfAccounts",
       "has_pagination": false,
       "returns": "An array representing the chart of accounts.",
@@ -86,6 +74,41 @@
     }
   ],
   "has_pagination": [
+    {
+      "name": "accounting.accounts.list",
+      "has_pagination": true,
+      "returns": "Paginated response with items array and pagination metadata (total, limit, offset, hasMore).",
+      "file": "server/routers/accounting.ts",
+      "added": "PERF-003"
+    },
+    {
+      "name": "comments.getEntityComments",
+      "has_pagination": true,
+      "returns": "Paginated response with items array and pagination metadata.",
+      "file": "server/routers/comments.ts",
+      "added": "PERF-003"
+    },
+    {
+      "name": "inbox.getMyItems",
+      "has_pagination": true,
+      "returns": "Paginated response with items array and pagination metadata.",
+      "file": "server/routers/inbox.ts",
+      "added": "PERF-003"
+    },
+    {
+      "name": "todoTasks.getListTasks",
+      "has_pagination": true,
+      "returns": "Paginated response with items array and pagination metadata.",
+      "file": "server/routers/todoTasks.ts",
+      "added": "PERF-003"
+    },
+    {
+      "name": "todoTasks.getMyTasks",
+      "has_pagination": true,
+      "returns": "Paginated response with items array and pagination metadata.",
+      "file": "server/routers/todoTasks.ts",
+      "added": "PERF-003"
+    },
     {
       "name": "ledger.list",
       "has_pagination": true,
