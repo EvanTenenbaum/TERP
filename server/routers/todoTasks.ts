@@ -16,13 +16,14 @@ import { DEFAULT_PAGE_SIZE } from "../_core/pagination";
 
 export const todoTasksRouter = router({
   // Get all tasks in a list with pagination
-  // PERF-003: Added pagination support
-  getListTasks: protectedProcedure.use(requirePermission("todos:read"))
+  // BUG-034: Uses cursor-based pagination from DB layer
+  getListTasks: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
       z.object({
         listId: z.number(),
-        limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
-        offset: z.number().min(0).default(0).optional(),
+        limit: z.number().min(1).max(100).optional(),
+        cursor: z.string().nullish(),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -30,42 +31,33 @@ export const todoTasksRouter = router({
 
       await permissions.assertCanViewList(ctx.user.id, input.listId);
 
-      const limit = input.limit ?? DEFAULT_PAGE_SIZE;
-      const offset = input.offset ?? 0;
-
-      const tasks = await todoTasksDb.getListTasks(input.listId, limit, offset);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
-      return {
-        items: tasks,
-        nextCursor: null,
-        hasMore: Array.isArray(tasks) && tasks.length === limit,
-        pagination: { total: -1, limit, offset }
-      };
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await todoTasksDb.getListTasks(input.listId, {
+        limit: input.limit,
+        cursor: input.cursor,
+      });
     }),
 
   // Get tasks assigned to current user with pagination
-  // PERF-003: Added pagination support
-  getMyTasks: protectedProcedure.use(requirePermission("todos:read"))
+  // BUG-034: Uses cursor-based pagination from DB layer
+  getMyTasks: protectedProcedure
+    .use(requirePermission("todos:read"))
     .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
-        offset: z.number().min(0).default(0).optional(),
-      }).optional()
+      z
+        .object({
+          limit: z.number().min(1).max(100).optional(),
+          cursor: z.string().nullish(),
+        })
+        .optional()
     )
     .query(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      
-      const limit = input?.limit ?? DEFAULT_PAGE_SIZE;
-      const offset = input?.offset ?? 0;
-      
-      const tasks = await todoTasksDb.getUserAssignedTasks(ctx.user.id, limit, offset);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
-      return {
-        items: tasks,
-        nextCursor: null,
-        hasMore: Array.isArray(tasks) && tasks.length === limit,
-        pagination: { total: -1, limit, offset }
-      };
+
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await todoTasksDb.getUserAssignedTasks(ctx.user.id, {
+        limit: input?.limit,
+        cursor: input?.cursor,
+      });
     }),
 
   // Get a specific task by ID
@@ -304,28 +296,44 @@ export const todoTasksRouter = router({
     }),
 
   // Get overdue tasks
-  getOverdue: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
-    const tasks = await todoTasksDb.getOverdueTasks();
-    // HOTFIX (BUG-033): Wrap in paginated response structure
-    return {
-      items: tasks,
-      nextCursor: null,
-      hasMore: false,
-    };
-  }),
+  getOverdue: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).optional(),
+          cursor: z.string().nullish(),
+        })
+        .optional()
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await todoTasksDb.getOverdueTasks({
+        limit: input?.limit,
+        cursor: input?.cursor,
+      });
+    }),
 
   // Get tasks due soon
-  getDueSoon: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
-    if (!ctx.user) throw new Error("Unauthorized");
-    const tasks = await todoTasksDb.getTasksDueSoon();
-    // HOTFIX (BUG-033): Wrap in paginated response structure
-    return {
-      items: tasks,
-      nextCursor: null,
-      hasMore: false,
-    };
-  }),
+  getDueSoon: protectedProcedure
+    .use(requirePermission("todos:read"))
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).optional(),
+          cursor: z.string().nullish(),
+        })
+        .optional()
+    )
+    .query(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Unauthorized");
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await todoTasksDb.getTasksDueSoon({
+        limit: input?.limit,
+        cursor: input?.cursor,
+      });
+    }),
 
   // Get task statistics for a list
   getListStats: protectedProcedure.use(requirePermission("todos:read"))

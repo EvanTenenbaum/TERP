@@ -5,6 +5,11 @@ import {
   type InsertTodoTask,
 } from "../drizzle/schema";
 import { eq, and, desc, asc, isNotNull, sql } from "drizzle-orm";
+import {
+  PaginatedResult,
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+} from "./_core/pagination";
 
 /**
  * Todo Tasks Database Access Layer
@@ -17,75 +22,107 @@ import { eq, and, desc, asc, isNotNull, sql } from "drizzle-orm";
 
 /**
  * Get all tasks in a list with pagination
- * PERF-003: Added pagination support
+ * BUG-034: Returns PaginatedResult with cursor-based pagination
  */
 export async function getListTasks(
   listId: number,
-  limit: number = 50,
-  offset: number = 0
-) {
+  options?: { limit?: number; cursor?: string | null }
+): Promise<PaginatedResult<TodoTask>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get total count for pagination
+  const limit = Math.min(options?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+
+  // Get total count
   const [countResult] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(todoTasks)
     .where(eq(todoTasks.listId, listId));
   const total = Number(countResult?.count ?? 0);
 
+  // Build query with optional cursor
+  let whereCondition = eq(todoTasks.listId, listId);
+  if (options?.cursor) {
+    const cursorId = parseInt(options.cursor, 10);
+    if (!isNaN(cursorId)) {
+      whereCondition = and(
+        eq(todoTasks.listId, listId),
+        sql`${todoTasks.id} > ${cursorId}`
+      ) as typeof whereCondition;
+    }
+  }
+
   // Get paginated tasks
   const tasks = await db
     .select()
     .from(todoTasks)
-    .where(eq(todoTasks.listId, listId))
+    .where(whereCondition)
     .orderBy(asc(todoTasks.position), desc(todoTasks.createdAt))
-    .limit(limit)
-    .offset(offset);
+    .limit(limit + 1);
+
+  const hasMore = tasks.length > limit;
+  const items = hasMore ? tasks.slice(0, limit) : tasks;
+  const lastItem = items[items.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
 
   return {
-    items: tasks,
+    items,
+    nextCursor,
+    hasMore,
     total,
-    limit,
-    offset,
-    hasMore: offset + tasks.length < total,
   };
 }
 
 /**
  * Get tasks assigned to a specific user with pagination
- * PERF-003: Added pagination support
+ * BUG-034: Returns PaginatedResult with cursor-based pagination
  */
 export async function getUserAssignedTasks(
   userId: number,
-  limit: number = 50,
-  offset: number = 0
-) {
+  options?: { limit?: number; cursor?: string | null }
+): Promise<PaginatedResult<TodoTask>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get total count for pagination
+  const limit = Math.min(options?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+
+  // Get total count
   const [countResult] = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(todoTasks)
     .where(eq(todoTasks.assignedTo, userId));
   const total = Number(countResult?.count ?? 0);
 
+  // Build query with optional cursor
+  let whereCondition = eq(todoTasks.assignedTo, userId);
+  if (options?.cursor) {
+    const cursorId = parseInt(options.cursor, 10);
+    if (!isNaN(cursorId)) {
+      whereCondition = and(
+        eq(todoTasks.assignedTo, userId),
+        sql`${todoTasks.id} > ${cursorId}`
+      ) as typeof whereCondition;
+    }
+  }
+
   // Get paginated tasks
   const tasks = await db
     .select()
     .from(todoTasks)
-    .where(eq(todoTasks.assignedTo, userId))
+    .where(whereCondition)
     .orderBy(desc(todoTasks.dueDate), desc(todoTasks.createdAt))
-    .limit(limit)
-    .offset(offset);
+    .limit(limit + 1);
+
+  const hasMore = tasks.length > limit;
+  const items = hasMore ? tasks.slice(0, limit) : tasks;
+  const lastItem = items[items.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
 
   return {
-    items: tasks,
+    items,
+    nextCursor,
+    hasMore,
     total,
-    limit,
-    offset,
-    hasMore: offset + tasks.length < total,
   };
 }
 
@@ -277,53 +314,115 @@ export async function assignTask(
 }
 
 /**
- * Get overdue tasks
+ * Get overdue tasks with pagination
+ * BUG-034: Returns PaginatedResult instead of raw array
  */
-export async function getOverdueTasks(): Promise<TodoTask[]> {
+export async function getOverdueTasks(
+  options?: { limit?: number; cursor?: string | null }
+): Promise<PaginatedResult<TodoTask>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const limit = Math.min(options?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
   const now = new Date();
+
+  const baseCondition = and(
+    isNotNull(todoTasks.dueDate),
+    sql`${todoTasks.dueDate} < ${now}`,
+    eq(todoTasks.isCompleted, false)
+  );
+
+  // Get total count
+  const [countResult] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(todoTasks)
+    .where(baseCondition);
+  const total = Number(countResult?.count ?? 0);
+
+  // Build query with optional cursor
+  let whereCondition = baseCondition;
+  if (options?.cursor) {
+    const cursorId = parseInt(options.cursor, 10);
+    if (!isNaN(cursorId)) {
+      whereCondition = and(baseCondition, sql`${todoTasks.id} > ${cursorId}`);
+    }
+  }
 
   const tasks = await db
     .select()
     .from(todoTasks)
-    .where(
-      and(
-        isNotNull(todoTasks.dueDate),
-        sql`${todoTasks.dueDate} < ${now}`,
-        eq(todoTasks.isCompleted, false)
-      )
-    )
-    .orderBy(asc(todoTasks.dueDate));
+    .where(whereCondition)
+    .orderBy(asc(todoTasks.dueDate))
+    .limit(limit + 1);
 
-  return tasks;
+  const hasMore = tasks.length > limit;
+  const items = hasMore ? tasks.slice(0, limit) : tasks;
+  const lastItem = items[items.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+  return {
+    items,
+    nextCursor,
+    hasMore,
+    total,
+  };
 }
 
 /**
- * Get tasks due soon (within next 7 days)
+ * Get tasks due soon (within next 7 days) with pagination
+ * BUG-034: Returns PaginatedResult instead of raw array
  */
-export async function getTasksDueSoon(): Promise<TodoTask[]> {
+export async function getTasksDueSoon(
+  options?: { limit?: number; cursor?: string | null }
+): Promise<PaginatedResult<TodoTask>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const limit = Math.min(options?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
   const now = new Date();
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const baseCondition = and(
+    isNotNull(todoTasks.dueDate),
+    sql`${todoTasks.dueDate} >= ${now}`,
+    sql`${todoTasks.dueDate} <= ${sevenDaysFromNow}`,
+    eq(todoTasks.isCompleted, false)
+  );
+
+  // Get total count
+  const [countResult] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(todoTasks)
+    .where(baseCondition);
+  const total = Number(countResult?.count ?? 0);
+
+  // Build query with optional cursor
+  let whereCondition = baseCondition;
+  if (options?.cursor) {
+    const cursorId = parseInt(options.cursor, 10);
+    if (!isNaN(cursorId)) {
+      whereCondition = and(baseCondition, sql`${todoTasks.id} > ${cursorId}`);
+    }
+  }
 
   const tasks = await db
     .select()
     .from(todoTasks)
-    .where(
-      and(
-        isNotNull(todoTasks.dueDate),
-        sql`${todoTasks.dueDate} >= ${now}`,
-        sql`${todoTasks.dueDate} <= ${sevenDaysFromNow}`,
-        eq(todoTasks.isCompleted, false)
-      )
-    )
-    .orderBy(asc(todoTasks.dueDate));
+    .where(whereCondition)
+    .orderBy(asc(todoTasks.dueDate))
+    .limit(limit + 1);
 
-  return tasks;
+  const hasMore = tasks.length > limit;
+  const items = hasMore ? tasks.slice(0, limit) : tasks;
+  const lastItem = items[items.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+  return {
+    items,
+    nextCursor,
+    hasMore,
+    total,
+  };
 }
 
 /**
