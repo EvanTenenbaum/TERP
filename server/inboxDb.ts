@@ -5,6 +5,11 @@ import {
   type InsertInboxItem,
 } from "../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import {
+  PaginatedResult,
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+} from "./_core/pagination";
 
 /**
  * Inbox Database Access Layer
@@ -58,52 +63,112 @@ export async function getUserInboxItems(
 }
 
 /**
- * Get unread inbox items for a user
+ * Get unread inbox items for a user with pagination
+ * BUG-034: Returns PaginatedResult instead of raw array
  */
 export async function getUnreadInboxItems(
-  userId: number
-): Promise<InboxItem[]> {
+  userId: number,
+  options?: { limit?: number; cursor?: string | null }
+): Promise<PaginatedResult<InboxItem>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  const limit = Math.min(options?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+  const whereCondition = and(
+    eq(inboxItems.userId, userId),
+    eq(inboxItems.status, "unread"),
+    eq(inboxItems.isArchived, false)
+  );
+
+  // Apply cursor if provided
+  let cursorCondition = whereCondition;
+  if (options?.cursor) {
+    const cursorId = parseInt(options.cursor, 10);
+    if (!isNaN(cursorId)) {
+      cursorCondition = and(whereCondition, sql`${inboxItems.id} < ${cursorId}`);
+    }
+  }
 
   const items = await db
     .select()
     .from(inboxItems)
-    .where(
-      and(
-        eq(inboxItems.userId, userId),
-        eq(inboxItems.status, "unread"),
-        eq(inboxItems.isArchived, false)
-      )
-    )
-    .orderBy(desc(inboxItems.createdAt));
+    .where(cursorCondition)
+    .orderBy(desc(inboxItems.createdAt))
+    .limit(limit + 1);
 
-  return items;
+  // Get total count
+  const [countResult] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(inboxItems)
+    .where(whereCondition);
+  const total = Number(countResult?.count ?? 0);
+
+  const hasMore = items.length > limit;
+  const trimmedItems = hasMore ? items.slice(0, limit) : items;
+  const lastItem = trimmedItems[trimmedItems.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+  return {
+    items: trimmedItems,
+    nextCursor,
+    hasMore,
+    total,
+  };
 }
 
 /**
- * Get inbox items by status
+ * Get inbox items by status with pagination
+ * BUG-034: Returns PaginatedResult instead of raw array
  */
 export async function getInboxItemsByStatus(
   userId: number,
-  status: "unread" | "seen" | "completed"
-): Promise<InboxItem[]> {
+  status: "unread" | "seen" | "completed",
+  options?: { limit?: number; cursor?: string | null }
+): Promise<PaginatedResult<InboxItem>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  const limit = Math.min(options?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+  const whereCondition = and(
+    eq(inboxItems.userId, userId),
+    eq(inboxItems.status, status),
+    eq(inboxItems.isArchived, false)
+  );
+
+  // Apply cursor if provided
+  let cursorCondition = whereCondition;
+  if (options?.cursor) {
+    const cursorId = parseInt(options.cursor, 10);
+    if (!isNaN(cursorId)) {
+      cursorCondition = and(whereCondition, sql`${inboxItems.id} < ${cursorId}`);
+    }
+  }
 
   const items = await db
     .select()
     .from(inboxItems)
-    .where(
-      and(
-        eq(inboxItems.userId, userId),
-        eq(inboxItems.status, status),
-        eq(inboxItems.isArchived, false)
-      )
-    )
-    .orderBy(desc(inboxItems.createdAt));
+    .where(cursorCondition)
+    .orderBy(desc(inboxItems.createdAt))
+    .limit(limit + 1);
 
-  return items;
+  // Get total count
+  const [countResult] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(inboxItems)
+    .where(whereCondition);
+  const total = Number(countResult?.count ?? 0);
+
+  const hasMore = items.length > limit;
+  const trimmedItems = hasMore ? items.slice(0, limit) : items;
+  const lastItem = trimmedItems[trimmedItems.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+  return {
+    items: trimmedItems,
+    nextCursor,
+    hasMore,
+    total,
+  };
 }
 
 /**
