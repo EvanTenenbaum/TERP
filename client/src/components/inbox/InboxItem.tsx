@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface InboxItemProps {
   item: {
@@ -50,6 +51,7 @@ const STATUS_COLORS = {
 
 export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const utils = trpc.useContext();
 
@@ -104,9 +106,12 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
   };
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      deleteItem.mutate({ itemId: item.id });
-    }
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    deleteItem.mutate({ itemId: item.id });
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -207,6 +212,17 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Item"
+        description="Are you sure you want to delete this item? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        isLoading={deleteItem.isPending}
+      />
     </div>
   );
 });

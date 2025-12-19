@@ -32,6 +32,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface LiveCatalogConfigProps {
   clientId: number;
@@ -821,6 +822,7 @@ function InterestListDetailModal({
 // Price Alerts Table Component
 function PriceAlertsTable({ clientId }: { clientId: number }) {
   const { toast } = useToast();
+  const [deactivateAlertId, setDeactivateAlertId] = useState<number | null>(null);
 
   // Fetch price alerts (admin endpoint - to be created)
   const {
@@ -850,8 +852,13 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
   });
 
   const handleDeactivateAlert = (alertId: number) => {
-    if (confirm("Are you sure you want to deactivate this price alert?")) {
-      deactivateAlertMutation.mutate({ alertId });
+    setDeactivateAlertId(alertId);
+  };
+
+  const confirmDeactivateAlert = () => {
+    if (deactivateAlertId) {
+      deactivateAlertMutation.mutate({ alertId: deactivateAlertId });
+      setDeactivateAlertId(null);
     }
   };
 
@@ -872,6 +879,7 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
   }
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -950,5 +958,17 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
         })}
       </TableBody>
     </Table>
+
+    <ConfirmDialog
+      open={!!deactivateAlertId}
+      onOpenChange={(open) => !open && setDeactivateAlertId(null)}
+      title="Deactivate Price Alert"
+      description="Are you sure you want to deactivate this price alert?"
+      confirmLabel="Deactivate"
+      variant="destructive"
+      onConfirm={confirmDeactivateAlert}
+      isLoading={deactivateAlertMutation.isPending}
+    />
+  </>
   );
 }

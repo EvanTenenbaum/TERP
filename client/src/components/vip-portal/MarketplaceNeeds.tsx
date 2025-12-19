@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, X, Calendar, Package } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface MarketplaceNeedsProps {
   clientId: number;
@@ -33,6 +34,7 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedNeed, setSelectedNeed] = useState<any>(null);
+  const [cancelNeedId, setCancelNeedId] = useState<number | null>(null);
 
   const { data: needs, refetch } = trpc.vipPortal.marketplace.getNeeds.useQuery({
     clientId,
@@ -86,8 +88,13 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
   };
 
   const handleCancel = (needId: number) => {
-    if (window.confirm("Are you sure you want to cancel this need?")) {
-      cancelMutation.mutate({ id: needId });
+    setCancelNeedId(needId);
+  };
+
+  const confirmCancel = () => {
+    if (cancelNeedId) {
+      cancelMutation.mutate({ id: cancelNeedId });
+      setCancelNeedId(null);
     }
   };
 
@@ -234,6 +241,17 @@ export function MarketplaceNeeds({ clientId, config }: MarketplaceNeedsProps) {
           config={config}
         />
       )}
+
+      <ConfirmDialog
+        open={!!cancelNeedId}
+        onOpenChange={(open) => !open && setCancelNeedId(null)}
+        title="Cancel Need"
+        description="Are you sure you want to cancel this need? This action cannot be undone."
+        confirmLabel="Cancel Need"
+        variant="destructive"
+        onConfirm={confirmCancel}
+        isLoading={cancelMutation.isPending}
+      />
     </div>
   );
 }

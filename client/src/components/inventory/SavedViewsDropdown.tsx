@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { BookmarkIcon, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,6 +18,7 @@ interface SavedViewsDropdownProps {
 }
 
 export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
+  const [deleteViewInfo, setDeleteViewInfo] = useState<{ id: number; name: string } | null>(null);
   const { data: views, isLoading, refetch } = trpc.inventory.views.list.useQuery();
   const deleteView = trpc.inventory.views.delete.useMutation();
 
@@ -24,17 +27,19 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
     toast.success(`Applied view: ${view.name}`);
   };
 
-  const handleDeleteView = async (e: React.MouseEvent, viewId: number, viewName: string) => {
+  const handleDeleteView = (e: React.MouseEvent, viewId: number, viewName: string) => {
     e.stopPropagation(); // Prevent dropdown from closing
+    setDeleteViewInfo({ id: viewId, name: viewName });
+  };
 
-    if (!confirm(`Delete view "${viewName}"?`)) {
-      return;
-    }
+  const confirmDeleteView = async () => {
+    if (!deleteViewInfo) return;
 
     try {
-      await deleteView.mutateAsync(viewId);
+      await deleteView.mutateAsync(deleteViewInfo.id);
       toast.success('View deleted');
       refetch();
+      setDeleteViewInfo(null);
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete view');
       console.error(error);
@@ -105,6 +110,17 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
           </>
         )}
       </DropdownMenuContent>
+
+      <ConfirmDialog
+        open={!!deleteViewInfo}
+        onOpenChange={(open) => !open && setDeleteViewInfo(null)}
+        title="Delete View"
+        description={`Are you sure you want to delete the view "${deleteViewInfo?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={confirmDeleteView}
+        isLoading={deleteView.isPending}
+      />
     </DropdownMenu>
   );
 }

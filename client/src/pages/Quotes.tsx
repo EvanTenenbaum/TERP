@@ -32,6 +32,7 @@ import { format } from 'date-fns';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { DataCardSection } from '@/components/data-cards';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function Quotes() {
   const [, setLocation] = useLocation();
@@ -103,16 +104,21 @@ export default function Quotes() {
     setSelectedQuote(quote);
   };
 
-  const handleConvertToSale = async (quoteId: number) => {
-    if (!confirm('Convert this quote to a sale order? This will create a new sales order and mark the quote as ACCEPTED.')) {
-      return;
-    }
+  const [convertQuoteId, setConvertQuoteId] = useState<number | null>(null);
 
+  const handleConvertToSale = async (quoteId: number) => {
+    setConvertQuoteId(quoteId);
+  };
+
+  const confirmConvertToSale = async () => {
+    if (!convertQuoteId) return;
+    
     try {
-      await convertToSale.mutateAsync({ quoteId });
+      await convertToSale.mutateAsync({ quoteId: convertQuoteId });
       toast.success('Quote converted to sale successfully');
       refetch();
       setSelectedQuote(null);
+      setConvertQuoteId(null);
     } catch (error: any) {
       toast.error(error.message || 'Failed to convert quote');
       console.error(error);
@@ -381,6 +387,18 @@ export default function Quotes() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Convert to Sale Confirmation Dialog */}
+      <ConfirmDialog
+        open={!!convertQuoteId}
+        onOpenChange={(open) => !open && setConvertQuoteId(null)}
+        title="Convert Quote to Sale"
+        description="Convert this quote to a sale order? This will create a new sales order and mark the quote as ACCEPTED."
+        confirmLabel="Convert to Sale"
+        variant="default"
+        onConfirm={confirmConvertToSale}
+        isLoading={convertToSale.isPending}
+      />
     </div>
   );
 }

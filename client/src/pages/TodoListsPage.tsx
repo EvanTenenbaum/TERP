@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { TodoListCard } from "@/components/todos/TodoListCard";
 import { TodoListForm } from "@/components/todos/TodoListForm";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useLocation } from "wouter";
 
 export function TodoListsPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+  const [deleteListId, setDeleteListId] = useState<number | null>(null);
   const [, setLocation] = useLocation();
 
   const { data: lists = [], isLoading } = trpc.todoLists.getMyLists.useQuery();
@@ -17,16 +19,17 @@ export function TodoListsPage() {
   const deleteList = trpc.todoLists.delete.useMutation({
     onSuccess: () => {
       utils.todoLists.getMyLists.invalidate();
+      setDeleteListId(null);
     },
   });
 
   const handleDeleteList = (listId: number) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this list? All tasks will be deleted."
-      )
-    ) {
-      deleteList.mutate({ listId });
+    setDeleteListId(listId);
+  };
+
+  const confirmDeleteList = () => {
+    if (deleteListId) {
+      deleteList.mutate({ listId: deleteListId });
     }
   };
 
@@ -83,6 +86,18 @@ export function TodoListsPage() {
       <TodoListForm
         isOpen={isCreateFormOpen}
         onClose={() => setIsCreateFormOpen(false)}
+      />
+
+      {/* Delete List Confirmation Dialog */}
+      <ConfirmDialog
+        open={!!deleteListId}
+        onOpenChange={(open) => !open && setDeleteListId(null)}
+        title="Delete Todo List"
+        description="Are you sure you want to delete this list? All tasks will be deleted."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={confirmDeleteList}
+        isLoading={deleteList.isPending}
       />
     </div>
   );

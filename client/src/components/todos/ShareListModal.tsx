@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { X, UserPlus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface ShareListModalProps {
   listId: number;
@@ -33,6 +34,7 @@ export function ShareListModal({
 }: ShareListModalProps) {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [role, setRole] = useState<"viewer" | "editor" | "owner">("editor");
+  const [removeMemberId, setRemoveMemberId] = useState<number | null>(null);
 
   const utils = trpc.useContext();
 
@@ -79,8 +81,13 @@ export function ShareListModal({
   };
 
   const handleRemoveMember = (userId: number) => {
-    if (window.confirm("Remove this member from the list?")) {
-      removeMember.mutate({ listId, userId });
+    setRemoveMemberId(userId);
+  };
+
+  const confirmRemoveMember = () => {
+    if (removeMemberId) {
+      removeMember.mutate({ listId, userId: removeMemberId });
+      setRemoveMemberId(null);
     }
   };
 
@@ -205,6 +212,17 @@ export function ShareListModal({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDialog
+        open={!!removeMemberId}
+        onOpenChange={(open) => !open && setRemoveMemberId(null)}
+        title="Remove Member"
+        description="Are you sure you want to remove this member from the list?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={confirmRemoveMember}
+        isLoading={removeMember.isPending}
+      />
     </Dialog>
   );
 }

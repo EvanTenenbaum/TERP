@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Shield, Plus, Edit2, Trash2, Eye, Save, X, Users } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
  * Role Management Component
@@ -42,6 +43,7 @@ export function RoleManagement() {
   const [editingRole, setEditingRole] = useState<any | null>(null);
   const [viewingRoleId, setViewingRoleId] = useState<number | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [deleteRoleInfo, setDeleteRoleInfo] = useState<{ roleId: number; roleName: string } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -125,8 +127,13 @@ export function RoleManagement() {
       return;
     }
 
-    if (confirm(`Are you sure you want to delete the role "${roleName}"? This action cannot be undone.`)) {
-      deleteRoleMutation.mutate({ roleId });
+    setDeleteRoleInfo({ roleId, roleName });
+  };
+
+  const confirmDeleteRole = () => {
+    if (deleteRoleInfo) {
+      deleteRoleMutation.mutate({ roleId: deleteRoleInfo.roleId });
+      setDeleteRoleInfo(null);
     }
   };
 
@@ -427,6 +434,17 @@ export function RoleManagement() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!deleteRoleInfo}
+        onOpenChange={(open) => !open && setDeleteRoleInfo(null)}
+        title="Delete Role"
+        description={`Are you sure you want to delete the role "${deleteRoleInfo?.roleName}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={confirmDeleteRole}
+        isLoading={deleteRoleMutation.isPending}
+      />
     </div>
   );
 }

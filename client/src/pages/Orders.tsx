@@ -431,8 +431,8 @@ export default function Orders() {
                             <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
                             <OrderStatusBadge status={order.fulfillmentStatus || 'PENDING'} />
                             {order.saleStatus && (
-                              <Badge variant="outline" className="text-xs">
-                                {order.saleStatus}
+                              <Badge variant="outline" className="text-xs" title="Payment Status">
+                                Payment: {order.saleStatus}
                               </Badge>
                             )}
                           </div>

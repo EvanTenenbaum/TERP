@@ -1295,9 +1295,9 @@ export async function getDashboardStats() {
         .sort((a, b) => b.value - a.value);
 
       return {
-        totalInventoryValue,
-        avgValuePerUnit,
-        totalUnits,
+        totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
+        avgValuePerUnit: Math.round(avgValuePerUnit * 100) / 100,
+        totalUnits: Math.round(totalUnits * 100) / 100,
         statusCounts,
         categoryStats,
         subcategoryStats,

@@ -565,6 +565,7 @@ export default function ClientsListPage() {
                       <button
                         onClick={() => handleSort('teriCode')}
                         className="flex items-center gap-1 hover:text-foreground transition-colors"
+                        title="TERI Code: Unique identifier for each client (format: CLI-XXXXXXXX)"
                       >
                         TERI Code
                         {sortColumn === 'teriCode' ? (

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Package, Edit, XCircle, Calendar, DollarSign } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface MarketplaceSupplyProps {
   clientId: number;
@@ -32,6 +33,7 @@ interface MarketplaceSupplyProps {
 export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingSupply, setEditingSupply] = useState<any>(null);
+  const [cancelSupplyId, setCancelSupplyId] = useState<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -120,8 +122,13 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
   };
 
   const handleCancel = (id: number) => {
-    if (window.confirm("Are you sure you want to cancel this listing?")) {
-      cancelSupply.mutate({ id });
+    setCancelSupplyId(id);
+  };
+
+  const confirmCancel = () => {
+    if (cancelSupplyId) {
+      cancelSupply.mutate({ id: cancelSupplyId });
+      setCancelSupplyId(null);
     }
   };
 
@@ -530,6 +537,17 @@ export function MarketplaceSupply({ clientId, config }: MarketplaceSupplyProps) 
           </Card>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!cancelSupplyId}
+        onOpenChange={(open) => !open && setCancelSupplyId(null)}
+        title="Cancel Listing"
+        description="Are you sure you want to cancel this listing? This action cannot be undone."
+        confirmLabel="Cancel Listing"
+        variant="destructive"
+        onConfirm={confirmCancel}
+        isLoading={cancelSupply.isPending}
+      />
     </div>
   );
 }

@@ -32,6 +32,7 @@ import {
 import { Key, Shield, Plus, X, Eye, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
  * Permission Assignment Component
@@ -51,6 +52,7 @@ export function PermissionAssignment() {
   const [viewingPermissionId, setViewingPermissionId] = useState<number | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<Set<number>>(new Set());
+  const [removePermissionInfo, setRemovePermissionInfo] = useState<{ roleId: number; roleName: string; permissionId: number } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -141,6 +143,16 @@ export function PermissionAssignment() {
       roleId: parseInt(selectedRoleId),
       permissionIds: Array.from(selectedPermissions),
     });
+  };
+
+  const confirmRemovePermission = () => {
+    if (removePermissionInfo) {
+      removePermissionMutation.mutate({
+        roleId: removePermissionInfo.roleId,
+        permissionId: removePermissionInfo.permissionId,
+      });
+      setRemovePermissionInfo(null);
+    }
   };
 
   const togglePermissionSelection = (permissionId: number) => {
@@ -465,12 +477,11 @@ export function PermissionAssignment() {
                                                   size="sm"
                                                   variant="ghost"
                                                   onClick={() => {
-                                                    if (confirm(`Remove this permission from "${role.roleName}"?`)) {
-                                                      removePermissionMutation.mutate({
-                                                        roleId: role.roleId,
-                                                        permissionId: permission.id,
-                                                      });
-                                                    }
+                                                    setRemovePermissionInfo({
+                                                      roleId: role.roleId,
+                                                      roleName: role.roleName,
+                                                      permissionId: permission.id,
+                                                    });
                                                   }}
                                                   disabled={removePermissionMutation.isPending}
                                                 >
@@ -497,6 +508,17 @@ export function PermissionAssignment() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!removePermissionInfo}
+        onOpenChange={(open) => !open && setRemovePermissionInfo(null)}
+        title="Remove Permission"
+        description={`Are you sure you want to remove this permission from "${removePermissionInfo?.roleName}"?`}
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={confirmRemovePermission}
+        isLoading={removePermissionMutation.isPending}
+      />
     </div>
   );
 }
