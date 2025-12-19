@@ -6137,3 +6137,207 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 - [ ] **QA-065: Implement Missing Dashboard Features** (P3)
   - **Status:** Not Started
   - **Effort:** 6-8h
+
+---
+
+## Sprint (Dec 26-31, 2025): Usability Gap Remediation - Phase 2
+
+**Strategic Focus:** Address remaining functional gaps identified in comprehensive usability testing.
+
+### 🔴 P0 - CRITICAL
+
+- [ ] **BUG-027: Order Status Update Permission Denied Error** (P0)
+  - **Status:** ready
+  - **Priority:** HIGH
+  - **Estimate:** 4h
+  - **Module:** `server/routers/orders.ts`
+  - **Dependencies:** None
+  - **Problem:** Updating order status throws a permission denied error, blocking core order workflow.
+  - **Deliverables:**
+    - [ ] Investigate permission middleware for order status updates
+    - [ ] Fix permission check or add missing permission grant
+    - [ ] Add test coverage for order status transitions
+    - [ ] Verify all order status updates work correctly
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+### 🟡 P1 - HIGH PRIORITY
+
+- [ ] **BUG-028: Batch Form Input Fields Non-Functional** (P1)
+  - **Status:** ready
+  - **Priority:** HIGH
+  - **Estimate:** 8h
+  - **Module:** `client/src/pages/Inventory.tsx`, `client/src/components/inventory/`
+  - **Dependencies:** None
+  - **Problem:** Multiple batch form fields are broken: quantity input doesn't accept input, warehouse selection dropdown doesn't respond to clicks, change status button is unresponsive.
+  - **Deliverables:**
+    - [ ] Fix quantity input field to accept numeric input
+    - [ ] Fix warehouse selection dropdown click handler
+    - [ ] Fix change status button functionality
+    - [ ] Add form validation for all fields
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **BUG-029: New Invoice Button Non-Functional** (P1)
+  - **Status:** ready
+  - **Priority:** HIGH
+  - **Estimate:** 4h
+  - **Module:** `client/src/pages/accounting/Invoices.tsx`
+  - **Dependencies:** None
+  - **Problem:** The "New Invoice" button on the accounting page is non-functional.
+  - **Deliverables:**
+    - [ ] Investigate button click handler
+    - [ ] Implement invoice creation modal or navigation
+    - [ ] Connect to backend invoice creation endpoint
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **BUG-030: Payment Record Navigation Broken** (P1)
+  - **Status:** ready
+  - **Priority:** HIGH
+  - **Estimate:** 4h
+  - **Module:** `client/src/pages/accounting/`
+  - **Dependencies:** None
+  - **Problem:** Clicking a payment record redirects to the wrong page instead of payment details.
+  - **Deliverables:**
+    - [ ] Fix payment record click handler
+    - [ ] Ensure correct navigation to payment detail view
+    - [ ] Verify payment detail page displays correctly
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **QA-066: Implement Quote Discount and Notes Features** (P1)
+  - **Status:** ready
+  - **Priority:** HIGH
+  - **Estimate:** 8h
+  - **Module:** `client/src/pages/OrderCreatorPage.tsx`, `server/routers/orders.ts`
+  - **Dependencies:** None
+  - **Problem:** Quote creation is missing discount application and notes/terms fields.
+  - **Deliverables:**
+    - [ ] Add discount input field to quote form
+    - [ ] Implement discount calculation logic (percentage and fixed)
+    - [ ] Add notes/terms textarea field
+    - [ ] Save discount and notes with quote
+    - [ ] Display discount and notes on quote preview
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+### 🟢 P2 - MEDIUM PRIORITY
+
+- [ ] **QA-067: Implement CRM Communication Features** (P2)
+  - **Status:** ready
+  - **Priority:** MEDIUM
+  - **Estimate:** 16h
+  - **Module:** `client/src/pages/ClientProfilePage.tsx`, `server/routers/clients.ts`
+  - **Dependencies:** None
+  - **Problem:** CRM is missing communication log, meeting scheduling, and activity timeline features.
+  - **Deliverables:**
+    - [ ] Create communication_logs table schema
+    - [ ] Implement communication log component
+    - [ ] Add meeting scheduling integration with calendar
+    - [ ] Create activity timeline component
+    - [ ] Add backend endpoints for communication CRUD
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **QA-068: Implement Client Purchase History View** (P2)
+  - **Status:** ready
+  - **Priority:** MEDIUM
+  - **Estimate:** 8h
+  - **Module:** `client/src/pages/ClientProfilePage.tsx`
+  - **Dependencies:** None
+  - **Problem:** Client profile is missing purchase history view and purchase pattern analysis.
+  - **Deliverables:**
+    - [ ] Add purchase history tab to client profile
+    - [ ] Display all orders for client with filtering
+    - [ ] Add basic purchase pattern metrics (frequency, avg order value)
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **QA-069: Implement Batch Media Upload** (P2)
+  - **Status:** ready
+  - **Priority:** MEDIUM
+  - **Estimate:** 8h
+  - **Module:** `client/src/components/inventory/`, `server/routers/inventory.ts`
+  - **Dependencies:** None
+  - **Problem:** No way to upload photos/media for batches.
+  - **Deliverables:**
+    - [ ] Add media upload component to batch form
+    - [ ] Implement file upload endpoint
+    - [ ] Store media references in database
+    - [ ] Display uploaded media in batch detail view
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **QA-070: Implement Missing Accounting Reports** (P2)
+  - **Status:** ready
+  - **Priority:** MEDIUM
+  - **Estimate:** 16h
+  - **Module:** `client/src/pages/accounting/`, `server/routers/accounting.ts`
+  - **Dependencies:** None
+  - **Problem:** Missing Fiscal Periods page, Trial Balance report, Order Audit Log, and Import Bank Transactions feature.
+  - **Deliverables:**
+    - [ ] Create Fiscal Periods management page
+    - [ ] Implement Trial Balance report
+    - [ ] Create Order Audit Log page
+    - [ ] Add Import Bank Transactions feature
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **QA-071: Add Batch Location Management** (P2)
+  - **Status:** ready
+  - **Priority:** MEDIUM
+  - **Estimate:** 8h
+  - **Module:** `client/src/components/inventory/`, `server/routers/inventory.ts`
+  - **Dependencies:** None
+  - **Problem:** No clear way to add or manage locations for batches.
+  - **Deliverables:**
+    - [ ] Add location assignment UI to batch form
+    - [ ] Implement location selection dropdown
+    - [ ] Add location history tracking
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+### 🔵 P3 - LOW PRIORITY
+
+- [ ] **QA-072: Implement VIP Portal Branding Settings** (P3)
+  - **Status:** ready
+  - **Priority:** LOW
+  - **Estimate:** 8h
+  - **Module:** `client/src/pages/vip-portal/`, `server/routers/vipPortalAdmin.ts`
+  - **Dependencies:** QA-060
+  - **Problem:** VIP Portal is missing branding/customization settings.
+  - **Deliverables:**
+    - [ ] Add branding settings page
+    - [ ] Implement logo upload
+    - [ ] Add color scheme customization
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **QA-073: Implement Help Video Tutorials** (P3)
+  - **Status:** ready
+  - **Priority:** LOW
+  - **Estimate:** 4h
+  - **Module:** `client/src/pages/Help.tsx`
+  - **Dependencies:** None
+  - **Problem:** Help section is missing video tutorials.
+  - **Deliverables:**
+    - [ ] Add video tutorials section to help page
+    - [ ] Embed or link to tutorial videos
+    - [ ] Organize by feature/module
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **QA-074: Implement Todo Task Activity History** (P3)
+  - **Status:** ready
+  - **Priority:** LOW
+  - **Estimate:** 6h
+  - **Module:** `client/src/pages/TodoListsPage.tsx`, `server/routers/todoTasks.ts`
+  - **Dependencies:** None
+  - **Problem:** Todo tasks are missing activity history and dashboard widget.
+  - **Deliverables:**
+    - [ ] Add activity history to task detail view
+    - [ ] Track task status changes, assignments, comments
+    - [ ] Create todo dashboard widget showing upcoming/overdue tasks
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
