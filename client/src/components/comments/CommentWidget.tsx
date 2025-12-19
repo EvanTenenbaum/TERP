@@ -23,11 +23,14 @@ export function CommentWidget({
 
   const utils = trpc.useContext();
 
-  // Fetch comments
-  const { data: comments = [], isLoading } = trpc.comments.getEntityComments.useQuery(
+  // Fetch comments - PERF-003: Handle paginated response
+  const { data: commentsData, isLoading } = trpc.comments.getEntityComments.useQuery(
     { commentableType, commentableId },
     { enabled: isOpen }
   );
+  
+  // Extract items from paginated response
+  const comments = commentsData?.items ?? [];
 
   // Fetch unresolved count
   const { data: unresolvedData } = trpc.comments.getUnresolvedCount.useQuery(

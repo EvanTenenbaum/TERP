@@ -1,6 +1,8 @@
 /**
  * Comments Router
  * API endpoints for universal polymorphic comments and @mentions
+ * 
+ * PERF-003: Added pagination support
  */
 
 import { z } from "zod";
@@ -9,23 +11,38 @@ import * as commentsDb from "../commentsDb";
 import * as inboxDb from "../inboxDb";
 import * as mentionParser from "../services/mentionParser";
 import { requirePermission } from "../_core/permissionMiddleware";
+import {
+  paginationInputSchema,
+  createPaginatedResponse,
+  DEFAULT_PAGE_SIZE,
+} from "../_core/pagination";
 
 export const commentsRouter = router({
-  // Get all comments for an entity
+  // Get all comments for an entity with pagination
+  // PERF-003: Added pagination support
   getEntityComments: protectedProcedure.use(requirePermission("comments:read"))
     .input(
       z.object({
         commentableType: z.string(),
         commentableId: z.number(),
+        limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
+        offset: z.number().min(0).default(0).optional(),
       })
     )
     .query(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
-      return await commentsDb.getEntityComments(
+      const limit = input.limit ?? DEFAULT_PAGE_SIZE;
+      const offset = input.offset ?? 0;
+
+      const result = await commentsDb.getEntityComments(
         input.commentableType,
-        input.commentableId
+        input.commentableId,
+        limit,
+        offset
       );
+
+      return result;
     }),
 
   // Get a specific comment by ID

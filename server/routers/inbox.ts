@@ -1,29 +1,44 @@
 /**
  * Inbox Router
  * API endpoints for unified inbox management
+ * 
+ * PERF-003: Added pagination support
  */
 
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import * as inboxDb from "../inboxDb";
 import { requirePermission } from "../_core/permissionMiddleware";
+import {
+  paginationInputSchema,
+  createPaginatedResponse,
+  DEFAULT_PAGE_SIZE,
+} from "../_core/pagination";
 
 export const inboxRouter = router({
-  // Get all inbox items for current user
+  // Get all inbox items for current user with pagination
+  // PERF-003: Added pagination support
   getMyItems: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z
         .object({
           includeArchived: z.boolean().optional().default(false),
+          limit: z.number().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
+          offset: z.number().min(0).default(0).optional(),
         })
         .optional()
     )
     .query(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
 
+      const limit = input?.limit ?? DEFAULT_PAGE_SIZE;
+      const offset = input?.offset ?? 0;
+
       return await inboxDb.getUserInboxItems(
         ctx.user.id,
-        input?.includeArchived ?? false
+        input?.includeArchived ?? false,
+        limit,
+        offset
       );
     }),
 

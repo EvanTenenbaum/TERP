@@ -20,15 +20,31 @@ import { eq, and, desc, sql } from "drizzle-orm";
 // ============================================================================
 
 /**
- * Get all comments for an entity
+ * Get all comments for an entity with pagination
+ * PERF-003: Added pagination support
  */
 export async function getEntityComments(
   commentableType: string,
-  commentableId: number
+  commentableId: number,
+  limit: number = 50,
+  offset: number = 0
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Get total count for pagination
+  const [countResult] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(comments)
+    .where(
+      and(
+        eq(comments.commentableType, commentableType),
+        eq(comments.commentableId, commentableId)
+      )
+    );
+  const total = Number(countResult?.count ?? 0);
+
+  // Get paginated comments
   const entityComments = await db
     .select({
       id: comments.id,
@@ -52,9 +68,17 @@ export async function getEntityComments(
         eq(comments.commentableId, commentableId)
       )
     )
-    .orderBy(desc(comments.createdAt));
+    .orderBy(desc(comments.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  return entityComments;
+  return {
+    items: entityComments,
+    total,
+    limit,
+    offset,
+    hasMore: offset + entityComments.length < total,
+  };
 }
 
 /**

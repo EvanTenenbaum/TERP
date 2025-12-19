@@ -9,10 +9,14 @@ import { formatDistanceToNow } from "date-fns";
 export function InboxWidget() {
   const [, setLocation] = useLocation();
 
-  // Fetch inbox items
-  const { data: items = [], refetch } = trpc.inbox.getMyItems.useQuery({
+  // Fetch inbox items - PERF-003: Handle paginated response
+  const { data: itemsData, refetch } = trpc.inbox.getMyItems.useQuery({
     includeArchived: false,
+    limit: 5, // Only fetch 5 items for widget
   });
+  
+  // Extract items from paginated response
+  const items = itemsData?.items ?? [];
 
   // Mark as seen mutation
   const markAsSeen = trpc.inbox.markAsSeen.useMutation({
@@ -21,12 +25,12 @@ export function InboxWidget() {
     },
   });
   
-  // Limit to 5 items for widget display
-  const displayItems = items.slice(0, 5);
+  // Display items (already limited by query)
+  const displayItems = items;
 
   const unreadCount = displayItems.filter((item) => !item.seenAt).length;
 
-  const handleItemClick = (item: typeof items[0]) => {
+  const handleItemClick = (item: (typeof items)[0]) => {
     // Mark as seen
     if (!item.seenAt) {
       markAsSeen.mutate({ itemId: item.id });
