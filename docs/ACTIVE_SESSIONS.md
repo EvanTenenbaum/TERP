@@ -13,6 +13,7 @@
 | Session ID                         | Task       | Branch                   | Module     | Status      | Started    | ETA |
 | ---------------------------------- | ---------- | ------------------------ | ---------- | ----------- | ---------- | --- |
 | Session-20251218-MASTER-FIX-c0f9fa | MASTER-FIX | claude/master-fix-c0f9fa | full-stack | In Progress | 2025-12-18 | TBA |
+| Session-20251219-SPRINT-A-5ccd4e | SPRINT-A | claude/setup-terp-erp-qUWOw | code-quality | In Progress | 2025-12-19 | TBA |
 
 ## ⏸️ Paused / Waiting
 
