@@ -344,10 +344,12 @@ describe("Clients Router", () => {
 
       // Assert
       expect(result.name).toBe("Updated Name");
+      // updateClient now takes 4 args: (clientId, userId, data, expectedVersion?)
       expect(clientsDb.updateClient).toHaveBeenCalledWith(
         1,
         1,
-        expect.objectContaining({ name: "Updated Name" })
+        expect.objectContaining({ name: "Updated Name" }),
+        undefined
       );
     });
 
