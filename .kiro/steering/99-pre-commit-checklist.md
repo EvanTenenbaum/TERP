@@ -6,6 +6,15 @@ inclusion: always
 
 **MANDATORY**: Before every commit, verify:
 
+## 🔬 Adaptive QA Protocol (RUN FIRST)
+
+- [ ] Work classified (Type, Persistence, Risk, Consumers)
+- [ ] QA severity selected (Level 1/2/3)
+- [ ] QA executed at appropriate level
+- [ ] Issues self-healed before proceeding
+
+**See `08-adaptive-qa-protocol.md` for full protocol.**
+
 ## Architecture Compliance
 
 - [ ] No deprecated systems used (see `07-deprecated-systems.md`)
