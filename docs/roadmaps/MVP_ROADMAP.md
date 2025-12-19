@@ -59,10 +59,10 @@ The core ERP functionality is largely complete. Remaining work focuses on:
 
 ### ✅ Should Have (Launch Quality)
 
-- [ ] Unified navigation (BUG-017)
-- [ ] Breadcrumb navigation (UX-009)
-- [ ] Searchable client dropdown (UX-013)
-- [ ] Debug routes removed (BUG-011)
+- [x] Unified navigation (BUG-017) ✅
+- [x] Breadcrumb navigation (UX-009) ✅
+- [x] Searchable client dropdown (UX-013) ✅
+- [x] Debug routes removed (BUG-011) ✅ (already removed - no /orders-debug route exists)
 
 ### ✅ Nice to Have (Post-Launch Sprint 1)
 
@@ -77,20 +77,20 @@ The core ERP functionality is largely complete. Remaining work focuses on:
 
 ### Phase Progress Tracker
 
-| Phase                        | Status         | Progress | Blocking Issues      |
-| ---------------------------- | -------------- | -------- | -------------------- |
-| Phase 0: Quick Wins          | ✅ COMPLETE    | 100%     | None                 |
-| Phase 1: Core UX             | ✅ COMPLETE    | 100%     | None                 |
-| Phase 2: Data Integrity      | ✅ COMPLETE    | 100%     | None                 |
-| Phase 3: Workflow Validation | ✅ COMPLETE    | 100%     | None                 |
-| Phase 4: MVP Polish          | ⏳ NOT STARTED | 0%       | Ready to start       |
-| Phase 5: Nice-to-Haves       | ⏳ NOT STARTED | 0%       | Waiting on Phase 4   |
+| Phase                        | Status         | Progress | Blocking Issues |
+| ---------------------------- | -------------- | -------- | --------------- |
+| Phase 0: Quick Wins          | ✅ COMPLETE    | 100%     | None            |
+| Phase 1: Core UX             | ✅ COMPLETE    | 100%     | None            |
+| Phase 2: Data Integrity      | ✅ COMPLETE    | 100%     | None            |
+| Phase 3: Workflow Validation | ✅ COMPLETE    | 100%     | None            |
+| Phase 4: MVP Polish          | ✅ COMPLETE    | 100%     | None            |
+| Phase 5: Nice-to-Haves       | ⏳ NOT STARTED | 0%       | Ready to start  |
 
 ### Last Status Update
 
 **Date:** December 19, 2025  
-**Updated By:** Kiro MVP Sprint  
-**Notes:** Phase 1 COMPLETE! All 4 tasks done: PERF-003 (pagination), UX-010 (empty states), UX-011 (skeleton loaders), BUG-M005 (orders item count fix). Ready for Phase 2.
+**Updated By:** Kiro Frontend Polish Sprint  
+**Notes:** Phase 4 COMPLETE! All tasks done: BUG-017 (unified navigation), UX-009 (breadcrumbs), UX-013 (searchable client dropdown), BUG-011 (debug routes already removed), UX-014 (Chart of Accounts edit already functional). MVP is ready for Phase 5 Nice-to-Haves!
 
 ---
 
@@ -146,12 +146,12 @@ The core ERP functionality is largely complete. Remaining work focuses on:
 
 ### Task Breakdown
 
-| Task         | Description                          | Est   | Status      | Assigned                  | Notes                                    |
-| ------------ | ------------------------------------ | ----- | ----------- | ------------------------- | ---------------------------------------- |
-| **PERF-003** | Add pagination to all list endpoints | 24h   | ✅ Complete | Session-20251130-PERF-003 | Completed Dec 19, 2025                   |
-| **UX-010**   | Add empty states to widgets/lists    | 4h    | ✅ Complete | MVP-Sprint-Dec19          | EmptyState component created             |
-| **UX-011**   | Add skeleton loaders                 | 3h    | ✅ Complete | MVP-Sprint-Dec19          | Skeleton components created              |
-| **BUG-M005** | Fix orders showing "0 items"         | 6-12h | ✅ Complete | MVP-Sprint-Dec19          | Fixed JSON parsing in ordersDb.ts        |
+| Task         | Description                          | Est   | Status      | Assigned                  | Notes                             |
+| ------------ | ------------------------------------ | ----- | ----------- | ------------------------- | --------------------------------- |
+| **PERF-003** | Add pagination to all list endpoints | 24h   | ✅ Complete | Session-20251130-PERF-003 | Completed Dec 19, 2025            |
+| **UX-010**   | Add empty states to widgets/lists    | 4h    | ✅ Complete | MVP-Sprint-Dec19          | EmptyState component created      |
+| **UX-011**   | Add skeleton loaders                 | 3h    | ✅ Complete | MVP-Sprint-Dec19          | Skeleton components created       |
+| **BUG-M005** | Fix orders showing "0 items"         | 6-12h | ✅ Complete | MVP-Sprint-Dec19          | Fixed JSON parsing in ordersDb.ts |
 
 ### Key Commits
 
@@ -182,10 +182,10 @@ The core ERP functionality is largely complete. Remaining work focuses on:
 
 ### Task Breakdown
 
-| Task         | Description                  | Est | Status         | Priority | Notes                                    |
-| ------------ | ---------------------------- | --- | -------------- | -------- | ---------------------------------------- |
-| **DATA-005** | Implement optimistic locking | 32h | ✅ Complete    | HIGH     | Schema + utility done, clients integrated |
-| **REL-002**  | Automated database backups   | 8h  | ✅ Complete    | HIGH     | Scripts exist, docs added                |
+| Task         | Description                  | Est | Status      | Priority | Notes                                     |
+| ------------ | ---------------------------- | --- | ----------- | -------- | ----------------------------------------- |
+| **DATA-005** | Implement optimistic locking | 32h | ✅ Complete | HIGH     | Schema + utility done, clients integrated |
+| **REL-002**  | Automated database backups   | 8h  | ✅ Complete | HIGH     | Scripts exist, docs added                 |
 
 ### Parallelization Strategy
 
@@ -291,53 +291,49 @@ AGENT B: WF-002 + WF-004 (Inventory & Data) - 14h
 
 ---
 
-## Phase 4: MVP Polish ⏳ NOT STARTED
+## Phase 4: MVP Polish ✅ COMPLETE
 
 **Goal:** Final touches before launch  
 **Duration:** 2 days  
-**Status:** ⏳ Waiting on Phase 3  
-**Estimated Effort:** 16 hours
+**Status:** ✅ COMPLETE (December 19, 2025)  
+**Estimated Effort:** 16 hours | **Actual:** ~4 hours
 
 ### Task Breakdown
 
-| Task        | Description                   | Est   | Status   | Priority |
-| ----------- | ----------------------------- | ----- | -------- | -------- |
-| **BUG-017** | Unify sidebar navigation      | 4-8h  | ⏳ Ready | HIGH     |
-| **UX-009**  | Breadcrumb navigation         | 4h    | ⏳ Ready | MEDIUM   |
-| **UX-013**  | Searchable client dropdown    | 2h    | ⏳ Ready | MEDIUM   |
-| **UX-014**  | Chart of Accounts edit button | 1h    | ⏳ Ready | LOW      |
-| **BUG-011** | Remove debug route            | 30min | ⏳ Ready | HIGH     |
+| Task        | Description                   | Est   | Status      | Priority | Notes                                    |
+| ----------- | ----------------------------- | ----- | ----------- | -------- | ---------------------------------------- |
+| **BUG-017** | Unify sidebar navigation      | 4-8h  | ✅ Complete | HIGH     | Created shared navigation config         |
+| **UX-009**  | Breadcrumb navigation         | 4h    | ✅ Complete | MEDIUM   | AppBreadcrumb component integrated       |
+| **UX-013**  | Searchable client dropdown    | 2h    | ✅ Complete | MEDIUM   | ClientCombobox integrated                |
+| **UX-014**  | Chart of Accounts edit button | 1h    | ✅ Complete | LOW      | Already functional (verified)            |
+| **BUG-011** | Remove debug route            | 30min | ✅ Complete | HIGH     | Already removed (no /orders-debug route) |
 
-### Parallelization Strategy
+### Key Commits
 
-```
-AGENT A: Navigation & Layout (8h)
-         ├── BUG-017: Unify sidebar navigation
-         │   ├── Sync DashboardLayout and AppSidebar
-         │   └── Ensure consistent nav across all pages
-         └── UX-009: Breadcrumb navigation
-             ├── Integrate existing breadcrumb component
-             └── Configure paths for all routes
+- `797c1958` - feat(UX-013): Add searchable client dropdown to SalesSheetCreator and EventInvitationDialog
+- `5f76c9b7` - fix(BUG-017): Unify sidebar navigation between AppSidebar and DashboardLayout
+- `b4f03622` - feat(UX-009): Add breadcrumb navigation to AppHeader
 
-AGENT B: Search & Cleanup (4h)
-         ├── UX-013: Searchable client dropdown
-         │   └── Replace basic dropdown with combobox
-         ├── UX-014: Chart of Accounts edit button
-         └── BUG-011: Remove /orders-debug route
-```
+### Deliverables
+
+- `client/src/config/navigation.ts` - Shared navigation configuration (single source of truth)
+- `client/src/components/layout/AppBreadcrumb.tsx` - Automatic breadcrumb component
+- Updated `AppSidebar.tsx` and `DashboardLayout.tsx` to use shared navigation
+- Updated `SalesSheetCreatorPage.tsx` and `EventInvitationDialog.tsx` with ClientCombobox
 
 ### Phase 4 Completion Criteria
 
-- [ ] Sidebar navigation identical on all pages
-- [ ] Breadcrumbs show on all pages
-- [ ] Client dropdown is searchable
-- [ ] Chart of Accounts edit works
-- [ ] No debug routes accessible in production
+- [x] Sidebar navigation identical on all pages
+- [x] Breadcrumbs show on all pages
+- [x] Client dropdown is searchable
+- [x] Chart of Accounts edit works
+- [x] No debug routes accessible in production
 
-### Phase 4 Checkpoint
+### Phase 4 Checkpoint ✅
 
-**When:** After all Phase 4 tasks complete  
-**Action:** Full QA pass, prepare launch checklist, update documentation
+**Date:** December 19, 2025  
+**Status:** All Phase 4 tasks complete. MVP Polish done!  
+**Notes:** Created shared navigation config for consistency, added breadcrumb navigation, integrated searchable client dropdowns. Verified BUG-011 and UX-014 were already resolved.
 
 ---
 
@@ -459,6 +455,36 @@ If you encounter:
 ---
 
 ## 📝 Status Update Log
+
+### December 19, 2025 - Phase 4 COMPLETE 🎉
+
+**Updated By:** Kiro Frontend Polish Sprint  
+**Phase:** Phase 4 COMPLETE, Phase 5 Ready  
+**Progress:** Phase 4: 5/5 tasks complete (BUG-017, UX-009, UX-013, UX-014, BUG-011)  
+**Blockers:** None  
+**Key Accomplishments:**
+
+- ✅ BUG-017: Unified sidebar navigation
+  - Created `client/src/config/navigation.ts` as single source of truth
+  - Updated AppSidebar and DashboardLayout to use shared config
+  - 23 navigation items now consistent across all pages
+- ✅ UX-009: Breadcrumb navigation
+  - Created `AppBreadcrumb` component with automatic path-based generation
+  - Integrated into AppHeader below main header row
+  - Supports custom breadcrumbs override
+- ✅ UX-013: Searchable client dropdown
+  - Integrated ClientCombobox into SalesSheetCreatorPage
+  - Integrated ClientCombobox into EventInvitationDialog
+  - Fixed ESLint warnings (proper types, no `any`)
+- ✅ UX-014: Chart of Accounts edit button - Already functional (verified)
+- ✅ BUG-011: Debug routes removed - Already removed (no /orders-debug route exists)
+
+**Next Actions:**
+
+- Begin Phase 5: Nice-to-Haves (BUG-M001, BUG-M003, QUAL-002, DATA-004)
+- MVP core functionality is complete!
+
+---
 
 ### December 19, 2025 - Phase 3 COMPLETE 🎉
 
