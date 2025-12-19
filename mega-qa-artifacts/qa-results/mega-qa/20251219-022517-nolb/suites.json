@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Must-Hit Suite",
+    "category": "must-hit",
+    "testsRun": 18,
+    "testsPassed": 0,
+    "testsFailed": 18,
+    "testsSkipped": 0,
+    "durationMs": 543409,
+    "failureIds": [],
+    "coveredTags": []
+  },
+  {
+    "name": "Property-Based Tests",
+    "category": "property",
+    "testsRun": 231,
+    "testsPassed": 227,
+    "testsFailed": 0,
+    "testsSkipped": 4,
+    "durationMs": 11965,
+    "failureIds": [],
+    "coveredTags": [
+      "property-tests",
+      "business-logic",
+      "invariants"
+    ]
+  },
+  {
+    "name": "Contract Tests",
+    "category": "contract",
+    "testsRun": 5,
+    "testsPassed": 5,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "durationMs": 3043,
+    "failureIds": [],
+    "coveredTags": [
+      "contract-tests",
+      "api-schema",
+      "trpc-procedures"
+    ]
+  },
+  {
+    "name": "Backend Invariants",
+    "category": "invariant",
+    "testsRun": 5,
+    "testsPassed": 4,
+    "testsFailed": 1,
+    "testsSkipped": 0,
+    "durationMs": 148,
+    "failureIds": [],
+    "coveredTags": [
+      "db-invariants"
+    ]
+  }
+]

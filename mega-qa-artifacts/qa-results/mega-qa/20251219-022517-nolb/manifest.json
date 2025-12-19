@@ -1,0 +1,27 @@
+{
+  "runId": "20251219-022517-nolb",
+  "gitSha": "8546af8149fe40bd5e3fce25548f1d79826c790a",
+  "gitBranch": "main",
+  "timestamp": "2025-12-19T02:34:37.656Z",
+  "config": {
+    "scenario": "full",
+    "journeyCount": 25,
+    "seed": 657585,
+    "baseURL": "https://terp-app-b9s35.ondigitalocean.app",
+    "outputDir": "qa-results/mega-qa",
+    "mode": "quick",
+    "soakDuration": 30,
+    "headless": true,
+    "ci": false,
+    "cloud": true,
+    "dbMode": "live"
+  },
+  "environment": {
+    "nodeVersion": "v20.19.6",
+    "platform": "linux",
+    "ci": false
+  },
+  "durationMs": 560158,
+  "result": "fail",
+  "exitCode": 1
+}
