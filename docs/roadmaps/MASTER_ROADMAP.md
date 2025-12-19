@@ -3399,6 +3399,40 @@ logger.error({ err: error }, "Error message");
   - Priority: Very Low (PWA may be sufficient)
   - Estimate: 2-3 months
 
+- [ ] **FEATURE-005: Unit Tracking with QR Codes & NFC Tags**
+  - Phase: 3+
+  - Priority: MEDIUM
+  - Estimate: 2-3 weeks (investigation) + 4-6 weeks (implementation)
+  - Context: Automated sticker + QR code generation for individual units to track during intake, shopping, order prep, and shipping
+  - **Scope:**
+    - **Investigation Phase:**
+      - Research QR code generation libraries (node-qrcode, qrcode-generator)
+      - Investigate NFC tag options (NTAG213/215/216, cost analysis, read/write capabilities)
+      - Evaluate label/sticker printer integration (Zebra, DYMO, Brother)
+      - Assess mobile device NFC capabilities for scanning
+      - Design data schema for unit-level tracking (batch → unit relationship)
+    - **Implementation Phase:**
+      - QR code generation service (unique codes per unit)
+      - Sticker template designer (customizable layouts with product info, QR, batch details)
+      - Print queue management for batch printing
+      - Mobile scanning interface for intake workflow
+      - Shopping floor scanning (quick product lookup, availability check)
+      - Order prep verification (scan to confirm correct items)
+      - Shipping prep integration (scan to mark packed, generate shipping labels)
+      - NFC tag writing/reading endpoints (if NFC selected)
+      - Audit trail for all scan events
+  - **Integration Points:**
+    - Inventory intake: Generate labels on batch creation
+    - Shopping: Scan to view product details, add to cart
+    - Order fulfillment: Scan to verify picks, prevent errors
+    - Shipping: Scan to confirm packed, link to shipment
+    - Returns: Scan to identify original batch/order
+  - **Success Metrics:**
+    - Reduce order picking errors by 90%
+    - Speed up intake processing by 50%
+    - Full traceability from intake to delivery
+  - Added: 2025-12-19
+
 ### Explicitly Excluded (Per User Feedback)
 
 These should **NOT** be built:
