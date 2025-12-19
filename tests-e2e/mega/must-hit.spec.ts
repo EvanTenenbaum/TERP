@@ -381,9 +381,10 @@ test.describe("Layout Consistency", () => {
 
       // Sidebar is implemented as a list of buttons (not necessarily <nav>/<aside>).
       // Verify key shell elements exist on every page.
-      await expect(
-        page.getByRole("button", { name: /dashboard/i }).first()
-      ).toBeVisible({ timeout: 5000 });
+      const dashboardNav = page
+        .getByRole("link", { name: /dashboard/i })
+        .or(page.getByRole("button", { name: /dashboard/i }));
+      await expect(dashboardNav.first()).toBeVisible({ timeout: 5000 });
 
       await expect(
         page.getByRole("searchbox", {
