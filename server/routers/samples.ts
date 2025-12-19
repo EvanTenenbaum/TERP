@@ -73,14 +73,20 @@ export const samplesRouter = router({
 
   // Get all pending sample requests
   getPending: publicProcedure
-    .query(async () => {
-      const requests = await samplesDb.getPendingSampleRequests();
-      // HOTFIX (BUG-033): Wrap in paginated response structure
-      return {
-        items: requests,
-        nextCursor: null,
-        hasMore: false,
-      };
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).optional(),
+          cursor: z.string().nullish(),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await samplesDb.getPendingSampleRequests({
+        limit: input?.limit,
+        cursor: input?.cursor,
+      });
     }),
 
   // Get monthly allocation for a client

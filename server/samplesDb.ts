@@ -1,15 +1,20 @@
 import { getDb } from "./db";
-import { 
-  sampleRequests, 
-  sampleAllocations, 
-  batches, 
+import {
+  sampleRequests,
+  sampleAllocations,
+  batches,
   orders,
   inventoryMovements,
   type InsertSampleRequest,
   type InsertSampleAllocation,
-  type SampleRequest
+  type SampleRequest,
 } from "../drizzle/schema";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import {
+  PaginatedResult,
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+} from "./_core/pagination";
 
 /**
  * Create a new sample request
@@ -340,21 +345,70 @@ export async function getSampleRequestsByClient(
 }
 
 /**
- * Get all pending sample requests
+ * Get all pending sample requests with pagination
+ * @param options - Optional pagination parameters
+ * @returns Paginated result of pending sample requests
  */
-export async function getPendingSampleRequests(): Promise<SampleRequest[]> {
+export async function getPendingSampleRequests(options?: {
+  limit?: number;
+  cursor?: string | null;
+}): Promise<PaginatedResult<SampleRequest>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const limit = Math.min(options?.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+
   try {
-    const requests = await db.select()
+    // Build base query
+    let query = db
+      .select()
       .from(sampleRequests)
       .where(eq(sampleRequests.sampleRequestStatus, "PENDING"))
       .orderBy(desc(sampleRequests.requestDate));
 
-    return requests;
+    // Apply cursor-based pagination if cursor provided
+    if (options?.cursor) {
+      const cursorId = parseInt(options.cursor, 10);
+      if (!isNaN(cursorId)) {
+        query = db
+          .select()
+          .from(sampleRequests)
+          .where(
+            and(
+              eq(sampleRequests.sampleRequestStatus, "PENDING"),
+              sql`${sampleRequests.id} < ${cursorId}`
+            )
+          )
+          .orderBy(desc(sampleRequests.requestDate));
+      }
+    }
+
+    // Fetch limit + 1 to determine if there are more pages
+    const requests = await query.limit(limit + 1);
+
+    // Get total count
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(sampleRequests)
+      .where(eq(sampleRequests.sampleRequestStatus, "PENDING"));
+    const total = countResult[0]?.count ?? 0;
+
+    // Determine if there are more items
+    const hasMore = requests.length > limit;
+    const items = hasMore ? requests.slice(0, limit) : requests;
+    const lastItem = items[items.length - 1];
+    const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+    return {
+      items,
+      nextCursor,
+      hasMore,
+      total,
+    };
   } catch (error) {
-    throw new Error(`Failed to get pending sample requests: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to get pending sample requests: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
