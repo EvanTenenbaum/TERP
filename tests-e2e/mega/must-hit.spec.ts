@@ -148,8 +148,10 @@ test.describe("Authentication", () => {
     await page.click('button[type="submit"]');
 
     // Should show error
-    const error = page.locator('[role="alert"], .error, .toast');
-    await expect(error.first()).toBeVisible({ timeout: 5000 });
+    // Login page renders errors as inline text (not necessarily role=alert)
+    await expect(
+      page.getByText(/invalid username or password/i).first()
+    ).toBeVisible({ timeout: 5000 });
 
     // Test success path
     await fillFirstVisible(
