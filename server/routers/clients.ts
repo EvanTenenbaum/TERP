@@ -110,10 +110,11 @@ export const clientsRouter = router({
       }
     }),
 
-  // Update client
+  // Update client (with optimistic locking - DATA-005)
   update: protectedProcedure.use(requirePermission("clients:update"))
     .input(z.object({
       clientId: z.number(),
+      version: z.number().optional(), // Optimistic locking - if provided, will check version before update
       name: z.string().min(1).max(255).optional(),
       email: z.string().email().optional(),
       phone: z.string().max(50).optional(),
@@ -127,8 +128,8 @@ export const clientsRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      const { clientId, ...data } = input;
-      return await clientsDb.updateClient(clientId, ctx.user.id, data);
+      const { clientId, version, ...data } = input;
+      return await clientsDb.updateClient(clientId, ctx.user.id, data, version);
     }),
 
   // Delete client

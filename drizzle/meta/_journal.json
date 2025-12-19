@@ -169,6 +169,13 @@
       "when": 1765938241475,
       "tag": "0023_redundant_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1766169787505,
+      "tag": "0024_misty_rogue",
+      "breakpoints": true
     }
   ]
 }

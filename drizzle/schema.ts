@@ -521,6 +521,7 @@ export const batches = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     code: varchar("code", { length: 50 }).notNull().unique(),
     deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+    version: int("version").notNull().default(1), // Optimistic locking (DATA-005)
     sku: varchar("sku", { length: 100 }).notNull().unique(),
     productId: int("productId").notNull(),
     lotId: int("lotId").notNull(),
@@ -941,6 +942,7 @@ export const invoices = mysqlTable(
     invoiceNumber: varchar("invoiceNumber", { length: 50 }).notNull().unique(),
     // SCHEMA DRIFT FIX: Re-added deletedAt - column exists in production database
     deletedAt: timestamp("deleted_at"),
+    version: int("version").notNull().default(1), // Optimistic locking (DATA-005)
     // FK added as part of Canonical Model Unification (Phase 2, Task 10.1)
     customerId: int("customerId")
       .notNull()
@@ -1396,6 +1398,7 @@ export const clients = mysqlTable(
   "clients",
   {
     id: int("id").primaryKey().autoincrement(),
+    version: int("version").notNull().default(1), // Optimistic locking (DATA-005)
     teriCode: varchar("teri_code", { length: 50 }).notNull().unique(),
     name: varchar("name", { length: 255 }).notNull(),
     email: varchar("email", { length: 255 }),
@@ -2079,6 +2082,7 @@ export const orders = mysqlTable(
   "orders",
   {
     id: int("id").primaryKey().autoincrement(),
+    version: int("version").notNull().default(1), // Optimistic locking (DATA-005)
     orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
     orderType: orderTypeEnum.notNull(),
     isDraft: boolean("is_draft").notNull().default(true),
