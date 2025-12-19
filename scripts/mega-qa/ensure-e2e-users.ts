@@ -13,10 +13,12 @@
 import { simpleAuth } from "../../server/_core/simpleAuth";
 import { getDb } from "../../server/db";
 import { sql } from "drizzle-orm";
+import { closeConnectionPool } from "../../server/_core/connectionPool";
 
 const truthy = (v: string | undefined) => v === "1" || v === "true" || v === "yes";
 
 async function main(): Promise<void> {
+  try {
   if (!truthy(process.env.MEGA_QA_CLOUD) && !truthy(process.env.MEGA_QA_USE_LIVE_DB)) {
     console.log("Skipping ensure-e2e-users: not in cloud/live mode.");
     return;
@@ -50,6 +52,11 @@ async function main(): Promise<void> {
   );
 
   console.log("✅ E2E users ensured.");
+  } finally {
+    // IMPORTANT: server connectionPool sets a periodic stats interval which keeps
+    // the Node process alive. For one-off scripts we must close it explicitly.
+    await closeConnectionPool().catch(() => {});
+  }
 }
 
 async function ensureUser(username: string, password: string, name: string): Promise<void> {
