@@ -3,6 +3,7 @@ import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } f
 import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { calendarLogger } from "../_core/logger";
 
 /**
  * Calendar Participants Router
@@ -85,7 +86,12 @@ export const calendarParticipantsRouter = router({
       if (input.notifyOnCreation) {
         // TODO: Integrate with notification system
         // For now, this is a hook point for future notification integration
-        console.log(`[Calendar] Notification: User ${input.userId} added to event ${input.eventId}`);
+        calendarLogger.operationSuccess("addParticipant", {
+          userId: input.userId,
+          eventId: input.eventId,
+          role: input.role,
+          notificationPending: true,
+        });
       }
 
       return participant;

@@ -262,9 +262,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 placeholder="Start typing vendor name..."
                 required
               />
-              {showVendorDropdown && vendors && vendors.length > 0 && (
+              {showVendorDropdown && vendors?.items && vendors.items.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-                  {vendors.map((vendor) => (
+                  {vendors.items.map((vendor) => (
                     <div
                       key={vendor.id}
                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
@@ -298,9 +298,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
                 placeholder="Start typing brand name..."
                 required
               />
-              {showBrandDropdown && brands && brands.length > 0 && (
+              {showBrandDropdown && brands?.items && brands.items.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-                  {brands.map((brand) => (
+                  {brands.items.map((brand) => (
                     <div
                       key={brand.id}
                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"

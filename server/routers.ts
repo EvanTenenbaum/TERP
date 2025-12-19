@@ -74,7 +74,10 @@ import { workflowQueueRouter } from "./routers/workflow-queue";
 import { deploymentsRouter } from "./routers/deployments";
 import { monitoringRouter } from "./routers/monitoring";
 import { searchRouter } from "./routers/search";
-import { debugRouter } from "./routers/debug";
+// Debug router - only imported in development
+const debugRouter = process.env.NODE_ENV !== "production" 
+  ? require("./routers/debug").debugRouter 
+  : null;
 
 export const appRouter = router({
   system: systemRouter,
@@ -150,7 +153,8 @@ export const appRouter = router({
   deployments: deploymentsRouter,
   monitoring: monitoringRouter,
   search: searchRouter,
-  debug: debugRouter,
+  // Debug router - only registered in development
+  ...(debugRouter ? { debug: debugRouter } : {}),
 });
 
 export type AppRouter = typeof appRouter;

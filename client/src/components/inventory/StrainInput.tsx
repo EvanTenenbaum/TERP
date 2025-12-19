@@ -129,7 +129,7 @@ export function StrainInput({
               <CommandEmpty>Searching...</CommandEmpty>
             )}
             
-            {!isLoading && searchQuery.length >= 2 && searchResults && searchResults.length === 0 && (
+            {!isLoading && searchQuery.length >= 2 && searchResults?.items && searchResults.items.length === 0 && (
               <CommandEmpty>
                 <div className="text-center py-2">
                   <p className="text-sm text-muted-foreground mb-2">
@@ -146,9 +146,9 @@ export function StrainInput({
               </CommandEmpty>
             )}
 
-            {searchResults && searchResults.length > 0 && (
+            {searchResults?.items && searchResults.items.length > 0 && (
               <CommandGroup>
-                {searchResults.map((strain) => (
+                {searchResults.items.map((strain) => (
                   <CommandItem
                     key={strain.id}
                     value={strain.id.toString()}
@@ -173,7 +173,7 @@ export function StrainInput({
                 
                 {/* Option to create new if no exact match */}
                 {searchQuery.length >= 2 && 
-                 !searchResults.find(s => s.name.toLowerCase() === searchQuery.toLowerCase()) && (
+                 !searchResults.items.find(s => s.name.toLowerCase() === searchQuery.toLowerCase()) && (
                   <CommandItem
                     value="create-new"
                     onSelect={handleCreateNew}

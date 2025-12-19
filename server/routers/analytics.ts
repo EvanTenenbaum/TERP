@@ -7,10 +7,67 @@ import { db } from "../db";
 import { orders, clients, batches } from "../../drizzle/schema";
 import { count, sum, isNull } from "drizzle-orm";
 
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+/** Summary analytics data for dashboard */
+interface AnalyticsSummary {
+  totalRevenue: number;
+  totalOrders: number;
+  totalClients: number;
+  totalInventoryItems: number;
+}
+
+/** Client strain preference data */
+interface ClientStrainPreference {
+  familyId: number;
+  familyName: string;
+  purchaseCount: number;
+  totalQuantity: number;
+  lastPurchaseDate: Date | null;
+}
+
+/** Top strain family data */
+interface TopStrainFamily {
+  familyId: number;
+  familyName: string;
+  totalSales: number;
+  orderCount: number;
+}
+
+/** Strain family trend data point */
+interface StrainFamilyTrend {
+  month: string;
+  sales: number;
+  orderCount: number;
+}
+
+// ============================================================================
+// INPUT SCHEMAS
+// ============================================================================
+
+const clientStrainPreferencesInput = z.object({ clientId: z.number() });
+
+const topStrainFamiliesInput = z.object({
+  limit: z.number().min(1).max(50).optional().default(10),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
+});
+
+const strainFamilyTrendsInput = z.object({
+  familyId: z.number(),
+  months: z.number().min(1).max(24).optional().default(6),
+});
+
+// ============================================================================
+// ROUTER
+// ============================================================================
+
 export const analyticsRouter = router({
   // Get summary analytics for dashboard
   getSummary: protectedProcedure.use(requirePermission("analytics:read"))
-    .query(async () => {
+    .query(async (): Promise<AnalyticsSummary> => {
       try {
         if (!db) {
           return {
@@ -54,12 +111,14 @@ export const analyticsRouter = router({
         });
       }
     }),
+
   // Get client's strain family preferences
   clientStrainPreferences: protectedProcedure.use(requirePermission("analytics:read"))
-    .input(z.object({ clientId: z.number() }))
-    .query(async ({ input }) => {
+    .input(clientStrainPreferencesInput)
+    .query(async ({ input }): Promise<ClientStrainPreference[]> => {
       try {
-        return await strainService.getClientPreferences(input.clientId);
+        const result = await strainService.getClientPreferences(input.clientId);
+        return result as ClientStrainPreference[];
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -71,14 +130,11 @@ export const analyticsRouter = router({
 
   // Get top selling strain families
   topStrainFamilies: protectedProcedure.use(requirePermission("analytics:read"))
-    .input(z.object({
-      limit: z.number().min(1).max(50).optional().default(10),
-      startDate: z.date().optional(),
-      endDate: z.date().optional(),
-    }))
-    .query(async ({ input }) => {
+    .input(topStrainFamiliesInput)
+    .query(async ({ input }): Promise<TopStrainFamily[]> => {
       try {
-        return await strainService.getTopFamilies(input.limit, input.startDate, input.endDate);
+        const result = await strainService.getTopFamilies(input.limit, input.startDate, input.endDate);
+        return result as TopStrainFamily[];
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -90,13 +146,11 @@ export const analyticsRouter = router({
 
   // Get strain family trends over time
   strainFamilyTrends: protectedProcedure.use(requirePermission("analytics:read"))
-    .input(z.object({
-      familyId: z.number(),
-      months: z.number().min(1).max(24).optional().default(6),
-    }))
-    .query(async ({ input }) => {
+    .input(strainFamilyTrendsInput)
+    .query(async ({ input }): Promise<StrainFamilyTrend[]> => {
       try {
-        return await strainService.getFamilyTrends(input.familyId, input.months);
+        const result = await strainService.getFamilyTrends(input.familyId, input.months);
+        return result as StrainFamilyTrend[];
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
