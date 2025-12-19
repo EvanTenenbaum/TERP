@@ -100,11 +100,11 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
       </div>
 
       {/* Top Profitable Batches */}
-      {topBatches && topBatches.length > 0 && (
+      {topBatches?.items && topBatches.items.length > 0 && (
         <div className="border-t pt-4">
           <h4 className="text-sm font-semibold mb-3">Top Profitable Batches</h4>
           <div className="space-y-2">
-            {topBatches.map((batch, index) => (
+            {topBatches.items.map((batch, index) => (
               <div
                 key={batch.batchId}
                 className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50"

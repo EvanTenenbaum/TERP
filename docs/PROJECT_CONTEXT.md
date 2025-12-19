@@ -4,7 +4,7 @@
 **Last Updated:** October 27, 2025  
 **Purpose:** Complete system overview for seamless handoff between Manus sessions
 
-**📖 New to TERP?** Start with [AGENT_ONBOARDING.md](./AGENT_ONBOARDING.md) for a quick orientation guide.
+**📖 New to TERP?** Start with the steering files in `.kiro/steering/` for a quick orientation guide.
 
 ---
 
@@ -30,22 +30,20 @@
 
 ### Essential Documents (Read First)
 
-1. **[AGENT_ONBOARDING.md](./AGENT_ONBOARDING.md)** - Quick start guide for new agents
+1. **`.kiro/steering/00-core-identity.md`** - Core identity and protocols for all agents
 2. **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** (this file) - Overall project state
-3. **[DEVELOPMENT_PROTOCOLS.md](./DEVELOPMENT_PROTOCOLS.md)** - **THE BIBLE** - all development rules
-4. **[roadmaps/ACTIVE.md](./roadmaps/ACTIVE.md)** - Current active roadmap
+3. **`.kiro/steering/01-development-standards.md`** - Development rules and standards
+4. **[roadmaps/MASTER_ROADMAP.md](./roadmaps/MASTER_ROADMAP.md)** - Current active roadmap
 5. **[notes/user-feedback.md](./notes/user-feedback.md)** - **Check every session** - owner's feedback
-6. **[HANDOFF_CONTEXT.md](./HANDOFF_CONTEXT.md)** - Latest session handoff
 
 ### Documentation Directories
 
 ```
 /docs/
-├── AGENT_ONBOARDING.md          # Start here for new agents
-├── NEW_AGENT_PROMPT.md          # Quick prompt to give new agents
+├── archive/                      # Archived legacy documentation
+│   ├── agent-prompts/           # Legacy agent prompt files
+│   └── legacy-reports/          # Historical reports and summaries
 ├── PROJECT_CONTEXT.md            # This file - overall project state
-├── DEVELOPMENT_PROTOCOLS.md      # Development rules and standards
-├── HANDOFF_CONTEXT.md            # Latest session handoff
 ├── CHANGELOG.md                  # Completed work history
 │
 ├── roadmaps/                     # All implementation roadmaps

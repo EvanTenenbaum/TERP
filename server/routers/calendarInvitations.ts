@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { publicProcedure, adminProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
+import { calendarLogger } from "../_core/logger";
 import {
   calendarEventInvitations,
   calendarInvitationSettings,
@@ -834,7 +835,10 @@ export const calendarInvitationsRouter = router({
           results.invitations.push(created);
           results.sent++;
         } catch (error) {
-          console.error("Failed to send invitation:", error);
+          calendarLogger.operationFailure("sendInvitation", error as Error, {
+            inviteeId: invitee.userId,
+            eventId: input.eventId,
+          });
           results.failed++;
         }
       }

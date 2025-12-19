@@ -55,14 +55,15 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
     );
   }
 
-  const hasViews = views && views.length > 0;
+  const viewItems = views?.items ?? [];
+  const hasViews = viewItems.length > 0;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline">
           <BookmarkIcon className="h-4 w-4 mr-2" />
-          Saved Views {hasViews && `(${views.length})`}
+          Saved Views {hasViews && `(${viewItems.length})`}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
@@ -77,7 +78,7 @@ export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {
           </div>
         ) : (
           <>
-            {views.map((view) => (
+            {viewItems.map((view) => (
               <DropdownMenuItem
                 key={view.id}
                 onClick={() => handleApplyView(view)}

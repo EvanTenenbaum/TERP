@@ -4,14 +4,57 @@ import * as dashboardAnalytics from "../dashboardAnalytics";
 import * as inventoryAlerts from "../inventoryAlerts";
 import { requirePermission } from "../_core/permissionMiddleware";
 
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+/** Date range input for dashboard queries */
+const dateRangeInput = z.object({
+  startDate: z.string(),
+  endDate: z.string(),
+});
+
+/** Date range with optional limit */
+const dateRangeWithLimitInput = z.object({
+  startDate: z.string(),
+  endDate: z.string(),
+  limit: z.number().optional(),
+});
+
+/** Export format input */
+const exportInput = z.object({
+  startDate: z.string(),
+  endDate: z.string(),
+  format: z.enum(["csv", "json"]).optional(),
+});
+
+/** Alert acknowledgement input */
+const acknowledgeAlertInput = z.object({
+  alertId: z.number(),
+  userId: z.number(),
+});
+
+/** Alert resolution input */
+const resolveAlertInput = z.object({
+  alertId: z.number(),
+  resolution: z.string(),
+  userId: z.number(),
+});
+
+/** Success response type */
+interface SuccessResponse {
+  success: boolean;
+}
+
+// ============================================================================
+// ROUTER
+// ============================================================================
+
 export const dashboardEnhancedRouter = router({
   // Get comprehensive dashboard data
   getDashboardData: publicProcedure
-    .input(z.object({
-      startDate: z.string(),
-      endDate: z.string()
-    }))
-    .query(async ({ input }) => {
+    .input(dateRangeInput)
+    .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getDashboardData>>> => {
       return await dashboardAnalytics.getDashboardData(
         new Date(input.startDate),
         new Date(input.endDate)
@@ -20,11 +63,8 @@ export const dashboardEnhancedRouter = router({
 
   // Get sales performance metrics
   getSalesPerformance: publicProcedure
-    .input(z.object({
-      startDate: z.string(),
-      endDate: z.string()
-    }))
-    .query(async ({ input }) => {
+    .input(dateRangeInput)
+    .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getSalesPerformance>>> => {
       return await dashboardAnalytics.getSalesPerformance(
         new Date(input.startDate),
         new Date(input.endDate)
@@ -33,24 +73,20 @@ export const dashboardEnhancedRouter = router({
 
   // Get AR aging report
   getARAgingReport: publicProcedure
-    .query(async () => {
+    .query(async (): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getARAgingReport>>> => {
       return await dashboardAnalytics.getARAgingReport();
     }),
 
   // Get inventory valuation
   getInventoryValuation: publicProcedure
-    .query(async () => {
+    .query(async (): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getInventoryValuation>>> => {
       return await dashboardAnalytics.getInventoryValuation();
     }),
 
   // Get top performing products
   getTopProducts: publicProcedure
-    .input(z.object({
-      startDate: z.string(),
-      endDate: z.string(),
-      limit: z.number().optional()
-    }))
-    .query(async ({ input }) => {
+    .input(dateRangeWithLimitInput)
+    .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getTopPerformingProducts>>> => {
       return await dashboardAnalytics.getTopPerformingProducts(
         new Date(input.startDate),
         new Date(input.endDate),
@@ -60,12 +96,8 @@ export const dashboardEnhancedRouter = router({
 
   // Get top clients
   getTopClients: publicProcedure
-    .input(z.object({
-      startDate: z.string(),
-      endDate: z.string(),
-      limit: z.number().optional()
-    }))
-    .query(async ({ input }) => {
+    .input(dateRangeWithLimitInput)
+    .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getTopClients>>> => {
       return await dashboardAnalytics.getTopClients(
         new Date(input.startDate),
         new Date(input.endDate),
@@ -75,11 +107,8 @@ export const dashboardEnhancedRouter = router({
 
   // Get profitability metrics
   getProfitabilityMetrics: publicProcedure
-    .input(z.object({
-      startDate: z.string(),
-      endDate: z.string()
-    }))
-    .query(async ({ input }) => {
+    .input(dateRangeInput)
+    .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.getProfitabilityMetrics>>> => {
       return await dashboardAnalytics.getProfitabilityMetrics(
         new Date(input.startDate),
         new Date(input.endDate)
@@ -88,12 +117,8 @@ export const dashboardEnhancedRouter = router({
 
   // Export dashboard data
   exportData: publicProcedure
-    .input(z.object({
-      startDate: z.string(),
-      endDate: z.string(),
-      format: z.enum(["csv", "json"]).optional()
-    }))
-    .query(async ({ input }) => {
+    .input(exportInput)
+    .query(async ({ input }): Promise<Awaited<ReturnType<typeof dashboardAnalytics.exportDashboardData>>> => {
       return await dashboardAnalytics.exportDashboardData(
         new Date(input.startDate),
         new Date(input.endDate),
@@ -103,38 +128,31 @@ export const dashboardEnhancedRouter = router({
 
   // Inventory Alerts
   generateAlerts: publicProcedure
-    .mutation(async () => {
+    .mutation(async (): Promise<SuccessResponse> => {
       await inventoryAlerts.generateInventoryAlerts();
       return { success: true };
     }),
 
   getActiveAlerts: publicProcedure
-    .query(async () => {
+    .query(async (): Promise<Awaited<ReturnType<typeof inventoryAlerts.getActiveInventoryAlerts>>> => {
       return await inventoryAlerts.getActiveInventoryAlerts();
     }),
 
   getAlertSummary: publicProcedure
-    .query(async () => {
+    .query(async (): Promise<Awaited<ReturnType<typeof inventoryAlerts.getAlertSummary>>> => {
       return await inventoryAlerts.getAlertSummary();
     }),
 
   acknowledgeAlert: publicProcedure
-    .input(z.object({
-      alertId: z.number(),
-      userId: z.number()
-    }))
-    .mutation(async ({ input }) => {
+    .input(acknowledgeAlertInput)
+    .mutation(async ({ input }): Promise<SuccessResponse> => {
       await inventoryAlerts.acknowledgeAlert(input.alertId, input.userId);
       return { success: true };
     }),
 
   resolveAlert: publicProcedure
-    .input(z.object({
-      alertId: z.number(),
-      resolution: z.string(),
-      userId: z.number()
-    }))
-    .mutation(async ({ input }) => {
+    .input(resolveAlertInput)
+    .mutation(async ({ input }): Promise<SuccessResponse> => {
       await inventoryAlerts.resolveAlert(input.alertId, input.resolution, input.userId);
       return { success: true };
     }),
