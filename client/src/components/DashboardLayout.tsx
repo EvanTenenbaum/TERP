@@ -21,55 +21,10 @@ import {
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import {
-  LayoutDashboard,
-  LogOut,
-  LogIn,
-  Settings,
-  PanelLeft,
-  Users,
-  ShoppingCart,
-  FileText,
-  Package,
-  TrendingUp,
-  DollarSign,
-  BarChart3,
-  HelpCircle,
-  CalendarDays,
-  ClipboardList,
-  // Truck, // DEPRECATED: Vendors menu item removed
-  RefreshCw,
-  Warehouse,
-  Workflow,
-} from "lucide-react";
+import { LogOut, LogIn, Settings, PanelLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
-
-const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: ClipboardList, label: "Todo Lists", path: "/todos" },
-  { icon: CalendarDays, label: "Calendar", path: "/calendar" },
-  { icon: ShoppingCart, label: "Orders", path: "/orders" },
-  { icon: FileText, label: "Sales Sheets", path: "/sales-sheets" },
-  { icon: Package, label: "Create Order", path: "/orders/create" },
-  { icon: Package, label: "Inventory", path: "/inventory" },
-  { icon: Workflow, label: "Workflow Queue", path: "/workflow-queue" },
-  { icon: TrendingUp, label: "Matchmaking", path: "/matchmaking" },
-  { icon: DollarSign, label: "Accounting", path: "/accounting" },
-  { icon: Users, label: "Clients", path: "/clients" },
-  // DEPRECATED: Vendors menu item removed - use Clients with "Suppliers" filter
-  // { icon: Truck, label: "Vendors", path: "/vendors" },
-  { icon: FileText, label: "Purchase Orders", path: "/purchase-orders" },
-  { icon: RefreshCw, label: "Returns", path: "/returns" },
-  { icon: Warehouse, label: "Locations", path: "/locations" },
-  { icon: BarChart3, label: "Pricing Rules", path: "/pricing-rules" },
-  { icon: BarChart3, label: "Pricing Profiles", path: "/pricing-profiles" },
-  { icon: DollarSign, label: "Credit Settings", path: "/credit-settings" },
-  { icon: DollarSign, label: "COGS Settings", path: "/settings/cogs" },
-  { icon: BarChart3, label: "Analytics", path: "/analytics" },
-  { icon: Settings, label: "Settings", path: "/settings" },
-  { icon: HelpCircle, label: "Help", path: "/help" },
-];
+import { navigationItems } from "@/config/navigation";
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -148,7 +103,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = navigationItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -230,20 +185,20 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {navigationItems.map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
+                      tooltip={item.name}
                       className={`h-10 transition-all font-normal`}
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
                       />
-                      <span>{item.label}</span>
+                      <span>{item.name}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -330,7 +285,7 @@ function DashboardLayoutContent({
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? APP_TITLE}
+                    {activeMenuItem?.name ?? APP_TITLE}
                   </span>
                 </div>
               </div>
