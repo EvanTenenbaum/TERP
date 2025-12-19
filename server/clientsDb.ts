@@ -3,8 +3,13 @@
  * Handles all database operations for the Client Management System
  */
 
-import { eq, and, desc, like, or, sql, SQL } from "drizzle-orm";
+import { eq, and, desc, like, or, sql, SQL, gt } from "drizzle-orm";
 import { getDb } from "./db";
+import {
+  PaginatedResult,
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+} from "./_core/pagination";
 import {
   clients,
   clientTransactions,
@@ -22,29 +27,27 @@ import {
 // ============================================================================
 
 /**
+ * Client type from schema
+ */
+type Client = typeof clients.$inferSelect;
+
+/**
  * Get all clients (with pagination and filters)
+ * BUG-034: Returns PaginatedResult with cursor-based pagination
  */
 export async function getClients(options: {
   limit?: number;
-  offset?: number;
+  cursor?: string | null;
   search?: string;
   clientTypes?: ("buyer" | "seller" | "brand" | "referee" | "contractor")[];
   tags?: string[];
   hasDebt?: boolean;
-}) {
+}): Promise<PaginatedResult<Client>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const {
-    limit = 50,
-    offset = 0,
-    search,
-    clientTypes,
-    tags,
-    hasDebt,
-  } = options;
-
-  let query = db.select().from(clients);
+  const limit = Math.min(options.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+  const { search, clientTypes, tags, hasDebt, cursor } = options;
 
   // Build WHERE conditions
   const conditions: (SQL<unknown> | undefined)[] = [];
@@ -92,16 +95,43 @@ export async function getClients(options: {
     }
   }
 
+  // Apply cursor for pagination
+  if (cursor) {
+    const cursorId = parseInt(cursor, 10);
+    if (!isNaN(cursorId)) {
+      conditions.push(sql`${clients.id} < ${cursorId}`);
+    }
+  }
+
+  // Get total count (without cursor filter)
+  const countConditions = conditions.filter(c => c !== conditions[conditions.length - 1] || !cursor);
+  const [countResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(clients)
+    .where(countConditions.length > 0 ? and(...countConditions.filter(Boolean)) : undefined);
+  const total = Number(countResult?.count ?? 0);
+
+  // Build and execute query
+  let query = db.select().from(clients);
   if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as any;
+    query = query.where(and(...conditions.filter(Boolean))) as typeof query;
   }
 
   const results = await query
-    .orderBy(desc(clients.createdAt))
-    .limit(limit)
-    .offset(offset);
+    .orderBy(desc(clients.id))
+    .limit(limit + 1);
 
-  return results;
+  const hasMore = results.length > limit;
+  const items = hasMore ? results.slice(0, limit) : results;
+  const lastItem = items[items.length - 1];
+  const nextCursor = hasMore && lastItem ? String(lastItem.id) : null;
+
+  return {
+    items,
+    nextCursor,
+    hasMore,
+    total,
+  };
 }
 
 /**

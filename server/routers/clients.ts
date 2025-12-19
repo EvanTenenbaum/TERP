@@ -7,28 +7,31 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const clientsRouter = router({
   // List clients with pagination and filters
-  list: protectedProcedure.use(requirePermission("clients:read"))
-    .input(z.object({
-      limit: z.number().optional().default(50),
-      offset: z.number().optional().default(0),
-      search: z.string().optional(),
-      clientTypes: z.array(z.enum(["buyer", "seller", "brand", "referee", "contractor"])).optional(),
-      tags: z.array(z.string()).optional(),
-      hasDebt: z.boolean().optional(),
-    }))
+  // BUG-034: Uses cursor-based pagination from DB layer
+  list: protectedProcedure
+    .use(requirePermission("clients:read"))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).optional(),
+        cursor: z.string().nullish(),
+        search: z.string().optional(),
+        clientTypes: z
+          .array(z.enum(["buyer", "seller", "brand", "referee", "contractor"]))
+          .optional(),
+        tags: z.array(z.string()).optional(),
+        hasDebt: z.boolean().optional(),
+      })
+    )
     .query(async ({ input }) => {
-      const clients = await clientsDb.getClients(input);
-      // HOTFIX (BUG-033): Wrap raw array in paginated response structure
-      return {
-        items: clients,
-        nextCursor: null,
-        hasMore: clients.length === input.limit,
-        pagination: {
-          total: -1,
-          limit: input.limit,
-          offset: input.offset,
-        }
-      };
+      // BUG-034: DB function now returns PaginatedResult directly
+      return await clientsDb.getClients({
+        limit: input.limit,
+        cursor: input.cursor,
+        search: input.search,
+        clientTypes: input.clientTypes,
+        tags: input.tags,
+        hasDebt: input.hasDebt,
+      });
     }),
 
   // Get total count for pagination
