@@ -5,6 +5,7 @@ import * as db from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "./env";
+import { logger } from "./logger";
 
 // JWT_SECRET is accessed lazily to prevent startup crashes
 // This allows the server to start even if JWT_SECRET validation fails
@@ -94,16 +95,30 @@ class SimpleAuthService {
     password: string
   ): Promise<{ user: User; token: string }> {
     // Find user by email (we'll use email field for username)
-    const user = await db.getUserByEmail(username);
+    let user: User | undefined;
+    try {
+      user = await db.getUserByEmail(username);
+    } catch (error) {
+      logger.error({ error, username }, "Auth login failed during user lookup");
+      throw ForbiddenError("Invalid username or password");
+    }
 
     if (!user) {
+      logger.warn({ username }, "Auth login rejected: user not found");
       throw ForbiddenError("Invalid username or password");
     }
 
     // Verify password (stored in loginMethod field temporarily)
-    const isValid = await this.verifyPassword(password, user.loginMethod || "");
+    let isValid = false;
+    try {
+      isValid = await this.verifyPassword(password, user.loginMethod || "");
+    } catch (error) {
+      logger.error({ error, username }, "Auth login failed during password verify");
+      throw ForbiddenError("Invalid username or password");
+    }
 
     if (!isValid) {
+      logger.warn({ username }, "Auth login rejected: password mismatch");
       throw ForbiddenError("Invalid username or password");
     }
 
@@ -180,6 +195,15 @@ export function registerSimpleAuthRoutes(app: Express) {
 
       res.json({ success: true, user: { name: user.name, email: user.email } });
     } catch (error) {
+      // Provide minimal details for diagnosis; never log password.
+      const username = req.body?.username;
+      logger.warn(
+        {
+          username: typeof username === "string" ? username : undefined,
+          err: error instanceof Error ? { message: error.message, name: error.name } : String(error),
+        },
+        "Auth login request failed"
+      );
       // Error logging handled by error handling middleware
       res.status(401).json({ error: "Invalid username or password" });
     }
