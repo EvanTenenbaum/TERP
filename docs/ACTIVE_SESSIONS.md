@@ -13,6 +13,7 @@
 | Session ID                         | Task       | Branch                   | Module     | Status      | Started    | ETA |
 | ---------------------------------- | ---------- | ------------------------ | ---------- | ----------- | ---------- | --- |
 | Session-20251218-MASTER-FIX-c0f9fa | MASTER-FIX | claude/master-fix-c0f9fa | full-stack | In Progress | 2025-12-18 | TBA |
+| Session-20251219-UX-SPRINT-B-57169f | UX-SPRINT-B | claude/setup-kiro-external-agent-U4Uhc | frontend | In Progress | 2025-12-19 | TBA |
 
 ## ⏸️ Paused / Waiting
 
