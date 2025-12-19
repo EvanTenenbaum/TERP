@@ -31,8 +31,9 @@ export function QuickAddTaskModal({ isOpen, onClose }: QuickAddTaskModalProps) {
 
   const utils = trpc.useContext();
 
-  // Fetch user's lists
-  const { data: lists = [] } = trpc.todoLists.getMyLists.useQuery();
+  // Fetch user's lists - handle paginated response
+  const { data: listsData } = trpc.todoLists.getMyLists.useQuery();
+  const lists = Array.isArray(listsData) ? listsData : (listsData?.items ?? []);
 
   // Create task mutation
   const createTask = trpc.todoTasks.create.useMutation({

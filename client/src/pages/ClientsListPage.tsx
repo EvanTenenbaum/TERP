@@ -102,14 +102,15 @@ export default function ClientsListPage() {
   const [page, setPage] = useState(0);
   const limit = 50;
 
-  // Fetch clients
-  const { data: clients, isLoading } = trpc.clients.list.useQuery({
+  // Fetch clients - handle paginated response
+  const { data: clientsData, isLoading } = trpc.clients.list.useQuery({
     limit,
     offset: page * limit,
     search: search || undefined,
     clientTypes: clientTypes.length > 0 ? clientTypes : undefined,
     hasDebt,
   });
+  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
 
   // Fetch total count for pagination
   const { data: totalCount } = trpc.clients.count.useQuery({
@@ -132,7 +133,7 @@ export default function ClientsListPage() {
 
   // Sort clients locally (since backend doesn't support all sort columns yet)
   const displayClients = useMemo(() => {
-    if (!clients) return [];
+    if (!clients || clients.length === 0) return [];
     if (!sortColumn) return clients;
     
     return [...clients].sort((a: any, b: any) => {

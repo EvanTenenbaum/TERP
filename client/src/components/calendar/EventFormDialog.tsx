@@ -42,9 +42,10 @@ export default function EventFormDialog({
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
 
-  // Queries
+  // Queries - handle paginated response
   const { data: users } = trpc.userManagement.listUsers.useQuery();
-  const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
+  const { data: clientsData } = trpc.clients.list.useQuery({ limit: 1000 });
+  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
 
   // Mutations
   const createEvent = trpc.calendar.createEvent.useMutation();
@@ -309,7 +310,7 @@ export default function EventFormDialog({
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">None</option>
-                {clients?.map((client) => (
+                {clients.map((client: any) => (
                   <option key={client.id} value={client.id}>
                     {client.name || `Client #${client.id}`}
                   </option>

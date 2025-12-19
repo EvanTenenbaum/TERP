@@ -45,10 +45,20 @@ export default function Expenses() {
   // Fetch expense breakdown
   const { data: breakdown } = trpc.accounting.expenses.getBreakdownByCategory.useQuery({});
 
-  // Filter expenses - extract from paginated response { expenses: [], total: number }
+  // Filter expenses - extract from paginated response
   const filteredExpenses = useMemo(() => {
-    // Extract expenses array from paginated response object
-    const expenseList = expenses?.expenses ?? [];
+    // Handle both raw response and paginated wrapper
+    let expenseList: any[] = [];
+    if (expenses) {
+      // Check if it's a paginated response with items
+      if ('items' in expenses && expenses.items) {
+        // The items contain { expenses: [], total: number }
+        expenseList = (expenses.items as any)?.expenses ?? [];
+      } else if ('expenses' in expenses) {
+        // Direct response with expenses array
+        expenseList = (expenses as any).expenses ?? [];
+      }
+    }
     
     if (!searchQuery) return expenseList;
 

@@ -34,10 +34,20 @@ export default function BankTransactions() {
     isReconciled: selectedReconciled === "YES" ? true : selectedReconciled === "NO" ? false : undefined,
   });
 
-  // Filter transactions - extract from paginated response { transactions: [], total: number }
+  // Filter transactions - extract from paginated response
   const filteredTransactions = useMemo(() => {
-    // Extract transactions array from paginated response object
-    const txList = transactions?.transactions ?? [];
+    // Handle both raw response and paginated wrapper
+    let txList: any[] = [];
+    if (transactions) {
+      // Check if it's a paginated response with items
+      if ('items' in transactions && transactions.items) {
+        // The items contain { transactions: [], total: number }
+        txList = (transactions.items as any)?.transactions ?? [];
+      } else if ('transactions' in transactions) {
+        // Direct response with transactions array
+        txList = (transactions as any).transactions ?? [];
+      }
+    }
     
     if (!searchQuery) return txList;
 

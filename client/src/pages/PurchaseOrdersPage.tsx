@@ -40,16 +40,20 @@ export default function PurchaseOrdersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPO, setSelectedPO] = useState<any>(null);
 
-  // Fetch data
-  const { data: pos = [], refetch } = trpc.purchaseOrders.getAll.useQuery();
+  // Fetch data - handle paginated responses
+  const { data: posData, refetch } = trpc.purchaseOrders.getAll.useQuery();
+  const pos = Array.isArray(posData) ? posData : (posData?.items ?? []);
+  
   // Use clients with isSeller=true (suppliers) instead of deprecated vendors
-  const { data: suppliersData } = trpc.clients.list.useQuery({ 
+  const { data: suppliersRawData } = trpc.clients.list.useQuery({ 
     clientTypes: ['seller'],
     limit: 1000,
   });
+  const suppliersData = Array.isArray(suppliersRawData) ? suppliersRawData : (suppliersRawData?.items ?? []);
+  
   const suppliers: Array<{ id: number; name: string; contactName: string | null; contactEmail: string | null; contactPhone: string | null; paymentTerms: string | null }> = useMemo(() => {
-    if (!suppliersData) return [];
-    return suppliersData.map(client => ({
+    if (!suppliersData || suppliersData.length === 0) return [];
+    return suppliersData.map((client: any) => ({
       id: client.id,
       name: client.name,
       contactName: null, // Contact name not in clients table
@@ -144,8 +148,8 @@ export default function PurchaseOrdersPage() {
 
   // Filter and search
   const filteredPOs = useMemo(() => {
-    if (!pos) return [];
-    return pos.filter(po => {
+    if (!pos || pos.length === 0) return [];
+    return pos.filter((po: any) => {
       // Search by PO number or supplier name (check both supplierClientId and legacy vendorId)
       const supplierId = po.supplierClientId ?? po.vendorId;
       const matchesSearch =

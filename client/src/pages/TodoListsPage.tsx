@@ -12,7 +12,9 @@ export function TodoListsPage() {
   const [deleteListId, setDeleteListId] = useState<number | null>(null);
   const [, setLocation] = useLocation();
 
-  const { data: lists = [], isLoading } = trpc.todoLists.getMyLists.useQuery();
+  // Handle paginated response - extract items array or use empty array as fallback
+  const { data: listsData, isLoading } = trpc.todoLists.getMyLists.useQuery();
+  const lists = Array.isArray(listsData) ? listsData : (listsData?.items ?? []);
 
   const utils = trpc.useContext();
 

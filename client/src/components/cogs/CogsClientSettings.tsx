@@ -25,11 +25,12 @@ import { trpc } from "@/lib/trpc";
 export function CogsClientSettings() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch clients
-  const { data: clients, isLoading } = trpc.clients.list.useQuery({ limit: 1000 });
+  // Fetch clients - handle paginated response
+  const { data: clientsData, isLoading } = trpc.clients.list.useQuery({ limit: 1000 });
+  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
 
   // Filter clients by search
-  const filteredClients = clients?.filter((client) =>
+  const filteredClients = clients.filter((client: any) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.teriCode.toLowerCase().includes(searchQuery.toLowerCase())
   );
