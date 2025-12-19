@@ -3538,6 +3538,46 @@ logger.error({ err: error }, "Error message");
     - Filter validation and error handling
   - Added: 2025-12-19
 
+- [ ] **FEATURE-009: Enhanced Role-Based Access Control (RBAC)**
+  - Phase: 3+
+  - Priority: MEDIUM
+  - Estimate: 2-3 weeks
+  - Context: Improve permission management with role-based assignments and user-specific permission overrides
+  - **Scope:**
+    - **Role Management:**
+      - Predefined roles (Admin, Manager, Sales Rep, Warehouse, Viewer, etc.)
+      - Custom role creation with permission bundles
+      - Role hierarchy (Manager inherits from Sales Rep, etc.)
+      - Role assignment UI in user management
+      - Bulk role assignment to multiple users
+    - **Permission System:**
+      - Granular permissions per module (orders:read, orders:write, orders:delete)
+      - Permission inheritance from roles
+      - User-specific permission overrides (grant or revoke individual permissions)
+      - Permission groups for easier management
+      - Audit log of permission changes
+    - **UI Components:**
+      - Role management page (create, edit, delete roles)
+      - Permission matrix view (roles × permissions grid)
+      - User permission editor (role + overrides)
+      - Visual indicator of effective permissions
+      - "Test as user" preview mode for admins
+    - **Enforcement:**
+      - Server-side permission checks on all endpoints
+      - Frontend UI hiding/disabling based on permissions
+      - Permission-aware navigation (hide inaccessible menu items)
+      - Clear "access denied" messaging
+    - **Existing Infrastructure:**
+      - Build on existing `permissionMiddleware.ts`
+      - Extend current RBAC tables in schema
+      - Maintain backward compatibility with current permissions
+  - **Database Changes:**
+    - Roles table with permission bundles
+    - User-role assignments table
+    - User-permission overrides table
+    - Permission audit log table
+  - Added: 2025-12-19
+
 ### Explicitly Excluded (Per User Feedback)
 
 These should **NOT** be built:
