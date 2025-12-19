@@ -214,7 +214,8 @@ function runPreflight(config: MegaQAConfig): boolean {
       }
     );
     const statusCode = result.stdout?.toString().trim();
-    if (statusCode === "200" || statusCode === "304") {
+    // Treat any 2xx/3xx as "reachable" (remote deployments often redirect / -> /login, etc.)
+    if (statusCode && (statusCode.startsWith("2") || statusCode.startsWith("3"))) {
       console.log(`   ✅ App is running at ${config.baseURL}`);
     } else {
       console.log(

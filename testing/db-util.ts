@@ -51,6 +51,32 @@ function getComposeCommand(): string {
   }
 }
 
+function buildMySqlConnectionOptionsFromUrl(databaseUrl: string): mysql.ConnectionOptions {
+  const needsSSL =
+    databaseUrl.includes('ssl-mode=REQUIRED') ||
+    databaseUrl.includes('sslmode=require') ||
+    databaseUrl.includes('ssl=true');
+
+  // mysql2 does not understand ssl-mode/sslmode query params as connection options.
+  // Strip them from the URI and provide an explicit ssl config instead.
+  const cleanDatabaseUrl = databaseUrl
+    .replace(/[?&]ssl-mode=[^&]*/gi, '')
+    .replace(/[?&]sslmode=[^&]*/gi, '')
+    .replace(/[?&]ssl=true/gi, '');
+
+  return {
+    uri: cleanDatabaseUrl,
+    connectTimeout: 15000,
+    ...(needsSSL
+      ? {
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        }
+      : {}),
+  } as mysql.ConnectionOptions;
+}
+
 /**
  * Start the test database using Docker Compose
  */
@@ -277,7 +303,7 @@ export async function preflightTestDatabase(): Promise<void> {
     console.log(`   Target: ${isRemote ? 'remote' : 'local'} url`);
     const masked = databaseUrl.replace(/:[^:@]+@/, ':****@');
     console.log(`   URL:    ${masked}`);
-    const conn = await mysql.createConnection(databaseUrl);
+    const conn = await mysql.createConnection(buildMySqlConnectionOptionsFromUrl(databaseUrl));
     try {
       await conn.query('SELECT 1 as health_check');
       console.log('✅ Database preflight passed');
@@ -289,7 +315,7 @@ export async function preflightTestDatabase(): Promise<void> {
 
   // Fallback to host/port defaults (local Docker)
   console.log('🔍 Preflight: checking DB via host/port config...');
-  const conn = await mysql.createConnection(TEST_DB_CONFIG);
+  const conn = await mysql.createConnection({ ...TEST_DB_CONFIG, connectTimeout: 15000 });
   try {
     await conn.query('SELECT 1 as health_check');
     console.log('✅ Database preflight passed');

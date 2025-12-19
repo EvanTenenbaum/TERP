@@ -160,6 +160,8 @@ export function runPlaywrightSuite(
   console.log(`\n🧪 Running ${suiteName}...`);
 
   const startTime = Date.now();
+  const isLocalBaseURL =
+    config.baseURL.includes("localhost") || config.baseURL.includes("127.0.0.1");
   const envVars = {
     ...process.env,
     MEGA_QA_SEED: String(config.seed),
@@ -168,10 +170,10 @@ export function runPlaywrightSuite(
     // Ensure Playwright points at the configured target (cloud or local)
     PLAYWRIGHT_BASE_URL: config.baseURL,
     MEGA_QA_BASE_URL: config.baseURL,
+    // Allow globalSetup to detect cloud/live DB mode and avoid Docker/reset.
+    ...(config.cloud ? { MEGA_QA_CLOUD: "1", MEGA_QA_USE_LIVE_DB: "1" } : {}),
     // If we're not targeting localhost, treat as CI to prevent Playwright webServer usage.
-    ...(config.baseURL.includes("localhost") || config.baseURL.includes("127.0.0.1")
-      ? {}
-      : { CI: "1" }),
+    ...(isLocalBaseURL ? {} : { CI: "1" }),
   };
 
   const playwrightArgs = [
