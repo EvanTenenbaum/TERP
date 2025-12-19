@@ -1,3 +1,8 @@
+/**
+ * Sales By Client Widget
+ * SPRINT-A Task 10: Added EmptyState component integration
+ */
+
 import { useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { trpc } from "@/lib/trpc";
 
 type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
@@ -23,10 +29,11 @@ type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
 export const SalesByClientWidget = memo(function SalesByClientWidget() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
 
-  const { data: response, isLoading } = trpc.dashboard.getSalesByClient.useQuery(
-    { timePeriod },
-    { refetchInterval: 60000 }
-  );
+  const { data: response, isLoading } =
+    trpc.dashboard.getSalesByClient.useQuery(
+      { timePeriod },
+      { refetchInterval: 60000 }
+    );
 
   const data = response?.data || [];
 
@@ -97,15 +104,12 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 space-y-2">
-            <p className="text-muted-foreground">No sales data available</p>
-            <p className="text-xs text-muted-foreground">
-              To see data here, seed the database with:{" "}
-              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-                pnpm seed
-              </code>
-            </p>
-          </div>
+          <EmptyState
+            variant="clients"
+            size="sm"
+            title="No sales data"
+            description="Sales by client will appear once orders are recorded"
+          />
         )}
       </CardContent>
     </Card>
