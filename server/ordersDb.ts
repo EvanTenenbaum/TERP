@@ -449,15 +449,25 @@ export async function getAllOrders(filters?: {
   }
   
   if (quoteStatus) {
-    conditions.push(eq(orders.quoteStatus, quoteStatus as any));
+    // Type assertion needed because filter input is string but schema expects enum
+    const validQuoteStatuses = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CONVERTED'] as const;
+    if (validQuoteStatuses.includes(quoteStatus as typeof validQuoteStatuses[number])) {
+      conditions.push(eq(orders.quoteStatus, quoteStatus as typeof validQuoteStatuses[number]));
+    }
   }
   
   if (saleStatus) {
-    conditions.push(eq(orders.saleStatus, saleStatus as any));
+    const validSaleStatuses = ['PENDING', 'PARTIAL', 'PAID', 'OVERDUE', 'CANCELLED'] as const;
+    if (validSaleStatuses.includes(saleStatus as typeof validSaleStatuses[number])) {
+      conditions.push(eq(orders.saleStatus, saleStatus as typeof validSaleStatuses[number]));
+    }
   }
   
   if (fulfillmentStatus) {
-    conditions.push(eq(orders.fulfillmentStatus, fulfillmentStatus as any));
+    const validFulfillmentStatuses = ['PENDING', 'PACKED', 'SHIPPED'] as const;
+    if (validFulfillmentStatuses.includes(fulfillmentStatus as typeof validFulfillmentStatuses[number])) {
+      conditions.push(eq(orders.fulfillmentStatus, fulfillmentStatus as typeof validFulfillmentStatuses[number]));
+    }
   }
   
   let results;
@@ -482,7 +492,7 @@ export async function getAllOrders(filters?: {
   }
   
   // Transform results to include client data and parse JSON items
-  const transformed = results.map(row => {
+  const transformed: Order[] = results.map(row => {
     // Parse items JSON string to array
     let parsedItems: OrderItem[] = [];
     if (row.orders.items) {
@@ -500,8 +510,8 @@ export async function getAllOrders(filters?: {
       ...row.orders,
       items: parsedItems,
       client: row.clients,
-    };
-  }) as any;
+    } as Order;
+  });
   
   return transformed;
 }
@@ -1171,7 +1181,10 @@ export async function updateOrderStatus(input: {
       }
       
       // Decrement inventory when shipped
-      await decrementInventoryForOrder(tx, orderId, order.items as any);
+      const orderItemsForDecrement = (typeof order.items === 'string' 
+        ? JSON.parse(order.items) 
+        : order.items) as OrderItem[];
+      await decrementInventoryForOrder(tx, orderId, orderItemsForDecrement);
     }
     
     // Update order status
