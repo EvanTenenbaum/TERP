@@ -303,14 +303,20 @@ async function runMegaQA(): Promise<void> {
   }
 
   // 2. Existing E2E Tests (auth, nav, crud, etc.)
-  const { result: e2eResult, failures: e2eFailures } = runPlaywrightSuite(
-    "Core E2E Suite",
-    "tests-e2e/*.spec.ts",
-    config
-  );
-  suiteResults.push({ ...e2eResult, category: "must-hit" });
-  allFailures.push(...e2eFailures);
-  allCoveredTags.push(...e2eResult.coveredTags);
+  // Cloud quick mode should be fast + safe against the live system, so we skip
+  // the full E2E suite and rely on Must-Hit + invariants + vitest suites.
+  if (config.mode !== "quick") {
+    const { result: e2eResult, failures: e2eFailures } = runPlaywrightSuite(
+      "Core E2E Suite",
+      "tests-e2e/*.spec.ts",
+      config
+    );
+    suiteResults.push({ ...e2eResult, category: "must-hit" });
+    allFailures.push(...e2eFailures);
+    allCoveredTags.push(...e2eResult.coveredTags);
+  } else {
+    console.log("\n⚡ Quick mode: skipping Core E2E suite (tests-e2e/*.spec.ts)");
+  }
 
   // 3-7. Mega E2E Suites (skip in quick mode to keep cloud runs fast/stable)
   if (config.mode !== "quick") {
