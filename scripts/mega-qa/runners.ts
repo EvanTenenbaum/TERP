@@ -172,8 +172,10 @@ export function runPlaywrightSuite(
     MEGA_QA_BASE_URL: config.baseURL,
     // Allow globalSetup to detect cloud/live DB mode and avoid Docker/reset.
     ...(config.cloud ? { MEGA_QA_CLOUD: "1", MEGA_QA_USE_LIVE_DB: "1" } : {}),
-    // If we're not targeting localhost, treat as CI to prevent Playwright webServer usage.
-    ...(isLocalBaseURL ? {} : { CI: "1" }),
+    // IMPORTANT:
+    // Do not force CI=1 for cloud runs. CI changes Playwright retries/workers defaults.
+    // We explicitly control those via CLI flags below.
+    ...(isLocalBaseURL ? {} : {}),
   };
 
   const playwrightArgs = [
@@ -182,7 +184,10 @@ export function runPlaywrightSuite(
     testPath,
     "--output=test-results",
     config.headless ? "" : "--headed",
-    config.ci ? "--retries=0" : "",
+    // Cloud/live DB should be gentle (single worker) but deterministic.
+    config.cloud ? "--workers=1" : "",
+    // Keep quick runs quick: no retries. CI runs can still opt into strict mode.
+    config.ci || config.mode === "quick" ? "--retries=0" : "",
   ].filter(Boolean);
 
   try {
