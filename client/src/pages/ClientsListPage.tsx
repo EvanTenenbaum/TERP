@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { AddClientWizard } from "@/components/clients/AddClientWizard";
+import { MobileClientCard } from "@/components/clients/MobileClientCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +27,7 @@ import { Search, Filter, Plus, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, 
 import { DataCardSection } from "@/components/data-cards";
 import { TableSkeleton } from "@/components/ui/skeleton-loaders";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useIsMobile } from "@/hooks/useMobile";
 
 export default function ClientsListPage() {
   const [, setLocation] = useLocation();
@@ -34,6 +36,7 @@ export default function ClientsListPage() {
   const searchInputRef = useRef<React.ElementRef<'input'>>(null);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const isMobile = useIsMobile();
   
   // Saved filter views
   type FilterView = {
@@ -576,8 +579,23 @@ export default function ClientsListPage() {
               }}
             />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <>
+              {/* BUG-M003: Mobile card view */}
+              {isMobile ? (
+                <div className="space-y-3">
+                  {displayClients.map((client: any, index: number) => (
+                    <MobileClientCard
+                      key={client.id}
+                      client={client}
+                      onClick={() => setLocation(`/clients/${client.id}`)}
+                      isSelected={index === selectedIndex}
+                    />
+                  ))}
+                </div>
+              ) : (
+                /* Desktop table view */
+                <div className="overflow-x-auto">
+                  <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>
@@ -872,7 +890,9 @@ export default function ClientsListPage() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Pagination */}
