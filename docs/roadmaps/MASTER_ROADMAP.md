@@ -3743,10 +3743,18 @@ logger.error({ err: error }, "Error message");
 - **Context:** Merge the concepts of "Quote" and "Sale Order" into a single unified order flow
 - **Scope:**
   - **Unified Order Model:**
-    - Single order entity with status progression
-    - Status flow: DRAFT → QUOTED → ACCEPTED → CONFIRMED → PACKED → SHIPPED → DELIVERED
-    - Quote = Order in DRAFT or QUOTED status
-    - Sale = Order in CONFIRMED+ status
+    - Single order entity with customizable status progression
+    - **Customizable status workflow** - admin can define status flow per business needs
+    - Example flow: DRAFT → QUOTED → ACCEPTED → CONFIRMED → PACKED → SHIPPED → DELIVERED
+    - Quote = Order in early statuses (e.g., DRAFT, QUOTED)
+    - Sale = Order in later statuses (e.g., CONFIRMED+)
+    - Status transitions configurable (which status can go to which)
+  - **Status Configuration:**
+    - Admin UI to define available statuses
+    - Define allowed transitions between statuses
+    - Set which statuses count as "quote" vs "order"
+    - Color coding per status
+    - Default status for new orders
   - **Quote Features:**
     - Send quote to client for review
     - Client can accept/reject/request changes
