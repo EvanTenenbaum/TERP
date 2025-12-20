@@ -3661,6 +3661,189 @@ logger.error({ err: error }, "Error message");
     - Any other right-side panels
   - Added: 2025-12-19
 
+---
+
+## 🛒 INITIATIVE: Unified Catalogue & Sales Experience
+
+> **Vision:** Transform the current sales sheet into a unified product catalogue that powers multiple sales channels: staff-generated sales sheets, in-person live shopping, and VIP portal self-service.
+
+### FEATURE-011: Unified Product Catalogue (Foundation)
+
+- [ ] **Status:** ready
+- **Phase:** 3
+- **Priority:** HIGH
+- **Estimate:** 3-4 weeks
+- **Dependencies:** None (foundation for other features)
+- **Context:** Create a single source of truth for live inventory that powers all sales experiences
+- **Scope:**
+  - **Core Catalogue Engine:**
+    - Real-time live inventory view (batches with status=LIVE)
+    - E-commerce style browsing experience (grid/list views)
+    - Product cards with photos, strain info, pricing, availability
+    - Advanced filtering (strain type, THC%, price range, category, tags)
+    - Search with autocomplete
+    - Sorting (price, THC%, newest, popularity)
+  - **Client Context Layer:**
+    - Apply client-specific pricing rules automatically
+    - Show client's credit limit and available credit
+    - Respect client's COGS agreements
+    - Filter by client's preferred categories/strains
+    - Show "previously purchased" indicators
+  - **Inventory Integration:**
+    - Real-time availability (prevent overselling)
+    - Reserve inventory when added to cart/order
+    - Show "low stock" warnings
+    - Batch-level detail drill-down
+- **Technical:**
+  - Reusable catalogue component library
+  - Server-side filtering for performance
+  - Optimistic UI updates
+  - WebSocket for real-time inventory updates (optional)
+- Added: 2025-12-19
+
+### FEATURE-012: Sales Sheet Generator (Staff Tool)
+
+- [ ] **Status:** ready
+- **Phase:** 3
+- **Priority:** HIGH
+- **Estimate:** 2-3 weeks
+- **Dependencies:** FEATURE-011 (Unified Catalogue)
+- **Context:** Allow staff to create customized sales sheets from the catalogue for specific clients
+- **Scope:**
+  - **Sheet Creation:**
+    - Select client → catalogue auto-applies their pricing/rules
+    - Browse catalogue, select products to include
+    - Drag-and-drop ordering of products
+    - Toggle photo inclusion per product or globally
+    - Add custom notes/descriptions
+    - Set sheet expiration date
+  - **Saved Views/Templates:**
+    - Save custom catalogue filters as "views" per client
+    - "Client X always wants indica concentrates under $X"
+    - Quick-apply saved views when creating sheets
+    - Share views between staff members
+  - **Output Options:**
+    - PDF generation (printable)
+    - Email directly to client
+    - Shareable link (time-limited)
+    - Export to VIP portal as "recommended for you"
+  - **Sheet Management:**
+    - List of created sheets with status
+    - Track which sheets converted to orders
+    - Analytics: views, clicks, conversion rate
+- Added: 2025-12-19
+
+### FEATURE-013: Quote/Order Unification
+
+- [ ] **Status:** ready
+- **Phase:** 3
+- **Priority:** MEDIUM
+- **Estimate:** 2 weeks
+- **Dependencies:** None (can be done in parallel)
+- **Context:** Merge the concepts of "Quote" and "Sale Order" into a single unified order flow
+- **Scope:**
+  - **Unified Order Model:**
+    - Single order entity with status progression
+    - Status flow: DRAFT → QUOTED → ACCEPTED → CONFIRMED → PACKED → SHIPPED → DELIVERED
+    - Quote = Order in DRAFT or QUOTED status
+    - Sale = Order in CONFIRMED+ status
+  - **Quote Features:**
+    - Send quote to client for review
+    - Client can accept/reject/request changes
+    - Quote expiration dates
+    - Version history (Quote v1, v2, etc.)
+    - Convert quote to order with one click
+  - **Order Features:**
+    - All existing order functionality
+    - Payment tracking
+    - Fulfillment workflow
+  - **UI Changes:**
+    - Remove separate "Quotes" section
+    - Orders list shows all (filter by status)
+    - "Create Order" starts as draft
+    - "Send as Quote" action on draft orders
+- **Migration:**
+  - Existing quotes → orders with QUOTED status
+  - Existing orders → unchanged
+- Added: 2025-12-19
+
+### FEATURE-003: Live Shopping Experience (Already Exists - Enhanced)
+
+> Note: FEATURE-003 already exists in backlog. This enhances it with catalogue integration.
+
+- **Enhancement:** Integrate with FEATURE-011 (Unified Catalogue)
+- **Additional Scope:**
+  - iPad-optimized catalogue browsing
+  - "Request Sample" button → triggers staff notification
+  - Sample tracking (which samples shown to which client)
+  - Quick add to cart from sample review
+  - Seamless transition: Browse → Sample → Order
+- **Dependencies:** FEATURE-011, FEATURE-013
+
+### FEATURE-014: VIP Portal Catalogue Integration
+
+- [ ] **Status:** ready
+- **Phase:** 4
+- **Priority:** MEDIUM
+- **Estimate:** 2-3 weeks
+- **Dependencies:** FEATURE-011 (Unified Catalogue), FEATURE-006 (VIP Portal Booking)
+- **Context:** Expose the unified catalogue to VIP portal clients for self-service browsing and reservation
+- **Scope:**
+  - **Client-Facing Catalogue:**
+    - Same catalogue engine, client-portal styling
+    - Auto-filtered to client's profile rules
+    - Client sees their pricing (not list price)
+    - "Request Quote" button on products
+    - "Reserve for Pickup" flow
+  - **Reservation System:**
+    - Client can reserve items (holds inventory temporarily)
+    - Reservation expires after X hours if not confirmed
+    - Staff notification on new reservations
+    - Convert reservation to order
+  - **Personalization:**
+    - "Recommended for You" based on purchase history
+    - "New Arrivals" since last visit
+    - "Back in Stock" notifications
+    - Saved favorites/wishlist
+  - **Integration with Booking:**
+    - "Book appointment to view these items"
+    - Link reservations to calendar appointments
+- Added: 2025-12-19
+
+### Initiative Dependency Graph
+
+```
+FEATURE-011 (Unified Catalogue) ─────┬──→ FEATURE-012 (Sales Sheet Generator)
+         │                           │
+         │                           ├──→ FEATURE-003 (Live Shopping) [enhanced]
+         │                           │
+         └───────────────────────────┴──→ FEATURE-014 (VIP Portal Catalogue)
+                                              │
+                                              └──→ FEATURE-006 (VIP Portal Booking)
+
+FEATURE-013 (Quote/Order Unification) ──→ All order-related features
+```
+
+### Recommended Implementation Order
+
+1. **Phase 1:** FEATURE-011 (Catalogue) + FEATURE-013 (Quote/Order) in parallel
+2. **Phase 2:** FEATURE-012 (Sales Sheet Generator)
+3. **Phase 3:** FEATURE-003 enhancement (Live Shopping)
+4. **Phase 4:** FEATURE-014 (VIP Portal Catalogue)
+
+### Total Estimated Effort
+
+| Feature                   | Estimate        |
+| ------------------------- | --------------- |
+| FEATURE-011               | 3-4 weeks       |
+| FEATURE-012               | 2-3 weeks       |
+| FEATURE-013               | 2 weeks         |
+| FEATURE-003 (enhancement) | 1-2 weeks       |
+| FEATURE-014               | 2-3 weeks       |
+| **Total**                 | **10-14 weeks** |
+
+---
+
 ### Explicitly Excluded (Per User Feedback)
 
 These should **NOT** be built:
