@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LogOut, LogIn, Settings, PanelLeft } from "lucide-react";
+import { LogOut, LogIn, Settings, PanelLeft, Menu } from "lucide-react";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { navigationItems } from "@/config/navigation";
@@ -277,17 +277,25 @@ function DashboardLayoutContent({
       <SidebarInset>
         {/* BUG-023: Add consistent header for desktop users */}
         {!isMobile && <AppHeader />}
-        {/* Mobile: Show sidebar trigger and page title */}
+        {/* BUG-M001: Mobile responsive header with hamburger menu */}
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.name ?? APP_TITLE}
-                  </span>
-                </div>
+          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger
+                className="h-10 w-10 rounded-lg bg-background hover:bg-accent"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+              </SidebarTrigger>
+              <div className="flex items-center gap-2">
+                <img
+                  src={APP_LOGO}
+                  className="h-7 w-7 rounded-md object-cover ring-1 ring-border"
+                  alt="Logo"
+                />
+                <span className="font-semibold tracking-tight text-foreground">
+                  {activeMenuItem?.name ?? APP_TITLE}
+                </span>
               </div>
             </div>
           </div>
