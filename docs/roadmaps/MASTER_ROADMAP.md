@@ -3578,6 +3578,55 @@ logger.error({ err: error }, "Error message");
     - Permission audit log table
   - Added: 2025-12-19
 
+- [ ] **FEATURE-010: Accounting-Calendar Integration & Cash Flow Forecasting**
+  - Phase: 3+
+  - Priority: MEDIUM
+  - Estimate: 4-6 weeks
+  - Context: Link accounting with calendar for payment scheduling, cash flow forecasting, and variance analysis
+  - **Scope:**
+    - **Scheduled Payments View:**
+      - Calendar view of upcoming payment collections (AR)
+      - Calendar view of upcoming payment distributions (AP)
+      - Integration with existing calendar module
+      - Event types: "Payment Due", "Collection Expected", "Bill Due"
+      - Color coding by status (on-time, overdue, at-risk)
+    - **Cash Flow Forecasting:**
+      - Short-term forecast (7/14/30/90 days)
+      - Expected inflows from scheduled collections
+      - Expected outflows from scheduled payments
+      - Running balance projection
+      - Visual timeline/chart of projected cash position
+      - Scenario modeling (best case, worst case, expected)
+    - **True-Up & Variance Analysis:**
+      - Compare expected vs actual collections
+      - Compare expected vs actual payments
+      - Variance reporting (why did we miss forecast?)
+      - Aging analysis integration
+      - Historical accuracy tracking (how good are our forecasts?)
+    - **Alerts & Notifications:**
+      - Upcoming large payments due
+      - Cash flow warnings (projected negative balance)
+      - Overdue collection alerts
+      - Weekly/monthly cash flow summary emails
+    - **Dashboard Widgets:**
+      - Cash flow forecast widget
+      - Upcoming payments widget
+      - Collection performance widget
+      - Variance summary widget
+  - **Integration Points:**
+    - Calendar module: Create/display payment events
+    - Invoices: Due dates feed into forecast
+    - Bills: Payment dates feed into forecast
+    - Payments: Actual payments update actuals
+    - AR/AP aging: Inform collection probability
+  - **Future Exploration:**
+    - Payment probability scoring based on client history
+    - Automated payment reminders via calendar
+    - Recurring payment scheduling
+    - Bank account balance integration
+    - Multi-currency support
+  - Added: 2025-12-19
+
 ### Explicitly Excluded (Per User Feedback)
 
 These should **NOT** be built:
