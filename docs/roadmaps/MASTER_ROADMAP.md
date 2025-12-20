@@ -3627,6 +3627,40 @@ logger.error({ err: error }, "Error message");
     - Multi-currency support
   - Added: 2025-12-19
 
+- [ ] **UX-016: Redesign Right Side Drawer (Sheet) Component**
+  - Phase: 2
+  - Priority: MEDIUM
+  - Estimate: 4-8h
+  - Context: The right-side drawer/sheet component has margin and spacing issues on both desktop and mobile
+  - **Issues Identified:**
+    - Content too close to edges (insufficient padding/margins)
+    - Header area cramped
+    - Action buttons at bottom need better spacing
+    - Mobile view has worse spacing issues
+    - Scrollable content area needs better boundaries
+    - Close button positioning inconsistent
+  - **Scope:**
+    - **Desktop Fixes:**
+      - Add proper padding to drawer content area
+      - Improve header section spacing
+      - Better visual separation between sections
+      - Consistent margins throughout
+    - **Mobile Fixes:**
+      - Full-width drawer on mobile
+      - Touch-friendly spacing (44px minimum tap targets)
+      - Better use of available screen real estate
+      - Safe area insets for notched devices
+    - **Component Updates:**
+      - Review Sheet/Drawer component from shadcn/ui
+      - Create consistent drawer layout wrapper
+      - Standardize header/content/footer sections
+      - Add responsive breakpoints
+  - **Affected Components:**
+    - Order detail drawer
+    - Client detail drawer
+    - Any other right-side panels
+  - Added: 2025-12-19
+
 ### Explicitly Excluded (Per User Feedback)
 
 These should **NOT** be built:
