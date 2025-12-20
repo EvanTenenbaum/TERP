@@ -66,7 +66,7 @@ The core ERP functionality is largely complete. Remaining work focuses on:
 
 ### ✅ Nice to Have (Post-Launch Sprint 1)
 
-- [ ] Mobile responsive sidebar (BUG-M001)
+- [x] Mobile responsive sidebar (BUG-M001) ✅
 - [ ] Mobile-friendly tables (BUG-M003)
 - [ ] Comprehensive input validation (QUAL-002)
 - [ ] N+1 query optimization (DATA-004)
@@ -84,7 +84,7 @@ The core ERP functionality is largely complete. Remaining work focuses on:
 | Phase 2: Data Integrity      | ✅ COMPLETE    | 100%     | None            |
 | Phase 3: Workflow Validation | ✅ COMPLETE    | 100%     | None            |
 | Phase 4: MVP Polish          | ✅ COMPLETE    | 100%     | None            |
-| Phase 5: Nice-to-Haves       | ⏳ NOT STARTED | 0%       | Ready to start  |
+| Phase 5: Nice-to-Haves       | 🔄 IN PROGRESS | 25%      | None            |
 
 ### Last Status Update
 
@@ -337,21 +337,25 @@ AGENT B: WF-002 + WF-004 (Inventory & Data) - 14h
 
 ---
 
-## Phase 5: Nice-to-Haves ⏳ NOT STARTED
+## Phase 5: Nice-to-Haves 🔄 IN PROGRESS
 
 **Goal:** Post-launch improvements  
 **Duration:** 1-2 weeks  
-**Status:** ⏳ Waiting on Phase 4 (MVP Launch)  
+**Status:** 🔄 IN PROGRESS  
 **Estimated Effort:** 80-120 hours
 
 ### Task Breakdown
 
-| Task         | Description                    | Est    | Status   | Priority |
-| ------------ | ------------------------------ | ------ | -------- | -------- |
-| **BUG-M001** | Mobile responsive sidebar      | 8-16h  | ⏳ Ready | HIGH     |
-| **BUG-M003** | Mobile-friendly tables         | 16-24h | ⏳ Ready | HIGH     |
-| **QUAL-002** | Comprehensive input validation | 32h    | ⏳ Ready | MEDIUM   |
-| **DATA-004** | N+1 query optimization         | 40h    | ⏳ Ready | MEDIUM   |
+| Task         | Description                    | Est    | Status      | Priority |
+| ------------ | ------------------------------ | ------ | ----------- | -------- |
+| **BUG-M001** | Mobile responsive sidebar      | 8-16h  | ✅ Complete | HIGH     |
+| **BUG-M003** | Mobile-friendly tables         | 16-24h | ⏳ Ready    | HIGH     |
+| **QUAL-002** | Comprehensive input validation | 32h    | ⏳ Ready    | MEDIUM   |
+| **DATA-004** | N+1 query optimization         | 40h    | ⏳ Ready    | MEDIUM   |
+
+### Key Commits
+
+- `7aed4142` - fix(BUG-M001): Mobile responsive sidebar with hamburger menu
 
 ### Phase 5 Completion Criteria
 
@@ -455,6 +459,29 @@ If you encounter:
 ---
 
 ## 📝 Status Update Log
+
+### December 19, 2025 - Phase 5 Started, BUG-M001 COMPLETE 🎉
+
+**Updated By:** Kiro Phase 5 Sprint  
+**Phase:** Phase 5 IN PROGRESS  
+**Progress:** Phase 5: 1/4 tasks complete (BUG-M001)  
+**Blockers:** None  
+**Key Accomplishments:**
+
+- ✅ BUG-M001: Mobile responsive sidebar COMPLETE
+  - Improved mobile header with hamburger menu icon
+  - Added proper touch targets (40px) for accessibility
+  - Added aria-label for screen reader support
+  - Leverages shadcn/ui Sidebar Sheet component for slide-in overlay
+  - Sidebar hidden by default on mobile, opens via hamburger tap
+  - Commit: `7aed4142`
+
+**Next Actions:**
+
+- Continue with BUG-M003 (Mobile-friendly tables)
+- Then QUAL-002 (Input validation) or DATA-004 (N+1 optimization)
+
+---
 
 ### December 19, 2025 - Phase 4 COMPLETE 🎉
 
