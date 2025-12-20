@@ -67,7 +67,7 @@ The core ERP functionality is largely complete. Remaining work focuses on:
 ### ✅ Nice to Have (Post-Launch Sprint 1)
 
 - [x] Mobile responsive sidebar (BUG-M001) ✅
-- [ ] Mobile-friendly tables (BUG-M003)
+- [x] Mobile-friendly tables (BUG-M003) ✅
 - [ ] Comprehensive input validation (QUAL-002)
 - [ ] N+1 query optimization (DATA-004)
 
