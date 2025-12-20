@@ -84,7 +84,7 @@ The core ERP functionality is largely complete. Remaining work focuses on:
 | Phase 2: Data Integrity      | ✅ COMPLETE    | 100%     | None            |
 | Phase 3: Workflow Validation | ✅ COMPLETE    | 100%     | None            |
 | Phase 4: MVP Polish          | ✅ COMPLETE    | 100%     | None            |
-| Phase 5: Nice-to-Haves       | 🔄 IN PROGRESS | 25%      | None            |
+| Phase 5: Nice-to-Haves       | 🔄 IN PROGRESS | 50%      | None            |
 
 ### Last Status Update
 
@@ -349,13 +349,14 @@ AGENT B: WF-002 + WF-004 (Inventory & Data) - 14h
 | Task         | Description                    | Est    | Status      | Priority |
 | ------------ | ------------------------------ | ------ | ----------- | -------- |
 | **BUG-M001** | Mobile responsive sidebar      | 8-16h  | ✅ Complete | HIGH     |
-| **BUG-M003** | Mobile-friendly tables         | 16-24h | ⏳ Ready    | HIGH     |
+| **BUG-M003** | Mobile-friendly tables         | 16-24h | ✅ Complete | HIGH     |
 | **QUAL-002** | Comprehensive input validation | 32h    | ⏳ Ready    | MEDIUM   |
 | **DATA-004** | N+1 query optimization         | 40h    | ⏳ Ready    | MEDIUM   |
 
 ### Key Commits
 
 - `7aed4142` - fix(BUG-M001): Mobile responsive sidebar with hamburger menu
+- `pending` - feat(BUG-M003): Mobile-friendly card view for clients list
 
 ### Phase 5 Completion Criteria
 
@@ -459,6 +460,28 @@ If you encounter:
 ---
 
 ## 📝 Status Update Log
+
+### December 19, 2025 - BUG-M003 COMPLETE 🎉
+
+**Updated By:** Kiro Phase 5 Sprint  
+**Phase:** Phase 5 IN PROGRESS  
+**Progress:** Phase 5: 2/4 tasks complete (BUG-M001, BUG-M003)  
+**Blockers:** None  
+**Key Accomplishments:**
+
+- ✅ BUG-M003: Mobile-friendly tables COMPLETE
+  - Created `MobileClientCard` component for mobile client display
+  - Created `ResponsiveTable` reusable component for future use
+  - Integrated mobile card view into ClientsListPage
+  - Shows cards on mobile (<768px), table on desktop
+  - Displays key info: name, TERI code, type badges, contact, financials
+  - Proper touch targets and accessibility support
+
+**Next Actions:**
+
+- Continue with QUAL-002 (Comprehensive input validation) or DATA-004 (N+1 query optimization)
+
+---
 
 ### December 19, 2025 - Phase 5 Started, BUG-M001 COMPLETE 🎉
 
