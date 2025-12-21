@@ -1,0 +1,23 @@
+[
+  {
+    "id": "invariant-1",
+    "classification": "backend",
+    "suite": "Backend Invariants",
+    "testName": "Database Connection",
+    "errorMessage": "Failed to connect: connect ECONNREFUSED 127.0.0.1:3307",
+    "replay": {
+      "seed": 135617,
+      "persona": "system",
+      "steps": [],
+      "urlHistory": [],
+      "replayCommand": "pnpm mega:qa --seed=135617"
+    },
+    "evidence": {
+      "consoleErrors": [],
+      "networkFailures": []
+    },
+    "timestamp": "2025-12-21T07:34:04.781Z",
+    "isKnown": false,
+    "coveredTags": ["db-invariants"]
+  }
+]

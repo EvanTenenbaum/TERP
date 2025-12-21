@@ -1,0 +1,27 @@
+{
+  "runId": "20251221-073241-ii05",
+  "gitSha": "438109ae71907555a64c5693e114dd21a9ba13b0",
+  "gitBranch": "claude/run-mega-qa-protocol-SkaNL",
+  "timestamp": "2025-12-21T07:34:04.824Z",
+  "config": {
+    "scenario": "full",
+    "journeyCount": 100,
+    "seed": 135617,
+    "baseURL": "http://localhost:5173",
+    "outputDir": "qa-results/mega-qa",
+    "mode": "quick",
+    "soakDuration": 30,
+    "headless": true,
+    "ci": false,
+    "cloud": false,
+    "dbMode": "local"
+  },
+  "environment": {
+    "nodeVersion": "v22.21.1",
+    "platform": "linux",
+    "ci": false
+  },
+  "durationMs": 83343,
+  "result": "fail",
+  "exitCode": 1
+}

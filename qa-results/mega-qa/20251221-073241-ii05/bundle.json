@@ -1,0 +1,264 @@
+{
+  "manifest": {
+    "runId": "20251221-073241-ii05",
+    "gitSha": "438109ae71907555a64c5693e114dd21a9ba13b0",
+    "gitBranch": "claude/run-mega-qa-protocol-SkaNL",
+    "timestamp": "2025-12-21T07:34:04.824Z",
+    "config": {
+      "scenario": "full",
+      "journeyCount": 100,
+      "seed": 135617,
+      "baseURL": "http://localhost:5173",
+      "outputDir": "qa-results/mega-qa",
+      "mode": "quick",
+      "soakDuration": 30,
+      "headless": true,
+      "ci": false,
+      "cloud": false,
+      "dbMode": "local"
+    },
+    "environment": {
+      "nodeVersion": "v22.21.1",
+      "platform": "linux",
+      "ci": false
+    },
+    "durationMs": 83343,
+    "result": "fail",
+    "exitCode": 1
+  },
+  "coverage": {
+    "required": [
+      {
+        "id": "TS-001",
+        "category": "ts-protocol",
+        "description": "Core protocol 001",
+        "required": true
+      },
+      {
+        "id": "TS-002",
+        "category": "ts-protocol",
+        "description": "Core protocol 002",
+        "required": true
+      },
+      {
+        "id": "TS-1.1",
+        "category": "ts-protocol",
+        "description": "Protocol 1.1",
+        "required": true
+      },
+      {
+        "id": "TS-2.1",
+        "category": "ts-protocol",
+        "description": "Protocol 2.1",
+        "required": true
+      },
+      {
+        "id": "TS-11.1",
+        "category": "ts-protocol",
+        "description": "Protocol 11.1",
+        "required": true
+      },
+      {
+        "id": "route:/login",
+        "category": "route",
+        "description": "Login route loads",
+        "required": true
+      },
+      {
+        "id": "route:/dashboard",
+        "category": "route",
+        "description": "Dashboard route loads",
+        "required": true
+      },
+      {
+        "id": "route:/orders",
+        "category": "route",
+        "description": "Orders route loads",
+        "required": true
+      },
+      {
+        "id": "route:/clients",
+        "category": "route",
+        "description": "Clients route loads",
+        "required": true
+      },
+      {
+        "id": "route:/inventory",
+        "category": "route",
+        "description": "Inventory route loads",
+        "required": true
+      },
+      {
+        "id": "api:auth.login",
+        "category": "api",
+        "description": "Auth login works",
+        "required": true
+      },
+      {
+        "id": "api:auth.me",
+        "category": "api",
+        "description": "Auth me works",
+        "required": true
+      },
+      {
+        "id": "api:orders.list",
+        "category": "api",
+        "description": "Orders list procedure works",
+        "required": true
+      },
+      {
+        "id": "api:clients.list",
+        "category": "api",
+        "description": "Clients list procedure works",
+        "required": true
+      },
+      {
+        "id": "api:batches.list",
+        "category": "api",
+        "description": "Batches list procedure works",
+        "required": true
+      },
+      {
+        "id": "regression:cmd-k",
+        "category": "regression",
+        "description": "Cmd+K works",
+        "required": true
+      },
+      {
+        "id": "regression:theme-toggle",
+        "category": "regression",
+        "description": "Theme toggle works",
+        "required": true
+      },
+      {
+        "id": "regression:no-spinner",
+        "category": "regression",
+        "description": "No infinite spinner regression",
+        "required": true
+      },
+      {
+        "id": "regression:layout-consistency",
+        "category": "regression",
+        "description": "Layout consistency regression check",
+        "required": true
+      }
+    ],
+    "covered": [
+      "property-tests",
+      "business-logic",
+      "invariants",
+      "contract-tests",
+      "api-schema",
+      "trpc-procedures",
+      "route:/login",
+      "route:/dashboard",
+      "route:/orders",
+      "route:/clients",
+      "route:/inventory",
+      "api:auth.login",
+      "api:auth.me",
+      "api:orders.list",
+      "api:clients.list",
+      "api:batches.list",
+      "TS-001",
+      "TS-002",
+      "TS-1.1",
+      "TS-2.1",
+      "TS-11.1",
+      "regression:cmd-k",
+      "regression:theme-toggle",
+      "regression:no-spinner",
+      "regression:layout-consistency"
+    ],
+    "missing": [],
+    "waivers": [],
+    "coveragePercent": 100,
+    "passed": true
+  },
+  "suites": [
+    {
+      "name": "Must-Hit Suite",
+      "category": "must-hit",
+      "testsRun": 0,
+      "testsPassed": 0,
+      "testsFailed": 0,
+      "testsSkipped": 0,
+      "durationMs": 63767,
+      "failureIds": [],
+      "coveredTags": []
+    },
+    {
+      "name": "Property-Based Tests",
+      "category": "property",
+      "testsRun": 272,
+      "testsPassed": 268,
+      "testsFailed": 0,
+      "testsSkipped": 4,
+      "durationMs": 10995,
+      "failureIds": [],
+      "coveredTags": ["property-tests", "business-logic", "invariants"]
+    },
+    {
+      "name": "Contract Tests",
+      "category": "contract",
+      "testsRun": 5,
+      "testsPassed": 5,
+      "testsFailed": 0,
+      "testsSkipped": 0,
+      "durationMs": 6093,
+      "failureIds": [],
+      "coveredTags": ["contract-tests", "api-schema", "trpc-procedures"]
+    },
+    {
+      "name": "Backend Invariants",
+      "category": "invariant",
+      "testsRun": 1,
+      "testsPassed": 0,
+      "testsFailed": 1,
+      "testsSkipped": 0,
+      "durationMs": 7,
+      "failureIds": [],
+      "coveredTags": ["db-invariants"]
+    }
+  ],
+  "failures": [
+    {
+      "id": "invariant-1",
+      "classification": "backend",
+      "suite": "Backend Invariants",
+      "testName": "Database Connection",
+      "errorMessage": "Failed to connect: connect ECONNREFUSED 127.0.0.1:3307",
+      "replay": {
+        "seed": 135617,
+        "persona": "system",
+        "steps": [],
+        "urlHistory": [],
+        "replayCommand": "pnpm mega:qa --seed=135617"
+      },
+      "evidence": {
+        "consoleErrors": [],
+        "networkFailures": []
+      },
+      "timestamp": "2025-12-21T07:34:04.781Z",
+      "isKnown": false,
+      "coveredTags": ["db-invariants"]
+    }
+  ],
+  "artifacts": {
+    "traces": [],
+    "screenshots": [],
+    "videos": [],
+    "visualDiffs": [],
+    "other": []
+  },
+  "summary": {
+    "totalTests": 278,
+    "passed": 273,
+    "failed": 1,
+    "skipped": 4,
+    "flaky": 0,
+    "coveragePercent": 100,
+    "newFailures": 1,
+    "knownFailures": 0
+  }
+}
