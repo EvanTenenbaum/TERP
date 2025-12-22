@@ -33,13 +33,16 @@ export const todoTasksRouter = router({
       const limit = input.limit ?? DEFAULT_PAGE_SIZE;
       const offset = input.offset ?? 0;
 
-      const tasks = await todoTasksDb.getListTasks(input.listId, limit, offset);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
+      // DB function already returns structured pagination response
+      // { items: TodoTask[], total: number, limit: number, offset: number, hasMore: boolean }
+      const result = await todoTasksDb.getListTasks(input.listId, limit, offset);
+      
+      // Return in unified format compatible with frontend
       return {
-        items: tasks,
+        items: result.items,
         nextCursor: null,
-        hasMore: Array.isArray(tasks) && tasks.length === limit,
-        pagination: { total: -1, limit, offset }
+        hasMore: result.hasMore,
+        pagination: { total: result.total, limit: result.limit, offset: result.offset }
       };
     }),
 
@@ -58,13 +61,16 @@ export const todoTasksRouter = router({
       const limit = input?.limit ?? DEFAULT_PAGE_SIZE;
       const offset = input?.offset ?? 0;
       
-      const tasks = await todoTasksDb.getUserAssignedTasks(ctx.user.id, limit, offset);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
+      // DB function already returns structured pagination response
+      // { items: TodoTask[], total: number, limit: number, offset: number, hasMore: boolean }
+      const result = await todoTasksDb.getUserAssignedTasks(ctx.user.id, limit, offset);
+      
+      // Return in unified format compatible with frontend
       return {
-        items: tasks,
+        items: result.items,
         nextCursor: null,
-        hasMore: Array.isArray(tasks) && tasks.length === limit,
-        pagination: { total: -1, limit, offset }
+        hasMore: result.hasMore,
+        pagination: { total: result.total, limit: result.limit, offset: result.offset }
       };
     }),
 
