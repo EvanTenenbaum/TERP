@@ -13,6 +13,7 @@ import {
   getOrCreateStrain,
   searchStrains as fuzzySearchStrains,
 } from "../strainMatcher";
+import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const strainsRouter = router({
     // Seed strains from CSV
@@ -20,6 +21,7 @@ export const strainsRouter = router({
       return await seedStrainsFromCSV();
     }),
     // List all strains
+    // BUG-034: Standardized pagination response
     list: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({
         query: z.string().optional(),
@@ -28,11 +30,7 @@ export const strainsRouter = router({
       }))
       .query(async ({ input }) => {
         const result = await inventoryDb.getAllStrains(input.query, input.category, input.limit);
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
+        return createSafeUnifiedResponse(result, result.length, input.limit, 0);
       }),
     // Get strain by ID
     getById: protectedProcedure.use(requirePermission("inventory:read"))
@@ -89,15 +87,12 @@ export const strainsRouter = router({
         }
       }),
     // Search strains (for autocomplete)
+    // BUG-034: Standardized pagination response
     search: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({ query: z.string() }))
       .query(async ({ input }) => {
         const result = await inventoryDb.searchStrains(input.query);
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
+        return createSafeUnifiedResponse(result, result.length, 20, 0);
       }),
     // Create custom strain
     create: protectedProcedure.use(requirePermission("inventory:create"))
@@ -194,6 +189,7 @@ export const strainsRouter = router({
       }),
     
     // Fuzzy search strains (for autocomplete with similarity scoring)
+    // BUG-034: Standardized pagination response
     fuzzySearch: protectedProcedure.use(requirePermission("inventory:read"))
       .input(z.object({
         query: z.string().min(1).max(255),
@@ -202,11 +198,7 @@ export const strainsRouter = router({
       .query(async ({ input }) => {
         try {
           const result = await fuzzySearchStrains(input.query, input.limit);
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
+          return createSafeUnifiedResponse(result, result.length, input.limit, 0);
         } catch (error) {
           console.error('Error searching strains:', error);
           throw new TRPCError({

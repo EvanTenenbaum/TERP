@@ -3,6 +3,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import * as samplesDb from "../samplesDb";
 import * as samplesAnalytics from "../samplesAnalytics";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const samplesRouter = router({
   // Create a new sample request
@@ -72,15 +73,11 @@ export const samplesRouter = router({
     }),
 
   // Get all pending sample requests
+  // BUG-034: Standardized pagination response
   getPending: publicProcedure
     .query(async () => {
       const requests = await samplesDb.getPendingSampleRequests();
-      // HOTFIX (BUG-033): Wrap in paginated response structure
-      return {
-        items: requests,
-        nextCursor: null,
-        hasMore: false,
-      };
+      return createSafeUnifiedResponse(requests, requests.length, 50, 0);
     }),
 
   // Get monthly allocation for a client

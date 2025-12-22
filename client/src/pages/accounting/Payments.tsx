@@ -32,15 +32,15 @@ export default function Payments() {
     paymentType: selectedType !== "ALL" ? (selectedType as any) : undefined,
   });
 
-  // Filter payments - extract from paginated response { payments: [], total: number }
+  // Filter payments - extract from paginated response { items: [], pagination: { total } }
   const filteredPayments = useMemo(() => {
-    // Extract payments array from paginated response object
-    const paymentList = payments?.payments ?? [];
+    // BUG-034: Extract payments array from standardized paginated response
+    const paymentList = payments?.items ?? [];
     
     if (!searchQuery) return paymentList;
 
     const query = searchQuery.toLowerCase();
-    return paymentList.filter((payment) =>
+    return paymentList.filter((payment: { paymentNumber: string }) =>
       payment.paymentNumber.toLowerCase().includes(query)
     );
   }, [payments, searchQuery]);

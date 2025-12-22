@@ -4,9 +4,11 @@ import { router, protectedProcedure } from "../_core/trpc";
 import * as clientsDb from "../clientsDb";
 import * as transactionsDb from "../transactionsDb";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const clientsRouter = router({
   // List clients with pagination and filters
+  // BUG-034: Standardized pagination response
   list: protectedProcedure.use(requirePermission("clients:read"))
     .input(z.object({
       limit: z.number().optional().default(50),
@@ -18,17 +20,7 @@ export const clientsRouter = router({
     }))
     .query(async ({ input }) => {
       const clients = await clientsDb.getClients(input);
-      // HOTFIX (BUG-033): Wrap raw array in paginated response structure
-      return {
-        items: clients,
-        nextCursor: null,
-        hasMore: clients.length === input.limit,
-        pagination: {
-          total: -1,
-          limit: input.limit,
-          offset: input.offset,
-        }
-      };
+      return createSafeUnifiedResponse(clients, -1, input.limit, input.offset);
     }),
 
   // Get total count for pagination

@@ -8,18 +8,15 @@ import { router, protectedProcedure } from "../_core/trpc";
 import * as todoListsDb from "../todoListsDb";
 import * as permissions from "../services/todoPermissions";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const todoListsRouter = router({
   // Get all lists accessible by current user
+  // BUG-034: Standardized pagination response
   getMyLists: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
     const lists = await todoListsDb.getUserLists(ctx.user.id);
-    // HOTFIX (BUG-033): Wrap in paginated response structure
-    return {
-      items: lists,
-      nextCursor: null,
-      hasMore: false,
-    };
+    return createSafeUnifiedResponse(lists, lists.length, 50, 0);
   }),
 
   // Get a specific list by ID
@@ -93,6 +90,7 @@ export const todoListsRouter = router({
     }),
 
   // Get list members
+  // BUG-034: Standardized pagination response
   getMembers: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
@@ -105,12 +103,7 @@ export const todoListsRouter = router({
       await permissions.assertCanViewList(ctx.user.id, input.listId);
 
       const members = await todoListsDb.getListMembers(input.listId);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
-      return {
-        items: members,
-        nextCursor: null,
-        hasMore: false,
-      };
+      return createSafeUnifiedResponse(members, members.length, 50, 0);
     }),
 
   // Add a member to a list

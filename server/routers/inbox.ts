@@ -12,6 +12,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
 import {
   paginationInputSchema,
   createPaginatedResponse,
+  createSafeUnifiedResponse,
   DEFAULT_PAGE_SIZE,
 } from "../_core/pagination";
 
@@ -43,19 +44,16 @@ export const inboxRouter = router({
     }),
 
   // Get unread inbox items
+  // BUG-034: Standardized pagination response
   getUnread: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
 
     const items = await inboxDb.getUnreadInboxItems(ctx.user.id);
-    // HOTFIX (BUG-033): Wrap in paginated response structure
-    return {
-      items: items,
-      nextCursor: null,
-      hasMore: false,
-    };
+    return createSafeUnifiedResponse(items, items.length, 50, 0);
   }),
 
   // Get inbox items by status
+  // BUG-034: Standardized pagination response
   getByStatus: protectedProcedure.use(requirePermission("todos:read"))
     .input(
       z.object({
@@ -66,12 +64,7 @@ export const inboxRouter = router({
       if (!ctx.user) throw new Error("Unauthorized");
 
       const items = await inboxDb.getInboxItemsByStatus(ctx.user.id, input.status);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
-      return {
-        items: items,
-        nextCursor: null,
-        hasMore: false,
-      };
+      return createSafeUnifiedResponse(items, items.length, 50, 0);
     }),
 
   // Get a specific inbox item

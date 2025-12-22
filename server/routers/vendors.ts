@@ -5,6 +5,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
 import { vendorNotes } from "../../drizzle/schema";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { createSafeUnifiedResponse } from "../_core/pagination";
 
 /**
  * Vendors Router - FACADE over clients table
@@ -42,13 +43,11 @@ export const vendorsRouter = router({
         _clientId: s.id,
       }));
       
-      // HOTFIX (BUG-033): Wrap in paginated response structure
+      // BUG-034: Standardized pagination response
       return {
         success: true,
         data: vendorData,
-        items: vendorData,
-        nextCursor: null,
-        hasMore: false,
+        ...createSafeUnifiedResponse(vendorData, vendorData.length, 50, 0),
       };
     } catch (error) {
       console.error("Error fetching vendors:", error);

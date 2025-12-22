@@ -57,10 +57,10 @@ export default function Invoices() {
     { enabled: showAging }
   );
 
-  // Filter invoices - extract from paginated response { invoices: [], total: number }
+  // Filter invoices - extract from paginated response { items: [], pagination: { total } }
   const filteredInvoices = useMemo(() => {
-    // Extract invoices array from paginated response object
-    const invoiceList = invoices?.invoices ?? [];
+    // BUG-034: Extract invoices array from standardized paginated response
+    const invoiceList = invoices?.items ?? [];
     
     if (!searchQuery) return invoiceList;
 
@@ -259,11 +259,11 @@ export default function Invoices() {
               </div>
               
               {/* PERF-003: Pagination Controls - mobile optimized */}
-              {invoices?.total && invoices.total > 0 && (
+              {invoices?.pagination?.total && invoices.pagination.total > 0 && (
                 <PaginationControls
                   currentPage={page}
-                  totalPages={Math.ceil(invoices.total / pageSize)}
-                  totalItems={invoices.total}
+                  totalPages={Math.ceil(invoices.pagination.total / pageSize)}
+                  totalItems={invoices.pagination.total}
                   pageSize={pageSize}
                   onPageChange={setPage}
                   onPageSizeChange={setPageSize}

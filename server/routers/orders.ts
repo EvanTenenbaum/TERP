@@ -22,6 +22,7 @@ import { priceCalculationService } from "../services/priceCalculationService";
 import { orderValidationService } from "../services/orderValidationService";
 import { orderAuditService } from "../services/orderAuditService";
 import { cogsChangeIntegrationService } from "../services/cogsChangeIntegrationService";
+import { createSafeUnifiedResponse } from "../_core/pagination";
 
 // ============================================================================
 // INPUT SCHEMAS
@@ -135,43 +136,6 @@ export const ordersRouter = router({
     }),
 
   /**
-   * DEBUG: Get raw order data for debugging
-   */
-  debugGetRaw: protectedProcedure
-    .use(requirePermission("orders:read"))
-    .query(async () => {
-      const db = await getDb();
-        if (!db) throw new Error("Database not available");
-      if (!db) throw new Error("Database not available");
-      
-      // Get database connection info (without exposing credentials)
-      const dbUrl = process.env.DATABASE_URL || '';
-      const dbHost = dbUrl.match(/@([^:]+)/)?.[1] || 'unknown';
-      const dbName = dbUrl.match(/\/([^?]+)/)?.[1] || 'unknown';
-      
-      const allOrders = await db.select().from(orders).limit(50);
-      const confirmedOrders = allOrders.filter(o => !o.isDraft);
-      
-      return {
-        dbInfo: {
-          host: dbHost,
-          database: dbName,
-          hasDbUrl: !!process.env.DATABASE_URL,
-        },
-        total: allOrders.length,
-        confirmed: confirmedOrders.length,
-        draft: allOrders.filter(o => o.isDraft).length,
-        sample: allOrders.slice(0, 3).map(o => ({
-          id: o.id,
-          orderNumber: o.orderNumber,
-          isDraft: o.isDraft,
-          isDraftType: typeof o.isDraft,
-          orderType: o.orderType,
-        })),
-      };
-    }),
-
-  /**
    * Get all orders with filtering
    */
   getAll: protectedProcedure
@@ -194,24 +158,11 @@ export const ordersRouter = router({
       // Debug logging removed - use structured logging middleware for API debugging
       const orders = await ordersDb.getAllOrders(input);
 
-      // HOTFIX (BUG-033): Wrap raw array in paginated response structure
-      // The frontend was refactored to expect a paginated object, but this endpoint
-      // still returns a raw array. This minimal fix restores data flow.
+      // BUG-034: Standardized pagination response
       const limit = input?.limit || 50;
       const offset = input?.offset || 0;
 
-      // NOTE: We cannot calculate total or hasMore without a separate count query,
-      // but for a hotfix, we assume no more pages if the result is less than the limit.
-      return {
-        items: orders,
-        nextCursor: null, // No cursor support yet
-        hasMore: orders.length === limit,
-        pagination: {
-          total: -1, // Unknown without a count query
-          limit: limit,
-          offset: offset,
-        }
-      };
+      return createSafeUnifiedResponse(orders, -1, limit, offset);
     }),
 
   /**
