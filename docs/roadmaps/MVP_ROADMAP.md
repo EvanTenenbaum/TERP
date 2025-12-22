@@ -350,13 +350,27 @@ AGENT B: WF-002 + WF-004 (Inventory & Data) - 14h
 | ------------ | ------------------------------ | ------ | ----------- | -------- |
 | **BUG-M001** | Mobile responsive sidebar      | 8-16h  | ✅ Complete | HIGH     |
 | **BUG-M003** | Mobile-friendly tables         | 16-24h | ✅ Complete | HIGH     |
-| **QUAL-002** | Comprehensive input validation | 32h    | ⏳ Ready    | MEDIUM   |
-| **DATA-004** | N+1 query optimization         | 40h    | ⏳ Ready    | MEDIUM   |
+| **QUAL-002** | Comprehensive input validation | 32h    | 🔄 Partial  | MEDIUM   |
+| **DATA-004** | N+1 query optimization         | 40h    | 🔄 Partial  | MEDIUM   |
 
 ### Key Commits
 
 - `7aed4142` - fix(BUG-M001): Mobile responsive sidebar with hamburger menu
 - `pending` - feat(BUG-M003): Mobile-friendly card view for clients list
+- `pending` - feat(QUAL-002): Shared validation schemas, fix z.any() in pricing.ts and vipPortalAdmin.ts
+- `pending` - feat(DATA-004): Query deduplication config, redundant query audit
+
+### QUAL-002 Progress (Partial - Parallel with BUG-034)
+- ✅ Created `server/_core/validationSchemas.ts` with 30+ reusable schemas
+- ✅ Fixed `z.any()` in `pricing.ts` (conditions field)
+- ✅ Fixed `z.any()` in `vipPortalAdmin.ts` (featuresConfig, advancedOptions, tiers)
+- ⏳ Remaining z.any() in FORBIDDEN files (BUG-034 scope) - documented in TECHNICAL_DEBT.md
+
+### DATA-004 Progress (Partial - Frontend Focus)
+- ✅ Added query deduplication config to `client/src/lib/trpc.ts`
+- ✅ Documented staleTime presets for different data types
+- ✅ Audited frontend for redundant queries - documented in TECHNICAL_DEBT.md
+- ⏳ Backend N+1 optimization deferred (BUG-034 scope)
 
 ### Phase 5 Completion Criteria
 
@@ -460,6 +474,36 @@ If you encounter:
 ---
 
 ## 📝 Status Update Log
+
+### December 22, 2025 - QUAL-002 & DATA-004 Partial Complete 🔄
+
+**Updated By:** Kiro QUAL-002/DATA-004 Sprint  
+**Phase:** Phase 5 IN PROGRESS  
+**Progress:** Phase 5: 2/4 complete, 2/4 partial (QUAL-002, DATA-004)  
+**Blockers:** BUG-034 owns many files needed for full completion  
+**Key Accomplishments:**
+
+- ✅ QUAL-002 (Partial): Input validation improvements
+  - Created `server/_core/validationSchemas.ts` with 30+ reusable Zod schemas
+  - Fixed `z.any()` in `pricing.ts` - replaced with `flexiblePricingConditionsSchema`
+  - Fixed `z.any()` in `vipPortalAdmin.ts` - replaced with proper typed schemas
+  - Documented remaining `z.any()` usages in TECHNICAL_DEBT.md (7 items in BUG-034 scope)
+  
+- ✅ DATA-004 (Partial): Query optimization
+  - Added query deduplication config to `client/src/lib/trpc.ts`
+  - Documented `staleTimePresets` for different data types
+  - Audited frontend for redundant queries - found 5 pages with duplicate `clients.list` calls
+  - Documented findings in TECHNICAL_DEBT.md (DEBT-001)
+
+**Deferred Work (BUG-034 Scope):**
+- z.any() in: configuration.ts, orderEnhancements.ts, clientNeedsEnhanced.ts, dashboard.ts, freeformNotes.ts, inventory.ts, clients.ts
+- Backend N+1 query optimization in DB files
+
+**Next Actions:**
+- Wait for BUG-034 completion to address remaining z.any() usages
+- Consider creating ClientsProvider context to eliminate redundant queries
+
+---
 
 ### December 19, 2025 - BUG-M003 COMPLETE 🎉
 

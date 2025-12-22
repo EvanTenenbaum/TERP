@@ -2,6 +2,12 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as vipPortalAdminService from "../services/vipPortalAdminService";
+import {
+  idSchema,
+  vipFeaturesConfigSchema,
+  vipAdvancedOptionsSchema,
+  vipTiersArraySchema,
+} from "../_core/validationSchemas";
 
 /**
  * VIP Portal Admin Router (Streamlined)
@@ -72,7 +78,7 @@ export const vipPortalAdminRouter = router({
 
     update: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
-        clientId: z.number(),
+        clientId: idSchema,
         moduleDashboardEnabled: z.boolean().optional(),
         moduleArEnabled: z.boolean().optional(),
         moduleApEnabled: z.boolean().optional(),
@@ -83,8 +89,8 @@ export const vipPortalAdminRouter = router({
         moduleMarketplaceSupplyEnabled: z.boolean().optional(),
         moduleLiveCatalogEnabled: z.boolean().optional(),
         moduleLeaderboardEnabled: z.boolean().optional(),
-        featuresConfig: z.any().optional(),
-        advancedOptions: z.any().optional(),
+        featuresConfig: vipFeaturesConfigSchema.optional(),
+        advancedOptions: vipAdvancedOptionsSchema.optional(),
       }))
       .mutation(async ({ input }) => {
         return await vipPortalAdminService.updateVipPortalConfiguration(input);
@@ -121,7 +127,7 @@ export const vipPortalAdminRouter = router({
 
     updateConfig: protectedProcedure.use(requirePermission("vip_portal:manage"))
       .input(z.object({
-        tiers: z.array(z.any()),
+        tiers: vipTiersArraySchema,
       }))
       .mutation(async ({ input }) => {
         return await vipPortalAdminService.updateVipTierConfiguration(input.tiers);
