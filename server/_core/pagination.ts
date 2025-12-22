@@ -211,3 +211,165 @@ export function getPageNumber(offset: number, limit: number): number {
 export function getOffsetFromPage(page: number, limit: number): number {
   return (page - 1) * limit;
 }
+
+// ============================================================================
+// UNIFIED PAGINATION (BUG-034)
+// ============================================================================
+
+/**
+ * Unified paginated response that supports both offset and cursor pagination.
+ * This is the target structure for BUG-034 standardization.
+ * 
+ * Frontend components can consume this structure regardless of whether
+ * the backend uses offset or cursor pagination internally.
+ */
+export interface UnifiedPaginatedResponse<T> {
+  /** Array of items for the current page */
+  items: T[];
+  /** Cursor for the next page (null if no more items or using offset pagination) */
+  nextCursor: string | null;
+  /** Whether there are more items after this page */
+  hasMore: boolean;
+  /** Optional pagination metadata (for offset-based pagination) */
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
+
+/**
+ * Creates a unified paginated response from offset-based pagination data.
+ * Use this when you have total count and offset information.
+ * 
+ * @param items - Array of items for the current page
+ * @param total - Total count of all items (use -1 if unknown)
+ * @param limit - Number of items per page
+ * @param offset - Number of items skipped
+ * @returns Unified paginated response
+ * 
+ * @example
+ * ```typescript
+ * const items = await db.select().from(table).limit(limit).offset(offset);
+ * const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(table);
+ * return createUnifiedPaginatedResponse(items, count, limit, offset);
+ * ```
+ */
+export function createUnifiedPaginatedResponse<T>(
+  items: T[],
+  total: number,
+  limit: number,
+  offset: number
+): UnifiedPaginatedResponse<T> {
+  const hasMore = total >= 0 ? offset + items.length < total : items.length === limit;
+  
+  return {
+    items,
+    nextCursor: null, // Offset-based doesn't use cursors
+    hasMore,
+    pagination: {
+      total,
+      limit,
+      offset,
+    },
+  };
+}
+
+/**
+ * Creates a unified paginated response from cursor-based pagination data.
+ * Use this when you have cursor information but no total count.
+ * 
+ * @param items - Array of items for the current page
+ * @param nextCursor - Cursor for the next page (null if no more items)
+ * @param limit - Number of items per page (optional, for metadata)
+ * @returns Unified paginated response
+ * 
+ * @example
+ * ```typescript
+ * const items = await db.select().from(table)
+ *   .where(cursor ? gt(table.id, parseInt(cursor)) : undefined)
+ *   .limit(limit + 1);
+ * const hasMore = items.length > limit;
+ * const pageItems = hasMore ? items.slice(0, limit) : items;
+ * const nextCursor = hasMore ? pageItems[pageItems.length - 1].id.toString() : null;
+ * return createUnifiedFromCursor(pageItems, nextCursor, limit);
+ * ```
+ */
+export function createUnifiedFromCursor<T>(
+  items: T[],
+  nextCursor: string | null,
+  limit?: number
+): UnifiedPaginatedResponse<T> {
+  return {
+    items,
+    nextCursor,
+    hasMore: nextCursor !== null,
+    pagination: limit ? {
+      total: -1, // Unknown for cursor-based
+      limit,
+      offset: 0, // Not applicable for cursor-based
+    } : undefined,
+  };
+}
+
+/**
+ * Null-safe wrapper for createUnifiedPaginatedResponse.
+ * Handles cases where items might be null/undefined.
+ * 
+ * @param items - Array of items (or null/undefined)
+ * @param total - Total count (or null/undefined, defaults to 0)
+ * @param limit - Limit (defaults to DEFAULT_PAGE_SIZE)
+ * @param offset - Offset (defaults to 0)
+ * @returns Unified paginated response with empty array if items is null
+ */
+export function createSafeUnifiedResponse<T>(
+  items: T[] | null | undefined,
+  total?: number | null,
+  limit?: number,
+  offset?: number
+): UnifiedPaginatedResponse<T> {
+  const safeItems = items ?? [];
+  const safeTotal = total ?? safeItems.length;
+  const safeLimit = limit ?? DEFAULT_PAGE_SIZE;
+  const safeOffset = offset ?? 0;
+  
+  return createUnifiedPaginatedResponse(safeItems, safeTotal, safeLimit, safeOffset);
+}
+
+/**
+ * Type guard to check if a response is a UnifiedPaginatedResponse.
+ * Useful for frontend code that needs to handle multiple response shapes.
+ */
+export function isUnifiedPaginatedResponse<T>(
+  response: unknown
+): response is UnifiedPaginatedResponse<T> {
+  return (
+    typeof response === 'object' &&
+    response !== null &&
+    'items' in response &&
+    Array.isArray((response as UnifiedPaginatedResponse<T>).items) &&
+    'hasMore' in response &&
+    typeof (response as UnifiedPaginatedResponse<T>).hasMore === 'boolean'
+  );
+}
+
+/**
+ * Extracts items array from various response shapes.
+ * Handles: raw arrays, { items: [] }, { invoices: [] }, etc.
+ * 
+ * @param response - Response from API (various shapes)
+ * @param domainKey - Optional domain-specific key (e.g., 'invoices', 'bills')
+ * @returns Array of items
+ */
+export function extractItems<T>(
+  response: T[] | { items: T[] } | Record<string, T[]> | null | undefined,
+  domainKey?: string
+): T[] {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if ('items' in response && Array.isArray(response.items)) return response.items;
+  if (domainKey && domainKey in response && Array.isArray((response as Record<string, T[]>)[domainKey])) {
+    return (response as Record<string, T[]>)[domainKey];
+  }
+  return [];
+}
