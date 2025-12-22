@@ -1023,14 +1023,25 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 ### QUAL-002: Add Comprehensive Input Validation
 
-**Status:** ready  
+**Status:** in-progress  
 **Priority:** HIGH  
 **Estimate:** 32h  
+**Actual Time:** ~4h (partial scope)  
 **Module:** Multiple routers  
 **Dependencies:** None  
-**Prompt:** `docs/prompts/QUAL-002.md` (to be created)
+**Prompt:** `docs/prompts/QUAL-002.md`, `docs/prompts/QUAL-002-DATA-004-PARALLEL.md`
 
 **Problem:** Missing input validation allows invalid data.
+
+**Progress (December 22, 2025):**
+- ✅ Created `server/_core/validationSchemas.ts` with 30+ reusable Zod schemas
+- ✅ Fixed `z.any()` in `pricing.ts` with `flexiblePricingConditionsSchema`
+- ✅ Fixed `z.any()` in `vipPortalAdmin.ts` with proper typed schemas
+- ✅ Documented remaining `z.any()` usages in `docs/TECHNICAL_DEBT.md`
+- ⏳ Remaining work blocked by BUG-034 (owns conflicting files)
+
+**Key Commits:**
+- `33f95e20` - feat(QUAL-002/DATA-004): Add shared validation schemas and query optimization
 
 **Objectives:**
 
@@ -1041,7 +1052,11 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 **Deliverables:**
 
-- [ ] Audit all router inputs
+- [x] Create shared validation schemas (`server/_core/validationSchemas.ts`)
+- [x] Fix `z.any()` in pricing.ts
+- [x] Fix `z.any()` in vipPortalAdmin.ts
+- [x] Document remaining z.any() usages
+- [ ] Audit all router inputs (partial - BUG-034 scope)
 - [ ] Add Zod schemas for missing inputs
 - [ ] Validate quantity > 0 for all quantity inputs
 - [ ] Validate prices >= 0 for all price inputs
@@ -1170,14 +1185,25 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 #### DATA-004: Fix N+1 Queries in Order Creation
 
-**Status:** ready  
+**Status:** in-progress  
 **Priority:** HIGH - Downgraded from P0  
 **Estimate:** 40h  
-**Module:** `server/ordersDb.ts`, `server/routers/orders.ts`  
+**Actual Time:** ~2h (partial scope - frontend focus)  
+**Module:** `server/ordersDb.ts`, `server/routers/orders.ts`, `client/src/lib/trpc.ts`  
 **Dependencies:** None  
-**Prompt:** `docs/prompts/DATA-004.md`
+**Prompt:** `docs/prompts/DATA-004.md`, `docs/prompts/QUAL-002-DATA-004-PARALLEL.md`
 
 **Problem:** N+1 queries in order creation cause slow performance (1-5s).
+
+**Progress (December 22, 2025):**
+- ✅ Added query optimization presets to `client/src/lib/trpc.ts`
+- ✅ Documented `staleTimePresets` for different data types
+- ✅ Audited frontend for redundant queries (5 pages with duplicate `clients.list`)
+- ✅ Documented findings in `docs/TECHNICAL_DEBT.md` (DEBT-001)
+- ⏳ Backend N+1 optimization blocked by BUG-034 (owns conflicting DB files)
+
+**Key Commits:**
+- `33f95e20` - feat(QUAL-002/DATA-004): Add shared validation schemas and query optimization
 
 **Objectives:**
 
@@ -1188,7 +1214,11 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 **Deliverables:**
 
-- [ ] Replace loop-based batch queries with batch load
+- [x] Add query optimization presets to trpc client
+- [x] Document staleTimePresets for different data types
+- [x] Audit frontend for redundant queries
+- [x] Document findings in TECHNICAL_DEBT.md
+- [ ] Replace loop-based batch queries with batch load (BUG-034 scope)
 - [ ] Use `inArray()` to load all batches in single query
 - [ ] Create batch lookup map for O(1) access
 - [ ] Fix N+1 in `ordersDb.ts:createOrder()`
@@ -6692,6 +6722,48 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] Add notes/terms textarea field
     - [ ] Save discount and notes with quote
     - [ ] Display discount and notes on quote preview
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+### 🟠 P1.5 - TEST INFRASTRUCTURE
+
+- [ ] **BUG-035: Admin Security Test Failures - publicProcedure in Admin Endpoints** (P1.5)
+  - **Status:** ready
+  - **Priority:** HIGH
+  - **Estimate:** 4h
+  - **Module:** `server/routers/admin.ts`
+  - **Dependencies:** None
+  - **Prompt:** `docs/prompts/BUG-035.md`
+  - **Problem:** 5 admin endpoints in `admin.ts` are using `publicProcedure` instead of `adminProcedure`, causing security test failures. These endpoints are exposed publicly without authentication:
+    - `fixUserPermissions` (line 330)
+    - `listUsers` (line 438)
+    - `grantPermission` (line 468)
+    - `clearPermissionCache` (line 583)
+    - `assignSuperAdminRole` (line 616)
+  - **Root Cause:** Endpoints were marked as public "for emergency debugging/fixes" but this violates security best practices.
+  - **Deliverables:**
+    - [ ] Change all 5 `publicProcedure` endpoints to `adminProcedure`
+    - [ ] Remove "intentionally PUBLIC" comments
+    - [ ] Verify admin-security.test.ts passes (all 3 tests)
+    - [ ] Ensure no regression in admin functionality
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **BUG-036: priceAlertsService Test Failures - Incomplete Mock** (P1.5)
+  - **Status:** ready
+  - **Priority:** MEDIUM
+  - **Estimate:** 4h
+  - **Module:** `server/services/priceAlertsService.test.ts`
+  - **Dependencies:** None
+  - **Prompt:** `docs/prompts/BUG-036.md`
+  - **Problem:** 2 tests failing due to incomplete mocking:
+    1. `createPriceAlert` test expects `alertId` to be 1 but gets 0 - mock doesn't handle MySQL `insertId` pattern
+    2. `checkPriceAlerts` test fails with "No getClientPricingRules export defined on mock" - the `../pricingEngine` mock only includes `calculateRetailPrice` but the service also calls `getClientPricingRules`
+  - **Root Cause:** Test mock is incomplete - missing `getClientPricingRules` export and incorrect insert result handling.
+  - **Deliverables:**
+    - [ ] Add `getClientPricingRules` to the `../pricingEngine` mock
+    - [ ] Fix `createPriceAlert` mock to return correct MySQL insertId structure
+    - [ ] Verify all 6 priceAlertsService tests pass
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
 
