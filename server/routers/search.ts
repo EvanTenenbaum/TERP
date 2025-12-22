@@ -1,6 +1,7 @@
 /**
  * Global Search Router
  * Provides unified search across quotes, customers, and products
+ * Version 2.1 - QUAL-002 Validation Improvements
  */
 
 import { z } from "zod";
@@ -10,6 +11,19 @@ import { clients, batches, orders } from "../../drizzle/schema";
 import { like, or, and, eq, sql } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 
+// Search query validation with reasonable constraints
+const searchQuerySchema = z.string()
+  .min(1, "Search query is required")
+  .max(200, "Search query too long")
+  .transform(s => s.trim());
+
+// Search limit validation
+const searchLimitSchema = z.number()
+  .int("Limit must be a whole number")
+  .min(1, "Limit must be at least 1")
+  .max(100, "Limit cannot exceed 100")
+  .default(10);
+
 export const searchRouter = router({
   /**
    * Global search across quotes, customers, and products
@@ -18,8 +32,8 @@ export const searchRouter = router({
     .use(requirePermission("clients:read")) // Basic read permission required
     .input(
       z.object({
-        query: z.string().min(1),
-        limit: z.number().optional().default(10),
+        query: searchQuerySchema,
+        limit: searchLimitSchema,
       })
     )
     .query(async ({ input }) => {

@@ -6,18 +6,28 @@ import { getDb } from "../db";
 import { calendarReminders } from "../../drizzle/schema";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { idSchema } from "../_core/validationSchemas";
 
 /**
  * Calendar Reminders Router
  * Reminder management for calendar events
- * Version 2.0 - Post-Adversarial QA
+ * Version 2.1 - QUAL-002 Validation Improvements
  * PRODUCTION-READY - No placeholders
  */
+
+// Reminder method enum for type safety
+const reminderMethodSchema = z.enum(["IN_APP", "EMAIL", "BOTH"]);
+
+// Relative minutes validation (reasonable range: 0 to 1 week in minutes)
+const relativeMinutesSchema = z.number()
+  .int("Minutes must be a whole number")
+  .min(0, "Minutes cannot be negative")
+  .max(10080, "Reminder cannot be more than 1 week before event");
 
 export const calendarRemindersRouter = router({
   // Get reminders for an event
   getReminders: publicProcedure
-    .input(z.object({ eventId: z.number() }))
+    .input(z.object({ eventId: idSchema }))
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
 
@@ -39,9 +49,9 @@ export const calendarRemindersRouter = router({
   createReminder: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        relativeMinutes: z.number(), // Minutes before event
-        method: z.enum(["IN_APP", "EMAIL", "BOTH"]).default("IN_APP"),
+        eventId: idSchema,
+        relativeMinutes: relativeMinutesSchema,
+        method: reminderMethodSchema.default("IN_APP"),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -82,7 +92,7 @@ export const calendarRemindersRouter = router({
 
   // Delete reminder
   deleteReminder: publicProcedure
-    .input(z.object({ reminderId: z.number() }))
+    .input(z.object({ reminderId: idSchema }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
 
@@ -106,7 +116,7 @@ export const calendarRemindersRouter = router({
 
   // Mark reminder as sent (for background job)
   markSent: publicProcedure
-    .input(z.object({ reminderId: z.number() }))
+    .input(z.object({ reminderId: idSchema }))
     .mutation(async ({ input }) => {
       return await calendarDb.updateReminderStatus(input.reminderId, "SENT");
     }),
@@ -115,8 +125,8 @@ export const calendarRemindersRouter = router({
   markFailed: publicProcedure
     .input(
       z.object({
-        reminderId: z.number(),
-        failureReason: z.string(),
+        reminderId: idSchema,
+        failureReason: z.string().min(1, "Failure reason is required").max(500, "Failure reason too long"),
       })
     )
     .mutation(async ({ input }) => {
@@ -131,7 +141,7 @@ export const calendarRemindersRouter = router({
   getMyUpcomingReminders: publicProcedure
     .input(
       z.object({
-        hoursAhead: z.number().default(24),
+        hoursAhead: z.number().int().min(1, "Hours must be at least 1").max(168, "Cannot look more than 1 week ahead").default(24),
       })
     )
     .query(async ({ input, ctx }) => {

@@ -4,18 +4,25 @@ import * as calendarDb from "../calendarDb";
 import PermissionService from "../_core/permissionService";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { calendarLogger } from "../_core/logger";
+import { idSchema } from "../_core/validationSchemas";
 
 /**
  * Calendar Participants Router
  * Participant management for calendar events
- * Version 2.0 - Post-Adversarial QA
+ * Version 2.1 - QUAL-002 Validation Improvements
  * PRODUCTION-READY - No placeholders
  */
+
+// Participant role enum for type safety
+const participantRoleSchema = z.enum(["ORGANIZER", "REQUIRED", "OPTIONAL", "OBSERVER"]);
+
+// Response status enum for type safety
+const responseStatusSchema = z.enum(["PENDING", "ACCEPTED", "DECLINED", "TENTATIVE"]);
 
 export const calendarParticipantsRouter = router({
   // Get participants for an event
   getParticipants: publicProcedure
-    .input(z.object({ eventId: z.number() }))
+    .input(z.object({ eventId: idSchema }))
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
 
@@ -37,11 +44,9 @@ export const calendarParticipantsRouter = router({
   addParticipant: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        userId: z.number(),
-        role: z
-          .enum(["ORGANIZER", "REQUIRED", "OPTIONAL", "OBSERVER"])
-          .default("REQUIRED"),
+        eventId: idSchema,
+        userId: idSchema,
+        role: participantRoleSchema.default("REQUIRED"),
         notifyOnCreation: z.boolean().default(true),
         notifyOnUpdate: z.boolean().default(true),
       })
@@ -101,8 +106,8 @@ export const calendarParticipantsRouter = router({
   updateResponse: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        responseStatus: z.enum(["PENDING", "ACCEPTED", "DECLINED", "TENTATIVE"]),
+        eventId: idSchema,
+        responseStatus: responseStatusSchema,
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -133,8 +138,8 @@ export const calendarParticipantsRouter = router({
   removeParticipant: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        userId: z.number(),
+        eventId: idSchema,
+        userId: idSchema,
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -172,11 +177,9 @@ export const calendarParticipantsRouter = router({
   addParticipants: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        userIds: z.array(z.number()),
-        role: z
-          .enum(["ORGANIZER", "REQUIRED", "OPTIONAL", "OBSERVER"])
-          .default("REQUIRED"),
+        eventId: idSchema,
+        userIds: z.array(idSchema).min(1, "At least one user ID is required").max(100, "Cannot add more than 100 participants at once"),
+        role: participantRoleSchema.default("REQUIRED"),
         notifyOnCreation: z.boolean().default(true),
       })
     )

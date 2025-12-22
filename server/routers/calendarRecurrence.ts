@@ -4,18 +4,49 @@ import * as calendarDb from "../calendarDb";
 import InstanceGenerationService from "../_core/instanceGenerationService";
 import PermissionService from "../_core/permissionService";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { idSchema, dateStringSchema, nameSchema, descriptionSchema } from "../_core/validationSchemas";
 
 /**
  * Calendar Recurrence Router
  * Recurrence pattern management and instance generation
- * Version 2.0 - Post-Adversarial QA
+ * Version 2.1 - QUAL-002 Validation Improvements
  * PRODUCTION-READY - No placeholders
  */
+
+// Recurrence frequency enum
+const recurrenceFrequencySchema = z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]);
+
+// Days ahead validation (reasonable range: 1 to 365 days)
+const daysAheadSchema = z.number()
+  .int("Days must be a whole number")
+  .min(1, "Days ahead must be at least 1")
+  .max(365, "Cannot generate instances more than 1 year ahead")
+  .default(90);
+
+// Instance modifications schema
+const instanceModificationsSchema = z.object({
+  title: nameSchema.optional(),
+  description: descriptionSchema,
+  location: z.string().max(500, "Location too long").optional(),
+  assignedTo: idSchema.optional(),
+  startTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, "Time must be in HH:MM or HH:MM:SS format").optional(),
+  endTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, "Time must be in HH:MM or HH:MM:SS format").optional(),
+});
+
+// Recurrence rule updates schema
+const recurrenceRuleUpdatesSchema = z.object({
+  frequency: recurrenceFrequencySchema.optional(),
+  interval: z.number().int().min(1, "Interval must be at least 1").max(99, "Interval too large").optional(),
+  byDay: z.array(z.number().int().min(0).max(6)).optional(),
+  byMonthDay: z.array(z.number().int().min(1).max(31)).optional(),
+  endDate: dateStringSchema.optional(),
+  count: z.number().int().min(1, "Count must be at least 1").max(999, "Count too large").optional(),
+});
 
 export const calendarRecurrenceRouter = router({
   // Get recurrence rule for event
   getRecurrenceRule: publicProcedure
-    .input(z.object({ eventId: z.number() }))
+    .input(z.object({ eventId: idSchema }))
     .query(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
 
@@ -33,9 +64,9 @@ export const calendarRecurrenceRouter = router({
   getInstances: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
+        eventId: idSchema,
+        startDate: dateStringSchema.optional(),
+        endDate: dateStringSchema.optional(),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -59,16 +90,9 @@ export const calendarRecurrenceRouter = router({
   modifyInstance: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        instanceDate: z.string(),
-        modifications: z.object({
-          title: z.string().optional(),
-          description: z.string().optional(),
-          location: z.string().optional(),
-          assignedTo: z.number().optional(),
-          startTime: z.string().optional(),
-          endTime: z.string().optional(),
-        }),
+        eventId: idSchema,
+        instanceDate: dateStringSchema,
+        modifications: instanceModificationsSchema,
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -107,8 +131,8 @@ export const calendarRecurrenceRouter = router({
   cancelInstance: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        instanceDate: z.string(),
+        eventId: idSchema,
+        instanceDate: dateStringSchema,
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -145,8 +169,8 @@ export const calendarRecurrenceRouter = router({
   regenerateInstances: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        daysAhead: z.number().default(90),
+        eventId: idSchema,
+        daysAhead: daysAheadSchema,
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -183,7 +207,7 @@ export const calendarRecurrenceRouter = router({
   regenerateAllInstances: publicProcedure
     .input(
       z.object({
-        daysAhead: z.number().default(90),
+        daysAhead: daysAheadSchema,
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -204,15 +228,8 @@ export const calendarRecurrenceRouter = router({
   updateRecurrenceRule: publicProcedure
     .input(
       z.object({
-        eventId: z.number(),
-        updates: z.object({
-          frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).optional(),
-          interval: z.number().optional(),
-          byDay: z.array(z.number()).optional(),
-          byMonthDay: z.array(z.number()).optional(),
-          endDate: z.string().optional(),
-          count: z.number().optional(),
-        }),
+        eventId: idSchema,
+        updates: recurrenceRuleUpdatesSchema,
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -253,7 +270,7 @@ export const calendarRecurrenceRouter = router({
 
   // Delete recurrence rule (convert to single event)
   deleteRecurrenceRule: publicProcedure
-    .input(z.object({ eventId: z.number() }))
+    .input(z.object({ eventId: idSchema }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
 
