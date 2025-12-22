@@ -1,34 +1,42 @@
 # BUG-034 Atomic Roadmap: Pagination Standardization
 
 **Created:** 2025-12-22
-**Status:** IN PROGRESS
+**Status:** PRE-WORK COMPLETE - Ready for Full Execution
 **Risk Level:** HIGH
-**Total Estimated Time:** 4 hours (Phase 0 pre-work only - full BUG-034 deferred)
+**Total Estimated Time:** 22 hours (revised after Red Hat QA Level 3)
 
 ---
 
 ## Executive Summary
 
-This roadmap addresses the critical issues discovered during Red Hat QA of BUG-034. Rather than executing the full 16-hour refactoring, we will:
+This roadmap addresses the critical issues discovered during Red Hat QA of BUG-034. 
 
-1. **Fix immediate bugs** (todoTasks double-wrapping)
-2. **Update the BUG-034 prompt** with accurate information
-3. **Create unified pagination types** for future work
-4. **Document the four existing contracts** for future reference
+**Pre-work (Phase 0-4) is COMPLETE.** The full BUG-034 execution should be done by a dedicated agent with the corrected prompt.
 
-The full BUG-034 execution should be done by a dedicated agent with the corrected prompt.
+### Key Corrections from Red Hat QA (2025-12-22):
+
+1. **Total procedures requiring work: 27** (not 19)
+   - 19 with BUG-033 markers
+   - 8 with unmarked inline wrappers (strains.ts: 3, inventory.ts: 5)
+
+2. **strains.ts does NOT use Contract B** - has 3 unmarked inline wrappers
+3. **inventory.ts has 5 unmarked wrappers** (vendors, brands, views.list, profitability.top)
+4. **inventory.ts `list` IS correct** - uses cursor-based pagination from DB layer
+5. **Time estimate revised to 22h** (from 16h) due to additional scope
 
 ---
 
-## Critical Issues to Address
+## Critical Issues Addressed in Pre-Work
 
-| # | Issue | Severity | Phase |
-|---|-------|----------|-------|
-| 1 | todoTasks router double-wrapping structured data | 🔴 BUG | Phase 1 |
-| 2 | BUG-034 prompt claims 30 procedures (actual: 21) | 🟡 DOC | Phase 2 |
-| 3 | Four different pagination contracts undocumented | 🟡 DOC | Phase 2 |
-| 4 | No unified pagination type exists | 🟡 TECH | Phase 3 |
-| 5 | Per-endpoint analysis missing from prompt | 🟡 DOC | Phase 2 |
+| # | Issue | Severity | Status |
+|---|-------|----------|--------|
+| 1 | todoTasks router double-wrapping structured data | 🔴 BUG | ✅ FIXED |
+| 2 | BUG-034 prompt claims 30 procedures (actual: 27) | 🟡 DOC | ✅ CORRECTED |
+| 3 | Four different pagination contracts undocumented | 🟡 DOC | ✅ DOCUMENTED |
+| 4 | No unified pagination type exists | 🟡 TECH | ✅ CREATED |
+| 5 | Per-endpoint analysis missing from prompt | 🟡 DOC | ✅ ADDED |
+| 6 | strains.ts incorrectly marked as "Contract B" | 🔴 DOC | ✅ CORRECTED |
+| 7 | inventory.ts unmarked wrappers not documented | 🔴 DOC | ✅ CORRECTED |
 
 ---
 
@@ -204,11 +212,27 @@ return {
 3. ✅ Unified pagination types available
 4. ✅ TypeScript compiles (tests have pre-existing failures)
 5. ✅ Ready for full BUG-034 execution by dedicated agent
+6. ✅ strains.ts and inventory.ts unmarked wrappers documented
+7. ✅ Total procedure count corrected to 27
+
+---
+
+## Next Steps: Full BUG-034 Execution
+
+The pre-work is complete. A dedicated agent should now execute the full BUG-034 using `docs/prompts/BUG-034.md`.
+
+**Key points for executing agent:**
+- Total procedures to refactor: **27** (19 marked + 8 unmarked)
+- Estimated time: **22 hours**
+- Follow the phase-by-phase approach in the prompt
+- Run QA gates after each batch of changes
+- Do NOT skip strains.ts or inventory.ts - they have unmarked wrappers
 
 ---
 
 ## Notes
 
 - This roadmap addresses PRE-WORK only
-- Full BUG-034 execution (16h) should be done separately
+- Full BUG-034 execution (22h) should be done separately
 - The corrected prompt will enable successful execution
+- Red Hat QA Level 3 performed 2025-12-22 identified critical documentation errors
