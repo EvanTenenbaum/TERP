@@ -2,7 +2,13 @@ import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -37,21 +43,36 @@ import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { JournalEntryForm, AccountSelector, FiscalPeriodSelector } from "@/components/accounting";
+import {
+  JournalEntryForm,
+  AccountSelector,
+  FiscalPeriodSelector,
+} from "@/components/accounting";
 
 type LedgerEntry = {
   id: number;
   entryNumber: string;
-  entryDate: string;
+  entryDate: string | Date;
   accountId: number;
-  debitAmount: string;
-  creditAmount: string;
-  description: string;
+  debit: string;
+  credit: string;
+  description: string | null;
   fiscalPeriodId: number;
-  status: "DRAFT" | "POSTED" | "VOID";
+  isPosted: boolean;
   referenceType: string | null;
   referenceId: number | null;
-  createdAt: string;
+  createdAt: string | Date;
+};
+
+// BUG-034: Type for trial balance items (matches API response)
+type TrialBalanceItem = {
+  accountId: number;
+  accountNumber: string;
+  accountName: string;
+  accountType: string;
+  totalDebit: number;
+  totalCredit: number;
+  balance: number;
 };
 
 export default function GeneralLedger() {
@@ -59,7 +80,10 @@ export default function GeneralLedger() {
   const [selectedAccount, setSelectedAccount] = useState<number | undefined>();
   const [selectedPeriod, setSelectedPeriod] = useState<number | undefined>();
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
     from: undefined,
     to: undefined,
   });
@@ -67,7 +91,11 @@ export default function GeneralLedger() {
   const [showTrialBalance, setShowTrialBalance] = useState(false);
 
   // Fetch ledger entries
-  const { data: entries, isLoading, refetch } = trpc.accounting.ledger.list.useQuery({
+  const {
+    data: entries,
+    isLoading,
+    refetch,
+  } = trpc.accounting.ledger.list.useQuery({
     accountId: selectedAccount,
     fiscalPeriodId: selectedPeriod,
     // Note: API expects Date objects, not strings
@@ -75,11 +103,12 @@ export default function GeneralLedger() {
     endDate: dateRange.to,
   });
 
-  // Fetch trial balance
-  const { data: trialBalance } = trpc.accounting.ledger.getTrialBalance.useQuery(
-    { fiscalPeriodId: selectedPeriod! },
-    { enabled: showTrialBalance && !!selectedPeriod }
-  );
+  // Fetch trial balance - use safe default when selectedPeriod is undefined
+  const { data: trialBalance } =
+    trpc.accounting.ledger.getTrialBalance.useQuery(
+      { fiscalPeriodId: selectedPeriod ?? 0 },
+      { enabled: showTrialBalance && !!selectedPeriod }
+    );
 
   // Post journal entry mutation
   const postJournalEntry = trpc.accounting.ledger.postJournalEntry.useMutation({
@@ -88,37 +117,43 @@ export default function GeneralLedger() {
       setShowPostDialog(false);
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to post journal entry: ${error.message}`);
     },
   });
 
-  // Filter entries by search query
+  // Filter entries by search query - BUG-034: Extract from paginated response
   const filteredEntries = useMemo(() => {
     if (!entries) return [];
 
-    // entries is an array, not a paginated response
-    const entryList = Array.isArray(entries) ? entries : [];
+    // BUG-034: entries is now a UnifiedPaginatedResponse with items array
+    const entryList = entries?.items ?? [];
 
     if (!searchQuery) return entryList;
 
     const query = searchQuery.toLowerCase();
     return entryList.filter(
-      (entry: any) =>
+      (entry: LedgerEntry) =>
         entry.entryNumber.toLowerCase().includes(query) ||
         (entry.description && entry.description.toLowerCase().includes(query))
     );
   }, [entries, searchQuery]);
 
-  // Calculate summary statistics
+  // Calculate summary statistics - BUG-034: Use debit/credit field names
   const totalDebits = useMemo(() => {
     if (!filteredEntries) return 0;
-    return filteredEntries.reduce((sum: number, entry: LedgerEntry) => sum + parseFloat(entry.debitAmount), 0);
+    return filteredEntries.reduce(
+      (sum: number, entry: LedgerEntry) => sum + parseFloat(entry.debit),
+      0
+    );
   }, [filteredEntries]);
 
   const totalCredits = useMemo(() => {
     if (!filteredEntries) return 0;
-    return filteredEntries.reduce((sum: number, entry: LedgerEntry) => sum + parseFloat(entry.creditAmount), 0);
+    return filteredEntries.reduce(
+      (sum: number, entry: LedgerEntry) => sum + parseFloat(entry.credit),
+      0
+    );
   }, [filteredEntries]);
 
   const formatCurrency = (amount: string | number) => {
@@ -133,17 +168,26 @@ export default function GeneralLedger() {
     return format(new Date(dateStr), "MMM dd, yyyy");
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "DRAFT":
-        return <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">Draft</Badge>;
-      case "POSTED":
-        return <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">Posted</Badge>;
-      case "VOID":
-        return <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">Void</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  // BUG-034: Updated to use isPosted boolean instead of status string
+  const getStatusBadge = (isPosted: boolean) => {
+    if (isPosted) {
+      return (
+        <Badge
+          variant="outline"
+          className="bg-green-100 text-green-700 border-green-200"
+        >
+          Posted
+        </Badge>
+      );
     }
+    return (
+      <Badge
+        variant="outline"
+        className="bg-gray-100 text-gray-700 border-gray-200"
+      >
+        Draft
+      </Badge>
+    );
   };
 
   return (
@@ -152,7 +196,9 @@ export default function GeneralLedger() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">General Ledger</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            General Ledger
+          </h1>
           <p className="text-muted-foreground mt-1">
             View and manage all journal entries and transactions
           </p>
@@ -189,7 +235,9 @@ export default function GeneralLedger() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalDebits)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalDebits)}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -198,10 +246,13 @@ export default function GeneralLedger() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalCredits)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalCredits)}
+            </div>
             {Math.abs(totalDebits - totalCredits) > 0.01 && (
               <p className="text-xs text-red-600 mt-1">
-                Out of balance by {formatCurrency(Math.abs(totalDebits - totalCredits))}
+                Out of balance by{" "}
+                {formatCurrency(Math.abs(totalDebits - totalCredits))}
               </p>
             )}
           </CardContent>
@@ -220,7 +271,7 @@ export default function GeneralLedger() {
               <Input
                 placeholder="Search entries..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
@@ -276,7 +327,7 @@ export default function GeneralLedger() {
                   mode="range"
                   defaultMonth={dateRange.from}
                   selected={{ from: dateRange.from, to: dateRange.to }}
-                  onSelect={(range) =>
+                  onSelect={range =>
                     setDateRange({ from: range?.from, to: range?.to })
                   }
                   numberOfMonths={2}
@@ -307,15 +358,21 @@ export default function GeneralLedger() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {trialBalance.map((item: any) => (
+                {trialBalance.map((item: TrialBalanceItem) => (
                   <TableRow key={item.accountId}>
-                    <TableCell className="font-mono">{item.accountNumber}</TableCell>
+                    <TableCell className="font-mono">
+                      {item.accountNumber}
+                    </TableCell>
                     <TableCell>{item.accountName}</TableCell>
                     <TableCell className="text-right font-mono">
-                      {parseFloat(item.debitBalance) > 0 ? formatCurrency(item.debitBalance) : "-"}
+                      {item.totalDebit > 0
+                        ? formatCurrency(item.totalDebit)
+                        : "-"}
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      {parseFloat(item.creditBalance) > 0 ? formatCurrency(item.creditBalance) : "-"}
+                      {item.totalCredit > 0
+                        ? formatCurrency(item.totalCredit)
+                        : "-"}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -323,12 +380,20 @@ export default function GeneralLedger() {
                   <TableCell colSpan={2}>Total</TableCell>
                   <TableCell className="text-right font-mono">
                     {formatCurrency(
-                      trialBalance.reduce((sum: number, item: any) => sum + parseFloat(item.debitBalance), 0)
+                      trialBalance.reduce(
+                        (sum: number, item: TrialBalanceItem) =>
+                          sum + item.totalDebit,
+                        0
+                      )
                     )}
                   </TableCell>
                   <TableCell className="text-right font-mono">
                     {formatCurrency(
-                      trialBalance.reduce((sum: number, item: any) => sum + parseFloat(item.creditBalance), 0)
+                      trialBalance.reduce(
+                        (sum: number, item: TrialBalanceItem) =>
+                          sum + item.totalCredit,
+                        0
+                      )
                     )}
                   </TableCell>
                 </TableRow>
@@ -348,7 +413,9 @@ export default function GeneralLedger() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading entries...</div>
+            <div className="text-center py-8 text-muted-foreground">
+              Loading entries...
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -364,7 +431,10 @@ export default function GeneralLedger() {
               <TableBody>
                 {filteredEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No ledger entries found
                     </TableCell>
                   </TableRow>
@@ -374,21 +444,23 @@ export default function GeneralLedger() {
                       <TableCell className="font-mono font-medium">
                         {entry.entryNumber}
                       </TableCell>
-                      <TableCell>{formatDate(entry.entryDate)}</TableCell>
+                      <TableCell>
+                        {formatDate(String(entry.entryDate))}
+                      </TableCell>
                       <TableCell className="max-w-md truncate">
                         {entry.description}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {parseFloat(entry.debitAmount) > 0
-                          ? formatCurrency(entry.debitAmount)
+                        {parseFloat(entry.debit) > 0
+                          ? formatCurrency(entry.debit)
                           : "-"}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {parseFloat(entry.creditAmount) > 0
-                          ? formatCurrency(entry.creditAmount)
+                        {parseFloat(entry.credit) > 0
+                          ? formatCurrency(entry.credit)
                           : "-"}
                       </TableCell>
-                      <TableCell>{getStatusBadge(entry.status)}</TableCell>
+                      <TableCell>{getStatusBadge(entry.isPosted)}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -408,7 +480,7 @@ export default function GeneralLedger() {
             </DialogDescription>
           </DialogHeader>
           <JournalEntryForm
-            onSubmit={(data) => {
+            onSubmit={data => {
               postJournalEntry.mutate({
                 entryDate: data.entryDate,
                 debitAccountId: data.debitAccountId,
@@ -426,4 +498,3 @@ export default function GeneralLedger() {
     </div>
   );
 }
-

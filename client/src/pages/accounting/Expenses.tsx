@@ -23,9 +23,34 @@ import { Search, Plus, Receipt, DollarSign, AlertCircle } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 
+// BUG-034: Define proper types for expenses
+type Expense = {
+  id: number;
+  expenseNumber: string;
+  expenseDate: Date | string;
+  description: string | null;
+  amount: string;
+  isReimbursable: boolean;
+  isReimbursed: boolean;
+};
+
+type ExpenseCategory = {
+  id: number;
+  categoryName: string;
+};
+
+type ExpenseBreakdown = {
+  categoryId: number;
+  categoryName: string;
+  totalAmount: number;
+  expenseCount: number;
+};
+
 export default function Expenses() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
+  const [selectedCategory, setSelectedCategory] = useState<
+    number | undefined
+  >();
   const [showReimbursable, setShowReimbursable] = useState(false);
 
   // Fetch expenses
@@ -34,45 +59,45 @@ export default function Expenses() {
   });
 
   // Fetch categories
-  const { data: categories } = trpc.accounting.expenseCategories.list.useQuery({});
-
-  // Fetch pending reimbursements
-  const { data: pendingReimbursements } = trpc.accounting.expenses.getPendingReimbursements.useQuery(
-    undefined,
-    { enabled: showReimbursable }
+  const { data: categories } = trpc.accounting.expenseCategories.list.useQuery(
+    {}
   );
 
-  // Fetch expense breakdown
-  const { data: breakdown } = trpc.accounting.expenses.getBreakdownByCategory.useQuery({});
+  // Fetch pending reimbursements
+  const { data: pendingReimbursements } =
+    trpc.accounting.expenses.getPendingReimbursements.useQuery(undefined, {
+      enabled: showReimbursable,
+    });
 
-  // Filter expenses - extract from paginated response
+  // Fetch expense breakdown
+  const { data: breakdown } =
+    trpc.accounting.expenses.getBreakdownByCategory.useQuery({});
+
+  // Filter expenses - BUG-034: Extract from standardized paginated response
   const filteredExpenses = useMemo(() => {
-    // Handle both raw response and paginated wrapper
-    let expenseList: any[] = [];
-    if (expenses) {
-      // Check if it's a paginated response with items
-      if ('items' in expenses && expenses.items) {
-        // The items contain { expenses: [], total: number }
-        expenseList = (expenses.items as any)?.expenses ?? [];
-      } else if ('expenses' in expenses) {
-        // Direct response with expenses array
-        expenseList = (expenses as any).expenses ?? [];
-      }
-    }
-    
+    // BUG-034: expenses is now a UnifiedPaginatedResponse with items array
+    const expenseList = expenses?.items ?? [];
+
     if (!searchQuery) return expenseList;
 
     const query = searchQuery.toLowerCase();
-    return expenseList.filter((exp) =>
-      (exp.expenseNumber && exp.expenseNumber.toLowerCase().includes(query)) ||
-      (exp.description && exp.description.toLowerCase().includes(query))
+    return expenseList.filter(
+      (exp: Expense) =>
+        (exp.expenseNumber &&
+          exp.expenseNumber.toLowerCase().includes(query)) ||
+        (exp.description && exp.description.toLowerCase().includes(query))
     );
   }, [expenses, searchQuery]);
 
   // Calculate totals
   const totalExpenses = filteredExpenses.length;
-  const totalAmount = filteredExpenses.reduce((sum: number, exp: any) => sum + parseFloat(exp.amount), 0);
-  const reimbursableExpenses = filteredExpenses.filter((exp: any) => exp.isReimbursable && !exp.isReimbursed).length;
+  const totalAmount = filteredExpenses.reduce(
+    (sum: number, exp: Expense) => sum + parseFloat(exp.amount),
+    0
+  );
+  const reimbursableExpenses = filteredExpenses.filter(
+    (exp: Expense) => exp.isReimbursable && !exp.isReimbursed
+  ).length;
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
@@ -83,11 +108,12 @@ export default function Expenses() {
   };
 
   const formatDate = (dateStr: Date | string) => {
-    const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+    const date = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
     return format(date, "MMM dd, yyyy");
   };
 
-  const categoryList = Array.isArray(categories) ? categories : [];
+  // BUG-034: Extract from paginated response
+  const categoryList = categories?.items ?? [];
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -95,13 +121,18 @@ export default function Expenses() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Expenses</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Expenses
+          </h1>
           <p className="text-muted-foreground mt-1">
             Track and manage business expenses
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowReimbursable(!showReimbursable)}>
+          <Button
+            variant="outline"
+            onClick={() => setShowReimbursable(!showReimbursable)}
+          >
             {showReimbursable ? "Hide" : "Show"} Pending Reimbursements
           </Button>
           <Button>
@@ -115,7 +146,9 @@ export default function Expenses() {
       <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Expenses
+            </CardTitle>
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -128,16 +161,22 @@ export default function Expenses() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalAmount)}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Reimbursements</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Pending Reimbursements
+            </CardTitle>
             <AlertCircle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{reimbursableExpenses}</div>
+            <div className="text-2xl font-bold text-orange-600">
+              {reimbursableExpenses}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -150,10 +189,17 @@ export default function Expenses() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {breakdown.map((item: any) => (
-                <div key={item.categoryId} className="flex items-center justify-between p-3 border rounded-lg">
-                  <span className="text-sm font-medium">{item.categoryName}</span>
-                  <span className="text-sm font-mono">{formatCurrency(item.totalAmount)}</span>
+              {breakdown.map((item: ExpenseBreakdown) => (
+                <div
+                  key={item.categoryId}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <span className="text-sm font-medium">
+                    {item.categoryName}
+                  </span>
+                  <span className="text-sm font-mono">
+                    {formatCurrency(item.totalAmount)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -162,43 +208,52 @@ export default function Expenses() {
       )}
 
       {/* Pending Reimbursements */}
-      {showReimbursable && pendingReimbursements && Array.isArray(pendingReimbursements) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Reimbursements</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Expense #</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingReimbursements.length === 0 ? (
+      {showReimbursable &&
+        pendingReimbursements &&
+        Array.isArray(pendingReimbursements) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Reimbursements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                      No pending reimbursements
-                    </TableCell>
+                    <TableHead>Expense #</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
-                ) : (
-                  pendingReimbursements.map((exp: any) => (
-                    <TableRow key={exp.id}>
-                      <TableCell className="font-mono">{exp.expenseNumber}</TableCell>
-                      <TableCell>{formatDate(exp.expenseDate)}</TableCell>
-                      <TableCell>{exp.description}</TableCell>
-                      <TableCell className="text-right font-mono">{formatCurrency(exp.amount)}</TableCell>
+                </TableHeader>
+                <TableBody>
+                  {pendingReimbursements.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-4 text-muted-foreground"
+                      >
+                        No pending reimbursements
+                      </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+                  ) : (
+                    pendingReimbursements.map((exp: Expense) => (
+                      <TableRow key={exp.id}>
+                        <TableCell className="font-mono">
+                          {exp.expenseNumber}
+                        </TableCell>
+                        <TableCell>{formatDate(exp.expenseDate)}</TableCell>
+                        <TableCell>{exp.description}</TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatCurrency(exp.amount)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Filters */}
       <Card>
@@ -213,21 +268,23 @@ export default function Expenses() {
                 <Input
                   placeholder="Search expenses..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
             </div>
-            <Select 
-              value={selectedCategory?.toString() || "ALL"} 
-              onValueChange={(val) => setSelectedCategory(val === "ALL" ? undefined : parseInt(val))}
+            <Select
+              value={selectedCategory?.toString() || "ALL"}
+              onValueChange={val =>
+                setSelectedCategory(val === "ALL" ? undefined : parseInt(val))
+              }
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All Categories</SelectItem>
-                {categoryList.map((cat: any) => (
+                {categoryList.map((cat: ExpenseCategory) => (
                   <SelectItem key={cat.id} value={cat.id.toString()}>
                     {cat.categoryName}
                   </SelectItem>
@@ -245,7 +302,9 @@ export default function Expenses() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading expenses...</div>
+            <div className="text-center py-8 text-muted-foreground">
+              Loading expenses...
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -261,12 +320,15 @@ export default function Expenses() {
               <TableBody>
                 {filteredExpenses.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No expenses found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredExpenses.map((expense: any) => (
+                  filteredExpenses.map((expense: Expense) => (
                     <TableRow key={expense.id}>
                       <TableCell className="font-mono font-medium">
                         {expense.expenseNumber}
@@ -280,26 +342,41 @@ export default function Expenses() {
                       </TableCell>
                       <TableCell>
                         {expense.isReimbursable ? (
-                          <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+                          <Badge
+                            variant="outline"
+                            className="bg-blue-100 text-blue-700 border-blue-200"
+                          >
                             Yes
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">
+                          <Badge
+                            variant="outline"
+                            className="bg-gray-100 text-gray-700 border-gray-200"
+                          >
                             No
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>
                         {expense.isReimbursed ? (
-                          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
+                          <Badge
+                            variant="outline"
+                            className="bg-green-100 text-green-700 border-green-200"
+                          >
                             Yes
                           </Badge>
                         ) : expense.isReimbursable ? (
-                          <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-200">
+                          <Badge
+                            variant="outline"
+                            className="bg-orange-100 text-orange-700 border-orange-200"
+                          >
                             Pending
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">
+                          <Badge
+                            variant="outline"
+                            className="bg-gray-100 text-gray-700 border-gray-200"
+                          >
                             N/A
                           </Badge>
                         )}
@@ -315,4 +392,3 @@ export default function Expenses() {
     </div>
   );
 }
-
