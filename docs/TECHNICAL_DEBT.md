@@ -51,9 +51,13 @@
 - **Shortcut**: Each page fetches `trpc.clients.list.useQuery({ limit: 1000 })` independently
 - **Risk**: 🟡 MEDIUM - Redundant API calls, increased server load, slower page loads
 - **Harden by**: Before 100+ concurrent users
-- **Effort**: 4h - Create shared ClientsProvider context or use React Query's built-in deduplication
+- **Effort**: 2h - Migrate pages to use `useClientsData` hook (hook already created)
 - **Created**: 2025-12-22
-- **Notes**: Found in Orders.tsx, Quotes.tsx, PurchaseOrdersPage.tsx, SalesSheetCreatorPage.tsx, OrderCreatorPage.tsx
+- **Notes**: 
+  - Found in Orders.tsx, Quotes.tsx, PurchaseOrdersPage.tsx, SalesSheetCreatorPage.tsx, OrderCreatorPage.tsx
+  - **SOLUTION CREATED**: `client/src/hooks/useClientsData.ts` provides shared hook with caching
+  - Migration: Replace `trpc.clients.list.useQuery({ limit: 1000 })` with `useClientsData()`
+  - React Query already deduplicates concurrent requests, but hook provides consistent interface
 
 ### [DEBT-002] z.any() usage in configuration.ts router
 - **Feature**: Configuration router
