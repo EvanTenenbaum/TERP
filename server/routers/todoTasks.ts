@@ -12,7 +12,7 @@ import * as todoActivityDb from "../todoActivityDb";
 import * as inboxDb from "../inboxDb";
 import * as permissions from "../services/todoPermissions";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { DEFAULT_PAGE_SIZE } from "../_core/pagination";
+import { DEFAULT_PAGE_SIZE, createSafeUnifiedResponse } from "../_core/pagination";
 
 export const todoTasksRouter = router({
   // Get all tasks in a list with pagination
@@ -310,27 +310,19 @@ export const todoTasksRouter = router({
     }),
 
   // Get overdue tasks
+  // BUG-034: Standardized pagination response
   getOverdue: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
     const tasks = await todoTasksDb.getOverdueTasks();
-    // HOTFIX (BUG-033): Wrap in paginated response structure
-    return {
-      items: tasks,
-      nextCursor: null,
-      hasMore: false,
-    };
+    return createSafeUnifiedResponse(tasks, tasks.length, 50, 0);
   }),
 
   // Get tasks due soon
+  // BUG-034: Standardized pagination response
   getDueSoon: protectedProcedure.use(requirePermission("todos:read")).query(async ({ ctx }) => {
     if (!ctx.user) throw new Error("Unauthorized");
     const tasks = await todoTasksDb.getTasksDueSoon();
-    // HOTFIX (BUG-033): Wrap in paginated response structure
-    return {
-      items: tasks,
-      nextCursor: null,
-      hasMore: false,
-    };
+    return createSafeUnifiedResponse(tasks, tasks.length, 50, 0);
   }),
 
   // Get task statistics for a list

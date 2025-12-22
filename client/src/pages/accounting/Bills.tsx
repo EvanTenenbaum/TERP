@@ -39,10 +39,10 @@ export default function Bills() {
     { enabled: showAging }
   );
 
-  // Filter bills - extract from paginated response { bills: [], total: number }
+  // Filter bills - extract from paginated response { items: [], pagination: { total } }
   const filteredBills = useMemo(() => {
-    // Extract bills array from paginated response object
-    const billList = bills?.bills ?? [];
+    // BUG-034: Extract bills array from standardized paginated response
+    const billList = bills?.items ?? [];
     
     if (!searchQuery) return billList;
 

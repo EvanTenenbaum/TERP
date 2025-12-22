@@ -22,6 +22,7 @@ These files are **automatically included** in every Kiro AI agent session. They 
 | `07-deprecated-systems.md`     | **CRITICAL** - Deprecated systems registry, what NOT to use       | Always    |
 | `08-adaptive-qa-protocol.md`   | **CRITICAL** - Adaptive QA gate, run BEFORE every commit          | Always    |
 | `10-mvp-initiative.md`         | MVP initiative focus and priorities                               | Always    |
+| `11-mvp-iteration-protocol.md` | **POST-MVP** - Fast iteration with safety rails                   | Always    |
 | `99-pre-commit-checklist.md`   | Final pre-commit verification checklist                           | Always    |
 | `terp-master-protocol.md`      | Roadmap Manager specific protocols                                | Always    |
 
@@ -51,8 +52,9 @@ Agents should understand protocols in this order:
 6. **02-workflows.md** - How to work (git, deploy, test)
 7. **03-agent-coordination.md** - How to coordinate with other agents
 8. **04-infrastructure.md** - How to deploy and monitor
-9. **99-pre-commit-checklist.md** - Final verification before commit
-10. **terp-master-protocol.md** - Role-specific (Roadmap Manager)
+9. **11-mvp-iteration-protocol.md** - **POST-MVP** - Fast iteration workflow
+10. **99-pre-commit-checklist.md** - Final verification before commit
+11. **terp-master-protocol.md** - Role-specific (Roadmap Manager)
 
 ### Role-Specific Protocols
 

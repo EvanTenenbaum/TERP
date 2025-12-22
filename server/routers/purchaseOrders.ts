@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { purchaseOrders, purchaseOrderItems, supplierProfiles } from "../../drizzle/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
 import { getSupplierByLegacyVendorId } from "../inventoryDb";
+import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const purchaseOrdersRouter = router({
   // Create new purchase order
@@ -161,13 +162,8 @@ export const purchaseOrdersRouter = router({
         : baseQuery;
       
       const pos = await query.orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
-      // HOTFIX (BUG-033): Wrap in paginated response structure
-      return {
-        items: pos,
-        nextCursor: null,
-        hasMore: pos.length === limit,
-        pagination: { total: -1, limit, offset }
-      };
+      // BUG-034: Standardized pagination response
+      return createSafeUnifiedResponse(pos, -1, limit, offset);
     }),
 
   // Get purchase order by ID with items

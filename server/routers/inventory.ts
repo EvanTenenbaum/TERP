@@ -13,6 +13,7 @@ import * as inventoryUtils from "../inventoryUtils";
 import type { BatchStatus } from "../inventoryUtils";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { storagePut } from "../storage";
+import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const inventoryRouter = router({
   // Upload media file for batch/purchase
@@ -292,18 +293,12 @@ export const inventoryRouter = router({
     .query(async ({ input }) => {
       if (input.query) {
         const result = await inventoryDb.searchVendors(input.query);
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
+        // BUG-034: Standardized pagination response
+        return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
       }
       const result = await inventoryDb.getAllVendors();
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
+      // BUG-034: Standardized pagination response
+      return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
     }),
 
   // Get brands (for autocomplete)
@@ -312,18 +307,12 @@ export const inventoryRouter = router({
     .query(async ({ input }) => {
       if (input.query) {
         const result = await inventoryDb.searchBrands(input.query);
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
+        // BUG-034: Standardized pagination response
+        return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
       }
       const result = await inventoryDb.getAllBrands();
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
+      // BUG-034: Standardized pagination response
+      return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
     }),
 
   // Get batches by vendor
@@ -338,19 +327,13 @@ export const inventoryRouter = router({
 
         const result = await inventoryDb.getBatchesByVendor(input.vendorId);
         
-        // Wrap the result in the expected paginated response structure
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
-
         inventoryLogger.operationSuccess("getBatchesByVendor", {
           vendorId: input.vendorId,
           batchCount: result.length,
         });
 
-        return result;
+        // BUG-034: Standardized pagination response
+        return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
       } catch (error) {
         inventoryLogger.operationFailure("getBatchesByVendor", error as Error, {
           vendorId: input.vendorId,
@@ -374,11 +357,8 @@ export const inventoryRouter = router({
         const userId = ctx.user?.id;
         if (!userId) throw new Error("User not authenticated");
         const result = await inventoryDb.getUserInventoryViews(userId);
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
+        // BUG-034: Standardized pagination response
+        return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
       } catch (error) {
         handleError(error, "inventory.views.list");
         throw error;
@@ -489,11 +469,8 @@ export const inventoryRouter = router({
       .query(async ({ input }) => {
         try {
           const result = await inventoryDb.getTopProfitableBatches(input);
-        return {
-          items: result,
-          nextCursor: null,
-          hasMore: false,
-        };
+          // BUG-034: Standardized pagination response
+          return createSafeUnifiedResponse(result, result?.length || 0, input, 0);
         } catch (error) {
           handleError(error, "inventory.profitability.top");
           throw error;
