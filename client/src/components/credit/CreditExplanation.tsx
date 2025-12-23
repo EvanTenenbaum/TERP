@@ -143,7 +143,11 @@ export const CreditExplanation = React.memo(function CreditExplanation({
               </p>
             </div>
             <span className="font-mono font-medium">
-              ${baseCapacity.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              $
+              {baseCapacity.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
             </span>
           </div>
 
@@ -152,7 +156,8 @@ export const CreditExplanation = React.memo(function CreditExplanation({
             <div>
               <span className="font-medium">Risk Modifier</span>
               <p className="text-xs text-muted-foreground">
-                Based on credit health score ({creditHealthScore.toFixed(0)}/100)
+                Based on credit health score ({creditHealthScore.toFixed(0)}
+                /100)
               </p>
             </div>
             <span className="font-mono font-medium">
@@ -167,7 +172,11 @@ export const CreditExplanation = React.memo(function CreditExplanation({
           <div className="flex justify-between items-center text-sm">
             <span className="font-medium">Final Credit Limit</span>
             <span className="font-mono font-bold text-base">
-              ${creditLimit.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              $
+              {creditLimit.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
             </span>
           </div>
         </div>
@@ -178,9 +187,8 @@ export const CreditExplanation = React.memo(function CreditExplanation({
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Signal Breakdown
         </p>
-        
-        {signals.map((signal) => {
-          const contribution = (signal.score * signal.weight) / 100;
+
+        {signals.map(signal => {
           return (
             <div key={signal.key} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
@@ -194,10 +202,10 @@ export const CreditExplanation = React.memo(function CreditExplanation({
                   </span>
                 </div>
               </div>
-              
+
               {/* Progress bar */}
               <div className="relative h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div 
+                <div
                   className={`absolute left-0 top-0 h-full transition-all ${getBarColor(signal.score)}`}
                   style={{ width: `${signal.score}%` }}
                 />

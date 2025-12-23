@@ -1,7 +1,7 @@
 /**
  * MobileClientCard Component
  * BUG-M003: Mobile-friendly card view for clients list
- * 
+ *
  * Displays client information in a card format optimized for mobile devices.
  * Shows primary info (name, TERI code) prominently with secondary details below.
  */
@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, AlertTriangle, Phone, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CreditIndicatorDot } from "@/components/credit/CreditIndicator";
 
 interface ClientType {
   id: number;
@@ -23,6 +24,7 @@ interface ClientType {
   totalSpent?: string | number | null;
   totalOwed?: string | number | null;
   oldestDebtDays?: number | null;
+  creditLimit?: string | number | null;
 }
 
 interface MobileClientCardProps {
@@ -121,6 +123,28 @@ export const MobileClientCard = React.memo(function MobileClientCard({
                 <span className="font-medium text-destructive">
                   {formatCurrency(client.totalOwed)}
                 </span>
+              </div>
+            </div>
+          )}
+          {/* Credit indicator for buyers */}
+          {client.isBuyer && (
+            <div className="flex items-center justify-between text-sm mt-1.5">
+              <span className="text-muted-foreground">Credit Status</span>
+              <div className="flex items-center gap-1.5">
+                <CreditIndicatorDot
+                  creditLimit={client.creditLimit}
+                  totalOwed={client.totalOwed}
+                />
+                {Number(client.creditLimit || 0) > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {Math.round(
+                      (Number(client.totalOwed || 0) /
+                        Number(client.creditLimit || 1)) *
+                        100
+                    )}
+                    %
+                  </span>
+                )}
               </div>
             </div>
           )}
