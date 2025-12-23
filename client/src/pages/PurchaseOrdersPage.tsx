@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "../lib/trpc";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -33,6 +34,7 @@ import { useLocation } from "wouter";
 
 export default function PurchaseOrdersPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [, _setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -190,7 +192,7 @@ export default function PurchaseOrdersPage() {
       paymentTerms: formData.paymentTerms || undefined,
       notes: formData.notes || undefined,
       vendorNotes: formData.supplierNotes || undefined,
-      createdBy: 1, // TODO: Get from auth context
+      createdBy: user?.id ?? 0,
       items,
     });
   };

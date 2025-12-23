@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   const [needFormOpen, setNeedFormOpen] = useState(false);
   const [selectedNeed, setSelectedNeed] = useState<any>(null);
   const [activeSubTab, setActiveSubTab] = useState("active");
+  const { user } = useAuth();
 
   // Fetch active needs
   const { data: activeNeedsData, isLoading: needsLoading, refetch: refetchNeeds } =
@@ -67,7 +69,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
   const handleCreateNeed = async (data: any) => {
     await createNeedMutation.mutateAsync({
       ...data,
-      createdBy: 1, // TODO: Get from auth context
+      createdBy: user?.id ?? 0,
     });
   };
 
@@ -88,7 +90,7 @@ export function ClientNeedsTab({ clientId }: ClientNeedsTabProps) {
       clientId,
       clientNeedId: need.id,
       matches,
-      userId: 1, // TODO: Get from auth context
+      userId: user?.id ?? 0,
     });
   };
 
