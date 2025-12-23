@@ -15,6 +15,7 @@ export interface AddItemRequest {
   batchId: number;
   quantity: number;
   addedByRole: "HOST" | "CLIENT";
+  isSample?: boolean; // P4-T03: Optional sample flag
 }
 
 export interface CartSummary {
@@ -330,6 +331,34 @@ export const sessionCartService = {
       totalValue,
       itemCount: items.length,
     };
+  },
+
+  /**
+   * Toggle the sample status of a cart item
+   * P4-T03 Implementation
+   */
+  async toggleItemSampleStatus(
+    sessionId: number,
+    cartItemId: number,
+    isSample: boolean
+  ): Promise<void> {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    await db
+      .update(sessionCartItems)
+      .set({
+        isSample,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(sessionCartItems.id, cartItemId),
+          eq(sessionCartItems.sessionId, sessionId)
+        )
+      );
+
+    await this.emitCartUpdate(sessionId);
   },
 
   /**
