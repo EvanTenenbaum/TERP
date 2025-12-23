@@ -92,13 +92,16 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
     // The typeCast function intercepts ENUM fields and returns them as strings.
     // See: https://github.com/pingcap/tidb/issues/6910
     typeCast: function (field: any, next: () => any) {
+      // FIX-006: TiDB ENUM compatibility fix with diagnostic logging
       // ENUM type code is 247 (0xf7) in TiDB binary protocol
       if (field.type === 'ENUM' || field.type === 247) {
+        logger.debug({ msg: "[TYPECAST] Processing ENUM field", fieldName: field.name, fieldType: field.type });
         const value = field.string();
         return value;
       }
       // SET type also has similar issues (type code 248)
       if (field.type === 'SET' || field.type === 248) {
+        logger.debug({ msg: "[TYPECAST] Processing SET field", fieldName: field.name, fieldType: field.type });
         const value = field.string();
         return value;
       }
