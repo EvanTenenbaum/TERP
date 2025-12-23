@@ -6871,6 +6871,61 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 ---
 
+#### UX-023: In-Context Module Settings Access
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 12-16h  
+**Module:** Multiple module pages across the application  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/UX-023.md`
+
+**Problem:** Users must navigate away from their current module to the Settings page to customize module-specific options. This breaks workflow and creates unnecessary friction. Module customization options should be accessible directly from within the module itself.
+
+**Objectives:**
+
+1. Audit all modules that have customization options in Settings
+2. Add in-context settings access (gear icon, settings panel, or modal) to each module
+3. Maintain Settings page as central hub while providing quick access from modules
+4. Improve workflow efficiency by reducing navigation
+
+**Modules to Audit:**
+
+- [ ] Inventory module (batch settings, status workflows, COGS defaults)
+- [ ] Orders module (order settings, status workflows, default terms)
+- [ ] Calendar module (calendar settings, event types, reminders)
+- [ ] Accounting module (chart of accounts, fiscal periods, defaults)
+- [ ] Clients module (client fields, credit settings, pricing defaults)
+- [ ] Products module (categories, subcategories, grades)
+- [ ] Pricing module (pricing rules, profiles, defaults)
+- [ ] VIP Portal module (portal configuration, catalog settings)
+- [ ] Dashboard module (widget settings, layout preferences)
+- [ ] Any other modules with configurable settings
+
+**Implementation Approach:**
+
+- **Option A:** Add settings gear icon in module header that opens a settings drawer/modal
+- **Option B:** Add "Module Settings" tab within each module
+- **Option C:** Add collapsible settings panel at top of module
+- **Recommendation:** Option A (gear icon + drawer) for consistency and minimal UI impact
+
+**Deliverables:**
+
+- [ ] Audit all modules and their associated settings
+- [ ] Create reusable ModuleSettingsDrawer component
+- [ ] Add settings access to Inventory module
+- [ ] Add settings access to Orders module
+- [ ] Add settings access to Calendar module
+- [ ] Add settings access to Accounting module
+- [ ] Add settings access to Clients module
+- [ ] Add settings access to other applicable modules
+- [ ] Ensure settings changes reflect immediately in module
+- [ ] Add "Open in Settings" link for full settings page access
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
 ### Summary
 
 | Phase               | Tasks        | Total Estimate |
