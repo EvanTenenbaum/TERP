@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { sql } from 'drizzle-orm';
 import { publicProcedure, router } from '../_core/trpc.js';
 import { getDb } from '../db.js';
 import { getConnectionPool } from '../_core/connectionPool.js';
@@ -126,52 +127,140 @@ export const debugRouter = router({
 
 
   /**
-   * Get counts of all seeded tables
+   * DIAG-003: Test Drizzle ORM queries specifically
+   * Compares queries with and without ENUM columns
+   */
+  drizzleTest: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) {
+      return { success: false, error: 'Database not available' };
+    }
+
+    const results: Record<string, any> = {
+      timestamp: new Date().toISOString(),
+      tests: {},
+    };
+
+    // Test 1: COUNT via Drizzle
+    try {
+      const count = await db.select({ count: sql<number>`count(*)` }).from(clients);
+      results.tests.drizzleCount = {
+        success: true,
+        data: count,
+      };
+    } catch (err: any) {
+      results.tests.drizzleCount = {
+        success: false,
+        error: err.message,
+        cause: err.cause?.message || err.cause,
+      };
+    }
+
+    // Test 2: Minimal columns (no ENUMs) via Drizzle
+    try {
+      const minimal = await db.select({
+        id: clients.id,
+        name: clients.name,
+      }).from(clients).limit(1);
+      results.tests.drizzleMinimal = {
+        success: true,
+        data: minimal,
+      };
+    } catch (err: any) {
+      results.tests.drizzleMinimal = {
+        success: false,
+        error: err.message,
+        cause: err.cause?.message || err.cause,
+      };
+    }
+
+    // Test 3: With ENUM columns via Drizzle
+    try {
+      const withEnums = await db.select({
+        id: clients.id,
+        name: clients.name,
+        cogsAdjustmentType: clients.cogsAdjustmentType,
+        creditLimitSource: clients.creditLimitSource,
+      }).from(clients).limit(1);
+      results.tests.drizzleWithEnums = {
+        success: true,
+        data: withEnums,
+      };
+    } catch (err: any) {
+      results.tests.drizzleWithEnums = {
+        success: false,
+        error: err.message,
+        cause: err.cause?.message || err.cause,
+      };
+    }
+
+    // Test 4: SELECT * via Drizzle (includes ALL columns)
+    try {
+      const full = await db.select().from(clients).limit(1);
+      results.tests.drizzleFull = {
+        success: true,
+        rowCount: full.length,
+        sampleKeys: full[0] ? Object.keys(full[0]) : [],
+      };
+    } catch (err: any) {
+      results.tests.drizzleFull = {
+        success: false,
+        error: err.message,
+        cause: err.cause?.message || err.cause,
+      };
+    }
+
+    results.success = true;
+    return results;
+  }),
+
+  /**
+   * Get counts of all seeded tables (using COUNT instead of SELECT *)
    */
   getCounts: publicProcedure.query(async () => {
     try {
       const db = await getDb();
       if (!db) throw new Error('Database not available');
-      
+
+      // DIAG-004: Use COUNT queries instead of SELECT * to avoid ENUM issues
       const [
-        vendorsList,
-        clientsList,
-        productsList,
-        batchesList,
-        ordersList,
-        invoicesList,
-        paymentsList,
+        vendorsCount,
+        clientsCount,
+        productsCount,
+        batchesCount,
+        ordersCount,
+        invoicesCount,
+        paymentsCount,
       ] = await Promise.all([
-        db.select().from(vendors),
-        db.select().from(clients),
-        db.select().from(products),
-        db.select().from(batches),
-        db.select().from(orders),
-        db.select().from(invoices),
-        db.select().from(payments),
+        db.select({ count: sql<number>`count(*)` }).from(vendors),
+        db.select({ count: sql<number>`count(*)` }).from(clients),
+        db.select({ count: sql<number>`count(*)` }).from(products),
+        db.select({ count: sql<number>`count(*)` }).from(batches),
+        db.select({ count: sql<number>`count(*)` }).from(orders),
+        db.select({ count: sql<number>`count(*)` }).from(invoices),
+        db.select({ count: sql<number>`count(*)` }).from(payments),
       ]);
 
       return {
         success: true,
         counts: {
-          vendors: vendorsList.length,
-          clients: clientsList.length,
-          products: productsList.length,
-          batches: batchesList.length,
-          orders: ordersList.length,
-          invoices: invoicesList.length,
-          payments: paymentsList.length,
-          total: vendorsList.length + clientsList.length + productsList.length + 
-                 batchesList.length + ordersList.length + invoicesList.length + paymentsList.length,
+          vendors: Number(vendorsCount[0]?.count || 0),
+          clients: Number(clientsCount[0]?.count || 0),
+          products: Number(productsCount[0]?.count || 0),
+          batches: Number(batchesCount[0]?.count || 0),
+          orders: Number(ordersCount[0]?.count || 0),
+          invoices: Number(invoicesCount[0]?.count || 0),
+          payments: Number(paymentsCount[0]?.count || 0),
         },
-        sampleVendor: vendorsList[0] || null,
-        sampleBatch: batchesList[0] || null,
       };
     } catch (error: any) {
+      // FIX-009: Extract cause from DrizzleQueryError
+      const cause = error.cause || {};
       return {
         success: false,
         error: error.message,
-        code: error.code,
+        mysqlError: cause.sqlMessage || cause.message,
+        code: cause.code || error.code,
       };
     }
   }),
