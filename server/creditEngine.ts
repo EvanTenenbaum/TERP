@@ -671,5 +671,116 @@ export async function saveCreditLimit(clientId: number, result: CreditCalculatio
     debtAgingTrend: result.signalTrends.debtAgingTrend,
     repaymentVelocityTrend: result.signalTrends.repaymentVelocityTrend,
   });
+
+  // Sync credit limit to clients table for fast access
+  await syncCreditToClient(clientId, result.creditLimit);
+}
+
+/**
+ * Sync credit limit from client_credit_limits to clients table
+ * This enables fast reads without joining to the credit limits table
+ */
+export async function syncCreditToClient(
+  clientId: number,
+  creditLimit: number,
+  source: "CALCULATED" | "MANUAL" = "CALCULATED",
+  overrideReason?: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(clients)
+    .set({
+      creditLimit: creditLimit.toString(),
+      creditLimitUpdatedAt: new Date(),
+      creditLimitSource: source,
+      creditLimitOverrideReason: source === "MANUAL" ? overrideReason : null,
+    })
+    .where(eq(clients.id, clientId));
+}
+
+/**
+ * Set manual credit limit override
+ * Bypasses the calculated limit and sets a user-defined value
+ */
+export async function setManualCreditLimit(
+  clientId: number,
+  newLimit: number,
+  reason: string,
+  userId: number
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get current limit for audit log
+  const client = await db
+    .select({ creditLimit: clients.creditLimit })
+    .from(clients)
+    .where(eq(clients.id, clientId))
+    .limit(1);
+
+  const oldLimit = client[0] ? Number(client[0].creditLimit || 0) : 0;
+
+  // Update clients table directly
+  await syncCreditToClient(clientId, newLimit, "MANUAL", reason);
+
+  // Also update client_credit_limits if it exists
+  const existing = await db
+    .select()
+    .from(clientCreditLimits)
+    .where(eq(clientCreditLimits.clientId, clientId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    await db
+      .update(clientCreditLimits)
+      .set({
+        creditLimit: newLimit.toString(),
+      })
+      .where(eq(clientCreditLimits.clientId, clientId));
+  }
+
+  // Log the manual override
+  await db.insert(creditAuditLog).values({
+    clientId,
+    eventType: "MANUAL_OVERRIDE",
+    oldValue: oldLimit.toString(),
+    newValue: newLimit.toString(),
+    changePercent: oldLimit > 0 ? (((newLimit - oldLimit) / oldLimit) * 100).toString() : "0",
+    reason,
+    triggeredBy: userId,
+  });
+}
+
+/**
+ * Recalculate credit for a client (convenience function)
+ * Skips clients with manual overrides unless force=true
+ */
+export async function recalculateClientCredit(
+  clientId: number,
+  userId?: number,
+  force: boolean = false
+): Promise<CreditCalculationResult | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Check if client has manual override
+  if (!force) {
+    const client = await db
+      .select({ creditLimitSource: clients.creditLimitSource })
+      .from(clients)
+      .where(eq(clients.id, clientId))
+      .limit(1);
+
+    if (client[0]?.creditLimitSource === "MANUAL") {
+      // Skip recalculation for manual overrides
+      return null;
+    }
+  }
+
+  const result = await calculateCreditLimit(clientId);
+  await saveCreditLimit(clientId, result, userId);
+  return result;
 }
 

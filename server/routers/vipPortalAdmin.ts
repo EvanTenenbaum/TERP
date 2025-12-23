@@ -233,8 +233,40 @@ export const vipPortalAdminRouter = router({
           itemIds: z.array(z.number()),
         }))
         .mutation(async ({ input, ctx }): Promise<{ orderNumber: string; itemCount: number }> => {
-          // TODO: Implement in service layer with order creation integration
-          throw new Error("Not yet implemented in service layer");
+          // Get interest list with items
+          const list = await vipPortalAdminService.getInterestListById(input.listId);
+          if (!list) {
+            throw new Error("Interest list not found");
+          }
+
+          // Filter to selected items
+          const selectedItems = list.items?.filter((item: { id: number }) => 
+            input.itemIds.includes(item.id)
+          ) || [];
+
+          if (selectedItems.length === 0) {
+            throw new Error("No valid items selected");
+          }
+
+          // Create order via orders service
+          const { createOrderFromInterestList } = await import("../services/orderService");
+          const order = await createOrderFromInterestList({
+            clientId: list.clientId,
+            items: selectedItems,
+            source: "vip_portal_interest_list",
+          });
+
+          // Update interest list status
+          await vipPortalAdminService.updateInterestListStatus({
+            listId: input.listId,
+            status: "CONVERTED",
+            notes: `Converted to order ${order.orderNumber}`,
+          });
+
+          return { 
+            orderNumber: order.orderNumber, 
+            itemCount: selectedItems.length 
+          };
         }),
       
       addToDraftOrder: protectedProcedure.use(requirePermission("vip_portal:manage"))
@@ -244,8 +276,34 @@ export const vipPortalAdminRouter = router({
           itemIds: z.array(z.number()),
         }))
         .mutation(async ({ input }): Promise<{ itemsAdded: number; orderNumber: string }> => {
-          // TODO: Implement in service layer with order update integration
-          throw new Error("Not yet implemented in service layer");
+          // Get interest list with items
+          const list = await vipPortalAdminService.getInterestListById(input.listId);
+          if (!list) {
+            throw new Error("Interest list not found");
+          }
+
+          // Filter to selected items
+          const selectedItems = list.items?.filter((item: { id: number }) => 
+            input.itemIds.includes(item.id)
+          ) || [];
+
+          if (selectedItems.length === 0) {
+            throw new Error("No valid items selected");
+          }
+
+          // Add items to existing order via orders service
+          const { addItemsToOrder, getOrderById } = await import("../services/orderService");
+          await addItemsToOrder({
+            orderId: input.orderId,
+            items: selectedItems,
+          });
+
+          const order = await getOrderById(input.orderId);
+
+          return { 
+            itemsAdded: selectedItems.length, 
+            orderNumber: order?.orderNumber || `ORD-${input.orderId}` 
+          };
         }),
     }),
     

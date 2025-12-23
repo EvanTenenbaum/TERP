@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import crypto from "crypto";
 import { getDb } from "../db";
 import { deployments } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 interface GitHubPushPayload {
   ref: string;
@@ -123,13 +124,16 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     });
 
     // Extract insertId from MySQL result (returns [ResultSetHeader, FieldPacket[]])
-    const insertId = Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId : 0;
+    const insertId = Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0;
 
     console.log("[WEBHOOK] Deployment record inserted successfully");
     console.log(`Deployment created: ${head_commit.id.substring(0, 7)} by ${pusher.name}`);
 
-    // TODO: Trigger background job to poll DigitalOcean API
-    // This will be implemented in the next step
+    // Trigger background job to poll DigitalOcean API
+    // Schedule polling to start after 30 seconds (give DO time to start the build)
+    if (insertId > 0) {
+      scheduleDeploymentPolling(head_commit.id, insertId);
+    }
 
     return res.status(200).json({
       message: "Webhook received",
@@ -146,4 +150,66 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     // Return 500 during development to see errors in GitHub webhook deliveries
     return res.status(500).json({ error: "Internal server error" });
   }
+}
+
+/**
+ * Schedule background polling for DigitalOcean deployment status
+ * Uses setTimeout for simple polling - in production, use a job queue
+ */
+function scheduleDeploymentPolling(commitSha: string, deploymentId: number): void {
+  const POLL_INTERVAL_MS = 30000; // 30 seconds
+  const MAX_POLLS = 20; // Max 10 minutes of polling
+  let pollCount = 0;
+
+  const poll = async () => {
+    pollCount++;
+    console.log(`[WEBHOOK] Polling deployment status (attempt ${pollCount}/${MAX_POLLS})`);
+
+    try {
+      const db = await getDb();
+      if (!db) {
+        console.error("[WEBHOOK] Database not available for polling");
+        return;
+      }
+
+      // Check if deployment is already complete (from external monitoring)
+      const [deployment] = await db
+        .select()
+        .from(deployments)
+        .where(eq(deployments.id, deploymentId))
+        .limit(1);
+
+      if (!deployment) {
+        console.error("[WEBHOOK] Deployment record not found");
+        return;
+      }
+
+      if (deployment.status === "success" || deployment.status === "failed") {
+        console.log(`[WEBHOOK] Deployment ${commitSha.substring(0, 7)} completed with status: ${deployment.status}`);
+        return; // Stop polling
+      }
+
+      // Continue polling if not at max
+      if (pollCount < MAX_POLLS) {
+        setTimeout(poll, POLL_INTERVAL_MS);
+      } else {
+        console.warn(`[WEBHOOK] Max polls reached for deployment ${commitSha.substring(0, 7)}`);
+        // Mark as unknown status
+        await db
+          .update(deployments)
+          .set({ status: "unknown" })
+          .where(eq(deployments.id, deploymentId));
+      }
+    } catch (error) {
+      console.error("[WEBHOOK] Error polling deployment status:", error);
+      // Continue polling on error
+      if (pollCount < MAX_POLLS) {
+        setTimeout(poll, POLL_INTERVAL_MS);
+      }
+    }
+  };
+
+  // Start polling after initial delay
+  setTimeout(poll, POLL_INTERVAL_MS);
+  console.log(`[WEBHOOK] Scheduled deployment polling for ${commitSha.substring(0, 7)}`);
 }

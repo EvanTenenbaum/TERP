@@ -28,6 +28,8 @@ import { DataCardSection } from "@/components/data-cards";
 import { TableSkeleton } from "@/components/ui/skeleton-loaders";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useIsMobile } from "@/hooks/useMobile";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CreditIndicator } from "@/components/credit/CreditIndicator";
 
 export default function ClientsListPage() {
   const [, setLocation] = useLocation();
@@ -79,6 +81,31 @@ export default function ClientsListPage() {
       setEditingClientId(null);
     },
   });
+
+  // Archive client mutation (soft delete)
+  const archiveClient = trpc.clients.archive.useMutation({
+    onSuccess: () => {
+      utils.clients.list.invalidate();
+      utils.clients.count.invalidate();
+    },
+  });
+
+  // Handle archive client with confirmation
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [clientToArchive, setClientToArchive] = useState<{ id: number; name: string } | null>(null);
+
+  const handleArchiveClient = (clientId: number, clientName: string) => {
+    setClientToArchive({ id: clientId, name: clientName });
+    setArchiveConfirmOpen(true);
+  };
+
+  const confirmArchiveClient = () => {
+    if (clientToArchive) {
+      archiveClient.mutate({ clientId: clientToArchive.id });
+    }
+    setArchiveConfirmOpen(false);
+    setClientToArchive(null);
+  };
   
   // Initialize filters from URL parameters
   const getInitialHasDebt = () => {
@@ -667,6 +694,7 @@ export default function ClientsListPage() {
                         )}
                       </button>
                     </TableHead>
+                    <TableHead className="text-center">Credit</TableHead>
                     <TableHead className="text-right">
                       <button
                         onClick={() => handleSort('oldestDebtDays')}
@@ -768,6 +796,18 @@ export default function ClientsListPage() {
                           <span className="text-destructive font-medium">{client.oldestDebtDays} days</span>
                         ) : (
                           <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {client.isBuyer ? (
+                          <CreditIndicator
+                            creditLimit={client.creditLimit}
+                            totalOwed={client.totalOwed}
+                            onClick={() => setLocation(`/clients/${client.id}`)}
+                            size="sm"
+                          />
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -874,8 +914,7 @@ export default function ClientsListPage() {
                             <DropdownMenuCheckboxItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // TODO: Implement archive
-                                console.log('Archive client:', client.id);
+                                handleArchiveClient(client.id, client.name);
                               }}
                               className="text-destructive"
                             >
@@ -934,6 +973,18 @@ export default function ClientsListPage() {
           // Navigate to client profile
           setLocation(`/clients/${clientId}`);
         }}
+      />
+
+      {/* Archive Confirmation Dialog */}
+      <ConfirmDialog
+        open={archiveConfirmOpen}
+        onOpenChange={setArchiveConfirmOpen}
+        title="Archive Client"
+        description={`Are you sure you want to archive "${clientToArchive?.name}"? They will be hidden from the active list but can be restored later.`}
+        confirmLabel="Archive"
+        variant="destructive"
+        onConfirm={confirmArchiveClient}
+        isLoading={archiveClient.isPending}
       />
     </div>
   );

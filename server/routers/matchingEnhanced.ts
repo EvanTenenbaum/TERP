@@ -2,7 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import * as matchingEngine from "../matchingEngineEnhanced";
 import * as historicalAnalysis from "../historicalAnalysis";
-import { requirePermission } from "../_core/permissionMiddleware";
+import type { EnhancedBatchSourceData, EnhancedHistoricalSourceData } from "../matchingEngineEnhanced";
 
 /**
  * Matching Router (Enhanced Version)
@@ -140,25 +140,70 @@ export const matchingEnhancedRouter = router({
    */
   getAllActiveNeedsWithMatches: publicProcedure
     .query(async () => {
-      // TODO: Implement full matching logic
-      // For now, return empty data to satisfy TypeScript
-      return {
-        success: true,
-        data: [] as Array<{
-          clientNeedId: number;
-          clientId: number;
-          clientName: string;
-          strain: string | null;
-          priority: string;
-          confidence: number;
-          batchId: number;
-          batchCode: string;
-          availableQty: number;
-          unitPrice: number;
-          type?: string;
-          reasons?: string[];
-        }>,
-      };
+      try {
+        const results = await matchingEngine.getAllActiveNeedsWithMatches();
+        
+        // Helper to safely extract client name from sourceData
+        const getClientName = (sourceData: matchingEngine.Match["sourceData"], fallback: string): string => {
+          if ("client" in sourceData && sourceData.client?.name) {
+            return sourceData.client.name;
+          }
+          return fallback;
+        };
+        
+        // Helper to safely extract strain from sourceData
+        const getStrain = (sourceData: matchingEngine.Match["sourceData"]): string | null => {
+          if ("product" in sourceData && sourceData.product?.nameCanonical) {
+            return sourceData.product.nameCanonical;
+          }
+          if ("strain" in sourceData && sourceData.strain) {
+            return sourceData.strain;
+          }
+          return null;
+        };
+        
+        // Helper to safely extract batch code from sourceData
+        const getBatchCode = (sourceData: matchingEngine.Match["sourceData"]): string => {
+          if ("batch" in sourceData && sourceData.batch?.code) {
+            return sourceData.batch.code;
+          }
+          if ("id" in sourceData && !("batch" in sourceData) && !("client" in sourceData)) {
+            // This is EnhancedVendorSourceData
+            return String(sourceData.id);
+          }
+          return "";
+        };
+        
+        // Transform results into dashboard-friendly format
+        const dashboardData = results.flatMap(result => 
+          result.matches.map(match => ({
+            clientNeedId: result.clientNeedId ?? 0,
+            clientId: result.clientId,
+            clientName: getClientName(match.sourceData, `Client ${result.clientId}`),
+            strain: getStrain(match.sourceData),
+            priority: match.type === "EXACT" ? "HIGH" : match.type === "CLOSE" ? "MEDIUM" : "LOW",
+            confidence: match.confidence,
+            batchId: match.source === "INVENTORY" ? match.sourceId : 0,
+            batchCode: getBatchCode(match.sourceData),
+            availableQty: match.availableQuantity ?? 0,
+            unitPrice: match.calculatedPrice ?? 0,
+            type: match.type,
+            reasons: match.reasons,
+          }))
+        );
+
+        return {
+          success: true,
+          data: dashboardData,
+        };
+      } catch (error) {
+        console.error("Error getting all active needs with matches:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to get matches",
+          data: [],
+        };
+      }
     }),
 
   /**
@@ -169,25 +214,41 @@ export const matchingEnhancedRouter = router({
       lookAheadDays: z.number().optional().default(30),
       minOrderCount: z.number().optional().default(2),
     }).optional())
-    .query(async () => {
-      // TODO: Implement predictive analytics
-      // For now, return empty data to satisfy TypeScript
-      return {
-        success: true,
-        data: [] as Array<{
-          clientId: number;
-          clientName: string;
-          productId: number;
-          productName: string;
-          strain?: string;
-          category?: string;
-          lastPurchaseDate: Date;
-          predictedReorderDate: Date;
-          confidence: number;
-          averageQuantity: number;
-          reasons?: string[];
-        }>,
-      };
+    .query(async ({ input }) => {
+      try {
+        const lookAheadDays = input?.lookAheadDays ?? 30;
+        const minOrderCount = input?.minOrderCount ?? 2;
+        
+        // Get clients with purchase patterns
+        const patterns = await historicalAnalysis.getPredictiveReorderOpportunities(lookAheadDays, minOrderCount);
+        
+        // Transform into predictive opportunities (using correct property names from ReorderPrediction)
+        const opportunities = patterns.map(pattern => ({
+          clientId: pattern.clientId,
+          clientName: pattern.clientName ?? `Client ${pattern.clientId}`,
+          productId: 0, // Not available in ReorderPrediction
+          productName: pattern.strain ?? pattern.category ?? "Unknown Product",
+          strain: pattern.strain,
+          category: pattern.category,
+          lastPurchaseDate: new Date(Date.now() - pattern.daysSinceLastOrder * 24 * 60 * 60 * 1000),
+          predictedReorderDate: pattern.predictedNextOrderDate ?? new Date(Date.now() + lookAheadDays * 24 * 60 * 60 * 1000),
+          confidence: pattern.confidence ?? 0.5,
+          averageQuantity: pattern.avgQuantity ?? 0,
+          reasons: pattern.reasons ?? ["Based on purchase history"],
+        }));
+
+        return {
+          success: true,
+          data: opportunities,
+        };
+      } catch (error) {
+        console.error("Error getting predictive reorder opportunities:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to get predictions",
+          data: [],
+        };
+      }
     }),
 
   /**
@@ -196,18 +257,54 @@ export const matchingEnhancedRouter = router({
   findBuyersForInventory: publicProcedure
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
-      // TODO: Implement buyer matching logic
-      // For now, return empty data to satisfy TypeScript
-      return {
-        success: true,
-        data: [] as Array<{
-          clientId: number;
-          clientName: string;
-          matchScore: number;
-          lastPurchaseDate: Date | null;
-          totalPurchases: number;
-        }>,
-      };
+      try {
+        const results = await matchingEngine.findBuyersForInventory(input.batchId);
+        
+        // Helper to safely extract data from sourceData union type
+        const getClientName = (sourceData: matchingEngine.Match["sourceData"], fallback: string): string => {
+          if ("client" in sourceData && sourceData.client?.name) {
+            return sourceData.client.name;
+          }
+          return fallback;
+        };
+        
+        const getLastPurchaseDate = (sourceData: matchingEngine.Match["sourceData"]): Date | null => {
+          if ("lastPurchaseDate" in sourceData && sourceData.lastPurchaseDate) {
+            return sourceData.lastPurchaseDate;
+          }
+          return null;
+        };
+        
+        const getTotalPurchases = (sourceData: matchingEngine.Match["sourceData"]): number => {
+          if ("purchaseCount" in sourceData && sourceData.purchaseCount) {
+            return sourceData.purchaseCount;
+          }
+          return 0;
+        };
+        
+        // Transform results into buyer-focused format
+        const buyers = results.map(result => ({
+          clientId: result.clientId,
+          clientName: result.matches[0] ? getClientName(result.matches[0].sourceData, `Client ${result.clientId}`) : `Client ${result.clientId}`,
+          matchScore: result.matches[0]?.confidence ?? 0,
+          lastPurchaseDate: result.matches[0] ? getLastPurchaseDate(result.matches[0].sourceData) : null,
+          totalPurchases: result.matches[0] ? getTotalPurchases(result.matches[0].sourceData) : 0,
+          matchType: result.matches[0]?.type,
+          reasons: result.matches[0]?.reasons ?? [],
+        }));
+
+        return {
+          success: true,
+          data: buyers,
+        };
+      } catch (error) {
+        console.error("Error finding buyers for inventory:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to find buyers",
+          data: [],
+        };
+      }
     }),
 
   /**
@@ -216,18 +313,65 @@ export const matchingEnhancedRouter = router({
   findHistoricalBuyers: publicProcedure
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
-      // TODO: Implement historical buyer analysis
-      // For now, return empty data to satisfy TypeScript
-      return {
-        success: true,
-        data: [] as Array<{
-          clientId: number;
-          clientName: string;
-          purchaseCount: number;
-          lastPurchaseDate: Date;
-          totalQuantity: number;
-        }>,
-      };
+      try {
+        // Get batch details first to find product/strain info
+        const batchResults = await matchingEngine.findBuyersForInventory(input.batchId);
+        
+        // Helper to safely extract data from sourceData union type
+        const getClientName = (sourceData: matchingEngine.Match["sourceData"], fallback: string): string => {
+          if ("client" in sourceData && sourceData.client?.name) {
+            return sourceData.client.name;
+          }
+          return fallback;
+        };
+        
+        const getPurchaseCount = (sourceData: matchingEngine.Match["sourceData"]): number => {
+          if ("purchaseCount" in sourceData && sourceData.purchaseCount) {
+            return sourceData.purchaseCount;
+          }
+          return 0;
+        };
+        
+        const getLastPurchaseDate = (sourceData: matchingEngine.Match["sourceData"]): Date => {
+          if ("lastPurchaseDate" in sourceData && sourceData.lastPurchaseDate) {
+            return sourceData.lastPurchaseDate;
+          }
+          return new Date();
+        };
+        
+        const getTotalQuantity = (sourceData: matchingEngine.Match["sourceData"]): number => {
+          if ("totalQuantity" in sourceData && sourceData.totalQuantity) {
+            return sourceData.totalQuantity;
+          }
+          return 0;
+        };
+        
+        // Filter to only historical matches
+        const historicalBuyers = batchResults
+          .filter(result => result.matches.some(m => m.type === "HISTORICAL"))
+          .map(result => {
+            const histMatch = result.matches.find(m => m.type === "HISTORICAL");
+            return {
+              clientId: result.clientId,
+              clientName: histMatch ? getClientName(histMatch.sourceData, `Client ${result.clientId}`) : `Client ${result.clientId}`,
+              purchaseCount: histMatch ? getPurchaseCount(histMatch.sourceData) : 0,
+              lastPurchaseDate: histMatch ? getLastPurchaseDate(histMatch.sourceData) : new Date(),
+              totalQuantity: histMatch ? getTotalQuantity(histMatch.sourceData) : 0,
+            };
+          });
+
+        return {
+          success: true,
+          data: historicalBuyers,
+        };
+      } catch (error) {
+        console.error("Error finding historical buyers:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to find historical buyers",
+          data: [],
+        };
+      }
     }),
 });
 
