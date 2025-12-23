@@ -12,6 +12,8 @@ import { eq, and, desc, like, or, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionPricingService } from "../services/live-shopping/sessionPricingService";
+import { sessionOrderService } from "../services/live-shopping/sessionOrderService";
+import { sessionCreditService } from "../services/live-shopping/sessionCreditService";
 import * as ordersDb from "../ordersDb";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 import { randomUUID } from "crypto";
@@ -363,7 +365,75 @@ export const liveShoppingRouter = router({
   // ==========================================================================
 
   /**
-   * End Session and Optionally Convert to Order
+   * Toggle Sample Status (P4-T03)
+   */
+  toggleCartItemSample: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+        isSample: z.boolean(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      await sessionCartService.toggleItemSampleStatus(
+        input.sessionId,
+        input.cartItemId,
+        input.isSample
+      );
+      return { success: true };
+    }),
+
+  /**
+   * Check Credit Status (P4-T04)
+   * Used by UI to show warnings before checkout
+   */
+  checkCreditStatus: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session) throw new TRPCError({ code: "NOT_FOUND" });
+
+      return await sessionCreditService.validateCartCredit(
+        input.sessionId,
+        session.clientId
+      );
+    }),
+
+  /**
+   * Generate Sales Sheet Snapshot (P4-T02)
+   * Can be done without ending session
+   */
+  generateSalesSheet: protectedProcedure
+    .use(requirePermission("orders:create"))
+    .input(z.object({ sessionId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+
+      try {
+        const sheetId = await sessionOrderService.generateSessionSnapshot(
+          input.sessionId,
+          userId
+        );
+        return { success: true, salesSheetId: sheetId };
+      } catch (e: any) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: e.message || "Failed to generate sales sheet",
+        });
+      }
+    }),
+
+  /**
+   * End Session and Optionally Convert to Order (Enhanced P4-T01)
    */
   endSession: protectedProcedure
     .use(requirePermission("orders:create"))
@@ -371,6 +441,12 @@ export const liveShoppingRouter = router({
       z.object({
         sessionId: z.number(),
         convertToOrder: z.boolean().default(false),
+        generateSalesSheet: z.boolean().default(false),
+        paymentTerms: z
+          .enum(["NET_7", "NET_15", "NET_30", "COD", "PARTIAL", "CONSIGNMENT"])
+          .optional(),
+        bypassCreditCheck: z.boolean().default(false),
+        internalNotes: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -379,65 +455,34 @@ export const liveShoppingRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
-      // 1. Get Session & Cart
-      const session = await db.query.liveShoppingSessions.findFirst({
-        where: eq(liveShoppingSessions.id, input.sessionId),
-      });
+      // If just ending without conversion
+      if (!input.convertToOrder) {
+        await db
+          .update(liveShoppingSessions)
+          .set({ status: "ENDED", endedAt: new Date() })
+          .where(eq(liveShoppingSessions.id, input.sessionId));
 
-      if (!session) throw new TRPCError({ code: "NOT_FOUND" });
-
-      if (session.status === "ENDED" || session.status === "CONVERTED") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Session already ended" });
+        sessionEventManager.emitSessionStatus(input.sessionId, "ENDED");
+        return { success: true };
       }
 
-      let orderId: number | undefined;
-
-      // 2. Convert to Order logic
-      if (input.convertToOrder) {
-        const cart = await sessionCartService.getCart(input.sessionId);
-        
-        if (cart.items.length === 0) {
-           throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot convert empty session to order" });
-        }
-
-        const lineItems = cart.items.map(item => ({
-          batchId: item.batchId,
-          quantity: parseFloat(item.quantity as string),
-          unitPrice: parseFloat(item.unitPrice as string),
-          isSample: false, // Defaulting to false for now
-          // We pass overrideCogs/Price if needed, but ordersDb.createOrder calculates COGS. 
-          // We need to ensure the price we negotiated in session sticks.
-          overridePrice: parseFloat(item.unitPrice as string), 
-        }));
-
-        // Call existing Orders Logic
-        const newOrder = await ordersDb.createOrder({
-          orderType: "SALE",
-          clientId: session.clientId,
-          items: lineItems,
-          createdBy: userId,
-          notes: `Created from Live Shopping Session #${session.id} (${session.title})`,
-          paymentTerms: "NET_30", // Default, host should probably edit later
+      // Perform conversion via service (P4-T01)
+      try {
+        const result = await sessionOrderService.convertSessionToOrder({
+          sessionId: input.sessionId,
+          userId,
+          paymentTerms: input.paymentTerms,
+          generateSalesSheet: input.generateSalesSheet,
+          bypassCreditCheck: input.bypassCreditCheck,
+          internalNotes: input.internalNotes,
         });
-        
-        orderId = newOrder.id;
+
+        return result;
+      } catch (e: any) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: e.message || "Failed to convert session to order",
+        });
       }
-
-      // 3. Update Session Status
-      await db
-        .update(liveShoppingSessions)
-        .set({
-          status: input.convertToOrder ? "CONVERTED" : "ENDED",
-          endedAt: new Date(),
-        })
-        .where(eq(liveShoppingSessions.id, input.sessionId));
-
-      // Emit final event
-      sessionEventManager.emitSessionStatus(
-        input.sessionId, 
-        input.convertToOrder ? "CONVERTED" : "ENDED"
-      );
-
-      return { success: true, orderId };
     }),
 });

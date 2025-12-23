@@ -119,6 +119,9 @@ export const sessionCartItems = mysqlTable(
     // Who added this item? (Host or Client)
     addedByRole: mysqlEnum("addedByRole", ["HOST", "CLIENT"]).notNull(),
     
+    // Is this a sample item? (P4-T03)
+    isSample: boolean("isSample").default(false).notNull(),
+    
     // Is this item "pinned" or "highlighted" in the UI?
     isHighlighted: boolean("isHighlighted").default(false),
 
