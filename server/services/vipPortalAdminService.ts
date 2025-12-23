@@ -197,6 +197,10 @@ export async function getClientLastLogin(clientId: number) {
  * Create an impersonation session for an admin to view the portal as a client
  * This creates a temporary session token that allows viewing the portal
  * without affecting the client's actual session or login count
+ * 
+ * IMPORTANT: Impersonation sessions are stored in localStorage on the admin's browser
+ * and validated by checking the token prefix. We do NOT overwrite the client's
+ * actual session token to avoid logging them out.
  */
 export async function createImpersonationSession(clientId: number, adminUserId?: number) {
   const db = await getDb();
@@ -221,7 +225,7 @@ export async function createImpersonationSession(clientId: number, adminUserId?:
     });
   }
 
-  // Check if auth record exists
+  // Check if auth record exists (client must have portal configured)
   const authRecord = await db.query.vipPortalAuth.findFirst({
     where: eq(vipPortalAuth.clientId, clientId),
   });
@@ -234,18 +238,9 @@ export async function createImpersonationSession(clientId: number, adminUserId?:
   }
 
   // Generate impersonation session token (prefixed to identify as impersonation)
-  const sessionToken = `imp_${crypto.randomUUID()}`;
+  // This token is NOT stored in the database - it's validated by prefix and expiry
+  const sessionToken = `imp_${clientId}_${Date.now()}_${crypto.randomUUID()}`;
   const sessionExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours for impersonation
-
-  // Update auth record with impersonation session
-  // Note: This overwrites any existing session, but impersonation sessions are short-lived
-  await db.update(vipPortalAuth)
-    .set({
-      sessionToken,
-      sessionExpiresAt,
-      // Don't update lastLoginAt or loginCount for impersonation
-    })
-    .where(eq(vipPortalAuth.id, authRecord.id));
 
   // Log the impersonation for audit purposes
   console.log(`[VIP Portal] Admin ${adminUserId || 'unknown'} started impersonation session for client ${clientId} (${client.name})`);

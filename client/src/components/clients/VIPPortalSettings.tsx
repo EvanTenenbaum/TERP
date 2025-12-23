@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -28,6 +27,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
   Eye,
+  EyeOff,
   Settings,
   Shield,
   Clock,
@@ -55,6 +55,7 @@ export function VIPPortalSettings({
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isImpersonating, setIsImpersonating] = useState(false);
 
   const utils = trpc.useUtils();
@@ -345,13 +346,28 @@ export function VIPPortalSettings({
             <div className="space-y-2">
               <Label htmlFor="portal-password">Initial Password</Label>
               <div className="flex gap-2">
-                <Input
-                  id="portal-password"
-                  type="text"
-                  placeholder="Initial password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative flex-1">
+                  <Input
+                    id="portal-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Initial password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
                 <Button
                   type="button"
                   variant="outline"

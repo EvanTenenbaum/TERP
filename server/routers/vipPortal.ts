@@ -24,6 +24,29 @@ import { eq, and, desc, gte, lte, sql, like, or, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 import { requirePermission } from "../_core/permissionMiddleware";
+import type { MetricType } from "../services/leaderboard";
+
+/**
+ * Map legacy leaderboard type to new metric type
+ */
+function mapLegacyTypeToMetric(
+  legacyType: string
+): MetricType | "master_score" {
+  switch (legacyType) {
+    case "ytd_spend":
+      return "ytd_revenue";
+    case "payment_speed":
+      return "average_days_to_pay";
+    case "order_frequency":
+      return "order_frequency";
+    case "credit_utilization":
+      return "credit_utilization";
+    case "ontime_payment_rate":
+      return "on_time_payment_rate";
+    default:
+      return "master_score";
+  }
+}
 
 /**
  * VIP Portal Router
@@ -100,8 +123,51 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        // Check if this is an impersonation token
+        if (input.sessionToken.startsWith("imp_")) {
+          // Parse impersonation token: imp_{clientId}_{timestamp}_{uuid}
+          const parts = input.sessionToken.split("_");
+          if (parts.length >= 3) {
+            const clientId = parseInt(parts[1], 10);
+            const timestamp = parseInt(parts[2], 10);
+            const expiresAt = timestamp + (2 * 60 * 60 * 1000); // 2 hours from creation
+            
+            if (Date.now() > expiresAt) {
+              throw new TRPCError({
+                code: "UNAUTHORIZED",
+                message: "Impersonation session expired",
+              });
+            }
+            
+            // Get client info
+            const client = await db.query.clients.findFirst({
+              where: eq(clients.id, clientId),
+            });
+            
+            if (!client || !client.vipPortalEnabled) {
+              throw new TRPCError({
+                code: "UNAUTHORIZED",
+                message: "Invalid impersonation session",
+              });
+            }
+            
+            // Get auth record for email
+            const authRecord = await db.query.vipPortalAuth.findFirst({
+              where: eq(vipPortalAuth.clientId, clientId),
+            });
+            
+            return {
+              clientId,
+              clientName: client.name,
+              email: authRecord?.email || "impersonation@admin",
+              isImpersonation: true,
+            };
+          }
+        }
+        
+        // Regular session token verification
         const authRecord = await db.query.vipPortalAuth.findFirst({
           where: and(
             eq(vipPortalAuth.sessionToken, input.sessionToken),
@@ -123,6 +189,7 @@ export const vipPortalRouter = router({
           clientId: authRecord.clientId,
           clientName: authRecord.client?.name,
           email: authRecord.email,
+          isImpersonation: false,
         };
       }),
 
@@ -800,7 +867,7 @@ export const vipPortalRouter = router({
   // ============================================================================
   
   leaderboard: router({
-    // Get leaderboard data for client
+    // Get leaderboard data for client (enhanced with unified leaderboard services)
     getLeaderboard: publicProcedure
       .input(z.object({
         clientId: z.number(),
@@ -809,12 +876,13 @@ export const vipPortalRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
         // Get client's VIP portal configuration
         const config = await db.query.vipPortalConfigurations.findFirst({
           where: eq(vipPortalConfigurations.clientId, input.clientId),
         });
 
-        // Read leaderboard settings from featuresConfig JSON (not from non-existent columns)
+        // Read leaderboard settings from featuresConfig JSON
         const leaderboardConfig = config?.featuresConfig?.leaderboard;
         const isLeaderboardEnabled = leaderboardConfig?.enabled ?? false;
 
@@ -825,12 +893,20 @@ export const vipPortalRouter = router({
           });
         }
 
-        const leaderboardType = (leaderboardConfig?.type || 'ytd_spend') as 'ytd_spend' | 'payment_speed' | 'order_frequency' | 'credit_utilization' | 'ontime_payment_rate';
         const displayMode = (leaderboardConfig?.displayMode || 'blackbox') as 'blackbox' | 'transparent';
         const showSuggestions = leaderboardConfig?.showSuggestions ?? true;
         const minimumClients = leaderboardConfig?.minimumClients ?? 5;
+        // Use 'type' field from existing config, map to new metric types
+        const legacyType = leaderboardConfig?.type || 'ytd_spend';
+        const primaryMetric = mapLegacyTypeToMetric(legacyType);
 
-        // Get all VIP clients
+        // Import unified leaderboard services
+        const { 
+          getLeaderboard: getUnifiedLeaderboard, 
+          sanitizeForVipPortal,
+        } = await import('../services/leaderboard');
+
+        // Get all VIP clients count for minimum threshold check
         const vipClients = await db.query.clients.findMany({
           where: eq(clients.vipPortalEnabled, true),
         });
@@ -842,173 +918,91 @@ export const vipPortalRouter = router({
           });
         }
 
-        // Calculate metrics for each client
-        const clientMetrics = await Promise.all(
-          vipClients.map(async (client) => {
-            let metricValue = 0;
-
-            switch (leaderboardType) {
-              case 'ytd_spend': {
-                // Calculate YTD spend from invoices
-                const ytdStart = new Date(new Date().getFullYear(), 0, 1);
-                const result = await db
-                  .select({ total: sql<number>`COALESCE(SUM(${invoices.totalAmount}), 0)` })
-                  .from(invoices)
-                  .where(
-                    and(
-                      eq(invoices.customerId, client.id),
-                      gte(invoices.invoiceDate, ytdStart)
-                    )
-                  );
-                metricValue = result[0]?.total || 0;
-                break;
-              }
-
-              case 'payment_speed': {
-                // Calculate average days to pay
-                const result = await db
-                  .select({
-                    avgDays: sql<number>`AVG(JULIANDAY(${clientTransactions.paymentDate}) - JULIANDAY(${clientTransactions.transactionDate}))`
-                  })
-                  .from(clientTransactions)
-                  .where(
-                    and(
-                      eq(clientTransactions.clientId, client.id),
-                      eq(clientTransactions.transactionType, 'PAYMENT'),
-                      sql`${clientTransactions.paymentDate} IS NOT NULL`
-                    )
-                  );
-                metricValue = result[0]?.avgDays || 0;
-                break;
-              }
-
-              case 'order_frequency': {
-                // Count orders in last 90 days
-                const ninetyDaysAgo = new Date();
-                ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-                const result = await db
-                  .select({ count: sql<number>`COUNT(*)` })
-                  .from(invoices)
-                  .where(
-                    and(
-                      eq(invoices.customerId, client.id),
-                      gte(invoices.invoiceDate, ninetyDaysAgo)
-                    )
-                  );
-                metricValue = result[0]?.count || 0;
-                break;
-              }
-
-              case 'credit_utilization': {
-                // Calculate credit utilization percentage
-                // Note: creditLimit is stored in clientCreditLimits table, not clients table
-                // For now, we use totalOwed as a proxy metric (lower debt = better)
-                const currentExposure = Number(client.totalOwed) || 0;
-                // Use inverse of debt as metric (clients with less debt rank higher)
-                // Scale to 0-100 where 100 = no debt
-                metricValue = Math.max(0, 100 - Math.min(100, currentExposure / 100));
-                break;
-              }
-
-              case 'ontime_payment_rate': {
-                // Calculate on-time payment rate based on payment status
-                const paymentStats = await db
-                  .select({
-                    total: sql<number>`COUNT(*)`,
-                    onTime: sql<number>`SUM(CASE WHEN ${clientTransactions.paymentStatus} = 'PAID' THEN 1 ELSE 0 END)`,
-                  })
-                  .from(clientTransactions)
-                  .where(
-                    and(
-                      eq(clientTransactions.clientId, client.id),
-                      eq(clientTransactions.transactionType, 'INVOICE')
-                    )
-                  );
-
-                const total = paymentStats[0]?.total || 0;
-                const onTime = paymentStats[0]?.onTime || 0;
-                metricValue = total > 0 ? Math.round((onTime / total) * 100) : 100;
-                break;
-              }
-            }
-
-            return {
-              clientId: client.id,
-              metricValue,
-            };
-          })
-        );
-
-        // Sort by metric value (higher is better for most, except payment_speed)
-        const sortedMetrics = clientMetrics.sort((a, b) => {
-          if (leaderboardType === 'payment_speed') {
-            return a.metricValue - b.metricValue; // Lower is better
-          }
-          return b.metricValue - a.metricValue; // Higher is better
+        // Get leaderboard using unified service
+        const leaderboardResult = await getUnifiedLeaderboard({
+          clientType: "CUSTOMER", // VIP Portal is for customers
+          sortBy: primaryMetric,
+          sortOrder: "desc",
+          limit: 100, // Get all for ranking
         });
 
-        // Assign ranks
-        const rankedClients = sortedMetrics.map((metric, index) => ({
-          ...metric,
-          rank: index + 1,
-        }));
+        // Sanitize for VIP Portal (remove PII from other clients)
+        const sanitizedResult = sanitizeForVipPortal(
+          leaderboardResult,
+          input.clientId,
+          displayMode,
+          primaryMetric
+        );
 
-        // Find current client's rank
-        const clientRank = rankedClients.find(r => r.clientId === input.clientId);
-        if (!clientRank) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Client not found in leaderboard",
-          });
-        }
-
-        // Get entries to display (top 3, client's position, and surrounding ranks)
+        // Build entries to show (top 3, client's position, surrounding ranks, last place)
         const entriesToShow = new Set<number>();
-        
-        // Add top 3
         entriesToShow.add(1);
         entriesToShow.add(2);
         entriesToShow.add(3);
-        
-        // Add client's rank and surrounding
-        entriesToShow.add(clientRank.rank);
-        if (clientRank.rank > 1) entriesToShow.add(clientRank.rank - 1);
-        if (clientRank.rank < rankedClients.length) entriesToShow.add(clientRank.rank + 1);
-        
-        // Add last place
-        entriesToShow.add(rankedClients.length);
+        entriesToShow.add(sanitizedResult.clientRank);
+        if (sanitizedResult.clientRank > 1) entriesToShow.add(sanitizedResult.clientRank - 1);
+        if (sanitizedResult.clientRank < sanitizedResult.totalParticipants) entriesToShow.add(sanitizedResult.clientRank + 1);
+        entriesToShow.add(sanitizedResult.totalParticipants);
 
-        const entries = rankedClients
+        const entries = sanitizedResult.entries
           .filter(r => entriesToShow.has(r.rank))
           .map(r => ({
             rank: r.rank,
-            clientId: r.clientId,
-            metricValue: r.metricValue,
-            isCurrentClient: r.clientId === input.clientId,
+            // Only show client ID for the requesting client (already sanitized)
+            clientId: r.isCurrentClient ? input.clientId : undefined,
+            metricValue: displayMode === 'transparent' ? r.metricValue : undefined,
+            isCurrentClient: r.isCurrentClient,
           }));
 
-        // Generate suggestions using the recommendations engine
-        const { generateLeaderboardRecommendations } = await import('../lib/leaderboardRecommendations');
-        const recommendations = generateLeaderboardRecommendations(
-          {
-            leaderboardType,
-            displayMode,
-            clientRank: clientRank.rank,
-            totalClients: rankedClients.length,
-            clientMetricValue: clientRank.metricValue,
-            entries,
-          },
-          showSuggestions
-        );
+        return {
+          leaderboardType: legacyType, // Return legacy type for backward compatibility
+          displayMode,
+          clientRank: sanitizedResult.clientRank,
+          totalClients: sanitizedResult.totalParticipants,
+          entries,
+          suggestions: showSuggestions ? sanitizedResult.suggestions : [],
+          lastUpdated: sanitizedResult.lastUpdated,
+        };
+      }),
+
+    // Get available metrics for VIP Portal configuration
+    getAvailableMetrics: publicProcedure
+      .input(z.object({
+        clientId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+        // Verify client exists and has VIP portal enabled
+        const client = await db.query.clients.findFirst({
+          where: eq(clients.id, input.clientId),
+        });
+
+        if (!client || !client.vipPortalEnabled) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "VIP Portal not enabled for this client",
+          });
+        }
+
+        // Return available metrics for customers (VIP Portal users)
+        const { METRIC_CONFIGS } = await import('../services/leaderboard');
+        
+        const customerMetrics = Object.entries(METRIC_CONFIGS)
+          .filter(([_, config]) => 
+            config.applicableTo.includes('CUSTOMER')
+          )
+          .map(([key, config]) => ({
+            type: key,
+            name: config.name,
+            description: config.description,
+            category: config.category,
+          }));
 
         return {
-          leaderboardType,
-          displayMode,
-          clientRank: clientRank.rank,
-          totalClients: rankedClients.length,
-          entries,
-          suggestions: recommendations.suggestions,
-          lastUpdated: new Date().toISOString(),
+          metrics: customerMetrics,
+          defaultPrimaryMetric: 'ytd_revenue',
         };
       }),
   }),
