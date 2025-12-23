@@ -1388,7 +1388,7 @@ export type InsertNoteActivity = typeof noteActivity.$inferInsert;
  * Credit Limit Source Enum
  * Tracks whether credit limit was calculated by system or manually set
  */
-export const creditLimitSourceEnum = mysqlEnum("credit_limit_source", [
+export const creditLimitSourceEnum = mysqlEnum("creditLimitSource", [
   "CALCULATED",
   "MANUAL",
 ]);
@@ -1397,7 +1397,7 @@ export const creditLimitSourceEnum = mysqlEnum("credit_limit_source", [
  * COGS Adjustment Type Enum
  * Types of COGS adjustments at client level
  */
-export const cogsAdjustmentTypeEnum = mysqlEnum("cogs_adjustment_type", [
+export const cogsAdjustmentTypeEnum = mysqlEnum("cogsAdjustmentType", [
   "NONE",
   "PERCENTAGE",
   "FIXED_AMOUNT",
