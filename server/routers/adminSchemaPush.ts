@@ -145,7 +145,50 @@ export const adminSchemaPushRouter = router({
         }
       }
 
-      // Step 7: Add foreign keys
+      // Step 7: Add missing clients columns (FIX-010: Migration 0025 incomplete)
+      try {
+        await db.execute(sql`
+          ALTER TABLE clients ADD COLUMN credit_limit_updated_at TIMESTAMP NULL
+        `);
+        results.push({ step: 'add_clients_credit_limit_updated_at', status: 'success' });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Duplicate column')) {
+          results.push({ step: 'add_clients_credit_limit_updated_at', status: 'already_exists' });
+        } else {
+          results.push({ step: 'add_clients_credit_limit_updated_at', status: 'error', message: errorMessage });
+        }
+      }
+
+      try {
+        await db.execute(sql`
+          ALTER TABLE clients ADD COLUMN creditLimitSource ENUM('CALCULATED','MANUAL') DEFAULT 'CALCULATED'
+        `);
+        results.push({ step: 'add_clients_creditLimitSource', status: 'success' });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Duplicate column')) {
+          results.push({ step: 'add_clients_creditLimitSource', status: 'already_exists' });
+        } else {
+          results.push({ step: 'add_clients_creditLimitSource', status: 'error', message: errorMessage });
+        }
+      }
+
+      try {
+        await db.execute(sql`
+          ALTER TABLE clients ADD COLUMN credit_limit_override_reason TEXT NULL
+        `);
+        results.push({ step: 'add_clients_credit_limit_override_reason', status: 'success' });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Duplicate column')) {
+          results.push({ step: 'add_clients_credit_limit_override_reason', status: 'already_exists' });
+        } else {
+          results.push({ step: 'add_clients_credit_limit_override_reason', status: 'error', message: errorMessage });
+        }
+      }
+
+      // Step 8: Add foreign keys
       try {
         await db.execute(sql`
           ALTER TABLE strains 
