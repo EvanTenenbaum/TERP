@@ -77,6 +77,7 @@ import { searchRouter } from "./routers/search";
 import { leaderboardRouter } from "./routers/leaderboard";
 import { liveShoppingRouter } from "./routers/liveShopping";
 import { vipPortalLiveShoppingRouter } from "./routers/vipPortalLiveShopping";
+import { unifiedSalesPortalRouter } from "./routers/unifiedSalesPortal";
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
@@ -171,6 +172,7 @@ export const appRouter = router({
   leaderboard: leaderboardRouter,
   liveShopping: liveShoppingRouter,
   vipPortalLiveShopping: vipPortalLiveShoppingRouter,
+  unifiedSalesPortal: unifiedSalesPortalRouter,
   // Debug router - only registered in development
   ...(debugRouter ? { debug: debugRouter } : {}),
 });
