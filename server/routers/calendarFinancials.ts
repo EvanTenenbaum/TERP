@@ -302,7 +302,7 @@ export const calendarFinancialsRouter = router({
     }),
 
   // Set custom reminder for sales sheet
-  setSalesSheetReminder: publicProcedure
+  setSalesSheetReminder: protectedProcedure
     .input(
       z.object({
         salesSheetId: z.number(),
@@ -358,7 +358,7 @@ export const calendarFinancialsRouter = router({
     }),
 
   // Get upcoming sales sheet reminders
-  getUpcomingSalesSheetReminders: publicProcedure
+  getUpcomingSalesSheetReminders: protectedProcedure
     .input(
       z.object({
         daysAhead: z.number().default(7),
@@ -391,7 +391,7 @@ export const calendarFinancialsRouter = router({
     }),
 
   // Create payment due reminder
-  createPaymentDueReminder: publicProcedure
+  createPaymentDueReminder: protectedProcedure
     .input(
       z.object({
         invoiceId: z.number(),
