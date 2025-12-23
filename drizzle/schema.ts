@@ -4985,6 +4985,10 @@ export {
 /**
  * Client Type Enum for Leaderboard
  * Defines the type of clients for leaderboard filtering
+ * 
+ * FIX-011: The enum name "leaderboard_client_type" was being used as the column name,
+ * but the database column is actually "client_type" (from migration 0041).
+ * We keep this enum definition for type inference but use explicit column names in tables.
  */
 export const leaderboardClientTypeEnum = mysqlEnum("leaderboard_client_type", [
   "CUSTOMER",
@@ -5004,7 +5008,8 @@ export const leaderboardWeightConfigs = mysqlTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     configName: varchar("config_name", { length: 100 }).notNull().default("default"),
-    clientType: leaderboardClientTypeEnum.notNull().default("ALL"),
+    // FIX-011: Explicitly specify column name as 'client_type' to match database (migration 0041)
+    clientType: mysqlEnum("client_type", ["CUSTOMER", "SUPPLIER", "ALL"]).notNull().default("ALL"),
     weights: json("weights").$type<Record<string, number>>().notNull(),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -5032,7 +5037,8 @@ export const leaderboardDefaultWeights = mysqlTable(
   "leaderboard_default_weights",
   {
     id: int("id").primaryKey().autoincrement(),
-    clientType: leaderboardClientTypeEnum.notNull(),
+    // FIX-011: Explicitly specify column name as 'client_type' to match database (migration 0041)
+    clientType: mysqlEnum("client_type", ["CUSTOMER", "SUPPLIER", "ALL"]).notNull(),
     weights: json("weights").$type<Record<string, number>>().notNull(),
     updatedBy: int("updated_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
