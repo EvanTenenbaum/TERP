@@ -44,16 +44,9 @@ export async function getClients(options: {
     hasDebt,
   } = options;
 
-  // FIX-005: Use explicit column selection with CAST for ENUM columns
-  // TiDB may return ENUM values as integers, causing Drizzle parsing to fail
-  // By casting ENUM columns to CHAR, we ensure string values are returned
-  // Using spread operator to include all columns automatically, only overriding ENUM columns
-  let query = db.select({
-    ...clients,
-    // Cast ENUM columns to CHAR to avoid TiDB integer representation issue
-    cogsAdjustmentType: sql<string>`CAST(${clients.cogsAdjustmentType} AS CHAR)`.as('cogsAdjustmentType'),
-    creditLimitSource: sql<string>`CAST(${clients.creditLimitSource} AS CHAR)`.as('creditLimitSource'),
-  }).from(clients);
+  // FIX-006: ENUM handling is now done at connection pool level via typeCast
+  // See: server/_core/connectionPool.ts
+  let query = db.select().from(clients);
 
   // Build WHERE conditions
   const conditions: (SQL<unknown> | undefined)[] = [];
