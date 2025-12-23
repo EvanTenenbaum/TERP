@@ -15,7 +15,7 @@ import {
   ledgerEntries,
   batches,
 } from "../../drizzle/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { getFiscalPeriodIdOrDefault } from "../_core/fiscalPeriod";
 import { getAccountIdByName, ACCOUNT_NAMES } from "../_core/accountLookup";
@@ -408,9 +408,12 @@ export async function reverseOrderAccountingEntries(input: {
   try {
     // Wrap all mutations in a transaction for atomicity
     await db.transaction(async (tx) => {
-      // 1. Get original ledger entries for this invoice
+      // 1. Get original ledger entries for this invoice (filter by both referenceType and referenceId)
       const originalEntries = await tx.query.ledgerEntries.findMany({
-        where: eq(ledgerEntries.referenceId, invoiceId),
+        where: and(
+          eq(ledgerEntries.referenceType, "INVOICE"),
+          eq(ledgerEntries.referenceId, invoiceId)
+        ),
       });
 
       // 2. Create reversing entries
