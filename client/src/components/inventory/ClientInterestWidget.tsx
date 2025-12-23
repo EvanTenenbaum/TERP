@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ interface ClientInterestWidgetProps {
 
 export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
   const [creatingQuote, setCreatingQuote] = useState<number | null>(null);
+  const { user } = useAuth();
 
   // Fetch matches for this batch
   const { data: matchesData, isLoading } = trpc.matching.findMatchesForBatch.useQuery({
@@ -39,7 +41,7 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
         clientId: match.clientId,
         clientNeedId: match.clientNeedId,
         matches: [match],
-        userId: 1, // TODO: Get from auth context
+        userId: user?.id ?? 0,
       });
     } catch (error) {
       console.error("Error creating quote:", error);
