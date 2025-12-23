@@ -45,6 +45,7 @@ interface CreateInvoiceFromOrderInput {
 
 /**
  * Create an invoice from a finalized order
+ * Uses transaction to ensure invoice, line items, and GL entries are atomic
  */
 export async function createInvoiceFromOrder(
   input: CreateInvoiceFromOrderInput
@@ -64,61 +65,95 @@ export async function createInvoiceFromOrder(
     createdBy,
   } = input;
 
+  // Generate invoice number and dates outside transaction
+  const invoiceNumber = `INV-${orderNumber.replace(/^[A-Z]-/, "")}`;
+  const invoiceDate = new Date();
+  const dueDateValue = dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default NET 30
+
+  // Pre-fetch account IDs and fiscal period (these are lookups, not mutations)
+  const arAccountId = await getAccountIdByName(ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE);
+  const revenueAccountId = await getAccountIdByName(ACCOUNT_NAMES.SALES_REVENUE);
+  const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+
   try {
-    // Generate invoice number
-    const invoiceNumber = `INV-${orderNumber.replace(/^[A-Z]-/, "")}`;
-    const invoiceDate = new Date();
-    const dueDateValue = dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default NET 30
+    // Wrap all mutations in a transaction for atomicity
+    const invoiceId = await db.transaction(async (tx) => {
+      // 1. Create invoice
+      const result = await tx.insert(invoices).values({
+        invoiceNumber,
+        customerId: clientId,
+        invoiceDate,
+        dueDate: dueDateValue,
+        subtotal: subtotal.toFixed(2),
+        taxAmount: tax.toFixed(2),
+        discountAmount: "0.00",
+        totalAmount: total.toFixed(2),
+        amountPaid: "0.00",
+        amountDue: total.toFixed(2),
+        status: "SENT",
+        referenceType: "ORDER",
+        referenceId: orderId,
+        createdBy,
+      });
 
-    // Create invoice (matching actual schema)
-    const result = await db.insert(invoices).values({
-      invoiceNumber,
-      customerId: clientId,
-      invoiceDate, // Date object
-      dueDate: dueDateValue, // Date object
-      subtotal: subtotal.toFixed(2),
-      taxAmount: tax.toFixed(2),
-      discountAmount: "0.00",
-      totalAmount: total.toFixed(2),
-      amountPaid: "0.00",
-      amountDue: total.toFixed(2),
-      status: "SENT",
-      referenceType: "ORDER",
-      referenceId: orderId,
-      createdBy,
-    });
+      const newInvoiceId = Number(result[0].insertId);
 
-    const invoiceId = Number(result[0].insertId);
+      // 2. Create line items
+      const lineItemsData = items
+        .filter((item) => !item.isSample) // Don't invoice samples
+        .map((item) => ({
+          invoiceId: newInvoiceId,
+          description: item.displayName,
+          quantity: item.quantity.toFixed(2),
+          unitPrice: item.unitPrice.toFixed(2),
+          lineTotal: item.lineTotal.toFixed(2),
+          batchId: item.batchId,
+          taxRate: "0.00",
+          discountPercent: "0.00",
+        }));
 
-    // Create line items (matching actual schema)
-    const lineItemsData = items
-      .filter((item) => !item.isSample) // Don't invoice samples
-      .map((item) => ({
-        invoiceId,
-        description: item.displayName,
-        quantity: item.quantity.toFixed(2),
-        unitPrice: item.unitPrice.toFixed(2),
-        lineTotal: item.lineTotal.toFixed(2),
-        batchId: item.batchId,
-        taxRate: "0.00",
-        discountPercent: "0.00",
-      }));
+      if (lineItemsData.length > 0) {
+        await tx.insert(invoiceLineItems).values(lineItemsData);
+      }
 
-    if (lineItemsData.length > 0) {
-      await db.insert(invoiceLineItems).values(lineItemsData);
-    }
+      // 3. Create GL entries (AR debit, Revenue credit)
+      const entryNumber = `SALE-${invoiceNumber}`;
 
-    // Create AR ledger entry
-    await createSaleGLEntries({
-      invoiceId,
-      invoiceNumber,
-      clientId,
-      total,
-      createdBy,
+      // Debit AR
+      await tx.insert(ledgerEntries).values({
+        entryNumber: `${entryNumber}-DR`,
+        entryDate: new Date(),
+        accountId: arAccountId,
+        debit: total.toFixed(2),
+        credit: "0.00",
+        description: `Sale - Invoice ${invoiceNumber}`,
+        referenceType: "INVOICE",
+        referenceId: newInvoiceId,
+        fiscalPeriodId,
+        isManual: false,
+        createdBy,
+      });
+
+      // Credit Revenue
+      await tx.insert(ledgerEntries).values({
+        entryNumber: `${entryNumber}-CR`,
+        entryDate: new Date(),
+        accountId: revenueAccountId,
+        debit: "0.00",
+        credit: total.toFixed(2),
+        description: `Sale - Invoice ${invoiceNumber}`,
+        referenceType: "INVOICE",
+        referenceId: newInvoiceId,
+        fiscalPeriodId,
+        isManual: false,
+        createdBy,
+      });
+
+      return newInvoiceId;
     });
 
     logger.info({
-      msg: "Invoice created from order",
+      msg: "Invoice created from order (transactional)",
       orderId,
       invoiceId,
       invoiceNumber,
@@ -137,65 +172,8 @@ export async function createInvoiceFromOrder(
 }
 
 /**
- * Create GL entries for a sale (AR debit, Revenue credit)
- */
-async function createSaleGLEntries(input: {
-  invoiceId: number;
-  invoiceNumber: string;
-  clientId: number;
-  total: number;
-  createdBy: number;
-}): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  try {
-    const arAccountId = await getAccountIdByName(ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE);
-    const revenueAccountId = await getAccountIdByName(ACCOUNT_NAMES.SALES_REVENUE);
-    const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
-
-    const entryNumber = `SALE-${input.invoiceNumber}`;
-
-    // Debit AR
-    await db.insert(ledgerEntries).values({
-      entryNumber: `${entryNumber}-DR`,
-      entryDate: new Date(),
-      accountId: arAccountId,
-      debit: input.total.toFixed(2),
-      credit: "0.00",
-      description: `Sale - Invoice ${input.invoiceNumber}`,
-      referenceType: "INVOICE",
-      referenceId: input.invoiceId,
-      fiscalPeriodId,
-      isManual: false,
-      createdBy: input.createdBy,
-    });
-
-    // Credit Revenue
-    await db.insert(ledgerEntries).values({
-      entryNumber: `${entryNumber}-CR`,
-      entryDate: new Date(),
-      accountId: revenueAccountId,
-      debit: "0.00",
-      credit: input.total.toFixed(2),
-      description: `Sale - Invoice ${input.invoiceNumber}`,
-      referenceType: "INVOICE",
-      referenceId: input.invoiceId,
-      fiscalPeriodId,
-      isManual: false,
-      createdBy: input.createdBy,
-    });
-  } catch (error) {
-    logger.warn({
-      msg: "Failed to create sale GL entries (non-fatal)",
-      invoiceId: input.invoiceId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-}
-
-/**
  * Record a cash payment for an order
+ * Uses transaction to ensure payment, invoice update, and GL entries are atomic
  */
 export async function recordOrderCashPayment(input: {
   invoiceId: number;
@@ -209,70 +187,103 @@ export async function recordOrderCashPayment(input: {
 
   if (amount <= 0) return null;
 
+  // Pre-fetch account IDs and fiscal period (these are lookups, not mutations)
+  const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
+  const arAccountId = await getAccountIdByName(ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE);
+  const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+
   try {
-    // Get invoice details
-    const invoice = await db.query.invoices.findFirst({
-      where: eq(invoices.id, invoiceId),
-    });
+    // Wrap all mutations in a transaction for atomicity
+    const paymentId = await db.transaction(async (tx) => {
+      // 1. Get invoice details
+      const invoice = await tx.query.invoices.findFirst({
+        where: eq(invoices.id, invoiceId),
+      });
 
-    if (!invoice) {
-      throw new Error(`Invoice ${invoiceId} not found`);
-    }
+      if (!invoice) {
+        throw new Error(`Invoice ${invoiceId} not found`);
+      }
 
-    // Generate payment number
-    const paymentNumber = `PMT-${Date.now()}`;
+      // 2. Generate payment number and create payment record
+      const paymentNumber = `PMT-${Date.now()}`;
+      const result = await tx.insert(payments).values({
+        paymentNumber,
+        paymentType: "RECEIVED",
+        invoiceId,
+        customerId: invoice.customerId,
+        paymentDate: new Date(),
+        amount: amount.toFixed(2),
+        paymentMethod: "CASH",
+        referenceNumber: `CASH-${Date.now()}`,
+        notes: "Cash payment at time of sale",
+        createdBy,
+      });
 
-    // Create payment record (matching actual schema)
-    const result = await db.insert(payments).values({
-      paymentNumber,
-      paymentType: "RECEIVED",
-      invoiceId,
-      customerId: invoice.customerId,
-      paymentDate: new Date(), // Date object
-      amount: amount.toFixed(2),
-      paymentMethod: "CASH",
-      referenceNumber: `CASH-${Date.now()}`,
-      notes: "Cash payment at time of sale",
-      createdBy,
-    });
+      const newPaymentId = Number(result[0].insertId);
 
-    const paymentId = Number(result[0].insertId);
+      // 3. Update invoice amounts
+      const currentPaid = parseFloat(invoice.amountPaid ?? "0");
+      const newPaid = currentPaid + amount;
+      const totalAmount = parseFloat(invoice.totalAmount ?? "0");
+      const newDue = Math.max(0, totalAmount - newPaid);
 
-    // Update invoice amounts
-    const currentPaid = parseFloat(invoice.amountPaid ?? "0");
-    const newPaid = currentPaid + amount;
-    const totalAmount = parseFloat(invoice.totalAmount ?? "0");
-    const newDue = Math.max(0, totalAmount - newPaid);
+      // Determine new status
+      let newStatus: "PARTIAL" | "PAID" = "PARTIAL";
+      if (newDue <= 0.01) {
+        newStatus = "PAID";
+      }
 
-    // Determine new status
-    let newStatus: "PARTIAL" | "PAID" = "PARTIAL";
-    if (newDue <= 0.01) {
-      newStatus = "PAID";
-    }
+      await tx
+        .update(invoices)
+        .set({
+          amountPaid: newPaid.toFixed(2),
+          amountDue: newDue.toFixed(2),
+          status: newStatus,
+        })
+        .where(eq(invoices.id, invoiceId));
 
-    await db
-      .update(invoices)
-      .set({
-        amountPaid: newPaid.toFixed(2),
-        amountDue: newDue.toFixed(2),
-        status: newStatus,
-      })
-      .where(eq(invoices.id, invoiceId));
+      // 4. Create GL entries (Cash debit, AR credit)
+      const entryNumber = `PMT-${newPaymentId}`;
 
-    // Create payment GL entries
-    await createPaymentGLEntries({
-      paymentId,
-      invoiceId,
-      amount,
-      createdBy,
-    });
+      // Debit Cash
+      await tx.insert(ledgerEntries).values({
+        entryNumber: `${entryNumber}-DR`,
+        entryDate: new Date(),
+        accountId: cashAccountId,
+        debit: amount.toFixed(2),
+        credit: "0.00",
+        description: `Payment received - Invoice #${invoiceId}`,
+        referenceType: "PAYMENT",
+        referenceId: newPaymentId,
+        fiscalPeriodId,
+        isManual: false,
+        createdBy,
+      });
 
-    logger.info({
-      msg: "Cash payment recorded",
-      invoiceId,
-      paymentId,
-      amount,
-      newStatus,
+      // Credit AR
+      await tx.insert(ledgerEntries).values({
+        entryNumber: `${entryNumber}-CR`,
+        entryDate: new Date(),
+        accountId: arAccountId,
+        debit: "0.00",
+        credit: amount.toFixed(2),
+        description: `Payment received - Invoice #${invoiceId}`,
+        referenceType: "PAYMENT",
+        referenceId: newPaymentId,
+        fiscalPeriodId,
+        isManual: false,
+        createdBy,
+      });
+
+      logger.info({
+        msg: "Cash payment recorded (transactional)",
+        invoiceId,
+        paymentId: newPaymentId,
+        amount,
+        newStatus,
+      });
+
+      return newPaymentId;
     });
 
     return paymentId;
@@ -284,63 +295,6 @@ export async function recordOrderCashPayment(input: {
       error: error instanceof Error ? error.message : String(error),
     });
     throw error;
-  }
-}
-
-/**
- * Create GL entries for a payment (Cash debit, AR credit)
- */
-async function createPaymentGLEntries(input: {
-  paymentId: number;
-  invoiceId: number;
-  amount: number;
-  createdBy: number;
-}): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  try {
-    const cashAccountId = await getAccountIdByName(ACCOUNT_NAMES.CASH);
-    const arAccountId = await getAccountIdByName(ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE);
-    const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
-
-    const entryNumber = `PMT-${input.paymentId}`;
-
-    // Debit Cash
-    await db.insert(ledgerEntries).values({
-      entryNumber: `${entryNumber}-DR`,
-      entryDate: new Date(),
-      accountId: cashAccountId,
-      debit: input.amount.toFixed(2),
-      credit: "0.00",
-      description: `Payment received - Invoice #${input.invoiceId}`,
-      referenceType: "PAYMENT",
-      referenceId: input.paymentId,
-      fiscalPeriodId,
-      isManual: false,
-      createdBy: input.createdBy,
-    });
-
-    // Credit AR
-    await db.insert(ledgerEntries).values({
-      entryNumber: `${entryNumber}-CR`,
-      entryDate: new Date(),
-      accountId: arAccountId,
-      debit: "0.00",
-      credit: input.amount.toFixed(2),
-      description: `Payment received - Invoice #${input.invoiceId}`,
-      referenceType: "PAYMENT",
-      referenceId: input.paymentId,
-      fiscalPeriodId,
-      isManual: false,
-      createdBy: input.createdBy,
-    });
-  } catch (error) {
-    logger.warn({
-      msg: "Failed to create payment GL entries (non-fatal)",
-      paymentId: input.paymentId,
-      error: error instanceof Error ? error.message : String(error),
-    });
   }
 }
 
@@ -434,6 +388,7 @@ export async function restoreInventoryFromOrder(input: {
 
 /**
  * Reverse accounting entries for a cancelled order
+ * Uses transaction to ensure all reversing entries and invoice void are atomic
  */
 export async function reverseOrderAccountingEntries(input: {
   invoiceId: number;
@@ -446,43 +401,47 @@ export async function reverseOrderAccountingEntries(input: {
 
   const { invoiceId, orderId, reason, reversedBy } = input;
 
+  // Pre-fetch fiscal period (lookup, not mutation)
+  const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
+  const reversalNumber = `REV-${Date.now()}`;
+
   try {
-    // Get original ledger entries for this invoice
-    const originalEntries = await db.query.ledgerEntries.findMany({
-      where: eq(ledgerEntries.referenceId, invoiceId),
+    // Wrap all mutations in a transaction for atomicity
+    await db.transaction(async (tx) => {
+      // 1. Get original ledger entries for this invoice
+      const originalEntries = await tx.query.ledgerEntries.findMany({
+        where: eq(ledgerEntries.referenceId, invoiceId),
+      });
+
+      // 2. Create reversing entries
+      for (const entry of originalEntries) {
+        await tx.insert(ledgerEntries).values({
+          entryNumber: `${reversalNumber}-${entry.id}`,
+          entryDate: new Date(),
+          accountId: entry.accountId,
+          debit: entry.credit, // Swap debit and credit
+          credit: entry.debit,
+          description: `Reversal: ${reason} (Original: ${entry.entryNumber})`,
+          referenceType: "REVERSAL",
+          referenceId: orderId,
+          fiscalPeriodId,
+          isManual: false,
+          createdBy: reversedBy,
+        });
+      }
+
+      // 3. Void the invoice by updating status
+      await tx
+        .update(invoices)
+        .set({
+          status: "VOID",
+          notes: `Voided: ${reason} on ${new Date().toISOString()}`,
+        })
+        .where(eq(invoices.id, invoiceId));
     });
 
-    const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
-    const reversalNumber = `REV-${Date.now()}`;
-
-    // Create reversing entries
-    for (const entry of originalEntries) {
-      await db.insert(ledgerEntries).values({
-        entryNumber: `${reversalNumber}-${entry.id}`,
-        entryDate: new Date(),
-        accountId: entry.accountId,
-        debit: entry.credit, // Swap debit and credit
-        credit: entry.debit,
-        description: `Reversal: ${reason} (Original: ${entry.entryNumber})`,
-        referenceType: "REVERSAL",
-        referenceId: orderId,
-        fiscalPeriodId,
-        isManual: false,
-        createdBy: reversedBy,
-      });
-    }
-
-    // Void the invoice by updating status
-    await db
-      .update(invoices)
-      .set({
-        status: "VOID",
-        notes: `Voided: ${reason} on ${new Date().toISOString()}`,
-      })
-      .where(eq(invoices.id, invoiceId));
-
     logger.info({
-      msg: "Order accounting entries reversed",
+      msg: "Order accounting entries reversed (transactional)",
       orderId,
       invoiceId,
       reason,
