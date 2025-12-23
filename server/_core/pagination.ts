@@ -329,7 +329,8 @@ export function createSafeUnifiedResponse<T>(
   offset?: number
 ): UnifiedPaginatedResponse<T> {
   const safeItems = items ?? [];
-  const safeTotal = total ?? safeItems.length;
+  // Handle -1 as "unknown total" and use items length instead
+  const safeTotal = (total !== null && total !== undefined && total >= 0) ? total : safeItems.length;
   const safeLimit = limit ?? DEFAULT_PAGE_SIZE;
   const safeOffset = offset ?? 0;
   
