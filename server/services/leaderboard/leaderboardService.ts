@@ -1,17 +1,11 @@
 /**
  * Leaderboard Service
- * Main service for leaderboard operations including ranking, caching, and weight management
+ * Main orchestration service for leaderboard operations
  */
 
 import { db } from "../../db";
-import {
-  clients,
-  leaderboardWeightConfigs,
-  leaderboardDefaultWeights,
-  leaderboardMetricCache,
-  leaderboardRankHistory,
-} from "../../../drizzle/schema";
-import { eq, and, isNull, or, sql, desc, asc, like, gte } from "drizzle-orm";
+import { clients } from "../../../drizzle/schema";
+import { eq, and, or, sql, like } from "drizzle-orm";
 import type {
   MetricType,
   MetricResult,
@@ -20,152 +14,20 @@ import type {
   LeaderboardResult,
   RankedClient,
   ClientRankingResult,
-  MasterScoreBreakdown,
-  MetricContribution,
-  RankHistoryEntry,
   ClientType,
 } from "./types";
-import {
-  METRIC_CONFIGS,
-  CUSTOMER_DEFAULT_WEIGHTS,
-  SUPPLIER_DEFAULT_WEIGHTS,
-  ALL_DEFAULT_WEIGHTS,
-  CACHE_TTL,
-  MIN_CLIENTS_FOR_SIGNIFICANCE,
-} from "./constants";
+import { MIN_CLIENTS_FOR_SIGNIFICANCE } from "./constants";
 import { calculateAllMetrics, getClientType } from "./metricCalculator";
-import { normalizeWeights, redistributeWeights } from "./weightNormalizer";
+import { calculateMasterScore } from "./scoringService";
+import { getEffectiveWeights } from "./weightService";
+import { getCachedMetrics, cacheMetrics } from "./cacheService";
+import { getClientTrend, getCategoryRanks, getGapToNextRank, getRankHistory } from "./rankingService";
 
-// ============================================================================
-// MASTER SCORE CALCULATION
-// ============================================================================
-
-/**
- * Calculate master score from metrics and weights
- */
-export function calculateMasterScore(
-  metrics: Partial<Record<MetricType, MetricResult>>,
-  weights: WeightConfig
-): { score: number | null; breakdown: MasterScoreBreakdown } {
-  const contributions: MetricContribution[] = [];
-  const excludedMetrics: MetricType[] = [];
-  let totalScore = 0;
-  let totalWeight = 0;
-
-  // First pass: identify which metrics can be included
-  for (const [metricType, weight] of Object.entries(weights)) {
-    const metric = metrics[metricType as MetricType];
-
-    if (!metric || metric.value === null || !metric.isSignificant) {
-      excludedMetrics.push(metricType as MetricType);
-      contributions.push({
-        metricType: metricType as MetricType,
-        weight,
-        normalizedValue: 0,
-        contribution: 0,
-        isIncluded: false,
-        excludeReason: !metric
-          ? "No data"
-          : metric.value === null
-          ? "Insufficient data"
-          : "Below significance threshold",
-      });
-      continue;
-    }
-
-    totalWeight += weight;
-  }
-
-  if (totalWeight === 0) {
-    return {
-      score: null,
-      breakdown: {
-        totalScore: 0,
-        contributions,
-        excludedMetrics,
-        effectiveWeights: {},
-      },
-    };
-  }
-
-  // Redistribute weights among included metrics
-  const effectiveWeights = redistributeWeights(weights, excludedMetrics);
-
-  // Second pass: calculate normalized values and contributions
-  for (const [metricType, effectiveWeight] of Object.entries(effectiveWeights)) {
-    const metric = metrics[metricType as MetricType];
-    const config = METRIC_CONFIGS[metricType as MetricType];
-
-    if (!metric || metric.value === null) continue;
-
-    // Normalize value to 0-100 scale
-    let normalizedValue: number;
-
-    if (config.direction === "optimal_range" && config.optimalMin !== undefined && config.optimalMax !== undefined) {
-      // For optimal range metrics (like credit utilization)
-      if (metric.value >= config.optimalMin && metric.value <= config.optimalMax) {
-        normalizedValue = 100;
-      } else {
-        const distanceFromOptimal =
-          metric.value < config.optimalMin
-            ? config.optimalMin - metric.value
-            : metric.value - config.optimalMax;
-        normalizedValue = Math.max(0, 100 - distanceFromOptimal * 2);
-      }
-    } else if (config.direction === "lower_better") {
-      // For metrics where lower is better (recency, days to pay)
-      // Invert the scale - assume max reasonable value is 365 days
-      const maxValue = 365;
-      normalizedValue = Math.max(0, Math.min(100, ((maxValue - metric.value) / maxValue) * 100));
-    } else {
-      // For metrics where higher is better
-      // Use a logarithmic scale for currency values to handle wide ranges
-      if (config.format === "currency") {
-        // Log scale: $0 = 0, $1M = 100
-        normalizedValue = Math.min(100, (Math.log10(Math.max(1, metric.value)) / 6) * 100);
-      } else if (config.format === "percentage") {
-        normalizedValue = Math.min(100, metric.value);
-      } else {
-        // Count-based metrics
-        normalizedValue = Math.min(100, metric.value * 10); // 10 orders = 100
-      }
-    }
-
-    const contribution = (normalizedValue * effectiveWeight) / 100;
-    totalScore += contribution;
-
-    // Update contribution record
-    const existingContribution = contributions.find(c => c.metricType === metricType);
-    if (existingContribution) {
-      existingContribution.normalizedValue = normalizedValue;
-      existingContribution.contribution = contribution;
-      existingContribution.isIncluded = true;
-      existingContribution.weight = effectiveWeight;
-    } else {
-      contributions.push({
-        metricType: metricType as MetricType,
-        weight: effectiveWeight,
-        normalizedValue,
-        contribution,
-        isIncluded: true,
-      });
-    }
-  }
-
-  return {
-    score: Math.round(totalScore * 100) / 100,
-    breakdown: {
-      totalScore: Math.round(totalScore * 100) / 100,
-      contributions,
-      excludedMetrics,
-      effectiveWeights,
-    },
-  };
-}
-
-// ============================================================================
-// LEADERBOARD QUERIES
-// ============================================================================
+// Re-export from sub-services for convenience
+export { calculateMasterScore } from "./scoringService";
+export { getEffectiveWeights, getDefaultWeights, saveUserWeights, resetUserWeights } from "./weightService";
+export { invalidateCache } from "./cacheService";
+export { saveRankHistorySnapshot } from "./rankingService";
 
 /**
  * Get the full leaderboard with rankings
@@ -195,39 +57,8 @@ export async function getLeaderboard(
   // Build client filter
   const clientFilter = buildClientTypeFilter(clientType);
 
-  // Get all matching clients - clients table doesn't have deletedAt
-  let allClients;
-  if (search) {
-    allClients = await db
-      .select({
-        id: clients.id,
-        name: clients.name,
-        teriCode: clients.teriCode,
-        isBuyer: clients.isBuyer,
-        isSeller: clients.isSeller,
-      })
-      .from(clients)
-      .where(
-        and(
-          clientFilter,
-          or(
-            like(clients.name, `%${search}%`),
-            like(clients.teriCode, `%${search}%`)
-          )
-        )
-      );
-  } else {
-    allClients = await db
-      .select({
-        id: clients.id,
-        name: clients.name,
-        teriCode: clients.teriCode,
-        isBuyer: clients.isBuyer,
-        isSeller: clients.isSeller,
-      })
-      .from(clients)
-      .where(clientFilter);
-  }
+  // Get all matching clients
+  const allClients = await fetchClients(clientFilter, search);
 
   // Calculate metrics for all clients
   const clientTypes = new Map<number, "CUSTOMER" | "SUPPLIER" | "DUAL">();
@@ -236,80 +67,21 @@ export async function getLeaderboard(
   }
 
   // Get or calculate metrics
-  const metricsMap = new Map<number, Partial<Record<MetricType, MetricResult>>>();
-  
-  for (const client of allClients) {
-    const cached = forceRefresh ? null : await getCachedMetrics(client.id);
-    if (cached) {
-      metricsMap.set(client.id, cached);
-    } else {
-      const metrics = await calculateAllMetrics(client.id, clientTypes.get(client.id)!);
-      metricsMap.set(client.id, metrics);
-      // Cache the results
-      await cacheMetrics(client.id, metrics);
-    }
-  }
+  const metricsMap = await getMetricsForClients(allClients, clientTypes, forceRefresh);
 
   // Calculate master scores and rank
-  const rankedClients: RankedClient[] = [];
-  const significanceWarnings: string[] = [];
-
-  for (const client of allClients) {
-    const metrics = metricsMap.get(client.id) || {};
-    const { score } = calculateMasterScore(metrics, weights);
-
-    // Get trend from history
-    const trend = await getClientTrend(client.id);
-
-    const clientTypeValue = clientTypes.get(client.id);
-    rankedClients.push({
-      clientId: client.id,
-      clientName: client.name,
-      teriCode: client.teriCode,
-      clientType: clientTypeValue === "DUAL" ? "DUAL" : 
-                  clientTypeValue === "SUPPLIER" ? "SUPPLIER" : "CUSTOMER",
-      rank: 0, // Will be set after sorting
-      percentile: 0, // Will be set after sorting
-      masterScore: score,
-      metrics,
-      trend: trend.direction,
-      trendAmount: trend.amount,
-    });
-  }
+  const { rankedClients, significanceWarnings } = await buildRankedClients(
+    allClients,
+    metricsMap,
+    clientTypes,
+    weights
+  );
 
   // Sort by master score (or specific metric)
-  rankedClients.sort((a, b) => {
-    let aValue: number | null;
-    let bValue: number | null;
-
-    if (sortBy === "master_score") {
-      aValue = a.masterScore;
-      bValue = b.masterScore;
-    } else {
-      aValue = a.metrics[sortBy as MetricType]?.value ?? null;
-      bValue = b.metrics[sortBy as MetricType]?.value ?? null;
-    }
-
-    // Handle nulls
-    if (aValue === null && bValue === null) return 0;
-    if (aValue === null) return 1;
-    if (bValue === null) return -1;
-
-    return sortOrder === "desc" ? bValue - aValue : aValue - bValue;
-  });
+  sortRankedClients(rankedClients, sortBy, sortOrder);
 
   // Assign ranks and percentiles
-  rankedClients.forEach((client, index) => {
-    client.rank = index + 1;
-    client.percentile = ((index + 1) / rankedClients.length) * 100;
-  });
-
-  // Check for significance warnings
-  if (rankedClients.length < MIN_CLIENTS_FOR_SIGNIFICANCE) {
-    significanceWarnings.push(
-      `Only ${rankedClients.length} clients in leaderboard. Rankings may not be statistically significant.`
-    );
-  }
+  assignRanksAndPercentiles(rankedClients);
 
   // Apply pagination
   const paginatedClients = rankedClients.slice(offset, offset + limit);
@@ -384,251 +156,7 @@ export async function getClientRanking(
 }
 
 // ============================================================================
-// WEIGHT MANAGEMENT
-// ============================================================================
-
-/**
- * Get effective weights for a user (custom or default)
- */
-export async function getEffectiveWeights(
-  userId: number | undefined,
-  clientType: ClientType
-): Promise<WeightConfig> {
-  if (!db) {
-    return getDefaultWeights(clientType);
-  }
-
-  // Try to get user's custom weights
-  if (userId) {
-    const effectiveClientType = clientType === "DUAL" ? "ALL" : clientType;
-    const userWeightsResult = await db
-      .select()
-      .from(leaderboardWeightConfigs)
-      .where(
-        and(
-          eq(leaderboardWeightConfigs.userId, userId),
-          eq(leaderboardWeightConfigs.clientType, effectiveClientType),
-          eq(leaderboardWeightConfigs.isActive, true),
-          isNull(leaderboardWeightConfigs.deletedAt)
-        )
-      )
-      .limit(1);
-
-    if (userWeightsResult[0]) {
-      return userWeightsResult[0].weights as WeightConfig;
-    }
-  }
-
-  // Fall back to system defaults
-  return getDefaultWeights(clientType);
-}
-
-/**
- * Get default weights for a client type
- */
-export async function getDefaultWeights(clientType: ClientType): Promise<WeightConfig> {
-  if (!db) {
-    // Fall back to hardcoded defaults
-    switch (clientType) {
-      case "SUPPLIER":
-        return SUPPLIER_DEFAULT_WEIGHTS;
-      case "CUSTOMER":
-        return CUSTOMER_DEFAULT_WEIGHTS;
-      default:
-        return ALL_DEFAULT_WEIGHTS;
-    }
-  }
-
-  // Try database defaults first
-  const effectiveClientType = clientType === "DUAL" ? "ALL" : clientType;
-  const dbDefaultsResult = await db
-    .select()
-    .from(leaderboardDefaultWeights)
-    .where(eq(leaderboardDefaultWeights.clientType, effectiveClientType))
-    .limit(1);
-
-  if (dbDefaultsResult[0]) {
-    return dbDefaultsResult[0].weights as WeightConfig;
-  }
-
-  // Fall back to hardcoded defaults
-  switch (clientType) {
-    case "SUPPLIER":
-      return SUPPLIER_DEFAULT_WEIGHTS;
-    case "CUSTOMER":
-      return CUSTOMER_DEFAULT_WEIGHTS;
-    default:
-      return ALL_DEFAULT_WEIGHTS;
-  }
-}
-
-/**
- * Save user's custom weights
- */
-export async function saveUserWeights(
-  userId: number,
-  clientType: ClientType,
-  weights: WeightConfig
-): Promise<void> {
-  if (!db) {
-    throw new Error("Database not available");
-  }
-
-  const normalizedWeights = normalizeWeights(weights);
-  const effectiveClientType = clientType === "DUAL" ? "ALL" : clientType;
-
-  // Check if config exists
-  const existingResult = await db
-    .select()
-    .from(leaderboardWeightConfigs)
-    .where(
-      and(
-        eq(leaderboardWeightConfigs.userId, userId),
-        eq(leaderboardWeightConfigs.clientType, effectiveClientType),
-        eq(leaderboardWeightConfigs.configName, "default"),
-        isNull(leaderboardWeightConfigs.deletedAt)
-      )
-    )
-    .limit(1);
-
-  const existing = existingResult[0];
-
-  if (existing) {
-    await db
-      .update(leaderboardWeightConfigs)
-      .set({ weights: normalizedWeights, updatedAt: new Date() })
-      .where(eq(leaderboardWeightConfigs.id, existing.id));
-  } else {
-    await db.insert(leaderboardWeightConfigs).values({
-      userId,
-      clientType: effectiveClientType,
-      configName: "default",
-      weights: normalizedWeights,
-      isActive: true,
-    });
-  }
-}
-
-/**
- * Reset user's weights to default
- */
-export async function resetUserWeights(
-  userId: number,
-  clientType: ClientType
-): Promise<void> {
-  if (!db) {
-    throw new Error("Database not available");
-  }
-
-  const effectiveClientType = clientType === "DUAL" ? "ALL" : clientType;
-
-  await db
-    .update(leaderboardWeightConfigs)
-    .set({ deletedAt: new Date() })
-    .where(
-      and(
-        eq(leaderboardWeightConfigs.userId, userId),
-        eq(leaderboardWeightConfigs.clientType, effectiveClientType),
-        isNull(leaderboardWeightConfigs.deletedAt)
-      )
-    );
-}
-
-// ============================================================================
-// CACHING
-// ============================================================================
-
-/**
- * Get cached metrics for a client
- */
-async function getCachedMetrics(
-  clientId: number
-): Promise<Partial<Record<MetricType, MetricResult>> | null> {
-  if (!db) return null;
-
-  const cached = await db
-    .select()
-    .from(leaderboardMetricCache)
-    .where(
-      and(
-        eq(leaderboardMetricCache.clientId, clientId),
-        gte(leaderboardMetricCache.expiresAt, new Date())
-      )
-    );
-
-  if (cached.length === 0) return null;
-
-  const metrics: Partial<Record<MetricType, MetricResult>> = {};
-  for (const entry of cached) {
-    metrics[entry.metricType as MetricType] = {
-      value: entry.metricValue ? parseFloat(entry.metricValue) : null,
-      sampleSize: entry.sampleSize,
-      isSignificant: entry.isSignificant,
-      calculatedAt: entry.calculatedAt,
-      rawData: entry.rawData as MetricResult["rawData"],
-    };
-  }
-
-  return metrics;
-}
-
-/**
- * Cache metrics for a client
- */
-async function cacheMetrics(
-  clientId: number,
-  metrics: Partial<Record<MetricType, MetricResult>>
-): Promise<void> {
-  if (!db) return;
-
-  const expiresAt = new Date(Date.now() + CACHE_TTL.clientMetrics);
-
-  for (const [metricType, result] of Object.entries(metrics)) {
-    if (!result) continue;
-
-    // Upsert cache entry
-    await db
-      .insert(leaderboardMetricCache)
-      .values({
-        clientId,
-        metricType,
-        metricValue: result.value?.toString() ?? null,
-        sampleSize: result.sampleSize,
-        isSignificant: result.isSignificant,
-        rawData: result.rawData,
-        calculatedAt: result.calculatedAt,
-        expiresAt,
-      })
-      .onDuplicateKeyUpdate({
-        set: {
-          metricValue: result.value?.toString() ?? null,
-          sampleSize: result.sampleSize,
-          isSignificant: result.isSignificant,
-          rawData: result.rawData,
-          calculatedAt: result.calculatedAt,
-          expiresAt,
-        },
-      });
-  }
-}
-
-/**
- * Invalidate cache for a client
- */
-export async function invalidateCache(clientId?: number): Promise<void> {
-  if (!db) return;
-
-  if (clientId) {
-    await db
-      .delete(leaderboardMetricCache)
-      .where(eq(leaderboardMetricCache.clientId, clientId));
-  } else {
-    await db.delete(leaderboardMetricCache);
-  }
-}
-
-// ============================================================================
-// HELPERS
+// HELPER FUNCTIONS
 // ============================================================================
 
 /**
@@ -648,176 +176,147 @@ function buildClientTypeFilter(clientType: ClientType) {
 }
 
 /**
- * Get client's trend from history
+ * Fetch clients with optional search filter
  */
-async function getClientTrend(
-  clientId: number
-): Promise<{ direction: "up" | "down" | "stable"; amount: number }> {
-  if (!db) return { direction: "stable", amount: 0 };
+async function fetchClients(
+  clientFilter: ReturnType<typeof buildClientTypeFilter>,
+  search?: string
+) {
+  if (!db) throw new Error("Database not available");
 
-  const history = await db
-    .select()
-    .from(leaderboardRankHistory)
-    .where(eq(leaderboardRankHistory.clientId, clientId))
-    .orderBy(desc(leaderboardRankHistory.snapshotDate))
-    .limit(2);
-
-  if (history.length < 2) {
-    return { direction: "stable", amount: 0 };
+  if (search) {
+    return db
+      .select({
+        id: clients.id,
+        name: clients.name,
+        teriCode: clients.teriCode,
+        isBuyer: clients.isBuyer,
+        isSeller: clients.isSeller,
+      })
+      .from(clients)
+      .where(
+        and(
+          clientFilter,
+          or(
+            like(clients.name, `%${search}%`),
+            like(clients.teriCode, `%${search}%`)
+          )
+        )
+      );
   }
 
-  const current = history[0].masterRank;
-  const previous = history[1].masterRank;
-
-  if (current === null || previous === null) {
-    return { direction: "stable", amount: 0 };
-  }
-
-  const diff = previous - current; // Positive = improved (lower rank is better)
-
-  if (diff > 0) return { direction: "up", amount: diff };
-  if (diff < 0) return { direction: "down", amount: Math.abs(diff) };
-  return { direction: "stable", amount: 0 };
+  return db
+    .select({
+      id: clients.id,
+      name: clients.name,
+      teriCode: clients.teriCode,
+      isBuyer: clients.isBuyer,
+      isSeller: clients.isSeller,
+    })
+    .from(clients)
+    .where(clientFilter);
 }
 
 /**
- * Get category ranks for a client
+ * Get metrics for all clients (from cache or calculate)
  */
-async function getCategoryRanks(
-  clientId: number,
-  _clientType: "CUSTOMER" | "SUPPLIER" | "DUAL"
-): Promise<{
-  financial: number | null;
-  engagement: number | null;
-  reliability: number | null;
-  growth: number | null;
-}> {
-  if (!db) {
-    return {
-      financial: null,
-      engagement: null,
-      reliability: null,
-      growth: null,
-    };
-  }
+async function getMetricsForClients(
+  allClients: Array<{ id: number; isBuyer: boolean | null; isSeller: boolean | null }>,
+  clientTypes: Map<number, "CUSTOMER" | "SUPPLIER" | "DUAL">,
+  forceRefresh: boolean
+): Promise<Map<number, Partial<Record<MetricType, MetricResult>>>> {
+  const metricsMap = new Map<number, Partial<Record<MetricType, MetricResult>>>();
 
-  // Get latest history entry
-  const historyResult = await db
-    .select()
-    .from(leaderboardRankHistory)
-    .where(eq(leaderboardRankHistory.clientId, clientId))
-    .orderBy(desc(leaderboardRankHistory.snapshotDate))
-    .limit(1);
-
-  const history = historyResult[0];
-
-  return {
-    financial: history?.financialRank ?? null,
-    engagement: history?.engagementRank ?? null,
-    reliability: history?.reliabilityRank ?? null,
-    growth: history?.growthRank ?? null,
-  };
-}
-
-/**
- * Get gap to next rank
- */
-function getGapToNextRank(
-  client: RankedClient,
-  allClients: RankedClient[]
-): { metric: MetricType; gap: number; nextRank: number } | null {
-  if (client.rank === 1) return null;
-
-  const nextClient = allClients.find(c => c.rank === client.rank - 1);
-  if (!nextClient) return null;
-
-  // Find the metric with the smallest gap
-  let bestMetric: MetricType | null = null;
-  let smallestGap = Infinity;
-
-  for (const [metricType, result] of Object.entries(client.metrics)) {
-    if (!result?.value) continue;
-    const nextValue = nextClient.metrics[metricType as MetricType]?.value;
-    if (!nextValue) continue;
-
-    const gap = Math.abs(nextValue - result.value);
-    if (gap < smallestGap) {
-      smallestGap = gap;
-      bestMetric = metricType as MetricType;
+  for (const client of allClients) {
+    const cached = forceRefresh ? null : await getCachedMetrics(client.id);
+    if (cached) {
+      metricsMap.set(client.id, cached);
+    } else {
+      const metrics = await calculateAllMetrics(client.id, clientTypes.get(client.id)!);
+      metricsMap.set(client.id, metrics);
+      await cacheMetrics(client.id, metrics);
     }
   }
 
-  if (!bestMetric) return null;
-
-  return {
-    metric: bestMetric,
-    gap: smallestGap,
-    nextRank: client.rank - 1,
-  };
+  return metricsMap;
 }
 
 /**
- * Get rank history for a client
+ * Build ranked clients array with scores and trends
  */
-async function getRankHistory(
-  clientId: number,
-  months: number
-): Promise<RankHistoryEntry[]> {
-  if (!db) return [];
+async function buildRankedClients(
+  allClients: Array<{ id: number; name: string; teriCode: string | null; isBuyer: boolean | null; isSeller: boolean | null }>,
+  metricsMap: Map<number, Partial<Record<MetricType, MetricResult>>>,
+  clientTypes: Map<number, "CUSTOMER" | "SUPPLIER" | "DUAL">,
+  weights: WeightConfig
+): Promise<{ rankedClients: RankedClient[]; significanceWarnings: string[] }> {
+  const rankedClients: RankedClient[] = [];
+  const significanceWarnings: string[] = [];
 
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - months);
+  for (const client of allClients) {
+    const metrics = metricsMap.get(client.id) || {};
+    const { score } = calculateMasterScore(metrics, weights);
+    const trend = await getClientTrend(client.id);
+    const clientTypeValue = clientTypes.get(client.id);
 
-  const history = await db
-    .select()
-    .from(leaderboardRankHistory)
-    .where(
-      and(
-        eq(leaderboardRankHistory.clientId, clientId),
-        gte(leaderboardRankHistory.snapshotDate, startDate)
-      )
-    )
-    .orderBy(asc(leaderboardRankHistory.snapshotDate));
+    rankedClients.push({
+      clientId: client.id,
+      clientName: client.name,
+      teriCode: client.teriCode ?? "",
+      clientType: clientTypeValue === "DUAL" ? "DUAL" : 
+                  clientTypeValue === "SUPPLIER" ? "SUPPLIER" : "CUSTOMER",
+      rank: 0,
+      percentile: 0,
+      masterScore: score,
+      metrics,
+      trend: trend.direction,
+      trendAmount: trend.amount,
+    });
+  }
 
-  return history.map(h => ({
-    date: h.snapshotDate instanceof Date 
-      ? h.snapshotDate.toISOString().split("T")[0] 
-      : String(h.snapshotDate),
-    rank: h.masterRank ?? 0,
-    score: h.masterScore ? parseFloat(h.masterScore) : null,
-  }));
+  if (rankedClients.length < MIN_CLIENTS_FOR_SIGNIFICANCE) {
+    significanceWarnings.push(
+      `Only ${rankedClients.length} clients in leaderboard. Rankings may not be statistically significant.`
+    );
+  }
+
+  return { rankedClients, significanceWarnings };
 }
 
 /**
- * Save rank history snapshot (called by scheduled job)
+ * Sort ranked clients by specified field
  */
-export async function saveRankHistorySnapshot(): Promise<void> {
-  if (!db) {
-    throw new Error("Database not available");
-  }
+function sortRankedClients(
+  rankedClients: RankedClient[],
+  sortBy: string,
+  sortOrder: "asc" | "desc"
+): void {
+  rankedClients.sort((a, b) => {
+    let aValue: number | null;
+    let bValue: number | null;
 
-  const today = new Date();
+    if (sortBy === "master_score") {
+      aValue = a.masterScore;
+      bValue = b.masterScore;
+    } else {
+      aValue = a.metrics[sortBy as MetricType]?.value ?? null;
+      bValue = b.metrics[sortBy as MetricType]?.value ?? null;
+    }
 
-  // Get current leaderboard
-  const leaderboard = await getLeaderboard({ clientType: "ALL" });
+    if (aValue === null && bValue === null) return 0;
+    if (aValue === null) return 1;
+    if (bValue === null) return -1;
 
-  // Save snapshot for each client
-  for (const client of leaderboard.clients) {
-    await db
-      .insert(leaderboardRankHistory)
-      .values({
-        clientId: client.clientId,
-        snapshotDate: today,
-        masterRank: client.rank,
-        masterScore: client.masterScore?.toString() ?? null,
-        totalClients: leaderboard.totalCount,
-      })
-      .onDuplicateKeyUpdate({
-        set: {
-          masterRank: client.rank,
-          masterScore: client.masterScore?.toString() ?? null,
-          totalClients: leaderboard.totalCount,
-        },
-      });
-  }
+    return sortOrder === "desc" ? bValue - aValue : aValue - bValue;
+  });
+}
+
+/**
+ * Assign ranks and percentiles to sorted clients
+ */
+function assignRanksAndPercentiles(rankedClients: RankedClient[]): void {
+  rankedClients.forEach((client, index) => {
+    client.rank = index + 1;
+    client.percentile = ((index + 1) / rankedClients.length) * 100;
+  });
 }
