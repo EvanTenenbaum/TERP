@@ -22,6 +22,8 @@ import {
 import { eq, and, desc, sql } from "drizzle-orm";
 import * as transactionsDb from "./transactionsDb";
 import { logger } from "./_core/logger";
+import { getFiscalPeriodIdOrDefault } from "./_core/fiscalPeriod";
+import { getAccountIdByName, ACCOUNT_NAMES } from "./_core/accountLookup";
 
 /**
  * Write off bad debt for a client transaction
@@ -161,31 +163,38 @@ async function createBadDebtGLEntries(
     // Generate entry number
     const entryNumber = `WO-${referenceNumber}`;
     
+    // Get actual account IDs from chart of accounts
+    const badDebtExpenseId = await getAccountIdByName(ACCOUNT_NAMES.BAD_DEBT_EXPENSE);
+    const accountsReceivableId = await getAccountIdByName(ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE);
+    
+    // Get fiscal period for the transaction date
+    const fiscalPeriodId = await getFiscalPeriodIdOrDefault(entryDate, 1);
+    
     // Debit: Bad Debt Expense
     await db.insert(ledgerEntries).values({
       entryNumber: `${entryNumber}-1`,
-      accountId: 0, // TODO: Should reference actual Bad Debt Expense account
+      accountId: badDebtExpenseId,
       entryDate,
       debit: amountNum.toString(),
       credit: "0.00",
       description: `Bad Debt Write-Off: ${description}`,
       referenceType: "WRITE_OFF",
       referenceId: 0,
-      fiscalPeriodId: 1, // TODO: Calculate actual fiscal period
+      fiscalPeriodId,
       createdBy: userId
     });
     
     // Credit: Accounts Receivable
     await db.insert(ledgerEntries).values({
       entryNumber: `${entryNumber}-2`,
-      accountId: 0, // TODO: Should reference actual Accounts Receivable account
+      accountId: accountsReceivableId,
       entryDate,
       debit: "0.00",
       credit: amountNum.toString(),
       description: `Bad Debt Write-Off: ${description}`,
       referenceType: "WRITE_OFF",
       referenceId: 0,
-      fiscalPeriodId: 1, // TODO: Calculate actual fiscal period
+      fiscalPeriodId,
       createdBy: userId
     });
   } catch (error) {
@@ -311,31 +320,38 @@ async function createBadDebtReversalGLEntries(
     // Generate entry number
     const entryNumber = `WOR-${referenceNumber}`;
     
+    // Get actual account IDs from chart of accounts
+    const badDebtExpenseId = await getAccountIdByName(ACCOUNT_NAMES.BAD_DEBT_EXPENSE);
+    const accountsReceivableId = await getAccountIdByName(ACCOUNT_NAMES.ACCOUNTS_RECEIVABLE);
+    
+    // Get fiscal period for the transaction date
+    const fiscalPeriodId = await getFiscalPeriodIdOrDefault(entryDate, 1);
+    
     // Credit: Bad Debt Expense (reverse the debit)
     await db.insert(ledgerEntries).values({
       entryNumber: `${entryNumber}-1`,
-      accountId: 0, // TODO: Should reference actual Bad Debt Expense account
+      accountId: badDebtExpenseId,
       entryDate,
       debit: "0.00",
       credit: amountNum.toString(),
       description: `Bad Debt Write-Off Reversal: ${description}`,
       referenceType: "WRITE_OFF_REVERSAL",
       referenceId: 0,
-      fiscalPeriodId: 1, // TODO: Calculate actual fiscal period
+      fiscalPeriodId,
       createdBy: userId
     });
     
     // Debit: Accounts Receivable (reverse the credit)
     await db.insert(ledgerEntries).values({
       entryNumber: `${entryNumber}-2`,
-      accountId: 0, // TODO: Should reference actual Accounts Receivable account
+      accountId: accountsReceivableId,
       entryDate,
       debit: amountNum.toString(),
       credit: "0.00",
       description: `Bad Debt Write-Off Reversal: ${description}`,
       referenceType: "WRITE_OFF_REVERSAL",
       referenceId: 0,
-      fiscalPeriodId: 1, // TODO: Calculate actual fiscal period
+      fiscalPeriodId,
       createdBy: userId
     });
   } catch (error) {

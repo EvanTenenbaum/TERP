@@ -13,6 +13,7 @@ import { getDb } from "./db";
 import { ledgerEntries, accounts, type InsertLedgerEntry } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { logger } from "./_core/logger";
+import { getFiscalPeriodIdOrDefault } from "./_core/fiscalPeriod";
 
 /**
  * Standard account codes (should be configurable in production)
@@ -68,13 +69,12 @@ async function generateEntryNumber(prefix: string): Promise<string> {
 
 /**
  * Get current fiscal period ID
- * TODO: Implement proper fiscal period lookup
+ * Uses the fiscal period lookup utility
+ * @param date - Optional date to get fiscal period for (defaults to now)
  * @returns Fiscal period ID
  */
-async function getCurrentFiscalPeriodId(): Promise<number> {
-  // Placeholder - in production, this should look up the current fiscal period
-  // based on the transaction date
-  return 1;
+async function getCurrentFiscalPeriodId(date?: Date): Promise<number> {
+  return getFiscalPeriodIdOrDefault(date ?? new Date(), 1);
 }
 
 /**

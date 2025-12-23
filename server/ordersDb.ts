@@ -14,6 +14,13 @@ import {
   type Order,
 } from "../drizzle/schema";
 import { calculateCogs, calculateDueDate, type CogsCalculationInput } from "./cogsCalculator";
+import {
+  createInvoiceFromOrder,
+  recordOrderCashPayment,
+  updateClientCreditExposure,
+  restoreInventoryFromOrder,
+  reverseOrderAccountingEntries,
+} from "./services/orderAccountingService";
 
 // ============================================================================
 // TYPES
@@ -314,6 +321,36 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       // TODO: Create invoice (accounting integration)
       // TODO: Record cash payment (accounting integration)
       // TODO: Update credit exposure (credit intelligence integration)
+      
+      // Create invoice from order (accounting integration)
+      try {
+        const invoiceId = await createInvoiceFromOrder({
+          orderId: order.id,
+          orderNumber: orderNumber,
+          clientId: input.clientId,
+          items: processedItems,
+          subtotal,
+          tax: 0,
+          total: subtotal,
+          dueDate,
+          createdBy: input.createdBy,
+        });
+
+        // Record cash payment if applicable
+        if (input.cashPayment && input.cashPayment > 0) {
+          await recordOrderCashPayment({
+            invoiceId,
+            amount: input.cashPayment,
+            createdBy: input.createdBy,
+          });
+        }
+
+        // Update credit exposure
+        await updateClientCreditExposure(input.clientId);
+      } catch (accountingError) {
+        // Log but don't fail the order - accounting can be reconciled later
+        console.error("Accounting integration error (non-fatal):", accountingError);
+      }
     }
     
     // 8. Return the created order
@@ -552,7 +589,9 @@ export async function updateOrder(
     updateData.validUntil = updates.validUntil;
   }
   
-  // TODO: Handle items updates (would require recalculating COGS, totals, etc.)
+  // Note: Items updates require recalculating COGS, totals, etc.
+  // This is handled by updateDraftOrder() for draft orders.
+  // For non-draft orders, items cannot be modified (business rule).
   
   await db
     .update(orders)
@@ -574,7 +613,7 @@ export async function updateOrder(
 /**
  * Delete/cancel an order
  */
-export async function deleteOrder(id: number): Promise<void> {
+export async function deleteOrder(id: number, cancelledBy?: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
@@ -590,8 +629,35 @@ export async function deleteOrder(id: number): Promise<void> {
       .set({ saleStatus: 'CANCELLED' })
       .where(eq(orders.id, id));
     
-    // TODO: Restore inventory
-    // TODO: Reverse accounting entries
+    // Restore inventory
+    const orderItems = typeof order.items === 'string' 
+      ? JSON.parse(order.items) 
+      : order.items;
+    
+    if (Array.isArray(orderItems) && orderItems.length > 0) {
+      try {
+        await restoreInventoryFromOrder({
+          items: orderItems,
+          orderId: id,
+        });
+      } catch (inventoryError) {
+        console.error("Failed to restore inventory (non-fatal):", inventoryError);
+      }
+    }
+    
+    // Reverse accounting entries if invoice exists
+    if (order.invoiceId) {
+      try {
+        await reverseOrderAccountingEntries({
+          invoiceId: order.invoiceId,
+          orderId: id,
+          reason: "Order cancelled",
+          reversedBy: cancelledBy ?? 1,
+        });
+      } catch (accountingError) {
+        console.error("Failed to reverse accounting entries (non-fatal):", accountingError);
+      }
+    }
   } else {
     // For quotes, can delete
     await db
@@ -741,7 +807,38 @@ export async function convertQuoteToSale(
       })
       .where(eq(orders.id, input.quoteId));
     
-    // 8. TODO: Create invoice, record payment, update credit
+    // 8. Create invoice, record payment, update credit
+    if (sale) {
+      try {
+        const subtotal = parseFloat(quote.subtotal ?? "0");
+        const invoiceId = await createInvoiceFromOrder({
+          orderId: sale.id,
+          orderNumber: saleNumber,
+          clientId: quote.clientId,
+          items: quoteItems,
+          subtotal,
+          tax: parseFloat(quote.tax ?? "0"),
+          total: parseFloat(quote.total ?? "0"),
+          dueDate,
+          createdBy: quote.createdBy ?? 1,
+        });
+
+        // Record cash payment if applicable
+        if (input.cashPayment && input.cashPayment > 0) {
+          await recordOrderCashPayment({
+            invoiceId,
+            amount: input.cashPayment,
+            createdBy: quote.createdBy ?? 1,
+          });
+        }
+
+        // Update credit exposure
+        await updateClientCreditExposure(quote.clientId);
+      } catch (accountingError) {
+        // Log but don't fail the conversion - accounting can be reconciled later
+        console.error("Accounting integration error (non-fatal):", accountingError);
+      }
+    }
     
     // 9. Return the sale
     if (!sale) {
@@ -758,7 +855,6 @@ export async function convertQuoteToSale(
 
 /**
  * Export order to various formats
- * TODO: Implement actual export logic
  */
 export async function exportOrder(
   id: number,
@@ -769,9 +865,68 @@ export async function exportOrder(
     throw new Error(`Order ${id} not found`);
   }
   
-  // TODO: Implement export logic
-  // For now, return a placeholder
-  return `Export ${format} for order ${order.orderNumber}`;
+  // Parse items
+  const items = typeof order.items === 'string' 
+    ? JSON.parse(order.items) 
+    : order.items;
+  
+  // Build export data
+  const exportData = {
+    orderNumber: order.orderNumber,
+    orderType: order.orderType,
+    status: order.isDraft ? 'DRAFT' : (order.saleStatus ?? order.quoteStatus ?? 'UNKNOWN'),
+    clientId: order.clientId,
+    createdAt: order.createdAt,
+    subtotal: order.subtotal,
+    tax: order.tax,
+    total: order.total,
+    items: Array.isArray(items) ? items.map((item: OrderItem) => ({
+      displayName: item.displayName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      lineTotal: item.lineTotal,
+    })) : [],
+  };
+  
+  switch (format) {
+    case 'clipboard':
+      // Return formatted text for clipboard
+      const lines = [
+        `Order: ${exportData.orderNumber}`,
+        `Type: ${exportData.orderType}`,
+        `Status: ${exportData.status}`,
+        `Date: ${exportData.createdAt?.toLocaleDateString() ?? 'N/A'}`,
+        '',
+        'Items:',
+        ...exportData.items.map((item: { displayName: string; quantity: number; unitPrice: number; lineTotal: number }) => 
+          `  - ${item.displayName}: ${item.quantity} x $${item.unitPrice.toFixed(2)} = $${item.lineTotal.toFixed(2)}`
+        ),
+        '',
+        `Subtotal: $${parseFloat(exportData.subtotal ?? '0').toFixed(2)}`,
+        `Tax: $${parseFloat(exportData.tax ?? '0').toFixed(2)}`,
+        `Total: $${parseFloat(exportData.total ?? '0').toFixed(2)}`,
+      ];
+      return lines.join('\n');
+      
+    case 'pdf':
+      // Return JSON data that can be used by a PDF generator on the client
+      return JSON.stringify({
+        type: 'pdf',
+        data: exportData,
+        template: 'order',
+      });
+      
+    case 'image':
+      // Return JSON data that can be used by an image generator on the client
+      return JSON.stringify({
+        type: 'image',
+        data: exportData,
+        template: 'order',
+      });
+      
+    default:
+      throw new Error(`Unsupported export format: ${format}`);
+  }
 }
 
 // NEW FUNCTIONS TO ADD TO ordersDb.ts
