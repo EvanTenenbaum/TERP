@@ -71,6 +71,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ✅ Recently Completed
 
+- **FEATURE-015**: VIP Portal Settings in Client Profile - COMPLETE (2025-12-22)
 - **PERF-003**: Add Pagination - COMPLETE (2025-12-19)
 - **BUG-031**: Fix Pagination Data Contract Breakage - COMPLETE (2025-12-19)
 - **BUG-032**: Fix Dashboard Stats Null Return - COMPLETE (2025-12-19)
@@ -7094,3 +7095,57 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
   2.  **Implement `createPaginatedResult()` Helper:** Use the generic helper function to create consistent paginated responses.
   3.  **Refactor DB Functions:** Modify database-layer functions (e.g., `clientsDb.getClients`) to return `PaginatedResult<T>` directly, moving pagination logic out of the router layer.
   4.  **Create `usePaginatedQuery()` Hook:** Develop a custom React hook for the frontend that automatically handles the `PaginatedResult<T>` structure, extracting the `.items` array and providing pagination controls. This will eliminate the need for manual `.items` extraction in every component.
+
+
+---
+
+## ✅ Completed Tasks (Retroactive)
+
+### FEATURE-015: VIP Portal Settings in Client Profile [RETROACTIVE]
+
+**Status:** complete  
+**Priority:** MEDIUM  
+**Estimate:** 4h  
+**Actual Time:** 2h  
+**Module:** `client/src/components/clients/`, `server/routers/vipPortalAdmin.ts`, `server/services/vipPortalAdminService.ts`  
+**Dependencies:** None  
+**Completed:** 2025-12-22
+
+**Problem:** Client profile page lacked VIP Portal settings section. Users had to navigate to a separate page to manage VIP portal access. No way for admins to preview the portal as the client would see it.
+
+**Objectives:**
+
+1. Add VIP Portal settings section to client profile Overview tab
+2. Allow enabling/disabling VIP portal directly from client profile
+3. Implement "View as Client" impersonation feature for admins
+4. Show portal configuration summary and last login info
+
+**Deliverables:**
+
+- [x] Created `VIPPortalSettings.tsx` component with enable/disable controls
+- [x] Added impersonation endpoint to `vipPortalAdmin.clients.impersonate`
+- [x] Implemented `createImpersonationSession()` service function
+- [x] Added impersonation banner to VIP Dashboard
+- [x] Updated `useVIPPortalAuth` hook to handle impersonation sessions
+- [x] Integrated component into ClientProfilePage Overview tab
+- [x] 2-hour session timeout for impersonation security
+- [x] Audit logging for impersonation sessions
+
+**Key Commits:** `feat(vip-portal): add VIP Portal settings to client profile with View as Client impersonation`
+
+**Technical Details:**
+
+- Impersonation sessions use `imp_` prefix on session tokens
+- Sessions expire after 2 hours (vs 30 days for normal logins)
+- Impersonation doesn't affect client's login count or last login timestamp
+- Visual banner in VIP Dashboard indicates impersonation mode
+- Exit button closes the impersonation tab
+
+**Files Modified:**
+
+- `client/src/components/clients/VIPPortalSettings.tsx` (new)
+- `client/src/pages/ClientProfilePage.tsx`
+- `client/src/pages/vip-portal/VIPDashboard.tsx`
+- `client/src/hooks/useVIPPortalAuth.ts`
+- `server/routers/vipPortalAdmin.ts`
+- `server/services/vipPortalAdminService.ts`
