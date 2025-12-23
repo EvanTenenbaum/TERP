@@ -18,19 +18,21 @@
 
 ## Risk Levels
 
-| Level | Definition | Action Required |
-|-------|------------|-----------------|
-| 🔴 HIGH | Data loss, security issue, major UX problem | Fix within 1 week |
-| 🟡 MEDIUM | Problems at scale, degraded experience | Fix before threshold hit |
-| 🟢 LOW | Minor inconvenience, cosmetic, unlikely | Fix when convenient |
+| Level     | Definition                                  | Action Required          |
+| --------- | ------------------------------------------- | ------------------------ |
+| 🔴 HIGH   | Data loss, security issue, major UX problem | Fix within 1 week        |
+| 🟡 MEDIUM | Problems at scale, degraded experience      | Fix before threshold hit |
+| 🟢 LOW    | Minor inconvenience, cosmetic, unlikely     | Fix when convenient      |
 
 ---
 
 ## Active Technical Debt
 
 ### Template (copy for new entries)
+
 ```markdown
 ### [DEBT-XXX] Brief description
+
 - **Feature**: Module/feature name
 - **Maturity**: 🧪 EXPERIMENTAL / 🔨 FUNCTIONAL / 🏛️ HARDENED
 - **Shortcut**: What was skipped or done quickly
@@ -46,6 +48,7 @@
 ### Active Items
 
 ### [DEBT-001] Redundant clients.list queries across pages
+
 - **Feature**: Multiple pages (Orders, Quotes, PurchaseOrders, SalesSheetCreator, OrderCreator)
 - **Maturity**: 🔨 FUNCTIONAL
 - **Shortcut**: Each page fetches `trpc.clients.list.useQuery({ limit: 1000 })` independently
@@ -53,13 +56,14 @@
 - **Harden by**: Before 100+ concurrent users
 - **Effort**: 2h - Migrate pages to use `useClientsData` hook (hook already created)
 - **Created**: 2025-12-22
-- **Notes**: 
+- **Notes**:
   - Found in Orders.tsx, Quotes.tsx, PurchaseOrdersPage.tsx, SalesSheetCreatorPage.tsx, OrderCreatorPage.tsx
   - **SOLUTION CREATED**: `client/src/hooks/useClientsData.ts` provides shared hook with caching
   - Migration: Replace `trpc.clients.list.useQuery({ limit: 1000 })` with `useClientsData()`
   - React Query already deduplicates concurrent requests, but hook provides consistent interface
 
 ### [DEBT-002] z.any() usage in configuration.ts router
+
 - **Feature**: Configuration router
 - **Maturity**: 🔨 FUNCTIONAL
 - **Shortcut**: Uses `z.any()` for config values and validation input
@@ -70,6 +74,7 @@
 - **Notes**: In FORBIDDEN files list (BUG-034 scope), defer until BUG-034 completes
 
 ### [DEBT-003] z.any() usage in orderEnhancements.ts router
+
 - **Feature**: Order enhancements (recurring orders)
 - **Maturity**: 🔨 FUNCTIONAL
 - **Shortcut**: Uses `z.any()` for orderTemplate field
@@ -80,6 +85,7 @@
 - **Notes**: In FORBIDDEN files list (BUG-034 scope), defer until BUG-034 completes
 
 ### [DEBT-004] z.any() usage in clientNeedsEnhanced.ts router
+
 - **Feature**: Client needs matching
 - **Maturity**: 🔨 FUNCTIONAL
 - **Shortcut**: Uses `z.any()` for matches array
@@ -90,6 +96,7 @@
 - **Notes**: In FORBIDDEN files list (BUG-034 scope), defer until BUG-034 completes
 
 ### [DEBT-005] z.any() usage in dashboard.ts router
+
 - **Feature**: Dashboard widgets
 - **Maturity**: 🔨 FUNCTIONAL
 - **Shortcut**: Uses `z.any()` for widget config
@@ -100,6 +107,7 @@
 - **Notes**: In FORBIDDEN files list (BUG-034 scope), defer until BUG-034 completes
 
 ### [DEBT-006] z.any() usage in freeformNotes.ts router
+
 - **Feature**: Freeform notes (rich text)
 - **Maturity**: 🔨 FUNCTIONAL
 - **Shortcut**: Uses `z.any()` for rich text content
@@ -110,6 +118,7 @@
 - **Notes**: In FORBIDDEN files list (BUG-034 scope), defer until BUG-034 completes
 
 ### [DEBT-007] z.any() usage in inventory.ts router (saved filters)
+
 - **Feature**: Inventory saved filters
 - **Maturity**: 🔨 FUNCTIONAL
 - **Shortcut**: Uses `z.any()` for filter JSON object
@@ -120,6 +129,7 @@
 - **Notes**: In FORBIDDEN files list (BUG-034 scope), defer until BUG-034 completes
 
 ### [DEBT-008] z.any() usage in clients.ts router (metadata)
+
 - **Feature**: Client transactions metadata
 - **Maturity**: 🔨 FUNCTIONAL
 - **Shortcut**: Uses `z.any()` for transaction metadata
@@ -133,11 +143,32 @@
 
 ## Resolved Technical Debt
 
+### [DEBT-009] UI Dark Mode and Mobile Responsiveness Issues ✅
+
+- **Resolved**: 2025-12-23
+- **Resolution**: Comprehensive UI QA audit and fixes applied
+- **Commits**: `9bbdcda5`
+- **Original Issues**:
+  - CalendarPage used hardcoded Tailwind colors breaking dark mode
+  - Login page used raw HTML instead of shadcn/ui components
+  - useMobile hook caused layout flash with undefined initial state
+  - ClientProfilePage tabs overflowed on mobile screens
+- **Fixes Applied**:
+  - Replaced all hardcoded colors with design system tokens
+  - Migrated Login to shadcn/ui components with dark mode support
+  - Fixed useMobile hook initialization to prevent layout flash
+  - Added horizontal scroll for ClientProfile tabs with scrollbar-hide utility
+  - Added comprehensive responsive design patterns
+- **Impact**: Improved mobile UX, dark mode support, and component consistency
+- **Documentation**: `docs/UI_QA_AUDIT_REPORT.md`, `docs/TECHNICAL_IMPLEMENTATION_DETAILS.md`
+
 <!-- Move resolved items here with resolution notes -->
 
 ### Template for resolved items
+
 ```markdown
 ### [DEBT-XXX] Brief description ✅
+
 - **Resolved**: YYYY-MM-DD
 - **Resolution**: How it was fixed
 - **Commits**: `abc1234`
@@ -146,28 +177,30 @@
 
 ---
 
-*No resolved debt entries yet.*
+_No resolved debt entries yet._
 
 ---
 
 ## Debt Metrics
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Total active debt items | 8 | < 20 |
-| HIGH risk items | 0 | 0 |
-| MEDIUM risk items | 1 | < 10 |
-| LOW risk items | 7 | - |
-| Oldest unresolved item | 2025-12-22 | < 30 days |
+| Metric                  | Current    | Target    |
+| ----------------------- | ---------- | --------- |
+| Total active debt items | 8          | < 20      |
+| HIGH risk items         | 0          | 0         |
+| MEDIUM risk items       | 1          | < 10      |
+| LOW risk items          | 7          | -         |
+| Resolved debt items     | 1          | -         |
+| Oldest unresolved item  | 2025-12-22 | < 30 days |
 
 ---
 
 ## Review Log
 
-| Date | Reviewer | Items Reviewed | Actions Taken |
-|------|----------|----------------|---------------|
-| 2025-12-22 | QUAL-002/DATA-004 Sprint | 8 items added | Audit of z.any() usage and redundant queries |
-| 2025-12-19 | System | Initial setup | Created registry |
+| Date       | Reviewer                 | Items Reviewed | Actions Taken                                                            |
+| ---------- | ------------------------ | -------------- | ------------------------------------------------------------------------ |
+| 2025-12-23 | UI QA Agent              | UI/UX issues   | Resolved DEBT-009: Dark mode, mobile responsiveness, component migration |
+| 2025-12-22 | QUAL-002/DATA-004 Sprint | 8 items added  | Audit of z.any() usage and redundant queries                             |
+| 2025-12-19 | System                   | Initial setup  | Created registry                                                         |
 
 ---
 
