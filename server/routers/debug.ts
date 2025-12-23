@@ -215,9 +215,6 @@ export const debugRouter = router({
   }),
 
   /**
-   * Get counts of all seeded tables (using COUNT instead of SELECT *)
-   */
-  /**
    * DIAG-005: Check leaderboard_weight_configs table structure
    */
   leaderboardTableCheck: publicProcedure.query(async () => {
@@ -283,6 +280,61 @@ export const debugRouter = router({
     return results;
   }),
 
+  /**
+   * DIAG-006: Check if leaderboard tables exist
+   */
+  checkLeaderboardTables: publicProcedure.query(async () => {
+    const results: Record<string, any> = {
+      timestamp: new Date().toISOString(),
+      tests: {},
+    };
+
+    try {
+      const pool = getConnectionPool();
+      const connection = await pool.getConnection();
+
+      // Check if tables exist
+      const tables = [
+        'leaderboard_weight_configs',
+        'leaderboard_default_weights', 
+        'leaderboard_metric_cache',
+        'leaderboard_rank_history',
+        'dashboard_widget_configs'
+      ];
+
+      for (const table of tables) {
+        try {
+          const [rows] = await connection.query(`SHOW TABLES LIKE '${table}'`);
+          results.tests[table] = {
+            exists: (rows as any[]).length > 0,
+          };
+          
+          if ((rows as any[]).length > 0) {
+            // Get column info
+            const [cols] = await connection.query(`DESCRIBE ${table}`);
+            results.tests[table].columns = (cols as any[]).map((c: any) => c.Field);
+          }
+        } catch (err: any) {
+          results.tests[table] = {
+            exists: false,
+            error: err.message,
+          };
+        }
+      }
+
+      connection.release();
+      results.success = true;
+    } catch (poolErr: any) {
+      results.success = false;
+      results.poolError = poolErr.message;
+    }
+
+    return results;
+  }),
+
+  /**
+   * Get counts of all seeded tables (using COUNT instead of SELECT *)
+   */
   getCounts: publicProcedure.query(async () => {
     try {
       const db = await getDb();
