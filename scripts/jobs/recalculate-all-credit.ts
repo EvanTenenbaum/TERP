@@ -68,7 +68,7 @@ async function recalculateAllCredit(options: JobOptions): Promise<JobResult> {
     conditions.push(ne(clients.creditLimitSource, "MANUAL"));
   }
 
-  let query = db
+  const query = db
     .select({
       id: clients.id,
       name: clients.name,

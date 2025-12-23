@@ -3,7 +3,8 @@
  * Calculates client credit limits based on real-time financial and behavioral data
  */
 
-import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
+import { performance } from "perf_hooks";
+import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   clients,
@@ -107,7 +108,7 @@ async function calculateRevenueMomentum(clientId: number): Promise<{ score: numb
   const growthRate = ((avgMonthly3M - avgMonthly12M) / avgMonthly12M) * 100;
   
   // Normalize to 0-100 (positive growth = higher score)
-  let score = 50 + Math.min(Math.max(growthRate, -50), 50);
+  const score = 50 + Math.min(Math.max(growthRate, -50), 50);
   
   // Determine trend
   let trend: -1 | 0 | 1 = 0;
@@ -161,7 +162,7 @@ async function calculateCashCollectionStrength(clientId: number): Promise<{ scor
   const avgLag = count > 0 ? totalLag / count : 30;
 
   // Normalize: 0 days = 100, 30 days = 50, 60+ days = 0
-  let score = Math.max(0, Math.min(100, 100 - (avgLag / 60) * 100));
+  const score = Math.max(0, Math.min(100, 100 - (avgLag / 60) * 100));
 
   // Determine trend (compare recent vs older)
   const midpoint = Math.floor(paidInvoices.length / 2);
@@ -213,7 +214,7 @@ async function calculateProfitabilityQuality(clientId: number): Promise<{ score:
   const avgMargin = Number(client[0].avgProfitMargin || 0);
 
   // Normalize margin to 0-100 (0% = 0, 50%+ = 100)
-  let score = Math.min(100, (avgMargin / 50) * 100);
+  const score = Math.min(100, (avgMargin / 50) * 100);
 
   // For trend, we'd need historical margin data - simplified here
   let trend: -1 | 0 | 1 = 0;
@@ -242,7 +243,7 @@ async function calculateDebtAgingRisk(clientId: number): Promise<{ score: number
   if (totalOwed === 0) return { score: 100, trend: 0 };
 
   // Normalize: 0 days = 100, 30 days = 70, 60 days = 40, 90+ days = 0
-  let score = Math.max(0, Math.min(100, 100 - (oldestDebtDays / 90) * 100));
+  const score = Math.max(0, Math.min(100, 100 - (oldestDebtDays / 90) * 100));
 
   // Determine trend
   let trend: -1 | 0 | 1 = 0;
@@ -298,7 +299,7 @@ async function calculateRepaymentVelocity(clientId: number): Promise<{ score: nu
   const ratio = totalPayments / totalNewAR;
 
   // Normalize to 0-100
-  let score = Math.min(100, ratio * 100);
+  const score = Math.min(100, ratio * 100);
 
   // Determine trend
   let trend: -1 | 0 | 1 = 0;
@@ -558,7 +559,7 @@ function generateExplanation(
   creditLimit: number,
   healthScore: number,
   signals: CreditSignals,
-  weights: any,
+  _weights: Record<string, number>,
   mode: "LEARNING" | "ACTIVE"
 ): string {
   const parts: string[] = [];

@@ -58,6 +58,13 @@ interface CreditCheckResult {
   enforcementMode: "WARNING" | "SOFT_BLOCK" | "HARD_BLOCK";
 }
 
+interface InventoryItemForOrder {
+  id: number;
+  name: string;
+  basePrice: number;
+  retailPrice?: number;
+}
+
 export default function OrderCreatorPageV2() {
   // State
   const [clientId, setClientId] = useState<number | null>(null);
@@ -235,7 +242,7 @@ export default function OrderCreatorPageV2() {
   };
 
   // Convert inventory items to LineItem format
-  const convertInventoryToLineItems = (inventoryItems: any[]): LineItem[] => {
+  const convertInventoryToLineItems = (inventoryItems: InventoryItemForOrder[]): LineItem[] => {
     return inventoryItems.map(item => {
       // Calculate margin percent from basePrice and retailPrice
       const cogsPerUnit = item.basePrice || 0;
@@ -268,7 +275,7 @@ export default function OrderCreatorPageV2() {
     });
   };
 
-  const handleAddItem = (inventoryItems: any[]) => {
+  const handleAddItem = (inventoryItems: InventoryItemForOrder[]) => {
     if (!inventoryItems || inventoryItems.length === 0) {
       toast.error("No items selected");
       return;
