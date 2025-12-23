@@ -121,95 +121,103 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
+    <div className="flex h-screen flex-col bg-background">
       {/* Header */}
-      <div className="border-b bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <BackButton label="Back to Dashboard" to="/" />
-            <h1 className="text-2xl font-semibold text-gray-900">Calendar</h1>
+      <div className="border-b bg-card px-3 py-3 sm:px-6 sm:py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex items-center gap-3">
+              <BackButton label="Back to Dashboard" to="/" />
+              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Calendar</h1>
+            </div>
 
             {/* Date Navigation */}
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePrevious}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-border px-2 py-1.5 text-xs font-medium text-foreground hover:bg-accent sm:px-3 sm:text-sm"
+                aria-label="Previous period"
               >
                 Previous
               </button>
               <button
                 onClick={handleToday}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-border px-2 py-1.5 text-xs font-medium text-foreground hover:bg-accent sm:px-3 sm:text-sm"
               >
                 Today
               </button>
               <button
                 onClick={handleNext}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-border px-2 py-1.5 text-xs font-medium text-foreground hover:bg-accent sm:px-3 sm:text-sm"
+                aria-label="Next period"
               >
                 Next
               </button>
             </div>
 
             {/* Current Date Display */}
-            <div className="text-lg font-medium text-gray-900">
+            <div className="text-base font-medium text-foreground sm:text-lg">
               {formatDateHeader(currentDate, currentView)}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* View Switcher */}
-            <div className="flex rounded-lg border border-gray-300 bg-white">
+            <div className="flex rounded-lg border border-border bg-card">
               <button
                 onClick={() => handleViewChange("MONTH")}
-                className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium ${
+                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium sm:gap-2 sm:px-3 sm:text-sm ${
                   currentView === "MONTH"
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-50"
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-accent"
                 }`}
+                aria-pressed={currentView === "MONTH"}
               >
-                <Calendar className="h-4 w-4" />
-                Month
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Month</span>
               </button>
               <button
                 onClick={() => handleViewChange("WEEK")}
-                className={`flex items-center gap-2 border-l border-gray-300 px-3 py-1.5 text-sm font-medium ${
+                className={`flex items-center gap-1 border-l border-border px-2 py-1.5 text-xs font-medium sm:gap-2 sm:px-3 sm:text-sm ${
                   currentView === "WEEK"
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-50"
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-accent"
                 }`}
+                aria-pressed={currentView === "WEEK"}
               >
-                <Grid3x3 className="h-4 w-4" />
-                Week
+                <Grid3x3 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Week</span>
               </button>
               <button
                 onClick={() => handleViewChange("DAY")}
-                className={`flex items-center gap-2 border-l border-gray-300 px-3 py-1.5 text-sm font-medium ${
+                className={`flex items-center gap-1 border-l border-border px-2 py-1.5 text-xs font-medium sm:gap-2 sm:px-3 sm:text-sm ${
                   currentView === "DAY"
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-50"
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-accent"
                 }`}
+                aria-pressed={currentView === "DAY"}
               >
-                <Clock className="h-4 w-4" />
-                Day
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Day</span>
               </button>
               <button
                 onClick={() => handleViewChange("AGENDA")}
-                className={`flex items-center gap-2 border-l border-gray-300 px-3 py-1.5 text-sm font-medium ${
+                className={`flex items-center gap-1 border-l border-border px-2 py-1.5 text-xs font-medium sm:gap-2 sm:px-3 sm:text-sm ${
                   currentView === "AGENDA"
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-50"
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-accent"
                 }`}
+                aria-pressed={currentView === "AGENDA"}
               >
-                <List className="h-4 w-4" />
-                Agenda
+                <List className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Agenda</span>
               </button>
             </div>
 
             {/* Create Event Button */}
             <button
               onClick={handleCreateEvent}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 sm:px-4 sm:py-2 sm:text-sm"
             >
               Create Event
             </button>
@@ -217,13 +225,13 @@ export default function CalendarPage() {
         </div>
 
         {/* Filters */}
-        <div className="mt-4">
+        <div className="mt-3 sm:mt-4">
           <CalendarFilters />
         </div>
       </div>
 
       {/* Calendar View */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-3 sm:p-6">
         {currentView === "MONTH" && (
           <MonthView
             currentDate={currentDate}

@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/select";
 import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
 import { CreditStatusCard } from "@/components/credit/CreditStatusCard";
-import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
 import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
 import { ClientNeedsTab } from "@/components/needs/ClientNeedsTab";
 import { CommunicationTimeline } from "@/components/clients/CommunicationTimeline";
@@ -366,18 +365,20 @@ export default function ClientProfilePage() {
 
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full ${client.isSeller ? 'grid-cols-10' : 'grid-cols-9'}`}>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {client.isSeller && <TabsTrigger value="supplier">Supplier</TabsTrigger>}
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
-          <TabsTrigger value="pricing">Pricing</TabsTrigger>
-          <TabsTrigger value="needs">Needs & History</TabsTrigger>
-          <TabsTrigger value="communications">Communications</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
-          <TabsTrigger value="live-catalog">Live Catalog</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
+          <TabsList className="inline-flex w-full min-w-max md:w-auto h-auto gap-1">
+            <TabsTrigger value="overview" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Overview</TabsTrigger>
+            {client.isSeller && <TabsTrigger value="supplier" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Supplier</TabsTrigger>}
+            <TabsTrigger value="transactions" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Transactions</TabsTrigger>
+            <TabsTrigger value="payments" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Payments</TabsTrigger>
+            <TabsTrigger value="pricing" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Pricing</TabsTrigger>
+            <TabsTrigger value="needs" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Needs</TabsTrigger>
+            <TabsTrigger value="communications" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Comms</TabsTrigger>
+            <TabsTrigger value="calendar" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Calendar</TabsTrigger>
+            <TabsTrigger value="notes" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Notes</TabsTrigger>
+            <TabsTrigger value="live-catalog" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Catalog</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">

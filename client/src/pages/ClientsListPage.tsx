@@ -137,7 +137,7 @@ export default function ClientsListPage() {
   const limit = 50;
 
   // Fetch clients - handle paginated response
-  const { data: clientsData, isLoading } = trpc.clients.list.useQuery({
+  const { data: clientsData, isLoading, error } = trpc.clients.list.useQuery({
     limit,
     offset: page * limit,
     search: search || undefined,
@@ -145,6 +145,14 @@ export default function ClientsListPage() {
     hasDebt,
   });
   const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
+  
+  // Debug logging for client data issues
+  if (error) {
+    console.error('[ClientsListPage] Query error:', error);
+  }
+  if (clientsData && !isLoading && clients.length === 0) {
+    console.warn('[ClientsListPage] Empty clients array. Raw data:', clientsData);
+  }
 
   // Fetch total count for pagination
   const { data: totalCount } = trpc.clients.count.useQuery({
@@ -588,6 +596,16 @@ export default function ClientsListPage() {
         <CardContent>
           {isLoading ? (
             <TableSkeleton rows={10} columns={10} />
+          ) : error ? (
+            <EmptyState
+              icon={<AlertTriangle className="h-12 w-12 text-destructive/50" />}
+              title="Failed to load clients"
+              description={error.message || "An error occurred while fetching clients. Please try again."}
+              action={{
+                label: "Retry",
+                onClick: () => window.location.reload(),
+              }}
+            />
           ) : !clients || clients.length === 0 ? (
             <EmptyState
               variant="clients"
