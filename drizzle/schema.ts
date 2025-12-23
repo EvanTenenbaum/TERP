@@ -2093,11 +2093,21 @@ export const salesSheetHistory = mysqlTable(
 
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow(),
+    
+    // USP: Link to converted order (when sales sheet becomes a quote/order)
+    // Note: FK constraint added via migration, not inline reference (avoids circular dependency)
+    convertedToOrderId: int("converted_to_order_id"),
+    // USP: Soft delete support for sales sheets
+    deletedAt: timestamp("deleted_at"),
   },
   table => ({
     clientIdIdx: index("idx_client_id").on(table.clientId),
     createdByIdx: index("idx_created_by").on(table.createdBy),
     createdAtIdx: index("idx_created_at").on(table.createdAt),
+    // USP: Index for converted order lookups
+    convertedToOrderIdIdx: index("idx_converted_to_order_id").on(table.convertedToOrderId),
+    // USP: Index for soft delete filtering
+    deletedAtIdx: index("idx_deleted_at").on(table.deletedAt),
   })
 );
 
@@ -2210,9 +2220,14 @@ export const orders = mysqlTable(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (): any => orders.id
     ),
+    // USP: Link back to original sales sheet (when order was created from sales sheet)
+    // Note: FK constraint added via migration, not inline reference (avoids circular dependency)
+    convertedFromSalesSheetId: int("converted_from_sales_sheet_id"),
     convertedAt: timestamp("converted_at"),
     confirmedAt: timestamp("confirmed_at"),
     relatedSampleRequestId: int("related_sample_request_id"), // Link to sample request if order came from sample
+    // USP: Soft delete support for orders
+    deletedAt: timestamp("deleted_at"),
 
     // Metadata
     notes: text("notes"),
@@ -2232,6 +2247,12 @@ export const orders = mysqlTable(
       table.fulfillmentStatus
     ),
     createdAtIdx: index("idx_created_at").on(table.createdAt),
+    // USP: Index for sales sheet origin lookups
+    convertedFromSalesSheetIdIdx: index("idx_converted_from_sales_sheet_id").on(
+      table.convertedFromSalesSheetId
+    ),
+    // USP: Index for soft delete filtering
+    deletedAtIdx: index("idx_orders_deleted_at").on(table.deletedAt),
   })
 );
 

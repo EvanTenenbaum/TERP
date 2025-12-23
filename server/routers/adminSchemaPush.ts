@@ -470,6 +470,64 @@ export const adminSchemaPushRouter = router({
       `);
 
       // ============================================================================
+      // MIGRATION 0043: Add USP (Unified Sales Portal) columns
+      // Risk: MEDIUM | Reversibility: HIGH
+      // Adds bidirectional linking between sales_sheet_history and orders
+      // ============================================================================
+      
+      // Add convertedToOrderId to sales_sheet_history
+      await safeExecute('0043_add_sales_sheet_convertedToOrderId', sql`
+        ALTER TABLE sales_sheet_history ADD COLUMN converted_to_order_id INT NULL
+      `);
+
+      // Add deletedAt to sales_sheet_history (soft delete)
+      await safeExecute('0043_add_sales_sheet_deletedAt', sql`
+        ALTER TABLE sales_sheet_history ADD COLUMN deleted_at TIMESTAMP NULL
+      `);
+
+      // Add convertedFromSalesSheetId to orders
+      await safeExecute('0043_add_orders_convertedFromSalesSheetId', sql`
+        ALTER TABLE orders ADD COLUMN converted_from_sales_sheet_id INT NULL
+      `);
+
+      // Add deletedAt to orders (soft delete) - may already exist
+      await safeExecute('0043_add_orders_deletedAt', sql`
+        ALTER TABLE orders ADD COLUMN deleted_at TIMESTAMP NULL
+      `);
+
+      // Add indexes for USP columns
+      await safeExecute('0043_idx_sales_sheet_convertedToOrderId', sql`
+        CREATE INDEX idx_converted_to_order_id ON sales_sheet_history (converted_to_order_id)
+      `);
+
+      await safeExecute('0043_idx_sales_sheet_deletedAt', sql`
+        CREATE INDEX idx_sales_sheet_deleted_at ON sales_sheet_history (deleted_at)
+      `);
+
+      await safeExecute('0043_idx_orders_convertedFromSalesSheetId', sql`
+        CREATE INDEX idx_converted_from_sales_sheet_id ON orders (converted_from_sales_sheet_id)
+      `);
+
+      await safeExecute('0043_idx_orders_deletedAt', sql`
+        CREATE INDEX idx_orders_deleted_at ON orders (deleted_at)
+      `);
+
+      // Add foreign key constraints (optional, may fail if data integrity issues)
+      await safeExecute('0043_fk_sales_sheet_to_order', sql`
+        ALTER TABLE sales_sheet_history 
+        ADD CONSTRAINT fk_sales_sheet_to_order 
+        FOREIGN KEY (converted_to_order_id) REFERENCES orders(id) 
+        ON DELETE SET NULL
+      `);
+
+      await safeExecute('0043_fk_order_to_sales_sheet', sql`
+        ALTER TABLE orders 
+        ADD CONSTRAINT fk_order_to_sales_sheet 
+        FOREIGN KEY (converted_from_sales_sheet_id) REFERENCES sales_sheet_history(id) 
+        ON DELETE SET NULL
+      `);
+
+      // ============================================================================
       // SUMMARY
       // ============================================================================
       const duration = Date.now() - startTime;
@@ -594,21 +652,51 @@ export const adminSchemaPushRouter = router({
         };
       }
 
+      // Check USP columns in sales_sheet_history
+      const salesSheetColumns = await db.execute(sql`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'sales_sheet_history'
+      `);
+      const salesSheetCols = (salesSheetColumns as unknown as Array<{ COLUMN_NAME: string }>).map(row => row.COLUMN_NAME);
+      const uspSalesSheetVerification = {
+        converted_to_order_id: salesSheetCols.includes('converted_to_order_id'),
+        deleted_at: salesSheetCols.includes('deleted_at')
+      };
+
+      // Check USP columns in orders
+      const ordersColumns = await db.execute(sql`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'orders'
+      `);
+      const ordersCols = (ordersColumns as unknown as Array<{ COLUMN_NAME: string }>).map(row => row.COLUMN_NAME);
+      const uspOrdersVerification = {
+        converted_from_sales_sheet_id: ordersCols.includes('converted_from_sales_sheet_id'),
+        deleted_at: ordersCols.includes('deleted_at')
+      };
+
       const allTablesPresent = Object.values(criticalTables).every(v => v);
       const allClientsColsPresent = Object.values(clientsVerification).every(v => v);
+      const allUspSalesSheetColsPresent = Object.values(uspSalesSheetVerification).every(v => v);
+      const allUspOrdersColsPresent = Object.values(uspOrdersVerification).every(v => v);
 
       return {
-        allPresent: allTablesPresent && allClientsColsPresent,
+        allPresent: allTablesPresent && allClientsColsPresent && allUspSalesSheetColsPresent && allUspOrdersColsPresent,
         verification: {
           tables: criticalTables,
           clients: clientsVerification,
           vendors: vendorsVerification,
           calendar_events: calendarVerification,
-          purchaseOrders: purchaseOrdersVerification
+          purchaseOrders: purchaseOrdersVerification,
+          usp_sales_sheet_history: uspSalesSheetVerification,
+          usp_orders: uspOrdersVerification
         },
         tableCount: tableNames.length,
-        message: allTablesPresent && allClientsColsPresent 
-          ? 'All schema changes from migrations 0027-0042 applied successfully' 
+        message: allTablesPresent && allClientsColsPresent && allUspSalesSheetColsPresent && allUspOrdersColsPresent
+          ? 'All schema changes from migrations 0027-0043 (including USP) applied successfully' 
           : 'Some tables or columns are missing'
       };
     } catch (error) {
