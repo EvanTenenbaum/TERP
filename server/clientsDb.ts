@@ -44,7 +44,44 @@ export async function getClients(options: {
     hasDebt,
   } = options;
 
-  let query = db.select().from(clients);
+  // FIX-005: Use explicit column selection with CAST for ENUM columns
+  // TiDB may return ENUM values as integers, causing Drizzle parsing to fail
+  // By casting ENUM columns to CHAR, we ensure string values are returned
+  let query = db.select({
+    id: clients.id,
+    version: clients.version,
+    teriCode: clients.teriCode,
+    name: clients.name,
+    email: clients.email,
+    phone: clients.phone,
+    address: clients.address,
+    isBuyer: clients.isBuyer,
+    isSeller: clients.isSeller,
+    isBrand: clients.isBrand,
+    isReferee: clients.isReferee,
+    isContractor: clients.isContractor,
+    tags: clients.tags,
+    pricingProfileId: clients.pricingProfileId,
+    customPricingRules: clients.customPricingRules,
+    // Cast ENUM columns to CHAR to avoid TiDB integer representation issue
+    cogsAdjustmentType: sql<string>`CAST(${clients.cogsAdjustmentType} AS CHAR)`.as('cogsAdjustmentType'),
+    cogsAdjustmentValue: clients.cogsAdjustmentValue,
+    autoDeferConsignment: clients.autoDeferConsignment,
+    totalSpent: clients.totalSpent,
+    totalProfit: clients.totalProfit,
+    avgProfitMargin: clients.avgProfitMargin,
+    totalOwed: clients.totalOwed,
+    oldestDebtDays: clients.oldestDebtDays,
+    creditLimit: clients.creditLimit,
+    creditLimitUpdatedAt: clients.creditLimitUpdatedAt,
+    // Cast ENUM columns to CHAR to avoid TiDB integer representation issue
+    creditLimitSource: sql<string>`CAST(${clients.creditLimitSource} AS CHAR)`.as('creditLimitSource'),
+    creditLimitOverrideReason: clients.creditLimitOverrideReason,
+    vipPortalEnabled: clients.vipPortalEnabled,
+    vipPortalLastLogin: clients.vipPortalLastLogin,
+    createdAt: clients.createdAt,
+    updatedAt: clients.updatedAt,
+  }).from(clients);
 
   // Build WHERE conditions
   const conditions: (SQL<unknown> | undefined)[] = [];
