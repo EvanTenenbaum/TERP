@@ -1035,6 +1035,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 **Problem:** Missing input validation allows invalid data.
 
 **Progress (December 22, 2025):**
+
 - ✅ Created `server/_core/validationSchemas.ts` with 30+ reusable Zod schemas
 - ✅ Fixed `z.any()` in `pricing.ts` with `flexiblePricingConditionsSchema`
 - ✅ Fixed `z.any()` in `vipPortalAdmin.ts` with proper typed schemas
@@ -1045,6 +1046,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 - ✅ Documented remaining `z.any()` usages in `docs/TECHNICAL_DEBT.md` (7 items in BUG-034 scope)
 
 **Key Commits:**
+
 - `33f95e20` - feat(QUAL-002/DATA-004): Add shared validation schemas and query optimization
 - `pending` - feat(QUAL-002): Improve validation in calendar and search routers
 
@@ -1069,6 +1071,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 - [x] Zero TypeScript errors
 
 **Deferred (BUG-034 Scope):**
+
 - z.any() in: configuration.ts, orderEnhancements.ts, clientNeedsEnhanced.ts, dashboard.ts, freeformNotes.ts, inventory.ts, clients.ts
 - See `docs/TECHNICAL_DEBT.md` for tracking
 
@@ -1203,6 +1206,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 **Problem:** N+1 queries in order creation cause slow performance (1-5s).
 
 **Progress (December 22, 2025):**
+
 - ✅ Added query optimization presets to `client/src/lib/trpc.ts`
 - ✅ Documented `staleTimePresets` for different data types
 - ✅ Created `client/src/hooks/useClientsData.ts` shared hook for client data
@@ -1210,6 +1214,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 - ✅ Documented findings in `docs/TECHNICAL_DEBT.md` (DEBT-001)
 
 **Key Commits:**
+
 - `33f95e20` - feat(QUAL-002/DATA-004): Add shared validation schemas and query optimization
 - `pending` - feat(DATA-004): Create useClientsData shared hook
 
@@ -1231,6 +1236,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 - [x] Zero TypeScript errors
 
 **Deferred (BUG-034 Scope):**
+
 - Backend N+1 optimization in ordersDb.ts, orders.ts
 - See `docs/TECHNICAL_DEBT.md` for tracking
 
@@ -6769,6 +6775,34 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] Add `getClientPricingRules` to the `../pricingEngine` mock
     - [ ] Fix `createPriceAlert` mock to return correct MySQL insertId structure
     - [ ] Verify all 6 priceAlertsService tests pass
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **BUG-037: VIP Portal createdBy FK Constraint Violation** (P0)
+  - **Status:** ready
+  - **Priority:** HIGH
+  - **Estimate:** 8h
+  - **Module:** `server/routers/vipPortal.ts`, `drizzle/schema.ts`
+  - **Dependencies:** None
+  - **Prompt:** `docs/prompts/BUG-037.md`
+  - **Problem:** VIP Portal mutations (`createSupply`, `createNeed`) set `createdBy: clientId` but the schema defines `createdBy` as a FK to `users.id`. This causes runtime FK constraint violations because `clientId` comes from the `clients` table (different ID space).
+  - **Affected Tables:**
+    - `vendor_supply.created_by` → references `users.id`
+    - `client_needs.created_by` → references `users.id`
+  - **Root Cause:** VIP Portal context provides `ctx.clientId` (from `clients` table) but schema expects `users.id`. These are different tables with different ID spaces.
+  - **Impact:** VIP Portal supply/needs creation features are completely broken at runtime.
+  - **Proposed Fix Options:**
+    1. Add `createdByClientId` column to both tables (recommended - preserves audit trail)
+    2. Create system user for VIP actions (quick fix - loses granular attribution)
+    3. Make `createdBy` nullable (loses actor attribution)
+  - **Deliverables:**
+    - [ ] Choose fix approach (requires user decision)
+    - [ ] If Option 1: Create migration to add `created_by_client_id` column
+    - [ ] If Option 1: Make `created_by` nullable for VIP portal actions
+    - [ ] Update `createSupply` mutation to use correct column
+    - [ ] Update `createNeed` mutation to use correct column
+    - [ ] Add tests for VIP portal supply/needs creation
+    - [ ] Verify FK constraints are satisfied
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
 
