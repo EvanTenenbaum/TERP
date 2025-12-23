@@ -25,6 +25,7 @@ import {
   Workflow,
   RefreshCw,
   Warehouse,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
 
@@ -128,6 +129,7 @@ export const navigationItems: NavigationItem[] = [
 
   // Analytics & Settings
   { name: "Analytics", path: "/analytics", icon: BarChart3, group: "settings" },
+  { name: "Leaderboard", path: "/leaderboard", icon: Trophy, group: "settings" },
   { name: "Settings", path: "/settings", icon: Settings, group: "settings" },
   { name: "Help", path: "/help", icon: HelpCircle, group: "settings" },
 ];

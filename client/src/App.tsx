@@ -52,6 +52,7 @@ import CalendarPage from "@/pages/CalendarPage";
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
+import LeaderboardPage from "@/pages/LeaderboardPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -141,6 +142,7 @@ function Router() {
               <Route path="/workflow-queue" component={WorkflowQueuePage} />
               <Route path="/analytics" component={AnalyticsPage} />
               <Route path="/search" component={SearchResultsPage} />
+              <Route path="/leaderboard" component={LeaderboardPage} />
               {/* Dev-only route for component showcase - only renders in development mode */}
               {import.meta.env.DEV && <Route path="/dev/showcase" component={ComponentShowcase} />}
               <Route path="/404" component={NotFound} />
