@@ -7181,6 +7181,30 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
 
+- [ ] **BUG-039: Client Profile COGS Configuration Duplication & Pricing Rules UX** (P1)
+  - **Status:** ready
+  - **Priority:** HIGH
+  - **Estimate:** 4h
+  - **Module:** `client/src/pages/ClientProfilePage.tsx`
+  - **Dependencies:** None
+  - **Prompt:** `docs/prompts/BUG-039.md`
+  - **Problem:** Two issues in the client profile page related to pricing configuration:
+    1. There appears to be a duplicate "COGS Configuration" section that likely duplicates functionality from Pricing Rules
+    2. When user clicks "Add Pricing Rule" within the profile, the new rule doesn't immediately appear in the pricing rules table - requires manual refresh
+  - **Issues:**
+    - **Duplicate COGS Config:** The second COGS configuration section may be redundant with pricing rules functionality. Need to investigate and either remove it or clarify its distinct purpose.
+    - **Pricing Rules Table Not Updating:** After adding a new pricing rule via the modal/form, the table should automatically refresh to show the newly added rule without requiring page reload.
+  - **Deliverables:**
+    - [ ] Investigate the two COGS configuration sections and determine if one is redundant
+    - [ ] If redundant: Remove duplicate section and consolidate functionality
+    - [ ] If not redundant: Clarify UI labels to distinguish their purposes
+    - [ ] Fix pricing rules table to auto-refresh after adding new rule
+    - [ ] Implement optimistic update or query invalidation for immediate feedback
+    - [ ] Add loading state while rule is being created
+    - [ ] Show success toast when rule is added
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
 ### 🟢 P2 - MEDIUM PRIORITY
 
 - [ ] **QA-067: Implement CRM Communication Features** (P2)
