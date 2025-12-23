@@ -7,14 +7,27 @@ import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
+/**
+ * VIP Portal Login Page
+ * 
+ * FIX-002: Enhanced error handling to prevent silent failures.
+ * - Added console logging for debugging
+ * - Improved error message extraction
+ * - Added onSettled callback to ensure loading state is always reset
+ * - Added inline error display for better UX
+ */
 export default function VIPLogin() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loginMutation = trpc.vipPortal.auth.login.useMutation({
     onSuccess: (data) => {
+      // Clear any previous error
+      setErrorMessage(null);
+      
       // Store session token
       localStorage.setItem("vip_session_token", data.sessionToken);
       localStorage.setItem("vip_client_id", data.clientId.toString());
@@ -24,7 +37,25 @@ export default function VIPLogin() {
       setLocation("/vip-portal/dashboard");
     },
     onError: (error) => {
-      toast.error(error.message || "Login failed");
+      // FIX-002: Enhanced error handling to prevent silent failures
+      console.error("[VIPLogin] Login error:", error);
+      
+      // Extract user-friendly error message
+      let message = "Login failed. Please try again.";
+      if (error.message) {
+        message = error.message;
+      } else if (error.data?.code === "UNAUTHORIZED") {
+        message = "Invalid email or password";
+      } else if (error.data?.code === "INTERNAL_SERVER_ERROR") {
+        message = "Server error. Please try again later.";
+      }
+      
+      // Show both toast and inline error for visibility
+      toast.error(message);
+      setErrorMessage(message);
+    },
+    onSettled: () => {
+      // FIX-002: Always reset loading state when mutation completes
       setIsLoading(false);
     },
   });
@@ -32,6 +63,7 @@ export default function VIPLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null); // Clear previous error
     
     loginMutation.mutate({
       email,
@@ -52,6 +84,13 @@ export default function VIPLogin() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* FIX-002: Inline error display for better visibility */}
+            {errorMessage && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                {errorMessage}
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
