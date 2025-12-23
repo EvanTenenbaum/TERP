@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Warehouse,
   Trophy,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 
@@ -51,6 +52,12 @@ export const navigationItems: NavigationItem[] = [
   { name: "Calendar", path: "/calendar", icon: Calendar, group: "core" },
 
   // Sales & Orders
+  {
+    name: "Live Shopping",
+    path: "/live-shopping",
+    icon: Video,
+    group: "operations",
+  },
   { name: "Orders", path: "/orders", icon: ShoppingCart, group: "operations" },
   { name: "Quotes", path: "/quotes", icon: FileText, group: "operations" },
   {
