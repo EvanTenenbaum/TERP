@@ -6799,6 +6799,78 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 ---
 
+#### UX-022: Table Navigation Audit & Search/Filter/Sort Improvements
+
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 16-24h  
+**Module:** Multiple list pages across the application  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/UX-022.md`
+
+**Problem:** Tables across the application have inconsistent search, filtering, and sorting capabilities. Some tables lack basic functionality that users expect, leading to poor navigation experience when dealing with large datasets.
+
+**Objectives:**
+
+1. Audit all data tables in the application
+2. Standardize search, filter, and sort functionality across all tables
+3. Improve UX consistency for table navigation
+4. Ensure all applicable tables have proper data discovery tools
+
+**Scope - Tables to Audit:**
+
+- [ ] Clients list
+- [ ] Orders list
+- [ ] Inventory/Batches list
+- [ ] Products list
+- [ ] Invoices list
+- [ ] Bills list
+- [ ] Payments list
+- [ ] Calendar events list
+- [ ] Vendors/Suppliers list
+- [ ] Purchase Orders list
+- [ ] Todo tasks list
+- [ ] Users list (admin)
+- [ ] Audit logs
+- [ ] Any other data tables
+
+**Features to Standardize:**
+
+- **Search:** Full-text search across relevant columns
+- **Filtering:**
+  - Quick filters (status, date ranges, categories)
+  - Advanced filter builder for complex queries
+  - Filter chips showing active filters
+  - Clear all filters button
+- **Sorting:**
+  - Click-to-sort column headers
+  - Sort direction indicators
+  - Multi-column sort support
+  - Default sort per table
+- **Pagination:**
+  - Consistent page size options
+  - Page navigation controls
+  - Total count display
+- **Column Management:**
+  - Show/hide columns
+  - Column reordering (optional)
+  - Column width persistence
+
+**Deliverables:**
+
+- [ ] Create audit document listing all tables and current capabilities
+- [ ] Identify gaps in search/filter/sort for each table
+- [ ] Create reusable table components/hooks for consistency
+- [ ] Implement missing search functionality
+- [ ] Implement missing filter functionality
+- [ ] Implement missing sort functionality
+- [ ] Add filter persistence (remember user's last filters)
+- [ ] Test all tables for consistent behavior
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
 ### Summary
 
 | Phase               | Tasks        | Total Estimate |
@@ -7083,6 +7155,29 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] Update `createNeed` mutation to use correct column
     - [ ] Add tests for VIP portal supply/needs creation
     - [ ] Verify FK constraints are satisfied
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
+
+- [ ] **BUG-038: Generate Credit Limit Button Non-Functional** (P1)
+  - **Status:** ready
+  - **Priority:** HIGH
+  - **Estimate:** 4h
+  - **Module:** `client/src/pages/ClientProfilePage.tsx`, `server/routers/credit.ts`
+  - **Dependencies:** None
+  - **Prompt:** `docs/prompts/BUG-038.md`
+  - **Problem:** The "Generate Credit Limit" button in the client profile page does not perform any action when clicked. Users expect this button to calculate and suggest a credit limit based on client history, payment patterns, and order volume.
+  - **Expected Behavior:**
+    - Button should trigger credit limit calculation algorithm
+    - Should analyze client's payment history, order frequency, average order value
+    - Should suggest a credit limit based on configurable rules
+    - Should allow user to accept, modify, or reject the suggestion
+  - **Deliverables:**
+    - [ ] Investigate current button implementation and identify why it's non-functional
+    - [ ] Implement credit limit generation algorithm (if missing)
+    - [ ] Connect button to backend endpoint
+    - [ ] Add loading state during calculation
+    - [ ] Display suggested credit limit with explanation
+    - [ ] Allow user to accept/modify/reject suggestion
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
 
