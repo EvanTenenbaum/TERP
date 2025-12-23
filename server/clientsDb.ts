@@ -96,12 +96,39 @@ export async function getClients(options: {
     query = query.where(and(...conditions)) as any;
   }
 
-  const results = await query
-    .orderBy(desc(clients.createdAt))
-    .limit(limit)
-    .offset(offset);
+  try {
+    const results = await query
+      .orderBy(desc(clients.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-  return results;
+    return results;
+  } catch (error) {
+    // Enhanced error logging to capture MySQL-specific error details
+    const mysqlError = error as {
+      code?: string;
+      errno?: number;
+      sqlState?: string;
+      sqlMessage?: string;
+      sql?: string;
+      message?: string;
+    };
+    
+    console.error("--- Database Query Failed: getClients ---");
+    if (mysqlError.sqlMessage) {
+      console.error("MySQL Error Message:", mysqlError.sqlMessage);
+      console.error("MySQL Error Code:", mysqlError.code);
+      console.error("MySQL Errno:", mysqlError.errno);
+      console.error("Failed SQL:", mysqlError.sql);
+    } else {
+      console.error("Error Message:", mysqlError.message || String(error));
+    }
+    console.error("Full Error:", error);
+    console.error("------------------------------------------");
+    
+    // Re-throw with more context
+    throw new Error(`Database error fetching clients: ${mysqlError.sqlMessage || mysqlError.message || String(error)}`);
+  }
 }
 
 /**
