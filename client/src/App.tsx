@@ -54,6 +54,7 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import LiveShoppingPage from "@/pages/LiveShoppingPage";
+import UnifiedSalesPortalPage from "@/pages/UnifiedSalesPortalPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -112,6 +113,7 @@ function Router() {
               <Route path="/pricing/rules" component={PricingRulesPage} />
               <Route path="/pricing/profiles" component={PricingProfilesPage} />
               <Route path="/sales-sheets" component={SalesSheetCreatorPage} />
+              <Route path="/sales-portal" component={UnifiedSalesPortalPage} />
               <Route path="/orders" component={Orders} />
               <Route path="/orders/create" component={OrderCreatorPage} />
               <Route path="/quotes" component={Quotes} />
