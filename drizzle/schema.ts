@@ -5191,3 +5191,9 @@ export const dashboardWidgetConfigsRelations = relations(
     }),
   })
 );
+
+// ============================================================================
+// LIVE SHOPPING MODULE (Phase 0)
+// ============================================================================
+export * from "./schema-live-shopping";
+
