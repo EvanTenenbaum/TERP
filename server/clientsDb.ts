@@ -44,9 +44,55 @@ export async function getClients(options: {
     hasDebt,
   } = options;
 
-  // FIX-006: ENUM handling is now done at connection pool level via typeCast
-  // See: server/_core/connectionPool.ts
-  let query = db.select().from(clients);
+  // FIX-008: Diagnostic - Test with minimal columns first to isolate failure
+  // If this fails, the issue is not with specific columns but with the connection/query execution
+  try {
+    const minimalTest = await db.select({
+      id: clients.id,
+      name: clients.name,
+    }).from(clients).limit(1);
+    console.log("[DIAG] Minimal query succeeded:", minimalTest.length, "rows");
+  } catch (minimalError) {
+    console.error("[DIAG] Minimal query FAILED:", minimalError);
+    // If even minimal query fails, throw with this context
+    throw new Error(`Database connection issue - even minimal query failed: ${String(minimalError)}`);
+  }
+
+  // FIX-007: Select specific columns to avoid max_allowed_packet issues
+  // Large JSON columns (tags, customPricingRules) are excluded from list view
+  // They can be fetched separately when viewing individual client details
+  let query = db.select({
+    id: clients.id,
+    version: clients.version,
+    teriCode: clients.teriCode,
+    name: clients.name,
+    email: clients.email,
+    phone: clients.phone,
+    address: clients.address,
+    isBuyer: clients.isBuyer,
+    isSeller: clients.isSeller,
+    isBrand: clients.isBrand,
+    isReferee: clients.isReferee,
+    isContractor: clients.isContractor,
+    // Exclude large JSON columns: tags, customPricingRules
+    pricingProfileId: clients.pricingProfileId,
+    cogsAdjustmentType: clients.cogsAdjustmentType,
+    cogsAdjustmentValue: clients.cogsAdjustmentValue,
+    autoDeferConsignment: clients.autoDeferConsignment,
+    totalSpent: clients.totalSpent,
+    totalProfit: clients.totalProfit,
+    avgProfitMargin: clients.avgProfitMargin,
+    totalOwed: clients.totalOwed,
+    oldestDebtDays: clients.oldestDebtDays,
+    creditLimit: clients.creditLimit,
+    creditLimitUpdatedAt: clients.creditLimitUpdatedAt,
+    creditLimitSource: clients.creditLimitSource,
+    creditLimitOverrideReason: clients.creditLimitOverrideReason,
+    vipPortalEnabled: clients.vipPortalEnabled,
+    vipPortalLastLogin: clients.vipPortalLastLogin,
+    createdAt: clients.createdAt,
+    updatedAt: clients.updatedAt,
+  }).from(clients);
 
   // Build WHERE conditions
   const conditions: (SQL<unknown> | undefined)[] = [];
