@@ -53,6 +53,7 @@ import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import LiveShoppingPage from "@/pages/LiveShoppingPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -128,6 +129,11 @@ function Router() {
               <Route path="/returns" component={ReturnsPage} />
               <Route path="/locations" component={LocationsPage} />
               <Route path="/matchmaking" component={MatchmakingServicePage} />
+              <Route path="/live-shopping" component={LiveShoppingPage} />
+              <Route
+                path="/live-shopping/:sessionId"
+                component={LiveShoppingPage}
+              />
               <Route path="/help" component={Help} />
               <Route
                 path="/clients/:clientId/vip-portal-config"
@@ -144,7 +150,9 @@ function Router() {
               <Route path="/search" component={SearchResultsPage} />
               <Route path="/leaderboard" component={LeaderboardPage} />
               {/* Dev-only route for component showcase - only renders in development mode */}
-              {import.meta.env.DEV && <Route path="/dev/showcase" component={ComponentShowcase} />}
+              {import.meta.env.DEV && (
+                <Route path="/dev/showcase" component={ComponentShowcase} />
+              )}
               <Route path="/404" component={NotFound} />
               {/* Final fallback route */}
               <Route component={NotFound} />
@@ -184,10 +192,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        switchable
-      >
+      <ThemeProvider defaultTheme="light" switchable>
         <TooltipProvider>
           <Toaster />
           <VersionChecker />
