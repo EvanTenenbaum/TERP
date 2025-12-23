@@ -152,30 +152,44 @@ export async function getClients(options: {
 
     return results;
   } catch (error) {
-    // Enhanced error logging to capture MySQL-specific error details
-    const mysqlError = error as {
-      code?: string;
-      errno?: number;
-      sqlState?: string;
-      sqlMessage?: string;
-      sql?: string;
+    // FIX-009: Improved error extraction from DrizzleQueryError
+    // Drizzle wraps MySQL errors in DrizzleQueryError with the actual error in 'cause'
+    const drizzleError = error as {
+      cause?: {
+        code?: string;
+        errno?: number;
+        sqlState?: string;
+        sqlMessage?: string;
+        message?: string;
+      };
       message?: string;
+      query?: string;
+      params?: any;
     };
-    
+
+    // Extract the underlying MySQL error from cause
+    const mysqlError = drizzleError.cause || {};
+
     console.error("--- Database Query Failed: getClients ---");
-    if (mysqlError.sqlMessage) {
+    console.error("Drizzle Error Message:", drizzleError.message);
+
+    if (mysqlError.sqlMessage || mysqlError.code) {
       console.error("MySQL Error Message:", mysqlError.sqlMessage);
       console.error("MySQL Error Code:", mysqlError.code);
       console.error("MySQL Errno:", mysqlError.errno);
-      console.error("Failed SQL:", mysqlError.sql);
-    } else {
-      console.error("Error Message:", mysqlError.message || String(error));
+      console.error("MySQL SQL State:", mysqlError.sqlState);
+    } else if (mysqlError.message) {
+      console.error("Cause Error Message:", mysqlError.message);
     }
-    console.error("Full Error:", error);
+
+    // Log the full error structure for debugging
+    console.error("Error cause:", drizzleError.cause);
+    console.error("Full Error Object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
     console.error("------------------------------------------");
-    
-    // Re-throw with more context
-    throw new Error(`Database error fetching clients: ${mysqlError.sqlMessage || mysqlError.message || String(error)}`);
+
+    // Re-throw with the actual MySQL error if available
+    const errorMessage = mysqlError.sqlMessage || mysqlError.message || drizzleError.message || String(error);
+    throw new Error(`Database error fetching clients: ${errorMessage}`);
   }
 }
 
