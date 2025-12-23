@@ -407,6 +407,8 @@ export async function calculateCreditLimit(
     tenureWeight?: number;
   }
 ): Promise<CreditCalculationResult> {
+  const startTime = performance.now();
+  
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -524,6 +526,12 @@ export async function calculateCreditLimit(
 
   // Generate explanation
   const explanation = generateExplanation(creditLimit, creditHealthScore, signals, weights, mode);
+
+  // Performance logging
+  const duration = performance.now() - startTime;
+  if (duration > 500) {
+    console.warn(`[CreditEngine] Slow calculation for client ${clientId}: ${duration.toFixed(0)}ms (target: <500ms)`);
+  }
 
   return {
     creditLimit: Math.round(creditLimit * 100) / 100,
