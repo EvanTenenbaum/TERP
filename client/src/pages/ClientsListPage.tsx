@@ -30,6 +30,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useIsMobile } from "@/hooks/useMobile";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CreditIndicator } from "@/components/credit/CreditIndicator";
+import { useCreditVisibility } from "@/hooks/useCreditVisibility";
 
 export default function ClientsListPage() {
   const [, setLocation] = useLocation();
@@ -39,6 +40,9 @@ export default function ClientsListPage() {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const isMobile = useIsMobile();
+  
+  // Credit visibility settings
+  const { shouldShowCreditInClientList } = useCreditVisibility();
   
   // Saved filter views
   type FilterView = {
@@ -694,7 +698,9 @@ export default function ClientsListPage() {
                         )}
                       </button>
                     </TableHead>
-                    <TableHead className="text-center">Credit</TableHead>
+                    {shouldShowCreditInClientList && (
+                      <TableHead className="text-center">Credit</TableHead>
+                    )}
                     <TableHead className="text-right">
                       <button
                         onClick={() => handleSort('oldestDebtDays')}
@@ -798,18 +804,20 @@ export default function ClientsListPage() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-center">
-                        {client.isBuyer ? (
-                          <CreditIndicator
-                            creditLimit={client.creditLimit}
-                            totalOwed={client.totalOwed}
-                            onClick={() => setLocation(`/clients/${client.id}`)}
-                            size="sm"
-                          />
-                        ) : (
-                          <span className="text-muted-foreground text-xs">-</span>
-                        )}
-                      </TableCell>
+                      {shouldShowCreditInClientList && (
+                        <TableCell className="text-center">
+                          {client.isBuyer ? (
+                            <CreditIndicator
+                              creditLimit={client.creditLimit}
+                              totalOwed={client.totalOwed}
+                              onClick={() => setLocation(`/clients/${client.id}`)}
+                              size="sm"
+                            />
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell>
                         {client.tags && Array.isArray(client.tags) && client.tags.length > 0 ? (
                           <div className="flex flex-wrap gap-1">

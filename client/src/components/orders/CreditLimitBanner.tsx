@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, AlertTriangle, CheckCircle, XCircle, Info } from "lucide-react";
+import { useCreditVisibility } from "@/hooks/useCreditVisibility";
 
 interface CreditLimitBannerProps {
   client: {
@@ -14,12 +15,20 @@ interface CreditLimitBannerProps {
 }
 
 export function CreditLimitBanner({ client, orderTotal }: CreditLimitBannerProps) {
+  // Check visibility settings
+  const { shouldShowCreditBannerInOrders } = useCreditVisibility();
+  
   // Get credit limit data from client (now synced from client_credit_limits)
   const creditLimit = parseFloat(client.creditLimit || "0");
   const currentExposure = parseFloat(client.totalOwed || "0");
   const newExposure = currentExposure + orderTotal;
   const utilizationPercent = creditLimit > 0 ? (newExposure / creditLimit) * 100 : 0;
   const availableCredit = creditLimit - currentExposure;
+
+  // Don't render if visibility is disabled
+  if (!shouldShowCreditBannerInOrders) {
+    return null;
+  }
 
   // Determine alert state
   const getAlertState = () => {
