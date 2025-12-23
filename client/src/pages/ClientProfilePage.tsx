@@ -50,6 +50,7 @@ import { ClientCalendarTab } from "@/components/clients/ClientCalendarTab";
 import { SupplierProfileSection } from "@/components/clients/SupplierProfileSection";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
+import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
 import { BackButton } from "@/components/common/BackButton";
 import { useCreditVisibility } from "@/hooks/useCreditVisibility";
 import {
@@ -392,6 +393,16 @@ export default function ClientProfilePage() {
 
           {/* Purchase Patterns Widget (only for buyers) */}
           {client.isBuyer && <PurchasePatternsWidget clientId={clientId} />}
+
+          {/* VIP Portal Settings (only for buyers) */}
+          {client.isBuyer && (
+            <VIPPortalSettings
+              clientId={clientId}
+              clientName={client.name}
+              vipPortalEnabled={client.vipPortalEnabled || false}
+              vipPortalLastLogin={client.vipPortalLastLogin}
+            />
+          )}
 
           <Card>
             <CardHeader>

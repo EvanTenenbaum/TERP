@@ -64,6 +64,9 @@ export default function VIPDashboard() {
   const { clientId, clientName, logout } = useVIPPortalAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Check if this is an impersonation session
+  const isImpersonation = localStorage.getItem("vip_impersonation") === "true";
 
   const { data: rawConfig } = trpc.vipPortal.config.get.useQuery({ clientId });
   const { data: kpis } = trpc.vipPortal.dashboard.getKPIs.useQuery({ clientId });
@@ -94,6 +97,23 @@ export default function VIPDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Impersonation Banner */}
+      {isImpersonation && (
+        <div className="bg-amber-500 text-amber-950 px-4 py-2 text-center text-sm font-medium">
+          <span className="mr-2">👁️</span>
+          Viewing as {clientName} (Admin Impersonation Mode)
+          <button
+            onClick={() => {
+              localStorage.removeItem("vip_impersonation");
+              window.close();
+            }}
+            className="ml-4 underline hover:no-underline"
+          >
+            Exit
+          </button>
+        </div>
+      )}
+      
       {/* Mobile-First Header */}
       <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="container mx-auto px-4 py-3">
