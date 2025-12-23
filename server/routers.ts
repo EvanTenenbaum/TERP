@@ -74,10 +74,19 @@ import { workflowQueueRouter } from "./routers/workflow-queue";
 import { deploymentsRouter } from "./routers/deployments";
 import { monitoringRouter } from "./routers/monitoring";
 import { searchRouter } from "./routers/search";
+
 // Debug router - only imported in development
-const debugRouter = process.env.NODE_ENV !== "production" 
-  ? require("./routers/debug").debugRouter 
-  : null;
+// Wrapped in try-catch to handle module resolution issues in test environments
+let debugRouter: ReturnType<typeof import("./routers/debug").debugRouter> | null = null;
+if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    debugRouter = require("./routers/debug").debugRouter;
+  } catch {
+    // Debug router not available - this is fine in test environments
+    debugRouter = null;
+  }
+}
 
 export const appRouter = router({
   system: systemRouter,
