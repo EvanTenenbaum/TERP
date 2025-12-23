@@ -1,4 +1,5 @@
 import { useState, memo } from "react";
+import { useLocation } from "wouter";
 import {
   MessageSquare,
   CheckCircle2,
@@ -6,6 +7,7 @@ import {
   Archive,
   Trash2,
   MoreVertical,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +54,7 @@ const STATUS_COLORS = {
 export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [, setLocation] = useLocation();
 
   const utils = trpc.useContext();
 
@@ -94,7 +97,29 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
     if (item.status === "unread") {
       markAsSeen.mutate({ itemId: item.id });
     }
-    // TODO: Navigate to the referenced entity
+    // Navigate to the referenced entity based on type
+    navigateToEntity();
+  };
+
+  const navigateToEntity = () => {
+    const entityRoutes: Record<string, string> = {
+      order: `/orders/${item.referenceId}`,
+      invoice: `/accounting/invoices/${item.referenceId}`,
+      client: `/clients/${item.referenceId}`,
+      batch: `/inventory?batchId=${item.referenceId}`,
+      inventory_batch: `/inventory?batchId=${item.referenceId}`,
+      calendar_event: `/calendar?eventId=${item.referenceId}`,
+      task: `/tasks/${item.referenceId}`,
+      comment: `/comments/${item.referenceId}`,
+      vendor_supply: `/vendor-supply/${item.referenceId}`,
+      bill: `/accounting/bills/${item.referenceId}`,
+      payment: `/accounting/payments/${item.referenceId}`,
+    };
+
+    const route = entityRoutes[item.referenceType];
+    if (route) {
+      setLocation(route);
+    }
   };
 
   const handleMarkCompleted = () => {

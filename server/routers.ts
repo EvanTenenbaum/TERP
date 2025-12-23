@@ -77,7 +77,8 @@ import { searchRouter } from "./routers/search";
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
-let debugRouter: ReturnType<typeof import("./routers/debug").debugRouter> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let debugRouter: any = null;
 if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports

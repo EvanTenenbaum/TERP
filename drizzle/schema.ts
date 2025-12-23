@@ -1385,6 +1385,15 @@ export type InsertNoteActivity = typeof noteActivity.$inferInsert;
 // ============================================================================
 
 /**
+ * Credit Limit Source Enum
+ * Tracks whether credit limit was calculated by system or manually set
+ */
+export const creditLimitSourceEnum = mysqlEnum("creditLimitSource", [
+  "CALCULATED",
+  "MANUAL",
+]);
+
+/**
  * COGS Adjustment Type Enum
  * Types of COGS adjustments at client level
  */
@@ -1440,6 +1449,14 @@ export const clients = mysqlTable(
     }).default("0"),
     totalOwed: decimal("total_owed", { precision: 15, scale: 2 }).default("0"),
     oldestDebtDays: int("oldest_debt_days").default(0),
+
+    // Credit limit fields (synced from client_credit_limits for fast access)
+    creditLimit: decimal("credit_limit", { precision: 15, scale: 2 }).default(
+      "0"
+    ),
+    creditLimitUpdatedAt: timestamp("credit_limit_updated_at"),
+    creditLimitSource: creditLimitSourceEnum.default("CALCULATED"),
+    creditLimitOverrideReason: text("credit_limit_override_reason"),
 
     // VIP Portal fields
     vipPortalEnabled: boolean("vip_portal_enabled").default(false),
@@ -1886,6 +1903,66 @@ export const creditAuditLog = mysqlTable(
 
 export type CreditAuditLog = typeof creditAuditLog.$inferSelect;
 export type InsertCreditAuditLog = typeof creditAuditLog.$inferInsert;
+
+/**
+ * Credit Enforcement Mode Enum
+ * Defines how credit limits are enforced during order creation
+ */
+export const creditEnforcementModeEnum = mysqlEnum("creditEnforcementMode", [
+  "WARNING",     // Show warning but allow order
+  "SOFT_BLOCK",  // Block by default, allow override with reason
+  "HARD_BLOCK",  // Block completely, no override
+]);
+
+/**
+ * Credit Visibility Settings
+ * Controls which credit UI elements are shown and enforcement behavior
+ * Can be configured globally (locationId = null) or per-location
+ */
+export const creditVisibilitySettings = mysqlTable(
+  "credit_visibility_settings",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    locationId: int("location_id"), // NULL = global default
+
+    // UI Element Visibility
+    showCreditInClientList: boolean("show_credit_in_client_list")
+      .default(true)
+      .notNull(),
+    showCreditBannerInOrders: boolean("show_credit_banner_in_orders")
+      .default(true)
+      .notNull(),
+    showCreditWidgetInProfile: boolean("show_credit_widget_in_profile")
+      .default(true)
+      .notNull(),
+    showSignalBreakdown: boolean("show_signal_breakdown")
+      .default(true)
+      .notNull(),
+    showAuditLog: boolean("show_audit_log").default(true).notNull(),
+
+    // Enforcement Settings
+    creditEnforcementMode: creditEnforcementModeEnum
+      .default("WARNING")
+      .notNull(),
+    warningThresholdPercent: int("warning_threshold_percent")
+      .default(75)
+      .notNull(),
+    alertThresholdPercent: int("alert_threshold_percent")
+      .default(90)
+      .notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    locationIdIdx: index("idx_location_id").on(table.locationId),
+  })
+);
+
+export type CreditVisibilitySettings =
+  typeof creditVisibilitySettings.$inferSelect;
+export type InsertCreditVisibilitySettings =
+  typeof creditVisibilitySettings.$inferInsert;
 
 // ============================================================================
 // PRICING RULES & SALES SHEETS

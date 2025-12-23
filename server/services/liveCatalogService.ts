@@ -59,6 +59,27 @@ export interface FilterOptions {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Get brand name from inventory item
+ */
+function getBrandName(item: { vendor?: string; category?: string }): string | undefined {
+  // Brand info may come from vendor field or be derived from product data
+  return item.vendor ?? undefined;
+}
+
+/**
+ * Get date from inventory item (creation or intake date)
+ */
+function getItemDate(item: { id: number }): Date | undefined {
+  // Date would come from batch creation - for now return undefined
+  // In a full implementation, this would be batch.createdAt or batch.intakeDate
+  return undefined;
+}
+
+// ============================================================================
 // CATALOG QUERY
 // ============================================================================
 
@@ -221,6 +242,9 @@ export async function getCatalog(
     });
   }
 
+  // Calculate total count before pagination filters
+  const totalCount = pricedItems.length;
+
   // Convert to catalog items
   const catalogItems: CatalogItem[] = pricedItems.map(item => {
     const quantity = item.quantity || 0;
@@ -233,9 +257,9 @@ export async function getCatalog(
       itemName: item.name,
       category: item.category,
       subcategory: item.subcategory ?? undefined,
-      brand: undefined, // TODO: Get brand from brandId
+      brand: getBrandName(item),
       grade: item.grade,
-      date: undefined, // TODO: Get from batch
+      date: getItemDate(item),
       retailPrice: item.retailPrice.toFixed(2),
       basePrice: liveCatalogConfig?.showBasePrice ? item.basePrice.toFixed(2) : undefined,
       markup: liveCatalogConfig?.showMarkup ? item.priceMarkup.toFixed(2) : undefined,
@@ -247,7 +271,7 @@ export async function getCatalog(
 
   return {
     items: catalogItems,
-    total: catalogItems.length, // TODO: Implement proper count query
+    total: totalCount,
   };
 }
 

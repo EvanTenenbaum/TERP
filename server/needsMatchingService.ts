@@ -3,12 +3,22 @@ import { orders, clientNeeds, batches, products, matchRecords } from "../drizzle
 import { eq } from "drizzle-orm";
 import { updateMatchAction, markMatchAsConverted } from "./matchRecordsDb";
 import { logger } from "./_core/logger";
-import type { Match } from "./matchingEngineEnhanced";
+import type { Match, EnhancedBatchSourceData, EnhancedVendorSourceData } from "./matchingEngineEnhanced";
 
 /**
  * Needs & Matching Service Layer
  * Business logic for complex workflows
  */
+
+// Type guard to check if sourceData is batch data
+function isBatchSourceData(data: Match["sourceData"]): data is EnhancedBatchSourceData {
+  return "batch" in data || "product" in data;
+}
+
+// Type guard to check if sourceData is vendor data
+function isVendorSourceData(data: Match["sourceData"]): data is EnhancedVendorSourceData {
+  return "vendorId" in data || ("strain" in data && !("batch" in data) && !("client" in data));
+}
 
 /**
  * Create a quote from a match
@@ -32,7 +42,7 @@ export async function createQuoteFromMatch(matchData: {
     let subtotal = 0;
 
     for (const match of matchData.matches) {
-      if (match.source === "INVENTORY") {
+      if (match.source === "INVENTORY" && isBatchSourceData(match.sourceData)) {
         const batch = match.sourceData.batch;
         const product = match.sourceData.product;
 
@@ -45,20 +55,20 @@ export async function createQuoteFromMatch(matchData: {
         const itemTotal = price * quantity;
 
         items.push({
-          batchId: batch.id,
+          batchId: batch?.id ?? 0,
           productId: product?.id,
           productName: product?.nameCanonical || "Unknown Product",
           strain: product?.nameCanonical,
           category: product?.category,
           subcategory: product?.subcategory,
-          grade: batch.grade,
+          grade: batch?.grade,
           quantity: quantity.toString(),
           price: price.toString(),
           total: itemTotal.toString(),
         });
 
         subtotal += itemTotal;
-      } else if (match.source === "VENDOR") {
+      } else if (match.source === "VENDOR" && isVendorSourceData(match.sourceData)) {
         const supply = match.sourceData;
 
         const quantity = Math.min(
@@ -72,10 +82,10 @@ export async function createQuoteFromMatch(matchData: {
         items.push({
           vendorSupplyId: supply.id,
           productName: `${supply.strain || ""} ${supply.category || ""}`.trim(),
-          strain: supply.strain,
-          category: supply.category,
-          subcategory: supply.subcategory,
-          grade: supply.grade,
+          strain: supply.strain ?? undefined,
+          category: supply.category ?? undefined,
+          subcategory: supply.subcategory ?? undefined,
+          grade: supply.grade ?? undefined,
           quantity: quantity.toString(),
           price: price.toString(),
           total: itemTotal.toString(),

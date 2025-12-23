@@ -21,8 +21,66 @@ export interface Match {
   reasons: string[];
   source: "INVENTORY" | "VENDOR" | "HISTORICAL";
   sourceId: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  sourceData: any; // Can be batch, vendor supply, or historical data - TODO: improve typing
+  sourceData: BatchSourceData | VendorSourceData | HistoricalSourceData;
+}
+
+// Typed source data interfaces
+export interface BatchSourceData {
+  batch?: {
+    id: number;
+    code?: string;
+    sku?: string;
+    grade?: string;
+    onHandQty?: string;
+    unitCogs?: string;
+  };
+  product?: {
+    id: number;
+    name?: string;
+    nameCanonical?: string;
+    category?: string;
+    subcategory?: string;
+    strainId?: number;
+  };
+  client?: {
+    id: number;
+    name?: string;
+  };
+}
+
+export interface VendorSourceData {
+  id: number;
+  strain?: string | null;
+  strainType?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  grade?: string | null;
+  unitPrice?: string | null;
+  quantityAvailable?: string;
+}
+
+export interface HistoricalSourceData {
+  client?: {
+    id: number;
+    name?: string;
+  };
+  purchaseCount?: number;
+  lastPurchaseDate?: Date;
+  totalQuantity?: number;
+  averageQuantity?: number;
+  // Pattern data for historical matches
+  pattern?: {
+    clientId: number;
+    strain?: string;
+    category?: string;
+    subcategory?: string;
+    grade?: string;
+    purchaseCount: number;
+    totalQuantity: number;
+    avgPrice: number;
+    lastPurchaseDate: Date;
+    daysSinceLastPurchase: number;
+  };
 }
 
 export interface MatchResult {

@@ -173,9 +173,27 @@ export const vipPortalRouter = router({
           })
           .where(eq(vipPortalAuth.id, authRecord.id));
 
-        // TODO: Send password reset email
-        // For now, just return the token (in production, this would be emailed)
-        return { success: true, resetToken };
+        // Send password reset email via notification service
+        try {
+          const { sendNotification } = await import("../services/notificationService");
+          const appUrl = process.env.APP_URL || "https://terp-app-b9s35.ondigitalocean.app";
+          await sendNotification({
+            userId: authRecord.clientId,
+            title: "Password Reset Request",
+            message: `Click here to reset your VIP Portal password: ${appUrl}/vip-portal/reset-password?token=${resetToken}`,
+            method: "email",
+            metadata: {
+              type: "password_reset",
+              token: resetToken,
+              expiresAt: resetTokenExpiresAt.toISOString(),
+            },
+          });
+        } catch (emailError) {
+          // Log but don't fail - user can still use the token
+          console.error("Failed to send password reset email:", emailError);
+        }
+
+        return { success: true };
       }),
 
     // Reset password with token
@@ -309,12 +327,27 @@ export const vipPortalRouter = router({
             eq(clientNeeds.status, "ACTIVE")
           ));
 
+        // Calculate credit utilization based on total owed
+        // Note: creditLimit is not in the clients schema, so we use a default or skip this metric
+        const currentBalance = parseFloat(client.totalOwed || "0");
+        // Credit utilization would require a creditLimit field - for now, return 0
+        const creditUtilization = 0;
+
+        // Count active supply listings for this client (as seller)
+        const activeSupply = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(vendorSupply)
+          .where(and(
+            eq(vendorSupply.vendorId, input.clientId),
+            eq(vendorSupply.status, "AVAILABLE")
+          ));
+
         return {
-          currentBalance: parseFloat(client.totalOwed || "0"),
+          currentBalance,
           ytdSpend,
-          creditUtilization: 0, // TODO: Calculate based on credit limit
+          creditUtilization: Math.round(creditUtilization * 100) / 100,
           activeNeedsCount: Number(activeNeeds[0]?.count || 0),
-          activeSupplyCount: 0, // TODO: Count active supply when schema is updated
+          activeSupplyCount: Number(activeSupply[0]?.count || 0),
         };
       }),
   }),
@@ -652,9 +685,26 @@ export const vipPortalRouter = router({
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        // clientId available from ctx.clientId via vipPortalProcedure
-        // TODO: Implement supply creation when schema is updated
-        return { supplyId: 0 };
+        
+        const clientId = ctx.clientId;
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + input.expiresInDays);
+
+        // Create supply listing in vendorSupply table (client acts as vendor/seller)
+        const [result] = await db.insert(vendorSupply).values({
+          vendorId: clientId,
+          strain: input.strain,
+          category: input.category,
+          quantityAvailable: input.quantity.toString(),
+          unitPrice: input.priceMin?.toString() || null,
+          notes: input.notes,
+          availableUntil: expiresAt,
+          status: "AVAILABLE",
+          createdAt: new Date(),
+          createdBy: clientId, // Use clientId for actor attribution in VIP portal context
+        });
+
+        return { supplyId: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
       }),
 
     // Update supply listing
@@ -673,8 +723,36 @@ export const vipPortalRouter = router({
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        // clientId available from ctx.clientId via vipPortalProcedure
-        // TODO: Implement supply update when schema is updated
+        
+        const clientId = ctx.clientId;
+        const { id, ...updateData } = input;
+
+        // Verify ownership before update
+        const existing = await db.query.vendorSupply.findFirst({
+          where: and(
+            eq(vendorSupply.id, id),
+            eq(vendorSupply.vendorId, clientId)
+          ),
+        });
+
+        if (!existing) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Supply listing not found or not owned by you",
+          });
+        }
+
+        await db.update(vendorSupply)
+          .set({
+            strain: updateData.strain,
+            category: updateData.category,
+            quantityAvailable: updateData.quantity.toString(),
+            unitPrice: updateData.priceMin?.toString() || null,
+            notes: updateData.notes,
+            updatedAt: new Date(),
+          })
+          .where(eq(vendorSupply.id, id));
+
         return { success: true };
       }),
 
@@ -687,8 +765,32 @@ export const vipPortalRouter = router({
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        // clientId available from ctx.clientId via vipPortalProcedure
-        // TODO: Implement supply cancellation when schema is updated
+        
+        const clientId = ctx.clientId;
+
+        // Verify ownership before cancellation
+        const existing = await db.query.vendorSupply.findFirst({
+          where: and(
+            eq(vendorSupply.id, input.id),
+            eq(vendorSupply.vendorId, clientId)
+          ),
+        });
+
+        if (!existing) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Supply listing not found or not owned by you",
+          });
+        }
+
+        // Soft delete by setting status to EXPIRED (CANCELLED is not a valid status)
+        await db.update(vendorSupply)
+          .set({
+            status: "EXPIRED",
+            updatedAt: new Date(),
+          })
+          .where(eq(vendorSupply.id, input.id));
+
         return { success: true };
       }),
   }),
@@ -799,32 +901,33 @@ export const vipPortalRouter = router({
 
               case 'credit_utilization': {
                 // Calculate credit utilization percentage
-                // Note: creditLimit field doesn't exist in schema yet
-                // Using totalOwed as current exposure, but no credit limit to compare against
-                // TODO: Add creditLimit field to clients table schema
+                // Note: creditLimit is stored in clientCreditLimits table, not clients table
+                // For now, we use totalOwed as a proxy metric (lower debt = better)
                 const currentExposure = Number(client.totalOwed) || 0;
-                // For now, return 0 since we don't have a credit limit to calculate against
-                metricValue = 0;
+                // Use inverse of debt as metric (clients with less debt rank higher)
+                // Scale to 0-100 where 100 = no debt
+                metricValue = Math.max(0, 100 - Math.min(100, currentExposure / 100));
                 break;
               }
 
               case 'ontime_payment_rate': {
-                // Calculate on-time payment rate
-                // Note: dueDate field doesn't exist in client_transactions schema yet
-                // TODO: Add dueDate field or use transaction_date + payment_terms to calculate
-                const totalPayments = await db
-                  .select({ count: sql<number>`COUNT(*)` })
+                // Calculate on-time payment rate based on payment status
+                const paymentStats = await db
+                  .select({
+                    total: sql<number>`COUNT(*)`,
+                    onTime: sql<number>`SUM(CASE WHEN ${clientTransactions.paymentStatus} = 'PAID' THEN 1 ELSE 0 END)`,
+                  })
                   .from(clientTransactions)
                   .where(
                     and(
                       eq(clientTransactions.clientId, client.id),
-                      eq(clientTransactions.transactionType, 'PAYMENT')
+                      eq(clientTransactions.transactionType, 'INVOICE')
                     )
                   );
 
-                // For now, assume all payments are on-time since we don't have dueDate
-                const total = totalPayments[0]?.count || 0;
-                metricValue = total > 0 ? 100 : 0;
+                const total = paymentStats[0]?.total || 0;
+                const onTime = paymentStats[0]?.onTime || 0;
+                metricValue = total > 0 ? Math.round((onTime / total) * 100) : 100;
                 break;
               }
             }

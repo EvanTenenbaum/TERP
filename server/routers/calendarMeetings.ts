@@ -13,6 +13,43 @@ import { requirePermission } from "../_core/permissionMiddleware";
  * PRODUCTION-READY - No placeholders
  */
 
+type MeetingType = "sales" | "support" | "onboarding" | "review" | "collections" | "other";
+
+/**
+ * Determine meeting type from event context and participants
+ */
+function determineMeetingType(
+  event: { title: string; description?: string | null; entityType?: string | null },
+  participants: Array<{ role?: string | null }>
+): MeetingType {
+  const text = `${event.title} ${event.description ?? ""}`.toLowerCase();
+  
+  // Check title/description for keywords
+  if (text.includes("sales") || text.includes("demo") || text.includes("pitch")) {
+    return "sales";
+  }
+  if (text.includes("support") || text.includes("help") || text.includes("issue") || text.includes("problem")) {
+    return "support";
+  }
+  if (text.includes("onboard") || text.includes("welcome") || text.includes("setup") || text.includes("training")) {
+    return "onboarding";
+  }
+  if (text.includes("review") || text.includes("check-in") || text.includes("quarterly") || text.includes("monthly")) {
+    return "review";
+  }
+  if (text.includes("collection") || text.includes("payment") || text.includes("overdue") || text.includes("debt")) {
+    return "collections";
+  }
+  
+  // Check entity type
+  if (event.entityType === "client") {
+    // Default client meetings to sales
+    return "sales";
+  }
+  
+  return "other";
+}
+
 export const calendarMeetingsRouter = router({
   // Get unconfirmed meetings for user
   getUnconfirmedMeetings: publicProcedure.query(async ({ ctx }) => {
@@ -103,12 +140,15 @@ export const calendarMeetingsRouter = router({
         name: `User ${p.userId}`, // Name will be resolved from user lookup if needed
       }));
 
+      // Determine meeting type from event context
+      const meetingType = determineMeetingType(event, participants);
+
       // Create meeting history entry
       const historyEntry = await calendarDb.addMeetingHistoryEntry({
         clientId: input.clientId,
         calendarEventId: input.eventId,
         meetingDate: new Date(event.startDate),
-        meetingType: "sales", // TODO: Determine from event context
+        meetingType,
         attendees,
         outcome: input.outcome,
         notes: input.notes || null,

@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
+import { CreditStatusCard } from "@/components/credit/CreditStatusCard";
 import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
 import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
 import { ClientNeedsTab } from "@/components/needs/ClientNeedsTab";
@@ -375,9 +376,14 @@ export default function ClientProfilePage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
-          {/* Credit Limit Widget (only for buyers) */}
+          {/* Credit Status Card (only for buyers) */}
           {client.isBuyer && (
-            <CreditLimitWidget clientId={clientId} showAdjustControls={false} />
+            <CreditStatusCard 
+              clientId={clientId} 
+              clientName={client.name}
+              showOverrideButton={true}
+              showRecalculateButton={true}
+            />
           )}
 
           {/* Purchase Patterns Widget (only for buyers) */}

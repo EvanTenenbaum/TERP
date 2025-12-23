@@ -27,10 +27,59 @@ export interface Match {
   reasons: string[];
   source: "INVENTORY" | "VENDOR" | "HISTORICAL";
   sourceId: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  sourceData: any; // Can be batch, vendor supply, or historical data - TODO: improve typing
+  sourceData: EnhancedBatchSourceData | EnhancedVendorSourceData | EnhancedHistoricalSourceData;
   calculatedPrice?: number; // For inventory matches with pricing
   availableQuantity?: number; // For inventory/vendor matches
+}
+
+// Typed source data interfaces for enhanced matching
+export interface EnhancedBatchSourceData {
+  batch?: {
+    id: number;
+    code?: string;
+    sku?: string;
+    grade?: string;
+    onHandQty?: string;
+    unitCogs?: string;
+    cogsMode?: string;
+    unitCogsMin?: string;
+    unitCogsMax?: string;
+  };
+  product?: {
+    id: number;
+    name?: string;
+    nameCanonical?: string;
+    category?: string;
+    subcategory?: string;
+    strainId?: number;
+  };
+  client?: {
+    id: number;
+    name?: string;
+  };
+}
+
+export interface EnhancedVendorSourceData {
+  id: number;
+  strain?: string | null;
+  strainType?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  grade?: string | null;
+  unitPrice?: string | null;
+  quantityAvailable?: string;
+  vendorId?: number;
+}
+
+export interface EnhancedHistoricalSourceData {
+  client?: {
+    id: number;
+    name?: string;
+  };
+  purchaseCount?: number;
+  lastPurchaseDate?: Date;
+  totalQuantity?: number;
+  averageQuantity?: number;
 }
 
 export interface MatchResult {
@@ -417,7 +466,26 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
           reasons,
           source: "INVENTORY",
           sourceId: batch.id,
-          sourceData: { batch, product },
+          sourceData: { 
+            batch: {
+              id: batch.id,
+              code: batch.code,
+              sku: batch.sku,
+              grade: batch.grade ?? undefined,
+              onHandQty: batch.onHandQty,
+              unitCogs: batch.unitCogs ?? undefined,
+              cogsMode: batch.cogsMode ?? undefined,
+              unitCogsMin: batch.unitCogsMin ?? undefined,
+              unitCogsMax: batch.unitCogsMax ?? undefined,
+            }, 
+            product: product ? {
+              id: product.id,
+              nameCanonical: product.nameCanonical,
+              category: product.category,
+              subcategory: product.subcategory ?? undefined,
+              strainId: product.strainId ?? undefined,
+            } : undefined,
+          },
           calculatedPrice: calculatedPrice || undefined,
           availableQuantity,
         };
@@ -490,9 +558,14 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
       grade: need.grade,
     });
 
+    // Helper to check if sourceData has client property (type guard)
+    const hasClient = (data: unknown): data is { client?: { id: number; name?: string } } => {
+      return typeof data === 'object' && data !== null && 'client' in data;
+    };
+
     // Filter to only this client's historical patterns
     const clientHistoricalMatches = historicalMatches.filter(
-      hm => hm.sourceData?.client?.id === need.clientId
+      hm => hasClient(hm.sourceData) && hm.sourceData?.client?.id === need.clientId
     );
 
     for (const histMatch of clientHistoricalMatches) {
@@ -589,7 +662,26 @@ export async function findBuyersForInventory(
           reasons,
           source: "INVENTORY",
           sourceId: batchId,
-          sourceData: { batch, product },
+          sourceData: { 
+            batch: {
+              id: batch.id,
+              code: batch.code,
+              sku: batch.sku,
+              grade: batch.grade ?? undefined,
+              onHandQty: batch.onHandQty,
+              unitCogs: batch.unitCogs ?? undefined,
+              cogsMode: batch.cogsMode ?? undefined,
+              unitCogsMin: batch.unitCogsMin ?? undefined,
+              unitCogsMax: batch.unitCogsMax ?? undefined,
+            }, 
+            product: product ? {
+              id: product.id,
+              nameCanonical: product.nameCanonical,
+              category: product.category,
+              subcategory: product.subcategory ?? undefined,
+              strainId: product.strainId ?? undefined,
+            } : undefined,
+          },
           calculatedPrice: calculatedPrice || undefined,
           availableQuantity,
         };
@@ -620,8 +712,13 @@ export async function findBuyersForInventory(
       grade: batch.grade,
     });
 
+    // Helper to check if sourceData has client property (type guard)
+    const hasClientData = (data: unknown): data is { client?: { id: number; name?: string } } => {
+      return typeof data === 'object' && data !== null && 'client' in data;
+    };
+
     for (const histMatch of historicalBuyers) {
-      const clientId = histMatch.sourceData?.client?.id;
+      const clientId = hasClientData(histMatch.sourceData) ? histMatch.sourceData?.client?.id : undefined;
       if (!clientId) continue;
 
       // Skip if already matched via explicit need

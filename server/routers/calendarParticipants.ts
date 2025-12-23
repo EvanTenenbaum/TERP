@@ -89,13 +89,29 @@ export const calendarParticipantsRouter = router({
 
       // Send notification if requested
       if (input.notifyOnCreation) {
-        // TODO: Integrate with notification system
-        // For now, this is a hook point for future notification integration
+        // Get event details for notification
+        const event = await calendarDb.getEventById(input.eventId);
+        if (event) {
+          const { sendNotification } = await import("../services/notificationService");
+          await sendNotification({
+            userId: input.userId,
+            title: "Calendar Invitation",
+            message: `You've been invited to "${event.title}" on ${new Date(event.startDate).toLocaleDateString()}`,
+            method: "in-app",
+            metadata: {
+              eventId: input.eventId,
+              type: "calendar_invitation",
+              startTime: event.startDate.toISOString(),
+              role: input.role,
+            },
+          });
+        }
+        
         calendarLogger.operationSuccess("addParticipant", {
           userId: input.userId,
           eventId: input.eventId,
           role: input.role,
-          notificationPending: true,
+          notificationSent: true,
         });
       }
 

@@ -373,7 +373,29 @@ export async function updateClientStats(clientId: number) {
     })
     .where(eq(clients.id, clientId));
 
+  // Trigger credit recalculation asynchronously (don't block the main flow)
+  // Only recalculate if client has transactions (buyer activity)
+  if (transactions.length > 0) {
+    triggerCreditRecalculation(clientId).catch(err => {
+      console.error(`Failed to recalculate credit for client ${clientId}:`, err);
+    });
+  }
+
   return true;
+}
+
+/**
+ * Trigger credit recalculation for a client (async, non-blocking)
+ * Skips clients with manual credit limit overrides
+ */
+async function triggerCreditRecalculation(clientId: number): Promise<void> {
+  try {
+    const { recalculateClientCredit } = await import("./creditEngine");
+    await recalculateClientCredit(clientId);
+  } catch (error) {
+    // Log but don't throw - credit recalculation is non-critical
+    console.error(`Credit recalculation failed for client ${clientId}:`, error);
+  }
 }
 
 // ============================================================================
