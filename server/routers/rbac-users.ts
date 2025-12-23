@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { requirePermission, requireAnyPermission } from "../_core/permissionMiddleware";
+import { getCurrentUserId } from "../_core/authHelpers";
 import { getDb } from "../db";
 import { 
   userRoles, 
@@ -569,7 +570,7 @@ export const rbacUsersRouter = router({
 
   /**
    * Get current user's permissions
-   * This endpoint is public (only requires authentication) so any user can check their own permissions
+   * Requires authentication - returns the authenticated user's permissions
    */
   getMyPermissions: protectedProcedure
     .query(async ({ ctx }) => {
@@ -577,19 +578,8 @@ export const rbacUsersRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
         
-        // PUBLIC ACCESS MODE: Return empty permissions when no user is present
-        // User explicitly requested public access for production site verification
-        // TODO: Re-enable authentication check when ready for secure access
-        if (!ctx.user) {
-          return {
-            userId: null,
-            isSuperAdmin: false,
-            permissions: [],
-            roles: [],
-          };
-        }
-
-        const userId = String(ctx.user.id);
+        // Authentication is enforced by protectedProcedure
+        const userId = String(getCurrentUserId(ctx));
 
         // Check if user is Super Admin (check by role name since isSuperAdmin column doesn't exist)
         const userRoleRecords = await db

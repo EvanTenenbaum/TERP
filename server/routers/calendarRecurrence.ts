@@ -204,7 +204,8 @@ export const calendarRecurrenceRouter = router({
     }),
 
   // Regenerate all instances (admin/background job)
-  regenerateAllInstances: publicProcedure
+  regenerateAllInstances: protectedProcedure
+    .use(requirePermission("calendar:admin"))
     .input(
       z.object({
         daysAhead: daysAheadSchema,
@@ -212,9 +213,6 @@ export const calendarRecurrenceRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
-
-      // TODO: Check admin permission
-      // For now, allow any user (will be restricted in production)
 
       // Regenerate all instances
       const count = await InstanceGenerationService.regenerateAllInstances(
