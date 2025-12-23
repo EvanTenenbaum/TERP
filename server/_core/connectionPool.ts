@@ -85,6 +85,25 @@ export function getConnectionPool(config?: PoolConfig): mysql.Pool {
     uri: cleanDatabaseUrl,
     ...poolConfig,
     ...sslConfig,
+    // FIX-006: TiDB ENUM compatibility fix
+    // TiDB returns ENUM columns with type code 0xf7 (247) in binary protocol
+    // instead of STRING type with ENUM flag like MySQL does.
+    // This causes "Unknown type '247'" errors in mysql2 driver.
+    // The typeCast function intercepts ENUM fields and returns them as strings.
+    // See: https://github.com/pingcap/tidb/issues/6910
+    typeCast: function (field: any, next: () => any) {
+      // ENUM type code is 247 (0xf7) in TiDB binary protocol
+      if (field.type === 'ENUM' || field.type === 247) {
+        const value = field.string();
+        return value;
+      }
+      // SET type also has similar issues (type code 248)
+      if (field.type === 'SET' || field.type === 248) {
+        const value = field.string();
+        return value;
+      }
+      return next();
+    },
   });
 
   // Handle pool errors
