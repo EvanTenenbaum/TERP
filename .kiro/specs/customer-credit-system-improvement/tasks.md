@@ -86,7 +86,7 @@
 - [ ] Add feature flag for gradual rollout
 - [ ] Test both components work correctly
 
-## Phase 3: Settings & Control (P1) - 8h estimated
+## Phase 3: Settings & Control (P1) - 8h estimated ✅ COMPLETE
 
 ### Task 3.1: Create Credit Visibility Settings Table
 
@@ -105,21 +105,21 @@
 
 ### Task 3.3: Create Credit Settings Admin Page
 
-- [ ] Create `client/src/pages/settings/CreditSettingsPage.tsx`
-- [ ] Add visibility toggles section
-- [ ] Add enforcement mode selector
-- [ ] Add threshold configuration
-- [ ] Add signal weight adjustment (link to existing)
-- [ ] Add save/reset buttons
+- [x] Create `client/src/pages/settings/CreditSettingsPage.tsx`
+- [x] Add visibility toggles section
+- [x] Add enforcement mode selector
+- [x] Add threshold configuration
+- [x] Add signal weight adjustment (link to existing)
+- [x] Add save/reset buttons
 
 ### Task 3.4: Apply Visibility Settings Throughout App
 
 - [x] Create `useCreditVisibility` hook
 - [x] Wrap credit components with visibility checks
 - [x] Conditionally render based on settings
-- [ ] Test all visibility combinations
+- [x] Test all visibility combinations
 
-## Phase 4: Auto-Recalculation & Order Integration (P2) - 8h estimated
+## Phase 4: Auto-Recalculation & Order Integration (P2) - 8h estimated ✅ COMPLETE
 
 ### Task 4.1: Add Order Credit Check Endpoint
 
@@ -130,34 +130,34 @@
 
 ### Task 4.2: Integrate Credit Check in Order Creation
 
-- [ ] Modify `OrderCreatorPage.tsx` to call credit check
-- [ ] Show warning dialog when credit exceeded
-- [ ] Allow proceed with override reason
-- [ ] Block if enforcement mode is 'HARD_BLOCK'
-- [ ] Update `CreditLimitBanner` to show override option
+- [x] Modify `OrderCreatorPage.tsx` to call credit check
+- [x] Show warning dialog when credit exceeded
+- [x] Allow proceed with override reason
+- [x] Block if enforcement mode is 'HARD_BLOCK'
+- [x] Update `CreditLimitBanner` to show override option
 
 ### Task 4.3: Add Transaction Triggers
 
-- [ ] Add credit recalc trigger to invoice creation flow
-- [ ] Add credit recalc trigger to payment recording flow
-- [ ] Add credit recalc trigger to order finalization
-- [ ] Ensure triggers are async (don't block main flow)
+- [x] Add credit recalc trigger to invoice creation flow
+- [x] Add credit recalc trigger to payment recording flow
+- [x] Add credit recalc trigger to order finalization
+- [x] Ensure triggers are async (don't block main flow)
 
 ### Task 4.4: Create Daily Batch Job
 
-- [ ] Create `scripts/jobs/recalculate-all-credit.ts`
-- [ ] Skip clients with manual overrides
-- [ ] Add progress logging
-- [ ] Add error handling and retry logic
-- [ ] Document cron setup for production
+- [x] Create `scripts/jobs/recalculate-all-credit.ts`
+- [x] Skip clients with manual overrides
+- [x] Add progress logging
+- [x] Add error handling and retry logic
+- [x] Document cron setup for production
 
 ### Task 4.5: Performance Optimization
 
-- [ ] Profile credit calculation performance
-- [ ] Add caching for frequently accessed data
-- [ ] Optimize database queries
-- [ ] Ensure <500ms per client target met
-- [ ] Add performance monitoring
+- [x] Profile credit calculation performance
+- [x] Add caching for frequently accessed data
+- [x] Optimize database queries
+- [x] Ensure <500ms per client target met
+- [x] Add performance monitoring
 
 ## Phase 5: VIP Portal (P3) - 8h estimated (Future)
 
