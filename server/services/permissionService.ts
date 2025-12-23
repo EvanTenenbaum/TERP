@@ -4,7 +4,8 @@ import {
   permissions, 
   rolePermissions, 
   userRoles, 
-  userPermissionOverrides 
+  userPermissionOverrides,
+  users
 } from "../../drizzle/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { logger } from "../_core/logger";
@@ -14,6 +15,9 @@ import { logger } from "../_core/logger";
  * 
  * This service provides functions for checking user permissions against the RBAC system.
  * It implements caching for performance and supports per-user permission overrides.
+ * 
+ * FIX-001: Added fallback for admin users with no roles assigned.
+ * This ensures the initial admin user can access the system before RBAC roles are seeded.
  */
 
 // In-memory cache for user permissions with automatic cleanup
@@ -61,10 +65,59 @@ export function clearPermissionCache(userId?: string) {
 }
 
 /**
+ * FIX-001: Check if a user is an admin in the users table
+ * This is a fallback for users who have admin role but no RBAC roles assigned yet.
+ */
+async function isUserAdmin(userId: string): Promise<boolean> {
+  try {
+    const db = await getDb();
+    if (!db) return false;
+    
+    // Check if the user has admin role in the users table
+    const userRecord = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.openId, userId))
+      .limit(1);
+    
+    if (userRecord.length > 0 && userRecord[0].role === 'admin') {
+      logger.info({ msg: "User is admin in users table (fallback check)", userId });
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    logger.error({ msg: "Error checking user admin status", userId, error });
+    return false;
+  }
+}
+
+/**
+ * FIX-001: Get all permissions from the database
+ * Used as a fallback for admin users with no RBAC roles assigned.
+ */
+async function getAllPermissions(): Promise<Set<string>> {
+  try {
+    const db = await getDb();
+    if (!db) return new Set<string>();
+    
+    const allPermissions = await db
+      .select({ name: permissions.name })
+      .from(permissions);
+    
+    return new Set(allPermissions.map(p => p.name));
+  } catch (error) {
+    logger.error({ msg: "Error fetching all permissions", error });
+    return new Set<string>();
+  }
+}
+
+/**
  * Get all permissions for a user
  * This function checks:
  * 1. User's assigned roles and their permissions
  * 2. User-specific permission overrides (grants and revocations)
+ * 3. FIX-001: Fallback for admin users with no RBAC roles
  * 
  * Results are cached for performance.
  */
@@ -92,7 +145,32 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
 
     if (userRoleRecords.length === 0) {
       logger.warn({ msg: "User has no roles assigned", userId });
-      // User has no roles, return empty set
+      
+      // FIX-001: Check if user is an admin in the users table
+      // This is a fallback for the initial admin user before RBAC roles are seeded
+      const isAdmin = await isUserAdmin(userId);
+      if (isAdmin) {
+        logger.info({ 
+          msg: "FIX-001: Granting all permissions to admin user with no RBAC roles", 
+          userId 
+        });
+        
+        // Grant all permissions to admin users
+        const allPermissions = await getAllPermissions();
+        
+        // Cache the result
+        permissionCache.set(userId, { permissions: allPermissions, timestamp: Date.now() });
+        
+        logger.info({ 
+          msg: "Admin user granted all permissions (fallback)", 
+          userId, 
+          permissionCount: allPermissions.size 
+        });
+        
+        return allPermissions;
+      }
+      
+      // User has no roles and is not an admin, return empty set
       const emptySet = new Set<string>();
       permissionCache.set(userId, { permissions: emptySet, timestamp: Date.now() });
       return emptySet;
@@ -281,16 +359,39 @@ export async function getUserRoles(userId: string): Promise<Array<{ id: number; 
 /**
  * Check if a user is a Super Admin
  * Super Admins have unrestricted access to the entire system
+ * 
+ * FIX-001: Also checks if user is an admin in the users table as fallback
  */
 export async function isSuperAdmin(userId: string): Promise<boolean> {
+  // First check RBAC roles
   const userRolesList = await getUserRoles(userId);
   const isSA = userRolesList.some((role) => role.name === "Super Admin");
+  
+  if (isSA) {
+    logger.debug({ 
+      msg: "Super Admin check (via RBAC role)", 
+      userId, 
+      result: true 
+    });
+    return true;
+  }
+  
+  // FIX-001: Fallback - check if user is admin in users table
+  const isAdmin = await isUserAdmin(userId);
+  if (isAdmin) {
+    logger.debug({ 
+      msg: "Super Admin check (via users.role fallback)", 
+      userId, 
+      result: true 
+    });
+    return true;
+  }
   
   logger.debug({ 
     msg: "Super Admin check", 
     userId, 
-    result: isSA 
+    result: false 
   });
   
-  return isSA;
+  return false;
 }
