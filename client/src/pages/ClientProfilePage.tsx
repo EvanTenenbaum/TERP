@@ -51,6 +51,7 @@ import { SupplierProfileSection } from "@/components/clients/SupplierProfileSect
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
 import { BackButton } from "@/components/common/BackButton";
+import { useCreditVisibility } from "@/hooks/useCreditVisibility";
 import {
   Edit,
   DollarSign,
@@ -77,6 +78,9 @@ export default function ClientProfilePage() {
   const [transactionSearch, setTransactionSearch] = useState("");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
+
+  // Credit visibility settings
+  const { shouldShowCreditWidgetInProfile } = useCreditVisibility();
 
   // Fetch client data
   const { data: client, isLoading: clientLoading } =
@@ -376,8 +380,8 @@ export default function ClientProfilePage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
-          {/* Credit Status Card (only for buyers) */}
-          {client.isBuyer && (
+          {/* Credit Status Card (only for buyers with visibility enabled) */}
+          {client.isBuyer && shouldShowCreditWidgetInProfile && (
             <CreditStatusCard 
               clientId={clientId} 
               clientName={client.name}

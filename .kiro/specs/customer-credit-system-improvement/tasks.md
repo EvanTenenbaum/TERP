@@ -76,7 +76,7 @@
 - [x] Create `CreditIndicator` sub-component (colored dot + percentage)
 - [x] Add color coding: green (<75%), yellow (75-90%), red (>90%)
 - [x] Make indicator clickable to open credit details
-- [ ] Add column visibility toggle
+- [x] Add column visibility toggle (via useCreditVisibility hook)
 - [x] Update mobile responsive view
 
 ### Task 2.6: Replace CreditLimitWidget Usage
@@ -115,8 +115,8 @@
 ### Task 3.4: Apply Visibility Settings Throughout App
 
 - [x] Create `useCreditVisibility` hook
-- [ ] Wrap credit components with visibility checks
-- [ ] Conditionally render based on settings
+- [x] Wrap credit components with visibility checks
+- [x] Conditionally render based on settings
 - [ ] Test all visibility combinations
 
 ## Phase 4: Auto-Recalculation & Order Integration (P2) - 8h estimated
