@@ -135,6 +135,18 @@
 
 @layer components {
   /**
+   * Hide scrollbar while maintaining scroll functionality.
+   * Useful for horizontal tab lists and carousels.
+   */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  /**
    * Custom container utility that centers content and adds responsive padding.
    *
    * This overrides Tailwind's default container behavior to:
