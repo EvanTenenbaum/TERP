@@ -42,8 +42,21 @@ import {
 import { OrderTotalsPanel } from "@/components/orders/OrderTotalsPanel";
 import { ClientPreview } from "@/components/orders/ClientPreview";
 import { CreditLimitBanner } from "@/components/orders/CreditLimitBanner";
+import { CreditWarningDialog } from "@/components/orders/CreditWarningDialog";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { useOrderCalculations, calculateLineItem } from "@/hooks/orders/useOrderCalculations";
+
+interface CreditCheckResult {
+  allowed: boolean;
+  warning?: string;
+  requiresOverride: boolean;
+  creditLimit: number;
+  currentExposure: number;
+  newExposure: number;
+  availableCredit: number;
+  utilizationPercent: number;
+  enforcementMode: "WARNING" | "SOFT_BLOCK" | "HARD_BLOCK";
+}
 
 export default function OrderCreatorPageV2() {
   // State
@@ -54,6 +67,11 @@ export default function OrderCreatorPageV2() {
     useState(true);
   const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  
+  // Credit check state
+  const [showCreditWarning, setShowCreditWarning] = useState(false);
+  const [creditCheckResult, setCreditCheckResult] = useState<CreditCheckResult | null>(null);
+  const [pendingOverrideReason, setPendingOverrideReason] = useState<string | undefined>();
 
   // Queries - handle paginated response
   const { data: clientsData, isLoading: clientsLoading } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -108,6 +126,9 @@ export default function OrderCreatorPageV2() {
     },
   });
 
+  // Credit check mutation
+  const creditCheckMutation = trpc.credit.checkOrderCredit.useMutation();
+
   // Handlers
   const handleSaveDraft = () => {
     if (!clientId) {
@@ -138,7 +159,7 @@ export default function OrderCreatorPageV2() {
     });
   };
 
-  const handlePreviewAndFinalize = () => {
+  const handlePreviewAndFinalize = async () => {
     if (!isValid) {
       toast.error("Please fix validation errors before finalizing");
       return;
@@ -150,22 +171,43 @@ export default function OrderCreatorPageV2() {
     }
 
     // Check credit limit for SALE orders
-    if (orderType === "SALE" && clientDetails) {
-      // creditLimit may not exist on client type - use 0 as default
-      const creditLimit = 0;
-      const currentExposure = parseFloat(clientDetails.totalOwed || "0");
-      const availableCredit = creditLimit - currentExposure;
-      
-      if (creditLimit > 0 && totals.total > availableCredit) {
-        toast.error(
-          `Order total ($${totals.total.toFixed(2)}) exceeds available credit ($${availableCredit.toFixed(2)})`
-        );
-        return;
+    if (orderType === "SALE") {
+      try {
+        const result = await creditCheckMutation.mutateAsync({
+          clientId,
+          orderTotal: totals.total,
+          overrideReason: pendingOverrideReason,
+        });
+        
+        setCreditCheckResult(result);
+        
+        // If there's a warning or requires override, show the dialog
+        if (result.warning || result.requiresOverride || !result.allowed) {
+          setShowCreditWarning(true);
+          return;
+        }
+      } catch (error) {
+        // If credit check fails, log but allow order to proceed
+        console.error("Credit check failed:", error);
+        // Continue to finalize - don't block on credit check errors
       }
     }
 
     // Show confirmation dialog for finalize
     setShowFinalizeConfirm(true);
+  };
+
+  const handleCreditProceed = (overrideReason?: string) => {
+    setShowCreditWarning(false);
+    setPendingOverrideReason(overrideReason);
+    // Show finalize confirmation
+    setShowFinalizeConfirm(true);
+  };
+
+  const handleCreditCancel = () => {
+    setShowCreditWarning(false);
+    setCreditCheckResult(null);
+    setPendingOverrideReason(undefined);
   };
 
   const confirmFinalize = () => {
@@ -458,6 +500,17 @@ export default function OrderCreatorPageV2() {
           </CardContent>
         </Card>
       )}
+
+      {/* Credit Warning Dialog */}
+      <CreditWarningDialog
+        open={showCreditWarning}
+        onOpenChange={setShowCreditWarning}
+        creditCheck={creditCheckResult}
+        orderTotal={totals.total}
+        clientName={clientDetails?.name || "Client"}
+        onProceed={handleCreditProceed}
+        onCancel={handleCreditCancel}
+      />
 
       {/* Finalize Confirmation Dialog */}
       <ConfirmDialog
