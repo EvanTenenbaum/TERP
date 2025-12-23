@@ -279,6 +279,16 @@ export const adminSchemaPushRouter = router({
       
       const clientNeedsCols = (clientNeedsColumns as unknown as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
 
+      // FIX-012: Check clients columns (from migration 0025/0042)
+      const clientsColumns = await db.execute(sql`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'clients'
+      `);
+      
+      const clientsCols = (clientsColumns as unknown as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME);
+
       const verification = {
         strains: {
           openthcId: strainsCols.includes('openthcId'),
@@ -288,6 +298,12 @@ export const adminSchemaPushRouter = router({
         },
         client_needs: {
           strainId: clientNeedsCols.includes('strainId')
+        },
+        // FIX-012: Verify clients columns from migration 0025/0042
+        clients: {
+          credit_limit_updated_at: clientsCols.includes('credit_limit_updated_at'),
+          creditLimitSource: clientsCols.includes('creditLimitSource'),
+          credit_limit_override_reason: clientsCols.includes('credit_limit_override_reason')
         }
       };
 
@@ -296,7 +312,11 @@ export const adminSchemaPushRouter = router({
         verification.strains.openthcStub &&
         verification.strains.parentStrainId &&
         verification.strains.baseStrainName &&
-        verification.client_needs.strainId;
+        verification.client_needs.strainId &&
+        // FIX-012: Include clients columns in verification
+        verification.clients.credit_limit_updated_at &&
+        verification.clients.creditLimitSource &&
+        verification.clients.credit_limit_override_reason;
 
       return {
         allPresent,
