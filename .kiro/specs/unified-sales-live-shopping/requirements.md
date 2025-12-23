@@ -176,14 +176,57 @@ This specification defines a unified sales system that consolidates the current 
 6. THE system SHALL notify staff when a self-service order is submitted for approval
 7. THE system SHALL use the same cart and order model as live shopping sessions
 
-### Requirement 13: Deprecation of Legacy Systems
+### Requirement 13: Sales Sheet as Shareable Catalog View
 
-**User Story:** As a system administrator, I want to deprecate the redundant sales tools, so that we have a single, maintainable sales system.
+**User Story:** As a sales staff member, I want to create and share curated catalog views with clients via multiple channels, so that clients can review products remotely and convert their selections into orders.
 
 #### Acceptance Criteria
 
-1. THE system SHALL mark the standalone "Sales Sheet Creator" as deprecated
-2. THE system SHALL mark the separate "Quote" order type as deprecated (use Draft Order instead)
-3. THE system SHALL provide migration path for existing quotes to draft orders
-4. THE system SHALL maintain read-only access to historical sales sheets and quotes
-5. THE system SHALL consolidate all order creation entry points to the unified system within 90 days of launch
+1. THE system SHALL allow staff to create a "Sales Sheet" by selecting items from inventory with client-specific pricing
+2. THE system SHALL support multiple sharing methods: plain text copy/paste, email, PDF export, and shareable link
+3. WHEN sharing as plain text THE system SHALL format the product list in a clean, readable format with names, quantities, and prices
+4. WHEN sharing as a link THE system SHALL generate a unique URL that displays the curated catalog view
+5. THE system SHALL allow clients to mark items they want from a shared sales sheet
+6. WHEN a client responds to a sales sheet THE staff SHALL be able to convert their selections into a draft order
+7. THE system SHALL track which sales sheets have been viewed and which items were selected
+8. THE system SHALL allow sales sheets to have an optional expiration date after which prices may no longer be honored
+
+### Requirement 14: Quote Consolidation
+
+**User Story:** As a system administrator, I want to consolidate the quote concept into the unified order model, so that we eliminate redundancy while preserving quoting functionality.
+
+#### Acceptance Criteria
+
+1. THE system SHALL treat "quotes" as draft orders with a QUOTE status for backward compatibility
+2. THE system SHALL provide migration path for existing quotes to the unified order model
+3. WHEN a quote/draft order is accepted THE system SHALL transition it to CONFIRMED status
+4. THE system SHALL maintain quote expiration functionality on draft orders
+5. THE system SHALL preserve all historical quote data with read-only access
+
+### Requirement 15: Unified Entry Points to Order Pipeline
+
+**User Story:** As a sales staff member, I want all sales channels to feed into the same order pipeline, so that order management is consistent regardless of how the sale originated.
+
+#### Acceptance Criteria
+
+1. THE system SHALL support the following entry points that all create orders in the unified model:
+   - Live Shopping Session (in-person showroom)
+   - Staff-Created Order (phone/remote without live session)
+   - Sales Sheet Response (client selects from shared sheet)
+   - VIP Portal Self-Service (client places order independently)
+2. WHEN an order is created from any entry point THE system SHALL record the origin channel
+3. THE system SHALL display all orders in a single orders list regardless of origin
+4. THE system SHALL apply the same inventory reservation, pricing, and fulfillment logic to all orders
+5. THE system SHALL provide filtering by origin channel in the orders list for reporting purposes
+
+### Requirement 16: Seamless Mode Transitions
+
+**User Story:** As a sales staff member, I want to seamlessly transition between sales modes, so that I can adapt to changing client situations.
+
+#### Acceptance Criteria
+
+1. WHEN a client with a draft order arrives in person THE staff SHALL be able to convert it to a live shopping session
+2. WHEN a live shopping session needs to pause THE staff SHALL be able to save it as a draft order for later
+3. WHEN a sales sheet recipient wants to discuss items THE staff SHALL be able to initiate a live session with those items pre-loaded
+4. THE system SHALL preserve all cart contents, pricing adjustments, and notes when transitioning between modes
+5. THE system SHALL record mode transitions in the order history for audit purposes

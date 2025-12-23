@@ -3,13 +3,16 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  RefreshCw, 
-  Edit2, 
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  Edit2,
   History,
   Info,
   AlertTriangle,
@@ -41,8 +44,12 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
 
   // Fetch credit data from client_credit_limits
-  const { data: creditData, isLoading, refetch } = trpc.credit.getByClientId.useQuery({ clientId });
-  
+  const {
+    data: creditData,
+    isLoading,
+    refetch,
+  } = trpc.credit.getByClientId.useQuery({ clientId });
+
   // Fetch client data for current exposure
   const { data: client } = trpc.clients.getById.useQuery({ clientId });
 
@@ -87,11 +94,12 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                 No Credit Limit Set
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                Calculate a credit limit based on this client's financial history
+                Calculate a credit limit based on this client's financial
+                history
               </p>
             </div>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={handleRecalculate}
               disabled={calculateMutation.isPending}
             >
@@ -105,10 +113,12 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
 
   // Parse values
   const creditLimit = Number(creditData.creditLimit || 0);
-  const currentExposure = Number(client?.totalOwed || creditData.currentExposure || 0);
+  const currentExposure = Number(
+    client?.totalOwed || creditData.currentExposure || 0
+  );
   const availableCredit = creditLimit - currentExposure;
-  const utilizationPercent = creditLimit > 0 ? (currentExposure / creditLimit) * 100 : 0;
-  const creditHealthScore = Number(creditData.creditHealthScore || 0);
+  const utilizationPercent =
+    creditLimit > 0 ? (currentExposure / creditLimit) * 100 : 0;
   const isManualOverride = client?.creditLimitSource === "MANUAL";
 
   // Determine status color
@@ -125,8 +135,10 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
   };
 
   const getStatusIcon = (utilization: number) => {
-    if (utilization >= 90) return <AlertTriangle className="h-4 w-4 text-red-600" />;
-    if (utilization >= 75) return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+    if (utilization >= 90)
+      return <AlertTriangle className="h-4 w-4 text-red-600" />;
+    if (utilization >= 75)
+      return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
     return <CheckCircle className="h-4 w-4 text-green-600" />;
   };
 
@@ -134,16 +146,24 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
     <>
       <Card className={compact ? "p-3" : ""}>
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-          <CardHeader className={`${compact ? "p-0 pb-3" : "pb-3"} flex flex-row items-center justify-between`}>
+          <CardHeader
+            className={`${compact ? "p-0 pb-3" : "pb-3"} flex flex-row items-center justify-between`}
+          >
             <div className="flex items-center gap-2">
               <CardTitle className="text-base">Credit Status</CardTitle>
               {isManualOverride && (
-                <Badge variant="outline" className="text-xs">Manual Override</Badge>
+                <Badge variant="outline" className="text-xs">
+                  Manual Override
+                </Badge>
               )}
             </div>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
               </Button>
             </CollapsibleTrigger>
           </CardHeader>
@@ -154,14 +174,24 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
               {/* Available Credit - Primary Display */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Available Credit</p>
-                  <p className={`text-2xl font-bold ${getStatusColor(utilizationPercent)}`}>
-                    ${availableCredit.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  <p className="text-sm text-muted-foreground">
+                    Available Credit
+                  </p>
+                  <p
+                    className={`text-2xl font-bold ${getStatusColor(utilizationPercent)}`}
+                  >
+                    $
+                    {availableCredit.toLocaleString(undefined, {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   {getStatusIcon(utilizationPercent)}
-                  <span className={`text-lg font-semibold ${getStatusColor(utilizationPercent)}`}>
+                  <span
+                    className={`text-lg font-semibold ${getStatusColor(utilizationPercent)}`}
+                  >
                     {utilizationPercent.toFixed(0)}%
                   </span>
                 </div>
@@ -170,7 +200,7 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
               {/* Utilization Bar */}
               <div className="space-y-1">
                 <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className={`absolute left-0 top-0 h-full transition-all ${getProgressColor(utilizationPercent)}`}
                     style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
                   />
@@ -183,9 +213,9 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
 
               {/* Action Buttons (collapsed view) */}
               {!isExpanded && showOverrideButton && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="w-full"
                   onClick={() => setOverrideDialogOpen(true)}
                 >
@@ -203,12 +233,16 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
               {/* Last Updated Info */}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  Last calculated: {creditData.updatedAt 
-                    ? new Date(creditData.updatedAt).toLocaleDateString() 
+                  Last calculated:{" "}
+                  {creditData.updatedAt
+                    ? new Date(creditData.updatedAt).toLocaleDateString()
                     : "Never"}
                 </span>
                 {creditData.mode === "LEARNING" && (
-                  <Badge variant="outline" className="text-xs border-yellow-600 text-yellow-600">
+                  <Badge
+                    variant="outline"
+                    className="text-xs border-yellow-600 text-yellow-600"
+                  >
                     Learning Mode
                   </Badge>
                 )}
@@ -217,20 +251,24 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
               {/* Action Buttons */}
               <div className="flex gap-2">
                 {showRecalculateButton && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={handleRecalculate}
                     disabled={calculateMutation.isPending}
                     className="flex-1"
                   >
-                    <RefreshCw className={`h-3 w-3 mr-2 ${calculateMutation.isPending ? "animate-spin" : ""}`} />
-                    {calculateMutation.isPending ? "Calculating..." : "Recalculate"}
+                    <RefreshCw
+                      className={`h-3 w-3 mr-2 ${calculateMutation.isPending ? "animate-spin" : ""}`}
+                    />
+                    {calculateMutation.isPending
+                      ? "Calculating..."
+                      : "Recalculate"}
                   </Button>
                 )}
                 {showOverrideButton && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setOverrideDialogOpen(true)}
                     className="flex-1"
@@ -252,10 +290,13 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                 <div className="flex gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
                   <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
                   <div className="text-xs">
-                    <p className="font-medium text-yellow-900 dark:text-yellow-100">Learning Mode Active</p>
+                    <p className="font-medium text-yellow-900 dark:text-yellow-100">
+                      Learning Mode Active
+                    </p>
                     <p className="text-yellow-800 dark:text-yellow-200 mt-0.5">
-                      Limited transaction history. Credit limit is conservative until more data is available.
-                      Data readiness: {Number(creditData.dataReadiness || 0).toFixed(0)}%
+                      Limited transaction history. Credit limit is conservative
+                      until more data is available. Data readiness:{" "}
+                      {Number(creditData.dataReadiness || 0).toFixed(0)}%
                     </p>
                   </div>
                 </div>
