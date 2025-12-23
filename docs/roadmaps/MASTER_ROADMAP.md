@@ -3752,6 +3752,65 @@ logger.error({ err: error }, "Error message");
     - Background job for message sending
   - Added: 2025-12-23
 
+- [ ] **FEATURE-020: Tags System Revamp & Auto-Tagging Rules**
+  - Phase: 3+
+  - Priority: MEDIUM
+  - Estimate: 2-3 weeks (Phase 1) + 1-2 weeks (Phase 2)
+  - Context: Revamp the tagging system for products with improved UX during intake and automatic tag assignment rules
+  - **Phase 1: Tags Revamp (Core)**
+    - **Tag Management:**
+      - Improved tag CRUD interface in settings
+      - Tag categories/groups (strain type, effect, flavor, etc.)
+      - Tag colors and icons for visual distinction
+      - Tag hierarchy support (parent/child tags)
+      - Bulk tag operations (merge, rename, delete)
+    - **Product Tagging on Intake:**
+      - Streamlined tag assignment during batch/product intake
+      - Tag autocomplete with fuzzy search
+      - Quick-add common tags (one-click)
+      - Tag suggestions based on product category
+      - Bulk tag assignment to multiple products
+      - Visual tag chips with easy removal
+    - **Tag Search & Filtering:**
+      - Filter products/batches by tags
+      - Multi-tag filtering (AND/OR logic)
+      - Tag-based saved views
+      - Tag usage statistics
+  - **Phase 2: Auto-Tagging Rules (V2)**
+    - **Tag Rules Engine:**
+      - Define rules to automatically assign tags based on conditions
+      - Rule conditions: strain name, product type, brand, category, vendor, etc.
+      - Rule actions: add tag(s), remove tag(s)
+      - Rule priority for conflict resolution
+      - Enable/disable rules without deletion
+    - **Rule Types:**
+      - Strain-based: "If strain contains 'Kush', add tag 'Indica-Dominant'"
+      - Category-based: "If category is 'Edibles', add tags 'Consumable', 'Delayed Onset'"
+      - Brand-based: "If brand is 'XYZ', add tag 'Premium'"
+      - Pattern matching: Regex support for complex matching
+      - Compound rules: Multiple conditions with AND/OR logic
+    - **Rule Application:**
+      - Apply on intake (new products/batches)
+      - Retroactive application to existing products
+      - Dry-run mode to preview changes
+      - Audit log of auto-applied tags
+    - **UI Components:**
+      - Tag rules management page
+      - Rule builder with condition/action UI
+      - Rule testing interface
+      - Bulk rule application tool
+  - **Database Changes:**
+    - Tag categories table
+    - Tag rules table (conditions JSON, actions JSON, priority, isActive)
+    - Tag application history for audit
+  - **Integration Points:**
+    - Intake workflow: Auto-tag on batch creation
+    - Product creation: Auto-tag based on rules
+    - Strain library: Link tags to strains
+    - Pricing rules: Use tags as pricing conditions
+    - VIP Portal: Tag-based catalog filtering
+  - Added: 2025-12-23
+
 - [ ] **UX-016: Redesign Right Side Drawer (Sheet) Component**
   - Phase: 2
   - Priority: MEDIUM
