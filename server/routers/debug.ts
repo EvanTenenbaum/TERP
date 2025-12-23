@@ -217,6 +217,72 @@ export const debugRouter = router({
   /**
    * Get counts of all seeded tables (using COUNT instead of SELECT *)
    */
+  /**
+   * DIAG-005: Check leaderboard_weight_configs table structure
+   */
+  leaderboardTableCheck: publicProcedure.query(async () => {
+    const results: Record<string, any> = {
+      timestamp: new Date().toISOString(),
+      tests: {},
+    };
+
+    try {
+      const pool = getConnectionPool();
+      const connection = await pool.getConnection();
+
+      try {
+        // Test 1: DESCRIBE the table to see column names
+        const [describeRows] = await connection.query('DESCRIBE leaderboard_weight_configs');
+        results.tests.tableStructure = {
+          success: true,
+          columns: describeRows,
+        };
+      } catch (err: any) {
+        results.tests.tableStructure = {
+          success: false,
+          error: err.message,
+        };
+      }
+
+      try {
+        // Test 2: Raw SELECT with client_type column
+        const [selectRows] = await connection.query('SELECT id, user_id, client_type FROM leaderboard_weight_configs LIMIT 1');
+        results.tests.selectClientType = {
+          success: true,
+          data: selectRows,
+        };
+      } catch (err: any) {
+        results.tests.selectClientType = {
+          success: false,
+          error: err.message,
+        };
+      }
+
+      try {
+        // Test 3: Raw SELECT with leaderboard_client_type column (should fail if column doesn't exist)
+        const [selectRows] = await connection.query('SELECT id, user_id, leaderboard_client_type FROM leaderboard_weight_configs LIMIT 1');
+        results.tests.selectLeaderboardClientType = {
+          success: true,
+          data: selectRows,
+        };
+      } catch (err: any) {
+        results.tests.selectLeaderboardClientType = {
+          success: false,
+          error: err.message,
+        };
+      }
+
+      connection.release();
+      results.connectionReleased = true;
+      results.success = true;
+    } catch (poolErr: any) {
+      results.success = false;
+      results.poolError = poolErr.message;
+    }
+
+    return results;
+  }),
+
   getCounts: publicProcedure.query(async () => {
     try {
       const db = await getDb();
