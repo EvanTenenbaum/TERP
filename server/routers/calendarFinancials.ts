@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router, getAuthenticatedUserId } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
 import * as calendarDb from "../calendarDb";
 import { calendarEvents, orders, invoices, bills } from "../../drizzle/schema";
@@ -14,7 +14,7 @@ import { and, eq, gte, lte, isNull, sql, desc } from "drizzle-orm";
 
 export const calendarFinancialsRouter = router({
   // Get financial context for client meeting
-  getMeetingFinancialContext: publicProcedure
+  getMeetingFinancialContext: protectedProcedure
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -117,7 +117,7 @@ export const calendarFinancialsRouter = router({
     }),
 
   // Get collections queue (prioritized list)
-  getCollectionsQueue: publicProcedure
+  getCollectionsQueue: protectedProcedure
     .input(
       z.object({
         minOverdueAmount: z.number().default(0),
@@ -194,7 +194,7 @@ export const calendarFinancialsRouter = router({
     }),
 
   // Get AP/AR summary for date range
-  getAPARSummary: publicProcedure
+  getAPARSummary: protectedProcedure
     .input(
       z.object({
         startDate: z.string(),
@@ -438,7 +438,7 @@ export const calendarFinancialsRouter = router({
     }),
 
   // Get overdue payment events
-  getOverduePayments: publicProcedure.query(async () => {
+  getOverduePayments: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
