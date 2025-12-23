@@ -41,17 +41,17 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### 🔄 Active Work
 
-| Task | Description | Progress | Owner |
-|------|-------------|----------|-------|
-| QUAL-003 | Complete Critical TODOs | ~70% | - |
+| Task     | Description             | Progress | Owner |
+| -------- | ----------------------- | -------- | ----- |
+| QUAL-003 | Complete Critical TODOs | ~70%     | -     |
 
 ### 📋 Remaining This Sprint
 
-| Task | Description | Priority | Estimate |
-|------|-------------|----------|----------|
-| BUG-035 | Admin Security Test Failures | HIGH | 4h |
-| BUG-036 | priceAlertsService Test Failures | MEDIUM | 4h |
-| BUG-037 | VIP Portal createdBy FK Constraint | HIGH | 8h |
+| Task    | Description                        | Priority | Estimate |
+| ------- | ---------------------------------- | -------- | -------- |
+| BUG-035 | Admin Security Test Failures       | HIGH     | 4h       |
+| BUG-036 | priceAlertsService Test Failures   | MEDIUM   | 4h       |
+| BUG-037 | VIP Portal createdBy FK Constraint | HIGH     | 8h       |
 
 ### ✅ Recently Completed
 
@@ -3677,6 +3677,45 @@ logger.error({ err: error }, "Error message");
     - Multi-currency support
   - Added: 2025-12-19
 
+- [ ] **FEATURE-019: Signal Messaging System**
+  - Phase: 3+
+  - Priority: MEDIUM
+  - Estimate: 2d
+  - Context: Allow users to send messages to clients via the Signal app for secure, encrypted communication
+  - **Scope:**
+    - **Signal Integration:**
+      - Integration with Signal API (signal-cli or signald)
+      - Secure credential storage for Signal account
+      - Message queue for reliable delivery
+      - Delivery status tracking (sent, delivered, read)
+    - **Client Communication:**
+      - Send messages to clients with Signal phone numbers
+      - Template messages for common communications (order updates, reminders, etc.)
+      - Message history per client
+      - Bulk messaging capability (with rate limiting)
+    - **UI Components:**
+      - Message composer in client profile
+      - Quick-send buttons for common messages
+      - Message history view
+      - Delivery status indicators
+      - Template management interface
+    - **Database Changes:**
+      - Client Signal phone number field
+      - Message log table (sender, recipient, content, status, timestamps)
+      - Message templates table
+      - Delivery status tracking
+    - **Security & Compliance:**
+      - End-to-end encryption via Signal protocol
+      - Message retention policies
+      - Opt-in/opt-out tracking for clients
+      - Audit logging for all messages sent
+  - **Technical Considerations:**
+    - Signal requires a dedicated phone number
+    - Rate limiting to prevent spam/abuse
+    - Fallback handling when Signal unavailable
+    - Background job for message sending
+  - Added: 2025-12-23
+
 - [ ] **UX-016: Redesign Right Side Drawer (Sheet) Component**
   - Phase: 2
   - Priority: MEDIUM
@@ -6635,6 +6674,36 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 ---
 
+#### UX-021: Customizable Quick Actions Dropdown
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 8h  
+**Module:** `client/src/components/layout/AppHeader.tsx`, `server/routers/userPreferences.ts`  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/UX-021.md`
+
+**Problem:** Users frequently need to access common actions (create order, add client, new invoice, etc.) but must navigate through menus each time. A customizable quick actions dropdown in the header would improve workflow efficiency.
+
+**Objectives:**
+
+1. Add a quick actions dropdown menu in the header
+2. Allow users to customize which actions appear in the dropdown
+3. Persist user preferences
+4. Provide sensible defaults for new users
+
+**Deliverables:**
+
+- [ ] Create QuickActionsDropdown component
+- [ ] Add dropdown to AppHeader with icon button
+- [ ] Implement action configuration UI (settings page or inline)
+- [ ] Create user preferences storage for quick actions
+- [ ] Add default quick actions (New Order, New Client, New Invoice, etc.)
+- [ ] Support keyboard shortcuts for quick actions
+- [ ] All tests passing
+
+---
+
 ### Summary
 
 | Phase               | Tasks        | Total Estimate |
@@ -7118,7 +7187,6 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
   2.  **Implement `createPaginatedResult()` Helper:** Use the generic helper function to create consistent paginated responses.
   3.  **Refactor DB Functions:** Modify database-layer functions (e.g., `clientsDb.getClients`) to return `PaginatedResult<T>` directly, moving pagination logic out of the router layer.
   4.  **Create `usePaginatedQuery()` Hook:** Develop a custom React hook for the frontend that automatically handles the `PaginatedResult<T>` structure, extracting the `.items` array and providing pagination controls. This will eliminate the need for manual `.items` extraction in every component.
-
 
 ---
 
