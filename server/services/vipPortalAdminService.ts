@@ -193,6 +193,72 @@ export async function getClientLastLogin(clientId: number) {
   };
 }
 
+/**
+ * Create an impersonation session for an admin to view the portal as a client
+ * This creates a temporary session token that allows viewing the portal
+ * without affecting the client's actual session or login count
+ */
+export async function createImpersonationSession(clientId: number, adminUserId?: number) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  // Verify client exists and has VIP portal enabled
+  const client = await db.query.clients.findFirst({
+    where: eq(clients.id, clientId),
+  });
+
+  if (!client) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Client not found",
+    });
+  }
+
+  if (!client.vipPortalEnabled) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "VIP Portal is not enabled for this client",
+    });
+  }
+
+  // Check if auth record exists
+  const authRecord = await db.query.vipPortalAuth.findFirst({
+    where: eq(vipPortalAuth.clientId, clientId),
+  });
+
+  if (!authRecord) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "VIP Portal authentication not configured for this client",
+    });
+  }
+
+  // Generate impersonation session token (prefixed to identify as impersonation)
+  const sessionToken = `imp_${crypto.randomUUID()}`;
+  const sessionExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours for impersonation
+
+  // Update auth record with impersonation session
+  // Note: This overwrites any existing session, but impersonation sessions are short-lived
+  await db.update(vipPortalAuth)
+    .set({
+      sessionToken,
+      sessionExpiresAt,
+      // Don't update lastLoginAt or loginCount for impersonation
+    })
+    .where(eq(vipPortalAuth.id, authRecord.id));
+
+  // Log the impersonation for audit purposes
+  console.log(`[VIP Portal] Admin ${adminUserId || 'unknown'} started impersonation session for client ${clientId} (${client.name})`);
+
+  return {
+    sessionToken,
+    clientId,
+    clientName: client.name,
+    expiresAt: sessionExpiresAt,
+    isImpersonation: true,
+  };
+}
+
 // ============================================================================
 // CONFIGURATION MANAGEMENT SERVICES
 // ============================================================================

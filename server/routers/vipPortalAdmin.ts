@@ -61,6 +61,15 @@ export const vipPortalAdminRouter = router({
       .query(async ({ input }) => {
         return await vipPortalAdminService.getClientLastLogin(input.clientId);
       }),
+
+    // Impersonate a client - creates a session to view portal as the client
+    impersonate: protectedProcedure.use(requirePermission("vip_portal:manage"))
+      .input(z.object({
+        clientId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await vipPortalAdminService.createImpersonationSession(input.clientId, ctx.user?.id);
+      }),
   }),
 
   // ============================================================================
