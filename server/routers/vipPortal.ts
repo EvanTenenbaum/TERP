@@ -1057,8 +1057,25 @@ export const vipPortalRouter = router({
         // Get catalog using service
         const result = await liveCatalogService.getCatalog(clientId, input);
         
+        // Map service response to UI-expected format
+        const mappedItems = result.items.map(item => ({
+          id: item.batchId,
+          name: item.itemName,
+          category: item.category,
+          subcategory: item.subcategory,
+          brand: item.brand,
+          grade: item.grade,
+          retailPrice: item.retailPrice,
+          basePrice: item.basePrice,
+          markup: item.markup,
+          quantity: item.quantity,
+          stockLevel: item.stockLevel,
+          inDraft: item.inDraft,
+          imageUrl: item.imageUrl,
+        }));
+        
         return {
-          items: result.items,
+          items: mappedItems,
           total: result.total,
           appliedFilters: input,
         };

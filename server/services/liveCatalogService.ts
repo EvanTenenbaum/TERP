@@ -8,9 +8,9 @@
  */
 
 import { getDb } from "../db";
-import { batches, products } from "../../drizzle/schema";
+import { batches, products, productMedia } from "../../drizzle/schema";
 import { vipPortalConfigurations, clientDraftInterests } from "../../drizzle/schema-vip-portal";
-import { eq, and, or, inArray, gte, lte, like, sql, desc, asc } from "drizzle-orm";
+import { eq, and, or, inArray, gte, lte, like, sql, desc, asc, isNull } from "drizzle-orm";
 import * as pricingEngine from "../pricingEngine";
 import { vipPortalLogger } from "../_core/logger";
 
@@ -32,6 +32,7 @@ export interface CatalogItem {
   quantity?: string;
   stockLevel: 'in_stock' | 'low_stock' | 'out_of_stock';
   inDraft: boolean;
+  imageUrl?: string; // Primary product image URL
 }
 
 export interface CatalogFilters {
@@ -177,9 +178,39 @@ export async function getCatalog(
   });
   const draftBatchIds = new Set(draftItems.map(d => d.batchId));
 
-  // Convert to inventory items format for pricing
+  // Get product images for all products in the result set
+  const productIds = filteredBatches
+    .map(({ product }) => product?.id)
+    .filter((id): id is number => id !== undefined && id !== null);
+  
+  const productImagesMap = new Map<number, string>();
+  if (productIds.length > 0) {
+    const productImages = await db
+      .select({
+        productId: productMedia.productId,
+        url: productMedia.url,
+      })
+      .from(productMedia)
+      .where(
+        and(
+          inArray(productMedia.productId, productIds),
+          eq(productMedia.type, "image"),
+          isNull(productMedia.deletedAt)
+        )
+      );
+    
+    // Store first image for each product (primary image)
+    for (const img of productImages) {
+      if (!productImagesMap.has(img.productId)) {
+        productImagesMap.set(img.productId, img.url);
+      }
+    }
+  }
+
+  // Convert to inventory items format for pricing (include productId for image lookup)
   const inventoryItems = filteredBatches.map(({ batch, product }) => ({
     id: batch.id,
+    productId: product?.id,
     name: batch.sku || `Batch #${batch.id}`,
     category: product?.category,
     subcategory: product?.subcategory ?? undefined,
@@ -252,6 +283,9 @@ export async function getCatalog(
     if (quantity > 10) stockLevel = 'in_stock';
     else if (quantity > 0) stockLevel = 'low_stock';
 
+    // Get image URL from the map using productId
+    const imageUrl = item.productId ? productImagesMap.get(item.productId) : undefined;
+
     return {
       batchId: item.id,
       itemName: item.name,
@@ -266,6 +300,7 @@ export async function getCatalog(
       quantity: liveCatalogConfig?.showQuantity ? quantity.toFixed(2) : undefined,
       stockLevel,
       inDraft: draftBatchIds.has(item.id),
+      imageUrl,
     };
   });
 

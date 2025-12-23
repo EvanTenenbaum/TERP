@@ -703,6 +703,44 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                     isInDraft(item.id) && "ring-2 ring-primary"
                   )}
                 >
+                  {/* Product Image - Mobile Optimized */}
+                  <div className="relative aspect-square w-full bg-muted">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name || "Product image"}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          // Fallback to placeholder on error
+                          const target = e.currentTarget;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    {/* Placeholder shown when no image or on error */}
+                    <div 
+                      className={cn(
+                        "absolute inset-0 flex items-center justify-center bg-muted",
+                        item.imageUrl && "hidden"
+                      )}
+                    >
+                      <div className="text-center text-muted-foreground">
+                        <div className="text-4xl mb-1">🌿</div>
+                        <span className="text-xs">No image</span>
+                      </div>
+                    </div>
+                    {/* Stock badge overlay */}
+                    {item.stockLevel === 'low_stock' && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute top-2 right-2 text-xs"
+                      >
+                        Low Stock
+                      </Badge>
+                    )}
+                  </div>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-base line-clamp-2">
