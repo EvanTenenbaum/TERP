@@ -3893,6 +3893,98 @@ FEATURE-013 (Quote/Order Unification) ──→ All order-related features
 
 ---
 
+---
+
+## 💳 FEATURE-015: Customer Credit System Improvement
+
+**Status:** in-progress  
+**Priority:** HIGH  
+**Estimate:** 48h total (Phase 1-5)  
+**Module:** `server/creditEngine.ts`, `server/routers/credit.ts`, `client/src/components/credit/`  
+**Dependencies:** None  
+**Spec:** `.kiro/specs/customer-credit-system-improvement/`  
+**Prompt:** `.kiro/specs/customer-credit-system-improvement/tasks.md`
+
+**Problem:** Current credit system lacks transparency, user control, and proper UI integration. Users can't understand how credit limits are calculated, can't override them when needed, and can't control visibility of credit information.
+
+**Objectives:**
+
+1. Add credit fields directly to clients table for performance
+2. Create progressive disclosure UI components ("show the math")
+3. Allow manual overrides with required audit trail
+4. Add visibility settings per-location
+5. Integrate credit checks into order creation flow
+6. Add real-time + batch recalculation triggers
+
+**Phase Status:**
+
+| Phase   | Description                                                                                | Status         | Completion |
+| ------- | ------------------------------------------------------------------------------------------ | -------------- | ---------- |
+| Phase 1 | Foundation (credit fields, sync, auto-recalc)                                              | ✅ COMPLETE    | 100%       |
+| Phase 2 | UI Components (CreditStatusCard, CreditExplanation, CreditOverrideDialog, CreditIndicator) | ✅ COMPLETE    | 100%       |
+| Phase 3 | Settings & Control (visibility settings, admin page)                                       | 🔄 IN PROGRESS | ~85%       |
+| Phase 4 | Order Integration (credit check, triggers, batch job)                                      | 🔄 IN PROGRESS | ~25%       |
+| Phase 5 | VIP Portal (customer-facing credit display)                                                | ⏳ NOT STARTED | 0%         |
+
+**Completed Deliverables:**
+
+- [x] Credit fields added to `clients` table (`creditLimit`, `creditLimitUpdatedAt`, `creditLimitSource`, `creditLimitOverrideReason`)
+- [x] Credit sync mechanism (`syncCreditToClient` function)
+- [x] `CreditLimitBanner` fixed to read from `client.creditLimit`
+- [x] Auto-recalculation trigger in `updateClientStats`
+- [x] `CreditStatusCard.tsx` - Progressive disclosure card with collapsed/expanded views
+- [x] `CreditExplanation.tsx` - "Show your work" calculation breakdown with 6 signals
+- [x] `CreditOverrideDialog.tsx` - Manual override with required reason (min 10 chars)
+- [x] `CreditIndicator.tsx` - Color-coded indicator for client list (green/yellow/red)
+- [x] `CreditIndicatorDot` - Compact version for tables
+- [x] Barrel export file (`client/src/components/credit/index.ts`)
+- [x] Integration in `ClientProfilePage.tsx` and `ClientsListPage.tsx`
+- [x] `credit_visibility_settings` table created and migrated
+- [x] `credit.getVisibilitySettings` and `credit.updateVisibilitySettings` endpoints
+- [x] `useCreditVisibility` hook created
+- [x] Visibility hook applied to ClientsListPage, ClientProfilePage, CreditLimitBanner
+
+**Remaining Work:**
+
+- [ ] **Phase 3.3**: Create `CreditSettingsPage.tsx` (visibility toggles, enforcement mode, thresholds)
+- [ ] **Phase 4.2**: Integrate credit check in `OrderCreatorPage.tsx`
+- [ ] **Phase 4.3**: Add transaction triggers (invoice, payment, order finalization)
+- [ ] **Phase 4.4**: Create daily batch job `scripts/jobs/recalculate-all-credit.ts`
+- [ ] **Phase 4.5**: Performance optimization (<500ms per client)
+- [ ] **Phase 5**: VIP Portal credit display (lowest priority)
+
+**Key Files:**
+
+- `server/creditEngine.ts` - Core credit calculation logic
+- `server/routers/credit.ts` - All credit endpoints
+- `client/src/components/credit/` - All credit UI components
+- `client/src/hooks/useCreditVisibility.ts` - Visibility settings hook
+- `drizzle/schema.ts` - `creditVisibilitySettings` table (~line 1922)
+- `drizzle/0040_add_credit_visibility_settings.sql` - Migration applied
+
+**Database Migration Applied:**
+
+```sql
+-- Table credit_visibility_settings created with defaults:
+-- show_credit_in_client_list: true
+-- show_credit_banner_in_orders: true
+-- show_credit_widget_in_profile: true
+-- credit_enforcement_mode: WARNING
+-- warning_threshold_percent: 75
+-- alert_threshold_percent: 90
+```
+
+**QA Status:**
+
+- ✅ TypeScript compilation passes
+- ✅ All diagnostics clear on credit components
+- ✅ ESLint passes
+- ⚠️ Tests NOT yet written for new functionality
+
+**Added:** 2025-12-22
+
+---
+
 ### Explicitly Excluded (Per User Feedback)
 
 These should **NOT** be built:
