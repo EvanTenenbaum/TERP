@@ -281,6 +281,56 @@ export const debugRouter = router({
   }),
 
   /**
+   * DIAG-007: Comprehensive database schema check
+   * Lists all tables and checks for migration tracking
+   */
+  checkDatabaseSchema: publicProcedure.query(async () => {
+    const results: Record<string, any> = {
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      const pool = getConnectionPool();
+      const connection = await pool.getConnection();
+
+      // Get all tables in the database
+      const [allTables] = await connection.query('SHOW TABLES');
+      results.allTables = (allTables as any[]).map((row: any) => Object.values(row)[0]);
+      results.tableCount = results.allTables.length;
+
+      // Check for drizzle migrations table
+      const [migrationsTable] = await connection.query("SHOW TABLES LIKE '__drizzle_migrations'");
+      results.hasMigrationsTable = (migrationsTable as any[]).length > 0;
+
+      if (results.hasMigrationsTable) {
+        const [migrations] = await connection.query('SELECT * FROM __drizzle_migrations ORDER BY id');
+        results.appliedMigrations = migrations;
+      }
+
+      // Check for key tables that should exist
+      const keyTables = [
+        'clients', 'vendors', 'products', 'batches', 'orders', 'invoices', 'payments',
+        'users', 'strains', 'purchaseOrders', 'purchase_order_line_items',
+        'leaderboard_weight_configs', 'leaderboard_default_weights',
+        'leaderboard_metric_cache', 'leaderboard_rank_history'
+      ];
+
+      results.keyTableStatus = {};
+      for (const table of keyTables) {
+        results.keyTableStatus[table] = results.allTables.includes(table);
+      }
+
+      connection.release();
+      results.success = true;
+    } catch (err: any) {
+      results.success = false;
+      results.error = err.message;
+    }
+
+    return results;
+  }),
+
+  /**
    * DIAG-006: Check if leaderboard tables exist
    */
   checkLeaderboardTables: publicProcedure.query(async () => {
