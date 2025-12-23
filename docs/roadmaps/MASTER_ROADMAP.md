@@ -2448,6 +2448,42 @@ logger.error({ err: error }, "Error message");
 
 ---
 
+### ST-024: Remove Comments Feature
+
+**Status:** ready  
+**Priority:** LOW  
+**Estimate:** 4h  
+**Module:** `server/routers/comments.ts`, `client/src/components/comments/`, `drizzle/schema.ts`  
+**Dependencies:** None  
+**Prompt:** `docs/prompts/ST-024.md`
+
+**Problem:** The comments feature is unused and adds unnecessary code complexity. Removing it will simplify the codebase and reduce maintenance burden.
+
+**Objectives:**
+
+- Audit codebase to verify no critical features depend on comments
+- Remove comments router and related backend code
+- Remove comments UI components from frontend
+- Soft-delete comments table data (preserve for historical reference)
+
+**Deliverables:**
+
+- [ ] Audit: Document all places comments are used
+- [ ] Verify no critical dependencies on comments feature
+- [ ] Remove `server/routers/comments.ts`
+- [ ] Remove comments router from `server/routers.ts`
+- [ ] Remove frontend comments components
+- [ ] Remove comments-related hooks and utilities
+- [ ] Add `deletedAt` to comments table (soft deprecation)
+- [ ] Update any UI that references comments
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+- [ ] Session archived
+
+**Note:** This is a cleanup task. The comments table data should be preserved (soft delete) in case it's needed for historical reference.
+
+---
+
 ## 🔧 INFRASTRUCTURE TASKS - Deployment & Conflict Mitigation
 
 > **Note:** These tasks implement the deployment monitoring and conflict resolution infrastructure.
