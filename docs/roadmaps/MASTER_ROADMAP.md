@@ -26,52 +26,44 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ---
 
-## 🎯 Current Sprint (Dec 18-21, 2025): UX Polish Sprint
+## 🎯 Current Sprint (Dec 22-24, 2025): Credit System & Quality Sprint
 
-**Strategic Focus:** Complete UX quick wins and core improvements
-**Sprint Plan:** UX polish tasks (non-conflicting with active work)
+**Strategic Focus:** Complete Customer Credit System and QUAL-003 cleanup
+**Sprint Plan:** Credit system completion + remaining quality fixes
 **Status:** Active
 
 ### 📊 Sprint Overview
 
-**Total Tasks:** 10 tasks
-**Estimated Time:** ~7 hours
-**Execution Strategy:** Parallel waves by module isolation
-**Active Work (DO NOT TOUCH):** UX-010, UX-011
+**Completed This Sprint:** 14 tasks
+**In Progress:** 1 task (QUAL-003)
+**Remaining:** 3 tasks
+**Execution Strategy:** Bug fixes and quality improvements
 
-### 🌊 Wave 1: Quick Wins (Parallel - 5 agents, ~1.5h total)
+### 🔄 Active Work
 
-| Task   | Description                       | Estimate | Module                  |
-| ------ | --------------------------------- | -------- | ----------------------- |
-| UX-001 | Fix Floating Point Display Error  | 30min    | `server/inventoryDb.ts` |
-| UX-003 | Rename "Lifetime" to "All Time"   | 15min    | `widgets-v2/`           |
-| UX-004 | Rename "Customize Metrics" Button | 15min    | Multiple pages          |
-| UX-005 | Remove Version Number from Header | 10min    | `DashboardLayout.tsx`   |
-| UX-008 | Fix Oldest Debt Abbreviation      | 15min    | `ClientsListPage.tsx`   |
+| Task | Description | Progress | Owner |
+|------|-------------|----------|-------|
+| QUAL-003 | Complete Critical TODOs | ~70% | - |
 
-### 🌊 Wave 2: Medium Effort (Parallel - 4 agents, ~4.5h total)
+### 📋 Remaining This Sprint
 
-| Task   | Description                       | Estimate | Module                                 |
-| ------ | --------------------------------- | -------- | -------------------------------------- |
-| UX-002 | Replace Browser confirm() Dialogs | 2h       | Multiple components (10 files)         |
-| UX-006 | Clarify Dual Status Badges        | 1h       | `OrdersPage.tsx`                       |
-| UX-007 | Add Tooltip for TERI Code         | 30min    | `ClientsListPage.tsx`                  |
-| UX-012 | Add "Clear Filters" Button        | 1h       | `Inventory.tsx`, `ClientsListPage.tsx` |
-
-### 🌊 Wave 3: Accounting Fix (Sequential, ~1h)
-
-| Task   | Description                       | Estimate | Module                    |
-| ------ | --------------------------------- | -------- | ------------------------- |
-| UX-014 | Fix Chart of Accounts Edit Button | 1h       | `ChartOfAccountsPage.tsx` |
-
-### ⚠️ Excluded from Sprint (Active Work)
-
-- **UX-010**: Add Empty States - IN PROGRESS
-- **UX-011**: Add Skeleton Loaders - IN PROGRESS
+| Task | Description | Priority | Estimate |
+|------|-------------|----------|----------|
+| BUG-035 | Admin Security Test Failures | HIGH | 4h |
+| BUG-036 | priceAlertsService Test Failures | MEDIUM | 4h |
+| BUG-037 | VIP Portal createdBy FK Constraint | HIGH | 8h |
 
 ### ✅ Recently Completed
 
-- **FEATURE-015**: VIP Portal Settings in Client Profile - COMPLETE (2025-12-22)
+- **FEATURE-015**: Customer Credit System (Phases 1-4) - COMPLETE (2025-12-23)
+- **BUG-034**: Complete Pagination Standardization - COMPLETE (2025-12-22)
+- **QUAL-002**: Input Validation & Shared Schemas - COMPLETE (2025-12-22)
+- **DATA-004**: Query Optimization (Frontend) - COMPLETE (2025-12-22)
+- **QUAL-003 Waves 0-1**: Foundation & Security Fixes - COMPLETE (2025-12-22)
+- **QUAL-003 Wave 2**: Accounting Integration - COMPLETE (2025-12-22)
+- **FEATURE-015 Phases 1-3**: Credit System Foundation & UI - COMPLETE (2025-12-22)
+- **FEATURE-015 Phase 4**: Order Integration & Batch Job - COMPLETE (2025-12-23)
+- **VIP Portal Settings**: Impersonation Feature - COMPLETE (2025-12-22)
 - **PERF-003**: Add Pagination - COMPLETE (2025-12-19)
 - **BUG-031**: Fix Pagination Data Contract Breakage - COMPLETE (2025-12-19)
 - **BUG-032**: Fix Dashboard Stats Null Return - COMPLETE (2025-12-19)
@@ -1080,33 +1072,48 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 ### QUAL-003: Complete Critical TODOs
 
-**Status:** ready  
+**Status:** in-progress  
 **Priority:** HIGH  
 **Estimate:** 2 weeks (80 hours)  
+**Actual Time:** ~12h (Waves 0-3 partial)  
 **Module:** Multiple files  
 **Dependencies:** None  
-**Prompt:** `docs/prompts/QUAL-003.md` (to be created)
+**Prompt:** `docs/prompts/QUAL-003.md`  
+**Parallel Strategy:** `docs/roadmaps/QUAL-003-PARALLEL-EXECUTION-STRATEGY.md`
 
 **Problem:** Critical TODOs indicate incomplete features and security gaps.
 
+**Progress (December 22-23, 2025):**
+
+- ✅ **Wave 0 (Foundation)**: `authHelpers.ts`, `fiscalPeriod.ts`, `accountLookup.ts`, `notificationService.ts` created
+- ✅ **Wave 1A (Frontend Auth)**: Hardcoded user IDs replaced with `useAuth()` hook
+- ✅ **Wave 1B (Server Auth)**: `rbac-users.ts` and `calendarRecurrence.ts` secured with `protectedProcedure`
+- ✅ **Wave 1C (Auth Tests)**: Integration and permission check tests added
+- ✅ **Wave 2 (Accounting)**: Transaction wrapping for order accounting operations
+- ✅ **Wave 3 (TypeScript)**: VIP Portal, Dashboard, Matching, UI TypeScript errors resolved
+
+**Key Commits:**
+
+- `18d430f1` - fix(auth): replace hardcoded user IDs with useAuth hook
+- `ad3170a9` - fix(security): enforce auth on rbac-users and calendar admin endpoints
+- `4012f0f2` - test(QUAL-003-W1C): add auth integration and permission check tests
+- `573488ae` - feat(QUAL-003): implement Wave 2 workstreams - accounting integration
+- `7fe6855f` - feat(accounting): add transaction wrapping for order accounting operations
+- `49eb01f5` - fix(QUAL-003-W3): resolve Wave 3 TypeScript errors
+- `b7ba8785` - fix(security): convert remaining publicProcedure to protectedProcedure
+
 **Objectives:**
 
-1. Complete all critical security TODOs
-2. Complete all critical feature TODOs
-3. Remove or document non-critical TODOs
-4. Create tasks for incomplete features
+1. ✅ Complete all critical security TODOs
+2. 🔄 Complete all critical feature TODOs (partial)
+3. ⏳ Remove or document non-critical TODOs
+4. ⏳ Create tasks for incomplete features
 
-**Deliverables:**
+**Remaining Work:**
 
-- [ ] Complete: "Re-enable permission checks" (permissionMiddleware.ts)
-- [ ] Complete: "Re-enable authentication" (trpc.ts)
-- [ ] Complete: "Create invoice" (ordersDb.ts)
-- [ ] Complete: "Record cash payment" (ordersDb.ts)
-- [ ] Complete: "Trigger background job" (webhooks/github.ts)
-- [ ] Review all other TODOs
-- [ ] All tests passing
-- [ ] Zero TypeScript errors
-- [ ] Session archived
+- [ ] Wave 2 completion: COGS module, Calendar financials
+- [ ] Wave 3 completion: VIP Portal supply CRUD, Dashboard real metrics
+- [ ] Final TODO audit and documentation
 
 ---
 
@@ -3901,6 +3908,7 @@ FEATURE-013 (Quote/Order Unification) ──→ All order-related features
 **Status:** in-progress  
 **Priority:** HIGH  
 **Estimate:** 48h total (Phase 1-5)  
+**Actual Time:** ~20h (Phases 1-4)  
 **Module:** `server/creditEngine.ts`, `server/routers/credit.ts`, `client/src/components/credit/`  
 **Dependencies:** None  
 **Spec:** `.kiro/specs/customer-credit-system-improvement/`  
@@ -3923,8 +3931,8 @@ FEATURE-013 (Quote/Order Unification) ──→ All order-related features
 | ------- | ------------------------------------------------------------------------------------------ | -------------- | ---------- |
 | Phase 1 | Foundation (credit fields, sync, auto-recalc)                                              | ✅ COMPLETE    | 100%       |
 | Phase 2 | UI Components (CreditStatusCard, CreditExplanation, CreditOverrideDialog, CreditIndicator) | ✅ COMPLETE    | 100%       |
-| Phase 3 | Settings & Control (visibility settings, admin page)                                       | 🔄 IN PROGRESS | ~85%       |
-| Phase 4 | Order Integration (credit check, triggers, batch job)                                      | 🔄 IN PROGRESS | ~25%       |
+| Phase 3 | Settings & Control (visibility settings, admin page)                                       | ✅ COMPLETE    | 100%       |
+| Phase 4 | Order Integration (credit check, triggers, batch job, performance)                         | ✅ COMPLETE    | 100%       |
 | Phase 5 | VIP Portal (customer-facing credit display)                                                | ⏳ NOT STARTED | 0%         |
 
 **Completed Deliverables:**
@@ -3944,24 +3952,37 @@ FEATURE-013 (Quote/Order Unification) ──→ All order-related features
 - [x] `credit.getVisibilitySettings` and `credit.updateVisibilitySettings` endpoints
 - [x] `useCreditVisibility` hook created
 - [x] Visibility hook applied to ClientsListPage, ClientProfilePage, CreditLimitBanner
+- [x] `CreditSettingsPage.tsx` created with visibility toggles, enforcement mode, thresholds
+- [x] Credit check integrated in `OrderCreatorPage.tsx` with `CreditWarningDialog`
+- [x] Transaction triggers (auto-recalc on invoice, payment, order finalization)
+- [x] Daily batch job `scripts/jobs/recalculate-all-credit.ts`
+- [x] Performance monitoring (<500ms target with logging)
 
 **Remaining Work:**
 
-- [ ] **Phase 3.3**: Create `CreditSettingsPage.tsx` (visibility toggles, enforcement mode, thresholds)
-- [ ] **Phase 4.2**: Integrate credit check in `OrderCreatorPage.tsx`
-- [ ] **Phase 4.3**: Add transaction triggers (invoice, payment, order finalization)
-- [ ] **Phase 4.4**: Create daily batch job `scripts/jobs/recalculate-all-credit.ts`
-- [ ] **Phase 4.5**: Performance optimization (<500ms per client)
-- [ ] **Phase 5**: VIP Portal credit display (lowest priority)
+- [ ] **Phase 5**: VIP Portal credit display (lowest priority, future sprint)
 
 **Key Files:**
 
-- `server/creditEngine.ts` - Core credit calculation logic
+- `server/creditEngine.ts` - Core credit calculation logic with performance monitoring
 - `server/routers/credit.ts` - All credit endpoints
+- `server/clientsDb.ts` - Transaction triggers via `triggerCreditRecalculation`
 - `client/src/components/credit/` - All credit UI components
 - `client/src/hooks/useCreditVisibility.ts` - Visibility settings hook
+- `client/src/pages/CreditSettingsPage.tsx` - Admin settings page
+- `client/src/components/orders/CreditWarningDialog.tsx` - Order creation warning
+- `scripts/jobs/recalculate-all-credit.ts` - Daily batch job
 - `drizzle/schema.ts` - `creditVisibilitySettings` table (~line 1922)
 - `drizzle/0040_add_credit_visibility_settings.sql` - Migration applied
+
+**Key Commits (Dec 22-23, 2025):**
+
+- `06df62c4` - feat(credit): complete Phase 2 UI components + mobile credit indicator
+- `4cb036a2` - feat(credit): apply visibility hook throughout app and add migration
+- `622af665` - feat(credit): Phase 3.3 - Add visibility & enforcement settings to CreditSettingsPage
+- `41c6f364` - feat(credit): Phase 4.2 - Integrate credit check in order creation
+- `3a5c2086` - feat(credit): Phase 4.4 - Add daily batch job for credit recalculation
+- `d1f80e9e` - feat(credit): Phase 4.5 - Add performance monitoring to credit calculation
 
 **Database Migration Applied:**
 
@@ -3979,6 +4000,7 @@ FEATURE-013 (Quote/Order Unification) ──→ All order-related features
 
 - ✅ TypeScript compilation passes
 - ✅ All diagnostics clear on credit components
+- ✅ Phase 4 Red Hat QA complete
 - ✅ ESLint passes
 - ⚠️ Tests NOT yet written for new functionality
 

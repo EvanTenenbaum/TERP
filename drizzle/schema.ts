@@ -4976,3 +4976,218 @@ export {
   userRolesRelations,
   userPermissionOverridesRelations,
 } from "./schema-rbac";
+
+
+// ============================================================================
+// LEADERBOARD SYSTEM SCHEMA
+// ============================================================================
+
+/**
+ * Client Type Enum for Leaderboard
+ * Defines the type of clients for leaderboard filtering
+ */
+export const leaderboardClientTypeEnum = mysqlEnum("leaderboard_client_type", [
+  "CUSTOMER",
+  "SUPPLIER",
+  "ALL",
+]);
+
+/**
+ * Leaderboard Weight Configurations
+ * Stores user-specific weight preferences for the internal leaderboard
+ */
+export const leaderboardWeightConfigs = mysqlTable(
+  "leaderboard_weight_configs",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    configName: varchar("config_name", { length: 100 }).notNull().default("default"),
+    clientType: leaderboardClientTypeEnum.notNull().default("ALL"),
+    weights: json("weights").$type<Record<string, number>>().notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
+  },
+  table => ({
+    userConfigTypeIdx: unique("idx_user_config_type").on(
+      table.userId,
+      table.configName,
+      table.clientType
+    ),
+    userActiveIdx: index("idx_user_active").on(table.userId, table.isActive),
+  })
+);
+
+export type LeaderboardWeightConfig = typeof leaderboardWeightConfigs.$inferSelect;
+export type InsertLeaderboardWeightConfig = typeof leaderboardWeightConfigs.$inferInsert;
+
+/**
+ * Leaderboard Default Weights
+ * System-wide default weights (admin-configurable)
+ */
+export const leaderboardDefaultWeights = mysqlTable(
+  "leaderboard_default_weights",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    clientType: leaderboardClientTypeEnum.notNull(),
+    weights: json("weights").$type<Record<string, number>>().notNull(),
+    updatedBy: int("updated_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    clientTypeIdx: unique("idx_default_weights_client_type").on(table.clientType),
+  })
+);
+
+export type LeaderboardDefaultWeight = typeof leaderboardDefaultWeights.$inferSelect;
+export type InsertLeaderboardDefaultWeight = typeof leaderboardDefaultWeights.$inferInsert;
+
+/**
+ * Leaderboard Metric Cache
+ * Cached metric calculations for performance
+ */
+export const leaderboardMetricCache = mysqlTable(
+  "leaderboard_metric_cache",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    clientId: int("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    metricType: varchar("metric_type", { length: 50 }).notNull(),
+    metricValue: decimal("metric_value", { precision: 15, scale: 4 }),
+    sampleSize: int("sample_size").notNull().default(0),
+    isSignificant: boolean("is_significant").notNull().default(false),
+    rawData: json("raw_data").$type<{
+      numerator?: number;
+      denominator?: number;
+      dataPoints?: number[];
+    }>(),
+    calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+  },
+  table => ({
+    clientMetricIdx: unique("idx_client_metric").on(table.clientId, table.metricType),
+    expiresIdx: index("idx_expires").on(table.expiresAt),
+    metricTypeIdx: index("idx_metric_type").on(table.metricType),
+  })
+);
+
+export type LeaderboardMetricCache = typeof leaderboardMetricCache.$inferSelect;
+export type InsertLeaderboardMetricCache = typeof leaderboardMetricCache.$inferInsert;
+
+/**
+ * Leaderboard Rank History
+ * Historical ranking snapshots for trend analysis
+ */
+export const leaderboardRankHistory = mysqlTable(
+  "leaderboard_rank_history",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    clientId: int("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    snapshotDate: date("snapshot_date").notNull(),
+    masterRank: int("master_rank"),
+    masterScore: decimal("master_score", { precision: 10, scale: 4 }),
+    financialRank: int("financial_rank"),
+    engagementRank: int("engagement_rank"),
+    reliabilityRank: int("reliability_rank"),
+    growthRank: int("growth_rank"),
+    totalClients: int("total_clients").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  table => ({
+    clientDateIdx: unique("idx_client_date").on(table.clientId, table.snapshotDate),
+    snapshotDateIdx: index("idx_snapshot_date").on(table.snapshotDate),
+  })
+);
+
+export type LeaderboardRankHistory = typeof leaderboardRankHistory.$inferSelect;
+export type InsertLeaderboardRankHistory = typeof leaderboardRankHistory.$inferInsert;
+
+/**
+ * Dashboard Widget Configurations
+ * Stores user-specific dashboard widget preferences
+ */
+export const dashboardWidgetConfigs = mysqlTable(
+  "dashboard_widget_configs",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    widgetType: varchar("widget_type", { length: 50 }).notNull(),
+    config: json("config").$type<{
+      metric?: string;
+      mode?: "top" | "bottom";
+      limit?: number;
+      clientType?: "ALL" | "CUSTOMER" | "SUPPLIER";
+      [key: string]: unknown;
+    }>().notNull(),
+    position: int("position").notNull().default(0),
+    isVisible: boolean("is_visible").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    userWidgetIdx: unique("idx_user_widget").on(table.userId, table.widgetType),
+  })
+);
+
+export type DashboardWidgetConfig = typeof dashboardWidgetConfigs.$inferSelect;
+export type InsertDashboardWidgetConfig = typeof dashboardWidgetConfigs.$inferInsert;
+
+// Leaderboard Relations
+export const leaderboardWeightConfigsRelations = relations(
+  leaderboardWeightConfigs,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [leaderboardWeightConfigs.userId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const leaderboardDefaultWeightsRelations = relations(
+  leaderboardDefaultWeights,
+  ({ one }) => ({
+    updatedByUser: one(users, {
+      fields: [leaderboardDefaultWeights.updatedBy],
+      references: [users.id],
+    }),
+  })
+);
+
+export const leaderboardMetricCacheRelations = relations(
+  leaderboardMetricCache,
+  ({ one }) => ({
+    client: one(clients, {
+      fields: [leaderboardMetricCache.clientId],
+      references: [clients.id],
+    }),
+  })
+);
+
+export const leaderboardRankHistoryRelations = relations(
+  leaderboardRankHistory,
+  ({ one }) => ({
+    client: one(clients, {
+      fields: [leaderboardRankHistory.clientId],
+      references: [clients.id],
+    }),
+  })
+);
+
+export const dashboardWidgetConfigsRelations = relations(
+  dashboardWidgetConfigs,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [dashboardWidgetConfigs.userId],
+      references: [users.id],
+    }),
+  })
+);

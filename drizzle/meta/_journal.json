@@ -183,6 +183,13 @@
       "when": 1766472489673,
       "tag": "0025_needy_carnage",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1766475541395,
+      "tag": "0026_first_salo",
+      "breakpoints": true
     }
   ]
 }
