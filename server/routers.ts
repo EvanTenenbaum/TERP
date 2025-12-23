@@ -82,7 +82,9 @@ import { vipPortalLiveShoppingRouter } from "./routers/vipPortalLiveShopping";
 // Wrapped in try-catch to handle module resolution issues in test environments
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let debugRouter: any = null;
-if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
+// TEMPORARY: Enable debug router in production for diagnostics (REMOVE AFTER DEBUGGING)
+// Original: if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV !== "test") {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     debugRouter = require("./routers/debug").debugRouter;
