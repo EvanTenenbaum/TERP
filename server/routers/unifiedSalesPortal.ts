@@ -272,10 +272,10 @@ export const unifiedSalesPortalRouter = router({
           orderConditions.push(inArray(orders.createdBy, input.createdByIds));
         }
         if (input.minValue !== undefined) {
-          orderConditions.push(sql`CAST(total_amount AS DECIMAL(15,2)) >= ${input.minValue}`);
+          orderConditions.push(sql`CAST(${orders.total} AS DECIMAL(15,2)) >= ${input.minValue}`);
         }
         if (input.maxValue !== undefined) {
-          orderConditions.push(sql`CAST(total_amount AS DECIMAL(15,2)) <= ${input.maxValue}`);
+          orderConditions.push(sql`CAST(${orders.total} AS DECIMAL(15,2)) <= ${input.maxValue}`);
         }
 
         // Filter by order type based on stages
@@ -296,7 +296,7 @@ export const unifiedSalesPortalRouter = router({
             quoteStatus: orders.quoteStatus,
             saleStatus: orders.saleStatus,
             clientId: orders.clientId,
-            totalAmount: orders.totalAmount,
+            totalAmount: orders.total,
             createdAt: orders.createdAt,
             createdBy: orders.createdBy,
             updatedAt: orders.updatedAt,
