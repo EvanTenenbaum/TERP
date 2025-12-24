@@ -31,6 +31,7 @@ import {
   Trophy,
   Video,
   Truck,
+  Kanban,
   type LucideIcon,
 } from "lucide-react";
 
@@ -68,6 +69,7 @@ export const navigationItems: NavigationItem[] = [
   // ═══════════════════════════════════════════════════════════════
   // SALES - All tools for selling (grouped together)
   // ═══════════════════════════════════════════════════════════════
+  { name: "Sales Portal", path: "/sales-portal", icon: Kanban, group: "sales" },
   { name: "Clients", path: "/clients", icon: Users, group: "sales" },
   { name: "Live Shopping", path: "/live-shopping", icon: Video, group: "sales" },
   { name: "Sales Sheets", path: "/sales-sheets", icon: Layers, group: "sales" },
