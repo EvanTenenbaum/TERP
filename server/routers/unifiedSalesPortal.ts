@@ -292,7 +292,7 @@ export const unifiedSalesPortalRouter = router({
             id: orders.id,
             orderNumber: orders.orderNumber,
             orderType: orders.orderType,
-            orderStatus: orders.orderStatus,
+            // orderStatus removed - field doesn't exist in orders table
             quoteStatus: orders.quoteStatus,
             saleStatus: orders.saleStatus,
             clientId: orders.clientId,
@@ -358,7 +358,7 @@ export const unifiedSalesPortalRouter = router({
             convertedToId: null, // Would need reverse lookup
             convertedAt: order.convertedAt,
             orderNumber: order.orderNumber,
-            orderStatus: order.orderStatus,
+            orderStatus: undefined, // Field doesn't exist in orders table
             quoteStatus: order.quoteStatus,
             saleStatus: order.saleStatus,
             validUntil: order.validUntil,
