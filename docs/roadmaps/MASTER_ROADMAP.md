@@ -55,6 +55,12 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ✅ Recently Completed
 
+- **FEATURE-017**: Unified Sales Portal (USP) - COMPLETE (2025-12-23)
+  - Kanban-style pipeline view for Sales Sheets, Quotes, Sales, and Fulfilled stages
+  - Advanced filtering (date range, value range, search, show deleted/closed)
+  - Drag-and-drop stage transitions with confirmation dialogs
+  - Backend tRPC router with getPipeline, moveItem, and getStats endpoints
+  - Navigation integration in main sidebar
 - **FEATURE-016**: Live Shopping Module (Phases 0-5) - COMPLETE (2025-12-24)
 - **FEATURE-015**: Customer Credit System (Phases 1-4) - COMPLETE (2025-12-23)
 - **BUG-034**: Complete Pagination Standardization - COMPLETE (2025-12-22)
