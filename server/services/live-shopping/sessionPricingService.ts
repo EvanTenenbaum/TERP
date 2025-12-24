@@ -36,7 +36,7 @@ export const sessionPricingService = {
     // 1. Fetch Batch and Product Details
     const batchResult = await db
       .select({
-        cost: batches.unitCost,
+        cost: batches.unitCogs,
         productId: batches.productId,
         productCategory: products.category, // Assuming category exists on products table
       })

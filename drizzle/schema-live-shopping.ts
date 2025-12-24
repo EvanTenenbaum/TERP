@@ -32,6 +32,16 @@ export const liveSessionStatusEnum = mysqlEnum("liveSessionStatus", [
 ]);
 
 /**
+ * Cart Item Status Enum
+ * Represents the customer's intent for each product in their cart
+ */
+export const cartItemStatusEnum = mysqlEnum("cartItemStatus", [
+  "SAMPLE_REQUEST",  // Customer wants to see a sample brought out
+  "INTERESTED",      // Customer is interested, may want to negotiate price
+  "TO_PURCHASE",     // Customer intends to buy this item
+]);
+
+/**
  * Live Shopping Sessions
  * Represents a real-time sales engagement between a Staff Host and a Client.
  */
@@ -124,6 +134,12 @@ export const sessionCartItems = mysqlTable(
     
     // Is this item "pinned" or "highlighted" in the UI?
     isHighlighted: boolean("isHighlighted").default(false),
+    
+    // Customer intent status for this item
+    // SAMPLE_REQUEST: Customer wants to see sample
+    // INTERESTED: Customer interested, may negotiate price
+    // TO_PURCHASE: Customer intends to buy
+    itemStatus: cartItemStatusEnum.default("INTERESTED"),
 
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

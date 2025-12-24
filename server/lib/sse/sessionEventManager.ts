@@ -4,11 +4,12 @@ import { EventEmitter } from "events";
 
 // Event Types
 export const SSE_EVENTS = {
-  CART_UPDATED: "CART_UPDATED",         // Cart contents changed
-  PRICE_CHANGED: "PRICE_CHANGED",       // Override price applied
-  PRODUCT_HIGHLIGHTED: "HIGHLIGHTED",   // Host highlighted a product
-  SESSION_STATUS: "SESSION_STATUS",     // Session ended/paused
-  CONNECTION_PING: "PING",              // Heartbeat
+  CART_UPDATED: "CART_UPDATED",           // Cart contents changed
+  PRICE_CHANGED: "PRICE_CHANGED",         // Override price applied
+  PRODUCT_HIGHLIGHTED: "HIGHLIGHTED",     // Host highlighted a product
+  SESSION_STATUS: "SESSION_STATUS",       // Session ended/paused
+  CONNECTION_PING: "PING",                // Heartbeat
+  ITEM_STATUS_CHANGED: "ITEM_STATUS",     // Item status changed (Sample/Interested/Purchase)
 } as const;
 
 export type SseEventType = keyof typeof SSE_EVENTS;
@@ -97,6 +98,19 @@ class SessionEventManager extends EventEmitter {
   
   public emitPing(sessionId: number) {
      this.emitToSession(sessionId, "CONNECTION_PING", { ts: Date.now() });
+  }
+
+  public emitItemStatusChange(
+    sessionId: number,
+    cartItemId: number,
+    status: "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE",
+    changedBy: "HOST" | "CLIENT"
+  ) {
+    this.emitToSession(sessionId, "ITEM_STATUS_CHANGED", {
+      cartItemId,
+      status,
+      changedBy,
+    });
   }
 }
 

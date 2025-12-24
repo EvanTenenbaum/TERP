@@ -100,7 +100,7 @@ export const vipPortalLiveShoppingRouter = router({
           productName: products.nameCanonical,
           description: products.description,
           imageUrl: productMedia.url,
-          price: products.basePrice, // This is indicative, real price comes from pricing engine
+          // Note: Price comes from pricing engine, not stored on products
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
@@ -263,7 +263,7 @@ export const vipPortalLiveShoppingRouter = router({
 
       // We emit a custom event that the Host UI will listen for
       // Note: We might want to persist this state in DB in future, but for now it's an event
-      sessionEventManager.emit(input.sessionId, {
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
         type: "CLIENT_CHECKOUT_REQUEST",
         payload: {
           clientId: ctx.clientId,
@@ -272,5 +272,141 @@ export const vipPortalLiveShoppingRouter = router({
       });
 
       return { success: true, message: "Host notified" };
+    }),
+
+  // ============================================================================
+  // ITEM STATUS MANAGEMENT (Customer-Facing)
+  // ============================================================================
+
+  /**
+   * Customer updates item status (Sample Request, Interested, To Purchase)
+   */
+  updateItemStatus: vipPortalProcedure
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+        status: z.enum(["SAMPLE_REQUEST", "INTERESTED", "TO_PURCHASE"]),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Validate session ownership
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session || session.clientId !== ctx.clientId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Invalid session" });
+      }
+
+      if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Session is not active" });
+      }
+
+      // Update item status
+      await sessionCartService.updateItemStatus(input.sessionId, input.cartItemId, input.status);
+
+      // Emit event for real-time updates to staff
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "ITEM_STATUS_CHANGED",
+        payload: {
+          cartItemId: input.cartItemId,
+          newStatus: input.status,
+          changedBy: "CLIENT",
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      return { success: true };
+    }),
+
+  /**
+   * Customer adds item directly with a specific status
+   */
+  addItemWithStatus: vipPortalProcedure
+    .input(
+      z.object({
+        sessionId: z.number(),
+        batchId: z.number(),
+        quantity: z.number().positive(),
+        status: z.enum(["SAMPLE_REQUEST", "INTERESTED", "TO_PURCHASE"]),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Validate session ownership
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session || session.clientId !== ctx.clientId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Invalid session" });
+      }
+
+      if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Session is not active" });
+      }
+
+      try {
+        const cartItemId = await sessionCartService.addItemWithStatus({
+          sessionId: input.sessionId,
+          batchId: input.batchId,
+          quantity: input.quantity,
+          addedByRole: "CLIENT",
+          itemStatus: input.status,
+        });
+        return { success: true, cartItemId };
+      } catch (e: any) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: e.message || "Failed to add item",
+        });
+      }
+    }),
+
+  /**
+   * Get customer's items grouped by status
+   */
+  getMyItemsByStatus: vipPortalProcedure
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Validate session ownership
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session || session.clientId !== ctx.clientId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Invalid session" });
+      }
+
+      const cart = await sessionCartService.getCart(input.sessionId);
+
+      const sampleRequests = cart.items.filter((i) => i.itemStatus === "SAMPLE_REQUEST");
+      const interested = cart.items.filter((i) => i.itemStatus === "INTERESTED");
+      const toPurchase = cart.items.filter((i) => i.itemStatus === "TO_PURCHASE");
+
+      return {
+        sampleRequests,
+        interested,
+        toPurchase,
+        totals: {
+          sampleRequestCount: sampleRequests.length,
+          interestedCount: interested.length,
+          toPurchaseCount: toPurchase.length,
+          toPurchaseValue: toPurchase.reduce(
+            (sum, i) =>
+              sum + parseFloat(i.quantity.toString()) * parseFloat(i.unitPrice.toString()),
+            0
+          ),
+        },
+      };
     }),
 });

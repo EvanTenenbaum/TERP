@@ -13,12 +13,12 @@ import {
   creditSignalHistory,
   creditSystemSettings,
   creditAuditLog,
-} from "../drizzle/schema";
+} from "../../drizzle/schema";
 // Phase 1 Imports
 import { 
   liveShoppingSessions, 
   sessionCartItems 
-} from "../drizzle/schema-live-shopping";
+} from "../../drizzle/schema-live-shopping";
 import { financialMath } from "../utils/financialMath";
 
 // ... (Existing types and signal calculations remain unchanged as per context) ...
@@ -88,14 +88,14 @@ export async function calculateTotalExposure(clientId: number): Promise<number> 
   // 1. AR Balance (Unpaid Invoices)
   const arBalanceResult = await db
     .select({ 
-      total: sql<number>`SUM(${clientTransactions.amount} - ${clientTransactions.amountPaid})` 
+      total: sql<number>`SUM(${clientTransactions.amount} - ${clientTransactions.paymentAmount})` 
     })
     .from(clientTransactions)
     .where(
       and(
         eq(clientTransactions.clientId, clientId),
         eq(clientTransactions.transactionType, "INVOICE"),
-        sql`${clientTransactions.amount} > ${clientTransactions.amountPaid}`
+        sql`${clientTransactions.amount} > ${clientTransactions.paymentAmount}`
       )
     );
   

@@ -4,7 +4,7 @@
  */
 import { getDb } from "../../db";
 import { eq } from "drizzle-orm";
-import { clients } from "../../../drizzle/schema";
+import { clients, clientCreditLimits } from "../../../drizzle/schema";
 import { sessionCartService } from "./sessionCartService";
 import { financialMath } from "../../utils/financialMath";
 
@@ -56,23 +56,17 @@ export const sessionCreditService = {
     const cartTotalStr = await this.getCartTotal(sessionId);
     const cartTotal = parseFloat(cartTotalStr);
 
-    // 2. Get Client Credit Profile
-    // TERP stores credit info directly on the clients table
-    const clientRecord = await db.query.clients.findFirst({
-      where: eq(clients.id, clientId),
+    // 2. Get Client Credit Profile from clientCreditLimits table
+    const creditRecord = await db.query.clientCreditLimits.findFirst({
+      where: eq(clientCreditLimits.clientId, clientId),
     });
 
-    if (!clientRecord) {
-      throw new Error("Client not found");
-    }
-
-    // Credit limit and exposure from client record
-    // Assuming these fields exist on the clients table based on TERP patterns
-    const limit = clientRecord.creditLimit
-      ? parseFloat(clientRecord.creditLimit.toString())
+    // If no credit record exists, assume unlimited credit (limit = 0)
+    const limit = creditRecord?.creditLimit
+      ? parseFloat(creditRecord.creditLimit.toString())
       : 0;
-    const exposure = clientRecord.creditExposure
-      ? parseFloat(clientRecord.creditExposure.toString())
+    const exposure = creditRecord?.currentExposure
+      ? parseFloat(creditRecord.currentExposure.toString())
       : 0;
 
     const projectedExposure = exposure + cartTotal;

@@ -161,7 +161,7 @@ export const liveShoppingRouter = router({
         .where(eq(liveShoppingSessions.id, input.sessionId));
 
       // Emit status change event
-      sessionEventManager.emitSessionStatus(input.sessionId, input.status);
+      sessionEventManager.emitStatusChange(input.sessionId, input.status);
 
       return { success: true };
     }),
@@ -318,7 +318,9 @@ export const liveShoppingRouter = router({
         ));
 
       // Emit highlight event
-      sessionEventManager.emitHighlight(input.sessionId, input.isHighlighted ? input.batchId : null);
+      if (input.isHighlighted) {
+        sessionEventManager.emitHighlight(input.sessionId, input.batchId);
+      }
       
       // Also update cart view
       await sessionCartService.emitCartUpdate(input.sessionId);
@@ -345,7 +347,7 @@ export const liveShoppingRouter = router({
           batchCode: batches.code,
           onHand: batches.onHandQty,
           reserved: batches.reservedQty,
-          unitCost: batches.unitCost,
+          unitCogs: batches.unitCogs,
         })
         .from(batches)
         .innerJoin(products, eq(batches.productId, products.id))
@@ -462,7 +464,7 @@ export const liveShoppingRouter = router({
           .set({ status: "ENDED", endedAt: new Date() })
           .where(eq(liveShoppingSessions.id, input.sessionId));
 
-        sessionEventManager.emitSessionStatus(input.sessionId, "ENDED");
+        sessionEventManager.emitStatusChange(input.sessionId, "ENDED");
         return { success: true };
       }
 
@@ -484,5 +486,113 @@ export const liveShoppingRouter = router({
           message: e.message || "Failed to convert session to order",
         });
       }
+    }),
+
+  // ==========================================================================
+  // ITEM STATUS MANAGEMENT (Three-Status Workflow)
+  // ==========================================================================
+
+  /**
+   * Update item status (Sample Request, Interested, To Purchase)
+   * Can be called by both staff and clients
+   */
+  updateItemStatus: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+        status: z.enum(["SAMPLE_REQUEST", "INTERESTED", "TO_PURCHASE"]),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db
+        .update(sessionCartItems)
+        .set({ itemStatus: input.status })
+        .where(
+          and(
+            eq(sessionCartItems.sessionId, input.sessionId),
+            eq(sessionCartItems.id, input.cartItemId)
+          )
+        );
+
+      // Emit status change event for real-time updates
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "ITEM_STATUS_CHANGED",
+        payload: {
+          cartItemId: input.cartItemId,
+          newStatus: input.status,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      // Also update cart view
+      await sessionCartService.emitCartUpdate(input.sessionId);
+
+      return { success: true };
+    }),
+
+  /**
+   * Add item directly with a specific status
+   * Allows adding items as Sample Request, Interested, or To Purchase
+   */
+  addItemWithStatus: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        batchId: z.number(),
+        quantity: z.number().positive(),
+        status: z.enum(["SAMPLE_REQUEST", "INTERESTED", "TO_PURCHASE"]),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const cartItemId = await sessionCartService.addItemWithStatus({
+          sessionId: input.sessionId,
+          batchId: input.batchId,
+          quantity: input.quantity,
+          addedByRole: "HOST",
+          itemStatus: input.status,
+        });
+        return { success: true, cartItemId };
+      } catch (e: any) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: e.message || "Failed to add item to cart",
+        });
+      }
+    }),
+
+  /**
+   * Get items grouped by status for the session
+   */
+  getItemsByStatus: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const cart = await sessionCartService.getCart(input.sessionId);
+      
+      const sampleRequests = cart.items.filter(i => i.itemStatus === "SAMPLE_REQUEST");
+      const interested = cart.items.filter(i => i.itemStatus === "INTERESTED");
+      const toPurchase = cart.items.filter(i => i.itemStatus === "TO_PURCHASE");
+
+      return {
+        sampleRequests,
+        interested,
+        toPurchase,
+        totals: {
+          sampleRequestCount: sampleRequests.length,
+          interestedCount: interested.length,
+          toPurchaseCount: toPurchase.length,
+          toPurchaseValue: toPurchase.reduce(
+            (sum, i) => sum + parseFloat(i.quantity.toString()) * parseFloat(i.unitPrice.toString()),
+            0
+          ),
+        },
+      };
     }),
 });

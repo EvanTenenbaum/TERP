@@ -132,7 +132,7 @@ export const sessionOrderService = {
       .where(eq(liveShoppingSessions.id, options.sessionId));
 
     // 8. Emit session ended event
-    sessionEventManager.emit(options.sessionId, {
+    sessionEventManager.emit(sessionEventManager.getRoomId(options.sessionId), {
       type: "SESSION_ENDED",
       data: {
         status: "CONVERTED",
@@ -191,15 +191,9 @@ export const sessionOrderService = {
       createdBy: userId,
       items: sheetItems,
       totalValue: totalValue,
-      name: roomCode
-        ? `Live Session ${roomCode}`
-        : `Session Recap #${referenceOrderId || Date.now()}`,
-      notes: referenceOrderId
-        ? `Generated from Order #${referenceOrderId}`
-        : undefined,
     });
 
-    return result.id;
+    return result;
   },
 
   /**

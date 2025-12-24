@@ -18,11 +18,16 @@ export interface AddItemRequest {
   isSample?: boolean; // P4-T03: Optional sample flag
 }
 
+export interface AddItemWithStatusRequest extends AddItemRequest {
+  itemStatus: "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
+}
+
 export interface CartSummary {
   items: (SessionCartItem & {
     productName: string;
     batchCode: string;
     subtotal: string;
+    itemStatus?: "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE" | null;
   })[];
   totalValue: string;
   itemCount: number;
@@ -367,5 +372,114 @@ export const sessionCartService = {
   async emitCartUpdate(sessionId: number) {
     const cart = await this.getCart(sessionId);
     sessionEventManager.emitCartUpdate(sessionId, cart.items);
+  },
+
+  /**
+   * Add item with a specific status (Sample Request, Interested, To Purchase)
+   * Returns the cart item ID
+   */
+  async addItemWithStatus(req: AddItemWithStatusRequest): Promise<number> {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    let cartItemId: number = 0;
+
+    await db.transaction(async (tx) => {
+      // 1. Validate Session
+      const session = await tx
+        .select()
+        .from(liveShoppingSessions)
+        .where(eq(liveShoppingSessions.id, req.sessionId))
+        .limit(1);
+
+      if (!session.length) throw new Error("Session not found");
+      if (session[0].status !== "ACTIVE" && session[0].status !== "PAUSED") {
+        throw new Error(`Cannot add items to session with status: ${session[0].status}`);
+      }
+
+      // 2. Validate Inventory (Batch)
+      const batch = await tx
+        .select({
+          id: batches.id,
+          productId: batches.productId,
+          code: batches.code,
+          onHandQty: batches.onHandQty,
+          reservedQty: batches.reservedQty,
+          holdQty: batches.holdQty,
+          quarantineQty: batches.quarantineQty,
+        })
+        .from(batches)
+        .where(eq(batches.id, req.batchId))
+        .limit(1);
+
+      if (!batch.length) throw new Error("Batch not found");
+
+      // 3. Calculate NET available
+      const netAvailable = await calculateNetAvailableQty(
+        tx,
+        batch[0],
+        req.batchId,
+        req.sessionId
+      );
+
+      // 4. Strict Inventory Check
+      if (financialMath.gt(req.quantity, netAvailable)) {
+        throw new Error(
+          `Insufficient inventory. Requested: ${req.quantity}, Available: ${netAvailable}`
+        );
+      }
+
+      // 5. Calculate Price
+      const priceResult = await sessionPricingService.calculateEffectivePrice(
+        req.sessionId,
+        req.batchId,
+        session[0].clientId
+      );
+
+      // 6. Insert new line item with status
+      const [result] = await tx.insert(sessionCartItems).values({
+        sessionId: req.sessionId,
+        batchId: req.batchId,
+        productId: batch[0].productId,
+        quantity: financialMath.toFixed(req.quantity, 4),
+        unitPrice: priceResult.finalPrice,
+        addedByRole: req.addedByRole,
+        itemStatus: req.itemStatus,
+      });
+
+      cartItemId = result.insertId;
+    });
+
+    // Emit event OUTSIDE transaction
+    await this.emitCartUpdate(req.sessionId);
+
+    return cartItemId;
+  },
+
+  /**
+   * Update item status
+   */
+  async updateItemStatus(
+    sessionId: number,
+    cartItemId: number,
+    status: "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE"
+  ): Promise<void> {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    await db
+      .update(sessionCartItems)
+      .set({
+        itemStatus: status,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(sessionCartItems.id, cartItemId),
+          eq(sessionCartItems.sessionId, sessionId)
+        )
+      );
+
+    await this.emitCartUpdate(sessionId);
   }
 };
