@@ -151,6 +151,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | BUG-035 | Admin Security Test Failures | HIGH | 4h | Security-related |
 | BUG-037 | VIP Portal createdBy FK Constraint | HIGH | 8h | Data integrity |
 | BUG-036 | priceAlertsService Test Failures | MEDIUM | 4h | Test stability |
+| REFACTOR-001 | Codebase Duplication & Consistency Cleanup | MEDIUM | 24h | Technical debt reduction |
 
 ### 🛠️ UI Enhancement Tasks (From E2E Testing)
 
@@ -162,9 +163,9 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### 📊 Sprint Capacity
 
-**Total Estimated Hours:** 27h  
-**Recommended Sprint Duration:** 1 week  
-**Focus Areas:** Complete remaining work, UI polish, test stability
+**Total Estimated Hours:** 51h  
+**Recommended Sprint Duration:** 2 weeks  
+**Focus Areas:** Complete remaining work, UI polish, test stability, technical debt reduction
 
 ---
 
@@ -4957,6 +4958,43 @@ This roadmap now includes a comprehensive 4-phase plan to address all technical 
 4. **Phase 4: Continuous Improvement (Ongoing)** - Quality culture, test coverage (CI-001 through CI-003)
 
 **The Goal:** Transform TERP from a feature-rich but brittle application into a robust, secure, and maintainable platform, setting the stage for future growth and scalability.
+
+---
+
+### REFACTOR-001: Codebase Duplication & Consistency Cleanup
+
+**Type:** Refactoring  
+**Priority:** MEDIUM  
+**Status:** Not Started  
+**Estimate:** 24h (3 sprints of 8h each)  
+**Reference:** [DUPLICATION_ANALYSIS_REPORT_V2.md](../DUPLICATION_ANALYSIS_REPORT_V2.md)
+
+**Description:**  
+Address codebase duplication, overlapping functionality, and naming inconsistencies identified in the third-party code review. This task reduces technical debt and improves long-term maintainability.
+
+**Phase 1: High-Impact Consolidation (8h)**
+- Merge `inventory.ts`, `inventoryMovements.ts`, and `inventoryShrinkage.ts` routers
+- Merge `auditLogs`, `creditAuditLog`, and `orderAuditLog` tables into central `auditLogs`
+- Deprecate `dashboard.ts` in favor of `dashboardEnhanced.ts`
+
+**Phase 2: Schema & Naming Cleanup (8h)**
+- Rename `batches` table to `inventory` to align with domain naming
+- Create `vendor_notes` join table and deprecate standalone `vendorNotes` table
+- Rename `customerPreferences.ts` to `clientPreferences.ts`
+
+**Phase 3: Consistency & Deprecation (8h)**
+- Standardize all TRPC imports to use `../_core/trpc` path
+- Replace all usages of `empty.tsx` with `empty-state.tsx`
+- Add linter rule to enforce `camelCase` for new database columns
+- Document and enforce single authorization strategy (`protectedProcedure` + `requirePermission`)
+
+**Dependencies:** None
+
+**Success Criteria:**
+- All inventory logic consolidated into single router
+- All audit logs in single table with `domain` column
+- Consistent naming conventions across codebase
+- All tests passing after refactoring
 
 ---
 
