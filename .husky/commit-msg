@@ -1,0 +1,68 @@
+#!/usr/bin/env sh
+# Commit message validation hook for TERP
+# Enforces conventional commit format
+
+# Get the commit message
+commit_msg=$(cat "$1")
+
+# Define conventional commit pattern
+# Format: type(scope): description
+# Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_-]+\))?: .{1,100}$"
+
+# Allow merge commits
+if echo "$commit_msg" | grep -qE "^Merge "; then
+  exit 0
+fi
+
+# Allow revert commits
+if echo "$commit_msg" | grep -qE "^Revert "; then
+  exit 0
+fi
+
+# Check first line against pattern
+first_line=$(echo "$commit_msg" | head -n 1)
+
+if ! echo "$first_line" | grep -qE "$pattern"; then
+  echo ""
+  echo "❌ Invalid commit message format!"
+  echo ""
+  echo "Your message: $first_line"
+  echo ""
+  echo "Expected format: type(scope): description"
+  echo ""
+  echo "Valid types:"
+  echo "  feat     - A new feature"
+  echo "  fix      - A bug fix"
+  echo "  docs     - Documentation only changes"
+  echo "  style    - Code style changes (formatting, etc)"
+  echo "  refactor - Code refactoring"
+  echo "  perf     - Performance improvements"
+  echo "  test     - Adding or updating tests"
+  echo "  build    - Build system or dependencies"
+  echo "  ci       - CI/CD configuration"
+  echo "  chore    - Other changes (maintenance, etc)"
+  echo "  revert   - Reverting previous commits"
+  echo ""
+  echo "Examples:"
+  echo "  feat(auth): add OAuth2 login support"
+  echo "  fix(orders): resolve calculation error in totals"
+  echo "  docs: update API documentation"
+  echo "  test(leaderboard): add unit tests for ranking"
+  echo ""
+  echo "To skip this check, use: git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+# Check description length (should be meaningful)
+description=$(echo "$first_line" | sed 's/^[^:]*: //')
+if [ ${#description} -lt 10 ]; then
+  echo ""
+  echo "⚠️  Commit message description is too short!"
+  echo "Please provide a more descriptive message (at least 10 characters)."
+  echo ""
+  exit 1
+fi
+
+echo "✅ Commit message format valid"
