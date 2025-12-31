@@ -81,6 +81,7 @@ import { unifiedSalesPortalRouter } from "./routers/unifiedSalesPortal";
 import { pickPackRouter } from "./routers/pickPack";
 import { referralsRouter } from "./routers/referrals";
 import { auditRouter } from "./routers/audit";
+import { receiptsRouter } from "./routers/receipts";
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
@@ -179,6 +180,7 @@ export const appRouter = router({
   pickPack: pickPackRouter, // WS-003: Pick & Pack Module
   referrals: referralsRouter, // WS-004: Referral Credits System
   audit: auditRouter, // WS-005: No Black Box Audit Trail
+  receipts: receiptsRouter, // WS-006: Receipt Generation
   // Debug router - only registered in development
   ...(debugRouter ? { debug: debugRouter } : {}),
 });

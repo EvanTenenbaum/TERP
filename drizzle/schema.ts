@@ -5424,6 +5424,48 @@ export const referralCreditsRelations = relations(referralCredits, ({ one }) => 
 }));
 
 // ============================================================================
+// WS-006: RECEIPTS MODULE
+// ============================================================================
+
+// Receipt transaction type enum
+export const receiptTransactionTypeEnum = mysqlEnum("receipt_transaction_type", [
+  "PAYMENT",
+  "CREDIT",
+  "ADJUSTMENT",
+  "STATEMENT",
+]);
+
+// Receipts table for tracking generated receipts
+export const receipts = mysqlTable(
+  "receipts",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    receiptNumber: varchar("receipt_number", { length: 50 }).notNull().unique(),
+    clientId: int("client_id").notNull().references(() => clients.id),
+    transactionType: receiptTransactionTypeEnum.notNull(),
+    transactionId: int("transaction_id"), // Reference to payment/credit/etc.
+    previousBalance: decimal("previous_balance", { precision: 12, scale: 2 }).notNull(),
+    transactionAmount: decimal("transaction_amount", { precision: 12, scale: 2 }).notNull(),
+    newBalance: decimal("new_balance", { precision: 12, scale: 2 }).notNull(),
+    note: text("note"),
+    pdfUrl: varchar("pdf_url", { length: 500 }),
+    emailedTo: varchar("emailed_to", { length: 255 }),
+    emailedAt: timestamp("emailed_at"),
+    smsSentTo: varchar("sms_sent_to", { length: 20 }),
+    smsSentAt: timestamp("sms_sent_at"),
+    createdBy: int("created_by").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  table => ({
+    clientIdx: index("idx_receipt_client").on(table.clientId),
+    receiptNumberIdx: index("idx_receipt_number").on(table.receiptNumber),
+  })
+);
+
+export type Receipt = typeof receipts.$inferSelect;
+export type InsertReceipt = typeof receipts.$inferInsert;
+
+// ============================================================================
 // LIVE SHOPPING MODULE (Phase 0)
 // ============================================================================
 export * from "./schema-live-shopping";
