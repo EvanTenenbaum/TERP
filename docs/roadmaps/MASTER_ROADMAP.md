@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.9
+**Version:** 2.10
 **Last Updated:** December 30, 2025
 **Status:** Active
 
@@ -35,7 +35,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 ### 📊 Sprint Overview
 
 **Completed Previous Sprint:** 18+ tasks (Credit System, Live Shopping, USP, Quality fixes)
-**In Progress:** QUAL-003 (~70%), INFRA-012 (Slack Bot)
+**In Progress:** AUDIT-001 (Code Review)
 **Remaining from Previous:** 3 tasks (BUG-035, BUG-036, BUG-037)
 **New Sprint Tasks:** 15 tasks (WS-001 through WS-015)
 **Execution Strategy:** Critical usability features + bug fixes
@@ -44,8 +44,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 | Task      | Description                        | Progress | Owner |
 | --------- | ---------------------------------- | -------- | ----- |
-| QUAL-003  | Complete Critical TODOs            | ~70%     | -     |
-| INFRA-012 | Deploy TERP Commander Slack Bot    | ~60%     | -     |
+| AUDIT-001 | Comprehensive System Code Review   | ~50%     | -     |
 
 ### 📋 Remaining from Previous Sprint
 
@@ -1093,7 +1092,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 ### QUAL-003: Complete Critical TODOs
 
-**Status:** in-progress  
+**Status:** ✅ COMPLETE  
 **Priority:** HIGH  
 **Estimate:** 2 weeks (80 hours)  
 **Actual Time:** ~12h (Waves 0-3 partial)  
@@ -1130,11 +1129,92 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 3. ⏳ Remove or document non-critical TODOs
 4. ⏳ Create tasks for incomplete features
 
-**Remaining Work:**
+**Remaining Work:** Moved to separate tasks (QUAL-005, QUAL-006, QUAL-007)
 
-- [ ] Wave 2 completion: COGS module, Calendar financials
-- [ ] Wave 3 completion: VIP Portal supply CRUD, Dashboard real metrics
-- [ ] Final TODO audit and documentation
+**Completion Notes (2025-12-30):**
+- Waves 0-3 completed successfully
+- Security TODOs resolved
+- Remaining feature TODOs moved to dedicated tasks below
+- 25 non-critical TODOs remain in codebase (acceptable technical debt)
+
+---
+
+### QUAL-005: COGS Module & Calendar Financials Integration
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 8h  
+**Module:** `server/cogsCalculator.ts`, `server/routers/calendar.ts`  
+**Dependencies:** None  
+**Origin:** Split from QUAL-003 Wave 2
+
+**Problem:** COGS module and Calendar financials have incomplete TODO implementations.
+
+**Objectives:**
+
+1. Complete COGS calculation integration
+2. Add financial tracking to calendar events
+3. Remove or document remaining TODOs
+
+**Deliverables:**
+
+- [ ] COGS module TODOs resolved
+- [ ] Calendar financial integration complete
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+### QUAL-006: VIP Portal Supply CRUD & Dashboard Real Metrics
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 12h  
+**Module:** `client/src/pages/vip-portal/`, `client/src/pages/DashboardPage.tsx`  
+**Dependencies:** None  
+**Origin:** Split from QUAL-003 Wave 3
+
+**Problem:** VIP Portal supply CRUD and Dashboard metrics have placeholder implementations.
+
+**Objectives:**
+
+1. Implement VIP Portal supply CRUD operations
+2. Replace dashboard placeholder metrics with real data
+3. Remove or document remaining TODOs
+
+**Deliverables:**
+
+- [ ] VIP Portal supply CRUD functional
+- [ ] Dashboard metrics pulling real data
+- [ ] All tests passing
+- [ ] Zero TypeScript errors
+
+---
+
+### QUAL-007: Final TODO Audit & Documentation
+
+**Status:** ready  
+**Priority:** LOW  
+**Estimate:** 4h  
+**Module:** Multiple files  
+**Dependencies:** QUAL-005, QUAL-006  
+**Origin:** Split from QUAL-003
+
+**Problem:** 25 non-critical TODOs remain in codebase that need documentation or resolution.
+
+**Objectives:**
+
+1. Audit all remaining TODOs
+2. Document acceptable technical debt
+3. Create tasks for any critical items found
+4. Update TECHNICAL_DEBT.md
+
+**Deliverables:**
+
+- [ ] TODO audit complete
+- [ ] TECHNICAL_DEBT.md updated
+- [ ] Critical items have tasks created
+- [ ] Non-critical items documented
 
 ---
 
@@ -2798,23 +2878,21 @@ logger.error({ err: error }, "Error message");
 
 ### INFRA-012: Deploy TERP Commander Slack Bot
 
-**Status:** ⏳ IN PROGRESS  
-**Priority:** HIGH  
+**Status:** ❌ DEPRECATED (2025-12-30)  
+**Priority:** ~~HIGH~~ N/A  
 **Estimate:** 4-6 hours  
 **Module:** `terp-commander/` (separate repository)  
 **Dependencies:** None  
-**Prompt:** `docs/prompts/INFRA-012.md` (to be created)
 
-**Problem:** TERP Commander Slack bot needs to be deployed as a separate service to avoid lockfile conflicts with main TERP app.
+**Deprecation Note:** This task has been deprecated. The Slack bot approach was abandoned in favor of other solutions. Last activity was November 25, 2025. The terp-commander repository remains but is not actively maintained.
 
-**Current Status:**
+**Historical Context:**
 
-- ✅ Repository created: `EvanTenenbaum/terp-commander` (private)
-- ✅ Code pushed to GitHub
-- ✅ DigitalOcean app created: `2df472a8-2f48-49c7-8de2-16a68d5842d0`
-- ⏳ Deployment in progress (fixing lockfile issue)
-- ❌ Environment variables need to be set
-- ❌ Bot not yet responding in Slack
+- Repository created: `EvanTenenbaum/terp-commander` (private)
+- Code pushed to GitHub (Nov 25, 2025)
+- DigitalOcean app created but never successfully deployed
+- Bot never responded in Slack
+- Decision: Abandoned in favor of direct Manus integration
 
 **Objectives:**
 
