@@ -92,9 +92,8 @@ echo "Phase 1.4: Testing application health..."
 echo ""
 
 # Determine the application URL based on environment
-if [ -n "$RAILWAY_ENVIRONMENT" ]; then
-    APP_URL="https://terp-app-production.up.railway.app"
-elif [ -n "$DIGITALOCEAN_APP_ID" ]; then
+# Note: Railway deployment deprecated - now using DigitalOcean App Platform
+if [ -n "$DIGITALOCEAN_APP_ID" ]; then
     APP_URL="https://terp-app-b9s35.ondigitalocean.app"
 else
     APP_URL="${APP_URL:-http://localhost:3000}"
