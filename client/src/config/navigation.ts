@@ -32,6 +32,8 @@ import {
   Video,
   Truck,
   Kanban,
+  Camera,
+  PackageSearch,
   type LucideIcon,
 } from "lucide-react";
 
@@ -81,6 +83,8 @@ export const navigationItems: NavigationItem[] = [
   // FULFILLMENT - Order processing and inventory
   // ═══════════════════════════════════════════════════════════════
   { name: "Fulfillment", path: "/workflow-queue", icon: PackageCheck, group: "fulfillment" },
+  { name: "Pick & Pack", path: "/pick-pack", icon: PackageSearch, group: "fulfillment" },
+  { name: "Photography", path: "/photography", icon: Camera, group: "fulfillment" },
   { name: "Inventory", path: "/inventory", icon: Package, group: "fulfillment" },
   { name: "Procurement", path: "/purchase-orders", icon: Truck, group: "fulfillment" },
   { name: "Returns", path: "/returns", icon: RefreshCw, group: "fulfillment" },

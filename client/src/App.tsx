@@ -56,6 +56,7 @@ import LeaderboardPage from "@/pages/LeaderboardPage";
 import LiveShoppingPage from "@/pages/LiveShoppingPage";
 import UnifiedSalesPortalPage from "@/pages/UnifiedSalesPortalPage";
 import PickPackPage from "@/pages/PickPackPage";
+import PhotographyPage from "@/pages/PhotographyPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -117,6 +118,7 @@ function Router() {
               <Route path="/sales-portal" component={UnifiedSalesPortalPage} />
               <Route path="/orders" component={Orders} />
               <Route path="/pick-pack" component={PickPackPage} />
+              <Route path="/photography" component={PhotographyPage} />
               <Route path="/orders/create" component={OrderCreatorPage} />
               <Route path="/quotes" component={Quotes} />
               <Route path="/settings/cogs" component={CogsSettingsPage} />

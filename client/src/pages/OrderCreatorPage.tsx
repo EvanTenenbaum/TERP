@@ -43,6 +43,8 @@ import { OrderTotalsPanel } from "@/components/orders/OrderTotalsPanel";
 import { ClientPreview } from "@/components/orders/ClientPreview";
 import { CreditLimitBanner } from "@/components/orders/CreditLimitBanner";
 import { CreditWarningDialog } from "@/components/orders/CreditWarningDialog";
+import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
+import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { useOrderCalculations, calculateLineItem } from "@/hooks/orders/useOrderCalculations";
 
@@ -79,6 +81,9 @@ export default function OrderCreatorPageV2() {
   const [showCreditWarning, setShowCreditWarning] = useState(false);
   const [creditCheckResult, setCreditCheckResult] = useState<CreditCheckResult | null>(null);
   const [pendingOverrideReason, setPendingOverrideReason] = useState<string | undefined>();
+  
+  // Referral tracking state (WS-004)
+  const [referredByClientId, setReferredByClientId] = useState<number | null>(null);
 
   // Queries - handle paginated response
   const { data: clientsData, isLoading: clientsLoading } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -356,6 +361,17 @@ export default function OrderCreatorPageV2() {
               emptyText="No customers found"
             />
           </div>
+          
+          {/* Referral Tracking (WS-004) */}
+          {clientId && (
+            <div className="mt-4">
+              <ReferredBySelector
+                currentClientId={clientId}
+                selectedReferrerId={referredByClientId}
+                onReferrerChange={setReferredByClientId}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

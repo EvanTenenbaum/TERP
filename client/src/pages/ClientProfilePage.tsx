@@ -51,6 +51,7 @@ import { CommentWidget } from "@/components/comments/CommentWidget";
 import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
 import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
 import { BackButton } from "@/components/common/BackButton";
+import { AuditIcon } from "@/components/audit";
 import { useCreditVisibility } from "@/hooks/useCreditVisibility";
 import {
   Edit,
@@ -346,7 +347,10 @@ export default function ClientProfilePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Amount Owed</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1">
+              <AuditIcon type="client" entityId={clientId} fieldName="totalOwed" />
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
             <div

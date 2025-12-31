@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { BulkActionsBar } from "@/components/inventory/BulkActionsBar";
 import { BulkConfirmDialog } from "@/components/inventory/BulkConfirmDialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AuditIcon } from "@/components/audit";
 
 export default function Inventory() {
   const [, setLocation] = useLocation();
@@ -727,7 +728,10 @@ export default function Inventory() {
                       </TableCell>
                       <TableCell>{getStatusBadge(batch.batchStatus)}</TableCell>
                       <TableCell className="text-right font-mono">
-                        {parseFloat(batch.onHandQty).toFixed(2)}
+                        <div className="flex items-center justify-end gap-1">
+                          {parseFloat(batch.onHandQty).toFixed(2)}
+                          <AuditIcon type="inventory" entityId={batch.id} fieldName="onHandQty" />
+                        </div>
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {parseFloat(batch.reservedQty).toFixed(2)}
