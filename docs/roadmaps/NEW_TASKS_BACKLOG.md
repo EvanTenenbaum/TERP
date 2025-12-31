@@ -173,7 +173,7 @@ Implement the fixes identified in the mobile responsiveness review (QA-049) resp
 
 ### ST-020: Add Drizzle Schema to TypeScript Checking
 
-**Priority:** P0 | **Status:** In Progress | **Effort:** 5min
+**Priority:** P0 | **Status:** ✅ Complete | **Effort:** 5min
 The `drizzle/` folder is excluded from `tsconfig.json` includes, meaning schema TypeScript errors are never caught during development or CI. This is the ROOT CAUSE of ST-021 and ST-022.
 
 **Fix:** Add `"drizzle/**/*"` to tsconfig.json includes array.
@@ -182,7 +182,7 @@ The `drizzle/` folder is excluded from `tsconfig.json` includes, meaning schema 
 
 ### ST-021: Fix Malformed Soft Delete Column Definitions
 
-**Priority:** P0 | **Status:** In Progress | **Effort:** 1-2h
+**Priority:** P0 | **Status:** ✅ Complete | **Effort:** 1-2h
 45+ tables have `deletedAt` columns incorrectly placed inside varchar/decimal/references option objects instead of as sibling columns. This was caused by a botched merge of the ST-013 soft delete feature.
 
 **Impact:** Soft delete columns are NOT actually being created in these tables. Soft delete functionality is broken.
@@ -204,7 +204,7 @@ deletedAt: timestamp("deleted_at"), // CORRECT - sibling column
 
 ### ST-022: Remove Broken Index Definitions
 
-**Priority:** P0 | **Status:** In Progress | **Effort:** 15min
+**Priority:** P0 | **Status:** ✅ Complete | **Effort:** 15min
 Three tables have index definitions referencing non-existent columns (copy-paste errors):
 
 | Table | Broken Index | Non-Existent Column |
