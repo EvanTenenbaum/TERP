@@ -1,5 +1,5 @@
 import { mysqlTable, int, boolean, json, timestamp, varchar, text, index, decimal, unique } from "drizzle-orm/mysql-core";
-import { clients } from "./schema";
+import { clients, users } from "./schema";
 
 /**
  * VIP Portal Configurations
@@ -278,3 +278,62 @@ export const vipPortalAuth = mysqlTable("vip_portal_auth", {
 
 export type VipPortalAuth = typeof vipPortalAuth.$inferSelect;
 export type InsertVipPortalAuth = typeof vipPortalAuth.$inferInsert;
+
+// ============================================================================
+// ADMIN IMPERSONATION AUDIT SCHEMA (FEATURE-012)
+// ============================================================================
+
+/**
+ * Admin Impersonation Sessions
+ * Tracks all admin impersonation sessions for audit and revocation purposes
+ */
+export const adminImpersonationSessions = mysqlTable("admin_impersonation_sessions", {
+  id: int("id").primaryKey().autoincrement(),
+  sessionGuid: varchar("session_guid", { length: 36 }).notNull().unique(),
+  adminUserId: int("admin_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  startAt: timestamp("start_at").defaultNow().notNull(),
+  endAt: timestamp("end_at"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: varchar("user_agent", { length: 500 }),
+  status: varchar("status", { length: 20 }).notNull().default("ACTIVE"), // ACTIVE, ENDED, REVOKED, EXPIRED
+  revokedBy: int("revoked_by").references(() => users.id),
+  revokedAt: timestamp("revoked_at"),
+  revokeReason: varchar("revoke_reason", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  adminUserIdIdx: index("idx_admin_imp_sessions_admin_user_id").on(table.adminUserId),
+  clientIdIdx: index("idx_admin_imp_sessions_client_id").on(table.clientId),
+  statusIdx: index("idx_admin_imp_sessions_status").on(table.status),
+  sessionGuidIdx: index("idx_admin_imp_sessions_guid").on(table.sessionGuid),
+}));
+
+export type AdminImpersonationSession = typeof adminImpersonationSessions.$inferSelect;
+export type InsertAdminImpersonationSession = typeof adminImpersonationSessions.$inferInsert;
+
+/**
+ * Admin Impersonation Actions
+ * Logs all significant actions taken during an impersonation session
+ */
+export const adminImpersonationActions = mysqlTable("admin_impersonation_actions", {
+  id: int("id").primaryKey().autoincrement(),
+  sessionId: int("session_id").notNull().references(() => adminImpersonationSessions.id, { onDelete: "cascade" }),
+  actionType: varchar("action_type", { length: 100 }).notNull(), // VIEW_PAGE, UPDATE_CONFIG, CREATE_ORDER, etc.
+  actionPath: varchar("action_path", { length: 255 }), // e.g., /vip-portal/ar
+  actionMethod: varchar("action_method", { length: 10 }), // GET, POST, PUT, DELETE
+  actionDetails: json("action_details").$type<{
+    description?: string;
+    entityType?: string;
+    entityId?: number;
+    changes?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  sessionIdIdx: index("idx_admin_imp_actions_session_id").on(table.sessionId),
+  actionTypeIdx: index("idx_admin_imp_actions_type").on(table.actionType),
+  createdAtIdx: index("idx_admin_imp_actions_created_at").on(table.createdAt),
+}));
+
+export type AdminImpersonationAction = typeof adminImpersonationActions.$inferSelect;
+export type InsertAdminImpersonationAction = typeof adminImpersonationActions.$inferInsert;

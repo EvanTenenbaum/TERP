@@ -16,11 +16,16 @@ import {
   clientPriceAlerts,
   batches,
   products,
+  adminImpersonationSessions,
+  adminImpersonationActions,
+  type InsertAdminImpersonationSession,
+  type InsertAdminImpersonationAction,
 } from "../../drizzle/schema";
 import * as pricingEngine from "../pricingEngine";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
+import { randomUUID } from "crypto";
 
 // ============================================================================
 // CLIENT MANAGEMENT SERVICES
@@ -239,7 +244,7 @@ export async function createImpersonationSession(clientId: number, adminUserId?:
 
   // Generate impersonation session token (prefixed to identify as impersonation)
   // This token is NOT stored in the database - it's validated by prefix and expiry
-  const sessionToken = `imp_${clientId}_${Date.now()}_${crypto.randomUUID()}`;
+  const sessionToken = `imp_${clientId}_${Date.now()}_${randomUUID()}`;
   const sessionExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours for impersonation
 
   // Log the impersonation for audit purposes
@@ -952,4 +957,467 @@ export async function deactivateClientPriceAlert(alertId: number) {
   await deactivatePriceAlert(alertId, alert.clientId);
 
   return { success: true };
+}
+
+// ============================================================================
+// ADMIN IMPERSONATION AUDIT SERVICES (FEATURE-012)
+// ============================================================================
+
+
+
+export interface CreateImpersonationSessionOptions {
+  adminUserId: number;
+  clientId: number;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+/**
+ * Creates a new impersonation session with full audit tracking.
+ * Returns a one-time-use token that must be exchanged for a portal session.
+ */
+export async function createAuditedImpersonationSession(options: CreateImpersonationSessionOptions) {
+  const { adminUserId, clientId, ipAddress, userAgent } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  // Verify client exists and has VIP portal enabled
+  const client = await db.query.clients.findFirst({
+    where: eq(clients.id, clientId),
+  });
+
+  if (!client) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Client not found" });
+  }
+
+  if (!client.vipPortalEnabled) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "VIP Portal is not enabled for this client" });
+  }
+
+  // Check if auth record exists
+  const authRecord = await db.query.vipPortalAuth.findFirst({
+    where: eq(vipPortalAuth.clientId, clientId),
+  });
+
+  if (!authRecord) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "VIP Portal authentication not configured for this client" });
+  }
+
+  // Generate a unique session GUID
+  const sessionGuid = randomUUID();
+
+  // Create the session record in the database
+  const sessionData: InsertAdminImpersonationSession = {
+    sessionGuid,
+    adminUserId,
+    clientId,
+    ipAddress: ipAddress || null,
+    userAgent: userAgent || null,
+    status: "ACTIVE",
+  };
+
+  await db.insert(adminImpersonationSessions).values(sessionData);
+
+  // Generate a one-time impersonation token (valid for 5 minutes to exchange)
+  // Format: imp_ot_{sessionGuid}_{timestamp}
+  const oneTimeToken = `imp_ot_${sessionGuid}_${Date.now()}`;
+  const tokenExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+  console.log(`[VIP Portal Audit] Admin ${adminUserId} started impersonation session ${sessionGuid} for client ${clientId} (${client.name})`);
+
+  return {
+    oneTimeToken,
+    tokenExpiresAt,
+    sessionGuid,
+    clientId,
+    clientName: client.name,
+  };
+}
+
+export interface ExchangeImpersonationTokenOptions {
+  oneTimeToken: string;
+}
+
+/**
+ * Exchanges a one-time impersonation token for a full portal session.
+ * This is called from the VIP portal auth page.
+ */
+export async function exchangeImpersonationToken(options: ExchangeImpersonationTokenOptions) {
+  const { oneTimeToken } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  // Parse the one-time token
+  if (!oneTimeToken.startsWith("imp_ot_")) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid impersonation token" });
+  }
+
+  const parts = oneTimeToken.split("_");
+  if (parts.length < 4) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid impersonation token format" });
+  }
+
+  const sessionGuid = parts[2];
+  const timestamp = parseInt(parts[3], 10);
+
+  // Check if token has expired (5 minute window)
+  if (Date.now() - timestamp > 5 * 60 * 1000) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Impersonation token has expired" });
+  }
+
+  // Find the session
+  const session = await db.query.adminImpersonationSessions.findFirst({
+    where: eq(adminImpersonationSessions.sessionGuid, sessionGuid),
+  });
+
+  if (!session) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Impersonation session not found" });
+  }
+
+  if (session.status !== "ACTIVE") {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: `Impersonation session is ${session.status.toLowerCase()}` });
+  }
+
+  // Get client info
+  const client = await db.query.clients.findFirst({
+    where: eq(clients.id, session.clientId),
+  });
+
+  if (!client || !client.vipPortalEnabled) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Client portal is no longer available" });
+  }
+
+  // Generate the actual session token for the VIP portal
+  // This token will be stored in sessionStorage and validated on each request
+  const sessionToken = `imp_${session.clientId}_${Date.now()}_${sessionGuid}`;
+  const sessionExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
+
+  // Log the token exchange action
+  await logImpersonationAction({
+    sessionId: session.id,
+    actionType: "TOKEN_EXCHANGE",
+    actionPath: "/vip-portal/auth/impersonate",
+    actionMethod: "POST",
+    actionDetails: { description: "One-time token exchanged for session token" },
+  });
+
+  return {
+    sessionToken,
+    sessionExpiresAt,
+    sessionGuid,
+    clientId: session.clientId,
+    clientName: client.name,
+    isImpersonation: true,
+  };
+}
+
+export interface LogImpersonationActionOptions {
+  sessionId: number;
+  actionType: string;
+  actionPath?: string;
+  actionMethod?: string;
+  actionDetails?: Record<string, unknown>;
+}
+
+/**
+ * Logs an action taken during an impersonation session.
+ */
+export async function logImpersonationAction(options: LogImpersonationActionOptions) {
+  const { sessionId, actionType, actionPath, actionMethod, actionDetails } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  const actionData: InsertAdminImpersonationAction = {
+    sessionId,
+    actionType,
+    actionPath: actionPath || null,
+    actionMethod: actionMethod || null,
+    actionDetails: actionDetails || null,
+  };
+
+  await db.insert(adminImpersonationActions).values(actionData);
+
+  return { success: true };
+}
+
+export interface LogImpersonationActionByGuidOptions {
+  sessionGuid: string;
+  actionType: string;
+  actionPath?: string;
+  actionMethod?: string;
+  actionDetails?: Record<string, unknown>;
+}
+
+/**
+ * Logs an action by session GUID (extracted from the session token).
+ */
+export async function logImpersonationActionByGuid(options: LogImpersonationActionByGuidOptions) {
+  const { sessionGuid, actionType, actionPath, actionMethod, actionDetails } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  // Find the session by GUID
+  const session = await db.query.adminImpersonationSessions.findFirst({
+    where: eq(adminImpersonationSessions.sessionGuid, sessionGuid),
+  });
+
+  if (!session) {
+    // Don't throw - just log a warning and return
+    console.warn(`[VIP Portal Audit] Could not find session ${sessionGuid} to log action ${actionType}`);
+    return { success: false, reason: "Session not found" };
+  }
+
+  return await logImpersonationAction({
+    sessionId: session.id,
+    actionType,
+    actionPath,
+    actionMethod,
+    actionDetails,
+  });
+}
+
+export interface EndImpersonationSessionOptions {
+  sessionGuid: string;
+}
+
+/**
+ * Ends an impersonation session normally.
+ */
+export async function endImpersonationSession(options: EndImpersonationSessionOptions) {
+  const { sessionGuid } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  const session = await db.query.adminImpersonationSessions.findFirst({
+    where: eq(adminImpersonationSessions.sessionGuid, sessionGuid),
+  });
+
+  if (!session) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Impersonation session not found" });
+  }
+
+  if (session.status !== "ACTIVE") {
+    return { success: true, alreadyEnded: true };
+  }
+
+  await db.update(adminImpersonationSessions)
+    .set({ 
+      status: "ENDED",
+      endAt: new Date(),
+    })
+    .where(eq(adminImpersonationSessions.sessionGuid, sessionGuid));
+
+  // Log the session end
+  await logImpersonationAction({
+    sessionId: session.id,
+    actionType: "SESSION_END",
+    actionDetails: { description: "Session ended by user" },
+  });
+
+  console.log(`[VIP Portal Audit] Impersonation session ${sessionGuid} ended`);
+
+  return { success: true };
+}
+
+export interface RevokeImpersonationSessionOptions {
+  sessionGuid: string;
+  revokedByUserId: number;
+  reason?: string;
+}
+
+/**
+ * Revokes an impersonation session (admin action).
+ */
+export async function revokeImpersonationSession(options: RevokeImpersonationSessionOptions) {
+  const { sessionGuid, revokedByUserId, reason } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  const session = await db.query.adminImpersonationSessions.findFirst({
+    where: eq(adminImpersonationSessions.sessionGuid, sessionGuid),
+  });
+
+  if (!session) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Impersonation session not found" });
+  }
+
+  if (session.status !== "ACTIVE") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: `Session is already ${session.status.toLowerCase()}` });
+  }
+
+  await db.update(adminImpersonationSessions)
+    .set({ 
+      status: "REVOKED",
+      endAt: new Date(),
+      revokedBy: revokedByUserId,
+      revokedAt: new Date(),
+      revokeReason: reason || null,
+    })
+    .where(eq(adminImpersonationSessions.sessionGuid, sessionGuid));
+
+  // Log the revocation
+  await logImpersonationAction({
+    sessionId: session.id,
+    actionType: "SESSION_REVOKED",
+    actionDetails: { 
+      description: "Session revoked by admin",
+      revokedBy: revokedByUserId,
+      reason: reason || "No reason provided",
+    },
+  });
+
+  console.log(`[VIP Portal Audit] Impersonation session ${sessionGuid} revoked by user ${revokedByUserId}`);
+
+  return { success: true };
+}
+
+export interface GetActiveImpersonationSessionsOptions {
+  adminUserId?: number;
+  clientId?: number;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Gets active impersonation sessions for monitoring.
+ */
+export async function getActiveImpersonationSessions(options: GetActiveImpersonationSessionsOptions = {}) {
+  const { adminUserId, clientId, limit = 50, offset = 0 } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  const conditions = [eq(adminImpersonationSessions.status, "ACTIVE")];
+  
+  if (adminUserId) {
+    conditions.push(eq(adminImpersonationSessions.adminUserId, adminUserId));
+  }
+  
+  if (clientId) {
+    conditions.push(eq(adminImpersonationSessions.clientId, clientId));
+  }
+
+  const sessions = await db.query.adminImpersonationSessions.findMany({
+    where: and(...conditions),
+    limit,
+    offset,
+    orderBy: (sessions, { desc }) => [desc(sessions.startAt)],
+  });
+
+  return { sessions };
+}
+
+export interface GetImpersonationSessionHistoryOptions {
+  sessionGuid?: string;
+  adminUserId?: number;
+  clientId?: number;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Gets impersonation session history for audit purposes.
+ */
+export async function getImpersonationSessionHistory(options: GetImpersonationSessionHistoryOptions = {}) {
+  const { sessionGuid, adminUserId, clientId, limit = 50, offset = 0 } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  const conditions = [];
+  
+  if (sessionGuid) {
+    conditions.push(eq(adminImpersonationSessions.sessionGuid, sessionGuid));
+  }
+  
+  if (adminUserId) {
+    conditions.push(eq(adminImpersonationSessions.adminUserId, adminUserId));
+  }
+  
+  if (clientId) {
+    conditions.push(eq(adminImpersonationSessions.clientId, clientId));
+  }
+
+  const sessions = await db.query.adminImpersonationSessions.findMany({
+    where: conditions.length > 0 ? and(...conditions) : undefined,
+    limit,
+    offset,
+    orderBy: (sessions, { desc }) => [desc(sessions.startAt)],
+  });
+
+  return { sessions };
+}
+
+export interface GetImpersonationSessionActionsOptions {
+  sessionId: number;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Gets actions for a specific impersonation session.
+ */
+export async function getImpersonationSessionActions(options: GetImpersonationSessionActionsOptions) {
+  const { sessionId, limit = 100, offset = 0 } = options;
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  const actions = await db.query.adminImpersonationActions.findMany({
+    where: eq(adminImpersonationActions.sessionId, sessionId),
+    limit,
+    offset,
+    orderBy: (actions, { asc }) => [asc(actions.createdAt)],
+  });
+
+  return { actions };
+}
+
+/**
+ * Validates an impersonation session token and returns session info.
+ * Used by the VIP portal to verify the session is still valid.
+ */
+export async function validateImpersonationSession(sessionToken: string) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+  // Parse the session token: imp_{clientId}_{timestamp}_{sessionGuid}
+  if (!sessionToken.startsWith("imp_")) {
+    return { valid: false, reason: "Invalid token format" };
+  }
+
+  const parts = sessionToken.split("_");
+  if (parts.length < 4) {
+    return { valid: false, reason: "Invalid token format" };
+  }
+
+  const clientId = parseInt(parts[1], 10);
+  const timestamp = parseInt(parts[2], 10);
+  const sessionGuid = parts[3];
+
+  // Check if token has expired (2 hours)
+  if (Date.now() - timestamp > 2 * 60 * 60 * 1000) {
+    return { valid: false, reason: "Session expired" };
+  }
+
+  // Find the session
+  const session = await db.query.adminImpersonationSessions.findFirst({
+    where: eq(adminImpersonationSessions.sessionGuid, sessionGuid),
+  });
+
+  if (!session) {
+    return { valid: false, reason: "Session not found" };
+  }
+
+  if (session.status !== "ACTIVE") {
+    return { valid: false, reason: `Session is ${session.status.toLowerCase()}` };
+  }
+
+  if (session.clientId !== clientId) {
+    return { valid: false, reason: "Client ID mismatch" };
+  }
+
+  return { 
+    valid: true, 
+    session,
+    sessionGuid,
+    clientId,
+  };
 }

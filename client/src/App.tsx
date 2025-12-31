@@ -46,6 +46,8 @@ import Help from "@/pages/Help";
 import VIPPortalConfigPage from "@/pages/VIPPortalConfigPage";
 import VIPLogin from "@/pages/vip-portal/VIPLogin";
 import VIPDashboard from "@/pages/vip-portal/VIPDashboard";
+import ImpersonatePage from "@/pages/vip-portal/auth/ImpersonatePage";
+import SessionEndedPage from "@/pages/vip-portal/SessionEndedPage";
 import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
 import { InboxPage } from "@/pages/InboxPage";
@@ -71,6 +73,9 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/vip-portal/login" component={VIPLogin} />
       <Route path="/vip-portal/dashboard" component={VIPDashboard} />
+      <Route path="/vip-portal/auth/impersonate" component={ImpersonatePage} />
+      <Route path="/vip-portal/session-ended" component={SessionEndedPage} />
+      <Route path="/vip-portal" component={VIPDashboard} />
 
       {/* Protected routes - wrapped in AppShell */}
       <Route>

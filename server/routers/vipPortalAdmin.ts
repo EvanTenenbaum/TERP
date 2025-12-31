@@ -346,4 +346,126 @@ export const vipPortalAdminRouter = router({
         }),
     }),
   }),
+
+  // ============================================================================
+  // ADMIN IMPERSONATION AUDIT (FEATURE-012)
+  // ============================================================================
+
+  audit: router({
+    // Create a new audited impersonation session
+    createImpersonationSession: protectedProcedure
+      .use(requirePermission("admin:impersonate"))
+      .input(z.object({
+        clientId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await vipPortalAdminService.createAuditedImpersonationSession({
+          adminUserId: ctx.user!.id,
+          clientId: input.clientId,
+          ipAddress: ctx.req?.ip || undefined,
+          userAgent: ctx.req?.headers?.['user-agent'] || undefined,
+        });
+      }),
+
+    // Log an action during impersonation
+    logAction: protectedProcedure
+      .use(requirePermission("admin:impersonate"))
+      .input(z.object({
+        sessionGuid: z.string(),
+        actionType: z.string(),
+        actionPath: z.string().optional(),
+        actionMethod: z.string().optional(),
+        actionDetails: z.record(z.unknown()).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await vipPortalAdminService.logImpersonationActionByGuid({
+          sessionGuid: input.sessionGuid,
+          actionType: input.actionType,
+          actionPath: input.actionPath,
+          actionMethod: input.actionMethod,
+          actionDetails: input.actionDetails,
+        });
+      }),
+
+    // End an impersonation session
+    endSession: protectedProcedure
+      .use(requirePermission("admin:impersonate"))
+      .input(z.object({
+        sessionGuid: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        return await vipPortalAdminService.endImpersonationSession({
+          sessionGuid: input.sessionGuid,
+        });
+      }),
+
+    // Revoke an impersonation session (super-admin action)
+    revokeSession: protectedProcedure
+      .use(requirePermission("admin:impersonate"))
+      .input(z.object({
+        sessionGuid: z.string(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await vipPortalAdminService.revokeImpersonationSession({
+          sessionGuid: input.sessionGuid,
+          revokedByUserId: ctx.user!.id,
+          reason: input.reason,
+        });
+      }),
+
+    // Get active impersonation sessions
+    getActiveSessions: protectedProcedure
+      .use(requirePermission("admin:impersonate"))
+      .input(z.object({
+        adminUserId: z.number().optional(),
+        clientId: z.number().optional(),
+        limit: z.number().optional().default(50),
+        offset: z.number().optional().default(0),
+      }))
+      .query(async ({ input }) => {
+        return await vipPortalAdminService.getActiveImpersonationSessions({
+          adminUserId: input.adminUserId,
+          clientId: input.clientId,
+          limit: input.limit,
+          offset: input.offset,
+        });
+      }),
+
+    // Get session history for audit
+    getSessionHistory: protectedProcedure
+      .use(requirePermission("admin:impersonate"))
+      .input(z.object({
+        sessionGuid: z.string().optional(),
+        adminUserId: z.number().optional(),
+        clientId: z.number().optional(),
+        limit: z.number().optional().default(50),
+        offset: z.number().optional().default(0),
+      }))
+      .query(async ({ input }) => {
+        return await vipPortalAdminService.getImpersonationSessionHistory({
+          sessionGuid: input.sessionGuid,
+          adminUserId: input.adminUserId,
+          clientId: input.clientId,
+          limit: input.limit,
+          offset: input.offset,
+        });
+      }),
+
+    // Get actions for a specific session
+    getSessionActions: protectedProcedure
+      .use(requirePermission("admin:impersonate"))
+      .input(z.object({
+        sessionId: z.number(),
+        limit: z.number().optional().default(100),
+        offset: z.number().optional().default(0),
+      }))
+      .query(async ({ input }) => {
+        return await vipPortalAdminService.getImpersonationSessionActions({
+          sessionId: input.sessionId,
+          limit: input.limit,
+          offset: input.offset,
+        });
+      }),
+  }),
 });

@@ -5035,6 +5035,13 @@ export {
   type InsertClientDraftInterest,
   type ClientPriceAlert,
   type InsertClientPriceAlert,
+  // Admin Impersonation Audit Tables (FEATURE-012)
+  adminImpersonationSessions,
+  adminImpersonationActions,
+  type AdminImpersonationSession,
+  type InsertAdminImpersonationSession,
+  type AdminImpersonationAction,
+  type InsertAdminImpersonationAction,
 } from "./schema-vip-portal";
 
 // ============================================================================
