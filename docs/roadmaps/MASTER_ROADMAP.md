@@ -2,9 +2,11 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.10
-**Last Updated:** December 30, 2025
+**Version:** 2.11  
+**Last Updated:** December 30, 2025  
 **Status:** Active
+
+> 📝 **NEW:** Full specifications for 24 tasks are now available in [`docs/specs/`](../specs/README.md)
 
 ---
 
@@ -1515,7 +1517,8 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 **Estimate:** 80h (2 weeks)  
 **Module:** Orders, UI Components  
 **Dependencies:** None  
-**Prompt:** `docs/prompts/FEATURE-003.md` (to be created)
+**Prompt:** `docs/prompts/FEATURE-003.md` (to be created)  
+**Spec:** [📋 Full Specification](../specs/FEATURE-003-SPEC.md)
 
 **Problem:** Customers need a real-time shopping experience in the showroom, with the ability to build orders interactively and negotiate prices on specific items before finalizing the purchase.
 
@@ -3587,6 +3590,7 @@ logger.error({ err: error }, "Error message");
   - Phase: 3+
   - Priority: MEDIUM
   - Estimate: 2-3 weeks (investigation) + 4-6 weeks (implementation)
+  - Spec: [📋 Full Specification](../specs/FEATURE-005-SPEC.md)
   - Context: Automated sticker + QR code generation for individual units to track during intake, shopping, order prep, and shipping
   - **Scope:**
     - **Investigation Phase:**
@@ -3621,6 +3625,7 @@ logger.error({ err: error }, "Error message");
   - Phase: 3+
   - Priority: MEDIUM
   - Estimate: 3-4 weeks
+  - Spec: [📋 Full Specification](../specs/FEATURE-006-SPEC.md)
   - Context: Allow clients to book appointments via VIP Portal with configurable approval workflows and notifications
   - **Scope:**
     - **Booking Interface (VIP Portal):**
@@ -3682,6 +3687,7 @@ logger.error({ err: error }, "Error message");
   - Phase: 3+
   - Priority: MEDIUM
   - Estimate: 3-4 weeks
+  - Spec: [📋 Full Specification](../specs/FEATURE-008-SPEC.md)
   - Context: Improve and standardize filtering and sorting capabilities across all list views in the system
   - **Scope:**
     - **Filter Infrastructure:**
@@ -3766,6 +3772,7 @@ logger.error({ err: error }, "Error message");
   - Phase: 3+
   - Priority: MEDIUM
   - Estimate: 4-6 weeks
+  - Spec: [📋 Full Specification](../specs/FEATURE-010-SPEC.md)
   - Context: Link accounting with calendar for payment scheduling, cash flow forecasting, and variance analysis
   - **Scope:**
     - **Scheduled Payments View:**
@@ -3854,6 +3861,7 @@ logger.error({ err: error }, "Error message");
   - Phase: 3+
   - Priority: MEDIUM
   - Estimate: 2-3 weeks (Phase 1) + 1-2 weeks (Phase 2)
+  - Spec: [📋 Full Specification](../specs/FEATURE-020-SPEC.md)
   - Context: Revamp the tagging system for products with improved UX during intake and automatic tag assignment rules
   - **Phase 1: Tags Revamp (Core)**
     - **Tag Management:**
@@ -3956,6 +3964,7 @@ logger.error({ err: error }, "Error message");
 - **Priority:** HIGH
 - **Estimate:** 3-4 weeks
 - **Dependencies:** None (foundation for other features)
+- **Spec:** [📋 Full Specification](../specs/FEATURE-011-SPEC.md)
 - **Context:** Create a single source of truth for live inventory that powers all sales experiences
 - **Scope:**
   - **Core Catalogue Engine:**
@@ -7616,32 +7625,32 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 ### 🔴 P0 - CRITICAL
 
-| Task | Description | Priority | Estimate | Module | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| WS-001 | **Quick Action: Receive Client Payment (Cash Drop-off)** | CRITICAL | 12h | Accounting | Not Started |
-| WS-002 | **Quick Action: Pay Vendor (Cash Out)** | CRITICAL | 12h | Accounting | Not Started |
-| WS-003 | **Pick & Pack Module: Group Bagging/Packing Action** | CRITICAL | 20h | Pick & Pack | Not Started |
-| WS-004 | **Sales: Simultaneous Multi-Order & Referral Credit System** | CRITICAL | 40h | Sales/Credit | Not Started |
-| WS-005 | **No Black Box Audit Trail (System-wide)** | CRITICAL | 30h | System Core | Not Started |
+| Task | Description | Priority | Estimate | Module | Status | Spec |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| WS-001 | **Quick Action: Receive Client Payment (Cash Drop-off)** | CRITICAL | 8h | Accounting | Not Started | [📋 Spec](../specs/WS-001-SPEC.md) |
+| WS-002 | **Quick Action: Pay Vendor (Cash Out)** | CRITICAL | 8h | Accounting | Not Started | [📋 Spec](../specs/WS-002-SPEC.md) |
+| WS-003 | **Pick & Pack Module: Group Bagging/Packing Action** | CRITICAL | 24h | Pick & Pack | Not Started | [📋 Spec](../specs/WS-003-SPEC.md) |
+| WS-004 | **Sales: Simultaneous Multi-Order & Referral Credit System** | CRITICAL | 40h | Sales/Credit | Not Started | [📋 Spec](../specs/WS-004-SPEC.md) |
+| WS-005 | **No Black Box Audit Trail (System-wide)** | CRITICAL | 30h | System Core | Not Started | [📋 Spec](../specs/WS-005-SPEC.md) |
 
 ### 🟡 P1 - HIGH PRIORITY
 
-| Task | Description | Priority | Estimate | Module | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| WS-006 | **Immediate Tab Screenshot/Receipt** | HIGH | 16h | Accounting/Client Profile | Not Started |
-| WS-007 | **Complex Flower Intake Flow** | HIGH | 24h | Inventory/Accounting | Not Started |
-| WS-008 | **Low Stock & Needs-Based Alerts (VIP Portal Integration)** | HIGH | 20h | Inventory/VIP Portal | Not Started |
-| WS-009 | **Pick & Pack Module: Inventory Movement SOP Flow** | HIGH | 16h | Pick & Pack | Not Started |
-| WS-010 | **Sales: Line-Item Price Override with Note** | HIGH | 12h | Sales | Not Started |
+| Task | Description | Priority | Estimate | Module | Status | Spec |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| WS-006 | **Immediate Tab Screenshot/Receipt** | HIGH | 12h | Accounting/Client Profile | Not Started | [📋 Spec](../specs/WS-006-SPEC.md) |
+| WS-007 | **Complex Flower Intake Flow** | HIGH | 20h | Inventory/Accounting | Not Started | [📋 Spec](../specs/WS-007-SPEC.md) |
+| WS-008 | **Low Stock & Needs-Based Alerts (VIP Portal Integration)** | HIGH | 16h | Inventory/VIP Portal | Not Started | [📋 Spec](../specs/WS-008-SPEC.md) |
+| WS-009 | **Pick & Pack Module: Inventory Movement SOP Flow** | HIGH | 20h | Pick & Pack | Not Started | [📋 Spec](../specs/WS-009-SPEC.md) |
+| WS-010 | **Photography Module** | HIGH | 16h | Inventory | Not Started | [📋 Spec](../specs/WS-010-SPEC.md) |
 
 ### 🟠 P2 - MEDIUM PRIORITY
 
-| Task | Description | Priority | Estimate | Module | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| WS-011 | **Photography Module: Simple Image Upload & Management** | MEDIUM | 16h | Inventory | Not Started |
-| WS-012 | **Vendor "Harvesting Again" Reminder** | MEDIUM | 8h | Vendor/Calendar | Not Started |
-| WS-013 | **Simple Task Management (Non-Inventory SOPs)** | MEDIUM | 12h | General Utility | Not Started |
-| WS-014 | **Sales: Quick Customer Creation** | MEDIUM | 8h | Sales | Not Started |
-| WS-015 | **Sales: Customer Wishlist Field** | MEDIUM | 4h | Sales | Not Started |
+| Task | Description | Priority | Estimate | Module | Status | Spec |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| WS-011 | **Sales: Quick Customer Creation** | MEDIUM | 4h | Sales | Not Started | [📋 Spec](../specs/WS-011-SPEC.md) |
+| WS-012 | **Customer Preferences & Purchase History** | MEDIUM | 16h | Sales/CRM | Not Started | [📋 Spec](../specs/WS-012-SPEC.md) |
+| WS-013 | **Simple Task Management (Non-Inventory SOPs)** | MEDIUM | 12h | General Utility | Not Started | [📋 Spec](../specs/WS-013-SPEC.md) |
+| WS-014 | **Vendor "Harvesting Again" Reminder** | MEDIUM | 8h | Vendor/Calendar | Not Started | [📋 Spec](../specs/WS-014-SPEC.md) |
+| WS-015 | **Sales: Customer Wishlist Field** | MEDIUM | 4h | Sales | Not Started | - |
 
 ---
