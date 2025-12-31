@@ -302,20 +302,52 @@ export function validateConfiguration(config: SystemConfiguration): string[] {
 
 /**
  * Feature flag helpers
+ * 
+ * @deprecated These legacy feature flags are deprecated and will be removed in a future version.
+ * Please migrate to the new database-driven feature flag system:
+ * 
+ * ```typescript
+ * // Old (deprecated):
+ * import { FeatureFlags } from "./configurationManager";
+ * if (FeatureFlags.isCreditManagementEnabled()) { ... }
+ * 
+ * // New (recommended):
+ * import { featureFlagService } from "./services/featureFlagService";
+ * if (await featureFlagService.isEnabled("credit-management", { userOpenId })) { ... }
+ * ```
+ * 
+ * Migration mapping:
+ * - enableCreditManagement -> "credit-management"
+ * - enableBadDebtWriteOff -> "bad-debt-write-off"
+ * - enableAutomaticGLPosting -> "automatic-gl-posting"
+ * - enableCOGSCalculation -> "cogs-calculation"
+ * - enableInventoryTracking -> "inventory-tracking"
+ * 
+ * The new system provides:
+ * - Database-driven configuration (no code changes needed)
+ * - Role-based overrides (different features for different roles)
+ * - User-specific overrides (beta testing, gradual rollout)
+ * - Audit logging (who changed what, when)
+ * - Dependency management (feature A requires feature B)
  */
 export const FeatureFlags = {
+  /** @deprecated Use featureFlagService.isEnabled("credit-management") instead */
   isCreditManagementEnabled: (): boolean => 
     currentConfig.features.enableCreditManagement,
   
+  /** @deprecated Use featureFlagService.isEnabled("bad-debt-write-off") instead */
   isBadDebtWriteOffEnabled: (): boolean => 
     currentConfig.features.enableBadDebtWriteOff,
   
+  /** @deprecated Use featureFlagService.isEnabled("automatic-gl-posting") instead */
   isAutomaticGLPostingEnabled: (): boolean => 
     currentConfig.features.enableAutomaticGLPosting,
   
+  /** @deprecated Use featureFlagService.isEnabled("cogs-calculation") instead */
   isCOGSCalculationEnabled: (): boolean => 
     currentConfig.features.enableCOGSCalculation,
   
+  /** @deprecated Use featureFlagService.isEnabled("inventory-tracking") instead */
   isInventoryTrackingEnabled: (): boolean => 
     currentConfig.features.enableInventoryTracking,
 };

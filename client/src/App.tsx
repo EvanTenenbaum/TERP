@@ -29,6 +29,7 @@ import Orders from "@/pages/Orders";
 import Quotes from "@/pages/Quotes";
 import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
+import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
 // DEPRECATED: VendorsPage and VendorProfilePage are replaced by redirects
@@ -122,6 +123,7 @@ function Router() {
               <Route path="/orders/create" component={OrderCreatorPage} />
               <Route path="/quotes" component={Quotes} />
               <Route path="/settings/cogs" component={CogsSettingsPage} />
+              <Route path="/settings/feature-flags" component={FeatureFlagsPage} />
               <Route path="/settings" component={Settings} />
               <Route path="/credit-settings" component={CreditSettingsPage} />
               <Route path="/needs" component={NeedsManagementPage} />

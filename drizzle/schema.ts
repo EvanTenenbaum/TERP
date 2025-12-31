@@ -5605,3 +5605,8 @@ export const vendorHarvestRemindersRelations = relations(vendorHarvestReminders,
 // ============================================================================
 export * from "./schema-live-shopping";
 
+
+// ============================================================================
+// FEATURE FLAGS MODULE
+// ============================================================================
+export * from "./schema-feature-flags";
