@@ -522,6 +522,36 @@ export async function runAutoMigrations() {
       }
     }
 
+    // FIX-002: Add version column to batches table for optimistic locking (DATA-005)
+    try {
+      await db.execute(
+        sql`ALTER TABLE batches ADD COLUMN version INT NOT NULL DEFAULT 1`
+      );
+      console.log("  ✅ Added version column to batches");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  batches.version already exists");
+      } else {
+        console.log("  ⚠️  batches.version:", errMsg);
+      }
+    }
+
+    // FIX-002: Add version column to orders table for optimistic locking (DATA-005)
+    try {
+      await db.execute(
+        sql`ALTER TABLE orders ADD COLUMN version INT NOT NULL DEFAULT 1`
+      );
+      console.log("  ✅ Added version column to orders");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  orders.version already exists");
+      } else {
+        console.log("  ⚠️  orders.version:", errMsg);
+      }
+    }
+
     // Add statusId column to batches table (Workflow Queue feature)
     // NOTE: Schema uses camelCase "statusId" not snake_case
     try {

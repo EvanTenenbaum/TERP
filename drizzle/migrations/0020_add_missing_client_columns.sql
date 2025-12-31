@@ -26,3 +26,9 @@ ALTER TABLE `clients` ADD COLUMN IF NOT EXISTS `wishlist` TEXT NULL;
 
 -- Add index for pricing profile lookups (safe - uses IF NOT EXISTS)
 CREATE INDEX IF NOT EXISTS `idx_clients_pricing_profile` ON `clients` (`pricing_profile_id`);
+
+-- FIX-002: Add version column to batches table for optimistic locking
+ALTER TABLE `batches` ADD COLUMN IF NOT EXISTS `version` INT NOT NULL DEFAULT 1;
+
+-- FIX-002: Add version column to orders table for optimistic locking
+ALTER TABLE `orders` ADD COLUMN IF NOT EXISTS `version` INT NOT NULL DEFAULT 1;
