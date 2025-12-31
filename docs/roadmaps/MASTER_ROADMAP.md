@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.11  
+**Version:** 2.12  
 **Last Updated:** December 30, 2025  
 **Status:** Active
 
@@ -25,6 +25,26 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 ```
 
 **Full instructions:** `docs/GEMINI_API_USAGE.md` | **This is non-negotiable.**
+
+---
+
+## 📋 MANDATORY: Review Specifications Before Implementation
+
+**ALL AI agents implementing tasks from this roadmap MUST review the corresponding specification BEFORE writing any code.**
+
+| Resource | Location | Description |
+|----------|----------|-------------|
+| **Specs Index** | [`docs/specs/README.md`](../specs/README.md) | Index of all 24 specifications with status and estimates |
+| **Spec Template** | [`docs/specs/SPEC_TEMPLATE.md`](../specs/SPEC_TEMPLATE.md) | Template for creating new specifications |
+
+**Each specification contains:**
+- Problem statement and user stories
+- Functional requirements (Must Have / Should Have / Nice to Have)
+- Technical specification (data models, API contracts)
+- UI/UX wireframes
+- Acceptance criteria and testing requirements
+
+**Look for the 📋 icon** next to task IDs in the roadmap tables - this links directly to the spec.
 
 ---
 
