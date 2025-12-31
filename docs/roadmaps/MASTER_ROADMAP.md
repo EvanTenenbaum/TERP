@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.17  
+**Version:** 2.18  
 **Last Updated:** December 31, 2025  
 **Status:** Active
 
@@ -150,31 +150,223 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ---
 
-## 📅 Next Sprint Planning (Jan 8-15, 2026)
+## 📅 Next Sprint: Feature Flag System (Jan 8-22, 2026)
 
-### 🟢 Immediate Priorities
+**Strategic Focus:** Implement comprehensive feature flag system for module gating and gradual rollouts  
+**Sprint Duration:** 2 weeks (21-27 hours estimated)  
+**Specification:** [`docs/specs/FEATURE-FLAG-SYSTEM-SPEC.md`](../specs/FEATURE-FLAG-SYSTEM-SPEC.md)  
+**Implementation Plan:** [`FEATURE_FLAG_IMPLEMENTATION_PLAN_v2.md`](../../FEATURE_FLAG_IMPLEMENTATION_PLAN_v2.md)
+
+### 🎯 Sprint Goals
+
+1. **Database-driven feature flags** with role and user overrides
+2. **Module-level gating** for major application sections
+3. **Admin UI** for flag management
+4. **Navigation integration** to hide disabled features
+5. **API middleware** to block disabled modules
+
+### 📋 Phase Breakdown
+
+| Phase | Description | Tasks | Hours | Status |
+| ----- | ----------- | ----- | ----- | ------ |
+| 1 | Database Foundation | 1.1-1.4 | 3-4h | ⬜ Not Started |
+| 2 | Core Service | 2.1-2.9 | 5-6h | ⬜ Not Started |
+| 3 | Override Management | 3.1-3.3 | 2-3h | ⬜ Not Started |
+| 4 | Module Hierarchy | 4.1 | 1-2h | ⬜ Not Started |
+| 5 | Export/Import | 5.1-5.2 | 1-2h | ⬜ Not Started |
+| 6 | tRPC Router | 6.1-6.3 | 3-4h | ⬜ Not Started |
+| 7 | Frontend Integration | 7.1-7.5 | 4-5h | ⬜ Not Started |
+| 8 | Admin UI | 8.1-8.7 | 3-4h | ⬜ Not Started |
+| 9 | Navigation & Seeding | 9.1-9.3 | 2-3h | ⬜ Not Started |
+| 10 | Integration Testing | 10.1 | 2h | ⬜ Not Started |
+
+### 📝 Task Details
+
+#### Phase 1: Database Foundation (3-4 hours)
+
+| Task | Description | Priority | Files |
+| ---- | ----------- | -------- | ----- |
+| FF-1.1 | Create featureFlags schema (camelCase tables) | CRITICAL | `drizzle/schema.ts` |
+| FF-1.2 | Add to autoMigrate.ts | CRITICAL | `server/autoMigrate.ts` |
+| FF-1.3 | Create migration file | HIGH | `drizzle/migrations/0021_add_feature_flags.sql` |
+| FF-1.4 | Create rollback script | MEDIUM | `drizzle/migrations/0021_rollback.sql` |
+
+**Schema Tables:**
+- `featureFlags` - Main flag definitions with module, systemEnabled, defaultEnabled, dependsOn
+- `featureFlagRoleOverrides` - Role-based overrides (links to RBAC roles table)
+- `featureFlagUserOverrides` - User-specific overrides
+- `featureFlagAuditLogs` - Change tracking
+
+#### Phase 2: Core Service (5-6 hours)
+
+| Task | Description | Priority | Files |
+| ---- | ----------- | -------- | ----- |
+| FF-2.1 | Create featureFlagsDb.ts | CRITICAL | `server/featureFlagsDb.ts` |
+| FF-2.2 | Create featureFlagService.ts | CRITICAL | `server/services/featureFlagService.ts` |
+| FF-2.3 | Implement RBAC role resolution | CRITICAL | Uses `userRoles` table |
+| FF-2.4 | Implement evaluation logic | CRITICAL | Priority: system → dependency → module → user → role → default |
+| FF-2.5 | Implement cache integration | HIGH | Uses `server/_core/cache.ts` |
+| FF-2.6-2.9 | Property tests (9 tests) | HIGH | `server/services/featureFlagService.test.ts` |
+
+**Evaluation Priority:**
+1. System disabled → always false
+2. Dependency check → if depends on disabled flag, false
+3. Module disabled → if module flag disabled, false
+4. User override → explicit user setting
+5. Role override → most permissive wins
+6. Default value → fallback
+
+#### Phase 3: Override Management (2-3 hours)
+
+| Task | Description | Priority |
+| ---- | ----------- | -------- |
+| FF-3.1 | Role override CRUD | HIGH |
+| FF-3.2 | User override CRUD | HIGH |
+| FF-3.3 | Audit logging | HIGH |
+
+#### Phase 4: Module Hierarchy (1-2 hours)
+
+| Task | Description | Priority |
+| ---- | ----------- | -------- |
+| FF-4.1 | Module flag implementation | HIGH |
+
+**Supported Modules:**
+- `module-calendar`, `module-inventory`, `module-accounting`
+- `module-orders`, `module-clients`, `module-vip-portal`
+- `module-leaderboard`, `module-matching`
+
+#### Phase 5: Export/Import (1-2 hours)
+
+| Task | Description | Priority |
+| ---- | ----------- | -------- |
+| FF-5.1 | Export functionality | MEDIUM |
+| FF-5.2 | Import functionality | MEDIUM |
+
+#### Phase 6: tRPC Router (3-4 hours)
+
+| Task | Description | Priority | Files |
+| ---- | ----------- | -------- | ----- |
+| FF-6.1 | Create featureFlags router | CRITICAL | `server/routers/featureFlags.ts` |
+| FF-6.2 | Create requireFeature middleware | HIGH | `server/_core/featureFlagMiddleware.ts` |
+| FF-6.3 | Register router | HIGH | `server/routers.ts` |
+
+**Router Endpoints:**
+- Public: `getEffectiveFlags`, `isEnabled`
+- Admin: `list`, `create`, `update`, `delete`, `bulkUpdate`
+- Overrides: `setRoleOverride`, `removeRoleOverride`, `setUserOverride`, `removeUserOverride`
+- Audit: `getAuditHistory`, `testEvaluation`
+- Export/Import: `export`, `import`
+
+#### Phase 7: Frontend Integration (4-5 hours)
+
+| Task | Description | Priority | Files |
+| ---- | ----------- | -------- | ----- |
+| FF-7.1 | Create FeatureFlagContext | CRITICAL | `client/src/contexts/FeatureFlagContext.tsx` |
+| FF-7.2 | Create useFeatureFlag hook | HIGH | `client/src/hooks/useFeatureFlag.ts` |
+| FF-7.3 | Create FeatureFlag component | HIGH | `client/src/components/feature-flags/FeatureFlag.tsx` |
+| FF-7.4 | Create FeatureDisabledError | HIGH | `client/src/components/feature-flags/FeatureDisabledError.tsx` |
+| FF-7.5 | Extend NavigationItem interface | HIGH | `client/src/config/navigation.ts` |
+
+#### Phase 8: Admin UI (3-4 hours)
+
+| Task | Description | Priority | Files |
+| ---- | ----------- | -------- | ----- |
+| FF-8.1 | Create FeatureFlagsPage | HIGH | `client/src/pages/admin/FeatureFlagsPage.tsx` |
+| FF-8.2 | Create FlagEditDialog | HIGH | `client/src/components/admin/FlagEditDialog.tsx` |
+| FF-8.3 | Create RoleOverridePanel | MEDIUM | `client/src/components/admin/RoleOverridePanel.tsx` |
+| FF-8.4 | Create UserOverridePanel | MEDIUM | `client/src/components/admin/UserOverridePanel.tsx` |
+| FF-8.5 | Create FlagTestPanel | MEDIUM | `client/src/components/admin/FlagTestPanel.tsx` |
+| FF-8.6 | Create FlagAuditHistory | MEDIUM | `client/src/components/admin/FlagAuditHistory.tsx` |
+| FF-8.7 | Add admin route | HIGH | `client/src/App.tsx` |
+
+#### Phase 9: Navigation & Seeding (2-3 hours)
+
+| Task | Description | Priority | Files |
+| ---- | ----------- | -------- | ----- |
+| FF-9.1 | Navigation integration | HIGH | `client/src/components/layout/Sidebar.tsx` |
+| FF-9.2 | Add module middleware to routers | HIGH | Various routers |
+| FF-9.3 | Seed default flags | HIGH | `scripts/seed/seeders/seed-feature-flags.ts` |
+
+#### Phase 10: Integration Testing (2 hours)
+
+| Task | Description | Priority | Files |
+| ---- | ----------- | -------- | ----- |
+| FF-10.1 | Integration tests | HIGH | `tests/integration/featureFlags.test.ts` |
+
+### ✅ Success Criteria
+
+- [ ] All 4 database tables created and migrated
+- [ ] Service passes all 9 property tests
+- [ ] tRPC router with all 15+ endpoints
+- [ ] Frontend context, hooks, and components working
+- [ ] Admin UI fully functional
+- [ ] Module gating in navigation
+- [ ] Module middleware blocking disabled modules
+- [ ] Seed data for all default modules
+- [ ] Build passes without errors
+- [ ] Integration tests passing
+- [ ] Cache invalidation working correctly
+
+### 🔗 Dependencies
+
+| Dependency | Status | Notes |
+| ---------- | ------ | ----- |
+| RBAC roles table | ✅ Exists | `drizzle/schema-rbac.ts` |
+| Cache utility | ✅ Exists | `server/_core/cache.ts` |
+| Users table | ✅ Exists | `drizzle/schema.ts` |
+| Admin procedure | ✅ Exists | `server/_core/trpc.ts` |
+
+---
+
+## 📅 Parallel Sprint: Documentation & Testing Infrastructure (Jan 8-22, 2026)
+
+**Strategic Focus:** Build documentation and testing infrastructure (runs parallel to Feature Flag Sprint)  
+**Sprint Duration:** 2 weeks  
+**Conflict Zone:** NONE - This sprint touches only docs/, tests/, and standalone modules
+
+### ⚠️ File Isolation Rules
+
+**DO NOT TOUCH (Feature Flag Sprint Territory):**
+- `drizzle/schema.ts`
+- `server/routers/clients.ts`, `orders.ts`, `inventory.ts`, `batches.ts`
+- `client/src/pages/ClientProfilePage.tsx`, `OrderCreatorPage.tsx`
+- `server/_core/*`
+
+**SAFE TO MODIFY:**
+- `docs/*` (all documentation)
+- `tests/*` (new test files)
+- `server/routers/analytics.ts`, `leaderboard.ts`, `search.ts`
+- `client/src/pages/AnalyticsPage.tsx`, `LeaderboardPage.tsx`
+- `.github/workflows/*`
+
+### 📋 Phase Breakdown
+
+| Phase | Description | Hours | Status |
+| ----- | ----------- | ----- | ------ |
+| 1 | Documentation Overhaul | 36h | ⬜ Not Started |
+| 2 | Test Infrastructure | 36h | ⬜ Not Started |
+| 3 | Analytics & Leaderboard Enhancements | 16h | ⬜ Not Started |
+| 4 | CI/CD Improvements | 12h | ⬜ Not Started |
+
+### 📝 Key Deliverables
+
+1. **API Documentation** - All 124 routers documented
+2. **User Guide** - All 15 WS features documented for end users
+3. **E2E Test Suite** - Playwright/Cypress tests for critical flows
+4. **Unit Tests** - 80%+ coverage on standalone modules
+5. **CI/CD** - Automated docs, coverage reporting, bundle monitoring
+
+---
+
+## 🔮 Future Sprint: Remaining Work (After Feature Flags)
+
+### 🟢 Deferred from Foundation Sprint
 
 | Task | Description | Priority | Estimate | Rationale |
 | ---- | ----------- | -------- | -------- | --------- |
-| FIX-001 | Client Profile Navigation Issue | HIGH | 4h | Client detail pages showing "Client not found" |
-| FIX-002 | Inventory Loading in Order Creator | HIGH | 4h | "Failed to load inventory" error in order creation |
-| TEST-001 | Comprehensive Integration Testing | MEDIUM | 8h | Verify all features with real data |
+| REFACTOR-001 | Codebase Duplication & Consistency Cleanup | MEDIUM | 24h | High-risk, needs dedicated sprint |
+| TEST-001 | Comprehensive Integration Testing | MEDIUM | 8h | After feature flag system complete |
 | DOCS-001 | User Documentation Update | LOW | 4h | Document new features for end users |
-| REFACTOR-001 | Codebase Duplication & Consistency Cleanup | MEDIUM | 24h | Technical debt reduction |
-
-### 🛠️ UI Enhancement Tasks (From E2E Testing)
-
-| Task | Description | Priority | Estimate |
-| ---- | ----------- | -------- | -------- |
-| UI-001 | Add visible "Available Credits" section to ReferralCreditsPanel | LOW | 2h |
-| UI-002 | Add prominent audit trail icons on transaction rows | LOW | 4h |
-| UI-003 | Verify ReceiptPreview modal appears after payment | LOW | 1h |
-
-### 📊 Sprint Capacity
-
-**Total Estimated Hours:** 51h  
-**Recommended Sprint Duration:** 2 weeks  
-**Focus Areas:** Complete remaining work, UI polish, test stability, technical debt reduction
 
 ---
 
