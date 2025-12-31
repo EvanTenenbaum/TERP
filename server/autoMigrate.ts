@@ -354,6 +354,174 @@ export async function runAutoMigrations() {
       }
     }
 
+    // FIX-001: Add missing columns to clients table (schema drift fix)
+    // These columns exist in schema.ts but were never migrated to production
+    
+    // Add version column for optimistic locking (DATA-005)
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN version INT NOT NULL DEFAULT 1`
+      );
+      console.log("  ✅ Added version column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.version already exists");
+      } else {
+        console.log("  ⚠️  clients.version:", errMsg);
+      }
+    }
+
+    // Add pricing_profile_id column
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN pricing_profile_id INT NULL`
+      );
+      console.log("  ✅ Added pricing_profile_id column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.pricing_profile_id already exists");
+      } else {
+        console.log("  ⚠️  clients.pricing_profile_id:", errMsg);
+      }
+    }
+
+    // Add custom_pricing_rules column
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN custom_pricing_rules JSON NULL`
+      );
+      console.log("  ✅ Added custom_pricing_rules column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.custom_pricing_rules already exists");
+      } else {
+        console.log("  ⚠️  clients.custom_pricing_rules:", errMsg);
+      }
+    }
+
+    // Add cogsAdjustmentType column (enum)
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN cogsAdjustmentType ENUM('NONE', 'PERCENTAGE', 'FIXED_AMOUNT') DEFAULT 'NONE'`
+      );
+      console.log("  ✅ Added cogsAdjustmentType column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.cogsAdjustmentType already exists");
+      } else {
+        console.log("  ⚠️  clients.cogsAdjustmentType:", errMsg);
+      }
+    }
+
+    // Add cogs_adjustment_value column
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN cogs_adjustment_value DECIMAL(10,4) DEFAULT 0`
+      );
+      console.log("  ✅ Added cogs_adjustment_value column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.cogs_adjustment_value already exists");
+      } else {
+        console.log("  ⚠️  clients.cogs_adjustment_value:", errMsg);
+      }
+    }
+
+    // Add auto_defer_consignment column
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN auto_defer_consignment BOOLEAN DEFAULT FALSE`
+      );
+      console.log("  ✅ Added auto_defer_consignment column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.auto_defer_consignment already exists");
+      } else {
+        console.log("  ⚠️  clients.auto_defer_consignment:", errMsg);
+      }
+    }
+
+    // Add credit_limit column
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN credit_limit DECIMAL(15,2) DEFAULT 0`
+      );
+      console.log("  ✅ Added credit_limit column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.credit_limit already exists");
+      } else {
+        console.log("  ⚠️  clients.credit_limit:", errMsg);
+      }
+    }
+
+    // Add credit_limit_updated_at column
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN credit_limit_updated_at TIMESTAMP NULL`
+      );
+      console.log("  ✅ Added credit_limit_updated_at column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.credit_limit_updated_at already exists");
+      } else {
+        console.log("  ⚠️  clients.credit_limit_updated_at:", errMsg);
+      }
+    }
+
+    // Add creditLimitSource column (enum)
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN creditLimitSource ENUM('CALCULATED', 'MANUAL') DEFAULT 'CALCULATED'`
+      );
+      console.log("  ✅ Added creditLimitSource column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.creditLimitSource already exists");
+      } else {
+        console.log("  ⚠️  clients.creditLimitSource:", errMsg);
+      }
+    }
+
+    // Add credit_limit_override_reason column
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN credit_limit_override_reason TEXT NULL`
+      );
+      console.log("  ✅ Added credit_limit_override_reason column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.credit_limit_override_reason already exists");
+      } else {
+        console.log("  ⚠️  clients.credit_limit_override_reason:", errMsg);
+      }
+    }
+
+    // Add wishlist column (WS-015)
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients ADD COLUMN wishlist TEXT NULL`
+      );
+      console.log("  ✅ Added wishlist column to clients");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.log("  ℹ️  clients.wishlist already exists");
+      } else {
+        console.log("  ⚠️  clients.wishlist:", errMsg);
+      }
+    }
+
     // Add statusId column to batches table (Workflow Queue feature)
     // NOTE: Schema uses camelCase "statusId" not snake_case
     try {
