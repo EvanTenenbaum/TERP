@@ -50,6 +50,7 @@ import { SupplierProfileSection } from "@/components/clients/SupplierProfileSect
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
 import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
+import { CustomerWishlistCard } from "@/components/clients/CustomerWishlistCard";
 import { BackButton } from "@/components/common/BackButton";
 import { AuditIcon } from "@/components/audit";
 import { useCreditVisibility } from "@/hooks/useCreditVisibility";
@@ -409,6 +410,14 @@ export default function ClientProfilePage() {
             />
           )}
 
+          {/* Customer Wishlist (WS-015) - only for buyers */}
+          {client.isBuyer && (
+            <CustomerWishlistCard
+              clientId={clientId}
+              wishlist={client.wishlist || ""}
+            />
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Client Information</CardTitle>
@@ -578,6 +587,7 @@ export default function ClientProfilePage() {
                         <TableHead className="text-right">Amount</TableHead>
                         <TableHead>Payment Status</TableHead>
                         <TableHead>Notes</TableHead>
+                        <TableHead>Audit</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -602,6 +612,13 @@ export default function ClientProfilePage() {
                           </TableCell>
                           <TableCell className="max-w-xs truncate">
                             {txn.notes || "-"}
+                          </TableCell>
+                          <TableCell>
+                            <AuditIcon
+                              entityType="transaction"
+                              entityId={txn.id}
+                              size="sm"
+                            />
                           </TableCell>
                           <TableCell className="text-right">
                             {txn.paymentStatus !== "PAID" && (

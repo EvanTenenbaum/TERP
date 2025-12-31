@@ -1463,6 +1463,9 @@ export const clients = mysqlTable(
     vipPortalEnabled: boolean("vip_portal_enabled").default(false),
     vipPortalLastLogin: timestamp("vip_portal_last_login"),
 
+    // Customer wishlist/preferences (WS-015)
+    wishlist: text("wishlist"), // Free-form text for customer product wishes/preferences
+
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },
@@ -3421,9 +3424,11 @@ export const clientNeeds = mysqlTable(
 
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+    // Attribution - either internal user OR VIP portal client (BUG-037)
     createdBy: int("created_by")
-      .notNull()
-      .references(() => users.id, { onDelete: "restrict" }),
+      .references(() => users.id, { onDelete: "restrict" }), // Internal user (nullable for VIP portal)
+    createdByClientId: int("created_by_client_id")
+      .references(() => clients.id, { onDelete: "restrict" }), // VIP portal client (nullable for internal)
   },
   table => ({
     clientIdIdx: index("idx_client_id").on(table.clientId),
@@ -3484,9 +3489,11 @@ export const vendorSupply = mysqlTable(
 
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+    // Attribution - either internal user OR VIP portal client (BUG-037)
     createdBy: int("created_by")
-      .notNull()
-      .references(() => users.id, { onDelete: "restrict" }),
+      .references(() => users.id, { onDelete: "restrict" }), // Internal user (nullable for VIP portal)
+    createdByClientId: int("created_by_client_id")
+      .references(() => clients.id, { onDelete: "restrict" }), // VIP portal client (nullable for internal)
   },
   table => ({
     vendorIdIdx: index("idx_vendor_id").on(table.vendorId),

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { strains, products, users, permissions, userPermissionOverrides } from "../../drizzle/schema";
 import { roles, userRoles } from "../../drizzle/schema-rbac";
@@ -325,9 +325,9 @@ export const adminRouter = router({
    * Fix User Permissions (BUG-001)
    * 
    * Makes a user a Super Admin to grant them all permissions.
-   * This is intentionally a PUBLIC endpoint for emergency fixes.
+   * Requires admin authentication (BUG-035 fix).
    */
-  fixUserPermissions: publicProcedure
+  fixUserPermissions: adminProcedure
     .input(
       z.object({
         username: z.string().optional(),
@@ -433,9 +433,9 @@ export const adminRouter = router({
    * List All Users
    * 
    * Returns all users for debugging.
-   * This is intentionally a PUBLIC endpoint for emergency debugging.
+   * Requires admin authentication (BUG-035 fix).
    */
-  listUsers: publicProcedure.query(async () => {
+  listUsers: adminProcedure.query(async () => {
     logger.info("[Admin] listUsers called");
 
     const db = await getDb();
@@ -463,9 +463,9 @@ export const adminRouter = router({
    * Grant Permission to User (BUG-001)
    * 
    * Grants a specific permission to a user via permission override.
-   * This is intentionally a PUBLIC endpoint for emergency fixes.
+   * Requires admin authentication (BUG-035 fix).
    */
-  grantPermission: publicProcedure
+  grantPermission: adminProcedure
     .input(
       z.object({
         email: z.string(),
@@ -578,9 +578,9 @@ export const adminRouter = router({
    * Clear Permission Cache (BUG-001)
    * 
    * Clears the permission cache for a specific user or all users.
-   * This is intentionally a PUBLIC endpoint for emergency fixes.
+   * Requires admin authentication (BUG-035 fix).
    */
-  clearPermissionCache: publicProcedure
+  clearPermissionCache: adminProcedure
     .input(
       z.object({
         userId: z.string().optional(),
@@ -611,9 +611,9 @@ export const adminRouter = router({
    * 
    * Assigns the "Super Admin" role to a user by creating a record in user_roles table.
    * This is the correct way to grant full permissions in the RBAC system.
-   * This is intentionally a PUBLIC endpoint for emergency fixes.
+   * Requires admin authentication (BUG-035 fix).
    */
-  assignSuperAdminRole: publicProcedure
+  assignSuperAdminRole: adminProcedure
     .input(
       z.object({
         email: z.string(),

@@ -128,6 +128,7 @@ export const clientsRouter = router({
       isReferee: z.boolean().optional(),
       isContractor: z.boolean().optional(),
       tags: z.array(z.string()).optional(),
+      wishlist: z.string().optional(), // WS-015: Customer wishlist field
     }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");

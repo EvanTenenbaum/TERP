@@ -556,4 +556,113 @@ export const auditRouter = router({
         note: "Journal entry audit trail will be available in a future update",
       };
     }),
+
+  /**
+   * Get entity history (UI-002: Generic audit trail for any entity)
+   * Returns audit logs for a specific entity type and ID
+   */
+  getEntityHistory: adminProcedure
+    .input(
+      z.object({
+        entityType: z.string(),
+        entityId: z.number(),
+        fieldName: z.string().optional(),
+        page: z.number().default(1),
+        pageSize: z.number().default(20),
+      })
+    )
+    .query(async ({ input }) => {
+      const { entityType, entityId, fieldName, page, pageSize } = input;
+      const offset = (page - 1) * pageSize;
+
+      // For now, return activity-based history from different sources based on entity type
+      // This can be expanded to use a dedicated audit_logs table in the future
+      
+      try {
+        const database = await db;
+        if (!database) {
+          return [];
+        }
+
+        // Query based on entity type
+        if (entityType === 'client') {
+          // Get client-related activities from orders and payments
+          const clientOrders = await database
+            .select({
+              id: orders.id,
+              action: sql<string>`'ORDER_CREATED'`,
+              createdAt: orders.createdAt,
+              details: orders.orderNumber,
+            })
+            .from(orders)
+            .where(eq(orders.clientId, entityId))
+            .orderBy(desc(orders.createdAt))
+            .limit(pageSize)
+            .offset(offset);
+
+          return clientOrders.map(o => ({
+            id: o.id,
+            action: o.action,
+            activityType: 'ORDER',
+            createdAt: o.createdAt,
+            details: `Order ${o.details}`,
+          }));
+        }
+
+        if (entityType === 'transaction' || entityType === 'order') {
+          // Get order-related activities
+          const orderPayments = await database
+            .select({
+              id: payments.id,
+              action: sql<string>`'PAYMENT_RECORDED'`,
+              createdAt: payments.paymentDate,
+              amount: payments.amount,
+            })
+            .from(payments)
+            .where(eq(payments.orderId, entityId))
+            .orderBy(desc(payments.paymentDate))
+            .limit(pageSize)
+            .offset(offset);
+
+          return orderPayments.map(p => ({
+            id: p.id,
+            action: p.action,
+            activityType: 'PAYMENT',
+            createdAt: p.createdAt,
+            details: `Payment of $${p.amount}`,
+          }));
+        }
+
+        if (entityType === 'batch' || entityType === 'inventory') {
+          // Get inventory movement history
+          const movements = await database
+            .select({
+              id: inventoryMovements.id,
+              action: inventoryMovements.movementType,
+              createdAt: inventoryMovements.createdAt,
+              quantity: inventoryMovements.quantity,
+              reason: inventoryMovements.reason,
+            })
+            .from(inventoryMovements)
+            .where(eq(inventoryMovements.batchId, entityId))
+            .orderBy(desc(inventoryMovements.createdAt))
+            .limit(pageSize)
+            .offset(offset);
+
+          return movements.map(m => ({
+            id: m.id,
+            action: m.action,
+            activityType: 'INVENTORY_MOVEMENT',
+            createdAt: m.createdAt,
+            details: `${m.action}: ${m.quantity} units${m.reason ? ` - ${m.reason}` : ''}`,
+          }));
+        }
+
+        // Default: return empty array for unsupported entity types
+        return [];
+      } catch (error) {
+        console.error('[Audit] getEntityHistory error:', error);
+        return [];
+      }
+    }),
 });

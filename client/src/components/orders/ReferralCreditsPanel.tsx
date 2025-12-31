@@ -99,7 +99,7 @@ export function ReferralCreditsPanel({
 
   return (
     <>
-      <Card className="border-green-200 bg-green-50">
+      <Card className="border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-green-700">
             <Gift className="h-5 w-5" />
@@ -108,15 +108,18 @@ export function ReferralCreditsPanel({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {/* Available Credits */}
+            {/* Prominent Available Credits Display (UI-001) */}
             {creditsData.totalAvailable > 0 && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-green-200">
                 <div>
-                  <p className="text-lg font-semibold text-green-700">
+                  <p className="text-xs uppercase tracking-wide text-green-600 font-medium mb-1">
+                    Available Credits
+                  </p>
+                  <p className="text-2xl font-bold text-green-700">
                     {formatCurrency(creditsData.totalAvailable)}
                   </p>
                   <p className="text-sm text-green-600">
-                    Available to apply ({availableCredits.length} referral{availableCredits.length !== 1 ? "s" : ""})
+                    From {availableCredits.length} referral{availableCredits.length !== 1 ? "s" : ""}
                   </p>
                 </div>
                 {isPreviewMode ? (

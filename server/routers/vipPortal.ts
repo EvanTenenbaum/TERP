@@ -655,7 +655,7 @@ export const vipPortalRouter = router({
           expiresAt: expiresAt,
           status: "ACTIVE",
           priority: "MEDIUM",
-          createdBy: clientId, // Use clientId for actor attribution
+          createdByClientId: clientId, // VIP portal client attribution (BUG-037 fix)
         });
 
         return { needId: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };
@@ -768,7 +768,7 @@ export const vipPortalRouter = router({
           availableUntil: expiresAt,
           status: "AVAILABLE",
           createdAt: new Date(),
-          createdBy: clientId, // Use clientId for actor attribution in VIP portal context
+          createdByClientId: clientId, // VIP portal client attribution (BUG-037 fix)
         });
 
         return { supplyId: Array.isArray(result) ? (result[0] as { insertId?: number })?.insertId ?? 0 : 0 };

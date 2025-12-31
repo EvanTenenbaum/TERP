@@ -11,6 +11,20 @@ vi.mock('../db', () => ({
 // Mock pricing engine
 vi.mock('../pricingEngine', () => ({
   calculateRetailPrice: vi.fn(),
+  getClientPricingRules: vi.fn().mockResolvedValue({}),
+}));
+
+// Mock logger to prevent console output during tests
+vi.mock('../_core/logger', () => ({
+  vipPortalLogger: {
+    priceAlertEvent: vi.fn(),
+    operationFailure: vi.fn(),
+    operationStart: vi.fn(),
+    operationSuccess: vi.fn(),
+  },
+  piiMasker: {
+    email: vi.fn((email) => email),
+  },
 }));
 
 describe('priceAlertsService', () => {
@@ -30,25 +44,11 @@ describe('priceAlertsService', () => {
           findMany: vi.fn(),
         },
       },
-      insert: vi.fn(() => ({
-        values: vi.fn(() => ({
-          returning: vi.fn(),
-        })),
-      })),
-      select: vi.fn(() => ({
-        from: vi.fn(() => ({
-          innerJoin: vi.fn(() => ({
-            leftJoin: vi.fn(() => ({
-              where: vi.fn(() => ({
-                orderBy: vi.fn(),
-              })),
-            })),
-          })),
-        })),
-      })),
+      insert: vi.fn(),
+      select: vi.fn(),
       update: vi.fn(() => ({
         set: vi.fn(() => ({
-          where: vi.fn(),
+          where: vi.fn().mockResolvedValue(undefined),
         })),
       })),
     };
@@ -64,21 +64,9 @@ describe('priceAlertsService', () => {
       // Mock no existing alert
       mockDb.query.clientPriceAlerts.findFirst.mockResolvedValue(null);
       
-      // Mock insert returning new alert
-      const mockAlert = {
-        id: 1,
-        clientId: 1,
-        batchId: 1,
-        targetPrice: 90,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
+      // Mock MySQL insert result - MySQL returns [{ insertId: number, ... }]
       mockDb.insert.mockReturnValue({
-        values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([mockAlert]),
-        }),
+        values: vi.fn().mockResolvedValue([{ insertId: 1 }]),
       });
 
       const result = await priceAlertsService.createPriceAlert(1, 1, 90);
@@ -97,6 +85,33 @@ describe('priceAlertsService', () => {
       expect(result.success).toBe(false);
       expect(result.message).toBe('Batch not found');
     });
+
+    it('should update existing alert if one already exists', async () => {
+      // Mock batch exists
+      mockDb.query.batches.findFirst.mockResolvedValue({ id: 1 });
+      
+      // Mock existing alert
+      mockDb.query.clientPriceAlerts.findFirst.mockResolvedValue({
+        id: 5,
+        clientId: 1,
+        batchId: 1,
+        targetPrice: '80',
+        active: true,
+      });
+      
+      // Mock update
+      mockDb.update.mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(undefined),
+        }),
+      });
+
+      const result = await priceAlertsService.createPriceAlert(1, 1, 90);
+
+      expect(result.success).toBe(true);
+      expect(result.alertId).toBe(5);
+      expect(result.message).toBe('Price alert updated');
+    });
   });
 
   describe('checkPriceAlerts', () => {
@@ -106,14 +121,15 @@ describe('priceAlertsService', () => {
           id: 1,
           clientId: 1,
           batchId: 1,
-          targetPrice: 110,
+          targetPrice: '110',
           clientName: 'Test Client',
           clientEmail: 'test@example.com',
           productName: 'Test Product',
-          basePrice: 100,
+          unitCogs: '100',
         },
       ];
 
+      // Mock the chained select query
       mockDb.select.mockReturnValue({
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
@@ -126,8 +142,11 @@ describe('priceAlertsService', () => {
         }),
       });
 
-      // Mock pricing engine to return price below target
-      vi.mocked(calculateRetailPrice).mockResolvedValue(95);
+      // Mock pricing engine to return price below target (95 < 110)
+      vi.mocked(calculateRetailPrice).mockResolvedValue({
+        retailPrice: 95,
+        appliedRules: [],
+      } as any);
 
       const triggeredAlerts = await priceAlertsService.checkPriceAlerts();
 
@@ -143,11 +162,11 @@ describe('priceAlertsService', () => {
           id: 1,
           clientId: 1,
           batchId: 1,
-          targetPrice: 80,
+          targetPrice: '80',
           clientName: 'Test Client',
           clientEmail: 'test@example.com',
           productName: 'Test Product',
-          basePrice: 100,
+          unitCogs: '100',
         },
       ];
 
@@ -163,8 +182,11 @@ describe('priceAlertsService', () => {
         }),
       });
 
-      // Mock pricing engine to return price above target
-      vi.mocked(calculateRetailPrice).mockResolvedValue(100);
+      // Mock pricing engine to return price above target (100 > 80)
+      vi.mocked(calculateRetailPrice).mockResolvedValue({
+        retailPrice: 100,
+        appliedRules: [],
+      } as any);
 
       const triggeredAlerts = await priceAlertsService.checkPriceAlerts();
 
