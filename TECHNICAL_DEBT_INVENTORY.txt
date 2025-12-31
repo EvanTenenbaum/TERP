@@ -1,0 +1,47 @@
+./client/src/components/dashboard/widgets-v2/TemplateSelector.tsx:30:    id: "TODO",
+./client/src/components/dashboard/widgets-v3/index.ts:2:// TODO: Widgets are being migrated from v2 to v3
+./client/src/components/inventory/BatchDetailDrawer.tsx:324:              {/* TODO: Re-enable when API includes product relation
+./client/src/components/inventory/BatchDetailDrawer.tsx:334:            {/* TODO: Re-enable when API includes product relation
+./client/src/components/inventory/BatchDetailDrawer.tsx:611:          currentAvgPrice={0} // TODO: Calculate from profitability data
+./client/src/components/inventory/ClientInterestWidget.tsx:196:                    // TODO: Navigate to client page
+./client/src/pages/ClientsListPage.tsx:654:                        title="TERI Code: Unique identifier for each client (format: CLI-XXXXXXXX)"
+./scripts/benchmark-api.ts:46:  // TODO: Replace with actual tRPC client call
+./scripts/generate-calendar-v32.ts:218:    ? `\n    // Use transaction for data consistency\n    return await withTransaction(async (tx) => {\n      // TODO: Implement transaction logic\n      throw new Error("Not implemented");\n    });`
+./scripts/generate-calendar-v32.ts:219:    : `\n    // TODO: Implement logic\n    throw new Error("Not implemented");`;
+./scripts/generators/lists-tasks.ts:64:const TASK_STATUSES = ["TODO", "IN_PROGRESS", "BLOCKED", "COMPLETED", "CANCELLED"];
+./scripts/generators/lists-tasks.ts:167:        status = "TODO";
+./scripts/generators/lists-tasks.ts:211:      // Add status change activity if not TODO
+./scripts/generators/lists-tasks.ts:212:      if (status !== "TODO") {
+./scripts/legacy/seed-realistic-main.ts:326:    // TODO: Refunds should be inserted into transactions table, not orders
+./scripts/legacy/seed-realistic-main.ts:337:    //     await db.insert(transactions).values(batch);  // TODO: Map RefundData to transaction format
+./scripts/manager.ts:163:  // Parse tasks - look for task patterns like "ST-XXX:", "BUG-XXX:", "FEATURE-XXX:", "CL-XXX:", "DATA-XXX:"
+./scripts/mega-qa/bugpackager.ts:24: * Get next available BUG-XXX ID from roadmap
+./scripts/qa/index.ts:8: * 3. Generates BUG-XXX entries for new failures
+./scripts/roadmap-strategic-executor.ts:61:  // Task pattern: matches BUG-XXX, ST-XXX, RF-XXX, WF-XXX, DATA-XXX, FEATURE-XXX, CL-XXX, INFRA-XXX, QA-XXX, etc.
+./scripts/roadmap.ts:126:  if (!idMatch) throw new Error('Invalid task ID format (expected PREFIX-XXX)');
+./scripts/roadmap.ts:147:    throw new Error(`Invalid prompt path format: ${promptPath} (expected docs/prompts/PREFIX-XXX.md)`);
+./scripts/seed-complete.ts:357:    // TODO: Fix schema definition
+./scripts/seed-critical-tables.ts:51:    // STEP 2: Seed TODO LISTS (Simple approach)
+./scripts/seed-critical-tables.ts:82:    // STEP 3: Seed TODO TASKS
+./scripts/seed-critical-tables.ts:106:    // STEP 4: Seed TODO LIST MEMBERS (if multiple users)
+./scripts/seed-phase2-highvalue.ts:27:    // 1. TODO LISTS (4 tables)
+./scripts/seed/lib/data-masking.ts:308:    const masked = "XXXX-XXXX-XXXX-" + lastFour;
+./server/_core/calendarJobs.ts:328:      // TODO: Send alert to admin
+./server/_core/index.ts:161:  // TODO: Fix schema drift and re-enable seeding
+./server/dataCardMetricsDb.ts:258:    // TODO: Add expirationDate to batches schema or remove this metric
+./server/dataCardMetricsDb.ts:379:    // TODO: Add expectedShipDate to orders schema or use different field
+./server/db.ts:133:// TODO: add feature queries here as your schema grows.
+./server/inventoryDb.ts:401:  // TODO: Add deletedAt column to clients table for proper soft delete
+./server/matchingEngineEnhanced.ts:650:        strainType: null, // TODO: Get from strain library via strainId
+./server/matchingEngineReverseSimplified.ts:146:  // TODO: Implement similar logic for vendor supply
+./server/ordersDb.ts:321:      // TODO: Create invoice (accounting integration)
+./server/ordersDb.ts:322:      // TODO: Record cash payment (accounting integration)
+./server/ordersDb.ts:323:      // TODO: Update credit exposure (credit intelligence integration)
+./server/routers/clients.ts:151:      // TODO: Implement proper soft delete when deletedAt column is added to clients table
+./server/services/liveCatalogService.ts:356:  // Extract unique brands (TODO: implement when brand data is available)
+./server/services/liveCatalogService.ts:366:  // Calculate price range (TODO: implement with pricing engine)
+./server/services/notificationService.ts:24:  // TODO: Implement actual notification delivery
+./server/services/vipPortalAdminService.ts:418:  // TODO: Implement tier configuration storage
+./server/services/vipPortalAdminService.ts:468:  // TODO: Implement tier configuration storage
+./server/todoListsDb.ts:19:// TODO LISTS QUERIES
+./server/todoTasksDb.ts:15:// TODO TASKS QUERIES
