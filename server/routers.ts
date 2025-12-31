@@ -79,6 +79,7 @@ import { liveShoppingRouter } from "./routers/liveShopping";
 import { vipPortalLiveShoppingRouter } from "./routers/vipPortalLiveShopping";
 import { unifiedSalesPortalRouter } from "./routers/unifiedSalesPortal";
 import { pickPackRouter } from "./routers/pickPack";
+import { referralsRouter } from "./routers/referrals";
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
@@ -175,6 +176,7 @@ export const appRouter = router({
   vipPortalLiveShopping: vipPortalLiveShoppingRouter,
   unifiedSalesPortal: unifiedSalesPortalRouter,
   pickPack: pickPackRouter, // WS-003: Pick & Pack Module
+  referrals: referralsRouter, // WS-004: Referral Credits System
   // Debug router - only registered in development
   ...(debugRouter ? { debug: debugRouter } : {}),
 });

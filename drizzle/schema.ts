@@ -2229,6 +2229,10 @@ export const orders = mysqlTable(
     // WS-003: Pick & Pack tracking
     pickPackStatus: pickPackStatusEnum.default("PENDING"),
 
+    // WS-004: Referral tracking
+    referredByClientId: int("referred_by_client_id").references(() => clients.id),
+    isReferralOrder: boolean("is_referral_order").default(false),
+
     // Conversion tracking
     convertedFromOrderId: int("converted_from_order_id").references(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -5305,6 +5309,119 @@ export const dashboardWidgetConfigsRelations = relations(
     }),
   })
 );
+
+// ============================================================================
+// WS-004: REFERRAL CREDITS MODULE
+// ============================================================================
+
+/**
+ * Referral Credit Status Enum
+ * Tracks the lifecycle of referral credits
+ */
+export const referralCreditStatusEnum = mysqlEnum("referralCreditStatus", [
+  "PENDING",    // Created when referred order created, waiting for finalization
+  "AVAILABLE",  // Referred order finalized, credit available for use
+  "APPLIED",    // Credit applied to VIP's order
+  "EXPIRED",    // Credit expired (if expiry configured)
+  "CANCELLED",  // Referred order was cancelled
+]);
+
+/**
+ * Referral Credits Table
+ * Tracks referral credits earned by VIP customers
+ */
+export const referralCredits = mysqlTable(
+  "referral_credits",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    referrerClientId: int("referrer_client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    referredClientId: int("referred_client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    referredOrderId: int("referred_order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    creditPercentage: decimal("credit_percentage", { precision: 5, scale: 2 })
+      .notNull()
+      .default("10.00"),
+    orderTotal: decimal("order_total", { precision: 12, scale: 2 }).notNull(),
+    creditAmount: decimal("credit_amount", { precision: 12, scale: 2 }).notNull(),
+    status: referralCreditStatusEnum.notNull().default("PENDING"),
+    appliedToOrderId: int("applied_to_order_id").references(() => orders.id),
+    appliedAmount: decimal("applied_amount", { precision: 12, scale: 2 }),
+    appliedAt: timestamp("applied_at"),
+    appliedBy: int("applied_by").references(() => users.id),
+    expiresAt: timestamp("expires_at"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  },
+  table => ({
+    referrerIdx: index("idx_referral_referrer").on(table.referrerClientId),
+    referredOrderIdx: index("idx_referral_referred_order").on(table.referredOrderId),
+    statusIdx: index("idx_referral_status").on(table.status),
+  })
+);
+
+export type ReferralCredit = typeof referralCredits.$inferSelect;
+export type InsertReferralCredit = typeof referralCredits.$inferInsert;
+
+/**
+ * Referral Settings Table
+ * Configures referral credit percentages (global and per-tier)
+ */
+export const referralSettings = mysqlTable(
+  "referral_settings",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    clientTier: varchar("client_tier", { length: 50 }), // NULL for global default
+    creditPercentage: decimal("credit_percentage", { precision: 5, scale: 2 })
+      .notNull()
+      .default("10.00"),
+    minOrderAmount: decimal("min_order_amount", { precision: 12, scale: 2 }).default("0"),
+    maxCreditAmount: decimal("max_credit_amount", { precision: 12, scale: 2 }), // NULL for no limit
+    creditExpiryDays: int("credit_expiry_days"), // NULL for no expiry
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  },
+  table => ({
+    tierIdx: uniqueIndex("unique_tier").on(table.clientTier),
+  })
+);
+
+export type ReferralSetting = typeof referralSettings.$inferSelect;
+export type InsertReferralSetting = typeof referralSettings.$inferInsert;
+
+// WS-004: Relations for referral credits
+export const referralCreditsRelations = relations(referralCredits, ({ one }) => ({
+  referrer: one(clients, {
+    fields: [referralCredits.referrerClientId],
+    references: [clients.id],
+    relationName: "referrer",
+  }),
+  referredClient: one(clients, {
+    fields: [referralCredits.referredClientId],
+    references: [clients.id],
+    relationName: "referredClient",
+  }),
+  referredOrder: one(orders, {
+    fields: [referralCredits.referredOrderId],
+    references: [orders.id],
+    relationName: "referredOrder",
+  }),
+  appliedToOrder: one(orders, {
+    fields: [referralCredits.appliedToOrderId],
+    references: [orders.id],
+    relationName: "appliedToOrder",
+  }),
+  appliedByUser: one(users, {
+    fields: [referralCredits.appliedBy],
+    references: [users.id],
+  }),
+}));
 
 // ============================================================================
 // LIVE SHOPPING MODULE (Phase 0)
