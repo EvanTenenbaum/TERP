@@ -1,0 +1,114 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'client/**'
+      - '**/*.test.ts'
+      - '**/*.spec.ts'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'client/**'
+      - '**/*.test.ts'
+      - '**/*.spec.ts'
+  workflow_dispatch:
+
+jobs:
+  coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests with coverage
+        run: pnpm test --coverage --reporter=json --reporter=default
+        continue-on-error: true
+        env:
+          CI: true
+
+      - name: Generate coverage summary
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+            
+            # Parse coverage summary
+            lines=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct')
+            statements=$(cat coverage/coverage-summary.json | jq -r '.total.statements.pct')
+            functions=$(cat coverage/coverage-summary.json | jq -r '.total.functions.pct')
+            branches=$(cat coverage/coverage-summary.json | jq -r '.total.branches.pct')
+            
+            echo "| Lines | ${lines}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Statements | ${statements}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Functions | ${functions}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Branches | ${branches}% |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Coverage report not generated" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+          verbose: true
+        continue-on-error: true
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  coverage-check:
+    name: Coverage Threshold Check
+    runs-on: ubuntu-latest
+    needs: coverage
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Check coverage thresholds
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            lines=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct')
+            
+            # Warn if coverage drops below 50%
+            if (( $(echo "$lines < 50" | bc -l) )); then
+              echo "::warning::Test coverage is below 50% ($lines%)"
+            fi
+            
+            # Fail if coverage drops below 30%
+            if (( $(echo "$lines < 30" | bc -l) )); then
+              echo "::error::Test coverage is critically low ($lines%)"
+              exit 1
+            fi
+          fi

@@ -1,0 +1,127 @@
+name: Bundle Size Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.ts'
+  workflow_dispatch:
+
+jobs:
+  bundle-size:
+    name: Analyze Bundle Size
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build production bundle
+        run: pnpm build
+        env:
+          NODE_ENV: production
+
+      - name: Analyze bundle size
+        id: bundle
+        run: |
+          # Calculate total bundle size
+          if [ -d "dist/client" ]; then
+            total_size=$(du -sb dist/client | cut -f1)
+            total_size_mb=$(echo "scale=2; $total_size / 1048576" | bc)
+            echo "total_size=$total_size" >> $GITHUB_OUTPUT
+            echo "total_size_mb=$total_size_mb" >> $GITHUB_OUTPUT
+            
+            # Find largest chunks
+            echo "## Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Total Size:** ${total_size_mb} MB" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Largest Files" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
+            echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+            find dist/client -type f -name "*.js" -exec ls -lh {} \; | sort -k5 -hr | head -10 | while read line; do
+              size=$(echo $line | awk '{print $5}')
+              file=$(echo $line | awk '{print $NF}' | xargs basename)
+              echo "| $file | $size |" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+      - name: Check bundle size limits
+        run: |
+          total_size=${{ steps.bundle.outputs.total_size }}
+          
+          # Warn if bundle exceeds 5MB
+          if [ "$total_size" -gt 5242880 ]; then
+            echo "::warning::Bundle size exceeds 5MB recommendation"
+          fi
+          
+          # Fail if bundle exceeds 10MB
+          if [ "$total_size" -gt 10485760 ]; then
+            echo "::error::Bundle size exceeds 10MB limit"
+            exit 1
+          fi
+
+      - name: Comment PR with bundle size
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const totalSizeMb = '${{ steps.bundle.outputs.total_size_mb }}';
+            const body = `## 📦 Bundle Size Report
+            
+            **Total Size:** ${totalSizeMb} MB
+            
+            <details>
+            <summary>Size Guidelines</summary>
+            
+            - ✅ Under 5MB: Excellent
+            - ⚠️ 5-10MB: Consider optimization
+            - ❌ Over 10MB: Needs attention
+            
+            </details>`;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Bundle Size Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
