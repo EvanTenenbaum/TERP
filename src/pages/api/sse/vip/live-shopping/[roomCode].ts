@@ -101,12 +101,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
 
   // Subscribe to the specific session channel
-  sessionEventManager.addListener(session.id, handleEvent);
+  sessionEventManager.subscribe(session.id, handleEvent);
 
   // 7. Cleanup on Close
   req.on("close", () => {
     clearInterval(heartbeat);
-    sessionEventManager.removeListener(session.id, handleEvent);
+    sessionEventManager.unsubscribe(session.id, handleEvent);
     console.log(`[VIP SSE] Client disconnected from session ${session.id}`);
   });
 
@@ -114,6 +114,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   req.on("error", (error) => {
     console.error("[VIP SSE] Request error:", error);
     clearInterval(heartbeat);
-    sessionEventManager.removeListener(session.id, handleEvent);
+    sessionEventManager.unsubscribe(session.id, handleEvent);
   });
 }

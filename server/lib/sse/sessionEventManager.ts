@@ -112,6 +112,30 @@ class SessionEventManager extends EventEmitter {
       changedBy,
     });
   }
+
+  // ==========================================================================
+  // LISTENER MANAGEMENT (for SSE endpoints)
+  // ==========================================================================
+
+  /**
+   * Subscribe to a session's events
+   * Used by SSE endpoints to subscribe to session updates
+   */
+  public subscribe(sessionId: number, listener: (event: { type: string; data: any }) => void): void {
+    const roomId = this.getRoomId(sessionId);
+    this.on(roomId, (payload: SsePayload) => {
+      listener({ type: payload.type, data: payload.data });
+    });
+  }
+
+  /**
+   * Unsubscribe from a session's events
+   * Used when SSE connection closes
+   */
+  public unsubscribe(sessionId: number, listener: (event: { type: string; data: any }) => void): void {
+    const roomId = this.getRoomId(sessionId);
+    this.off(roomId, listener as any);
+  }
 }
 
 export const sessionEventManager = SessionEventManager.getInstance();

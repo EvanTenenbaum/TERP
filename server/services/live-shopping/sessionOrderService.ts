@@ -56,10 +56,12 @@ export const sessionOrderService = {
       throw new Error("Session is already closed");
     }
 
-    // 2. Fetch Cart
+    // 2. Fetch Cart and filter to only TO_PURCHASE items
     const cart = await sessionCartService.getCart(options.sessionId);
-    if (cart.items.length === 0) {
-      throw new Error("Cannot convert empty session to order");
+    const purchaseItems = cart.items.filter(item => item.itemStatus === "TO_PURCHASE");
+    
+    if (purchaseItems.length === 0) {
+      throw new Error("Cannot convert session to order: No items marked 'To Purchase'. Please mark items as 'To Purchase' before converting.");
     }
 
     // 3. Credit Check (Skip if bypassing)
@@ -78,8 +80,8 @@ export const sessionOrderService = {
       }
     }
 
-    // 4. Prepare Order Items
-    const orderItems = cart.items.map((item) => ({
+    // 4. Prepare Order Items (only TO_PURCHASE items)
+    const orderItems = purchaseItems.map((item) => ({
       batchId: item.batchId,
       quantity: parseFloat(item.quantity.toString()),
       unitPrice: parseFloat(item.unitPrice.toString()),

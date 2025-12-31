@@ -58,7 +58,7 @@ export default async function handler(
   };
 
   // Subscribe to session events
-  sessionEventManager.addListener(sessionIdNum, listener);
+  sessionEventManager.subscribe(sessionIdNum, listener);
 
   // Keep connection alive with heartbeat
   const heartbeat = setInterval(() => {
@@ -73,7 +73,7 @@ export default async function handler(
   // Handle client disconnect
   req.on("close", () => {
     clearInterval(heartbeat);
-    sessionEventManager.removeListener(sessionIdNum, listener);
+    sessionEventManager.unsubscribe(sessionIdNum, listener);
     console.log(`[SSE] Client disconnected from session ${sessionIdNum}`);
   });
 
@@ -81,6 +81,6 @@ export default async function handler(
   req.on("error", (error) => {
     console.error("[SSE] Request error:", error);
     clearInterval(heartbeat);
-    sessionEventManager.removeListener(sessionIdNum, listener);
+    sessionEventManager.unsubscribe(sessionIdNum, listener);
   });
 }
