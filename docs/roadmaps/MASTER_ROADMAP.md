@@ -7968,3 +7968,36 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 | WS-015 | **Sales: Customer Wishlist Field** | MEDIUM | 4h | Sales | ✅ COMPLETE | [📋 Spec](../specs/WS-015-SPEC.md) |
 
 ---
+
+
+---
+
+## 🚀 Next Sprint (Jan 8-22, 2026): UX & Stability Sprint
+
+**Strategic Focus:** Address critical UX flaws, fix systemic bugs, and establish development standards to improve platform stability and usability.
+**Sprint Plan:** Implement the three tiers of tasks identified in the UX/UI Analysis Report V2.
+
+### Sprint Task Overview
+
+| Task ID | Title | Priority | Estimate | Spec |
+| :--- | :--- | :--- | :--- | :--- |
+| **UX-001** | Foundational Stability: Critical Functionality Fixes | CRITICAL | 24h | [UX-001-SPEC.md](../specs/ux-sprint/UX-001-SPEC.md) |
+| **UX-002** | Development Standards: Error Handling & Data Formatting | HIGH | 16h | [UX-002-SPEC.md](../specs/ux-sprint/UX-002-SPEC.md) |
+| **UX-003** | UX Enhancements: Data Tables & Onboarding | MEDIUM | 20h | [UX-003-SPEC.md](../specs/ux-sprint/UX-003-SPEC.md) |
+
+### Tier 1: Foundational Stability (CRITICAL)
+
+-   **UX-001.1: Fix VIP Portal:** Resolve the infinite loading bug by fixing the authentication race condition and implementing proper error handling.
+-   **UX-001.2: Unify Navigation:** Refactor the application to use a single, consistent sidebar layout, eliminating the duplicate navigation bug.
+-   **UX-001.3: Correct Profit Calculation:** Implement the correct business logic for the "Total Profit" metric.
+
+### Tier 2: Development Standards (HIGH)
+
+-   **UX-002.1: Standardize Error Handling:** Create and enforce a standard pattern for handling loading, error, and empty states for all data-fetching components.
+-   **UX-002.2: Centralize Data Formatting:** Create and enforce the use of a single, centralized utility for all data formatting (currency, numbers, dates).
+
+### Tier 3: UX Enhancements (MEDIUM)
+
+-   **UX-003.1: Enhance Data Tables:** Add bulk actions and column customization to the Client and Inventory tables.
+-   **UX-003.2: Develop Placeholder Pages:** Implement baseline functional versions of the Analytics and Leaderboard pages, deployed behind feature flags.
+-   **UX-003.3: Improve Empty States:** Add informative descriptions to all empty state pages.
