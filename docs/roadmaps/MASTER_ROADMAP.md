@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.19  
+**Version:** 2.20  
 **Last Updated:** December 31, 2025  
 **Status:** Active
 
@@ -14,6 +14,7 @@
 > - Admin UI at `/settings/feature-flags`
 > - 15 default flags (all enabled): modules, accounting, inventory, sales features
 > - 11 Redhat QA reviews completed
+> - Per-user and role override management UI deployed and verified (Dec 31, 2025)
 > - Full documentation in `docs/qa-reviews/FEATURE_FLAG_FINAL_SUMMARY.md`
 >
 > **Previous Sprint (Foundation Stabilization - Commit 8538adf3):**
