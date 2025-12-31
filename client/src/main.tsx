@@ -4,6 +4,7 @@ import { httpBatchLink } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
+import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
 import "./index.css";
 
 // Initialize Sentry AFTER all other imports to prevent blocking
@@ -76,7 +77,9 @@ rootElement.innerHTML = "";
 createRoot(rootElement).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <FeatureFlagProvider>
+        <App />
+      </FeatureFlagProvider>
     </QueryClientProvider>
   </trpc.Provider>
 );

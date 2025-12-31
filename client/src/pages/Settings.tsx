@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -46,6 +46,7 @@ export default function Settings() {
             <TabsTrigger value="categories" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Categories</TabsTrigger>
             <TabsTrigger value="grades" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Grades</TabsTrigger>
             <TabsTrigger value="database" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Database</TabsTrigger>
+            <TabsTrigger value="feature-flags" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Feature Flags</TabsTrigger>
           </TabsList>
         </div>
 
@@ -79,6 +80,28 @@ export default function Settings() {
 
         <TabsContent value="database" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
           <DatabaseManager />
+        </TabsContent>
+
+        <TabsContent value="feature-flags" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Flag className="h-5 w-5" />
+                Feature Flags
+              </CardTitle>
+              <CardDescription>
+                Manage feature availability across the application
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Feature flags allow you to enable or disable features for specific users, roles, or the entire system.
+              </p>
+              <Button asChild>
+                <a href="/settings/feature-flags">Open Feature Flags Manager</a>
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

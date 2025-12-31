@@ -1,0 +1,442 @@
+/**
+ * Feature Flags Admin Page
+ * 
+ * Allows administrators to manage feature flags, including:
+ * - Viewing all flags and their status
+ * - Toggling system-wide enable/disable
+ * - Managing role and user overrides
+ * - Viewing audit history
+ */
+
+import React, { useState } from "react";
+import { trpc } from "../../lib/trpc";
+import { useToast } from "../../hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Switch } from "../../components/ui/switch";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
+import {
+  AlertCircle,
+  Check,
+  Flag,
+  History,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Settings,
+  X,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+export default function FeatureFlagsPage() {
+  const { toast } = useToast();
+  const [selectedFlag, setSelectedFlag] = useState<number | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  
+  // Queries
+  const { data: flags, isLoading, refetch } = trpc.featureFlags.getAll.useQuery();
+  const { data: auditHistory } = trpc.featureFlags.getAuditHistory.useQuery({ limit: 50 });
+  
+  // Mutations
+  const toggleMutation = trpc.featureFlags.toggleSystemEnabled.useMutation({
+    onSuccess: () => {
+      toast({ title: "Flag updated", description: "System enabled status changed." });
+      refetch();
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+  
+  const createMutation = trpc.featureFlags.create.useMutation({
+    onSuccess: () => {
+      toast({ title: "Flag created", description: "New feature flag has been created." });
+      setIsCreateDialogOpen(false);
+      refetch();
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+  
+  const invalidateCachesMutation = trpc.featureFlags.invalidateAllCaches.useMutation({
+    onSuccess: () => {
+      toast({ title: "Caches cleared", description: "All feature flag caches have been invalidated." });
+    },
+  });
+
+  const handleToggle = (id: number, currentEnabled: boolean) => {
+    toggleMutation.mutate({ id, enabled: !currentEnabled });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Feature Flags</h1>
+          <p className="text-muted-foreground">
+            Manage feature availability across the application
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => invalidateCachesMutation.mutate()}
+            disabled={invalidateCachesMutation.isPending}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${invalidateCachesMutation.isPending ? "animate-spin" : ""}`} />
+            Clear Caches
+          </Button>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                New Flag
+              </Button>
+            </DialogTrigger>
+            <CreateFlagDialog
+              onSubmit={(data) => createMutation.mutate(data)}
+              isLoading={createMutation.isPending}
+            />
+          </Dialog>
+        </div>
+      </div>
+
+      <Tabs defaultValue="flags">
+        <TabsList>
+          <TabsTrigger value="flags">
+            <Flag className="h-4 w-4 mr-2" />
+            Flags ({flags?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="audit">
+            <History className="h-4 w-4 mr-2" />
+            Audit History
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="flags" className="mt-4">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Flag</TableHead>
+                    <TableHead>Module</TableHead>
+                    <TableHead>System</TableHead>
+                    <TableHead>Default</TableHead>
+                    <TableHead>Depends On</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {flags?.map((flag) => (
+                    <TableRow key={flag.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{flag.name}</div>
+                          <div className="text-xs text-muted-foreground font-mono">
+                            {flag.key}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {flag.module ? (
+                          <Badge variant="outline">{flag.module}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={flag.systemEnabled}
+                          onCheckedChange={() => handleToggle(flag.id, flag.systemEnabled)}
+                          disabled={toggleMutation.isPending}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {flag.defaultEnabled ? (
+                          <Badge variant="default" className="bg-green-500">
+                            <Check className="h-3 w-3 mr-1" />
+                            On
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <X className="h-3 w-3 mr-1" />
+                            Off
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {flag.dependsOn ? (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {flag.dependsOn}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedFlag(flag.id)}
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!flags || flags.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Flag className="h-8 w-8" />
+                          <p>No feature flags defined yet</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsCreateDialogOpen(true)}
+                          >
+                            Create your first flag
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="audit" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Audit History</CardTitle>
+              <CardDescription>
+                Recent changes to feature flags
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Flag</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Actor</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {auditHistory?.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="text-muted-foreground">
+                        {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {entry.flagKey}
+                      </TableCell>
+                      <TableCell>
+                        <ActionBadge action={entry.action} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {entry.actorOpenId}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!auditHistory || auditHistory.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No audit history yet
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function ActionBadge({ action }: { action: string }) {
+  const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+    created: { variant: "default", label: "Created" },
+    updated: { variant: "secondary", label: "Updated" },
+    deleted: { variant: "destructive", label: "Deleted" },
+    enabled: { variant: "default", label: "Enabled" },
+    disabled: { variant: "secondary", label: "Disabled" },
+    override_added: { variant: "outline", label: "Override Added" },
+    override_removed: { variant: "outline", label: "Override Removed" },
+  };
+  
+  const config = variants[action] || { variant: "outline" as const, label: action };
+  
+  return <Badge variant={config.variant}>{config.label}</Badge>;
+}
+
+interface CreateFlagDialogProps {
+  onSubmit: (data: {
+    key: string;
+    name: string;
+    description?: string;
+    module?: string;
+    systemEnabled: boolean;
+    defaultEnabled: boolean;
+    dependsOn?: string;
+  }) => void;
+  isLoading: boolean;
+}
+
+function CreateFlagDialog({ onSubmit, isLoading }: CreateFlagDialogProps) {
+  const [key, setKey] = useState("");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [module, setModule] = useState("");
+  const [systemEnabled, setSystemEnabled] = useState(true);
+  const [defaultEnabled, setDefaultEnabled] = useState(false);
+  const [dependsOn, setDependsOn] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      key,
+      name,
+      description: description || undefined,
+      module: module || undefined,
+      systemEnabled,
+      defaultEnabled,
+      dependsOn: dependsOn || undefined,
+    });
+  };
+
+  return (
+    <DialogContent>
+      <form onSubmit={handleSubmit}>
+        <DialogHeader>
+          <DialogTitle>Create Feature Flag</DialogTitle>
+          <DialogDescription>
+            Add a new feature flag to control feature availability.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="key">Key</Label>
+            <Input
+              id="key"
+              placeholder="my-feature"
+              value={key}
+              onChange={(e) => setKey(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Lowercase alphanumeric with hyphens only
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              placeholder="My Feature"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="What this flag controls..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="module">Module (optional)</Label>
+            <Input
+              id="module"
+              placeholder="module-accounting"
+              value={module}
+              onChange={(e) => setModule(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="dependsOn">Depends On (optional)</Label>
+            <Input
+              id="dependsOn"
+              placeholder="parent-flag-key"
+              value={dependsOn}
+              onChange={(e) => setDependsOn(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="systemEnabled">System Enabled</Label>
+            <Switch
+              id="systemEnabled"
+              checked={systemEnabled}
+              onCheckedChange={setSystemEnabled}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="defaultEnabled">Default Enabled</Label>
+            <Switch
+              id="defaultEnabled"
+              checked={defaultEnabled}
+              onCheckedChange={setDefaultEnabled}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="submit" disabled={isLoading || !key || !name}>
+            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Create Flag
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  );
+}

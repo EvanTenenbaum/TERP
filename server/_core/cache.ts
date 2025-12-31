@@ -173,6 +173,13 @@ export const CacheKeys = {
   productsByBrand: (brandId: number) => `products:brand:${brandId}`,
   batchStats: () => "batches:stats",
   dashboardStats: () => "dashboard:stats",
+  // Feature Flags cache keys
+  featureFlags: {
+    all: () => "featureFlags:all",
+    byKey: (key: string) => `featureFlags:key:${key}`,
+    userEffective: (userOpenId: string) => `featureFlags:user:${userOpenId}`,
+    moduleFlags: (module: string) => `featureFlags:module:${module}`,
+  },
 };
 
 /**
