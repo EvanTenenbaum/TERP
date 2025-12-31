@@ -39,9 +39,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings2,
-  Download,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { ExportButton, WeightCustomizer } from "@/components/leaderboard";
 
 // Types
 type ClientType = "ALL" | "CUSTOMER" | "SUPPLIER" | "DUAL";
@@ -134,28 +134,6 @@ const TrendIndicator = React.memo(function TrendIndicator({
   );
 });
 
-const formatMetricValue = (value: number | null, format?: string): string => {
-  if (value === null || value === undefined) return "N/A";
-  
-  switch (format) {
-    case "currency":
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(value);
-    case "percentage":
-      return `${value.toFixed(1)}%`;
-    case "days":
-      return `${Math.round(value)} days`;
-    case "count":
-      return value.toFixed(0);
-    default:
-      return value.toFixed(2);
-  }
-};
-
 // Main component
 export const LeaderboardPage = React.memo(function LeaderboardPage() {
   const [, navigate] = useLocation();
@@ -244,6 +222,7 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
+          <ExportButton clientType={filters.clientType} />
         </div>
       </div>
 
@@ -303,6 +282,15 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Weight Customizer Panel */}
+      {showWeightCustomizer && (
+        <WeightCustomizer
+          clientType={filters.clientType}
+          onClose={() => setShowWeightCustomizer(false)}
+          onSave={() => refetch()}
+        />
+      )}
 
       {/* Metric Category Tabs */}
       <Tabs
