@@ -2,11 +2,17 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.13  
+**Version:** 2.14  
 **Last Updated:** December 30, 2025  
 **Status:** Active
 
 > ✅ **SPRINT COMPLETE:** Cooper Rd Remediation Sprint - 14/15 tasks implemented (WS-001 through WS-014)
+>
+> ✅ **POST-SPRINT COMPLETE:** All deployment tasks verified and pushed
+> - Database migrations renumbered (0013-0017)
+> - UI integration complete (ReferredBySelector, AuditIcon)
+> - Navigation updated (Pick & Pack, Photography)
+> - QA documentation in `docs/qa/POST_SPRINT_*.md`
 
 > 📝 **NEW:** Full specifications for 24 tasks are now available in [`docs/specs/`](../specs/README.md)
 
