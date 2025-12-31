@@ -86,6 +86,9 @@ import { flowerIntakeRouter } from "./routers/flowerIntake";
 import { alertsRouter } from "./routers/alerts";
 import { inventoryShrinkageRouter } from "./routers/inventoryShrinkage";
 import { photographyRouter } from "./routers/photography";
+import { quickCustomerRouter } from "./routers/quickCustomer";
+import { customerPreferencesRouter } from "./routers/customerPreferences";
+import { vendorRemindersRouter } from "./routers/vendorReminders";
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
@@ -189,6 +192,9 @@ export const appRouter = router({
   alerts: alertsRouter, // WS-008: Low Stock & Needs-Based Alerts
   inventoryShrinkage: inventoryShrinkageRouter, // WS-009: Inventory Movement & Shrinkage
   photography: photographyRouter, // WS-010: Photography Module
+  quickCustomer: quickCustomerRouter, // WS-011: Quick Customer Creation
+  customerPreferences: customerPreferencesRouter, // WS-012: Customer Preferences & History
+  vendorReminders: vendorRemindersRouter, // WS-014: Vendor Harvest Reminders
   // Debug router - only registered in development
   ...(debugRouter ? { debug: debugRouter } : {}),
 });
