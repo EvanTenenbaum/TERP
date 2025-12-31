@@ -107,7 +107,7 @@ const DEFAULT_FLAGS = [
     description: "Enable the VIP Portal Live Catalog feature for browsing inventory",
     module: "module-vip-portal",
     systemEnabled: true,
-    defaultEnabled: false, // Disabled by default, enable per-client
+    defaultEnabled: true, // Enabled by default for all users
   },
 
   // ========================================================================
