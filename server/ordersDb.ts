@@ -1281,7 +1281,8 @@ export async function updateOrderStatus(input: {
   newStatus: 'PENDING' | 'PACKED' | 'SHIPPED';
   notes?: string;
   userId: number;
-}): Promise<{ success: boolean; newStatus: string }> {
+  expectedVersion?: number; // DATA-005: Optimistic locking support
+}): Promise<{ success: boolean; newStatus: string; version?: number }> {
   const { orderId, newStatus, userId } = input;
   
   // Sanitize notes input
@@ -1294,6 +1295,12 @@ export async function updateOrderStatus(input: {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId));
     if (!order) {
       throw new Error('Order not found');
+    }
+    
+    // DATA-005: Optimistic locking check
+    if (input.expectedVersion !== undefined && order.version !== input.expectedVersion) {
+      const { OptimisticLockError } = await import('./_core/optimisticLocking');
+      throw new OptimisticLockError('Order', orderId, input.expectedVersion, order.version);
     }
     
     const oldStatus = order.fulfillmentStatus || 'PENDING';
@@ -1342,7 +1349,8 @@ export async function updateOrderStatus(input: {
       await decrementInventoryForOrder(tx, orderId, orderItemsForDecrement);
     }
     
-    // Update order status
+    // Update order status with version increment (DATA-005)
+    updateData.version = sql`version + 1`;
     await tx.update(orders)
       .set(updateData)
       .where(eq(orders.id, orderId));
@@ -1360,7 +1368,9 @@ export async function updateOrderStatus(input: {
       notes: sanitizedNotes,
     });
     
-    return { success: true, newStatus };
+    // Get updated version for response
+    const [updatedOrder] = await tx.select({ version: orders.version }).from(orders).where(eq(orders.id, orderId));
+    return { success: true, newStatus, version: updatedOrder?.version };
   });
 }
 

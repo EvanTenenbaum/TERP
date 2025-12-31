@@ -591,15 +591,29 @@ export async function getBatchByCode(code: string) {
 
 export async function updateBatchStatus(
   id: number, 
-  status: "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED"
-) {
+  status: "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED",
+  expectedVersion?: number // DATA-005: Optimistic locking support
+): Promise<{ version?: number }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // DATA-005: Optimistic locking check if version provided
+  if (expectedVersion !== undefined) {
+    const [current] = await db.select({ version: batches.version }).from(batches).where(eq(batches.id, id));
+    if (!current) throw new Error(`Batch ${id} not found`);
+    if (current.version !== expectedVersion) {
+      const { OptimisticLockError } = await import('./_core/optimisticLocking');
+      throw new OptimisticLockError('Batch', id, expectedVersion, current.version);
+    }
+  }
+
   await db
     .update(batches)
-    .set({ batchStatus: status })
+    .set({ batchStatus: status, version: sql`version + 1` })
     .where(eq(batches.id, id));
+  
+  const [updated] = await db.select({ version: batches.version }).from(batches).where(eq(batches.id, id));
+  return { version: updated?.version };
 }
 
 export async function updateBatchQty(
@@ -610,15 +624,29 @@ export async function updateBatchQty(
     | "quarantineQty"
     | "holdQty"
     | "defectiveQty",
-  value: string
-) {
+  value: string,
+  expectedVersion?: number // DATA-005: Optimistic locking support
+): Promise<{ version?: number }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // DATA-005: Optimistic locking check if version provided
+  if (expectedVersion !== undefined) {
+    const [current] = await db.select({ version: batches.version }).from(batches).where(eq(batches.id, id));
+    if (!current) throw new Error(`Batch ${id} not found`);
+    if (current.version !== expectedVersion) {
+      const { OptimisticLockError } = await import('./_core/optimisticLocking');
+      throw new OptimisticLockError('Batch', id, expectedVersion, current.version);
+    }
+  }
+
   await db
     .update(batches)
-    .set({ [field]: value })
+    .set({ [field]: value, version: sql`version + 1` })
     .where(eq(batches.id, id));
+  
+  const [updated] = await db.select({ version: batches.version }).from(batches).where(eq(batches.id, id));
+  return { version: updated?.version };
 }
 
 export async function getAllBatches(limit: number = 100) {
