@@ -149,3 +149,4 @@ playwright/.cache/
 !qa-results/history.json
 !qa-results/audit/
 .env.production
+.vercel/
