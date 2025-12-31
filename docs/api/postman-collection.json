@@ -1,0 +1,560 @@
+{
+  "info": {
+    "name": "TERP API Collection",
+    "description": "Complete API collection for TERP Cannabis ERP System. Uses tRPC protocol over HTTP.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://terp-app-b9s35.ondigitalocean.app",
+      "type": "string"
+    },
+    {
+      "key": "sessionCookie",
+      "value": "",
+      "type": "string",
+      "description": "Session cookie value after login"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "Cookie",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "terp_session={{sessionCookie}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticate user and receive session cookie"
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/auth.me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "auth.me"]
+            },
+            "description": "Get currently authenticated user"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/auth.logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "auth.logout"]
+            },
+            "description": "End current session"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Summary",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/analytics.getSummary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "analytics.getSummary"]
+            },
+            "description": "Get analytics summary (revenue, orders, clients, inventory)"
+          }
+        },
+        {
+          "name": "Client Strain Preferences",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/analytics.clientStrainPreferences?input={\"clientId\":1}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "analytics.clientStrainPreferences"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"clientId\":1}"
+                }
+              ]
+            },
+            "description": "Get strain preferences for a specific client"
+          }
+        },
+        {
+          "name": "Top Strain Families",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/analytics.topStrainFamilies?input={\"limit\":10}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "analytics.topStrainFamilies"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"limit\":10}"
+                }
+              ]
+            },
+            "description": "Get top selling strain families"
+          }
+        },
+        {
+          "name": "Strain Family Trends",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/analytics.strainFamilyTrends?input={\"familyId\":1,\"months\":6}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "analytics.strainFamilyTrends"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"familyId\":1,\"months\":6}"
+                }
+              ]
+            },
+            "description": "Get sales trends for a strain family"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leaderboard",
+      "item": [
+        {
+          "name": "List Leaderboard",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/leaderboard.list?input={\"clientType\":\"ALL\",\"limit\":25}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "leaderboard.list"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"clientType\":\"ALL\",\"limit\":25}"
+                }
+              ]
+            },
+            "description": "Get full leaderboard with rankings"
+          }
+        },
+        {
+          "name": "Get Client Ranking",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/leaderboard.getForClient?input={\"clientId\":1}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "leaderboard.getForClient"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"clientId\":1}"
+                }
+              ]
+            },
+            "description": "Get ranking context for a single client"
+          }
+        },
+        {
+          "name": "Get Widget Data",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/leaderboard.getWidgetData?input={\"metric\":\"master_score\",\"mode\":\"top\",\"limit\":5}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "leaderboard.getWidgetData"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"metric\":\"master_score\",\"mode\":\"top\",\"limit\":5}"
+                }
+              ]
+            },
+            "description": "Get condensed leaderboard data for dashboard widgets"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Global Search",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/search.global?input={\"query\":\"test\",\"limit\":10}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "search.global"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"query\":\"test\",\"limit\":10}"
+                }
+              ]
+            },
+            "description": "Search across quotes, customers, and products"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accounting",
+      "item": [
+        {
+          "name": "Accounts",
+          "item": [
+            {
+              "name": "List Accounts",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/trpc/accounting.accounts.list?input={\"limit\":50}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "trpc", "accounting.accounts.list"],
+                  "query": [
+                    {
+                      "key": "input",
+                      "value": "{\"limit\":50}"
+                    }
+                  ]
+                },
+                "description": "List chart of accounts"
+              }
+            },
+            {
+              "name": "Get Account by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/trpc/accounting.accounts.getById?input={\"id\":1}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "trpc", "accounting.accounts.getById"],
+                  "query": [
+                    {
+                      "key": "input",
+                      "value": "{\"id\":1}"
+                    }
+                  ]
+                },
+                "description": "Get single account by ID"
+              }
+            },
+            {
+              "name": "Get Chart of Accounts",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/trpc/accounting.accounts.getChartOfAccounts",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "trpc",
+                    "accounting.accounts.getChartOfAccounts"
+                  ]
+                },
+                "description": "Get hierarchical chart of accounts"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ledger",
+          "item": [
+            {
+              "name": "List Ledger Entries",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/trpc/accounting.ledger.list?input={\"limit\":50}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "trpc", "accounting.ledger.list"],
+                  "query": [
+                    {
+                      "key": "input",
+                      "value": "{\"limit\":50}"
+                    }
+                  ]
+                },
+                "description": "List general ledger entries"
+              }
+            },
+            {
+              "name": "Get Trial Balance",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/trpc/accounting.ledger.getTrialBalance?input={\"fiscalPeriodId\":1}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "trpc", "accounting.ledger.getTrialBalance"],
+                  "query": [
+                    {
+                      "key": "input",
+                      "value": "{\"fiscalPeriodId\":1}"
+                    }
+                  ]
+                },
+                "description": "Get trial balance for fiscal period"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fiscal Periods",
+          "item": [
+            {
+              "name": "List Fiscal Periods",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/trpc/accounting.fiscalPeriods.list",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "trpc", "accounting.fiscalPeriods.list"]
+                },
+                "description": "List all fiscal periods"
+              }
+            },
+            {
+              "name": "Get Current Period",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/trpc/accounting.fiscalPeriods.getCurrent",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "trpc", "accounting.fiscalPeriods.getCurrent"]
+                },
+                "description": "Get current open fiscal period"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Data",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/dashboard.getData",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "dashboard.getData"]
+            },
+            "description": "Get main dashboard data"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clients",
+      "item": [
+        {
+          "name": "List Clients",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/clients.list?input={\"limit\":50}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "clients.list"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"limit\":50}"
+                }
+              ]
+            },
+            "description": "List all clients"
+          }
+        },
+        {
+          "name": "Get Client by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/clients.getById?input={\"id\":1}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "clients.getById"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"id\":1}"
+                }
+              ]
+            },
+            "description": "Get single client by ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "List Inventory",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/inventory.list?input={\"limit\":50}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "inventory.list"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"limit\":50}"
+                }
+              ]
+            },
+            "description": "List inventory batches"
+          }
+        },
+        {
+          "name": "Get Batch by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/inventory.getById?input={\"id\":1}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "inventory.getById"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"id\":1}"
+                }
+              ]
+            },
+            "description": "Get single batch by ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/orders.list?input={\"limit\":50}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "orders.list"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"limit\":50}"
+                }
+              ]
+            },
+            "description": "List all orders"
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trpc/orders.getById?input={\"id\":1}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trpc", "orders.getById"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"id\":1}"
+                }
+              ]
+            },
+            "description": "Get single order by ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check system health status"
+          }
+        },
+        {
+          "name": "Liveness Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health/live",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "live"]
+            },
+            "description": "Kubernetes liveness probe"
+          }
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "ready"]
+            },
+            "description": "Kubernetes readiness probe"
+          }
+        }
+      ]
+    }
+  ]
+}
