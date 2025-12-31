@@ -97,6 +97,19 @@ export default function FeatureFlagsPage() {
     },
   });
 
+  const seedDefaultsMutation = trpc.featureFlags.seedDefaults.useMutation({
+    onSuccess: (result) => {
+      toast({
+        title: "Seed complete",
+        description: `Created ${result.created} flags, skipped ${result.skipped} existing.`,
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const handleToggle = (id: number, currentEnabled: boolean) => {
     toggleMutation.mutate({ id, enabled: !currentEnabled });
   };
@@ -119,6 +132,15 @@ export default function FeatureFlagsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => seedDefaultsMutation.mutate()}
+            disabled={seedDefaultsMutation.isPending}
+          >
+            <Settings className={`h-4 w-4 mr-2 ${seedDefaultsMutation.isPending ? "animate-spin" : ""}`} />
+            Seed Defaults
+          </Button>
           <Button
             variant="outline"
             size="sm"

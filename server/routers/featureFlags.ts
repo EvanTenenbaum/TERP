@@ -9,6 +9,7 @@ import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { featureFlagService } from "../services/featureFlagService";
 import { featureFlagsDb } from "../featureFlagsDb";
+import { seedFeatureFlags } from "../services/seedFeatureFlags";
 import { TRPCError } from "@trpc/server";
 
 /**
@@ -352,6 +353,15 @@ export const featureFlagsRouter = router({
   invalidateAllCaches: adminProcedure.mutation(async () => {
     featureFlagService.invalidateAllCaches();
     return { success: true };
+  }),
+
+  /**
+   * Seed default feature flags (admin utility)
+   * Idempotent - only creates flags that don't exist
+   */
+  seedDefaults: adminProcedure.mutation(async ({ ctx }) => {
+    const result = await seedFeatureFlags(ctx.user.openId);
+    return result;
   }),
 });
 
