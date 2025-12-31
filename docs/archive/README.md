@@ -74,7 +74,10 @@ Documents are archived when they:
 
 ---
 
-**Last Updated:** November 13, 2025 (ST-003 Consolidation)  
-**Archived Count:** 186 files  
-**Active Count:** 44 files  
-**Recent Additions:** 15 files archived in ST-003 (completion reports, guides, investigation reports, planning docs)
+**Last Updated:** December 30, 2025 (Comprehensive Cleanup)  
+**Archived Count:** 369 files  
+**Active Count:** See main `/docs` directory  
+**Recent Additions:** 
+- Roadmap archives moved to `docs/roadmaps/archive/`
+- Legacy Railway deployment docs consolidated
+- Deprecated platform configurations removed from repo
