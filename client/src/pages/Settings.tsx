@@ -12,6 +12,7 @@ import { UserManagement } from "@/components/UserManagement";
 import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagement";
 import { RoleManagement } from "@/components/settings/rbac/RoleManagement";
 import { PermissionAssignment } from "@/components/settings/rbac/PermissionAssignment";
+import { VIPImpersonationManager } from "@/components/settings/VIPImpersonationManager";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +48,7 @@ export default function Settings() {
             <TabsTrigger value="grades" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Grades</TabsTrigger>
             <TabsTrigger value="database" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Database</TabsTrigger>
             <TabsTrigger value="feature-flags" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Feature Flags</TabsTrigger>
+            <TabsTrigger value="vip-impersonation" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">VIP Access</TabsTrigger>
           </TabsList>
         </div>
 
@@ -102,6 +104,10 @@ export default function Settings() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="vip-impersonation" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          <VIPImpersonationManager />
         </TabsContent>
       </Tabs>
     </div>

@@ -248,7 +248,7 @@ export const PERMISSIONS = [
   { name: "todo:tasks:complete", description: "Can mark tasks as complete", module: "todo" },
   { name: "todo:activity:view", description: "Can view task activity", module: "todo" },
 
-  // VIP Portal (10)
+  // VIP Portal (12) - Updated for FEATURE-012
   { name: "vip_portal:access", description: "Can access VIP portal admin", module: "vip_portal" },
   { name: "vip_portal:config:view", description: "Can view VIP portal configuration", module: "vip_portal" },
   { name: "vip_portal:config:edit", description: "Can edit VIP portal configuration", module: "vip_portal" },
@@ -259,6 +259,9 @@ export const PERMISSIONS = [
   { name: "vip_portal:alerts:manage", description: "Can manage price alerts", module: "vip_portal" },
   { name: "vip_portal:customization", description: "Can customize VIP portal appearance", module: "vip_portal" },
   { name: "vip_portal:analytics:view", description: "Can view VIP portal analytics", module: "vip_portal" },
+  // Admin Impersonation (FEATURE-012)
+  { name: "admin:impersonate", description: "Can impersonate clients in VIP portal with full audit logging", module: "admin" },
+  { name: "admin:impersonate:audit", description: "Can view impersonation audit logs and session history", module: "admin" },
 
   // Matching & Recommendations (8)
   { name: "matching:access", description: "Can access matching module", module: "matching" },

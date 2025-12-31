@@ -30,6 +30,7 @@ import { TransactionHistory } from "@/components/vip-portal/TransactionHistory";
 import { MarketplaceSupply } from "@/components/vip-portal/MarketplaceSupply";
 import { Leaderboard } from "@/components/vip-portal/Leaderboard";
 import { LiveCatalog } from "@/components/vip-portal/LiveCatalog";
+import { ImpersonationBanner } from "@/components/vip-portal/ImpersonationBanner";
 
 // Type for VIP Portal configuration with all module flags as boolean
 interface VipPortalConfig {
@@ -61,12 +62,9 @@ interface VipPortalConfig {
 }
 
 export default function VIPDashboard() {
-  const { clientId, clientName, logout } = useVIPPortalAuth();
+  const { clientId, clientName, logout, isImpersonation, sessionGuid } = useVIPPortalAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Check if this is an impersonation session
-  const isImpersonation = localStorage.getItem("vip_impersonation") === "true";
 
   const { data: rawConfig } = trpc.vipPortal.config.get.useQuery({ clientId });
   const { data: kpis } = trpc.vipPortal.dashboard.getKPIs.useQuery({ clientId });
@@ -97,21 +95,13 @@ export default function VIPDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Impersonation Banner */}
+      {/* Enhanced Impersonation Banner (FEATURE-012) */}
       {isImpersonation && (
-        <div className="bg-amber-500 text-amber-950 px-4 py-2 text-center text-sm font-medium">
-          <span className="mr-2">👁️</span>
-          Viewing as {clientName} (Admin Impersonation Mode)
-          <button
-            onClick={() => {
-              localStorage.removeItem("vip_impersonation");
-              window.close();
-            }}
-            className="ml-4 underline hover:no-underline"
-          >
-            Exit
-          </button>
-        </div>
+        <ImpersonationBanner
+          clientName={clientName}
+          sessionGuid={sessionGuid}
+          onEndSession={logout}
+        />
       )}
       
       {/* Mobile-First Header */}
