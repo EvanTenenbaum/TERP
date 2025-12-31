@@ -7515,3 +7515,41 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 - `client/src/hooks/useVIPPortalAuth.ts`
 - `server/routers/vipPortalAdmin.ts`
 - `server/services/vipPortalAdminService.ts`
+
+---
+
+## Sprint (Jan 1-7, 2026): Cooper Rd Working Session Remediation
+
+**Strategic Focus:** Implement critical usability and complex sales features to achieve the "Save 20 hours/week" goal and address the "No Black Box" tenet.
+
+### 🔴 P0 - CRITICAL
+
+| Task | Description | Priority | Estimate | Module | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| WS-001 | **Quick Action: Receive Client Payment (Cash Drop-off)** | CRITICAL | 12h | Accounting | Not Started |
+| WS-002 | **Quick Action: Pay Vendor (Cash Out)** | CRITICAL | 12h | Accounting | Not Started |
+| WS-003 | **Pick & Pack Module: Group Bagging/Packing Action** | CRITICAL | 20h | Pick & Pack | Not Started |
+| WS-004 | **Sales: Simultaneous Multi-Order & Referral Credit System** | CRITICAL | 40h | Sales/Credit | Not Started |
+| WS-005 | **No Black Box Audit Trail (System-wide)** | CRITICAL | 30h | System Core | Not Started |
+
+### 🟡 P1 - HIGH PRIORITY
+
+| Task | Description | Priority | Estimate | Module | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| WS-006 | **Immediate Tab Screenshot/Receipt** | HIGH | 16h | Accounting/Client Profile | Not Started |
+| WS-007 | **Complex Flower Intake Flow** | HIGH | 24h | Inventory/Accounting | Not Started |
+| WS-008 | **Low Stock & Needs-Based Alerts (VIP Portal Integration)** | HIGH | 20h | Inventory/VIP Portal | Not Started |
+| WS-009 | **Pick & Pack Module: Inventory Movement SOP Flow** | HIGH | 16h | Pick & Pack | Not Started |
+| WS-010 | **Sales: Line-Item Price Override with Note** | HIGH | 12h | Sales | Not Started |
+
+### 🟠 P2 - MEDIUM PRIORITY
+
+| Task | Description | Priority | Estimate | Module | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| WS-011 | **Photography Module: Simple Image Upload & Management** | MEDIUM | 16h | Inventory | Not Started |
+| WS-012 | **Vendor "Harvesting Again" Reminder** | MEDIUM | 8h | Vendor/Calendar | Not Started |
+| WS-013 | **Simple Task Management (Non-Inventory SOPs)** | MEDIUM | 12h | General Utility | Not Started |
+| WS-014 | **Sales: Quick Customer Creation** | MEDIUM | 8h | Sales | Not Started |
+| WS-015 | **Sales: Customer Wishlist Field** | MEDIUM | 4h | Sales | Not Started |
+
+---
