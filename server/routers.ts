@@ -82,6 +82,10 @@ import { pickPackRouter } from "./routers/pickPack";
 import { referralsRouter } from "./routers/referrals";
 import { auditRouter } from "./routers/audit";
 import { receiptsRouter } from "./routers/receipts";
+import { flowerIntakeRouter } from "./routers/flowerIntake";
+import { alertsRouter } from "./routers/alerts";
+import { inventoryShrinkageRouter } from "./routers/inventoryShrinkage";
+import { photographyRouter } from "./routers/photography";
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
@@ -181,6 +185,10 @@ export const appRouter = router({
   referrals: referralsRouter, // WS-004: Referral Credits System
   audit: auditRouter, // WS-005: No Black Box Audit Trail
   receipts: receiptsRouter, // WS-006: Receipt Generation
+  flowerIntake: flowerIntakeRouter, // WS-007: Complex Flower Intake Flow
+  alerts: alertsRouter, // WS-008: Low Stock & Needs-Based Alerts
+  inventoryShrinkage: inventoryShrinkageRouter, // WS-009: Inventory Movement & Shrinkage
+  photography: photographyRouter, // WS-010: Photography Module
   // Debug router - only registered in development
   ...(debugRouter ? { debug: debugRouter } : {}),
 });
