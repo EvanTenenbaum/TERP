@@ -179,8 +179,8 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | Metric | Value |
 | ------ | ----- |
 | Tasks Planned | 15 |
-| Tasks Completed | 14 |
-| Completion Rate | 93.3% |
+| Tasks Completed | 15 |
+| Completion Rate | 100% |
 | QA Issues Fixed | 6 |
 | E2E Tests Passed | 8/10 |
 | Build Status | ✅ Passing |
@@ -196,7 +196,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | Inventory | WS-007, WS-008, WS-010 | ✅ All Complete |
 | General Utility | WS-013 | ✅ Complete |
 | Vendor/Calendar | WS-014 | ✅ Complete |
-| Sales | WS-015 | ⏳ Pending |
+| Sales | WS-015 | ✅ Complete |
 
 ### QA Fixes Applied (Dec 31, 2025)
 
@@ -7837,6 +7837,6 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 | WS-012 | **Customer Preferences & Purchase History** | MEDIUM | 16h | Sales/CRM | ✅ COMPLETE | [📋 Spec](../specs/WS-012-SPEC.md) |
 | WS-013 | **Simple Task Management (Non-Inventory SOPs)** | MEDIUM | 12h | General Utility | ✅ COMPLETE | [📋 Spec](../specs/WS-013-SPEC.md) |
 | WS-014 | **Vendor "Harvesting Again" Reminder** | MEDIUM | 8h | Vendor/Calendar | ✅ COMPLETE | [📋 Spec](../specs/WS-014-SPEC.md) |
-| WS-015 | **Sales: Customer Wishlist Field** | MEDIUM | 4h | Sales | Not Started | - |
+| WS-015 | **Sales: Customer Wishlist Field** | MEDIUM | 4h | Sales | ✅ COMPLETE | [📋 Spec](../specs/WS-015-SPEC.md) |
 
 ---
