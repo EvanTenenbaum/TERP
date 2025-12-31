@@ -8,6 +8,17 @@
 
 ---
 
+## ⚠️ Session Hygiene Rule
+
+**Sessions older than 7 days must be reviewed:**
+- If task is complete → Archive to `docs/sessions/completed/`
+- If task is still active → Update status and continue
+- If task is abandoned → Move to `docs/sessions/abandoned/`
+
+**On task completion, archive session in the SAME commit as your final code changes.**
+
+---
+
 ## 🟢 Currently Working
 
 | Session ID                                   | Task            | Branch | Module   | Status      | Started    | ETA |

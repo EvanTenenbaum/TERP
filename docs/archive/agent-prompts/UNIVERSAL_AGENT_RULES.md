@@ -460,27 +460,34 @@ git push origin main
 
 ### Completing a Task
 
+> ⚠️ **CRITICAL**: Archive your session in the SAME commit as your final code changes.
+> Do NOT leave session archival as a separate step - it gets forgotten.
+
 ```bash
-# 1. Archive session
+# === TASK COMPLETION (copy-paste and customize) ===
+SESSION_ID="YOUR_SESSION_ID_HERE"
+TASK_ID="YOUR_TASK_ID_HERE"
+
+# 1. Archive session file
 mv docs/sessions/active/$SESSION_ID.md docs/sessions/completed/
 
-# 2. Remove from ACTIVE_SESSIONS.md
-# Edit docs/ACTIVE_SESSIONS.md and remove your line
+# 2. Edit docs/ACTIVE_SESSIONS.md - remove your session line
 
-# 3. Update roadmap (if applicable)
-# Edit docs/roadmaps/MASTER_ROADMAP.md
-# Change status to "complete"
+# 3. Edit docs/roadmaps/MASTER_ROADMAP.md - change task status to "complete"
 
-# 4. Validate roadmap
+# 4. Validate everything
 pnpm roadmap:validate
+pnpm validate:sessions
 
-# 5. Commit everything
-git add docs/sessions/completed/$SESSION_ID.md \
-        docs/ACTIVE_SESSIONS.md \
-        docs/roadmaps/MASTER_ROADMAP.md
-git commit -m "chore: complete TASK-ID and archive session"
+# 5. SINGLE ATOMIC COMMIT with all changes
+git add -A
+git commit -m "feat($TASK_ID): complete task and archive session $SESSION_ID"
 git push origin main
+# === END TASK COMPLETION ===
 ```
+
+**Why atomic commits matter:** When archival is a separate step, agents forget to do it.
+23 stale sessions were found in the Dec 2025 cleanup because of this.
 
 ---
 
@@ -647,8 +654,9 @@ bash scripts/watch-deploy.sh
 ## Roadmap Compliance
 
 - [ ] Roadmap validates: `pnpm roadmap:validate`
+- [ ] Sessions clean: `pnpm validate:sessions`
 - [ ] Task status updated
-- [ ] Session file updated
+- [ ] Session file updated (archived if task complete)
 
 ## Coordination
 
