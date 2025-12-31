@@ -2162,6 +2162,17 @@ export const fulfillmentStatusEnum = mysqlEnum("fulfillmentStatus", [
 ]);
 
 /**
+ * WS-003: Pick & Pack Status Enum
+ * Tracks the warehouse picking/packing workflow status
+ */
+export const pickPackStatusEnum = mysqlEnum("pickPackStatus", [
+  "PENDING",   // Order confirmed, waiting to be picked
+  "PICKING",   // Currently being picked
+  "PACKED",    // All items packed into bags
+  "READY",     // Ready for shipping/pickup
+]);
+
+/**
  * Orders Table (Unified Quotes + Sales)
  * Combines quotes and sales into a single table for simplicity
  */
@@ -2214,6 +2225,9 @@ export const orders = mysqlTable(
     packedBy: int("packed_by").references(() => users.id),
     shippedAt: timestamp("shipped_at"),
     shippedBy: int("shipped_by").references(() => users.id),
+
+    // WS-003: Pick & Pack tracking
+    pickPackStatus: pickPackStatusEnum.default("PENDING"),
 
     // Conversion tracking
     convertedFromOrderId: int("converted_from_order_id").references(
@@ -2286,6 +2300,79 @@ export const orderStatusHistory = mysqlTable(
 
 export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;
 export type InsertOrderStatusHistory = typeof orderStatusHistory.$inferInsert;
+
+/**
+ * WS-003: Order Bags Table
+ * Tracks bags/containers used for packing orders
+ */
+export const orderBags = mysqlTable(
+  "order_bags",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    orderId: int("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    bagIdentifier: varchar("bag_identifier", { length: 50 }).notNull(), // e.g., "BAG-001"
+    notes: text("notes"),
+    createdBy: int("created_by").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  table => ({
+    orderIdIdx: index("idx_order_bags_order_id").on(table.orderId),
+    uniqueBagPerOrder: uniqueIndex("unique_bag_per_order").on(table.orderId, table.bagIdentifier),
+  })
+);
+
+export type OrderBag = typeof orderBags.$inferSelect;
+export type InsertOrderBag = typeof orderBags.$inferInsert;
+
+/**
+ * WS-003: Order Item Bags Table
+ * Tracks which items are assigned to which bags
+ */
+export const orderItemBags = mysqlTable(
+  "order_item_bags",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    orderItemId: int("order_item_id").notNull(), // References order line item (JSON items array index or orderLineItems.id)
+    bagId: int("bag_id")
+      .notNull()
+      .references(() => orderBags.id, { onDelete: "cascade" }),
+    packedAt: timestamp("packed_at").defaultNow(),
+    packedBy: int("packed_by").references(() => users.id),
+  },
+  table => ({
+    bagIdIdx: index("idx_order_item_bags_bag_id").on(table.bagId),
+    uniqueItemBag: uniqueIndex("unique_item_bag").on(table.orderItemId, table.bagId),
+  })
+);
+
+export type OrderItemBag = typeof orderItemBags.$inferSelect;
+export type InsertOrderItemBag = typeof orderItemBags.$inferInsert;
+
+// WS-003: Relations for order bags
+export const orderBagsRelations = relations(orderBags, ({ one, many }) => ({
+  order: one(orders, {
+    fields: [orderBags.orderId],
+    references: [orders.id],
+  }),
+  createdByUser: one(users, {
+    fields: [orderBags.createdBy],
+    references: [users.id],
+  }),
+  items: many(orderItemBags),
+}));
+
+export const orderItemBagsRelations = relations(orderItemBags, ({ one }) => ({
+  bag: one(orderBags, {
+    fields: [orderItemBags.bagId],
+    references: [orderBags.id],
+  }),
+  packedByUser: one(users, {
+    fields: [orderItemBags.packedBy],
+    references: [users.id],
+  }),
+}));
 
 /**
  * Return Reason Enum
