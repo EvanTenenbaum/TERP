@@ -4,9 +4,9 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure, publicProcedure } from "../trpc";
+import { router, adminProcedure, publicProcedure } from "../_core/trpc";
 import { db } from "../db";
-import { clients, orders, orderItems, clientNeeds, batches, products } from "../../drizzle/schema";
+import { clients, orders, orderLineItems, clientNeeds, batches, products } from "../../drizzle/schema";
 import { eq, and, desc, sql, count } from "drizzle-orm";
 
 export const customerPreferencesRouter = router({
@@ -33,22 +33,19 @@ export const customerPreferencesRouter = router({
         .orderBy(desc(orders.createdAt))
         .limit(input.limit);
 
-      // Get frequently purchased products
+      // Get frequently purchased products using orderLineItems
       const frequentProducts = await db
         .select({
-          productId: orderItems.productId,
-          productName: products.name,
-          strain: batches.strain,
-          totalQuantity: sql<number>`SUM(CAST(${orderItems.quantity} AS DECIMAL))`,
-          orderCount: sql<number>`COUNT(DISTINCT ${orderItems.orderId})`,
+          productName: orderLineItems.productDisplayName,
+          batchId: orderLineItems.batchId,
+          totalQuantity: sql<number>`SUM(CAST(${orderLineItems.quantity} AS DECIMAL))`,
+          orderCount: sql<number>`COUNT(DISTINCT ${orderLineItems.orderId})`,
         })
-        .from(orderItems)
-        .leftJoin(orders, eq(orderItems.orderId, orders.id))
-        .leftJoin(products, eq(orderItems.productId, products.id))
-        .leftJoin(batches, eq(orderItems.batchId, batches.id))
+        .from(orderLineItems)
+        .leftJoin(orders, eq(orderLineItems.orderId, orders.id))
         .where(eq(orders.clientId, input.clientId))
-        .groupBy(orderItems.productId, batches.strain)
-        .orderBy(desc(sql`COUNT(DISTINCT ${orderItems.orderId})`))
+        .groupBy(orderLineItems.productDisplayName, orderLineItems.batchId)
+        .orderBy(desc(sql`COUNT(DISTINCT ${orderLineItems.orderId})`))
         .limit(10);
 
       return {
@@ -60,9 +57,8 @@ export const customerPreferencesRouter = router({
           createdAt: o.createdAt,
         })),
         frequentProducts: frequentProducts.map(p => ({
-          productId: p.productId,
           productName: p.productName || 'Unknown',
-          strain: p.strain,
+          batchId: p.batchId,
           totalQuantity: p.totalQuantity || 0,
           orderCount: p.orderCount || 0,
         })),
@@ -152,23 +148,25 @@ export const customerPreferencesRouter = router({
         updates.notes = input.notes;
       }
 
-      await db
-        .update(clients)
-        .set(updates)
-        .where(eq(clients.id, input.clientId));
+      if (Object.keys(updates).length > 0) {
+        await db
+          .update(clients)
+          .set(updates)
+          .where(eq(clients.id, input.clientId));
+      }
 
       return { success: true };
     }),
 
   /**
-   * Add customer need/request
+   * Add customer need
    */
   addNeed: adminProcedure
     .input(z.object({
       clientId: z.number(),
       productType: z.string(),
       strain: z.string().optional(),
-      quantity: z.number(),
+      quantity: z.number().optional(),
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
@@ -176,11 +174,10 @@ export const customerPreferencesRouter = router({
         clientId: input.clientId,
         productType: input.productType,
         strain: input.strain,
-        quantity: String(input.quantity),
+        quantity: input.quantity ? String(input.quantity) : null,
         notes: input.notes,
         status: 'PENDING',
         createdBy: ctx.user.id,
-        createdAt: new Date(),
       });
 
       return {
@@ -190,51 +187,72 @@ export const customerPreferencesRouter = router({
     }),
 
   /**
-   * Get customer analytics
+   * Update need status
    */
-  getAnalytics: adminProcedure
+  updateNeedStatus: adminProcedure
+    .input(z.object({
+      needId: z.number(),
+      status: z.enum(['PENDING', 'FULFILLED', 'CANCELLED']),
+      fulfilledOrderId: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      await db
+        .update(clientNeeds)
+        .set({
+          status: input.status,
+          fulfilledOrderId: input.fulfilledOrderId,
+          fulfilledAt: input.status === 'FULFILLED' ? new Date() : null,
+        })
+        .where(eq(clientNeeds.id, input.needId));
+
+      return { success: true };
+    }),
+
+  /**
+   * Get purchase patterns for a client
+   */
+  getPurchasePatterns: publicProcedure
     .input(z.object({
       clientId: z.number(),
     }))
     .query(async ({ input }) => {
-      // Total spend
-      const totalSpend = await db
+      // Get order frequency
+      const orderStats = await db
         .select({
-          total: sql<number>`SUM(CAST(${orders.total} AS DECIMAL))`,
-          orderCount: sql<number>`COUNT(*)`,
-        })
-        .from(orders)
-        .where(and(
-          eq(orders.clientId, input.clientId),
-          eq(orders.status, 'COMPLETED')
-        ));
-
-      // Average order value
-      const avgOrderValue = totalSpend[0]?.orderCount > 0
-        ? (totalSpend[0]?.total || 0) / totalSpend[0].orderCount
-        : 0;
-
-      // First and last order dates
-      const orderDates = await db
-        .select({
+          totalOrders: sql<number>`COUNT(*)`,
+          totalSpent: sql<number>`SUM(CAST(${orders.total} AS DECIMAL))`,
+          avgOrderValue: sql<number>`AVG(CAST(${orders.total} AS DECIMAL))`,
           firstOrder: sql<Date>`MIN(${orders.createdAt})`,
           lastOrder: sql<Date>`MAX(${orders.createdAt})`,
         })
         .from(orders)
-        .where(eq(orders.clientId, input.clientId));
+        .where(and(
+          eq(orders.clientId, input.clientId),
+          eq(orders.isDraft, false)
+        ));
 
-      // Days since last order
-      const daysSinceLastOrder = orderDates[0]?.lastOrder
-        ? Math.floor((Date.now() - new Date(orderDates[0].lastOrder).getTime()) / (1000 * 60 * 60 * 24))
-        : null;
+      const stats = orderStats[0];
+      
+      // Calculate average days between orders
+      let avgDaysBetweenOrders = 0;
+      if (stats && stats.firstOrder && stats.lastOrder && stats.totalOrders > 1) {
+        const daysDiff = Math.floor(
+          (new Date(stats.lastOrder).getTime() - new Date(stats.firstOrder).getTime()) 
+          / (1000 * 60 * 60 * 24)
+        );
+        avgDaysBetweenOrders = Math.round(daysDiff / (stats.totalOrders - 1));
+      }
 
       return {
-        totalSpend: totalSpend[0]?.total || 0,
-        orderCount: totalSpend[0]?.orderCount || 0,
-        avgOrderValue,
-        firstOrderDate: orderDates[0]?.firstOrder,
-        lastOrderDate: orderDates[0]?.lastOrder,
-        daysSinceLastOrder,
+        totalOrders: stats?.totalOrders || 0,
+        totalSpent: stats?.totalSpent || 0,
+        avgOrderValue: stats?.avgOrderValue || 0,
+        firstOrderDate: stats?.firstOrder,
+        lastOrderDate: stats?.lastOrder,
+        avgDaysBetweenOrders,
+        predictedNextOrder: stats?.lastOrder 
+          ? new Date(new Date(stats.lastOrder).getTime() + avgDaysBetweenOrders * 24 * 60 * 60 * 1000)
+          : null,
       };
     }),
 });

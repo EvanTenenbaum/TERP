@@ -13,7 +13,7 @@ import {
   referralCredits,
   referralSettings,
 } from "../../drizzle/schema";
-import { adminProcedure, router } from "../trpc";
+import { adminProcedure, router } from "../_core/trpc";
 
 export const referralsRouter = router({
   /**

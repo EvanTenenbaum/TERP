@@ -9,17 +9,15 @@ import { db } from "../db";
 import {
   clients,
   orders,
-  orderItems,
+  orderLineItems,
   payments,
   bills,
-  inventory,
+  batches,
   inventoryMovements,
   users,
   vendors,
-  journalEntries,
-  journalEntryLines,
 } from "../../drizzle/schema";
-import { adminProcedure, router } from "../trpc";
+import { adminProcedure, router } from "../_core/trpc";
 
 export const auditRouter = router({
   /**
@@ -196,13 +194,13 @@ export const auditRouter = router({
       // Get batch info
       const [batch] = await db
         .select({
-          id: inventory.id,
-          strainName: inventory.strainName,
-          quantity: inventory.quantity,
-          reservedQuantity: inventory.reservedQuantity,
+          id: batches.id,
+          code: batches.code,
+          onHandQty: batches.onHandQty,
+          reservedQty: batches.reservedQty,
         })
-        .from(inventory)
-        .where(eq(inventory.id, batchId))
+        .from(batches)
+        .where(eq(batches.id, batchId))
         .limit(1);
 
       if (!batch) {
@@ -262,12 +260,12 @@ export const auditRouter = router({
       );
 
       return {
-        batchName: batch.strainName,
-        currentQuantity: parseFloat(batch.quantity || "0"),
-        reservedQuantity: parseFloat(batch.reservedQuantity || "0"),
+        batchName: batch.code,
+        currentQuantity: parseFloat(batch.onHandQty || "0"),
+        reservedQuantity: parseFloat(batch.reservedQty || "0"),
         availableQuantity:
-          parseFloat(batch.quantity || "0") -
-          parseFloat(batch.reservedQuantity || "0"),
+          parseFloat(batch.onHandQty || "0") -
+          parseFloat(batch.reservedQty || "0"),
         formula: "Sum(Intake) - Sum(Sold) - Sum(Adjustments) + Sum(Returns)",
         totalMovements: movements.length,
         page,
@@ -307,18 +305,17 @@ export const auditRouter = router({
         return { error: "Order not found" };
       }
 
-      // Get line items
+      // Get line items from orderLineItems table
       const lineItems = await db
         .select({
-          id: orderItems.id,
-          productName: orderItems.productName,
-          quantity: orderItems.quantity,
-          unitPrice: orderItems.unitPrice,
-          lineTotal: orderItems.lineTotal,
-          discount: orderItems.discount,
+          id: orderLineItems.id,
+          productName: orderLineItems.productDisplayName,
+          quantity: orderLineItems.quantity,
+          unitPrice: orderLineItems.cogsPerUnit,
+          lineTotal: orderLineItems.lineTotal,
         })
-        .from(orderItems)
-        .where(eq(orderItems.orderId, orderId));
+        .from(orderLineItems)
+        .where(eq(orderLineItems.orderId, orderId));
 
       // Get payments for this order
       const orderPayments = await db
@@ -360,7 +357,7 @@ export const auditRouter = router({
           quantity: parseFloat(li.quantity || "0"),
           unitPrice: parseFloat(li.unitPrice || "0"),
           lineTotal: parseFloat(li.lineTotal || "0"),
-          discount: parseFloat(li.discount || "0"),
+          discount: 0, // Discount is at order level, not line item level
         })),
         payments: orderPayments.map((p) => ({
           id: p.id,
@@ -395,7 +392,6 @@ export const auditRouter = router({
         .select({
           id: vendors.id,
           name: vendors.name,
-          totalOwed: vendors.totalOwed,
         })
         .from(vendors)
         .where(eq(vendors.id, vendorId))
@@ -407,22 +403,27 @@ export const auditRouter = router({
 
       // Build date filter for bills
       const billDateFilter = [];
-      if (dateFrom) billDateFilter.push(gte(bills.createdAt, dateFrom));
-      if (dateTo) billDateFilter.push(lte(bills.createdAt, dateTo));
+      if (dateFrom) billDateFilter.push(gte(bills.billDate, dateFrom));
+      if (dateTo) billDateFilter.push(lte(bills.billDate, dateTo));
 
       // Get all bills for this vendor
       const vendorBills = await db
         .select({
           id: bills.id,
           billNumber: bills.billNumber,
-          amount: bills.amount,
-          createdAt: bills.createdAt,
+          amount: bills.totalAmount,
+          billDate: bills.billDate,
           createdByName: users.name,
         })
         .from(bills)
         .leftJoin(users, eq(bills.createdBy, users.id))
         .where(and(eq(bills.vendorId, vendorId), ...billDateFilter))
-        .orderBy(desc(bills.createdAt));
+        .orderBy(desc(bills.billDate));
+
+      // Build date filter for payments
+      const paymentDateFilter = [];
+      if (dateFrom) paymentDateFilter.push(gte(payments.createdAt, dateFrom));
+      if (dateTo) paymentDateFilter.push(lte(payments.createdAt, dateTo));
 
       // Get all payments to this vendor
       const vendorPayments = await db
@@ -436,7 +437,7 @@ export const auditRouter = router({
         })
         .from(payments)
         .leftJoin(users, eq(payments.createdBy, users.id))
-        .where(eq(payments.vendorId, vendorId))
+        .where(and(eq(payments.vendorId, vendorId), ...paymentDateFilter))
         .orderBy(desc(payments.createdAt));
 
       // Combine transactions
@@ -452,20 +453,20 @@ export const auditRouter = router({
 
       const transactions: Transaction[] = [];
 
-      // Add bills (positive - increases amount owed)
+      // Add bills (positive - increases what we owe)
       for (const bill of vendorBills) {
         transactions.push({
           id: bill.id,
           type: "BILL",
           description: `Bill ${bill.billNumber}`,
           amount: parseFloat(bill.amount || "0"),
-          date: bill.createdAt || new Date(),
+          date: bill.billDate || new Date(),
           createdBy: bill.createdByName || "System",
           reference: bill.billNumber || `BILL-${bill.id}`,
         });
       }
 
-      // Add payments (negative - decreases amount owed)
+      // Add payments (negative - decreases what we owe)
       for (const payment of vendorPayments) {
         transactions.push({
           id: payment.id,
@@ -497,29 +498,34 @@ export const auditRouter = router({
         offset + pageSize
       );
 
+      // Calculate current balance
+      const totalBills = vendorBills.reduce(
+        (sum, b) => sum + parseFloat(b.amount || "0"),
+        0
+      );
+      const totalPayments = vendorPayments.reduce(
+        (sum, p) => sum + parseFloat(p.amount || "0"),
+        0
+      );
+
       return {
         vendorName: vendor.name,
-        currentBalance: parseFloat(vendor.totalOwed || "0"),
+        currentBalance: totalBills - totalPayments,
         formula: "Sum(Bills) - Sum(Payments)",
         totalTransactions: transactions.length,
         page,
         pageSize,
         transactions: paginatedTransactions,
         summary: {
-          totalBills: vendorBills.reduce(
-            (sum, b) => sum + parseFloat(b.amount || "0"),
-            0
-          ),
-          totalPayments: vendorPayments.reduce(
-            (sum, p) => sum + parseFloat(p.amount || "0"),
-            0
-          ),
+          totalBills,
+          totalPayments,
         },
       };
     }),
 
   /**
    * Get account balance breakdown (for accounting module)
+   * Note: This is a placeholder - full journal entry support requires additional schema
    */
   getAccountBalanceBreakdown: adminProcedure
     .input(
@@ -532,85 +538,22 @@ export const auditRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const { accountId, dateFrom, dateTo, page, pageSize } = input;
-      const offset = (page - 1) * pageSize;
+      const { accountId, page, pageSize } = input;
 
-      // Build date filter
-      const dateFilter = [];
-      if (dateFrom) dateFilter.push(gte(journalEntries.entryDate, dateFrom));
-      if (dateTo) dateFilter.push(lte(journalEntries.entryDate, dateTo));
-
-      // Get all journal entry lines for this account
-      const entries = await db
-        .select({
-          id: journalEntryLines.id,
-          entryId: journalEntryLines.journalEntryId,
-          debit: journalEntryLines.debit,
-          credit: journalEntryLines.credit,
-          description: journalEntryLines.description,
-          entryDate: journalEntries.entryDate,
-          entryDescription: journalEntries.description,
-          createdByName: users.name,
-        })
-        .from(journalEntryLines)
-        .innerJoin(
-          journalEntries,
-          eq(journalEntryLines.journalEntryId, journalEntries.id)
-        )
-        .leftJoin(users, eq(journalEntries.createdBy, users.id))
-        .where(and(eq(journalEntryLines.accountId, accountId), ...dateFilter))
-        .orderBy(desc(journalEntries.entryDate));
-
-      // Calculate running balance
-      const sortedAsc = [...entries].reverse();
-      let runningBalance = 0;
-      const withRunningBalance = sortedAsc.map((e) => {
-        const debit = parseFloat(e.debit || "0");
-        const credit = parseFloat(e.credit || "0");
-        runningBalance += debit - credit;
-        return {
-          id: e.id,
-          entryId: e.entryId,
-          type: debit > 0 ? "DEBIT" : "CREDIT",
-          description: e.description || e.entryDescription,
-          debit,
-          credit,
-          net: debit - credit,
-          runningBalance,
-          date: e.entryDate,
-          createdBy: e.createdByName || "System",
-          reference: `JE-${e.entryId}`,
-        };
-      });
-
-      withRunningBalance.reverse();
-
-      // Paginate
-      const paginatedEntries = withRunningBalance.slice(
-        offset,
-        offset + pageSize
-      );
-
-      const totalDebits = entries.reduce(
-        (sum, e) => sum + parseFloat(e.debit || "0"),
-        0
-      );
-      const totalCredits = entries.reduce(
-        (sum, e) => sum + parseFloat(e.credit || "0"),
-        0
-      );
-
+      // Return placeholder response - journal entries table not yet implemented
       return {
-        currentBalance: totalDebits - totalCredits,
+        accountId,
+        currentBalance: 0,
         formula: "Sum(Debits) - Sum(Credits)",
-        totalEntries: entries.length,
+        totalEntries: 0,
         page,
         pageSize,
-        entries: paginatedEntries,
+        entries: [],
         summary: {
-          totalDebits,
-          totalCredits,
+          totalDebits: 0,
+          totalCredits: 0,
         },
+        note: "Journal entry audit trail will be available in a future update",
       };
     }),
 });

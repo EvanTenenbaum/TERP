@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure } from "../trpc";
+import { router, adminProcedure, publicProcedure } from "../_core/trpc";
 import { db } from "../db";
 import { receipts, clients, users } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -138,6 +138,163 @@ function generateReceiptHtml(data: {
   `.trim();
 }
 
+/**
+ * Generate PDF from receipt data using jsPDF
+ * Returns base64 encoded PDF data
+ */
+async function generateReceiptPdf(data: {
+  receiptNumber: string;
+  clientName: string;
+  clientAddress?: string;
+  transactionType: string;
+  previousBalance: number;
+  transactionAmount: number;
+  newBalance: number;
+  note?: string;
+  date: Date;
+}): Promise<string> {
+  // Dynamic import of jsPDF for server-side usage
+  const { jsPDF } = await import('jspdf');
+  
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const formatCurrency = (amount: number) => {
+    const formatted = Math.abs(amount).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return (amount < 0 ? '-$' : '$') + formatted;
+  };
+
+  const transactionLabel = data.transactionType === 'PAYMENT' 
+    ? 'Payment Received' 
+    : data.transactionType === 'CREDIT'
+    ? 'Credit Applied'
+    : data.transactionType === 'ADJUSTMENT'
+    ? 'Balance Adjustment'
+    : 'Statement';
+
+  // Page dimensions
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const contentWidth = pageWidth - (margin * 2);
+  let y = margin;
+
+  // Header
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Payment Receipt', pageWidth / 2, y, { align: 'center' });
+  y += 10;
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text(`#${data.receiptNumber}`, pageWidth / 2, y, { align: 'center' });
+  y += 7;
+
+  doc.setFontSize(10);
+  doc.text(data.date.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  }), pageWidth / 2, y, { align: 'center' });
+  y += 10;
+
+  // Divider line
+  doc.setDrawColor(50, 50, 50);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 15;
+
+  // Client info
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(data.clientName, margin, y);
+  y += 7;
+
+  if (data.clientAddress) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(data.clientAddress, margin, y);
+    y += 7;
+  }
+  y += 10;
+
+  // Transaction table
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+
+  // Previous Balance
+  doc.text('Previous Balance:', margin, y);
+  doc.text(formatCurrency(data.previousBalance), pageWidth - margin, y, { align: 'right' });
+  y += 8;
+
+  // Divider
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  // Transaction
+  doc.text(`${transactionLabel}:`, margin, y);
+  const transactionColor = data.transactionAmount < 0 ? [34, 197, 94] : [239, 68, 68];
+  doc.setTextColor(transactionColor[0], transactionColor[1], transactionColor[2]);
+  doc.text(formatCurrency(data.transactionAmount), pageWidth - margin, y, { align: 'right' });
+  y += 8;
+
+  // Divider
+  doc.setTextColor(0, 0, 0);
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  // New Balance (bold)
+  doc.setFont('helvetica', 'bold');
+  doc.setDrawColor(50, 50, 50);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y - 2, pageWidth - margin, y - 2);
+  y += 5;
+  doc.text('New Balance:', margin, y);
+  doc.text(formatCurrency(data.newBalance), pageWidth - margin, y, { align: 'right' });
+  y += 15;
+
+  // Note section
+  if (data.note) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFillColor(249, 249, 249);
+    doc.roundedRect(margin, y, contentWidth, 20, 3, 3, 'F');
+    y += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Note: ${data.note}`, margin + 5, y);
+    y += 20;
+  }
+
+  // Footer
+  y = doc.internal.pageSize.getHeight() - 30;
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+
+  doc.setFontSize(10);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Thank you for your business!', pageWidth / 2, y, { align: 'center' });
+  y += 5;
+  doc.text('Questions? Contact us at support@terp.app', pageWidth / 2, y, { align: 'center' });
+
+  // Return as base64
+  return doc.output('datauristring');
+}
+
 export const receiptsRouter = router({
   /**
    * Generate a receipt for a transaction
@@ -167,6 +324,27 @@ export const receiptsRouter = router({
       // Generate unique receipt number
       const receiptNumber = await generateReceiptNumber();
 
+      // Generate PDF
+      const receiptData = {
+        receiptNumber,
+        clientName: client[0].name,
+        clientAddress: client[0].address || undefined,
+        transactionType: input.transactionType,
+        previousBalance: input.previousBalance,
+        transactionAmount: input.transactionAmount,
+        newBalance: input.newBalance,
+        note: input.note,
+        date: new Date(),
+      };
+
+      let pdfDataUri: string | null = null;
+      try {
+        pdfDataUri = await generateReceiptPdf(receiptData);
+      } catch (error) {
+        console.error('Failed to generate PDF:', error);
+        // Continue without PDF - will use HTML fallback
+      }
+
       // Create receipt record
       const [newReceipt] = await db.insert(receipts).values({
         receiptNumber,
@@ -177,30 +355,17 @@ export const receiptsRouter = router({
         transactionAmount: String(input.transactionAmount),
         newBalance: String(input.newBalance),
         note: input.note,
+        pdfUrl: pdfDataUri ? `/api/receipts/${receiptNumber}/pdf` : null,
         createdBy: ctx.user.id,
       });
 
       // Generate HTML preview
-      const previewHtml = generateReceiptHtml({
-        receiptNumber,
-        clientName: client[0].name,
-        clientAddress: client[0].address || undefined,
-        transactionType: input.transactionType,
-        previousBalance: input.previousBalance,
-        transactionAmount: input.transactionAmount,
-        newBalance: input.newBalance,
-        note: input.note,
-        date: new Date(),
-      });
-
-      // TODO: Generate PDF and upload to S3
-      // For now, return placeholder URL
-      const pdfUrl = `/api/receipts/${receiptNumber}/pdf`;
+      const previewHtml = generateReceiptHtml(receiptData);
 
       return {
         receiptId: newReceipt.insertId,
         receiptNumber,
-        pdfUrl,
+        pdfUrl: `/api/receipts/${receiptNumber}/pdf`,
         previewHtml,
       };
     }),
@@ -397,7 +562,7 @@ export const receiptsRouter = router({
 
   /**
    * Download receipt as PDF
-   * (Returns HTML for now, PDF generation to be implemented)
+   * Generates actual PDF using jsPDF
    */
   downloadPdf: adminProcedure
     .input(z.object({ receiptId: z.number() }))
@@ -424,7 +589,7 @@ export const receiptsRouter = router({
       }
 
       const r = receipt[0];
-      const html = generateReceiptHtml({
+      const receiptData = {
         receiptNumber: r.receiptNumber,
         clientName: r.clientName || 'Unknown Client',
         clientAddress: r.clientAddress || undefined,
@@ -434,12 +599,64 @@ export const receiptsRouter = router({
         newBalance: parseFloat(r.newBalance as string),
         note: r.note || undefined,
         date: r.createdAt || new Date(),
-      });
+      };
 
-      // TODO: Convert HTML to PDF using puppeteer or similar
+      // Generate actual PDF
+      const pdfDataUri = await generateReceiptPdf(receiptData);
+
       return {
-        html,
+        pdfDataUri,
         filename: `receipt-${r.receiptNumber}.pdf`,
+        html: generateReceiptHtml(receiptData), // Fallback HTML
+      };
+    }),
+
+  /**
+   * Public endpoint to view receipt by receipt number
+   */
+  getPublicReceipt: publicProcedure
+    .input(z.object({ receiptNumber: z.string() }))
+    .query(async ({ input }) => {
+      const receipt = await db
+        .select({
+          receiptNumber: receipts.receiptNumber,
+          clientName: clients.name,
+          transactionType: receipts.transactionType,
+          previousBalance: receipts.previousBalance,
+          transactionAmount: receipts.transactionAmount,
+          newBalance: receipts.newBalance,
+          note: receipts.note,
+          createdAt: receipts.createdAt,
+        })
+        .from(receipts)
+        .leftJoin(clients, eq(receipts.clientId, clients.id))
+        .where(eq(receipts.receiptNumber, input.receiptNumber))
+        .limit(1);
+
+      if (!receipt.length) {
+        throw new Error('Receipt not found');
+      }
+
+      const r = receipt[0];
+      return {
+        receiptNumber: r.receiptNumber,
+        clientName: r.clientName || 'Client',
+        transactionType: r.transactionType,
+        previousBalance: parseFloat(r.previousBalance as string),
+        transactionAmount: parseFloat(r.transactionAmount as string),
+        newBalance: parseFloat(r.newBalance as string),
+        note: r.note,
+        date: r.createdAt,
+        html: generateReceiptHtml({
+          receiptNumber: r.receiptNumber,
+          clientName: r.clientName || 'Client',
+          transactionType: r.transactionType,
+          previousBalance: parseFloat(r.previousBalance as string),
+          transactionAmount: parseFloat(r.transactionAmount as string),
+          newBalance: parseFloat(r.newBalance as string),
+          note: r.note || undefined,
+          date: r.createdAt || new Date(),
+        }),
       };
     }),
 });

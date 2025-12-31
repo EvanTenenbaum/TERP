@@ -1,16 +1,46 @@
 /**
  * WS-007: Flower Intake Router
  * Handles complex flower intake with branching logic for value application
+ * 
+ * Note: This router works with the existing batches schema structure.
+ * Intake-specific fields are stored in the metadata JSON field.
  */
 
 import { z } from "zod";
-import { router, adminProcedure, publicProcedure } from "../trpc";
+import { router, adminProcedure, publicProcedure } from "../_core/trpc";
 import { db } from "../db";
-import { batches, clients, journalEntries, journalEntryLines, users } from "../../drizzle/schema";
+import { batches, clients, products, lots, users } from "../../drizzle/schema";
 import { eq, and, desc, sql, isNull } from "drizzle-orm";
 
 // Intake type enum
 const intakeTypeEnum = z.enum(['PURCHASE', 'CLIENT_DROPOFF', 'CONSIGNMENT', 'OTHER']);
+
+// Interface for intake metadata stored in batches.metadata
+interface IntakeMetadata {
+  intakeType?: string;
+  dropoffClientId?: number;
+  isPendingValuation?: boolean;
+  originalIntakeValue?: number;
+  valuedAt?: string;
+  valuedBy?: number;
+  valuationNotes?: string;
+  intakeNotes?: string;
+}
+
+// Helper to parse metadata
+function parseMetadata(metadata: string | null): IntakeMetadata {
+  if (!metadata) return {};
+  try {
+    return JSON.parse(metadata);
+  } catch {
+    return {};
+  }
+}
+
+// Helper to stringify metadata
+function stringifyMetadata(metadata: IntakeMetadata): string {
+  return JSON.stringify(metadata);
+}
 
 export const flowerIntakeRouter = router({
   /**
@@ -21,10 +51,8 @@ export const flowerIntakeRouter = router({
     .input(z.object({
       // Standard intake fields
       productId: z.number(),
-      strain: z.string(),
+      lotId: z.number(),
       quantity: z.number(),
-      unit: z.string(),
-      locationId: z.number().optional(),
       
       // Flow selection
       intakeType: intakeTypeEnum,
@@ -56,32 +84,37 @@ export const flowerIntakeRouter = router({
         }
       }
 
-      // Generate batch number
-      const batchNumber = `BATCH-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      // Generate batch code
+      const batchCode = `BATCH-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      const sku = `SKU-${Date.now()}`;
 
-      // Create batch record
-      const [newBatch] = await db.insert(batches).values({
-        batchNumber,
-        productId: input.productId,
-        strain: input.strain,
-        quantity: String(input.quantity),
-        unit: input.unit,
-        locationId: input.locationId,
+      // Build metadata
+      const metadata: IntakeMetadata = {
         intakeType: input.intakeType,
         dropoffClientId: input.dropoffClientId,
         isPendingValuation: !input.applyValueNow && input.intakeType === 'CLIENT_DROPOFF',
-        originalIntakeValue: input.applyValueNow ? String(calculatedValue) : null,
-        valuedAt: input.applyValueNow ? new Date() : null,
-        valuedBy: input.applyValueNow ? ctx.user.id : null,
-        notes: input.notes,
-        createdBy: ctx.user.id,
+        originalIntakeValue: input.applyValueNow ? calculatedValue : undefined,
+        valuedAt: input.applyValueNow ? new Date().toISOString() : undefined,
+        valuedBy: input.applyValueNow ? ctx.user.id : undefined,
+        intakeNotes: input.notes,
+      };
+
+      // Create batch record
+      const [newBatch] = await db.insert(batches).values({
+        code: batchCode,
+        sku,
+        productId: input.productId,
+        lotId: input.lotId,
+        cogsMode: 'FIXED',
+        paymentTerms: 'COD',
+        onHandQty: String(input.quantity),
         batchStatus: 'LIVE',
+        metadata: stringifyMetadata(metadata),
       });
 
-      let journalEntryId: number | undefined;
       let newClientBalance: number | undefined;
 
-      // If applying value now, create journal entry and update client tab
+      // If applying value now, update client tab
       if (input.applyValueNow && input.dropoffClientId) {
         // Get current client balance
         const [client] = await db
@@ -97,44 +130,14 @@ export const flowerIntakeRouter = router({
           .update(clients)
           .set({ totalOwed: String(newClientBalance) })
           .where(eq(clients.id, input.dropoffClientId));
-
-        // Create journal entry
-        const [je] = await db.insert(journalEntries).values({
-          entryNumber: `JE-INTAKE-${Date.now()}`,
-          entryDate: new Date(),
-          description: `Flower intake from client - ${input.strain} (${input.quantity} ${input.unit})`,
-          status: 'POSTED',
-          createdBy: ctx.user.id,
-        });
-
-        journalEntryId = je.insertId;
-
-        // Create journal entry lines (Debit Inventory, Credit AR)
-        await db.insert(journalEntryLines).values([
-          {
-            journalEntryId: journalEntryId,
-            accountCode: '1400', // Inventory
-            description: `Inventory - ${input.strain}`,
-            debit: String(calculatedValue),
-            credit: '0',
-          },
-          {
-            journalEntryId: journalEntryId,
-            accountCode: '1200', // Accounts Receivable
-            description: `AR Credit - Client flower drop-off`,
-            debit: '0',
-            credit: String(calculatedValue),
-          },
-        ]);
       }
 
       return {
         batchId: newBatch.insertId,
-        batchNumber,
+        batchCode,
         isPendingValuation: !input.applyValueNow && input.intakeType === 'CLIENT_DROPOFF',
         tabCreditApplied: input.applyValueNow ? calculatedValue : undefined,
         newClientBalance,
-        journalEntryId,
       };
     }),
 
@@ -147,42 +150,69 @@ export const flowerIntakeRouter = router({
       olderThanDays: z.number().optional(),
     }))
     .query(async ({ input }) => {
-      let query = db
+      // Get all batches and filter by metadata
+      const allBatches = await db
         .select({
-          batchId: batches.id,
-          batchNumber: batches.batchNumber,
+          id: batches.id,
+          code: batches.code,
           productId: batches.productId,
-          strain: batches.strain,
-          quantity: batches.quantity,
-          unit: batches.unit,
-          clientId: batches.dropoffClientId,
-          clientName: clients.name,
-          intakeDate: batches.createdAt,
+          onHandQty: batches.onHandQty,
+          metadata: batches.metadata,
+          createdAt: batches.createdAt,
         })
         .from(batches)
-        .leftJoin(clients, eq(batches.dropoffClientId, clients.id))
-        .where(eq(batches.isPendingValuation, true))
+        .where(isNull(batches.deletedAt))
         .orderBy(desc(batches.createdAt));
 
-      const results = await query;
+      // Filter by pending valuation in metadata
+      const pendingBatches = allBatches.filter(b => {
+        const meta = parseMetadata(b.metadata);
+        if (!meta.isPendingValuation) return false;
+        if (input.clientId && meta.dropoffClientId !== input.clientId) return false;
+        return true;
+      });
 
-      return results.map(r => {
-        const intakeDate = r.intakeDate || new Date();
+      // Get client names for the results
+      const results = await Promise.all(pendingBatches.map(async (b) => {
+        const meta = parseMetadata(b.metadata);
+        let clientName = 'Unknown';
+        
+        if (meta.dropoffClientId) {
+          const [client] = await db
+            .select({ name: clients.name })
+            .from(clients)
+            .where(eq(clients.id, meta.dropoffClientId));
+          clientName = client?.name || 'Unknown';
+        }
+
+        // Get product info
+        const [product] = await db
+          .select({ name: products.name })
+          .from(products)
+          .where(eq(products.id, b.productId));
+
+        const intakeDate = b.createdAt || new Date();
         const daysPending = Math.floor((Date.now() - intakeDate.getTime()) / (1000 * 60 * 60 * 24));
         
         return {
-          batchId: r.batchId,
-          batchNumber: r.batchNumber,
-          productId: r.productId,
-          strain: r.strain || 'Unknown',
-          quantity: parseFloat(r.quantity as string),
-          unit: r.unit || 'EA',
-          clientId: r.clientId || 0,
-          clientName: r.clientName || 'Unknown',
+          batchId: b.id,
+          batchCode: b.code,
+          productId: b.productId,
+          productName: product?.name || 'Unknown',
+          quantity: parseFloat(b.onHandQty || '0'),
+          clientId: meta.dropoffClientId || 0,
+          clientName,
           intakeDate,
           daysPending,
         };
-      });
+      }));
+
+      // Filter by age if specified
+      if (input.olderThanDays) {
+        return results.filter(r => r.daysPending >= input.olderThanDays!);
+      }
+
+      return results;
     }),
 
   /**
@@ -207,12 +237,14 @@ export const flowerIntakeRouter = router({
         throw new Error('Batch not found');
       }
 
-      if (!batch.isPendingValuation) {
+      const meta = parseMetadata(batch.metadata);
+
+      if (!meta.isPendingValuation) {
         throw new Error('Batch is not pending valuation');
       }
 
       // Calculate value
-      const quantity = parseFloat(batch.quantity as string);
+      const quantity = parseFloat(batch.onHandQty || '0');
       let calculatedValue = 0;
       if (input.totalValue) {
         calculatedValue = input.totalValue;
@@ -222,28 +254,30 @@ export const flowerIntakeRouter = router({
         throw new Error('Value is required');
       }
 
+      // Update metadata
+      meta.isPendingValuation = false;
+      meta.originalIntakeValue = calculatedValue;
+      meta.valuedAt = new Date().toISOString();
+      meta.valuedBy = ctx.user.id;
+      meta.valuationNotes = input.notes;
+
       // Update batch
       await db
         .update(batches)
         .set({
-          isPendingValuation: false,
-          originalIntakeValue: String(calculatedValue),
-          valuedAt: new Date(),
-          valuedBy: ctx.user.id,
-          valuationNotes: input.notes,
+          metadata: stringifyMetadata(meta),
         })
         .where(eq(batches.id, input.batchId));
 
       let newClientBalance = 0;
-      let journalEntryId = 0;
 
       // Apply to client tab if requested
-      if (input.applyToClientTab && batch.dropoffClientId) {
+      if (input.applyToClientTab && meta.dropoffClientId) {
         // Get current client balance
         const [client] = await db
           .select({ totalOwed: clients.totalOwed })
           .from(clients)
-          .where(eq(clients.id, batch.dropoffClientId));
+          .where(eq(clients.id, meta.dropoffClientId));
 
         const currentBalance = parseFloat(client?.totalOwed as string || '0');
         newClientBalance = currentBalance - calculatedValue;
@@ -252,43 +286,13 @@ export const flowerIntakeRouter = router({
         await db
           .update(clients)
           .set({ totalOwed: String(newClientBalance) })
-          .where(eq(clients.id, batch.dropoffClientId));
-
-        // Create journal entry
-        const [je] = await db.insert(journalEntries).values({
-          entryNumber: `JE-VAL-${Date.now()}`,
-          entryDate: new Date(),
-          description: `Valuation applied - ${batch.strain} (${quantity} ${batch.unit})`,
-          status: 'POSTED',
-          createdBy: ctx.user.id,
-        });
-
-        journalEntryId = je.insertId;
-
-        // Create journal entry lines
-        await db.insert(journalEntryLines).values([
-          {
-            journalEntryId,
-            accountCode: '1400', // Inventory
-            description: `Inventory - ${batch.strain}`,
-            debit: String(calculatedValue),
-            credit: '0',
-          },
-          {
-            journalEntryId,
-            accountCode: '1200', // Accounts Receivable
-            description: `AR Credit - Deferred flower valuation`,
-            debit: '0',
-            credit: String(calculatedValue),
-          },
-        ]);
+          .where(eq(clients.id, meta.dropoffClientId));
       }
 
       return {
         success: true,
         tabCreditApplied: calculatedValue,
         newClientBalance,
-        journalEntryId,
       };
     }),
 
@@ -320,28 +324,44 @@ export const flowerIntakeRouter = router({
    * Get pending valuation stats for dashboard
    */
   getStats: adminProcedure.query(async () => {
-    const results = await db
+    // Get all batches and filter by metadata
+    const allBatches = await db
       .select({
-        count: sql<number>`COUNT(*)`,
-        totalQuantity: sql<number>`SUM(CAST(${batches.quantity} AS DECIMAL))`,
+        onHandQty: batches.onHandQty,
+        metadata: batches.metadata,
+        createdAt: batches.createdAt,
       })
       .from(batches)
-      .where(eq(batches.isPendingValuation, true));
+      .where(isNull(batches.deletedAt));
 
-    const oldestPending = await db
-      .select({ createdAt: batches.createdAt })
-      .from(batches)
-      .where(eq(batches.isPendingValuation, true))
-      .orderBy(batches.createdAt)
-      .limit(1);
+    // Filter by pending valuation
+    const pendingBatches = allBatches.filter(b => {
+      const meta = parseMetadata(b.metadata);
+      return meta.isPendingValuation === true;
+    });
 
-    const oldestDays = oldestPending.length > 0 && oldestPending[0].createdAt
-      ? Math.floor((Date.now() - oldestPending[0].createdAt.getTime()) / (1000 * 60 * 60 * 24))
-      : 0;
+    const totalQuantity = pendingBatches.reduce(
+      (sum, b) => sum + parseFloat(b.onHandQty || '0'),
+      0
+    );
+
+    // Find oldest pending
+    let oldestDays = 0;
+    if (pendingBatches.length > 0) {
+      const oldest = pendingBatches.reduce((oldest, b) => {
+        if (!b.createdAt) return oldest;
+        if (!oldest.createdAt) return b;
+        return b.createdAt < oldest.createdAt ? b : oldest;
+      }, pendingBatches[0]);
+
+      if (oldest.createdAt) {
+        oldestDays = Math.floor((Date.now() - oldest.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+      }
+    }
 
     return {
-      pendingCount: results[0]?.count || 0,
-      totalQuantity: results[0]?.totalQuantity || 0,
+      pendingCount: pendingBatches.length,
+      totalQuantity,
       oldestPendingDays: oldestDays,
     };
   }),

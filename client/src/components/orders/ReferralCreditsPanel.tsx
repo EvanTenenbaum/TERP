@@ -1,6 +1,10 @@
 /**
  * WS-004: Referral Credits Panel
  * Displays pending/available referral credits and allows applying them to an order
+ * 
+ * Supports two modes:
+ * 1. Preview mode (no orderId): Shows available credits during order creation
+ * 2. Apply mode (with orderId): Allows applying credits to an existing order
  */
 
 import { useState } from "react";
@@ -8,7 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Gift, DollarSign, Check, AlertCircle } from "lucide-react";
+import { Gift, DollarSign, Check, AlertCircle, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,9 +25,10 @@ import { formatCurrency } from "@/lib/utils";
 
 interface ReferralCreditsPanelProps {
   clientId: number;
-  orderId: number;
+  orderId?: number; // Optional - if not provided, shows preview mode
   orderTotal: number;
   onCreditsApplied?: (appliedAmount: number, newTotal: number) => void;
+  onCreditsSelected?: (creditIds: number[], totalAmount: number) => void; // For preview mode
 }
 
 export function ReferralCreditsPanel({
@@ -31,6 +36,7 @@ export function ReferralCreditsPanel({
   orderId,
   orderTotal,
   onCreditsApplied,
+  onCreditsSelected,
 }: ReferralCreditsPanelProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedCreditIds, setSelectedCreditIds] = useState<number[]>([]);
@@ -48,11 +54,29 @@ export function ReferralCreditsPanel({
     },
   });
 
+  // Don't render if no credits available
   if (!creditsData || (creditsData.totalPending === 0 && creditsData.totalAvailable === 0)) {
     return null;
   }
 
   const handleApplyCredits = () => {
+    if (!orderId) {
+      // Preview mode - just notify parent of selection
+      const selectedAmount = selectedCreditIds.length > 0
+        ? availableCredits
+            .filter((c) => selectedCreditIds.includes(c.id))
+            .reduce((sum, c) => sum + c.creditAmount, 0)
+        : Math.min(creditsData.totalAvailable, orderTotal);
+      
+      onCreditsSelected?.(
+        selectedCreditIds.length > 0 ? selectedCreditIds : availableCredits.map(c => c.id),
+        selectedAmount
+      );
+      setShowConfirmDialog(false);
+      return;
+    }
+
+    // Apply mode - actually apply credits to order
     applyCredits.mutate({
       orderId,
       creditIds: selectedCreditIds.length > 0 ? selectedCreditIds : undefined,
@@ -69,6 +93,9 @@ export function ReferralCreditsPanel({
 
   const availableCredits = creditsData.credits.filter((c) => c.status === "AVAILABLE");
   const pendingCredits = creditsData.credits.filter((c) => c.status === "PENDING");
+
+  // Preview mode (no orderId)
+  const isPreviewMode = !orderId;
 
   return (
     <>
@@ -92,13 +119,34 @@ export function ReferralCreditsPanel({
                     Available to apply ({availableCredits.length} referral{availableCredits.length !== 1 ? "s" : ""})
                   </p>
                 </div>
-                <Button
-                  onClick={() => setShowConfirmDialog(true)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  Apply Credits
-                </Button>
+                {isPreviewMode ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowConfirmDialog(true)}
+                    className="border-green-600 text-green-600 hover:bg-green-100"
+                  >
+                    <Info className="mr-2 h-4 w-4" />
+                    View Credits
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => setShowConfirmDialog(true)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Apply Credits
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Preview Mode Info */}
+            {isPreviewMode && creditsData.totalAvailable > 0 && (
+              <div className="flex items-center gap-2 text-green-600 bg-green-100 rounded-md p-2">
+                <Info className="h-4 w-4 flex-shrink-0" />
+                <span className="text-sm">
+                  Credits can be applied after order is finalized
+                </span>
               </div>
             )}
 
@@ -139,9 +187,13 @@ export function ReferralCreditsPanel({
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Apply Referral Credits</DialogTitle>
+            <DialogTitle>
+              {isPreviewMode ? "Available Referral Credits" : "Apply Referral Credits"}
+            </DialogTitle>
             <DialogDescription>
-              Select which credits to apply to this order, or apply all available credits.
+              {isPreviewMode
+                ? "These credits will be available to apply after the order is finalized."
+                : "Select which credits to apply to this order, or apply all available credits."}
             </DialogDescription>
           </DialogHeader>
 
@@ -149,12 +201,14 @@ export function ReferralCreditsPanel({
             {availableCredits.map((credit) => (
               <div
                 key={credit.id}
-                className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors ${
+                className={`flex items-center justify-between rounded-lg border p-3 ${
+                  isPreviewMode ? "cursor-default" : "cursor-pointer"
+                } transition-colors ${
                   selectedCreditIds.includes(credit.id)
                     ? "border-green-500 bg-green-50"
                     : "border-gray-200 hover:border-green-300"
                 }`}
-                onClick={() => toggleCreditSelection(credit.id)}
+                onClick={() => !isPreviewMode && toggleCreditSelection(credit.id)}
               >
                 <div>
                   <p className="font-medium">{credit.referredClientName}</p>
@@ -166,7 +220,7 @@ export function ReferralCreditsPanel({
                   <span className="font-semibold text-green-600">
                     {formatCurrency(credit.creditAmount)}
                   </span>
-                  {selectedCreditIds.includes(credit.id) && (
+                  {!isPreviewMode && selectedCreditIds.includes(credit.id) && (
                     <Check className="h-5 w-5 text-green-600" />
                   )}
                 </div>
@@ -179,7 +233,7 @@ export function ReferralCreditsPanel({
                 <span>{formatCurrency(orderTotal)}</span>
               </div>
               <div className="flex justify-between text-sm text-green-600">
-                <span>Credits to Apply:</span>
+                <span>{isPreviewMode ? "Available Credits:" : "Credits to Apply:"}</span>
                 <span>
                   -{formatCurrency(
                     selectedCreditIds.length > 0
@@ -191,7 +245,7 @@ export function ReferralCreditsPanel({
                 </span>
               </div>
               <div className="mt-2 flex justify-between font-semibold border-t pt-2">
-                <span>New Total:</span>
+                <span>{isPreviewMode ? "Potential New Total:" : "New Total:"}</span>
                 <span>
                   {formatCurrency(
                     Math.max(
@@ -211,15 +265,17 @@ export function ReferralCreditsPanel({
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
-              Cancel
+              {isPreviewMode ? "Close" : "Cancel"}
             </Button>
-            <Button
-              onClick={handleApplyCredits}
-              disabled={applyCredits.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {applyCredits.isPending ? "Applying..." : "Apply Credits"}
-            </Button>
+            {!isPreviewMode && (
+              <Button
+                onClick={handleApplyCredits}
+                disabled={applyCredits.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {applyCredits.isPending ? "Applying..." : "Apply Credits"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

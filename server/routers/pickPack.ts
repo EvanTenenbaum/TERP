@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure } from "../trpc";
+import { router, adminProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
 // Pick & Pack status enum for validation
@@ -395,7 +395,7 @@ export const pickPackRouter = router({
       const db = await import("../db").then((m) => m.getDb());
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
-      const { orderBags, orderItemBags } = await import("../../drizzle/schema");
+      const { orderBags, orderItemBags, auditLogs, orders } = await import("../../drizzle/schema");
       const { eq, and, inArray, sql } = await import("drizzle-orm");
 
       // Get bag IDs for this order
@@ -420,7 +420,31 @@ export const pickPackRouter = router({
           )
         );
 
-      // TODO: Log the unpack action with reason to audit log
+      // Log the unpack action with reason to audit log (WS-005)
+      // Get order number for better audit trail
+      const [order] = await db
+        .select({ orderNumber: orders.orderNumber })
+        .from(orders)
+        .where(eq(orders.id, input.orderId))
+        .limit(1);
+
+      await db.insert(auditLogs).values({
+        actorId: ctx.user.id,
+        entity: "ORDER_ITEM_BAG",
+        entityId: input.orderId,
+        action: "UNPACK_ITEMS",
+        before: JSON.stringify({
+          orderId: input.orderId,
+          orderNumber: order?.orderNumber,
+          itemIds: input.itemIds,
+          itemCount: input.itemIds.length,
+        }),
+        after: JSON.stringify({
+          status: "UNPACKED",
+          itemCount: input.itemIds.length,
+        }),
+        reason: input.reason,
+      });
 
       return {
         success: true,

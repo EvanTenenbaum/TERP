@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure } from "../trpc";
+import { router, adminProcedure } from "../_core/trpc";
 import { db } from "../db";
 import { clients } from "../../drizzle/schema";
 import { eq, like, desc, sql } from "drizzle-orm";

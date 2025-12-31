@@ -5,6 +5,8 @@
  * 1. Select Client
  * 2. Enter Amount
  * 3. Confirm & Generate Receipt
+ * 
+ * WS-006: Integrated ReceiptPreview for post-payment receipt viewing
  */
 
 import { useState, useEffect } from "react";
@@ -39,6 +41,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ReceiptPreview } from "@/components/receipts/ReceiptPreview";
 
 interface ReceivePaymentModalProps {
   open: boolean;
@@ -49,6 +52,7 @@ interface ReceivePaymentModalProps {
     paymentNumber: string;
     previousBalance: number;
     newBalance: number;
+    receiptId?: number;
   }) => void;
 }
 
@@ -68,6 +72,12 @@ export function ReceivePaymentModal({
   const [note, setNote] = useState<string>("");
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
+  // Receipt preview state (WS-006)
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [receiptId, setReceiptId] = useState<number | null>(null);
+  const [clientEmail, setClientEmail] = useState<string | undefined>();
+  const [clientPhone, setClientPhone] = useState<string | undefined>();
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (open) {
@@ -76,6 +86,8 @@ export function ReceivePaymentModal({
       setPaymentMethod("CASH");
       setNote("");
       setStep(preselectedClientId ? 2 : 1);
+      setShowReceiptPreview(false);
+      setReceiptId(null);
     }
   }, [open, preselectedClientId]);
 
@@ -100,8 +112,17 @@ export function ReceivePaymentModal({
       });
       utils.accounting.payments.list.invalidate();
       utils.accounting.quickActions.getRecentClients.invalidate();
-      onSuccess?.(result);
-      onOpenChange(false);
+      
+      // Show receipt preview if receipt was generated (WS-006)
+      if (result.receiptId) {
+        setReceiptId(result.receiptId);
+        setClientEmail(result.clientEmail);
+        setClientPhone(result.clientPhone);
+        setShowReceiptPreview(true);
+      } else {
+        onSuccess?.(result);
+        onOpenChange(false);
+      }
     },
     onError: (error) => {
       toast({
@@ -131,12 +152,37 @@ export function ReceivePaymentModal({
     });
   };
 
+  const handleReceiptPreviewClose = () => {
+    setShowReceiptPreview(false);
+    onSuccess?.({
+      paymentId: receivePayment.data?.paymentId || 0,
+      paymentNumber: receivePayment.data?.paymentNumber || "",
+      previousBalance: receivePayment.data?.previousBalance || 0,
+      newBalance: receivePayment.data?.newBalance || 0,
+      receiptId: receiptId || undefined,
+    });
+    onOpenChange(false);
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
     }).format(value);
   };
+
+  // If showing receipt preview, render that instead
+  if (showReceiptPreview && receiptId) {
+    return (
+      <ReceiptPreview
+        isOpen={true}
+        onClose={handleReceiptPreviewClose}
+        receiptId={receiptId}
+        clientEmail={clientEmail}
+        clientPhone={clientPhone}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

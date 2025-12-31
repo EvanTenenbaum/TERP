@@ -11,6 +11,7 @@ import {
   date,
   index,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
@@ -5464,6 +5465,133 @@ export const receipts = mysqlTable(
 
 export type Receipt = typeof receipts.$inferSelect;
 export type InsertReceipt = typeof receipts.$inferInsert;
+
+// ============================================================================
+// WS-010: PHOTOGRAPHY MODULE
+// ============================================================================
+
+/**
+ * Image Status Enum
+ * Tracks the approval status of product images
+ */
+export const imageStatusEnum = mysqlEnum("image_status", [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "ARCHIVED",
+]);
+
+/**
+ * Product Images Table
+ * Stores images associated with batches and products for photography module
+ * Feature: WS-010 Photography Module
+ */
+export const productImages = mysqlTable(
+  "product_images",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    batchId: int("batch_id").references(() => batches.id, { onDelete: "cascade" }),
+    productId: int("product_id").references(() => products.id, { onDelete: "cascade" }),
+    imageUrl: varchar("image_url", { length: 500 }).notNull(),
+    thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
+    caption: varchar("caption", { length: 255 }),
+    isPrimary: boolean("is_primary").default(false),
+    sortOrder: int("sort_order").default(0),
+    status: imageStatusEnum.default("APPROVED"),
+    uploadedBy: int("uploaded_by").references(() => users.id),
+    uploadedAt: timestamp("uploaded_at").defaultNow(),
+  },
+  table => ({
+    batchIdx: index("idx_batch_images").on(table.batchId),
+    productIdx: index("idx_product_images").on(table.productId),
+  })
+);
+
+export type ProductImage = typeof productImages.$inferSelect;
+export type InsertProductImage = typeof productImages.$inferInsert;
+
+// Relations for productImages
+export const productImagesRelations = relations(productImages, ({ one }) => ({
+  batch: one(batches, {
+    fields: [productImages.batchId],
+    references: [batches.id],
+  }),
+  product: one(products, {
+    fields: [productImages.productId],
+    references: [products.id],
+  }),
+  uploader: one(users, {
+    fields: [productImages.uploadedBy],
+    references: [users.id],
+  }),
+}));
+
+// ============================================================================
+// WS-014: VENDOR HARVEST REMINDERS MODULE
+// ============================================================================
+
+/**
+ * Reminder Status Enum
+ * Tracks the status of vendor harvest reminders
+ */
+export const reminderStatusEnum = mysqlEnum("reminder_status", [
+  "PENDING",
+  "CONTACTED",
+  "COMPLETED",
+  "CANCELLED",
+]);
+
+/**
+ * Vendor Harvest Reminders Table
+ * Tracks expected harvest dates and reminder schedules for vendor outreach
+ * Feature: WS-014 Vendor Harvest Reminders
+ */
+export const vendorHarvestReminders = mysqlTable(
+  "vendor_harvest_reminders",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    vendorId: int("vendor_id").notNull().references(() => vendors.id, { onDelete: "cascade" }),
+    expectedHarvestDate: date("expected_harvest_date").notNull(),
+    reminderDate: date("reminder_date").notNull(),
+    strain: varchar("strain", { length: 100 }),
+    estimatedQuantity: decimal("estimated_quantity", { precision: 12, scale: 2 }),
+    actualQuantity: decimal("actual_quantity", { precision: 12, scale: 2 }),
+    notes: text("notes"),
+    status: reminderStatusEnum.default("PENDING"),
+    createdBy: int("created_by").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow(),
+    contactedAt: timestamp("contacted_at"),
+    contactedBy: int("contacted_by").references(() => users.id),
+    contactNotes: text("contact_notes"),
+    completedAt: timestamp("completed_at"),
+    completionNotes: text("completion_notes"),
+  },
+  table => ({
+    vendorStatusIdx: index("idx_vendor_reminders").on(table.vendorId, table.status),
+    reminderDateIdx: index("idx_reminder_date").on(table.reminderDate, table.status),
+  })
+);
+
+export type VendorHarvestReminder = typeof vendorHarvestReminders.$inferSelect;
+export type InsertVendorHarvestReminder = typeof vendorHarvestReminders.$inferInsert;
+
+// Relations for vendorHarvestReminders
+export const vendorHarvestRemindersRelations = relations(vendorHarvestReminders, ({ one }) => ({
+  vendor: one(vendors, {
+    fields: [vendorHarvestReminders.vendorId],
+    references: [vendors.id],
+  }),
+  creator: one(users, {
+    fields: [vendorHarvestReminders.createdBy],
+    references: [users.id],
+    relationName: "reminderCreator",
+  }),
+  contacter: one(users, {
+    fields: [vendorHarvestReminders.contactedBy],
+    references: [users.id],
+    relationName: "reminderContacter",
+  }),
+}));
 
 // ============================================================================
 // LIVE SHOPPING MODULE (Phase 0)

@@ -454,6 +454,14 @@ export default function OrderCreatorPageV2() {
               />
             )}
 
+            {/* Referral Credits Panel (WS-004) */}
+            {clientId && (
+              <ReferralCreditsPanel
+                clientId={clientId}
+                orderTotal={totals.total}
+              />
+            )}
+
             {/* Totals */}
             <OrderTotalsPanel
               totals={totals}
