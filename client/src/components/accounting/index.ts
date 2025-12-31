@@ -10,6 +10,8 @@ export { AgingBadge } from "./AgingBadge";
 export { AccountSelector } from "./AccountSelector";
 export { FiscalPeriodSelector } from "./FiscalPeriodSelector";
 export { JournalEntryForm } from "./JournalEntryForm";
+export { ReceivePaymentModal } from "./ReceivePaymentModal";
+export { PayVendorModal } from "./PayVendorModal";
 
 // Re-export types
 export type { InvoiceStatus, BillStatus, PaymentType, PaymentMethod } from "./StatusBadge";

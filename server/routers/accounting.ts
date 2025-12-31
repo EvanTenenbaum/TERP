@@ -795,4 +795,230 @@ export const accountingRouter = router({
           return await cashExpensesDb.generateExpenseNumber();
         }),
     }),
+
+    // WS-001 & WS-002: Quick Actions for common accounting tasks
+    quickActions: router({
+      // WS-001: Preview client balance before payment
+      previewPaymentBalance: protectedProcedure.use(requirePermission("accounting:read"))
+        .input(z.object({
+          clientId: z.number(),
+          amount: z.number().positive(),
+        }))
+        .query(async ({ input }) => {
+          const db = await import("../db").then(m => m.getDb());
+          if (!db) throw new Error("Database not available");
+          
+          const { clients } = await import("../../drizzle/schema");
+          const { eq } = await import("drizzle-orm");
+          
+          const client = await db.select({
+            id: clients.id,
+            name: clients.name,
+            totalOwed: clients.totalOwed,
+          }).from(clients).where(eq(clients.id, input.clientId)).limit(1);
+          
+          if (!client[0]) throw new Error("Client not found");
+          
+          const currentBalance = Number(client[0].totalOwed || 0);
+          const projectedBalance = currentBalance - input.amount;
+          
+          return {
+            clientId: client[0].id,
+            clientName: client[0].name,
+            currentBalance,
+            paymentAmount: input.amount,
+            projectedBalance,
+            willCreateCredit: projectedBalance < 0,
+          };
+        }),
+
+      // WS-001: Receive client payment (cash drop-off)
+      receiveClientPayment: protectedProcedure.use(requirePermission("accounting:create"))
+        .input(z.object({
+          clientId: z.number(),
+          amount: z.number().positive(),
+          paymentMethod: z.enum(["CASH", "CHECK", "WIRE", "ACH", "OTHER"]),
+          note: z.string().optional(),
+          generateReceipt: z.boolean().default(true),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Unauthorized");
+          
+          const db = await import("../db").then(m => m.getDb());
+          if (!db) throw new Error("Database not available");
+          
+          const { clients, payments, clientTransactions } = await import("../../drizzle/schema");
+          const { eq, sql } = await import("drizzle-orm");
+          
+          // 1. Get current client balance
+          const client = await db.select({
+            id: clients.id,
+            name: clients.name,
+            totalOwed: clients.totalOwed,
+          }).from(clients).where(eq(clients.id, input.clientId)).limit(1);
+          
+          if (!client[0]) throw new Error("Client not found");
+          
+          const previousBalance = Number(client[0].totalOwed || 0);
+          const newBalance = previousBalance - input.amount;
+          
+          // 2. Generate payment number
+          const paymentNumber = await arApDb.generatePaymentNumber("RECEIVED");
+          
+          // 3. Create payment record
+          const paymentResult = await db.insert(payments).values({
+            paymentNumber,
+            paymentType: "RECEIVED",
+            paymentDate: new Date(),
+            amount: input.amount.toFixed(2),
+            paymentMethod: input.paymentMethod,
+            customerId: input.clientId,
+            notes: input.note || `Quick payment from ${client[0].name}`,
+            createdBy: ctx.user.id,
+          });
+          
+          const paymentId = Number(paymentResult[0].insertId);
+          
+          // 4. Create client transaction record for audit trail
+          await db.insert(clientTransactions).values({
+            clientId: input.clientId,
+            transactionType: "PAYMENT",
+            transactionDate: new Date(),
+            amount: input.amount.toFixed(2),
+            paymentStatus: "PAID",
+            referenceType: "PAYMENT",
+            referenceId: paymentId,
+            notes: input.note || `Quick payment - ${input.paymentMethod}`,
+          });
+          
+          // 5. Update client totalOwed
+          await db.update(clients).set({
+            totalOwed: newBalance.toFixed(2),
+          }).where(eq(clients.id, input.clientId));
+          
+          // 6. Return result
+          return {
+            paymentId,
+            paymentNumber,
+            previousBalance,
+            newBalance,
+            paymentAmount: input.amount,
+            clientName: client[0].name,
+            timestamp: new Date().toISOString(),
+            receiptUrl: input.generateReceipt ? `/api/receipts/payment/${paymentId}` : undefined,
+          };
+        }),
+
+      // WS-002: Pay vendor (cash out)
+      payVendor: protectedProcedure.use(requirePermission("accounting:create"))
+        .input(z.object({
+          vendorId: z.number(),
+          amount: z.number().positive(),
+          paymentMethod: z.enum(["CASH", "CHECK", "WIRE", "ACH", "OTHER"]),
+          note: z.string().optional(),
+          billId: z.number().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Unauthorized");
+          
+          const db = await import("../db").then(m => m.getDb());
+          if (!db) throw new Error("Database not available");
+          
+          const { clients, payments, bills } = await import("../../drizzle/schema");
+          const { eq, and, sql } = await import("drizzle-orm");
+          
+          // 1. Get vendor (supplier) info
+          const vendor = await db.select({
+            id: clients.id,
+            name: clients.name,
+            isSeller: clients.isSeller,
+          }).from(clients).where(and(
+            eq(clients.id, input.vendorId),
+            eq(clients.isSeller, true)
+          )).limit(1);
+          
+          if (!vendor[0]) throw new Error("Vendor not found or not a seller");
+          
+          // 2. Generate payment number
+          const paymentNumber = await arApDb.generatePaymentNumber("SENT");
+          
+          // 3. Create payment record
+          const paymentResult = await db.insert(payments).values({
+            paymentNumber,
+            paymentType: "SENT",
+            paymentDate: new Date(),
+            amount: input.amount.toFixed(2),
+            paymentMethod: input.paymentMethod,
+            vendorId: input.vendorId,
+            billId: input.billId,
+            notes: input.note || `Quick payment to ${vendor[0].name}`,
+            createdBy: ctx.user.id,
+          });
+          
+          const paymentId = Number(paymentResult[0].insertId);
+          
+          // 4. If billId provided, update bill payment status
+          if (input.billId) {
+            await arApDb.recordBillPayment(input.billId, input.amount);
+          }
+          
+          // 5. Return result
+          return {
+            paymentId,
+            paymentNumber,
+            paymentAmount: input.amount,
+            vendorName: vendor[0].name,
+            timestamp: new Date().toISOString(),
+          };
+        }),
+
+      // Get recent clients for quick selection
+      getRecentClients: protectedProcedure.use(requirePermission("accounting:read"))
+        .input(z.object({
+          limit: z.number().min(1).max(20).default(10),
+        }))
+        .query(async ({ input }) => {
+          const db = await import("../db").then(m => m.getDb());
+          if (!db) throw new Error("Database not available");
+          
+          const { clients, payments } = await import("../../drizzle/schema");
+          const { desc, eq, sql } = await import("drizzle-orm");
+          
+          // Get clients with recent payment activity
+          const recentClients = await db.select({
+            id: clients.id,
+            name: clients.name,
+            totalOwed: clients.totalOwed,
+          }).from(clients)
+            .where(eq(clients.isBuyer, true))
+            .orderBy(desc(clients.updatedAt))
+            .limit(input.limit);
+          
+          return recentClients;
+        }),
+
+      // Get recent vendors for quick selection
+      getRecentVendors: protectedProcedure.use(requirePermission("accounting:read"))
+        .input(z.object({
+          limit: z.number().min(1).max(20).default(10),
+        }))
+        .query(async ({ input }) => {
+          const db = await import("../db").then(m => m.getDb());
+          if (!db) throw new Error("Database not available");
+          
+          const { clients } = await import("../../drizzle/schema");
+          const { desc, eq } = await import("drizzle-orm");
+          
+          // Get vendors (sellers)
+          const recentVendors = await db.select({
+            id: clients.id,
+            name: clients.name,
+          }).from(clients)
+            .where(eq(clients.isSeller, true))
+            .orderBy(desc(clients.updatedAt))
+            .limit(input.limit);
+          
+          return recentVendors;
+        }),
+    }),
   })

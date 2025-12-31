@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,11 +22,14 @@ import {
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
-import { StatusBadge, AgingBadge } from "@/components/accounting";
+import { StatusBadge, AgingBadge, ReceivePaymentModal, PayVendorModal } from "@/components/accounting";
 import { DataCardSection } from "@/components/data-cards";
 
 
 export default function AccountingDashboard() {
+  // WS-001 & WS-002: Quick Action Modal State
+  const [receivePaymentOpen, setReceivePaymentOpen] = useState(false);
+  const [payVendorOpen, setPayVendorOpen] = useState(false);
 
   // Fetch dashboard data
   const { data: totalCash } = trpc.accounting.bankAccounts.getTotalCashBalance.useQuery();
@@ -148,13 +152,31 @@ export default function AccountingDashboard() {
         </Card>
       )}
 
-      {/* Quick Actions */}
+      {/* Quick Actions - WS-001 & WS-002: Added Receive Payment and Pay Vendor */}
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {/* WS-001: Receive Client Payment - Primary Quick Action */}
+            <Button 
+              variant="default" 
+              className="h-20 flex-col gap-2 bg-green-600 hover:bg-green-700"
+              onClick={() => setReceivePaymentOpen(true)}
+            >
+              <DollarSign className="h-5 w-5" />
+              <span>Receive Payment</span>
+            </Button>
+            {/* WS-002: Pay Vendor - Primary Quick Action */}
+            <Button 
+              variant="destructive" 
+              className="h-20 flex-col gap-2"
+              onClick={() => setPayVendorOpen(true)}
+            >
+              <DollarSign className="h-5 w-5" />
+              <span>Pay Vendor</span>
+            </Button>
             <Button 
               variant="outline" 
               className="h-20 flex-col gap-2"
@@ -190,6 +212,16 @@ export default function AccountingDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* WS-001 & WS-002: Quick Action Modals */}
+      <ReceivePaymentModal 
+        open={receivePaymentOpen} 
+        onOpenChange={setReceivePaymentOpen} 
+      />
+      <PayVendorModal 
+        open={payVendorOpen} 
+        onOpenChange={setPayVendorOpen} 
+      />
 
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-3">
