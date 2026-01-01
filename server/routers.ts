@@ -90,6 +90,7 @@ import { quickCustomerRouter } from "./routers/quickCustomer";
 import { customerPreferencesRouter } from "./routers/customerPreferences";
 import { vendorRemindersRouter } from "./routers/vendorReminders";
 import { featureFlagsRouter } from "./routers/featureFlags";
+import { adminSetupRouter } from "./routers/adminSetup";
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
@@ -196,7 +197,8 @@ export const appRouter = router({
   quickCustomer: quickCustomerRouter, // WS-011: Quick Customer Creation
   customerPreferences: customerPreferencesRouter, // WS-012: Customer Preferences & History
   vendorReminders: vendorRemindersRouter, // WS-014: Vendor Harvest Reminders
-  featureFlags: featureFlagsRouter, // Feature Flag System
+  featureFlags: featureFlagsRouter,
+  adminSetup: adminSetupRouter, // Feature Flag System
   // Debug router - only registered in development
   ...(debugRouter ? { debug: debugRouter } : {}),
 });
