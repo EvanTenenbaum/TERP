@@ -30,6 +30,7 @@ import Quotes from "@/pages/Quotes";
 import ComponentShowcase from "@/pages/ComponentShowcase";
 import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
+import AdminSetupPage from "@/pages/AdminSetupPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
 // DEPRECATED: VendorsPage and VendorProfilePage are replaced by redirects
@@ -70,6 +71,7 @@ function Router() {
   return (
     <Switch>
       {/* Public routes - no AppShell */}
+      <Route path="/admin-setup" component={AdminSetupPage} />
       <Route path="/login" component={Login} />
       <Route path="/vip-portal/login" component={VIPLogin} />
       <Route path="/vip-portal/dashboard" component={VIPDashboard} />
