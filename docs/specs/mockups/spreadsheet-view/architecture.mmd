@@ -1,0 +1,58 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e3f2fd', 'primaryTextColor': '#1565c0', 'primaryBorderColor': '#1565c0', 'lineColor': '#424242', 'secondaryColor': '#fff3e0', 'tertiaryColor': '#e8f5e9'}}}%%
+flowchart TB
+    subgraph Frontend["SPREADSHEET VIEW (New Frontend Components)"]
+        direction LR
+        IG[Inventory Grid]
+        ING[Intake Grid]
+        PPG[Pick & Pack Grid]
+        CG[Client Grid]
+    end
+
+    subgraph Transform["DATA TRANSFORMATION ONLY (New)"]
+        SR[spreadsheetRouter.ts<br/>~200 LoC]
+    end
+
+    subgraph Existing["EXISTING BACKEND (No Changes)"]
+        direction TB
+        subgraph Routers["tRPC Routers"]
+            IR[inventory Router]
+            IS[inventoryIntakeService]
+            PR[pickPack Router]
+            OR[orders Router]
+        end
+        subgraph Controls["Security & Integrity Controls"]
+            VAL[Validation<br/>Zod Schemas]
+            PERM[Permissions<br/>RBAC]
+            AUDIT[Audit Logging]
+            LOCK[Optimistic Locking]
+        end
+    end
+
+    subgraph DB["DATABASE (Single Source of Truth)"]
+        MySQL[(MySQL)]
+    end
+
+    IG --> SR
+    ING --> SR
+    PPG --> SR
+    CG --> SR
+
+    SR --> IR
+    SR --> IS
+    SR --> PR
+    SR --> OR
+
+    IR --> VAL
+    IS --> VAL
+    PR --> VAL
+    OR --> VAL
+
+    VAL --> PERM
+    PERM --> AUDIT
+    AUDIT --> LOCK
+    LOCK --> MySQL
+
+    style Frontend fill:#e3f2fd,stroke:#1565c0
+    style Transform fill:#fff3e0,stroke:#ff9800
+    style Existing fill:#e8f5e9,stroke:#4caf50
+    style DB fill:#fce4ec,stroke:#e91e63

@@ -214,3 +214,33 @@ Three tables have index definitions referencing non-existent columns (copy-paste
 | `tagGroups` | `idx_sales_batch_id` | `batchId` |
 
 **Fix:** Remove or correct these index definitions.
+
+
+---
+
+## 🖥️ User Experience Features - Added 2026-01-02
+
+### FEATURE-021: Unified Spreadsheet View
+
+**Priority:** P1 | **Status:** 📋 Spec Complete | **Effort:** 40-56h
+
+Implement a spreadsheet-like interface for users accustomed to spreadsheet-based workflows. This feature provides a familiar, grid-based experience for managing Inventory, processing new Intakes, and handling Pick & Pack fulfillment, while maintaining full integration with the TERP backend.
+
+**Architecture:** "Views, Not Modules" - Pure presentation layer over existing services. NO new business logic. All mutations flow through existing tRPC procedures.
+
+**Key Requirements:**
+- All data operations use existing tRPC routers (no bypasses)
+- All validation, permissions, and business rules enforced
+- Bidirectional data sync with standard ERP views
+- Full audit trail via existing logging system
+
+**Phases:**
+1. Phase 1: Inventory Grid + Client View (16-20h)
+2. Phase 2: Intake Grid (12-16h)
+3. Phase 3: Pick & Pack Grid (12-20h)
+
+**Specification:** [`docs/specs/FEATURE-SPREADSHEET-VIEW-SPEC.md`](../specs/FEATURE-SPREADSHEET-VIEW-SPEC.md)
+**QA Review:** [`docs/reviews/QA-REVIEW-SPREADSHEET-VIEW-SPEC-V2.md`](../reviews/QA-REVIEW-SPREADSHEET-VIEW-SPEC-V2.md)
+**Mockups:** [`docs/specs/mockups/spreadsheet-view/`](../specs/mockups/spreadsheet-view/)
+
+---

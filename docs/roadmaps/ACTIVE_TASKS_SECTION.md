@@ -163,3 +163,52 @@
 **Note:** Currently blocked - requires authProvider and dataProvider abstraction layer to be complete first.
 
 ---
+
+
+### FEATURE-021: Unified Spreadsheet View
+
+**Status:** 📋 Ready  
+**Priority:** 🔴 HIGH  
+**Estimate:** 40-56h  
+**Module:** `client/src/pages/`, `server/routers/`  
+**Dependencies:** None  
+**Spec:** [`docs/specs/FEATURE-SPREADSHEET-VIEW-SPEC.md`](../specs/FEATURE-SPREADSHEET-VIEW-SPEC.md)
+
+**Objectives:**
+
+- Implement spreadsheet-like grid interface using AG-Grid
+- Provide familiar workflow for users accustomed to spreadsheets
+- Cover Inventory, Intake, Pick & Pack, and Client views
+- Ensure all operations flow through existing tRPC procedures (no bypasses)
+- Maintain bidirectional data sync with standard ERP views
+
+**Critical Constraints:**
+
+- **NO new business logic** - pure presentation layer only
+- **ALL mutations** must use existing tRPC procedures
+- **ALL validation/permissions** must be enforced via existing controls
+- **ALL actions** must be logged via existing audit system
+
+**Deliverables:**
+
+- [ ] Phase 1: Inventory Grid + Client View (16-20h)
+  - [ ] `SpreadsheetViewPage.tsx` container with tabs
+  - [ ] `InventoryGrid.tsx` with AG-Grid
+  - [ ] `ClientGrid.tsx` with master-detail layout
+  - [ ] `spreadsheetRouter.ts` for data transformation only
+- [ ] Phase 2: Intake Grid (12-16h)
+  - [ ] `IntakeGrid.tsx` for new batch entry
+  - [ ] Integration with existing `inventoryIntakeService`
+- [ ] Phase 3: Pick & Pack Grid (12-20h)
+  - [ ] `PickPackGrid.tsx` for order fulfillment
+  - [ ] Integration with existing `pickPack` router
+- [ ] Unit tests for cell renderers and data transformers
+- [ ] Integration tests for `spreadsheetRouter` procedures
+- [ ] E2E tests for core workflows
+- [ ] Security tests verifying permission enforcement
+- [ ] All tests passing (no regressions)
+- [ ] Zero TypeScript errors
+- [ ] Feature flag: `spreadsheet-view`
+- [ ] MASTER_ROADMAP updated to ✅ Complete
+
+---
