@@ -2948,10 +2948,12 @@ logger.error({ err: error }, "Error message");
 **Scope - Files to Remove or Modify:**
 
 **1. Core LLM Infrastructure (Remove)**
+
 - `server/_core/llm.ts` - Central LLM invocation service (not actively used)
 - `server/_core/env.ts` - Remove `forgeApiUrl` and `forgeApiKey` getters (lines 72-77)
 
 **2. Slack Bot AI (Remove)**
+
 - `scripts/slack-bot-ai.ts` - AI-powered Slack bot (504 lines)
 - `scripts/slack-bot-qa-handlers.ts` - QA handlers for AI bot
 - `scripts/slack-bot-health-check.ts` - Health check with Gemini key validation
@@ -2962,6 +2964,7 @@ logger.error({ err: error }, "Error message");
 - `scripts/monitor-slack-bot-deployment.sh` - Deployment monitor
 
 **3. Development Automation Scripts (Remove)**
+
 - `scripts/pre-commit-review.ts` - AI pre-commit code review
 - `scripts/manager.ts` - Roadmap task executor with AI
 - `scripts/gemini-batch-memo.py` - Batch code modification
@@ -2969,12 +2972,14 @@ logger.error({ err: error }, "Error message");
 - `test-gemini-bot.ts` - Gemini test script
 
 **4. GitHub Actions (Modify)**
+
 - `.github/workflows/execute-natural-commands.yml` - Remove `GOOGLE_GEMINI_API_KEY`
 - `.github/workflows/swarm-auto-start.yml` - Remove `GOOGLE_GEMINI_API_KEY`
 - `.github/workflows/add-secrets.yml` - Remove `GEMINI_API_KEY` handling
 - `.github/workflows/bootstrap-secrets.yml` - Remove Gemini secret extraction
 
 **5. Documentation (Update)**
+
 - `docs/testing/ai-agents-guide.md` - Archive or remove
 - `product-management/initiatives/TERP-INIT-009/docs/gemini_qa_analysis.md` - Archive
 - `product-management/pm-evaluation/ai_agent_timeline_analysis.md` - Archive
@@ -2982,12 +2987,14 @@ logger.error({ err: error }, "Error message");
 - Update `MASTER_ROADMAP.md` - Remove Gemini API mandate section (lines 11-26)
 
 **6. Environment Variables to Remove:**
+
 - `GEMINI_API_KEY`
 - `GOOGLE_GEMINI_API_KEY`
 - `BUILT_IN_FORGE_API_KEY`
 - `BUILT_IN_FORGE_API_URL`
 
 **Objectives:**
+
 1. Remove all AI/LLM-related code from the production codebase
 2. Remove AI-related environment variables from deployment configs
 3. Archive AI-related documentation
@@ -2995,6 +3002,7 @@ logger.error({ err: error }, "Error message");
 5. Ensure no broken imports or references remain
 
 **Deliverables:**
+
 - [ ] All AI/LLM files removed or archived
 - [ ] GitHub Actions updated to remove AI secrets
 - [ ] Environment variables removed from DigitalOcean
@@ -3006,6 +3014,7 @@ logger.error({ err: error }, "Error message");
 - [ ] Session archived
 
 **Notes:**
+
 - The Slack bot (`scripts/slack-bot.ts`) without AI features can remain if needed
 - Playwright AI agents are external tools, not codebase - can remain documented
 - Consider keeping `docs/testing/ai-agents-guide.md` as it documents external Playwright features
@@ -8122,7 +8131,9 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 | WS-015 | **Sales: Customer Wishlist Field**              | MEDIUM   | 4h       | Sales           | ✅ COMPLETE | [📋 Spec](../specs/WS-015-SPEC.md) |
 
 ---
+
 ## 🚀 Parallel Sprint Execution Plan (Jan 8-22, 2026)
+
 > **📋 Full Plan:** [`docs/roadmaps/PARALLEL_SPRINT_PLAN.md`](./PARALLEL_SPRINT_PLAN.md)
 
 **Execution Strategy:** 5 sprints designed for maximum parallelization with zero file conflicts.
@@ -8137,6 +8148,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 | **Total** | | **296h** | | |
 
 **Execution Order:**
+
 1. Sprint A completes first (schema must be stable)
 2. Sprints B, C, D, E run in parallel (4 agents)
 3. Merge order: A → B → C → D → E
@@ -8148,6 +8160,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 ---
 
 ## 🚀 Next Sprint (Jan 8-22, 2026): UX & Stability Sprint
+
 **Strategic Focus:** Address critical UX flaws, fix systemic bugs, and establish development standards to improve platform stability and usability.ty.
 **Sprint Plan:** Implement the three tiers of tasks identified in the UX/UI Analysis Report V2.
 
@@ -8186,11 +8199,11 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 **Specifications:** [`docs/specs/ux-improvements/README.md`](../specs/ux-improvements/README.md)
 
-| Phase | Focus | Tasks | Estimate | Priority |
-| :--- | :--- | :--- | :--- | :--- |
-| **Phase 1** | Stabilize the Core | STAB-001, STAB-002, STAB-003 | 18h | CRITICAL |
-| **Phase 2** | Universal Actionability | ACT-001, ACT-002, ACT-003 | 28h | HIGH |
-| **Phase 3** | Enhance and Refine | ENH-001, ENH-002, ENH-003 | 20h | MEDIUM |
+| Phase       | Focus                   | Tasks                        | Estimate | Priority |
+| :---------- | :---------------------- | :--------------------------- | :------- | :------- |
+| **Phase 1** | Stabilize the Core      | STAB-001, STAB-002, STAB-003 | 18h      | CRITICAL |
+| **Phase 2** | Universal Actionability | ACT-001, ACT-002, ACT-003    | 28h      | HIGH     |
+| **Phase 3** | Enhance and Refine      | ENH-001, ENH-002, ENH-003    | 20h      | MEDIUM   |
 
 **Total Estimate:** 66h
 
@@ -8200,13 +8213,14 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 **Goal:** Fix the 5 broken modules, data integrity issues, and UI bugs that undermine user trust.
 
-| Task ID | Title | Priority | Estimate | Spec |
-| :--- | :--- | :--- | :--- | :--- |
-| **STAB-001** | Fix Broken Modules (Tasks, Fulfillment, Procurement, Accounting, Sales Portal) | CRITICAL | 8h | [📋 Spec](../specs/ux-improvements/STAB-001-SPEC.md) |
-| **STAB-002** | Fix Data Integrity Issues (Orders mismatch, Profit calculation, Floating point) | CRITICAL | 6h | [📋 Spec](../specs/ux-improvements/STAB-002-SPEC.md) |
-| **STAB-003** | Fix UI Bugs (Duplicate nav, Non-functional KPI cards, Inconsistent empty states) | HIGH | 4h | [📋 Spec](../specs/ux-improvements/STAB-003-SPEC.md) |
+| Task ID      | Title                                                                            | Priority | Estimate | Spec                                                 |
+| :----------- | :------------------------------------------------------------------------------- | :------- | :------- | :--------------------------------------------------- |
+| **STAB-001** | Fix Broken Modules (Tasks, Fulfillment, Procurement, Accounting, Sales Portal)   | CRITICAL | 8h       | [📋 Spec](../specs/ux-improvements/STAB-001-SPEC.md) |
+| **STAB-002** | Fix Data Integrity Issues (Orders mismatch, Profit calculation, Floating point)  | CRITICAL | 6h       | [📋 Spec](../specs/ux-improvements/STAB-002-SPEC.md) |
+| **STAB-003** | Fix UI Bugs (Duplicate nav, Non-functional KPI cards, Inconsistent empty states) | HIGH     | 4h       | [📋 Spec](../specs/ux-improvements/STAB-003-SPEC.md) |
 
 **Key Deliverables:**
+
 - All 27 navigation items lead to functional pages (0 404s, 0 infinite loading)
 - Orders KPI cards and table show consistent data
 - Profit calculation returns accurate values
@@ -8218,13 +8232,14 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 **Goal:** Make every data element (KPI cards, table rows, widgets) a starting point for action.
 
-| Task ID | Title | Priority | Estimate | Spec |
-| :--- | :--- | :--- | :--- | :--- |
-| **ACT-001** | Make KPI Cards Actionable (Click to filter table, URL state, visual feedback) | HIGH | 8h | [📋 Spec](../specs/ux-improvements/ACT-001-SPEC.md) |
-| **ACT-002** | Make Data Tables Actionable (Row click, bulk actions, clickable cells, action menus) | HIGH | 12h | [📋 Spec](../specs/ux-improvements/ACT-002-SPEC.md) |
-| **ACT-003** | Make Widgets Actionable (Clickable rows, chart segments, values with drill-down) | HIGH | 8h | [📋 Spec](../specs/ux-improvements/ACT-003-SPEC.md) |
+| Task ID     | Title                                                                                | Priority | Estimate | Spec                                                |
+| :---------- | :----------------------------------------------------------------------------------- | :------- | :------- | :-------------------------------------------------- |
+| **ACT-001** | Make KPI Cards Actionable (Click to filter table, URL state, visual feedback)        | HIGH     | 8h       | [📋 Spec](../specs/ux-improvements/ACT-001-SPEC.md) |
+| **ACT-002** | Make Data Tables Actionable (Row click, bulk actions, clickable cells, action menus) | HIGH     | 12h      | [📋 Spec](../specs/ux-improvements/ACT-002-SPEC.md) |
+| **ACT-003** | Make Widgets Actionable (Clickable rows, chart segments, values with drill-down)     | HIGH     | 8h       | [📋 Spec](../specs/ux-improvements/ACT-003-SPEC.md) |
 
 **Key Deliverables:**
+
 - Clicking a KPI card filters the corresponding table
 - Table rows are clickable (navigate to detail view)
 - Bulk actions available when rows are selected
@@ -8237,13 +8252,14 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 **Goal:** Improve navigation, empty states, and consolidate duplicate pages.
 
-| Task ID | Title | Priority | Estimate | Spec |
-| :--- | :--- | :--- | :--- | :--- |
-| **ENH-001** | Implement Collapsible Navigation (7 groups, pinned items, persistence) | MEDIUM | 10h | [📋 Spec](../specs/ux-improvements/ENH-001-SPEC.md) |
-| **ENH-002** | Improve Empty States (Icon, title, description, CTA for all pages) | MEDIUM | 6h | [📋 Spec](../specs/ux-improvements/ENH-002-SPEC.md) |
-| **ENH-003** | Consolidate Duplicate Pages (Locations → Settings, Pricing Rules + Profiles) | MEDIUM | 4h | [📋 Spec](../specs/ux-improvements/ENH-003-SPEC.md) |
+| Task ID     | Title                                                                        | Priority | Estimate | Spec                                                |
+| :---------- | :--------------------------------------------------------------------------- | :------- | :------- | :-------------------------------------------------- |
+| **ENH-001** | Implement Collapsible Navigation (7 groups, pinned items, persistence)       | MEDIUM   | 10h      | [📋 Spec](../specs/ux-improvements/ENH-001-SPEC.md) |
+| **ENH-002** | Improve Empty States (Icon, title, description, CTA for all pages)           | MEDIUM   | 6h       | [📋 Spec](../specs/ux-improvements/ENH-002-SPEC.md) |
+| **ENH-003** | Consolidate Duplicate Pages (Locations → Settings, Pricing Rules + Profiles) | MEDIUM   | 4h       | [📋 Spec](../specs/ux-improvements/ENH-003-SPEC.md) |
 
 **Key Deliverables:**
+
 - Navigation grouped into 7 collapsible sections (Core, Sales, Fulfillment, Inventory, Finance, Insights, System)
 - All empty states include icon, title, description, and primary CTA
 - `/locations` redirects to `/settings?tab=locations`
@@ -8255,14 +8271,14 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 The following risks were identified and mitigated in the specification process:
 
-| Risk | Mitigation |
-| :--- | :--- |
-| KPI card click behavior undefined | Defined explicit pattern: click = filter table |
-| Table row click conflicts with action menu | Defined distinct click zones |
-| No performance baseline | Establish metrics before Phase 1 |
-| No rollback plan | Implement feature flags for major changes |
-| Sales consolidation too risky | Rejected; use cross-linking instead |
-| Credit Settings consolidation wrong persona | Rejected; keep standalone |
+| Risk                                        | Mitigation                                     |
+| :------------------------------------------ | :--------------------------------------------- |
+| KPI card click behavior undefined           | Defined explicit pattern: click = filter table |
+| Table row click conflicts with action menu  | Defined distinct click zones                   |
+| No performance baseline                     | Establish metrics before Phase 1               |
+| No rollback plan                            | Implement feature flags for major changes      |
+| Sales consolidation too risky               | Rejected; use cross-linking instead            |
+| Credit Settings consolidation wrong persona | Rejected; keep standalone                      |
 
 ---
 
@@ -8278,19 +8294,20 @@ The following risks were identified and mitigated in the specification process:
 
 A comprehensive backend audit revealed that the VIP Portal backend is **~90% complete** (1,614 lines of code). The issues observed in the live portal are **frontend integration failures**, not missing backend functionality.
 
-| Component | Backend Status |
-|-----------|----------------|
-| Authentication | ✅ Complete |
-| Dashboard KPIs | ✅ Complete |
-| Live Catalog | ✅ Complete |
-| Draft Interests & Interest Lists | ✅ Complete |
-| AR/AP (Invoices, Bills) | ✅ Complete |
-| Marketplace (Needs, Supply) | ✅ Complete |
-| Saved Views & Price Alerts | ✅ Complete |
+| Component                        | Backend Status |
+| -------------------------------- | -------------- |
+| Authentication                   | ✅ Complete    |
+| Dashboard KPIs                   | ✅ Complete    |
+| Live Catalog                     | ✅ Complete    |
+| Draft Interests & Interest Lists | ✅ Complete    |
+| AR/AP (Invoices, Bills)          | ✅ Complete    |
+| Marketplace (Needs, Supply)      | ✅ Complete    |
+| Saved Views & Price Alerts       | ✅ Complete    |
 
 ### Business Logic Clarification
 
 **The VIP Portal is NOT an e-commerce platform.** The correct workflow is:
+
 1. Client browses the Live Catalog
 2. Client adds items to a "Draft" (expressing interest)
 3. Client submits the draft as an "Interest List"
@@ -8303,13 +8320,14 @@ There is **no online payment** and **no direct purchasing**.
 
 ### Phase 1: Fix Frontend Rendering (24h) - CRITICAL
 
-| Task ID | Task | Priority | Estimate | Status |
-|---------|------|----------|----------|--------|
-| VIP-F-01 | Fix Dashboard KPI Rendering (display all 7+ KPIs) | CRITICAL | 8h | 🔴 Not Started |
-| VIP-F-02 | Fix Catalog Rendering (debug "No products found" bug) | CRITICAL | 12h | 🔴 Not Started |
-| VIP-F-03 | Fix AR/AP Amount Display | CRITICAL | 4h | 🔴 Not Started |
+| Task ID  | Task                                                  | Priority | Estimate | Status         |
+| -------- | ----------------------------------------------------- | -------- | -------- | -------------- |
+| VIP-F-01 | Fix Dashboard KPI Rendering (display all 7+ KPIs)     | CRITICAL | 8h       | 🔴 Not Started |
+| VIP-F-02 | Fix Catalog Rendering (debug "No products found" bug) | CRITICAL | 12h      | 🔴 Not Started |
+| VIP-F-03 | Fix AR/AP Amount Display                              | CRITICAL | 4h       | 🔴 Not Started |
 
 **Key Deliverables:**
+
 - Dashboard displays all 7+ KPI cards with real data
 - Catalog displays browsable products with pricing
 - Invoices and bills show amounts formatted as currency
@@ -8318,14 +8336,15 @@ There is **no online payment** and **no direct purchasing**.
 
 ### Phase 2: Mobile-First UI & Actionability (48h) - HIGH
 
-| Task ID | Task | Priority | Estimate | Status |
-|---------|------|----------|----------|--------|
-| VIP-M-01 | Implement Mobile-First Navigation (bottom nav or hamburger) | HIGH | 16h | 🔴 Not Started |
-| VIP-A-01 | Make Dashboard KPIs Actionable (click-through to filtered views) | HIGH | 12h | 🔴 Not Started |
-| VIP-A-02 | Make Financials Actionable (invoice detail view, PDF placeholder) | HIGH | 8h | 🔴 Not Started |
-| VIP-A-03 | Implement Interest List Flow (Add to Draft, Submit List) | HIGH | 12h | 🔴 Not Started |
+| Task ID  | Task                                                              | Priority | Estimate | Status         |
+| -------- | ----------------------------------------------------------------- | -------- | -------- | -------------- |
+| VIP-M-01 | Implement Mobile-First Navigation (bottom nav or hamburger)       | HIGH     | 16h      | 🔴 Not Started |
+| VIP-A-01 | Make Dashboard KPIs Actionable (click-through to filtered views)  | HIGH     | 12h      | 🔴 Not Started |
+| VIP-A-02 | Make Financials Actionable (invoice detail view, PDF placeholder) | HIGH     | 8h       | 🔴 Not Started |
+| VIP-A-03 | Implement Interest List Flow (Add to Draft, Submit List)          | HIGH     | 12h      | 🔴 Not Started |
 
 **Key Deliverables:**
+
 - Portal is fully functional on 375px viewport (mobile-first)
 - All KPI cards are clickable and navigate to relevant views
 - Invoices can be expanded to show details
@@ -8335,14 +8354,15 @@ There is **no online payment** and **no direct purchasing**.
 
 ### Phase 3: New Features (76h) - MEDIUM/HIGH
 
-| Task ID | Task | Priority | Estimate | Status |
-|---------|------|----------|----------|--------|
-| **VIP-C-01** | **ERP: Calendar Management System** | **HIGH** | **24h** | 🔴 Not Started |
-| **VIP-C-02** | **VIP Portal: Appointment Booking UI** | **HIGH** | **24h** | 🔴 Not Started |
-| **VIP-C-03** | **In-App Notification System (ERP + VIP Portal)** | **HIGH** | **20h** | 🔴 Not Started |
-| VIP-B-01 | PDF Generation for Invoices/Bills | MEDIUM | 8h | 🔴 Not Started |
+| Task ID      | Task                                              | Priority | Estimate | Status         |
+| ------------ | ------------------------------------------------- | -------- | -------- | -------------- |
+| **VIP-C-01** | **ERP: Calendar Management System**               | **HIGH** | **24h**  | 🔴 Not Started |
+| **VIP-C-02** | **VIP Portal: Appointment Booking UI**            | **HIGH** | **24h**  | 🔴 Not Started |
+| **VIP-C-03** | **In-App Notification System (ERP + VIP Portal)** | **HIGH** | **20h**  | 🔴 Not Started |
+| VIP-B-01     | PDF Generation for Invoices/Bills                 | MEDIUM   | 8h       | 🔴 Not Started |
 
 **Key Deliverables:**
+
 - Clients can schedule appointments for payment pickup/drop-off
 - Clients can schedule office visits for vending/purchasing
 - Managers can configure availability and approve/reject requests
@@ -8355,36 +8375,36 @@ There is **no online payment** and **no direct purchasing**.
 
 This Calendly-like system allows VIP Portal clients to book appointments:
 
-| Appointment Type | Description |
-|------------------|-------------|
-| **Payment Pickup/Drop-off** | Schedule time with accounting team for payment handling |
-| **Office Visits** | Schedule time in the office for vending, purchasing, or other business |
+| Appointment Type            | Description                                                            |
+| --------------------------- | ---------------------------------------------------------------------- |
+| **Payment Pickup/Drop-off** | Schedule time with accounting team for payment handling                |
+| **Office Visits**           | Schedule time in the office for vending, purchasing, or other business |
 
 **System Components:**
 
-| Component | Location | Description |
-|-----------|----------|-------------|
-| Calendar Management | ERP Settings | Managers create calendars with custom availability, buffer times, min notice |
-| Booking UI | VIP Portal | Clients see available slots and submit appointment requests |
-| Request Workflow | Both | Managers receive notifications, accept/reject/propose new times |
-| Calendar Integration | ERP | Confirmed appointments auto-added to the main calendar |
+| Component            | Location     | Description                                                                  |
+| -------------------- | ------------ | ---------------------------------------------------------------------------- |
+| Calendar Management  | ERP Settings | Managers create calendars with custom availability, buffer times, min notice |
+| Booking UI           | VIP Portal   | Clients see available slots and submit appointment requests                  |
+| Request Workflow     | Both         | Managers receive notifications, accept/reject/propose new times              |
+| Calendar Integration | ERP          | Confirmed appointments auto-added to the main calendar                       |
 
 ---
 
 ### Specifications
 
-| Spec ID | Title | File |
-|---------|-------|------|
-| VIP-F-001 | Fix Frontend Rendering Issues | [📋 Spec](../specs/vip-portal-sprint/VIP-F-001-SPEC.md) |
-| VIP-M-001 | Mobile-First UI Redesign | [📋 Spec](../specs/vip-portal-sprint/VIP-M-001-SPEC.md) |
-| VIP-A-001 | Actionability Implementation | [📋 Spec](../specs/vip-portal-sprint/VIP-A-001-SPEC.md) |
-| VIP-B-001 | PDF Generation | [📋 Spec](../specs/vip-portal-sprint/VIP-B-001-SPEC.md) |
+| Spec ID       | Title                             | File                                                    |
+| ------------- | --------------------------------- | ------------------------------------------------------- |
+| VIP-F-001     | Fix Frontend Rendering Issues     | [📋 Spec](../specs/vip-portal-sprint/VIP-F-001-SPEC.md) |
+| VIP-M-001     | Mobile-First UI Redesign          | [📋 Spec](../specs/vip-portal-sprint/VIP-M-001-SPEC.md) |
+| VIP-A-001     | Actionability Implementation      | [📋 Spec](../specs/vip-portal-sprint/VIP-A-001-SPEC.md) |
+| VIP-B-001     | PDF Generation                    | [📋 Spec](../specs/vip-portal-sprint/VIP-B-001-SPEC.md) |
 | **VIP-C-001** | **Appointment Scheduling System** | [📋 Spec](../specs/vip-portal-sprint/VIP-C-001-SPEC.md) |
 
 ### Dependencies
 
-- Phase 1 (VIP-F-*) must be complete before Phase 2
-- Phase 2 (VIP-M-*, VIP-A-*) should be validated with users before Phase 3
+- Phase 1 (VIP-F-\*) must be complete before Phase 2
+- Phase 2 (VIP-M-_, VIP-A-_) should be validated with users before Phase 3
 - VIP-C-001 requires the ERP Calendar module to be stable
 
 ---
@@ -8400,6 +8420,7 @@ This Calendly-like system allows VIP Portal clients to book appointments:
 ### Overview
 
 Core systems are foundational components that:
+
 - Serve both the ERP application and VIP Portal
 - Are dependencies for multiple feature sprints
 - Require careful architecture to ensure scalability and maintainability
@@ -8416,13 +8437,13 @@ Replaces the current "Inbox" with a unified "Notifications" system that serves b
 
 #### Current State Issues
 
-| Component | Status | Issue |
-|-----------|--------|-------|
-| `inboxItems` table | Exists | Limited `sourceType` enum, ERP users only |
-| `inbox` router | Exists | Functional but limited |
-| `InboxPanel` UI | Exists | Needs rename to "Notifications" |
-| `notificationService.ts` | Stub | Logs only, doesn't create records |
-| VIP Portal notifications | **Missing** | No infrastructure |
+| Component                | Status      | Issue                                     |
+| ------------------------ | ----------- | ----------------------------------------- |
+| `inboxItems` table       | Exists      | Limited `sourceType` enum, ERP users only |
+| `inbox` router           | Exists      | Functional but limited                    |
+| `InboxPanel` UI          | Exists      | Needs rename to "Notifications"           |
+| `notificationService.ts` | Stub        | Logs only, doesn't create records         |
+| VIP Portal notifications | **Missing** | No infrastructure                         |
 
 #### Target State
 
@@ -8434,20 +8455,20 @@ Replaces the current "Inbox" with a unified "Notifications" system that serves b
 
 #### Task Breakdown
 
-| Task ID | Task | Estimate | Status |
-|---------|------|----------|--------|
-| NOTIF-01 | Database schema changes & migration | 4h | 🔴 Not Started |
-| NOTIF-02 | Notification service refactor | 8h | 🔴 Not Started |
-| NOTIF-03 | Notifications router refactor | 4h | 🔴 Not Started |
-| NOTIF-04 | VIP Portal notification endpoints | 4h | 🔴 Not Started |
-| NOTIF-05 | ERP UI rename (Inbox → Notifications) | 4h | 🔴 Not Started |
-| NOTIF-06 | VIP Portal notification bell UI | 4h | 🔴 Not Started |
-| NOTIF-07 | Notification preferences UI | 4h | 🔴 Not Started |
+| Task ID  | Task                                  | Estimate | Status         |
+| -------- | ------------------------------------- | -------- | -------------- |
+| NOTIF-01 | Database schema changes & migration   | 4h       | 🔴 Not Started |
+| NOTIF-02 | Notification service refactor         | 8h       | 🔴 Not Started |
+| NOTIF-03 | Notifications router refactor         | 4h       | 🔴 Not Started |
+| NOTIF-04 | VIP Portal notification endpoints     | 4h       | 🔴 Not Started |
+| NOTIF-05 | ERP UI rename (Inbox → Notifications) | 4h       | 🔴 Not Started |
+| NOTIF-06 | VIP Portal notification bell UI       | 4h       | 🔴 Not Started |
+| NOTIF-07 | Notification preferences UI           | 4h       | 🔴 Not Started |
 
 #### Specifications
 
-| Spec ID | Title | File |
-|---------|-------|------|
+| Spec ID   | Title                                    | File                                               |
+| --------- | ---------------------------------------- | -------------------------------------------------- |
 | NOTIF-001 | Unified Notification System Architecture | [📋 Spec](../specs/core-systems/NOTIF-001-SPEC.md) |
 
 ---
@@ -8464,25 +8485,25 @@ Replaces the current "Inbox" with a unified "Notifications" system that serves b
 
 The Calendar Sprint addresses critical gaps in the current Calendar module, transforming it from a basic event manager into a sophisticated scheduling system. This is a prerequisite for the VIP Portal Appointment Scheduling feature (VIP-C-001).
 
-| Current State | Target State |
-|---------------|--------------|
-| Single calendar for all events | Multiple purpose-driven calendars (Accounting, Office, Personal) |
-| No availability management | Calendly-like availability configuration |
-| Direct event creation only | Request/approval workflow for appointments |
-| Recurrence schema exists, no UI | Full recurring events UI |
-| No vacation tracking | Vacation/time-off with approval workflow |
+| Current State                   | Target State                                                     |
+| ------------------------------- | ---------------------------------------------------------------- |
+| Single calendar for all events  | Multiple purpose-driven calendars (Accounting, Office, Personal) |
+| No availability management      | Calendly-like availability configuration                         |
+| Direct event creation only      | Request/approval workflow for appointments                       |
+| Recurrence schema exists, no UI | Full recurring events UI                                         |
+| No vacation tracking            | Vacation/time-off with approval workflow                         |
 
 ### Red Hat QA Review Summary
 
 All specifications have been reviewed for accuracy, efficacy, robustness, and reliability. Key findings and recommendations have been incorporated:
 
-| Finding | Recommendation | Status |
-|---------|----------------|--------|
-| Admin permissions for new users | Auto-grant ownership of default calendars to new admins | Incorporated |
-| Availability endpoint performance | Implement caching strategy for `getSlots` | Incorporated |
-| Concurrent approval race condition | Use pessimistic locking in approval transaction | Incorporated |
-| Client ID authentication | Derive `clientId` from session, not client input | Incorporated |
-| Time-off scope | User time-off blocks availability across all relevant calendars | Incorporated |
+| Finding                            | Recommendation                                                  | Status       |
+| ---------------------------------- | --------------------------------------------------------------- | ------------ |
+| Admin permissions for new users    | Auto-grant ownership of default calendars to new admins         | Incorporated |
+| Availability endpoint performance  | Implement caching strategy for `getSlots`                       | Incorporated |
+| Concurrent approval race condition | Use pessimistic locking in approval transaction                 | Incorporated |
+| Client ID authentication           | Derive `clientId` from session, not client input                | Incorporated |
+| Time-off scope                     | User time-off blocks availability across all relevant calendars | Incorporated |
 
 ---
 
@@ -8496,15 +8517,15 @@ Establishes the multi-calendar architecture, enabling separate calendars for dif
 
 #### Task Breakdown
 
-| Task ID | Task | Estimate | Status |
-|---------|------|----------|--------|
-| CAL-01-01 | Create `calendars` and `calendar_user_access` tables | 4h | 🔴 Not Started |
-| CAL-01-02 | Add `calendarId` FK to `calendarEvents` table | 2h | 🔴 Not Started |
-| CAL-01-03 | Data migration: create default calendars, migrate existing events | 2h | 🔴 Not Started |
-| CAL-01-04 | tRPC endpoints for calendar CRUD and user access management | 4h | 🔴 Not Started |
-| CAL-01-05 | Settings UI: Calendar management page | 8h | 🔴 Not Started |
-| CAL-01-06 | Event forms: Add calendar selector dropdown | 2h | 🔴 Not Started |
-| CAL-01-07 | Calendar view: Add calendar filter and legend | 2h | 🔴 Not Started |
+| Task ID   | Task                                                              | Estimate | Status         |
+| --------- | ----------------------------------------------------------------- | -------- | -------------- |
+| CAL-01-01 | Create `calendars` and `calendar_user_access` tables              | 4h       | 🔴 Not Started |
+| CAL-01-02 | Add `calendarId` FK to `calendarEvents` table                     | 2h       | 🔴 Not Started |
+| CAL-01-03 | Data migration: create default calendars, migrate existing events | 2h       | 🔴 Not Started |
+| CAL-01-04 | tRPC endpoints for calendar CRUD and user access management       | 4h       | 🔴 Not Started |
+| CAL-01-05 | Settings UI: Calendar management page                             | 8h       | 🔴 Not Started |
+| CAL-01-06 | Event forms: Add calendar selector dropdown                       | 2h       | 🔴 Not Started |
+| CAL-01-07 | Calendar view: Add calendar filter and legend                     | 2h       | 🔴 Not Started |
 
 #### Deliverables
 
@@ -8516,8 +8537,8 @@ Establishes the multi-calendar architecture, enabling separate calendars for dif
 
 #### Specification
 
-| Spec ID | Title | File |
-|---------|-------|------|
+| Spec ID | Title               | File                                                |
+| ------- | ------------------- | --------------------------------------------------- |
 | CAL-001 | Calendar Foundation | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md) |
 
 ---
@@ -8532,16 +8553,16 @@ Introduces Calendly-like availability configuration, enabling administrators to 
 
 #### Task Breakdown
 
-| Task ID | Task | Estimate | Status |
-|---------|------|----------|--------|
-| CAL-02-01 | Create `appointmentTypes` table | 2h | 🔴 Not Started |
-| CAL-02-02 | Create `calendarAvailability` table | 2h | 🔴 Not Started |
-| CAL-02-03 | Create `calendarBlockedDates` table | 1h | 🔴 Not Started |
-| CAL-02-04 | tRPC endpoints for appointment type CRUD | 3h | 🔴 Not Started |
-| CAL-02-05 | tRPC endpoints for availability rule management | 3h | 🔴 Not Started |
-| CAL-02-06 | Core `availability.getSlots` endpoint implementation | 9h | 🔴 Not Started |
-| CAL-02-07 | Settings UI: Appointment Types management | 6h | 🔴 Not Started |
-| CAL-02-08 | Settings UI: Weekly availability schedule | 6h | 🔴 Not Started |
+| Task ID   | Task                                                 | Estimate | Status         |
+| --------- | ---------------------------------------------------- | -------- | -------------- |
+| CAL-02-01 | Create `appointmentTypes` table                      | 2h       | 🔴 Not Started |
+| CAL-02-02 | Create `calendarAvailability` table                  | 2h       | 🔴 Not Started |
+| CAL-02-03 | Create `calendarBlockedDates` table                  | 1h       | 🔴 Not Started |
+| CAL-02-04 | tRPC endpoints for appointment type CRUD             | 3h       | 🔴 Not Started |
+| CAL-02-05 | tRPC endpoints for availability rule management      | 3h       | 🔴 Not Started |
+| CAL-02-06 | Core `availability.getSlots` endpoint implementation | 9h       | 🔴 Not Started |
+| CAL-02-07 | Settings UI: Appointment Types management            | 6h       | 🔴 Not Started |
+| CAL-02-08 | Settings UI: Weekly availability schedule            | 6h       | 🔴 Not Started |
 
 #### Deliverables
 
@@ -8553,8 +8574,8 @@ Introduces Calendly-like availability configuration, enabling administrators to 
 
 #### Specification
 
-| Spec ID | Title | File |
-|---------|-------|------|
+| Spec ID | Title                             | File                                                |
+| ------- | --------------------------------- | --------------------------------------------------- |
 | CAL-002 | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md) |
 
 ---
@@ -8569,15 +8590,15 @@ Implements the critical request/approval workflow for appointment bookings, ensu
 
 #### Task Breakdown
 
-| Task ID | Task | Estimate | Status |
-|---------|------|----------|--------|
-| CAL-03-01 | Create `appointmentRequests` table | 2h | 🔴 Not Started |
-| CAL-03-02 | `appointment.request` endpoint (for VIP Portal) | 4h | 🔴 Not Started |
-| CAL-03-03 | `appointment.approve` endpoint with transaction and locking | 4h | 🔴 Not Started |
-| CAL-03-04 | `appointment.reject` endpoint | 2h | 🔴 Not Started |
-| CAL-03-05 | Notification integration (NOTIF-001) | 4h | 🔴 Not Started |
-| CAL-03-06 | Pending Requests UI: List view with filtering | 4h | 🔴 Not Started |
-| CAL-03-07 | Request Detail Modal: Approve/Reject actions | 4h | 🔴 Not Started |
+| Task ID   | Task                                                        | Estimate | Status         |
+| --------- | ----------------------------------------------------------- | -------- | -------------- |
+| CAL-03-01 | Create `appointmentRequests` table                          | 2h       | 🔴 Not Started |
+| CAL-03-02 | `appointment.request` endpoint (for VIP Portal)             | 4h       | 🔴 Not Started |
+| CAL-03-03 | `appointment.approve` endpoint with transaction and locking | 4h       | 🔴 Not Started |
+| CAL-03-04 | `appointment.reject` endpoint                               | 2h       | 🔴 Not Started |
+| CAL-03-05 | Notification integration (NOTIF-001)                        | 4h       | 🔴 Not Started |
+| CAL-03-06 | Pending Requests UI: List view with filtering               | 4h       | 🔴 Not Started |
+| CAL-03-07 | Request Detail Modal: Approve/Reject actions                | 4h       | 🔴 Not Started |
 
 #### Deliverables
 
@@ -8589,8 +8610,8 @@ Implements the critical request/approval workflow for appointment bookings, ensu
 
 #### Specification
 
-| Spec ID | Title | File |
-|---------|-------|------|
+| Spec ID | Title                     | File                                                |
+| ------- | ------------------------- | --------------------------------------------------- |
 | CAL-003 | Request/Approval Workflow | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md) |
 
 ---
@@ -8605,15 +8626,15 @@ Adds high-value quality-of-life features: recurring events UI, vacation/time-off
 
 #### Task Breakdown
 
-| Task ID | Task | Estimate | Status |
-|---------|------|----------|--------|
-| CAL-04-01 | Recurring events UI: Recurrence rule builder | 4h | 🔴 Not Started |
-| CAL-04-02 | Recurring events: Edit/delete single vs. series logic | 4h | 🔴 Not Started |
-| CAL-04-03 | Time-off: Schema additions (`isTimeOff`, `timeOffStatus`) | 1h | 🔴 Not Started |
-| CAL-04-04 | Time-off: Request and approval workflow | 3h | 🔴 Not Started |
-| CAL-04-05 | Time-off: Integration with availability blocking | 2h | 🔴 Not Started |
-| CAL-04-06 | Mobile: Responsive calendar grid (week/day view default) | 3h | 🔴 Not Started |
-| CAL-04-07 | Mobile: Full-screen modals and bottom sheets | 3h | 🔴 Not Started |
+| Task ID   | Task                                                      | Estimate | Status         |
+| --------- | --------------------------------------------------------- | -------- | -------------- |
+| CAL-04-01 | Recurring events UI: Recurrence rule builder              | 4h       | 🔴 Not Started |
+| CAL-04-02 | Recurring events: Edit/delete single vs. series logic     | 4h       | 🔴 Not Started |
+| CAL-04-03 | Time-off: Schema additions (`isTimeOff`, `timeOffStatus`) | 1h       | 🔴 Not Started |
+| CAL-04-04 | Time-off: Request and approval workflow                   | 3h       | 🔴 Not Started |
+| CAL-04-05 | Time-off: Integration with availability blocking          | 2h       | 🔴 Not Started |
+| CAL-04-06 | Mobile: Responsive calendar grid (week/day view default)  | 3h       | 🔴 Not Started |
+| CAL-04-07 | Mobile: Full-screen modals and bottom sheets              | 3h       | 🔴 Not Started |
 
 #### Deliverables
 
@@ -8624,21 +8645,21 @@ Adds high-value quality-of-life features: recurring events UI, vacation/time-off
 
 #### Specification
 
-| Spec ID | Title | File |
-|---------|-------|------|
+| Spec ID | Title             | File                                                |
+| ------- | ----------------- | --------------------------------------------------- |
 | CAL-004 | Enhanced Features | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md) |
 
 ---
 
 ### Specifications Index
 
-| Spec ID | Title | File | Status |
-|---------|-------|------|--------|
-| CAL-001 | Calendar Foundation | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md) | DRAFT |
-| CAL-002 | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md) | DRAFT |
-| CAL-003 | Request/Approval Workflow | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md) | DRAFT |
-| CAL-004 | Enhanced Features | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md) | DRAFT |
-| QA Review | Red Hat QA Review | [📋 Review](../specs/calendar-sprint/CAL_QA_REVIEW.md) | COMPLETE |
+| Spec ID   | Title                             | File                                                   | Status   |
+| --------- | --------------------------------- | ------------------------------------------------------ | -------- |
+| CAL-001   | Calendar Foundation               | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md)    | DRAFT    |
+| CAL-002   | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md)    | DRAFT    |
+| CAL-003   | Request/Approval Workflow         | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md)    | DRAFT    |
+| CAL-004   | Enhanced Features                 | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md)    | DRAFT    |
+| QA Review | Red Hat QA Review                 | [📋 Review](../specs/calendar-sprint/CAL_QA_REVIEW.md) | COMPLETE |
 
 ---
 
@@ -8689,32 +8710,36 @@ Adds high-value quality-of-life features: recurring events UI, vacation/time-off
 ### Parallel Execution Strategy
 
 **Wave 1 (Can Start Immediately):**
+
 - UX & Stability Sprint: STAB-001, STAB-002, STAB-003
 - Core Systems Sprint: NOTIF-001
 - Calendar Sprint: CAL-001, CAL-002
 - VIP Portal Sprint: VIP-F-001, VIP-M-001, VIP-A-001, VIP-B-001
 
 **Wave 2 (After NOTIF-001 Complete):**
+
 - Calendar Sprint: CAL-003 (Request/Approval Workflow)
 
 **Wave 3 (After CAL-003 Complete):**
+
 - Calendar Sprint: CAL-004 (Enhanced Features)
 - VIP Portal Sprint: VIP-C-001 (Appointment Scheduling - now uses Calendar Sprint foundation)
 
 **Wave 4 (Lower Priority):**
+
 - UX & Stability Sprint: ACT-001, ACT-002, ACT-003, ENH-001, ENH-002, ENH-003
 
 ---
 
 ## Total Roadmap Summary
 
-| Sprint | Estimate | Priority | Status |
-|--------|----------|----------|--------|
-| UX & Stability Sprint | 66h | CRITICAL/HIGH/MEDIUM | 🔴 Not Started |
-| Core Systems Sprint | 32h | HIGH | 🔴 Not Started |
-| **Calendar Sprint** | **100h** | **HIGH** | 🔴 Not Started |
-| VIP Portal Sprint | 112h | CRITICAL/HIGH/MEDIUM | 🔴 Not Started |
-| **Grand Total** | **310h** | | |
+| Sprint                | Estimate | Priority             | Status         |
+| --------------------- | -------- | -------------------- | -------------- |
+| UX & Stability Sprint | 66h      | CRITICAL/HIGH/MEDIUM | 🔴 Not Started |
+| Core Systems Sprint   | 32h      | HIGH                 | 🔴 Not Started |
+| **Calendar Sprint**   | **100h** | **HIGH**             | 🔴 Not Started |
+| VIP Portal Sprint     | 112h     | CRITICAL/HIGH/MEDIUM | 🔴 Not Started |
+| **Grand Total**       | **310h** |                      |                |
 
 > **Note:** VIP Portal Sprint estimate reduced from 140h to 112h. The VIP-C-001 (Appointment Scheduling) task was reduced from 60h to 40h because the Calendar Sprint now provides the foundational calendar management, availability, and request/approval infrastructure. VIP-C-001 now only needs to implement the client-facing booking UI.
 
@@ -8790,3 +8815,78 @@ The application is ready for Tier 1 customer assessment with the following notes
 
 ---
 
+
+## 📦 Sample Management Enhancement (Jan 2026)
+
+> **📋 Full Analysis:** [`docs/analysis/SAMPLE_MANAGEMENT_ANALYSIS.md`](../analysis/SAMPLE_MANAGEMENT_ANALYSIS.md)
+
+**Strategic Focus:** Enhance sample management with frontend UI, return workflows, and tracking improvements.
+
+**Analysis Date:** January 2, 2026  
+**Total Effort:** 84 hours  
+**RedHat QA Score:** 8.5/10
+
+### Current Implementation Status
+
+| Category                  | Status             | Completeness |
+| ------------------------- | ------------------ | ------------ |
+| Sample Request Workflow   | ✅ Implemented     | 85%          |
+| Monthly Allocation System | ✅ Implemented     | 90%          |
+| Inventory Integration     | ✅ Implemented     | 80%          |
+| Conversion Tracking       | ✅ Implemented     | 75%          |
+| Analytics & Reporting     | ✅ Implemented     | 85%          |
+| Sample Returns            | ❌ Not Implemented | 0%           |
+| Vendor Sample Returns     | ❌ Not Implemented | 0%           |
+| Frontend UI               | ⚠️ Minimal         | 20%          |
+
+### Sprint B Tasks: Sample Management UI (40h)
+
+| Task ID    | Description                         | Priority | Estimate | Status  |
+| ---------- | ----------------------------------- | -------- | -------- | ------- |
+| SAMPLE-001 | Create Sample Management page       | P0       | 16h      | 🟡 TODO |
+| SAMPLE-002 | Build sample request list component | P0       | 8h       | 🟡 TODO |
+| SAMPLE-003 | Add sample creation form            | P0       | 6h       | 🟡 TODO |
+| SAMPLE-004 | Implement delete endpoint           | P0       | 4h       | 🟡 TODO |
+| SAMPLE-005 | Add notification integration        | P1       | 6h       | 🟡 TODO |
+
+### Sprint D Tasks: Sample Returns & Tracking (44h)
+
+| Task ID    | Description                      | Priority | Estimate | Status  |
+| ---------- | -------------------------------- | -------- | -------- | ------- |
+| SAMPLE-006 | Implement sample return workflow | P0       | 16h      | 🟡 TODO |
+| SAMPLE-007 | Implement vendor return workflow | P1       | 12h      | 🟡 TODO |
+| SAMPLE-008 | Add location tracking            | P2       | 8h       | 🟡 TODO |
+| SAMPLE-009 | Add expiration tracking          | P2       | 8h       | 🟡 TODO |
+
+### Implementation Dependencies
+
+```
+Sprint A (COMPLETE)
+    │
+    ├──► Sprint B: SAMPLE-001 → SAMPLE-002 → SAMPLE-003
+    │                   │
+    │                   └──► SAMPLE-004, SAMPLE-005 (parallel)
+    │
+    └──► Sprint D: SAMPLE-006 → SAMPLE-007
+                        │
+                        └──► SAMPLE-008, SAMPLE-009 (parallel)
+```
+
+### Key Files
+
+| File                         | Purpose                       |
+| ---------------------------- | ----------------------------- |
+| `server/routers/samples.ts`  | Sample management tRPC router |
+| `server/samplesDb.ts`        | Sample database operations    |
+| `server/samplesAnalytics.ts` | Sample analytics functions    |
+| `drizzle/schema.ts`          | Database schema definitions   |
+
+### Success Criteria
+
+- [ ] Sample Management page accessible from main navigation
+- [ ] Sample request CRUD operations functional
+- [ ] Sample return workflow implemented with status tracking
+- [ ] Vendor return workflow implemented
+- [ ] Location and expiration tracking fields added
+- [ ] All endpoints have proper RBAC enforcement
+- [ ] E2E tests passing for sample workflows
