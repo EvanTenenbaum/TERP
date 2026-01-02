@@ -8262,11 +8262,11 @@ The following risks were identified and mitigated in the specification process:
 
 ---
 
-## VIP Portal Sprint (REVISED)
+## VIP Portal Sprint (REVISED v2)
 
-**Goal:** Fix frontend rendering issues and transform the VIP Portal into a mobile-first, fully actionable B2B portal.
+**Goal:** Fix frontend rendering issues, implement mobile-first UI, and add appointment scheduling system.
 
-**Total Estimate:** 104 hours (reduced from 120h - backend is already ~90% complete)
+**Total Estimate:** 140 hours
 
 ### Critical Correction
 
@@ -8327,17 +8327,41 @@ There is **no online payment** and **no direct purchasing**.
 
 ---
 
-### Phase 3: New Features (32h) - MEDIUM
+### Phase 3: New Features (68h) - MEDIUM/HIGH
 
 | Task ID | Task | Priority | Estimate | Status |
 |---------|------|----------|----------|--------|
-| VIP-B-01 | Implement SSO (Google OAuth) | MEDIUM | 12h | 🔴 Not Started |
-| VIP-B-02 | Implement SSO (Microsoft OAuth) | MEDIUM | 12h | 🔴 Not Started |
-| VIP-B-03 | Implement PDF Generation for Invoices/Bills | MEDIUM | 8h | 🔴 Not Started |
+| **VIP-C-01** | **ERP: Calendar Management System** | **HIGH** | **24h** | 🔴 Not Started |
+| **VIP-C-02** | **VIP Portal: Appointment Booking UI** | **HIGH** | **24h** | 🔴 Not Started |
+| **VIP-C-03** | **Request/Notification System** | **HIGH** | **12h** | 🔴 Not Started |
+| VIP-B-01 | PDF Generation for Invoices/Bills | MEDIUM | 8h | 🔴 Not Started |
 
 **Key Deliverables:**
-- Users can log in with Google or Microsoft accounts
+- Clients can schedule appointments for payment pickup/drop-off
+- Clients can schedule office visits for vending/purchasing
+- Managers can configure availability and approve/reject requests
+- Confirmed appointments auto-sync to ERP calendar
 - Users can download PDF versions of invoices and bills
+
+---
+
+### New Feature: Appointment Scheduling System (VIP-C-001)
+
+This Calendly-like system allows VIP Portal clients to book appointments:
+
+| Appointment Type | Description |
+|------------------|-------------|
+| **Payment Pickup/Drop-off** | Schedule time with accounting team for payment handling |
+| **Office Visits** | Schedule time in the office for vending, purchasing, or other business |
+
+**System Components:**
+
+| Component | Location | Description |
+|-----------|----------|-------------|
+| Calendar Management | ERP Settings | Managers create calendars with custom availability, buffer times, min notice |
+| Booking UI | VIP Portal | Clients see available slots and submit appointment requests |
+| Request Workflow | Both | Managers receive notifications, accept/reject/propose new times |
+| Calendar Integration | ERP | Confirmed appointments auto-added to the main calendar |
 
 ---
 
@@ -8348,11 +8372,13 @@ There is **no online payment** and **no direct purchasing**.
 | VIP-F-001 | Fix Frontend Rendering Issues | [📋 Spec](../specs/vip-portal-sprint/VIP-F-001-SPEC.md) |
 | VIP-M-001 | Mobile-First UI Redesign | [📋 Spec](../specs/vip-portal-sprint/VIP-M-001-SPEC.md) |
 | VIP-A-001 | Actionability Implementation | [📋 Spec](../specs/vip-portal-sprint/VIP-A-001-SPEC.md) |
-| VIP-B-001 | New Backend Features (SSO, PDF) | [📋 Spec](../specs/vip-portal-sprint/VIP-B-001-SPEC.md) |
+| VIP-B-001 | PDF Generation | [📋 Spec](../specs/vip-portal-sprint/VIP-B-001-SPEC.md) |
+| **VIP-C-001** | **Appointment Scheduling System** | [📋 Spec](../specs/vip-portal-sprint/VIP-C-001-SPEC.md) |
 
 ### Dependencies
 
 - Phase 1 (VIP-F-*) must be complete before Phase 2
 - Phase 2 (VIP-M-*, VIP-A-*) should be validated with users before Phase 3
+- VIP-C-001 requires the ERP Calendar module to be stable
 
 ---

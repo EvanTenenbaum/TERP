@@ -1,7 +1,7 @@
-# VIP-B-001: New Backend Features (SSO, PDF Generation)
+# VIP-B-001: PDF Generation for Invoices/Bills
 
 **Priority:** MEDIUM
-**Estimate:** 32 hours
+**Estimate:** 8 hours
 **Status:** Not Started
 **Depends On:** VIP-F-001, VIP-A-001
 
@@ -9,111 +9,17 @@
 
 ## Overview
 
-This specification covers the two remaining backend features from the V3 specification that have not yet been implemented: Single Sign-On (SSO) and PDF generation for invoices and bills.
+This specification covers the implementation of PDF generation for invoices and bills in the VIP Portal. This allows clients to download professional, print-ready documents of their financial records.
+
+**Note:** The SSO feature (Google/Microsoft login) has been removed from this specification and replaced with the Appointment Scheduling System (VIP-C-001).
 
 ---
 
-## Task 1: Implement Single Sign-On (24h)
+## Implementation
 
-### Requirements
+### 1. PDF Generation Service (4h)
 
-The VIP Portal must support SSO via Google and Microsoft, in addition to the existing email/password authentication.
-
-### Database Schema
-
-The `vipPortalAuth` table already has placeholder fields for SSO:
-```sql
-googleId VARCHAR(255),
-microsoftId VARCHAR(255),
-```
-
-### Implementation
-
-**1. Google OAuth (12h)**
-
-Add a Google OAuth flow using the `@react-oauth/google` library:
-
-```tsx
-// client/src/pages/vip-portal/VIPLogin.tsx
-import { GoogleLogin } from '@react-oauth/google';
-
-<GoogleLogin
-  onSuccess={(credentialResponse) => {
-    loginWithGoogle.mutate({ credential: credentialResponse.credential });
-  }}
-  onError={() => {
-    toast.error('Google login failed');
-  }}
-/>
-```
-
-Backend endpoint:
-```typescript
-// server/routers/vipPortal.ts
-loginWithGoogle: publicProcedure
-  .input(z.object({ credential: z.string() }))
-  .mutation(async ({ input }) => {
-    // 1. Verify the Google credential
-    // 2. Extract email and googleId
-    // 3. Find or create vipPortalAuth record
-    // 4. Generate session token
-    // 5. Return session
-  }),
-```
-
-**2. Microsoft OAuth (12h)**
-
-Add a Microsoft OAuth flow using the `@azure/msal-react` library:
-
-```tsx
-// client/src/pages/vip-portal/VIPLogin.tsx
-import { useMsal } from '@azure/msal-react';
-
-const { instance } = useMsal();
-
-const handleMicrosoftLogin = async () => {
-  const response = await instance.loginPopup({ scopes: ['openid', 'email'] });
-  loginWithMicrosoft.mutate({ accessToken: response.accessToken });
-};
-```
-
-Backend endpoint:
-```typescript
-// server/routers/vipPortal.ts
-loginWithMicrosoft: publicProcedure
-  .input(z.object({ accessToken: z.string() }))
-  .mutation(async ({ input }) => {
-    // 1. Verify the Microsoft access token
-    // 2. Extract email and microsoftId
-    // 3. Find or create vipPortalAuth record
-    // 4. Generate session token
-    // 5. Return session
-  }),
-```
-
-### Environment Variables Required
-
-```
-GOOGLE_CLIENT_ID=xxx
-GOOGLE_CLIENT_SECRET=xxx
-MICROSOFT_CLIENT_ID=xxx
-MICROSOFT_CLIENT_SECRET=xxx
-MICROSOFT_TENANT_ID=xxx
-```
-
----
-
-## Task 2: Implement PDF Generation (8h)
-
-### Requirements
-
-Clients must be able to download PDF versions of their invoices and bills.
-
-### Implementation
-
-**1. PDF Generation Service (4h)**
-
-Create a new service using `@react-pdf/renderer` or `pdfmake`:
+Create a new service using `pdfkit` or `@react-pdf/renderer`:
 
 ```typescript
 // server/services/pdfService.ts
@@ -124,16 +30,17 @@ export async function generateInvoicePdf(invoiceId: number): Promise<Buffer> {
   const doc = new PDFDocument();
   
   // Add header with company logo
-  // Add invoice details
+  // Add invoice details (number, date, due date)
+  // Add client information
   // Add line items table
-  // Add totals
+  // Add totals (subtotal, tax, total)
   // Add payment instructions
   
   return doc;
 }
 ```
 
-**2. Download Endpoint (2h)**
+### 2. Download Endpoint (2h)
 
 ```typescript
 // server/routers/vipPortal.ts
@@ -146,7 +53,7 @@ downloadInvoicePdf: vipPortalProcedure
   }),
 ```
 
-**3. Frontend Integration (2h)**
+### 3. Frontend Integration (2h)
 
 ```tsx
 // In the invoice detail view
@@ -168,14 +75,6 @@ downloadInvoicePdf: vipPortalProcedure
 
 ## Acceptance Criteria
 
-### SSO
-1. Users can log in with Google OAuth
-2. Users can log in with Microsoft OAuth
-3. SSO accounts are linked to existing email accounts if the email matches
-4. SSO login creates a new account if no matching email exists
-5. Session management works identically for SSO and email/password users
-
-### PDF Generation
 1. Users can download a PDF of any invoice they have access to
 2. PDF includes: company logo, invoice number, date, line items, totals
 3. PDF is formatted professionally and is print-ready
@@ -185,9 +84,8 @@ downloadInvoicePdf: vipPortalProcedure
 
 ## Testing
 
-1. **SSO Testing:** Test with real Google and Microsoft accounts
-2. **PDF Testing:** Verify PDF renders correctly across different invoice types
-3. **Security Testing:** Verify users cannot download invoices belonging to other clients
+1. **PDF Testing:** Verify PDF renders correctly across different invoice types
+2. **Security Testing:** Verify users cannot download invoices belonging to other clients
 
 ---
 
