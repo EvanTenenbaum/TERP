@@ -1,0 +1,352 @@
+# 🟢 Sprint B: Frontend UX & UI Components
+
+## Agent Assignment Prompt
+
+You are assigned to execute **Sprint B** of the TERP ERP parallel sprint plan. This sprint focuses on Frontend UX and UI Components. You will work in parallel with two other agents (Sprint C and Sprint D) who are working on different file domains.
+
+---
+
+## 🚨 CRITICAL: READ BEFORE STARTING
+
+### Prerequisites
+1. **Sprint A must be complete** - Verify schema is stable before starting
+2. **Pull latest code** - `git pull origin main` to get Sprint A changes
+3. **Regenerate types** - `pnpm generate` to update TypeScript types
+4. **Create your branch** - `git checkout -b sprint-b/frontend-ux`
+
+### File Ownership Rules (STRICTLY ENFORCED)
+You have **EXCLUSIVE WRITE ACCESS** to these files only:
+```
+client/src/components/ui/
+client/src/components/dashboard/
+client/src/components/layout/AppSidebar.tsx
+client/src/components/layout/DashboardLayout.tsx
+client/src/pages/DashboardPage.tsx
+client/src/pages/Orders.tsx
+client/src/pages/ClientsListPage.tsx
+client/src/pages/Inventory.tsx
+client/src/pages/TodoListsPage.tsx
+client/src/pages/Analytics.tsx
+client/src/pages/Leaderboard.tsx
+client/src/contexts/
+client/src/hooks/
+```
+
+**DO NOT MODIFY** any files outside this list. Other agents are working on:
+- Sprint C owns: `client/src/pages/accounting/`, `client/src/pages/vip-portal/`, `client/src/pages/ClientProfilePage.tsx`
+- Sprint D owns: `client/src/pages/SalesSheetCreatorPage.tsx`, `client/src/pages/LocationsPage.tsx`, `client/src/pages/PickPackPage.tsx`
+
+---
+
+## 📋 Sprint Tasks
+
+### Phase 1: Stabilize the Core (CRITICAL) - 18h
+
+#### STAB-001: Fix Broken Modules (8h)
+**Spec:** `docs/specs/ux-improvements/STAB-001-SPEC.md`
+
+**Problem:** 5 modules have critical issues (Tasks, Fulfillment, Procurement, Accounting sidebar, Sales Portal)
+
+**Deliverables:**
+- [ ] Tasks page loads without errors
+- [ ] Fulfillment page displays data correctly
+- [ ] Procurement page is accessible
+- [ ] Accounting sidebar navigation works
+- [ ] Sales Portal renders properly
+
+**🔴 REDHAT QA GATE 1.1:**
+```
+Before marking STAB-001 complete:
+□ Navigate to each of the 5 modules in browser
+□ Verify no console errors
+□ Verify no infinite loading states
+□ Verify data displays correctly
+□ Screenshot each working module
+□ Document any issues found
+```
+
+#### STAB-002: Fix Data Integrity Display Issues (6h)
+**Spec:** `docs/specs/ux-improvements/STAB-002-SPEC.md`
+
+**Problem:** Orders KPI mismatch, profit calculation errors, floating point display issues
+
+**Deliverables:**
+- [ ] Orders KPI cards match table data
+- [ ] Profit calculations return accurate values
+- [ ] No floating point display errors (e.g., $10.000000001)
+
+**🔴 REDHAT QA GATE 1.2:**
+```
+Before marking STAB-002 complete:
+□ Compare KPI card totals to table row counts
+□ Verify profit calculation with manual check
+□ Search for any floating point artifacts in UI
+□ Test with various data sets
+□ Document calculation logic
+```
+
+#### STAB-003: Fix UI Bugs (4h)
+**Spec:** `docs/specs/ux-improvements/STAB-003-SPEC.md`
+
+**Problem:** Duplicate navigation, non-functional KPI cards, inconsistent empty states
+
+**Deliverables:**
+- [ ] Single navigation bar (no duplicates)
+- [ ] All KPI cards are functional
+- [ ] Empty states are consistent
+
+**🔴 REDHAT QA GATE 1.3 (PHASE 1 COMPLETE):**
+```
+Before proceeding to Phase 2:
+□ All 27 navigation items lead to functional pages
+□ Zero 404 errors
+□ Zero infinite loading states
+□ All Phase 1 deliverables verified
+□ Run: pnpm test (all tests pass)
+□ Run: pnpm build (no TypeScript errors)
+□ Commit with message: "SPRINT-B Phase 1: Stabilize Core [REDHAT QA PASSED]"
+```
+
+---
+
+### Phase 2: Universal Actionability (HIGH) - 28h
+
+#### ACT-001: Make KPI Cards Actionable (8h)
+**Spec:** `docs/specs/ux-improvements/ACT-001-SPEC.md`
+
+**Problem:** KPI cards are display-only, clicking does nothing
+
+**Deliverables:**
+- [ ] Clicking KPI card filters corresponding table
+- [ ] URL state reflects filter (shareable links)
+- [ ] Visual feedback on hover/click
+- [ ] Active state indicator
+
+**🔴 REDHAT QA GATE 2.1:**
+```
+Before marking ACT-001 complete:
+□ Test each KPI card click behavior
+□ Verify URL updates with filter params
+□ Verify table filters correctly
+□ Test browser back/forward navigation
+□ Test direct URL access with params
+□ Verify hover states work
+```
+
+#### ACT-002: Make Data Tables Actionable (12h)
+**Spec:** `docs/specs/ux-improvements/ACT-002-SPEC.md`
+
+**Problem:** Table rows not clickable, no bulk actions, cells not interactive
+
+**Deliverables:**
+- [ ] Row click navigates to detail view
+- [ ] Checkbox selection for bulk actions
+- [ ] Bulk action menu (delete, export, status change)
+- [ ] Email/phone cells are clickable links
+- [ ] Action menu on each row
+
+**🔴 REDHAT QA GATE 2.2:**
+```
+Before marking ACT-002 complete:
+□ Test row click on Orders, Clients, Inventory tables
+□ Test checkbox selection (single, all, range)
+□ Test each bulk action
+□ Verify email links open mailto:
+□ Verify phone links open tel:
+□ Test action menu items
+□ Verify no conflicts with row click
+```
+
+#### ACT-003: Make Widgets Actionable (8h)
+**Spec:** `docs/specs/ux-improvements/ACT-003-SPEC.md`
+
+**Problem:** Dashboard widgets are display-only
+
+**Deliverables:**
+- [ ] Widget rows are clickable
+- [ ] Chart segments drill down to filtered view
+- [ ] Values link to relevant pages
+
+**🔴 REDHAT QA GATE 2.3 (PHASE 2 COMPLETE):**
+```
+Before proceeding to Phase 3:
+□ All KPI cards interactive
+□ All table rows clickable
+□ All widgets actionable
+□ Run: pnpm test (all tests pass)
+□ Run: pnpm build (no TypeScript errors)
+□ Manual E2E test of critical paths
+□ Commit with message: "SPRINT-B Phase 2: Universal Actionability [REDHAT QA PASSED]"
+```
+
+---
+
+### Phase 3: Enhance and Refine (MEDIUM) - 20h
+
+#### ENH-001: Implement Collapsible Navigation (10h)
+**Spec:** `docs/specs/ux-improvements/ENH-001-SPEC.md`
+
+**Problem:** Flat navigation with 27+ items is overwhelming
+
+**Deliverables:**
+- [ ] Navigation grouped into 7 sections (Core, Sales, Fulfillment, Inventory, Finance, Insights, System)
+- [ ] Sections collapsible/expandable
+- [ ] Pinned items feature
+- [ ] State persisted to localStorage
+
+**🔴 REDHAT QA GATE 3.1:**
+```
+Before marking ENH-001 complete:
+□ Verify all 7 groups exist
+□ Test collapse/expand behavior
+□ Test pin/unpin functionality
+□ Verify state persists across page refresh
+□ Verify state persists across sessions
+□ Test keyboard navigation
+```
+
+#### ENH-002: Improve Empty States (6h)
+**Spec:** `docs/specs/ux-improvements/ENH-002-SPEC.md`
+
+**Problem:** Empty pages show blank space without guidance
+
+**Deliverables:**
+- [ ] All empty states have icon
+- [ ] All empty states have title
+- [ ] All empty states have description
+- [ ] All empty states have primary CTA
+
+**🔴 REDHAT QA GATE 3.2:**
+```
+Before marking ENH-002 complete:
+□ Audit all pages for empty states
+□ Verify each empty state has all 4 elements
+□ Test CTA buttons work correctly
+□ Verify consistent styling
+```
+
+#### ENH-003: Consolidate Duplicate Pages (4h)
+**Spec:** `docs/specs/ux-improvements/ENH-003-SPEC.md`
+
+**Problem:** Duplicate pages cause confusion (Locations, Pricing)
+
+**Deliverables:**
+- [ ] `/locations` redirects to `/settings?tab=locations`
+- [ ] `/pricing` shows tabbed interface with Rules and Profiles
+
+**🔴 REDHAT QA GATE 3.3 (PHASE 3 COMPLETE):**
+```
+Before marking sprint complete:
+□ All Phase 3 deliverables verified
+□ Run: pnpm test (all tests pass)
+□ Run: pnpm build (no TypeScript errors)
+□ Full manual regression test
+□ No regressions from Phase 1 or 2
+□ Commit with message: "SPRINT-B Phase 3: Enhance & Refine [REDHAT QA PASSED]"
+```
+
+---
+
+## 🔴 FINAL REDHAT QA GATE (SPRINT COMPLETE)
+
+Before submitting your branch for merge:
+
+### Code Quality
+- [ ] `pnpm test` - All tests pass
+- [ ] `pnpm build` - Zero TypeScript errors
+- [ ] `pnpm lint` - No linting errors
+- [ ] No `console.log` statements left in code
+- [ ] No commented-out code blocks
+- [ ] All new components have proper TypeScript types
+
+### Functional Verification
+- [ ] All 27 navigation items functional
+- [ ] All KPI cards interactive
+- [ ] All table rows clickable
+- [ ] All widgets actionable
+- [ ] All empty states implemented
+- [ ] Navigation groups working
+- [ ] No regressions in existing functionality
+
+### Documentation
+- [ ] Update task status in MASTER_ROADMAP.md
+- [ ] Document any deviations from spec
+- [ ] Note any technical debt created
+
+### Git Hygiene
+- [ ] All commits have descriptive messages
+- [ ] No merge conflicts with main
+- [ ] Branch is rebased on latest main
+
+### Final Commit
+```bash
+git add .
+git commit -m "SPRINT-B Complete: Frontend UX & UI Components [REDHAT QA PASSED]
+
+Phase 1: Stabilize Core (STAB-001, STAB-002, STAB-003)
+Phase 2: Universal Actionability (ACT-001, ACT-002, ACT-003)
+Phase 3: Enhance & Refine (ENH-001, ENH-002, ENH-003)
+
+All Redhat QA gates passed.
+Ready for integration."
+
+git push origin sprint-b/frontend-ux
+```
+
+---
+
+## 🚫 ROLLBACK PROCEDURES
+
+If you introduce a regression or break existing functionality:
+
+### Level 1: Revert Last Commit
+```bash
+git revert HEAD
+```
+
+### Level 2: Revert to Phase Checkpoint
+```bash
+git log --oneline  # Find checkpoint commit
+git revert <commit_hash>..HEAD
+```
+
+### Level 3: Abandon Branch
+```bash
+git checkout main
+git branch -D sprint-b/frontend-ux
+git checkout -b sprint-b/frontend-ux  # Start fresh
+```
+
+---
+
+## 📞 ESCALATION
+
+If you encounter:
+- **File conflicts with other sprints** → STOP and report immediately
+- **Schema/type errors after Sprint A** → Run `pnpm generate` and retry
+- **Blocking bugs in Sprint A code** → Document and escalate
+- **Unclear requirements** → Check spec files first, then escalate
+
+---
+
+## ⏱️ TIME ESTIMATES
+
+| Phase | Tasks | Estimate | Checkpoint |
+|-------|-------|----------|------------|
+| Phase 1 | STAB-001, STAB-002, STAB-003 | 18h | QA Gate 1.3 |
+| Phase 2 | ACT-001, ACT-002, ACT-003 | 28h | QA Gate 2.3 |
+| Phase 3 | ENH-001, ENH-002, ENH-003 | 20h | QA Gate 3.3 |
+| **Total** | | **66h** | Final QA Gate |
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+Sprint B is successful when:
+1. All 9 tasks completed and verified
+2. All Redhat QA gates passed
+3. Zero regressions in existing functionality
+4. Branch ready for merge (no conflicts)
+5. Documentation updated
+
+**DO NOT submit your branch until ALL criteria are met.**

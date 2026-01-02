@@ -8119,12 +8119,33 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 | WS-015 | **Sales: Customer Wishlist Field**              | MEDIUM   | 4h       | Sales           | ✅ COMPLETE | [📋 Spec](../specs/WS-015-SPEC.md) |
 
 ---
+---
+
+## 🚀 Parallel Sprint Execution Plan (Jan 8-22, 2026)
+
+> **📋 Full Plan:** [`docs/roadmaps/PARALLEL_SPRINT_PLAN.md`](./PARALLEL_SPRINT_PLAN.md)
+
+**Execution Strategy:** 4 sprints designed for maximum parallelization with zero file conflicts.
+
+| Sprint | Focus | Hours | Owner | Status |
+|--------|-------|-------|-------|--------|
+| **🔵 A** | Backend Infrastructure & Schema | 60h | DevOps Lead | PREREQUISITE |
+| **🟢 B** | Frontend UX & UI Components | 66h | Frontend Agent | After Sprint A |
+| **🟠 C** | Accounting & VIP Portal | 54h | Full-Stack Agent | After Sprint A |
+| **🟣 D** | Sales, Inventory & QA | 58h | QA Agent | After Sprint A |
+| **Total** | | **238h** | | |
+
+**Execution Order:**
+1. Sprint A completes first (schema must be stable)
+2. Sprints B, C, D run in parallel
+3. Merge order: A → B → C → D
+
+**Agent Prompts:** [`docs/prompts/parallel-sprints/`](../prompts/parallel-sprints/)
 
 ---
 
 ## 🚀 Next Sprint (Jan 8-22, 2026): UX & Stability Sprint
-
-**Strategic Focus:** Address critical UX flaws, fix systemic bugs, and establish development standards to improve platform stability and usability.
+**Strategic Focus:** Address critical UX flaws, fix systemic bugs, and establish development standards to improve platform stability and usability.ty.
 **Sprint Plan:** Implement the three tiers of tasks identified in the UX/UI Analysis Report V2.
 
 ### Sprint Task Overview
