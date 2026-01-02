@@ -36,6 +36,7 @@ import { format } from "date-fns";
 import { CogsEditModal } from "./CogsEditModal";
 import { PotentialBuyersWidget } from "./PotentialBuyersWidget";
 import { PriceSimulationModal } from "./PriceSimulationModal";
+import { BatchMediaUpload } from "./BatchMediaUpload";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { useState } from "react";
 
@@ -414,6 +415,11 @@ export function BatchDetailDrawer({
                 </div>
               </div>
             </div>
+
+            <Separator />
+
+            {/* Batch Media */}
+            <BatchMediaUpload batchId={batchId} productId={batch.productId} />
 
             <Separator />
 
