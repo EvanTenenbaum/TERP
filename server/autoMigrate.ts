@@ -922,6 +922,70 @@ export async function runAutoMigrations() {
         }
       }
     }
+    // ============================================================================
+    // FEATURE-012: Admin Impersonation Tables (VIP Portal Admin Access Tool)
+    // ============================================================================
+    // Create admin_impersonation_sessions table
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS admin_impersonation_sessions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          session_guid VARCHAR(36) NOT NULL UNIQUE,
+          admin_user_id INT NOT NULL,
+          client_id INT NOT NULL,
+          status ENUM('ACTIVE', 'ENDED', 'REVOKED', 'EXPIRED') NOT NULL DEFAULT 'ACTIVE',
+          start_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          end_at TIMESTAMP NULL,
+          expires_at TIMESTAMP NOT NULL,
+          ip_address VARCHAR(45) NULL,
+          user_agent TEXT NULL,
+          revoked_by INT NULL,
+          revoked_at TIMESTAMP NULL,
+          revoke_reason TEXT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_admin_user_id (admin_user_id),
+          INDEX idx_client_id (client_id),
+          INDEX idx_status (status),
+          INDEX idx_session_guid (session_guid)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created admin_impersonation_sessions table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.log("  ℹ️  admin_impersonation_sessions table already exists");
+      } else {
+        console.log("  ⚠️  admin_impersonation_sessions table:", errMsg);
+      }
+    }
+
+    // Create admin_impersonation_actions table (audit log)
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS admin_impersonation_actions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          session_id INT NOT NULL,
+          action_type VARCHAR(50) NOT NULL,
+          action_details JSON NULL,
+          entity_type VARCHAR(50) NULL,
+          entity_id INT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_session_id (session_id),
+          INDEX idx_action_type (action_type),
+          INDEX idx_created_at (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log("  ✅ Created admin_impersonation_actions table");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("already exists")) {
+        console.log("  ℹ️  admin_impersonation_actions table already exists");
+      } else {
+        console.log("  ⚠️  admin_impersonation_actions table:", errMsg);
+      }
+    }
+
 
     const duration = Date.now() - startTime;
     console.log(`✅ Auto-migrations completed in ${duration}ms`);
