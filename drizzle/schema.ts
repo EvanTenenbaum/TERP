@@ -2118,6 +2118,61 @@ export const salesSheetHistory = mysqlTable(
 export type SalesSheetHistory = typeof salesSheetHistory.$inferSelect;
 export type InsertSalesSheetHistory = typeof salesSheetHistory.$inferInsert;
 
+/**
+ * Sales Sheet Drafts
+ * Auto-saved drafts for sales sheets in progress
+ * QA-062: Implements draft/auto-save functionality
+ */
+export const salesSheetDrafts = mysqlTable(
+  "sales_sheet_drafts",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    clientId: int("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    createdBy: int("created_by")
+      .notNull()
+      .references(() => users.id),
+    
+    // Draft metadata
+    name: varchar("name", { length: 255 }).notNull(),
+    
+    // Items with pricing (same structure as salesSheetHistory)
+    items: json("items").notNull().$type<Array<{
+      id: number;
+      name: string;
+      category?: string;
+      subcategory?: string;
+      strain?: string;
+      basePrice: number;
+      retailPrice: number;
+      quantity: number;
+      grade?: string;
+      vendor?: string;
+      priceMarkup: number;
+      appliedRules?: Array<{
+        ruleId: number;
+        ruleName: string;
+        adjustment: string;
+      }>;
+    }>>(),
+    totalValue: decimal("total_value", { precision: 15, scale: 2 }).notNull(),
+    itemCount: int("item_count").notNull(),
+    
+    // Timestamps
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    clientIdIdx: index("idx_drafts_client_id").on(table.clientId),
+    createdByIdx: index("idx_drafts_created_by").on(table.createdBy),
+    updatedAtIdx: index("idx_drafts_updated_at").on(table.updatedAt),
+  })
+);
+
+export type SalesSheetDraft = typeof salesSheetDrafts.$inferSelect;
+export type InsertSalesSheetDraft = typeof salesSheetDrafts.$inferInsert;
+
 // ============================================================================
 // QUOTE/SALES MODULE SCHEMA
 // ============================================================================

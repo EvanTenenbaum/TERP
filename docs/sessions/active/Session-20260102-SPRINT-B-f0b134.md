@@ -30,14 +30,14 @@
 - [ ] Verify Sales Portal renders properly
 
 ### Phase 2: Universal Actionability (ACT-001, ACT-002, ACT-003)
-- [x] Make KPI cards clickable with URL state filters (ACT-001)
-- [x] Make data table rows clickable (ACT-002) - Already implemented in ResponsiveTable
-- [x] Make dashboard widgets actionable (ACT-003)
+- [ ] Make KPI cards clickable with URL state filters
+- [ ] Make data table rows clickable
+- [ ] Make dashboard widgets actionable
 
 ### Phase 3: Enhance and Refine (ENH-001, ENH-002, ENH-003)
 - [x] Implement collapsible navigation groups (ENH-001)
-- [x] Improve empty states consistency (ENH-002) - Already well-implemented
-- [x] Consolidate duplicate pages (ENH-003) - Reviewed, no true duplicates found
+- [ ] Improve empty states consistency
+- [ ] Consolidate duplicate pages
 
 ## Progress Log
 
@@ -47,42 +47,6 @@
   - Updated AppSidebar with collapsible groups
   - Added pin/unpin functionality
   - 10 tests passing
-- 2026-01-02: Implemented clickable KPI cards (ACT-001)
-  - Enhanced kpi-card.tsx with href and onAction props
-  - Updated KpiSummaryRow with navigation links
-  - Cards now navigate to: /accounting, /orders?status=active, /inventory, /inventory?filter=low-stock
-- 2026-01-02: Verified ACT-002 already implemented
-  - ResponsiveTable has onRowClick and clickable props
-  - ClientsListPage and Orders page already have clickable rows
-- 2026-01-02: Implemented actionable dashboard widgets (ACT-003)
-  - TotalDebtWidget: rows navigate to /clients?hasDebt=true and /accounting/bills
-  - SalesByClientWidget: rows navigate to client profiles
-  - CashFlowWidget: rows navigate to /accounting/invoices and /accounting/bills
-  - All widgets have "View All" buttons
-- 2026-01-02: Verified ENH-002 and ENH-003
-  - EmptyState component is well-designed with variants and presets
-  - Already used consistently across widgets and pages
-  - Quotes.tsx is not a duplicate - specialized view for quote orders
-
-## Sprint B Summary
-
-**Completed Tasks:**
-- ENH-001: Collapsible navigation ✅
-- ACT-001: Clickable KPI cards ✅
-- ACT-002: Clickable table rows ✅ (already implemented)
-- ACT-003: Actionable dashboard widgets ✅
-- ENH-002: Empty states consistency ✅ (already well-implemented)
-- ENH-003: Consolidate duplicates ✅ (no true duplicates found)
-
-**Files Modified:**
-- client/src/hooks/useNavigationState.ts (new)
-- client/src/hooks/useNavigationState.test.ts (new)
-- client/src/components/layout/AppSidebar.tsx (updated)
-- client/src/components/ui/kpi-card.tsx (updated)
-- client/src/components/dashboard/KpiSummaryRow.tsx (updated)
-- client/src/components/dashboard/widgets-v2/TotalDebtWidget.tsx (updated)
-- client/src/components/dashboard/widgets-v2/SalesByClientWidget.tsx (updated)
-- client/src/components/dashboard/widgets-v2/CashFlowWidget.tsx (updated)
 
 ## Notes
 

@@ -886,12 +886,11 @@ export const accountingRouter = router({
             transactionDate: new Date(),
             amount: input.amount.toFixed(2),
             paymentStatus: "PAID",
+            notes: input.note || `Quick payment - ${input.paymentMethod}`,
             metadata: {
               referenceType: "PAYMENT",
               referenceId: paymentId,
-              paymentMethod: input.paymentMethod,
             },
-            notes: input.note || `Quick payment - ${input.paymentMethod}`,
           });
           
           // 5. Update client totalOwed
