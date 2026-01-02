@@ -30,14 +30,14 @@
 - [ ] Verify Sales Portal renders properly
 
 ### Phase 2: Universal Actionability (ACT-001, ACT-002, ACT-003)
-- [ ] Make KPI cards clickable with URL state filters
-- [ ] Make data table rows clickable
-- [ ] Make dashboard widgets actionable
+- [x] Make KPI cards clickable with URL state filters (ACT-001)
+- [ ] Make data table rows clickable (ACT-002)
+- [ ] Make dashboard widgets actionable (ACT-003)
 
 ### Phase 3: Enhance and Refine (ENH-001, ENH-002, ENH-003)
 - [x] Implement collapsible navigation groups (ENH-001)
-- [ ] Improve empty states consistency
-- [ ] Consolidate duplicate pages
+- [ ] Improve empty states consistency (ENH-002)
+- [ ] Consolidate duplicate pages (ENH-003)
 
 ## Progress Log
 
@@ -47,6 +47,10 @@
   - Updated AppSidebar with collapsible groups
   - Added pin/unpin functionality
   - 10 tests passing
+- 2026-01-02: Implemented clickable KPI cards (ACT-001)
+  - Enhanced kpi-card.tsx with href and onAction props
+  - Updated KpiSummaryRow with navigation links
+  - Cards now navigate to: /accounting, /orders?status=active, /inventory, /inventory?filter=low-stock
 
 ## Notes
 

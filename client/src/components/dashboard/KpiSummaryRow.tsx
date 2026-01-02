@@ -17,6 +17,10 @@ interface KpiSummaryRowProps {
   loading?: boolean;
 }
 
+/**
+ * KPI Summary Row with clickable cards
+ * ACT-001: Cards navigate to relevant pages when clicked
+ */
 export const KpiSummaryRow = memo(function KpiSummaryRow({ data, loading }: KpiSummaryRowProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -55,6 +59,7 @@ export const KpiSummaryRow = memo(function KpiSummaryRow({ data, loading }: KpiS
             : "neutral"
         }
         loading={loading}
+        href="/accounting"
       />
 
       <KpiCard
@@ -79,6 +84,7 @@ export const KpiSummaryRow = memo(function KpiSummaryRow({ data, loading }: KpiS
             : "neutral"
         }
         loading={loading}
+        href="/orders?status=active"
       />
 
       <KpiCard
@@ -103,6 +109,7 @@ export const KpiSummaryRow = memo(function KpiSummaryRow({ data, loading }: KpiS
             : "neutral"
         }
         loading={loading}
+        href="/inventory"
       />
 
       <KpiCard
@@ -110,6 +117,7 @@ export const KpiSummaryRow = memo(function KpiSummaryRow({ data, loading }: KpiS
         value={data ? formatNumber(data.lowStockCount) : "0"}
         icon={AlertTriangle}
         loading={loading}
+        href="/inventory?filter=low-stock"
       />
     </div>
   );
