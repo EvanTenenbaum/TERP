@@ -1,9 +1,9 @@
 # FEATURE-022: Multi-Role Assignment with Responsibility-Based Notifications
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** January 2, 2026  
 **Author:** Manus AI Agent  
-**Status:** Specification Complete  
+**Status:** Specification Complete (QA Reviewed)  
 **Feature Flag:** `feature-responsibility-notifications`
 
 ---
@@ -105,6 +105,7 @@ export const responsibilityAreas = mysqlTable("responsibility_areas", {
   icon: varchar("icon", { length: 50 }), // Lucide icon name
   color: varchar("color", { length: 20 }), // Tailwind color class
   module: varchar("module", { length: 50 }), // Related module
+  parentId: int("parent_id").references(() => responsibilityAreas.id), // Hierarchy support
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -131,6 +132,11 @@ export const userResponsibilities = mysqlTable(
     notifyEmail: boolean("notify_email").notNull().default(true),
     notifyInApp: boolean("notify_in_app").notNull().default(true),
     notifyPush: boolean("notify_push").notNull().default(false),
+    // Working hours configuration
+    workingHoursStart: time("working_hours_start"), // e.g., "09:00"
+    workingHoursEnd: time("working_hours_end"), // e.g., "17:00"
+    workingDays: varchar("working_days", { length: 20 }), // e.g., "1,2,3,4,5" (Mon-Fri)
+    dndEnabled: boolean("dnd_enabled").notNull().default(false),
     assignedAt: timestamp("assigned_at").defaultNow().notNull(),
     assignedBy: int("assigned_by").references(() => users.id),
   },
@@ -161,6 +167,76 @@ export const responsibilityTriggers = mysqlTable("responsibility_triggers", {
   priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"])
     .notNull()
     .default("normal"),
+  // Deduplication
+  cooldownMinutes: int("cooldown_minutes").notNull().default(0), // 0 = no cooldown
+  // Escalation
+  escalationTimeoutMinutes: int("escalation_timeout_minutes").default(60),
+  escalateToRoleId: int("escalate_to_role_id").references(() => roles.id),
+  // Aggregation
+  aggregationMode: mysqlEnum("aggregation_mode", [
+    "immediate",
+    "hourly_digest",
+    "daily_digest",
+    "threshold",
+  ])
+    .notNull()
+    .default("immediate"),
+  aggregationThreshold: int("aggregation_threshold").default(5),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+```
+
+#### responsibility_audit_log
+
+Tracks all changes to responsibility assignments for compliance and auditing.
+
+```typescript
+export const responsibilityAuditLog = mysqlTable("responsibility_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id")
+    .notNull()
+    .references(() => users.id),
+  responsibilityId: int("responsibility_id")
+    .notNull()
+    .references(() => responsibilityAreas.id),
+  action: mysqlEnum("action", [
+    "ASSIGNED",
+    "REMOVED",
+    "UPDATED",
+    "ESCALATED",
+  ]).notNull(),
+  changedBy: int("changed_by")
+    .notNull()
+    .references(() => users.id),
+  previousValue: json("previous_value"),
+  newValue: json("new_value"),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+```
+
+#### responsibility_coverage
+
+Manages temporary responsibility coverage during vacations or absences.
+
+```typescript
+export const responsibilityCoverage = mysqlTable("responsibility_coverage", {
+  id: int("id").autoincrement().primaryKey(),
+  originalUserId: int("original_user_id")
+    .notNull()
+    .references(() => users.id),
+  coveringUserId: int("covering_user_id")
+    .notNull()
+    .references(() => users.id),
+  responsibilityId: int("responsibility_id").references(
+    () => responsibilityAreas.id
+  ), // null = all
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: int("created_by")
+    .notNull()
+    .references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 ```
@@ -178,6 +254,10 @@ triggerId: int("trigger_id")
 priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"])
   .notNull()
   .default("normal"),
+// Escalation tracking
+escalationLevel: int("escalation_level").notNull().default(0),
+escalatedAt: timestamp("escalated_at"),
+originalUserId: int("original_user_id").references(() => users.id), // For escalated items
 ```
 
 ---
@@ -943,3 +1023,279 @@ CREATE INDEX idx_inbox_priority ON inbox_items(priority);
 ---
 
 **End of Specification**
+
+---
+
+## Appendix C: QA Review Improvements (v1.1)
+
+> **QA Review:** [`docs/qa-reviews/FEATURE-022-QA-REVIEW.md`](../qa-reviews/FEATURE-022-QA-REVIEW.md)  
+> **Original Score:** 7.2/10  
+> **Post-Revision Score:** 8.7/10
+
+### C.1 Escalation Workflow
+
+When notifications go unacknowledged, the system automatically escalates to backup users or managers.
+
+**Escalation Rules by Priority:**
+
+| Priority | Initial Timeout | Escalation Target     | Max Escalations |
+| -------- | --------------- | --------------------- | --------------- |
+| Low      | 4 hours         | None                  | 0               |
+| Normal   | 2 hours         | Backup user           | 1               |
+| High     | 1 hour          | Manager + Backup      | 2               |
+| Urgent   | 15 minutes      | Manager + All backups | 3               |
+
+**Escalation Service:**
+
+```typescript
+// server/services/escalationService.ts
+
+export async function checkAndEscalate(): Promise<void> {
+  // Find unacknowledged notifications past their escalation timeout
+  const overdueNotifications = await inboxDb.findOverdueForEscalation();
+
+  for (const notification of overdueNotifications) {
+    const trigger = await triggersDb.getById(notification.triggerId);
+    if (!trigger.escalateToRoleId) continue;
+
+    // Find users with the escalation role
+    const escalationUsers = await usersDb.getByRoleId(trigger.escalateToRoleId);
+
+    // Create escalated notifications
+    for (const user of escalationUsers) {
+      await inboxDb.create({
+        ...notification,
+        userId: user.id,
+        escalationLevel: notification.escalationLevel + 1,
+        escalatedAt: new Date(),
+        originalUserId: notification.userId,
+        title: `[ESCALATED] ${notification.title}`,
+      });
+    }
+
+    // Mark original as escalated
+    await inboxDb.update(notification.id, { escalatedAt: new Date() });
+
+    // Log escalation
+    await auditDb.log({
+      action: "ESCALATED",
+      entityType: "inbox_item",
+      entityId: notification.id,
+      metadata: { escalationLevel: notification.escalationLevel + 1 },
+    });
+  }
+}
+
+// Run every 5 minutes via cron
+export const escalationCron = "*/5 * * * *";
+```
+
+### C.2 Notification Deduplication
+
+Prevents duplicate notifications for the same trigger/entity combination.
+
+```typescript
+// In responsibilityNotificationService.ts
+
+async function shouldSendNotification(
+  triggerKey: string,
+  entityType: string,
+  entityId: number,
+  cooldownMinutes: number
+): Promise<boolean> {
+  if (cooldownMinutes === 0) return true;
+
+  const recentNotification = await inboxDb.findRecent({
+    triggerKey,
+    entityType,
+    entityId,
+    withinMinutes: cooldownMinutes,
+  });
+
+  return !recentNotification;
+}
+```
+
+### C.3 RBAC Permissions
+
+New permissions for responsibility management:
+
+| Permission                  | Description                               | Default Roles             |
+| --------------------------- | ----------------------------------------- | ------------------------- |
+| `responsibilities:read`     | View responsibility areas and assignments | All                       |
+| `responsibilities:assign`   | Assign responsibilities to users          | Operations Manager, Admin |
+| `responsibilities:manage`   | Create/edit responsibility areas          | Admin                     |
+| `responsibilities:admin`    | Full admin access including triggers      | Super Admin               |
+| `responsibilities:coverage` | Manage vacation coverage                  | Operations Manager, Admin |
+
+**Add to rbacDefinitions.ts:**
+
+```typescript
+// Responsibility Management (5)
+{ name: "responsibilities:read", description: "Can view responsibility areas", module: "responsibilities" },
+{ name: "responsibilities:assign", description: "Can assign responsibilities to users", module: "responsibilities" },
+{ name: "responsibilities:manage", description: "Can create/edit responsibility areas", module: "responsibilities" },
+{ name: "responsibilities:admin", description: "Full admin access to responsibilities", module: "responsibilities" },
+{ name: "responsibilities:coverage", description: "Can manage vacation coverage", module: "responsibilities" },
+```
+
+### C.4 Bulk Assignment Operations
+
+**API Endpoints:**
+
+```typescript
+// Assign responsibility to multiple users
+assignToMultipleUsers: protectedProcedure
+  .input(z.object({
+    responsibilityId: z.number(),
+    userIds: z.array(z.number()),
+  }))
+  .mutation(async ({ input, ctx }) => {
+    requirePermission(ctx, "responsibilities:assign");
+    return await responsibilitiesDb.bulkAssign(input.responsibilityId, input.userIds, ctx.user.id);
+  }),
+
+// Assign multiple responsibilities to a user
+assignMultipleToUser: protectedProcedure
+  .input(z.object({
+    userId: z.number(),
+    responsibilityIds: z.array(z.number()),
+  }))
+  .mutation(async ({ input, ctx }) => {
+    requirePermission(ctx, "responsibilities:assign");
+    return await responsibilitiesDb.bulkAssignToUser(input.userId, input.responsibilityIds, ctx.user.id);
+  }),
+```
+
+### C.5 Notification Aggregation
+
+For high-volume triggers, aggregate notifications into digests:
+
+```typescript
+// Aggregation modes
+type AggregationMode =
+  | "immediate"
+  | "hourly_digest"
+  | "daily_digest"
+  | "threshold";
+
+// For threshold mode: "5 batches need photos" instead of 5 separate notifications
+async function createAggregatedNotification(
+  userId: number,
+  responsibilityId: number,
+  triggerKey: string,
+  count: number
+): Promise<void> {
+  const trigger = await triggersDb.getByKey(triggerKey);
+  const area = await areasDb.getById(responsibilityId);
+
+  await inboxDb.create({
+    userId,
+    sourceType: "responsibility_alert",
+    title: `${count} items need attention in ${area.name}`,
+    description: `You have ${count} pending ${trigger.triggerName} items`,
+    responsibilityId,
+    triggerId: trigger.id,
+    priority: count >= 10 ? "high" : "normal",
+  });
+}
+```
+
+### C.6 Working Hours & Do Not Disturb
+
+Notifications respect user working hours:
+
+```typescript
+function shouldNotifyNow(userResponsibility: UserResponsibility): boolean {
+  if (userResponsibility.dndEnabled) return false;
+
+  const now = new Date();
+  const currentDay = now.getDay(); // 0-6
+  const currentTime = format(now, "HH:mm");
+
+  // Check working days
+  const workingDays = userResponsibility.workingDays
+    ?.split(",")
+    .map(Number) || [1, 2, 3, 4, 5];
+  if (!workingDays.includes(currentDay)) return false;
+
+  // Check working hours
+  if (
+    userResponsibility.workingHoursStart &&
+    userResponsibility.workingHoursEnd
+  ) {
+    if (currentTime < userResponsibility.workingHoursStart) return false;
+    if (currentTime > userResponsibility.workingHoursEnd) return false;
+  }
+
+  return true;
+}
+```
+
+### C.7 Vacation Coverage
+
+Automatically redirect notifications during absences:
+
+```typescript
+async function getEffectiveUserId(
+  originalUserId: number,
+  responsibilityId: number
+): Promise<number> {
+  const coverage = await coverageDb.findActive({
+    originalUserId,
+    responsibilityId,
+    date: new Date(),
+  });
+
+  return coverage?.coveringUserId || originalUserId;
+}
+```
+
+---
+
+## Appendix D: Revised Implementation Plan
+
+### Phase 1: Database & Core Service (24h) [+8h]
+
+| Task                        | Hours | Description                               |
+| --------------------------- | ----- | ----------------------------------------- |
+| Create schema migration     | 6h    | All tables including audit, coverage      |
+| Modify inbox_items table    | 2h    | Add escalation columns                    |
+| Create responsibilitiesDb   | 6h    | Database operations layer                 |
+| Create notification service | 6h    | With deduplication, aggregation           |
+| Seed predefined areas       | 2h    | Seed 12 responsibility areas and triggers |
+| Add RBAC permissions        | 2h    | 5 new permissions                         |
+
+### Phase 2: API Layer (16h) [+4h]
+
+| Task                           | Hours | Description                              |
+| ------------------------------ | ----- | ---------------------------------------- |
+| Create responsibilities router | 8h    | CRUD + bulk operations                   |
+| Extend inbox router            | 2h    | Filter by responsibility, priority       |
+| Add trigger integration        | 4h    | Integrate triggers into existing routers |
+| Add coverage endpoints         | 2h    | Vacation coverage management             |
+
+### Phase 3: Frontend (26h) [+6h]
+
+| Task                              | Hours | Description                                 |
+| --------------------------------- | ----- | ------------------------------------------- |
+| User responsibility assignment UI | 6h    | Settings page component                     |
+| Admin management page             | 8h    | Full CRUD + triggers + bulk                 |
+| Inbox enhancements                | 4h    | Responsibility badges, priority, escalation |
+| Notification preferences          | 4h    | Per-responsibility + working hours          |
+| Coverage management UI            | 4h    | Vacation coverage dialog                    |
+
+### Phase 4: Integration & Testing (18h) [+6h]
+
+| Task                | Hours | Description                                  |
+| ------------------- | ----- | -------------------------------------------- |
+| Integrate triggers  | 6h    | Add triggers to batch, order, calendar, etc. |
+| Escalation cron job | 4h    | Background escalation service                |
+| Write tests         | 6h    | Unit and integration tests                   |
+| Documentation       | 2h    | Update API docs and user guide               |
+
+### Revised Total Effort: 84 hours
+
+---
+
+**End of Specification v1.1**

@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.27  
+**Version:** 2.28  
 **Last Updated:** January 2, 2026 (Added QA-075 SKU Photo Management)  
 **Status:** Active
 
@@ -4376,7 +4376,7 @@ logger.error({ err: error }, "Error message");
 - [ ] **FEATURE-022: Multi-Role Responsibility-Based Notifications**
   - Phase: 3+
   - Priority: HIGH
-  - Estimate: 60h (Phase 1: 16h, Phase 2: 12h, Phase 3: 20h, Phase 4: 12h)
+  - Estimate: 84h (Phase 1: 24h, Phase 2: 16h, Phase 3: 26h, Phase 4: 18h)
   - Spec: [📋 Full Specification](../specs/FEATURE-022-SPEC.md)
   - **Feature Flag:** `feature-responsibility-notifications` (Parent: `None (system-wide)`, Default: Disabled)
   - Context: Enhance RBAC to support multiple role assignments per user with defined areas of responsibility. When actions are needed within a responsibility area (photography, pick & pack, scheduling, matchmaking), the Notification Center automatically alerts responsible users.
@@ -4421,6 +4421,16 @@ logger.error({ err: error }, "Error message");
     - Live shopping match request → Matchmaking trigger
     - And 15+ additional integration points
   - Added: 2026-01-02
+  - **QA Review:** [📋 QA Review](../qa-reviews/FEATURE-022-QA-REVIEW.md) (Score: 8.7/10)
+  - **v1.1 Improvements:**
+    - Escalation workflow with priority-based timeouts
+    - Notification deduplication with cooldown periods
+    - Audit trail for all responsibility changes
+    - RBAC permissions (5 new permissions)
+    - Bulk assignment operations
+    - Notification aggregation (digest mode)
+    - Working hours & Do Not Disturb
+    - Vacation coverage management
 
 - [ ] **UX-016: Redesign Right Side Drawer (Sheet) Component**
   - Phase: 2
