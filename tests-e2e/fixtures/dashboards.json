@@ -1,28 +1,92 @@
 [
   {
     "name": "Main Dashboard",
-    "url": "/dashboard",
+    "url": "/",
     "expectedMetrics": [
-      "Total Revenue",
-      "Active Orders",
-      "Clients",
-      "Inventory Value"
+      "Cash Collected",
+      "Total Debt",
+      "Sales Top 10",
+      "Inventory Snapshot"
     ],
     "filterSelectors": {
       "period": "select[name='period']"
-    }
+    },
+    "actionableElements": [
+      {
+        "selector": "text=/cash collected/i",
+        "expectedNavigation": "/accounting"
+      },
+      {
+        "selector": "tbody tr",
+        "expectedNavigation": "/clients/"
+      }
+    ]
   },
   {
     "name": "Accounting Dashboard",
-    "url": "/accounting/dashboard",
+    "url": "/accounting",
     "expectedMetrics": [
-      "Revenue",
-      "Expenses",
-      "Profit",
-      "Accounts Receivable"
+      "Cash Balance",
+      "Accounts Receivable",
+      "Accounts Payable",
+      "Net Position"
     ],
     "filterSelectors": {
       "fiscalPeriod": "select[name='fiscalPeriod']"
+    },
+    "actionableElements": [
+      {
+        "selector": "text=/accounts receivable/i",
+        "expectedNavigation": "/accounting/invoices"
+      }
+    ]
+  },
+  {
+    "name": "Inventory Dashboard",
+    "url": "/inventory",
+    "expectedMetrics": [
+      "Total Units",
+      "Inventory Value",
+      "Categories"
+    ],
+    "filterSelectors": {
+      "category": "[data-testid='category-filter']"
     }
+  },
+  {
+    "name": "Clients Dashboard",
+    "url": "/clients",
+    "expectedMetrics": [
+      "Total Clients",
+      "Buyers",
+      "Suppliers",
+      "With Debt"
+    ],
+    "filterSelectors": {
+      "type": "[data-testid='client-type-filter']"
+    }
+  },
+  {
+    "name": "Locations Dashboard",
+    "url": "/locations",
+    "expectedMetrics": [
+      "Total Locations",
+      "Sites"
+    ],
+    "filterSelectors": {}
+  },
+  {
+    "name": "Calendar Dashboard",
+    "url": "/calendar",
+    "expectedMetrics": [],
+    "filterSelectors": {}
+  },
+  {
+    "name": "Leaderboard Dashboard",
+    "url": "/leaderboard",
+    "expectedMetrics": [
+      "Top Performers"
+    ],
+    "filterSelectors": {}
   }
 ]
