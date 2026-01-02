@@ -9000,3 +9000,18 @@ Sprint A (COMPLETE)
 - [ ] Location and expiration tracking fields added
 - [ ] All endpoints have proper RBAC enforcement
 - [ ] E2E tests passing for sample workflows
+
+
+---
+
+## Technical Debt & Remediation
+
+### Migration Gap Remediation Plan
+
+**Status:** ✅ **COMPLETE & VERIFIED**
+
+A significant **migration gap** was discovered, analyzed, and fully remediated in the TERP system. Automated CLI tools were developed to verify the database state, apply all missing migrations, and establish a new protocol to prevent future discrepancies.
+
+For the detailed plan, tools developed, and the new protocol, please see the full document:
+
+[**Migration Gap Remediation Plan & Protocol**](../technical/MIGRATION_REMEDIATION_PLAN.md)
