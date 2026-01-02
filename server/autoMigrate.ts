@@ -922,10 +922,8 @@ export async function runAutoMigrations() {
         }
       }
     }
-    // ============================================================================
-    // FEATURE-012: Admin Impersonation Tables (VIP Portal Admin Access Tool)
-    // ============================================================================
     // Create admin_impersonation_sessions table
+    // Schema matches drizzle/schema-vip-portal.ts exactly
     try {
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS admin_impersonation_sessions (
@@ -933,21 +931,19 @@ export async function runAutoMigrations() {
           session_guid VARCHAR(36) NOT NULL UNIQUE,
           admin_user_id INT NOT NULL,
           client_id INT NOT NULL,
-          status ENUM('ACTIVE', 'ENDED', 'REVOKED', 'EXPIRED') NOT NULL DEFAULT 'ACTIVE',
           start_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
           end_at TIMESTAMP NULL,
-          expires_at TIMESTAMP NOT NULL,
           ip_address VARCHAR(45) NULL,
-          user_agent TEXT NULL,
+          user_agent VARCHAR(500) NULL,
+          status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
           revoked_by INT NULL,
           revoked_at TIMESTAMP NULL,
-          revoke_reason TEXT NULL,
+          revoke_reason VARCHAR(255) NULL,
           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_admin_user_id (admin_user_id),
-          INDEX idx_client_id (client_id),
-          INDEX idx_status (status),
-          INDEX idx_session_guid (session_guid)
+          INDEX idx_admin_imp_sessions_admin_user_id (admin_user_id),
+          INDEX idx_admin_imp_sessions_client_id (client_id),
+          INDEX idx_admin_imp_sessions_status (status),
+          INDEX idx_admin_imp_sessions_guid (session_guid)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
       console.log("  ✅ Created admin_impersonation_sessions table");
@@ -961,19 +957,20 @@ export async function runAutoMigrations() {
     }
 
     // Create admin_impersonation_actions table (audit log)
+    // Schema matches drizzle/schema-vip-portal.ts exactly
     try {
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS admin_impersonation_actions (
           id INT AUTO_INCREMENT PRIMARY KEY,
           session_id INT NOT NULL,
-          action_type VARCHAR(50) NOT NULL,
+          action_type VARCHAR(100) NOT NULL,
+          action_path VARCHAR(255) NULL,
+          action_method VARCHAR(10) NULL,
           action_details JSON NULL,
-          entity_type VARCHAR(50) NULL,
-          entity_id INT NULL,
           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_session_id (session_id),
-          INDEX idx_action_type (action_type),
-          INDEX idx_created_at (created_at)
+          INDEX idx_admin_imp_actions_session_id (session_id),
+          INDEX idx_admin_imp_actions_action_type (action_type),
+          INDEX idx_admin_imp_actions_created_at (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
       console.log("  ✅ Created admin_impersonation_actions table");
@@ -985,6 +982,7 @@ export async function runAutoMigrations() {
         console.log("  ⚠️  admin_impersonation_actions table:", errMsg);
       }
     }
+
 
 
     const duration = Date.now() - startTime;
