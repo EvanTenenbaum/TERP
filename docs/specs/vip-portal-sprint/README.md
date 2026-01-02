@@ -1,7 +1,7 @@
-# VIP Portal Sprint Specifications (REVISED v2)
+# VIP Portal Sprint Specifications (REVISED v3)
 
 **Last Updated:** January 2, 2026
-**Status:** REVISED - Added Appointment Scheduling, Removed SSO
+**Status:** REVISED - Added Appointment Scheduling, Removed SSO, Clarified In-App Notifications
 
 ---
 
@@ -37,15 +37,15 @@ A comprehensive audit of the backend codebase (1,614 lines in `vipPortal.ts` alo
 
 ## Revised Sprint Focus
 
-This sprint focuses on **fixing the frontend** to expose the already-built backend functionality, then adding a new **Appointment Scheduling System**.
+This sprint focuses on **fixing the frontend** to expose the already-built backend functionality, then adding a new **Appointment Scheduling System** with **in-app notifications only** (no email).
 
 | Phase | Focus | Effort | Priority |
 |-------|-------|--------|----------|
 | Phase 1 | Fix Frontend Rendering (Dashboard, Catalog, AR/AP) | 24h | CRITICAL |
 | Phase 2 | Mobile-First UI & Actionability | 48h | HIGH |
-| Phase 3 | New Features (Appointment Scheduling, PDF Generation) | 68h | MEDIUM |
+| Phase 3 | New Features (Appointment Scheduling, PDF, Notifications) | 76h | MEDIUM/HIGH |
 
-**Total Estimate:** 140 hours
+**Total Estimate:** 148 hours
 
 ---
 
@@ -63,19 +63,29 @@ This sprint focuses on **fixing the frontend** to expose the already-built backe
 
 ## New Feature: Appointment Scheduling System (VIP-C-001)
 
-This feature replaces the SSO requirement. It allows VIP Portal clients to schedule appointments for:
+This feature allows VIP Portal clients to book appointments for:
 
-1. **Payment Pickup/Drop-off:** Clients can schedule a time to pick up or drop off payments with the accounting team.
-2. **Office Visits:** Clients can schedule time in the office for vending, purchasing, or other business.
+1. **Payment Pickup/Drop-off:** Schedule time with accounting team for payment handling
+2. **Office Visits:** Schedule time in the office for vending, purchasing, or other business
 
-The system includes:
+### System Components
 
-| Component | Description |
-|-----------|-------------|
-| **ERP Calendar Management** | Managers create "Calendars" (e.g., "Accounting Payments", "Office Visits") with custom availability, buffer times, and minimum notice. |
-| **VIP Portal Booking UI** | Clients see available time slots and submit appointment requests. |
-| **Request/Approval Workflow** | Managers receive notifications, can accept/reject/propose new times. |
-| **Automatic Calendar Integration** | Confirmed appointments are automatically added to the ERP calendar. |
+| Component | Location | Estimate | Description |
+|-----------|----------|----------|-------------|
+| **Calendar Management** | ERP Settings | 24h | Managers create calendars with custom availability, event types, buffer times, minimum notice |
+| **Booking UI** | VIP Portal | 24h | Clients see available time slots and submit appointment requests |
+| **In-App Notification System** | Both | 20h | Enhancements to ERP inbox + new VIP Portal notification system |
+
+### Notification Approach
+
+**All notifications are in-app only.** There is no email notification system.
+
+| System | Current State | Enhancements Needed |
+|--------|---------------|---------------------|
+| **ERP Inbox** | Exists, but limited to mentions/tasks | Add appointment-related notification types |
+| **VIP Portal** | Does not exist | Create new notification table, API, and UI |
+
+Both systems will use **30-second polling** for near-real-time updates.
 
 ---
 
@@ -98,8 +108,9 @@ There is **no online payment** and **no direct purchasing**.
 
 1. **Mobile-First Design:** All new UI must be designed for mobile viewports first, then enhanced for desktop.
 2. **Actionability Mandate:** Every data element (KPI, invoice, product) must be clickable with meaningful actions.
-3. **Specification Alignment:** All work must align with the VIP Portal V3 specification.
-4. **Feature Flags:** Major UI changes must be deployed behind feature flags for safe rollback.
+3. **In-App Notifications Only:** No email system exists; all notifications are delivered via in-app notification bells.
+4. **Specification Alignment:** All work must align with the VIP Portal V3 specification.
+5. **Feature Flags:** Major UI changes must be deployed behind feature flags for safe rollback.
 
 ---
 

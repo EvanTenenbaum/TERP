@@ -8266,7 +8266,7 @@ The following risks were identified and mitigated in the specification process:
 
 **Goal:** Fix frontend rendering issues, implement mobile-first UI, and add appointment scheduling system.
 
-**Total Estimate:** 140 hours
+**Total Estimate:** 148 hours
 
 ### Critical Correction
 
@@ -8327,13 +8327,13 @@ There is **no online payment** and **no direct purchasing**.
 
 ---
 
-### Phase 3: New Features (68h) - MEDIUM/HIGH
+### Phase 3: New Features (76h) - MEDIUM/HIGH
 
 | Task ID | Task | Priority | Estimate | Status |
 |---------|------|----------|----------|--------|
 | **VIP-C-01** | **ERP: Calendar Management System** | **HIGH** | **24h** | 🔴 Not Started |
 | **VIP-C-02** | **VIP Portal: Appointment Booking UI** | **HIGH** | **24h** | 🔴 Not Started |
-| **VIP-C-03** | **Request/Notification System** | **HIGH** | **12h** | 🔴 Not Started |
+| **VIP-C-03** | **In-App Notification System (ERP + VIP Portal)** | **HIGH** | **20h** | 🔴 Not Started |
 | VIP-B-01 | PDF Generation for Invoices/Bills | MEDIUM | 8h | 🔴 Not Started |
 
 **Key Deliverables:**
