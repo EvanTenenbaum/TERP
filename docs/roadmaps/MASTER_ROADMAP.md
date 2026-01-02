@@ -8259,3 +8259,58 @@ The following risks were identified and mitigated in the specification process:
 | Credit Settings consolidation wrong persona | Rejected; keep standalone |
 
 ---
+
+---
+
+## VIP Portal Sprint
+
+**Goal:** Transform the VIP Portal from a pre-MVP state into a modern, mobile-first, fully actionable B2B portal.
+
+**Total Estimate:** 120 hours
+
+### Phase 0: Root Cause Investigation (4h)
+| Task ID | Task | Priority | Estimate | Status |
+|---------|------|----------|----------|--------|
+| VIP-000 | Root Cause Investigation Spike | CRITICAL | 4h | 🔴 Not Started |
+
+### Phase 1: Stabilize & Secure (28h)
+| Task ID | Task | Priority | Estimate | Status |
+|---------|------|----------|----------|--------|
+| VIP-001-1 | Fix Broken Catalog | CRITICAL | 6h | 🔴 Not Started |
+| VIP-001-2 | Fix Missing Dashboard Data | CRITICAL | 4h | 🔴 Not Started |
+| VIP-001-3 | Fix Incorrect AR Data | CRITICAL | 4h | 🔴 Not Started |
+| VIP-001-4 | Fix Broken Marketplace | CRITICAL | 4h | 🔴 Not Started |
+| VIP-001-5 | Implement Real Password Reset | HIGH | 4h | 🔴 Not Started |
+| VIP-001-6 | Implement SSO (Google/Microsoft) | HIGH | 6h | 🔴 Not Started |
+
+### Phase 2: Core Functionality - Mobile-First (48h)
+| Task ID | Task | Priority | Estimate | Status |
+|---------|------|----------|----------|--------|
+| VIP-002-1 | Implement Mobile-First Navigation | HIGH | 12h | 🔴 Not Started |
+| VIP-002-2 | Implement Actionable Dashboard | HIGH | 10h | 🔴 Not Started |
+| VIP-002-3 | Implement Actionable Receivables | HIGH | 10h | 🔴 Not Started |
+| VIP-002-4 | Build Core Ordering Workflow | HIGH | 12h | 🔴 Not Started |
+| VIP-002-5 | Implement Reorder from History | MEDIUM | 4h | 🔴 Not Started |
+
+### Phase 3: Enhance & Differentiate (40h)
+| Task ID | Task | Priority | Estimate | Status |
+|---------|------|----------|----------|--------|
+| VIP-003-1 | Implement Quick Order by SKU | MEDIUM | 8h | 🔴 Not Started |
+| VIP-003-2 | Build My Needs Marketplace | MEDIUM | 12h | 🔴 Not Started |
+| VIP-003-3 | Implement Role-Based Access | LOW | 10h | 🔴 Not Started |
+| VIP-003-4 | Customizable Dashboard Widgets | LOW | 10h | 🔴 Not Started |
+
+### Key Principles
+1. **Mobile-First Design:** All new UI must be designed for mobile viewports first.
+2. **Actionability Mandate:** Every data element must be clickable with meaningful actions.
+3. **Feature Flags:** Major UI changes deployed behind feature flags for safe rollback.
+
+### Dependencies
+- VIP-001 blocks VIP-002 (bugs must be fixed before new features)
+- User validation milestone after VIP-002 before starting VIP-003
+
+### Specifications
+- [VIP-000-SPEC](../specs/vip-portal-sprint/VIP-000-SPEC.md) - Root Cause Investigation
+- [VIP-001-SPEC](../specs/vip-portal-sprint/VIP-001-SPEC.md) - Stabilize & Secure
+- [VIP-002-SPEC](../specs/vip-portal-sprint/VIP-002-SPEC.md) - Core Functionality
+- [VIP-003-SPEC](../specs/vip-portal-sprint/VIP-003-SPEC.md) - Enhance & Differentiate
