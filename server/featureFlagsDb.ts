@@ -35,13 +35,22 @@ async function insertAuditLog(
 ): Promise<void> {
   if (!db) return;
   
+  const prevJson = previousValue ? JSON.stringify(previousValue) : null;
+  const newJson = newValue ? JSON.stringify(newValue) : null;
+  
   try {
+    // Use parameterized query with explicit NULL handling
+    const flagIdValue = flagId === null ? sql`NULL` : sql`${flagId}`;
+    const prevValue = prevJson === null ? sql`NULL` : sql`${prevJson}`;
+    const newValue2 = newJson === null ? sql`NULL` : sql`${newJson}`;
+    
     await db.execute(sql`
       INSERT INTO feature_flag_audit_logs 
         (flag_id, flag_key, action, actor_open_id, previous_value, new_value)
       VALUES 
-        (${flagId}, ${flagKey}, ${action}, ${actorOpenId}, ${previousValue ? JSON.stringify(previousValue) : null}, ${newValue ? JSON.stringify(newValue) : null})
+        (${flagIdValue}, ${flagKey}, ${action}, ${actorOpenId}, ${prevValue}, ${newValue2})
     `);
+    logger.info({ flagKey, action, actorOpenId }, "[FeatureFlags] Audit log created");
   } catch (error) {
     // Don't throw - audit logging should never break the main operation
     logger.error({ error, flagKey, action }, "[FeatureFlags] Failed to insert audit log");
