@@ -1,0 +1,30 @@
+[
+  {
+    "category": "Migration Integrity",
+    "issue": "Drizzle Journal Hash Mismatch",
+    "detail": "Consolidating migrations (Step 1.1) will change file hashes. Step 1.5 (Journal Sync) is too vague. It must explicitly handle the `_journal.json` file and the `__drizzle_migrations` table to prevent Drizzle from entering an inconsistent state.",
+    "risk": "High",
+    "recommendation": "Use `drizzle-kit generate` after consolidation to create a fresh, single migration that Drizzle recognizes as the 'current' state."
+  },
+  {
+    "category": "Deployment Risk",
+    "issue": "Manual SQL Execution Order",
+    "detail": "Step 1.3 doesn't account for foreign key dependencies. Applying a large SQL file manually can fail if tables are created out of order or if constraints are violated by existing data.",
+    "risk": "Medium",
+    "recommendation": "The consolidated SQL must be wrapped in a transaction and include `SET FOREIGN_KEY_CHECKS = 0;` at the start and `1` at the end for the initial sync."
+  },
+  {
+    "category": "Automation",
+    "issue": "Lack of CLI Tooling",
+    "detail": "The roadmap relies on manual steps (1.3, 1.4, 1.5). This is prone to human error and doesn't align with the 'CLI-first' mandate.",
+    "risk": "Medium",
+    "recommendation": "Create a `scripts/sync-production-schema.ts` that automates the validation and application of the missing schema."
+  },
+  {
+    "category": "Functional Gaps",
+    "issue": "Incomplete Error Handling",
+    "detail": "Phase 2 focuses on fixing 500 errors but doesn't address the *cause* of the lack of visibility (logging).",
+    "risk": "Low",
+    "recommendation": "Add a task to improve backend error reporting to Sentry or a similar service to catch these desyncs earlier."
+  }
+]
