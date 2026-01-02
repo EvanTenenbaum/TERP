@@ -42,9 +42,8 @@ describe("Schema Validation", () => {
       expect(
         (firstWhale as Record<string, unknown>).paymentTerms
       ).toBeUndefined();
-      expect(
-        (firstWhale as Record<string, unknown>).creditLimit
-      ).toBeUndefined();
+      // Note: creditLimit now exists in schema but generators may not include it
+      // as it's calculated/managed separately
       expect((firstWhale as Record<string, unknown>).notes).toBeUndefined();
     });
   });
@@ -63,16 +62,17 @@ describe("Schema Validation", () => {
       expect(clients.tags).toBeDefined();
     });
 
-    it("should not have paymentTerms, creditLimit, or notes fields", () => {
+    it("should not have paymentTerms or notes fields (creditLimit now exists)", () => {
       const schemaColumns = clients;
 
       // These fields do not exist in the clients table
       expect(
         (schemaColumns as Record<string, unknown>).paymentTerms
       ).toBeUndefined();
+      // creditLimit was added in FEATURE-012 / credit visibility feature
       expect(
         (schemaColumns as Record<string, unknown>).creditLimit
-      ).toBeUndefined();
+      ).toBeDefined();
       expect((schemaColumns as Record<string, unknown>).notes).toBeUndefined();
     });
   });
