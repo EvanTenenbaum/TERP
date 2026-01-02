@@ -2923,6 +2923,88 @@ logger.error({ err: error }, "Error message");
 
 ---
 
+## 🧹 CLEANUP TASKS - Code Maintenance
+
+> **Note:** These tasks handle code cleanup, removal of unused features, and technical debt.
+
+### CLEANUP-001: Remove LLM/AI from Codebase
+
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 8 hours  
+**Module:** Multiple (server, scripts, client)  
+**Dependencies:** None  
+**Created:** 2025-12-30
+
+**Problem:** The codebase contains multiple AI/LLM integrations that are either unused in production or need to be removed for simplification. These include development automation scripts, Slack bot AI features, and infrastructure code.
+
+**Scope - Files to Remove or Modify:**
+
+**1. Core LLM Infrastructure (Remove)**
+- `server/_core/llm.ts` - Central LLM invocation service (not actively used)
+- `server/_core/env.ts` - Remove `forgeApiUrl` and `forgeApiKey` getters (lines 72-77)
+
+**2. Slack Bot AI (Remove)**
+- `scripts/slack-bot-ai.ts` - AI-powered Slack bot (504 lines)
+- `scripts/slack-bot-qa-handlers.ts` - QA handlers for AI bot
+- `scripts/slack-bot-health-check.ts` - Health check with Gemini key validation
+- `scripts/slack-bot-verify.ts` - Verification script
+- `scripts/slack-bot.test.ts` - Test file
+- `Dockerfile.bot` - Docker config for bot
+- `scripts/bot-start.sh` - Bot startup script
+- `scripts/monitor-slack-bot-deployment.sh` - Deployment monitor
+
+**3. Development Automation Scripts (Remove)**
+- `scripts/pre-commit-review.ts` - AI pre-commit code review
+- `scripts/manager.ts` - Roadmap task executor with AI
+- `scripts/gemini-batch-memo.py` - Batch code modification
+- `scripts/roadmap-strategic-executor.ts` - Strategic executor with Gemini
+- `test-gemini-bot.ts` - Gemini test script
+
+**4. GitHub Actions (Modify)**
+- `.github/workflows/execute-natural-commands.yml` - Remove `GOOGLE_GEMINI_API_KEY`
+- `.github/workflows/swarm-auto-start.yml` - Remove `GOOGLE_GEMINI_API_KEY`
+- `.github/workflows/add-secrets.yml` - Remove `GEMINI_API_KEY` handling
+- `.github/workflows/bootstrap-secrets.yml` - Remove Gemini secret extraction
+
+**5. Documentation (Update)**
+- `docs/testing/ai-agents-guide.md` - Archive or remove
+- `product-management/initiatives/TERP-INIT-009/docs/gemini_qa_analysis.md` - Archive
+- `product-management/pm-evaluation/ai_agent_timeline_analysis.md` - Archive
+- `docs/GEMINI_API_USAGE.md` - Remove
+- Update `MASTER_ROADMAP.md` - Remove Gemini API mandate section (lines 11-26)
+
+**6. Environment Variables to Remove:**
+- `GEMINI_API_KEY`
+- `GOOGLE_GEMINI_API_KEY`
+- `BUILT_IN_FORGE_API_KEY`
+- `BUILT_IN_FORGE_API_URL`
+
+**Objectives:**
+1. Remove all AI/LLM-related code from the production codebase
+2. Remove AI-related environment variables from deployment configs
+3. Archive AI-related documentation
+4. Update roadmap to remove Gemini mandate
+5. Ensure no broken imports or references remain
+
+**Deliverables:**
+- [ ] All AI/LLM files removed or archived
+- [ ] GitHub Actions updated to remove AI secrets
+- [ ] Environment variables removed from DigitalOcean
+- [ ] Documentation archived to `docs/archive/ai-features/`
+- [ ] Roadmap Gemini mandate section removed
+- [ ] TypeScript check passes (`pnpm run check`)
+- [ ] Build succeeds (`pnpm run build`)
+- [ ] All tests passing
+- [ ] Session archived
+
+**Notes:**
+- The Slack bot (`scripts/slack-bot.ts`) without AI features can remain if needed
+- Playwright AI agents are external tools, not codebase - can remain documented
+- Consider keeping `docs/testing/ai-agents-guide.md` as it documents external Playwright features
+
+---
+
 ## 🔧 INFRASTRUCTURE TASKS - Deployment & Conflict Mitigation
 
 > **Note:** These tasks implement the deployment monitoring and conflict resolution infrastructure.
