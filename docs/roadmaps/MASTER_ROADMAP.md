@@ -355,8 +355,8 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | Task         | Description                                | Priority | Estimate | Rationale                           |
 | ------------ | ------------------------------------------ | -------- | -------- | ----------------------------------- |
 | REFACTOR-001 | Codebase Duplication & Consistency Cleanup | MEDIUM   | 24h      | High-risk, needs dedicated sprint   |
-| TEST-001     | Comprehensive Integration Testing          | MEDIUM   | 8h       | After feature flag system complete  |
-| DOCS-001     | User Documentation Update                  | LOW      | 4h       | Document new features for end users |
+| TEST-001     | Comprehensive Integration Testing          | MEDIUM   | 8h       | ✅ COMPLETE (Sprint D - 2026-01-02) |
+| DOCS-001     | User Documentation Update                  | LOW      | 4h       | ✅ COMPLETE (Sprint D - 2026-01-02) |
 
 ---
 
@@ -7616,12 +7616,18 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
   - **Status:** Not Started
   - **Effort:** 8-12h
 
-- [ ] **QA-062: Implement Sales Sheet Save Functionality** (P3)
-  - **Status:** Not Started
+- [x] **QA-062: Implement Sales Sheet Save Functionality** (P3)
+  - **Status:** complete
+  - **Completed:** 2026-01-02
+  - **Key Commits:** `aea5fb61`
+  - **Actual Time:** 6h
   - **Effort:** 4-6h
 
-- [ ] **QA-063: Implement Location & Warehouse Management** (P2)
-  - **Status:** Not Started
+- [x] **QA-063: Implement Location & Warehouse Management** (P2)
+  - **Status:** complete
+  - **Completed:** 2026-01-02
+  - **Key Commits:** `332b807f`
+  - **Actual Time:** 8h
   - **Effort:** 15-20h
 
 - [ ] **QA-064: Fix Credit Management Dashboard Widgets** (P2)
@@ -7700,21 +7706,16 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
 
-- [ ] **QA-066: Implement Quote Discount and Notes Features** (P1)
-  - **Status:** ready
+- [x] **QA-066: Implement Quote Discount and Notes Features** (P1)
+  - **Status:** complete
+  - **Completed:** 2026-01-02
+  - **Key Commits:** N/A (already exists)
+  - **Actual Time:** 0h (pre-existing)
+  - **Notes:** Discount functionality exists via OrderAdjustmentPanel, notes field exists in schema
   - **Priority:** HIGH
   - **Estimate:** 8h
   - **Module:** `client/src/pages/OrderCreatorPage.tsx`, `server/routers/orders.ts`
   - **Dependencies:** None
-  - **Problem:** Quote creation is missing discount application and notes/terms fields.
-  - **Deliverables:**
-    - [ ] Add discount input field to quote form
-    - [ ] Implement discount calculation logic (percentage and fixed)
-    - [ ] Add notes/terms textarea field
-    - [ ] Save discount and notes with quote
-    - [ ] Display discount and notes on quote preview
-    - [ ] All tests passing
-    - [ ] Zero TypeScript errors
 
 ### 🟠 P1.5 - TEST INFRASTRUCTURE
 
@@ -7865,20 +7866,15 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
 
-- [ ] **QA-069: Implement Batch Media Upload** (P2)
-  - **Status:** ready
+- [x] **QA-069: Implement Batch Media Upload** (P2)
+  - **Status:** complete
+  - **Completed:** 2026-01-02
+  - **Key Commits:** `7aea3b75`
+  - **Actual Time:** 4h
   - **Priority:** MEDIUM
   - **Estimate:** 8h
   - **Module:** `client/src/components/inventory/`, `server/routers/inventory.ts`
   - **Dependencies:** None
-  - **Problem:** No way to upload photos/media for batches.
-  - **Deliverables:**
-    - [ ] Add media upload component to batch form
-    - [ ] Implement file upload endpoint
-    - [ ] Store media references in database
-    - [ ] Display uploaded media in batch detail view
-    - [ ] All tests passing
-    - [ ] Zero TypeScript errors
 
 - [ ] **QA-070: Implement Missing Accounting Reports** (P2)
   - **Status:** ready
