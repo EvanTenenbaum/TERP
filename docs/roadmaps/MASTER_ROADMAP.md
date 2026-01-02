@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.26  
+**Version:** 2.27  
 **Last Updated:** January 2, 2026 (Added QA-075 SKU Photo Management)  
 **Status:** Active
 
@@ -4372,6 +4372,55 @@ logger.error({ err: error }, "Error message");
     - Pricing rules: Use tags as pricing conditions
     - VIP Portal: Tag-based catalog filtering
   - Added: 2025-12-23
+
+- [ ] **FEATURE-022: Multi-Role Responsibility-Based Notifications**
+  - Phase: 3+
+  - Priority: HIGH
+  - Estimate: 60h (Phase 1: 16h, Phase 2: 12h, Phase 3: 20h, Phase 4: 12h)
+  - Spec: [📋 Full Specification](../specs/FEATURE-022-SPEC.md)
+  - **Feature Flag:** `feature-responsibility-notifications` (Parent: `None (system-wide)`, Default: Disabled)
+  - Context: Enhance RBAC to support multiple role assignments per user with defined areas of responsibility. When actions are needed within a responsibility area (photography, pick & pack, scheduling, matchmaking), the Notification Center automatically alerts responsible users.
+  - **Core Concepts:**
+    - **Responsibility Areas:** Defined operational domains (Photography, Pick & Pack, Scheduling, Matchmaking, etc.)
+    - **Responsibility Assignment:** Links users to one or more responsibility areas
+    - **Trigger Events:** Actions or state changes that require attention in a responsibility area
+    - **Responsibility Notifications:** Inbox items sent to all users assigned to the relevant area
+  - **Predefined Responsibility Areas (12):**
+    - Photography: Product photography and image management
+    - Pick & Pack: Order fulfillment and packaging
+    - Scheduling: Appointment and calendar management
+    - Matchmaking: Client-product matching and recommendations
+    - Product Intake: Receiving and processing new inventory
+    - Quality Control: Product quality inspection
+    - Shipping: Order shipping and logistics
+    - Returns Processing: Handling returns and refunds
+    - Client Support: Client inquiries and support
+    - Vendor Relations: Vendor communication and management
+    - Accounting: Financial tasks and reconciliation
+    - Compliance: Regulatory compliance tasks
+  - **Notification Triggers:**
+    - Photography: batch.needs_photo, batch.photo_requested, product.needs_hero_image
+    - Pick & Pack: order.ready_for_pick, order.pick_overdue, order.rush_pick
+    - Scheduling: appointment.requested, appointment.reschedule_needed
+    - Matchmaking: client.needs_match, inventory.new_arrival, live_shopping.match_request
+    - And 20+ additional triggers across all responsibility areas
+  - **Database Changes:**
+    - responsibility_areas table (key, name, description, icon, color, module)
+    - user_responsibilities table (userId, responsibilityId, isPrimary, notification prefs)
+    - responsibility_triggers table (triggerKey, entityType, priority)
+    - Modify inbox_items: add responsibilityId, triggerId, priority columns
+  - **Frontend Components:**
+    - User responsibility assignment UI in settings
+    - Admin responsibility management page
+    - Inbox enhancements with responsibility badges and priority indicators
+    - Per-responsibility notification preferences
+  - **Integration Points:**
+    - Batch creation → Photography trigger
+    - Order status change → Pick & Pack trigger
+    - Appointment request → Scheduling trigger
+    - Live shopping match request → Matchmaking trigger
+    - And 15+ additional integration points
+  - Added: 2026-01-02
 
 - [ ] **UX-016: Redesign Right Side Drawer (Sheet) Component**
   - Phase: 2
