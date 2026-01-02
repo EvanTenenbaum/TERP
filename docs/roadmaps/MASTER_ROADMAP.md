@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.25  
-**Last Updated:** January 2, 2026 (All Parallel Sprints Complete + QA Report)  
+**Version:** 2.26  
+**Last Updated:** January 2, 2026 (Added QA-075 SKU Photo Management)  
 **Status:** Active
 
 > ✅ **FEATURE-012 POST-DEPLOYMENT: ALL CRITICAL ISSUES RESOLVED (Jan 2, 2026)**
@@ -7914,6 +7914,25 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
 
+- [ ] **QA-075: SKU Photo Management with Media Classification** (P2)
+  - **Status:** ready
+  - **Priority:** MEDIUM
+  - **Estimate:** 12h
+  - **Module:** `client/src/components/inventory/BatchDetailDrawer.tsx`, `server/routers/inventory.ts`
+  - **Dependencies:** QA-069 (Batch Media Upload - COMPLETE)
+  - **Problem:** Users cannot add photos to specific SKUs/batches in inventory edit mode with proper classification for visibility control.
+  - **User Story:** As an inventory manager, I want to add photos to a SKU and classify them as either "catalog media" (visible in live view/catalog) or "notes media" (internal only, visible when viewing SKU details).
+  - **Deliverables:**
+    - [ ] Add photo upload button in inventory edit/batch detail view
+    - [ ] Implement media classification toggle (Catalog vs Notes)
+    - [ ] Catalog media: Visible in live shopping, sales sheets, client-facing views
+    - [ ] Notes media: Internal only, visible in batch detail drawer for staff
+    - [ ] Support multiple photo uploads per SKU
+    - [ ] Store media classification in database (mediaType: catalog | notes)
+    - [ ] Update BatchDetailDrawer to show notes media in expandable section
+    - [ ] Ensure catalog media flows to existing live view/catalog components
+    - [ ] All tests passing
+    - [ ] Zero TypeScript errors
 ### 🔴 CRITICAL PRIORITY (P0) - Performance & Data Integrity
 
 - [ ] **PERF-004**: Refactor inventoryDb.getDashboardStats to use SQL Aggregation
