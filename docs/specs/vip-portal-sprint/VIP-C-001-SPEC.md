@@ -1,9 +1,9 @@
 # VIP-C-001: Appointment Scheduling System
 
 **Priority:** HIGH
-**Estimate:** 68 hours (increased from 60h to include notification system enhancements)
+**Estimate:** 60 hours
 **Status:** Not Started
-**Replaces:** VIP-B-001 (SSO)
+**Dependencies:** NOTIF-001 (Unified Notification System Architecture)
 
 ---
 
@@ -11,18 +11,17 @@
 
 This specification covers a comprehensive appointment scheduling system, similar to Calendly. This system allows VIP Portal clients to book appointments for various services (payment pickup/drop-off, office visits) and provides a management interface for ERP users to control their availability and approve requests.
 
-**All notifications are in-app only.** There is no email notification system.
+**Note:** This feature depends on the Unified Notification System (NOTIF-001). The notification-related work in this spec assumes NOTIF-001 has established the core notification infrastructure. If NOTIF-001 is not complete, the notification portions of this spec will need to be deferred or the dependency resolved.
 
 ---
 
 ## 2. System Architecture
 
-This feature requires four main components:
+This feature requires three main components:
 
 1. **Calendar Management (ERP):** A new section in the main ERP for managers to create and configure different "Calendars" (e.g., "Accounting Payments", "Office Visits").
 2. **Appointment Booking (VIP Portal):** A new UI in the VIP Portal for clients to select a calendar, view available time slots, and request an appointment.
-3. **In-App Notification System:** Enhancements to the existing ERP inbox and a new VIP Portal notification system.
-4. **Request & Approval Workflow:** Backend logic to handle appointment requests, approvals, rejections, and notifications.
+3. **Request & Approval Workflow:** Backend logic to handle appointment requests, approvals, rejections, and trigger notifications via the unified notification system.
 
 ---
 
@@ -66,38 +65,6 @@ CREATE TABLE appointment_requests (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 ```
-
-**`vipPortalNotifications` Table:**
-```sql
-CREATE TABLE vip_portal_notifications (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  client_id INT NOT NULL REFERENCES clients(id),
-  notification_type ENUM(
-    'appointment_confirmed',
-    'appointment_rejected', 
-    'appointment_rescheduled',
-    'appointment_reminder',
-    'interest_list_processed',
-    'invoice_created',
-    'general'
-  ) NOT NULL,
-  reference_type VARCHAR(50), -- e.g., 'appointment_request', 'invoice'
-  reference_id INT,
-  title VARCHAR(255) NOT NULL,
-  message TEXT,
-  is_read BOOLEAN DEFAULT FALSE,
-  read_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### 3.2 Schema Updates
-
-**`inboxItems` sourceType enum - Add new values:**
-- `appointment_request` - New appointment request received
-- `appointment_confirmed` - Appointment was confirmed
-- `appointment_rejected` - Appointment was rejected
-- `appointment_rescheduled` - Client responded to proposed time
 
 ---
 
@@ -192,82 +159,56 @@ appointments: {
 
 ---
 
-## 6. In-App Notification System (12 hours)
+## 6. Notification Integration (12 hours)
 
-### 6.1 ERP Inbox Enhancements (4 hours)
+This section depends on NOTIF-001 (Unified Notification System Architecture).
 
-1. **Schema Update:** Add new `sourceType` values to `inboxItems`:
-   - `appointment_request`
-   - `appointment_confirmed`
-   - `appointment_rejected`
-   - `appointment_rescheduled`
+### 6.1 Notification Types Required
 
-2. **Notification Service:** Implement actual inbox item creation in `notificationService.ts`:
-   ```typescript
-   case "in-app":
-     await inboxDb.createInboxItem({
-       userId: payload.userId,
-       sourceType: payload.metadata?.sourceType || "task_update",
-       sourceId: payload.metadata?.sourceId || 0,
-       referenceType: payload.metadata?.referenceType || "general",
-       referenceId: payload.metadata?.referenceId || 0,
-       title: payload.title,
-       description: payload.message,
-     });
-     break;
-   ```
+The following notification types must be registered with the unified notification system:
 
-3. **Polling:** Add 30-second polling to `InboxPanel` component for near-real-time updates.
+| Notification Type | Recipient | Trigger |
+|-------------------|-----------|---------|
+| `appointment_request_received` | ERP User (Manager) | Client submits a new request |
+| `appointment_confirmed` | VIP Portal Client | Manager confirms request |
+| `appointment_rejected` | VIP Portal Client | Manager rejects request |
+| `appointment_rescheduled` | VIP Portal Client | Manager proposes new time |
+| `appointment_accepted` | ERP User (Manager) | Client accepts proposed time |
+| `appointment_cancelled` | ERP User (Manager) | Client cancels request |
+| `appointment_reminder` | Both | 24 hours before appointment |
 
-### 6.2 VIP Portal Notifications (8 hours)
+### 6.2 Integration Points
 
-1. **New Schema:** Create `vipPortalNotifications` table (see Section 3.1)
+When appointment state changes occur, the system will call the unified notification service:
 
-2. **New Endpoints:**
-   ```typescript
-   notifications: {
-     getAll: vipPortalProcedure.query(...)
-     getUnread: vipPortalProcedure.query(...)
-     markAsRead: vipPortalProcedure.input({ notificationId }).mutation(...)
-     markAllAsRead: vipPortalProcedure.mutation(...)
-   }
-   ```
-
-3. **New UI Component:** `VIPNotificationBell`
-   - Bell icon in VIP Portal header
-   - Badge showing unread count
-   - Dropdown panel listing recent notifications
-   - Click notification to navigate to relevant page
-   - 30-second polling for updates
+```typescript
+// Example: When manager confirms an appointment
+await notificationService.send({
+  type: 'appointment_confirmed',
+  recipientType: 'client',
+  recipientId: request.clientId,
+  referenceType: 'appointment_request',
+  referenceId: request.id,
+  data: {
+    appointmentDate: request.requestedStart,
+    calendarName: calendar.name,
+  }
+});
+```
 
 ---
 
-## 7. Notification Triggers
-
-| Event | ERP Notification | VIP Portal Notification |
-|-------|------------------|------------------------|
-| Client submits request | Manager receives "New appointment request from [Client]" | Client sees "Request submitted" confirmation |
-| Manager confirms | - | Client receives "Appointment confirmed for [Date/Time]" |
-| Manager rejects | - | Client receives "Appointment request declined: [Reason]" |
-| Manager proposes new time | - | Client receives "New time proposed: [Date/Time]" |
-| Client accepts proposed time | Manager receives "Client accepted proposed time" | Client sees confirmation |
-| Client cancels request | Manager receives "Client cancelled appointment" | - |
-| Appointment reminder (1 day before) | Manager receives reminder | Client receives reminder |
-
----
-
-## 8. Acceptance Criteria
+## 7. Acceptance Criteria
 
 1. ERP users can create and manage appointment calendars with custom availability
 2. VIP Portal clients can view available times and submit appointment requests
 3. ERP users can approve, reject, or propose new times for requests
 4. Confirmed appointments are automatically added to the ERP calendar
-5. Both parties receive in-app notifications for all state changes
-6. Notifications appear within 30 seconds of the triggering event (via polling)
+5. Both parties receive notifications for all state changes (via unified notification system)
 
 ---
 
-## 9. Estimate Breakdown
+## 8. Estimate Breakdown
 
 | Component | Estimate |
 |-----------|----------|
@@ -275,25 +216,22 @@ appointments: {
 | ERP Calendar Management Backend | 12h |
 | VIP Portal Booking UI | 16h |
 | VIP Portal Booking Backend | 8h |
-| ERP Inbox Enhancements | 4h |
-| VIP Portal Notification System | 8h |
+| Notification Integration | 4h |
 | Integration & Testing | 8h |
-| **Total** | **68h** |
+| **Total** | **60h** |
 
 ---
 
-## 10. Dependencies
+## 9. Dependencies
 
+- **NOTIF-001:** Unified Notification System Architecture must be complete or in progress
 - The core Calendar module must be stable
-- The existing `inboxItems` schema must be updatable (add enum values)
-- VIP Portal frontend must support header modifications for notification bell
+- VIP Portal frontend must support the booking flow UI
 
 ---
 
-## 11. Future Enhancements (Out of Scope)
+## 10. Future Enhancements (Out of Scope)
 
-- Email notifications (requires email service integration)
-- SMS notifications (requires SMS service integration)
-- WebSocket for real-time push notifications
 - Recurring appointments
 - Google Calendar / Outlook integration
+- SMS/Email notifications (depends on NOTIF-001 scope)

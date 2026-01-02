@@ -1,7 +1,7 @@
-# VIP Portal Sprint Specifications (REVISED v3)
+# VIP Portal Sprint Specifications (REVISED v4)
 
 **Last Updated:** January 2, 2026
-**Status:** REVISED - Added Appointment Scheduling, Removed SSO, Clarified In-App Notifications
+**Status:** REVISED - Added NOTIF-001 dependency for Appointment Scheduling
 
 ---
 
@@ -37,33 +37,59 @@ A comprehensive audit of the backend codebase (1,614 lines in `vipPortal.ts` alo
 
 ## Revised Sprint Focus
 
-This sprint focuses on **fixing the frontend** to expose the already-built backend functionality, then adding a new **Appointment Scheduling System** with **in-app notifications only** (no email).
+This sprint focuses on **fixing the frontend** to expose the already-built backend functionality, then adding a new **Appointment Scheduling System** with **unified notifications** (in-app only, no email).
 
 | Phase | Focus | Effort | Priority |
 |-------|-------|--------|----------|
 | Phase 1 | Fix Frontend Rendering (Dashboard, Catalog, AR/AP) | 24h | CRITICAL |
 | Phase 2 | Mobile-First UI & Actionability | 48h | HIGH |
-| Phase 3 | New Features (Appointment Scheduling, PDF, Notifications) | 76h | MEDIUM/HIGH |
+| Phase 3 | New Features (Appointment Scheduling, PDF) | 68h | MEDIUM/HIGH |
 
-**Total Estimate:** 148 hours
+**Total Estimate:** 140 hours
 
 ---
 
 ## Specification Files
 
-| Spec ID | Title | Priority | Status |
-|---------|-------|----------|--------|
-| VIP-F-001 | Fix Frontend Rendering Issues | CRITICAL | 🔴 Not Started |
-| VIP-M-001 | Mobile-First UI Redesign | HIGH | 🔴 Not Started |
-| VIP-A-001 | Actionability Implementation | HIGH | 🔴 Not Started |
-| VIP-B-001 | PDF Generation for Invoices/Bills | MEDIUM | 🔴 Not Started |
-| **VIP-C-001** | **Appointment Scheduling System (Calendly-like)** | **HIGH** | 🔴 Not Started |
+| Spec ID | Title | Priority | Estimate | Status |
+|---------|-------|----------|----------|--------|
+| VIP-F-001 | Fix Frontend Rendering Issues | CRITICAL | 24h | 🔴 Not Started |
+| VIP-M-001 | Mobile-First UI Redesign | HIGH | 48h | 🔴 Not Started |
+| VIP-A-001 | Actionability Implementation | HIGH | (in VIP-M-001) | 🔴 Not Started |
+| VIP-B-001 | PDF Generation for Invoices/Bills | MEDIUM | 8h | 🔴 Not Started |
+| **VIP-C-001** | **Appointment Scheduling System** | **HIGH** | **60h** | 🔴 Not Started |
+
+---
+
+## Dependencies
+
+### Internal Dependencies
+
+| Spec | Depends On | Notes |
+|------|------------|-------|
+| VIP-F-001 | None | Can start immediately |
+| VIP-M-001 | VIP-F-001 | Frontend must be stable first |
+| VIP-A-001 | VIP-F-001 | Frontend must be stable first |
+| VIP-B-001 | None | Can start immediately |
+
+### External Dependencies
+
+| Spec | Depends On | Sprint | Notes |
+|------|------------|--------|-------|
+| **VIP-C-001** | **NOTIF-001** | **Core Systems Sprint** | **BLOCKED** until Unified Notification System is complete |
+
+**VIP-C-001 (Appointment Scheduling System)** requires the **Unified Notification System (NOTIF-001)** from the Core Systems Sprint. The appointment workflow requires notifications to:
+- Alert managers of new appointment requests
+- Notify clients of confirmations, rejections, and proposed new times
+- Send reminders before appointments
+
+**NOTIF-001 must be complete before VIP-C-001 can begin.**
 
 ---
 
 ## New Feature: Appointment Scheduling System (VIP-C-001)
 
-This feature allows VIP Portal clients to book appointments for:
+This Calendly-like feature allows VIP Portal clients to book appointments for:
 
 1. **Payment Pickup/Drop-off:** Schedule time with accounting team for payment handling
 2. **Office Visits:** Schedule time in the office for vending, purchasing, or other business
@@ -74,18 +100,18 @@ This feature allows VIP Portal clients to book appointments for:
 |-----------|----------|----------|-------------|
 | **Calendar Management** | ERP Settings | 24h | Managers create calendars with custom availability, event types, buffer times, minimum notice |
 | **Booking UI** | VIP Portal | 24h | Clients see available time slots and submit appointment requests |
-| **In-App Notification System** | Both | 20h | Enhancements to ERP inbox + new VIP Portal notification system |
+| **Notification Integration** | Both | 12h | Integration with NOTIF-001 (Unified Notification System) |
 
 ### Notification Approach
 
-**All notifications are in-app only.** There is no email notification system.
+**All notifications use the Unified Notification System (NOTIF-001).** There is no email notification system.
 
-| System | Current State | Enhancements Needed |
-|--------|---------------|---------------------|
-| **ERP Inbox** | Exists, but limited to mentions/tasks | Add appointment-related notification types |
-| **VIP Portal** | Does not exist | Create new notification table, API, and UI |
-
-Both systems will use **30-second polling** for near-real-time updates.
+The appointment scheduling system will register the following notification types with NOTIF-001:
+- `appointment_request` - Manager receives alert when client submits request
+- `appointment_confirmed` - Client receives alert when manager confirms
+- `appointment_rejected` - Client receives alert when manager rejects
+- `appointment_rescheduled` - Client receives alert when manager proposes new time
+- `appointment_reminder` - Both parties receive reminder 24h before
 
 ---
 
@@ -108,7 +134,7 @@ There is **no online payment** and **no direct purchasing**.
 
 1. **Mobile-First Design:** All new UI must be designed for mobile viewports first, then enhanced for desktop.
 2. **Actionability Mandate:** Every data element (KPI, invoice, product) must be clickable with meaningful actions.
-3. **In-App Notifications Only:** No email system exists; all notifications are delivered via in-app notification bells.
+3. **Unified Notifications:** All notifications use NOTIF-001 (in-app only, no email).
 4. **Specification Alignment:** All work must align with the VIP Portal V3 specification.
 5. **Feature Flags:** Major UI changes must be deployed behind feature flags for safe rollback.
 
@@ -119,3 +145,4 @@ There is **no online payment** and **no direct purchasing**.
 - [VIP Portal Feature Spec V3](../../archive/vip-portal/VIP_CLIENT_PORTAL_FEATURE_SPEC_V3.md)
 - [VIP Portal Gap Analysis](../../archive/vip-portal/VIP_PORTAL_GAP_ANALYSIS.md)
 - [UX Improvements Sprint](../ux-improvements/README.md)
+- [Core Systems Sprint - NOTIF-001](../core-systems/NOTIF-001-SPEC.md)

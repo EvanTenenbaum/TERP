@@ -8382,3 +8382,124 @@ This Calendly-like system allows VIP Portal clients to book appointments:
 - VIP-C-001 requires the ERP Calendar module to be stable
 
 ---
+
+---
+
+## Core Systems Sprint
+
+**Goal:** Build foundational cross-cutting systems that serve multiple application areas.
+**Total Estimate:** 32 hours
+**Priority:** HIGH
+
+### Overview
+
+Core systems are foundational components that:
+- Serve both the ERP application and VIP Portal
+- Are dependencies for multiple feature sprints
+- Require careful architecture to ensure scalability and maintainability
+
+---
+
+### NOTIF-001: Unified Notification System Architecture (32h)
+
+**Priority:** HIGH
+**Status:** 🔴 Not Started
+**Blocking:** VIP-C-001 (Appointment Scheduling System)
+
+Replaces the current "Inbox" with a unified "Notifications" system that serves both ERP users and VIP Portal clients.
+
+#### Current State Issues
+
+| Component | Status | Issue |
+|-----------|--------|-------|
+| `inboxItems` table | Exists | Limited `sourceType` enum, ERP users only |
+| `inbox` router | Exists | Functional but limited |
+| `InboxPanel` UI | Exists | Needs rename to "Notifications" |
+| `notificationService.ts` | Stub | Logs only, doesn't create records |
+| VIP Portal notifications | **Missing** | No infrastructure |
+
+#### Target State
+
+- Rename "Inbox" to "Notifications" throughout the application
+- Unified `notifications` table serving both ERP users and VIP Portal clients
+- Configurable notification types via `notification_types` table
+- User/client notification preferences
+- In-app delivery with 30-second polling
+
+#### Task Breakdown
+
+| Task ID | Task | Estimate | Status |
+|---------|------|----------|--------|
+| NOTIF-01 | Database schema changes & migration | 4h | 🔴 Not Started |
+| NOTIF-02 | Notification service refactor | 8h | 🔴 Not Started |
+| NOTIF-03 | Notifications router refactor | 4h | 🔴 Not Started |
+| NOTIF-04 | VIP Portal notification endpoints | 4h | 🔴 Not Started |
+| NOTIF-05 | ERP UI rename (Inbox → Notifications) | 4h | 🔴 Not Started |
+| NOTIF-06 | VIP Portal notification bell UI | 4h | 🔴 Not Started |
+| NOTIF-07 | Notification preferences UI | 4h | 🔴 Not Started |
+
+#### Specifications
+
+| Spec ID | Title | File |
+|---------|-------|------|
+| NOTIF-001 | Unified Notification System Architecture | [📋 Spec](../specs/core-systems/NOTIF-001-SPEC.md) |
+
+---
+
+## Sprint Dependency Graph
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    SPRINT DEPENDENCIES                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────────┐                                          │
+│  │ UX & Stability   │  ← Can start immediately                 │
+│  │ Sprint (66h)     │                                          │
+│  │ STAB-*, ACT-*,   │                                          │
+│  │ ENH-*            │                                          │
+│  └──────────────────┘                                          │
+│                                                                 │
+│  ┌──────────────────┐                                          │
+│  │ Core Systems     │  ← Can start immediately                 │
+│  │ Sprint (32h)     │                                          │
+│  │ NOTIF-001        │───────────────────┐                      │
+│  └──────────────────┘                   │                      │
+│                                         ▼                      │
+│  ┌──────────────────┐         ┌──────────────────┐            │
+│  │ VIP Portal       │         │ VIP Portal       │            │
+│  │ Phase 1 & 2      │         │ Phase 3          │            │
+│  │ (72h)            │         │ VIP-C-001 (60h)  │            │
+│  │ VIP-F-*, VIP-M-* │         │ Appointments     │            │
+│  │ VIP-A-*, VIP-B-* │         │                  │            │
+│  │ Can start now    │         │ BLOCKED BY       │            │
+│  └──────────────────┘         │ NOTIF-001        │            │
+│                               └──────────────────┘            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Parallel Execution Strategy
+
+**Wave 1 (Can Start Immediately):**
+- UX & Stability Sprint: STAB-001, STAB-002, STAB-003
+- Core Systems Sprint: NOTIF-001
+- VIP Portal Sprint: VIP-F-001, VIP-M-001, VIP-A-001, VIP-B-001
+
+**Wave 2 (After NOTIF-001 Complete):**
+- VIP Portal Sprint: VIP-C-001 (Appointment Scheduling)
+
+**Wave 3 (Lower Priority):**
+- UX & Stability Sprint: ACT-001, ACT-002, ACT-003, ENH-001, ENH-002, ENH-003
+
+---
+
+## Total Roadmap Summary
+
+| Sprint | Estimate | Priority | Status |
+|--------|----------|----------|--------|
+| UX & Stability Sprint | 66h | CRITICAL/HIGH/MEDIUM | 🔴 Not Started |
+| Core Systems Sprint | 32h | HIGH | 🔴 Not Started |
+| VIP Portal Sprint | 140h | CRITICAL/HIGH/MEDIUM | 🔴 Not Started |
+| **Grand Total** | **238h** | | |
+
