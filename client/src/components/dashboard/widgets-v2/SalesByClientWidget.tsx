@@ -1,9 +1,11 @@
 /**
  * Sales By Client Widget
  * SPRINT-A Task 10: Added EmptyState component integration
+ * ACT-003: Made actionable with clickable rows navigating to client profiles
  */
 
 import { useState, memo } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -21,12 +23,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 type TimePeriod = "LIFETIME" | "YEAR" | "QUARTER" | "MONTH";
 
 export const SalesByClientWidget = memo(function SalesByClientWidget() {
+  const [, setLocation] = useLocation();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
 
   const { data: response, isLoading } =
@@ -42,20 +47,30 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">Sales</CardTitle>
-          <Select
-            value={timePeriod}
-            onValueChange={v => setTimePeriod(v as TimePeriod)}
-          >
-            <SelectTrigger className="w-[140px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="LIFETIME">All Time</SelectItem>
-              <SelectItem value="YEAR">This Year</SelectItem>
-              <SelectItem value="QUARTER">This Quarter</SelectItem>
-              <SelectItem value="MONTH">This Month</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select
+              value={timePeriod}
+              onValueChange={v => setTimePeriod(v as TimePeriod)}
+            >
+              <SelectTrigger className="w-[140px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="LIFETIME">All Time</SelectItem>
+                <SelectItem value="YEAR">This Year</SelectItem>
+                <SelectItem value="QUARTER">This Quarter</SelectItem>
+                <SelectItem value="MONTH">This Month</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/clients")}
+              className="text-xs"
+            >
+              View All <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -84,7 +99,11 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
                   },
                   index: number
                 ) => (
-                  <TableRow key={client.customerId}>
+                  <TableRow
+                    key={client.customerId}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setLocation(`/clients/${client.customerId}`)}
+                  >
                     <TableCell className="text-muted-foreground">
                       {index + 1}
                     </TableCell>

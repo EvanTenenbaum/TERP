@@ -31,8 +31,8 @@
 
 ### Phase 2: Universal Actionability (ACT-001, ACT-002, ACT-003)
 - [x] Make KPI cards clickable with URL state filters (ACT-001)
-- [ ] Make data table rows clickable (ACT-002)
-- [ ] Make dashboard widgets actionable (ACT-003)
+- [x] Make data table rows clickable (ACT-002) - Already implemented in ResponsiveTable
+- [x] Make dashboard widgets actionable (ACT-003)
 
 ### Phase 3: Enhance and Refine (ENH-001, ENH-002, ENH-003)
 - [x] Implement collapsible navigation groups (ENH-001)
@@ -51,6 +51,14 @@
   - Enhanced kpi-card.tsx with href and onAction props
   - Updated KpiSummaryRow with navigation links
   - Cards now navigate to: /accounting, /orders?status=active, /inventory, /inventory?filter=low-stock
+- 2026-01-02: Verified ACT-002 already implemented
+  - ResponsiveTable has onRowClick and clickable props
+  - ClientsListPage and Orders page already have clickable rows
+- 2026-01-02: Implemented actionable dashboard widgets (ACT-003)
+  - TotalDebtWidget: rows navigate to /clients?hasDebt=true and /accounting/bills
+  - SalesByClientWidget: rows navigate to client profiles
+  - CashFlowWidget: rows navigate to /accounting/invoices and /accounting/bills
+  - All widgets have "View All" buttons
 
 ## Notes
 
