@@ -184,6 +184,73 @@ export const adminMigrationsRouter = router({
         });
       }
 
+      // Migration 5: Create admin_impersonation_sessions table (FEATURE-012)
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS admin_impersonation_sessions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            session_guid VARCHAR(36) NOT NULL UNIQUE,
+            admin_user_id INT NOT NULL,
+            client_id INT NOT NULL,
+            start_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            end_at TIMESTAMP NULL,
+            ip_address VARCHAR(45) NULL,
+            user_agent VARCHAR(500) NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+            revoked_by INT NULL,
+            revoked_at TIMESTAMP NULL,
+            revoke_reason VARCHAR(255) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_admin_imp_sessions_admin_user_id (admin_user_id),
+            INDEX idx_admin_imp_sessions_client_id (client_id),
+            INDEX idx_admin_imp_sessions_status (status),
+            INDEX idx_admin_imp_sessions_guid (session_guid)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        results.push({
+          migration: "create_admin_impersonation_sessions",
+          status: "success",
+          message: "Created admin_impersonation_sessions table for VIP Portal audit"
+        });
+      } catch (error) {
+        results.push({
+          migration: "create_admin_impersonation_sessions",
+          status: "error",
+          message: error instanceof Error ? error.message : String(error)
+        });
+      }
+
+      // Migration 6: Create admin_impersonation_actions table (FEATURE-012)
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS admin_impersonation_actions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            session_id INT NOT NULL,
+            action_type VARCHAR(100) NOT NULL,
+            action_path VARCHAR(255) NULL,
+            action_method VARCHAR(10) NULL,
+            action_details JSON NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_admin_imp_actions_session_id (session_id),
+            INDEX idx_admin_imp_actions_action_type (action_type),
+            INDEX idx_admin_imp_actions_created_at (created_at)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        results.push({
+          migration: "create_admin_impersonation_actions",
+          status: "success",
+          message: "Created admin_impersonation_actions table for VIP Portal audit log"
+        });
+      } catch (error) {
+        results.push({
+          migration: "create_admin_impersonation_actions",
+          status: "error",
+          message: error instanceof Error ? error.message : String(error)
+        });
+      }
+
       const duration = Date.now() - startTime;
 
       return {
