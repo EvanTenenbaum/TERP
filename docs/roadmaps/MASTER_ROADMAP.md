@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.23  
-**Last Updated:** January 2, 2026  
+**Version:** 2.24  
+**Last Updated:** January 2, 2026 (Calendar Sprint Added)  
 **Status:** Active
 
 > ✅ **FEATURE-012 POST-DEPLOYMENT: ALL CRITICAL ISSUES RESOLVED (Jan 2, 2026)**
@@ -8456,37 +8456,238 @@ Replaces the current "Inbox" with a unified "Notifications" system that serves b
 
 ---
 
+## Calendar Sprint
+
+**Goal:** Overhaul the Calendar module to support multiple calendars, Calendly-like availability, appointment request/approval workflows, recurring events, and vacation tracking.  
+**Total Estimate:** 100 hours  
+**Priority:** HIGH  
+**Dependencies:** NOTIF-001 (Unified Notification System)  
+**Downstream:** VIP-C-001 (Appointment Scheduling) depends on this sprint
+
+### Overview
+
+The Calendar Sprint addresses critical gaps in the current Calendar module, transforming it from a basic event manager into a sophisticated scheduling system. This is a prerequisite for the VIP Portal Appointment Scheduling feature (VIP-C-001).
+
+| Current State | Target State |
+|---------------|--------------|
+| Single calendar for all events | Multiple purpose-driven calendars (Accounting, Office, Personal) |
+| No availability management | Calendly-like availability configuration |
+| Direct event creation only | Request/approval workflow for appointments |
+| Recurrence schema exists, no UI | Full recurring events UI |
+| No vacation tracking | Vacation/time-off with approval workflow |
+
+### Red Hat QA Review Summary
+
+All specifications have been reviewed for accuracy, efficacy, robustness, and reliability. Key findings and recommendations have been incorporated:
+
+| Finding | Recommendation | Status |
+|---------|----------------|--------|
+| Admin permissions for new users | Auto-grant ownership of default calendars to new admins | Incorporated |
+| Availability endpoint performance | Implement caching strategy for `getSlots` | Incorporated |
+| Concurrent approval race condition | Use pessimistic locking in approval transaction | Incorporated |
+| Client ID authentication | Derive `clientId` from session, not client input | Incorporated |
+| Time-off scope | User time-off blocks availability across all relevant calendars | Incorporated |
+
+---
+
+### CAL-001: Calendar Foundation (24h)
+
+**Priority:** HIGH  
+**Status:** 🔴 Not Started  
+**Dependencies:** None
+
+Establishes the multi-calendar architecture, enabling separate calendars for different business functions.
+
+#### Task Breakdown
+
+| Task ID | Task | Estimate | Status |
+|---------|------|----------|--------|
+| CAL-01-01 | Create `calendars` and `calendar_user_access` tables | 4h | 🔴 Not Started |
+| CAL-01-02 | Add `calendarId` FK to `calendarEvents` table | 2h | 🔴 Not Started |
+| CAL-01-03 | Data migration: create default calendars, migrate existing events | 2h | 🔴 Not Started |
+| CAL-01-04 | tRPC endpoints for calendar CRUD and user access management | 4h | 🔴 Not Started |
+| CAL-01-05 | Settings UI: Calendar management page | 8h | 🔴 Not Started |
+| CAL-01-06 | Event forms: Add calendar selector dropdown | 2h | 🔴 Not Started |
+| CAL-01-07 | Calendar view: Add calendar filter and legend | 2h | 🔴 Not Started |
+
+#### Deliverables
+
+- `calendars` table with default "Accounting" and "Office" calendars
+- `calendar_user_access` table for permission management
+- Calendar management UI in Settings
+- Calendar selector in Create/Edit Event forms
+- Calendar filter in main calendar view
+
+#### Specification
+
+| Spec ID | Title | File |
+|---------|-------|------|
+| CAL-001 | Calendar Foundation | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md) |
+
+---
+
+### CAL-002: Availability & Booking Foundation (32h)
+
+**Priority:** HIGH  
+**Status:** 🔴 Not Started  
+**Dependencies:** CAL-001
+
+Introduces Calendly-like availability configuration, enabling administrators to define when calendars are available for booking.
+
+#### Task Breakdown
+
+| Task ID | Task | Estimate | Status |
+|---------|------|----------|--------|
+| CAL-02-01 | Create `appointmentTypes` table | 2h | 🔴 Not Started |
+| CAL-02-02 | Create `calendarAvailability` table | 2h | 🔴 Not Started |
+| CAL-02-03 | Create `calendarBlockedDates` table | 1h | 🔴 Not Started |
+| CAL-02-04 | tRPC endpoints for appointment type CRUD | 3h | 🔴 Not Started |
+| CAL-02-05 | tRPC endpoints for availability rule management | 3h | 🔴 Not Started |
+| CAL-02-06 | Core `availability.getSlots` endpoint implementation | 9h | 🔴 Not Started |
+| CAL-02-07 | Settings UI: Appointment Types management | 6h | 🔴 Not Started |
+| CAL-02-08 | Settings UI: Weekly availability schedule | 6h | 🔴 Not Started |
+
+#### Deliverables
+
+- `appointmentTypes` table with duration, buffer, and notice settings
+- `calendarAvailability` table for weekly recurring rules
+- `calendarBlockedDates` table for one-off unavailability
+- `availability.getSlots` API endpoint for VIP Portal integration
+- Settings UI for managing appointment types and availability
+
+#### Specification
+
+| Spec ID | Title | File |
+|---------|-------|------|
+| CAL-002 | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md) |
+
+---
+
+### CAL-003: Request/Approval Workflow (24h)
+
+**Priority:** HIGH  
+**Status:** 🔴 Not Started  
+**Dependencies:** CAL-002, NOTIF-001
+
+Implements the critical request/approval workflow for appointment bookings, ensuring business control over the schedule.
+
+#### Task Breakdown
+
+| Task ID | Task | Estimate | Status |
+|---------|------|----------|--------|
+| CAL-03-01 | Create `appointmentRequests` table | 2h | 🔴 Not Started |
+| CAL-03-02 | `appointment.request` endpoint (for VIP Portal) | 4h | 🔴 Not Started |
+| CAL-03-03 | `appointment.approve` endpoint with transaction and locking | 4h | 🔴 Not Started |
+| CAL-03-04 | `appointment.reject` endpoint | 2h | 🔴 Not Started |
+| CAL-03-05 | Notification integration (NOTIF-001) | 4h | 🔴 Not Started |
+| CAL-03-06 | Pending Requests UI: List view with filtering | 4h | 🔴 Not Started |
+| CAL-03-07 | Request Detail Modal: Approve/Reject actions | 4h | 🔴 Not Started |
+
+#### Deliverables
+
+- `appointmentRequests` table tracking request status
+- API endpoints for submitting, approving, and rejecting requests
+- Automatic event creation upon approval
+- Notification triggers for all workflow state changes
+- Manager UI for reviewing and actioning pending requests
+
+#### Specification
+
+| Spec ID | Title | File |
+|---------|-------|------|
+| CAL-003 | Request/Approval Workflow | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md) |
+
+---
+
+### CAL-004: Enhanced Features (20h)
+
+**Priority:** MEDIUM  
+**Status:** 🔴 Not Started  
+**Dependencies:** CAL-003
+
+Adds high-value quality-of-life features: recurring events UI, vacation/time-off tracking, and mobile optimization.
+
+#### Task Breakdown
+
+| Task ID | Task | Estimate | Status |
+|---------|------|----------|--------|
+| CAL-04-01 | Recurring events UI: Recurrence rule builder | 4h | 🔴 Not Started |
+| CAL-04-02 | Recurring events: Edit/delete single vs. series logic | 4h | 🔴 Not Started |
+| CAL-04-03 | Time-off: Schema additions (`isTimeOff`, `timeOffStatus`) | 1h | 🔴 Not Started |
+| CAL-04-04 | Time-off: Request and approval workflow | 3h | 🔴 Not Started |
+| CAL-04-05 | Time-off: Integration with availability blocking | 2h | 🔴 Not Started |
+| CAL-04-06 | Mobile: Responsive calendar grid (week/day view default) | 3h | 🔴 Not Started |
+| CAL-04-07 | Mobile: Full-screen modals and bottom sheets | 3h | 🔴 Not Started |
+
+#### Deliverables
+
+- Full recurring events UI with RRULE support
+- Vacation/time-off request and approval workflow
+- Time-off automatically blocks availability for booking
+- Mobile-optimized calendar views and interactions
+
+#### Specification
+
+| Spec ID | Title | File |
+|---------|-------|------|
+| CAL-004 | Enhanced Features | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md) |
+
+---
+
+### Specifications Index
+
+| Spec ID | Title | File | Status |
+|---------|-------|------|--------|
+| CAL-001 | Calendar Foundation | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md) | DRAFT |
+| CAL-002 | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md) | DRAFT |
+| CAL-003 | Request/Approval Workflow | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md) | DRAFT |
+| CAL-004 | Enhanced Features | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md) | DRAFT |
+| QA Review | Red Hat QA Review | [📋 Review](../specs/calendar-sprint/CAL_QA_REVIEW.md) | COMPLETE |
+
+---
+
 ## Sprint Dependency Graph
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    SPRINT DEPENDENCIES                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────────┐                                          │
-│  │ UX & Stability   │  ← Can start immediately                 │
-│  │ Sprint (66h)     │                                          │
-│  │ STAB-*, ACT-*,   │                                          │
-│  │ ENH-*            │                                          │
-│  └──────────────────┘                                          │
-│                                                                 │
-│  ┌──────────────────┐                                          │
-│  │ Core Systems     │  ← Can start immediately                 │
-│  │ Sprint (32h)     │                                          │
-│  │ NOTIF-001        │───────────────────┐                      │
-│  └──────────────────┘                   │                      │
-│                                         ▼                      │
-│  ┌──────────────────┐         ┌──────────────────┐            │
-│  │ VIP Portal       │         │ VIP Portal       │            │
-│  │ Phase 1 & 2      │         │ Phase 3          │            │
-│  │ (72h)            │         │ VIP-C-001 (60h)  │            │
-│  │ VIP-F-*, VIP-M-* │         │ Appointments     │            │
-│  │ VIP-A-*, VIP-B-* │         │                  │            │
-│  │ Can start now    │         │ BLOCKED BY       │            │
-│  └──────────────────┘         │ NOTIF-001        │            │
-│                               └──────────────────┘            │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                           SPRINT DEPENDENCIES                                  │
+├───────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  ┌──────────────────┐                                                        │
+│  │ UX & Stability   │  ← Can start immediately                               │
+│  │ Sprint (66h)     │                                                        │
+│  │ STAB-*, ACT-*,   │                                                        │
+│  │ ENH-*            │                                                        │
+│  └──────────────────┘                                                        │
+│                                                                               │
+│  ┌──────────────────┐                                                        │
+│  │ Core Systems     │  ← Can start immediately                               │
+│  │ Sprint (32h)     │                                                        │
+│  │ NOTIF-001        │─────────────────────────────────┐                      │
+│  └──────────────────┘                                 │                      │
+│                                                       │                      │
+│  ┌──────────────────┐                                 │                      │
+│  │ Calendar Sprint  │  ← CAL-001, CAL-002 can start   │                      │
+│  │ (100h)           │    immediately                  │                      │
+│  │ CAL-001 (24h)    │                                 │                      │
+│  │ CAL-002 (32h)    │                                 │                      │
+│  │ CAL-003 (24h) ◄──┼─────────────────────────────────┘                      │
+│  │ CAL-004 (20h)    │  CAL-003 BLOCKED BY NOTIF-001                          │
+│  └────────┬─────────┘                                                        │
+│           │                                                                   │
+│           │ VIP-C-001 depends on Calendar Sprint                             │
+│           ▼                                                                   │
+│  ┌──────────────────┐         ┌──────────────────┐                          │
+│  │ VIP Portal       │         │ VIP Portal       │                          │
+│  │ Phase 1 & 2      │         │ Phase 3          │                          │
+│  │ (72h)            │         │ VIP-C-001 (40h)  │  ← Reduced from 60h      │
+│  │ VIP-F-*, VIP-M-* │         │ Appointments     │    (Calendar Sprint      │
+│  │ VIP-A-*, VIP-B-* │         │                  │     provides foundation) │
+│  │ Can start now    │         │ BLOCKED BY       │                          │
+│  └──────────────────┘         │ Calendar Sprint  │                          │
+│                               └──────────────────┘                          │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Parallel Execution Strategy
@@ -8494,12 +8695,17 @@ Replaces the current "Inbox" with a unified "Notifications" system that serves b
 **Wave 1 (Can Start Immediately):**
 - UX & Stability Sprint: STAB-001, STAB-002, STAB-003
 - Core Systems Sprint: NOTIF-001
+- Calendar Sprint: CAL-001, CAL-002
 - VIP Portal Sprint: VIP-F-001, VIP-M-001, VIP-A-001, VIP-B-001
 
 **Wave 2 (After NOTIF-001 Complete):**
-- VIP Portal Sprint: VIP-C-001 (Appointment Scheduling)
+- Calendar Sprint: CAL-003 (Request/Approval Workflow)
 
-**Wave 3 (Lower Priority):**
+**Wave 3 (After CAL-003 Complete):**
+- Calendar Sprint: CAL-004 (Enhanced Features)
+- VIP Portal Sprint: VIP-C-001 (Appointment Scheduling - now uses Calendar Sprint foundation)
+
+**Wave 4 (Lower Priority):**
 - UX & Stability Sprint: ACT-001, ACT-002, ACT-003, ENH-001, ENH-002, ENH-003
 
 ---
@@ -8510,6 +8716,8 @@ Replaces the current "Inbox" with a unified "Notifications" system that serves b
 |--------|----------|----------|--------|
 | UX & Stability Sprint | 66h | CRITICAL/HIGH/MEDIUM | 🔴 Not Started |
 | Core Systems Sprint | 32h | HIGH | 🔴 Not Started |
-| VIP Portal Sprint | 140h | CRITICAL/HIGH/MEDIUM | 🔴 Not Started |
-| **Grand Total** | **238h** | | |
+| **Calendar Sprint** | **100h** | **HIGH** | 🔴 Not Started |
+| VIP Portal Sprint | 112h | CRITICAL/HIGH/MEDIUM | 🔴 Not Started |
+| **Grand Total** | **310h** | | |
 
+> **Note:** VIP Portal Sprint estimate reduced from 140h to 112h. The VIP-C-001 (Appointment Scheduling) task was reduced from 60h to 40h because the Calendar Sprint now provides the foundational calendar management, availability, and request/approval infrastructure. VIP-C-001 now only needs to implement the client-facing booking UI.
