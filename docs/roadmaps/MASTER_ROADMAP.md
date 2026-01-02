@@ -141,11 +141,11 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### 🟡 FEATURE-012 Short-Term Tasks (P1 - Within 1 Week)
 
-| Task        | Description                                        | Priority | Status  | Owner |
-| ----------- | -------------------------------------------------- | -------- | ------- | ----- |
-| FIX-012-001 | Add feature flag to control old impersonation path | P1       | 🟡 TODO | Dev   |
-| FIX-012-002 | Update VIPPortalSettings to use new audited API    | P1       | 🟡 TODO | Dev   |
-| FIX-012-003 | Add audit log retention policy                     | P2       | 🟡 TODO | Dev   |
+| Task        | Description                                        | Priority | Status      | Owner |
+| ----------- | -------------------------------------------------- | -------- | ----------- | ----- |
+| FIX-012-001 | Add feature flag to control old impersonation path | P1       | 🟡 TODO     | Dev   |
+| FIX-012-002 | Update VIPPortalSettings to use new audited API    | P1       | ✅ COMPLETE | Dev   |
+| FIX-012-003 | Add audit log retention policy                     | P2       | 🟡 TODO     | Dev   |
 
 ### 🟢 FEATURE-012 Long-Term Tasks (P3 - Within 1 Month)
 
@@ -1476,9 +1476,12 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 ### QUAL-005: COGS Module & Calendar Financials Integration
 
-**Status:** ready  
+**Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 8h  
+**Actual Time:** 0h (already complete)  
+**Completed:** 2026-01-02  
+**Key Commits:** `cd8744b5`  
 **Module:** `server/cogsCalculator.ts`, `server/routers/calendar.ts`  
 **Dependencies:** None  
 **Origin:** Split from QUAL-003 Wave 2
@@ -1493,18 +1496,23 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 **Deliverables:**
 
-- [ ] COGS module TODOs resolved
-- [ ] Calendar financial integration complete
-- [ ] All tests passing
-- [ ] Zero TypeScript errors
+- [x] COGS module TODOs resolved
+- [x] Calendar financial integration complete
+- [x] All tests passing
+- [x] Zero TypeScript errors
+
+**Notes:** Per QA Phase 3 Review, this task was already complete - no TODOs found in cogs.ts or calendar.ts.
 
 ---
 
 ### QUAL-006: VIP Portal Supply CRUD & Dashboard Real Metrics
 
-**Status:** ready  
+**Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 12h  
+**Actual Time:** 0h (already complete)  
+**Completed:** 2026-01-02  
+**Key Commits:** `cd8744b5`  
 **Module:** `client/src/pages/vip-portal/`, `client/src/pages/DashboardPage.tsx`  
 **Dependencies:** None  
 **Origin:** Split from QUAL-003 Wave 3
@@ -1519,10 +1527,12 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 
 **Deliverables:**
 
-- [ ] VIP Portal supply CRUD functional
-- [ ] Dashboard metrics pulling real data
-- [ ] All tests passing
-- [ ] Zero TypeScript errors
+- [x] VIP Portal supply CRUD functional
+- [x] Dashboard metrics pulling real data
+- [x] All tests passing
+- [x] Zero TypeScript errors
+
+**Notes:** Per QA Phase 3 Review, this task was already complete - createSupply, updateSupply, cancelSupply all implemented in vendorSupply.ts.
 
 ---
 

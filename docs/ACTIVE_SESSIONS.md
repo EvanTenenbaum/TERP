@@ -26,7 +26,6 @@
 | --------------------------------------- | ----------------------- | ---------------------------- | ------------- | ----------- | ---------- | --- |
 | Session-20251230-ROADMAP-CLEANUP-39dfaf | ROADMAP-CLEANUP         | main                         | docs          | In Progress | 2025-12-30 | TBA |
 | Session-20260102-SPRINT-B-f0b134        | Sprint B Frontend UX    | main                         | client/src    | In Progress | 2026-01-02 | -   |
-| Session-20260102-SPRINT-C-095c75        | Sprint C Accounting/VIP | main                         | server/acct   | In Progress | 2026-01-02 | -   |
 | Session-20260102-SPRINT-D-adfcf4        | Sprint D Sales/Inv/QA   | sprint-d/sales-inventory-qa  | sales/tests   | In Progress | 2026-01-02 | -   |
 
 ## ⏸️ Paused / Waiting
@@ -69,3 +68,4 @@ Branch: `claude/DOCS-002-20251231-82fd9d00`
 | Session ID                             | Task                                      | Status      |
 | -------------------------------------- | ----------------------------------------- | ----------- |
 | Session-20260102-SPRINT-A-INFRA-d7654e | Sprint A: Backend Infrastructure & Schema | ✅ Complete |
+| Session-20260102-SPRINT-C-095c75       | Sprint C: Accounting & VIP Portal Modules | ✅ Complete |
