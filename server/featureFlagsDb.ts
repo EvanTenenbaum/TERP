@@ -6,7 +6,7 @@
  */
 
 import { db } from "./db";
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { eq, and, isNull, desc, sql } from "drizzle-orm";
 import {
   featureFlags,
   featureFlagRoleOverrides,
@@ -20,6 +20,33 @@ import {
 } from "../drizzle/schema";
 import { userRoles } from "../drizzle/schema-rbac";
 import { logger } from "./_core/logger";
+
+/**
+ * Helper function to insert audit log using raw SQL
+ * This avoids the Drizzle ORM issue with AUTO_INCREMENT columns
+ */
+async function insertAuditLog(
+  flagId: number | null,
+  flagKey: string,
+  action: string,
+  actorOpenId: string,
+  previousValue: Record<string, unknown> | null,
+  newValue: Record<string, unknown> | null
+): Promise<void> {
+  if (!db) return;
+  
+  try {
+    await db.execute(sql`
+      INSERT INTO feature_flag_audit_logs 
+        (flag_id, flag_key, action, actor_open_id, previous_value, new_value)
+      VALUES 
+        (${flagId}, ${flagKey}, ${action}, ${actorOpenId}, ${previousValue ? JSON.stringify(previousValue) : null}, ${newValue ? JSON.stringify(newValue) : null})
+    `);
+  } catch (error) {
+    // Don't throw - audit logging should never break the main operation
+    logger.error({ error, flagKey, action }, "[FeatureFlags] Failed to insert audit log");
+  }
+}
 
 /**
  * Feature Flags Database Operations
@@ -100,14 +127,15 @@ export const featureFlagsDb = {
     const [result] = await db.insert(featureFlags).values(flag);
     const flagId = result.insertId;
 
-    // Create audit log
-    await db.insert(featureFlagAuditLogs).values({
+    // Create audit log using raw SQL
+    await insertAuditLog(
       flagId,
-      flagKey: flag.key,
-      action: "created",
+      flag.key,
+      "created",
       actorOpenId,
-      newValue: flag as Record<string, unknown>,
-    });
+      null,
+      flag as Record<string, unknown>
+    );
 
     logger.info({ flagKey: flag.key, flagId, actorOpenId }, "[FeatureFlags] Flag created");
     return flagId;
@@ -148,15 +176,15 @@ export const featureFlagsDb = {
       action = "disabled";
     }
 
-    // Create audit log
-    await db.insert(featureFlagAuditLogs).values({
-      flagId: id,
-      flagKey: existing.key,
+    // Create audit log using raw SQL
+    await insertAuditLog(
+      id,
+      existing.key,
       action,
       actorOpenId,
-      previousValue: existing as Record<string, unknown>,
-      newValue: updates as Record<string, unknown>,
-    });
+      existing as Record<string, unknown>,
+      updates as Record<string, unknown>
+    );
 
     logger.info({ flagKey: existing.key, flagId: id, actorOpenId, action }, "[FeatureFlags] Flag updated");
   },
@@ -183,14 +211,15 @@ export const featureFlagsDb = {
       .set({ deletedAt: new Date() })
       .where(eq(featureFlags.id, id));
 
-    // Create audit log
-    await db.insert(featureFlagAuditLogs).values({
-      flagId: id,
-      flagKey: existing.key,
-      action: "deleted",
+    // Create audit log using raw SQL
+    await insertAuditLog(
+      id,
+      existing.key,
+      "deleted",
       actorOpenId,
-      previousValue: existing as Record<string, unknown>,
-    });
+      existing as Record<string, unknown>,
+      null
+    );
 
     logger.info({ flagKey: existing.key, flagId: id, actorOpenId }, "[FeatureFlags] Flag deleted");
   },
@@ -256,13 +285,15 @@ export const featureFlagsDb = {
       .from(featureFlags)
       .where(eq(featureFlags.id, flagId));
 
-    await db.insert(featureFlagAuditLogs).values({
+    // Create audit log using raw SQL
+    await insertAuditLog(
       flagId,
-      flagKey: flag?.key || "unknown",
-      action: "override_added",
+      flag?.key || "unknown",
+      "override_added",
       actorOpenId,
-      newValue: { type: "role", roleId, enabled },
-    });
+      null,
+      { type: "role", roleId, enabled }
+    );
 
     logger.info({ flagId, roleId, enabled, actorOpenId }, "[FeatureFlags] Role override set");
   },
@@ -290,13 +321,15 @@ export const featureFlagsDb = {
       .from(featureFlags)
       .where(eq(featureFlags.id, flagId));
 
-    await db.insert(featureFlagAuditLogs).values({
+    // Create audit log using raw SQL
+    await insertAuditLog(
       flagId,
-      flagKey: flag?.key || "unknown",
-      action: "override_removed",
+      flag?.key || "unknown",
+      "override_removed",
       actorOpenId,
-      previousValue: { type: "role", roleId },
-    });
+      { type: "role", roleId },
+      null
+    );
 
     logger.info({ flagId, roleId, actorOpenId }, "[FeatureFlags] Role override removed");
   },
@@ -352,13 +385,15 @@ export const featureFlagsDb = {
       .from(featureFlags)
       .where(eq(featureFlags.id, flagId));
 
-    await db.insert(featureFlagAuditLogs).values({
+    // Create audit log using raw SQL
+    await insertAuditLog(
       flagId,
-      flagKey: flag?.key || "unknown",
-      action: "override_added",
+      flag?.key || "unknown",
+      "override_added",
       actorOpenId,
-      newValue: { type: "user", userOpenId, enabled },
-    });
+      null,
+      { type: "user", userOpenId, enabled }
+    );
 
     logger.info({ flagId, userOpenId, enabled, actorOpenId }, "[FeatureFlags] User override set");
   },
@@ -391,13 +426,15 @@ export const featureFlagsDb = {
       .from(featureFlags)
       .where(eq(featureFlags.id, flagId));
 
-    await db.insert(featureFlagAuditLogs).values({
+    // Create audit log using raw SQL
+    await insertAuditLog(
       flagId,
-      flagKey: flag?.key || "unknown",
-      action: "override_removed",
+      flag?.key || "unknown",
+      "override_removed",
       actorOpenId,
-      previousValue: { type: "user", userOpenId },
-    });
+      { type: "user", userOpenId },
+      null
+    );
 
     logger.info({ flagId, userOpenId, actorOpenId }, "[FeatureFlags] User override removed");
   },
@@ -407,11 +444,11 @@ export const featureFlagsDb = {
   // ========================================================================
 
   /**
-   * Get audit history for a flag or all flags
+   * Get audit logs for a flag or all flags
    */
-  async getAuditHistory(
+  async getAuditLogs(
     flagKey?: string,
-    limit = 100
+    limit: number = 100
   ): Promise<FeatureFlagAuditLog[]> {
     if (!db) {
       logger.warn("[FeatureFlags] Database not available");
@@ -451,20 +488,30 @@ export const featureFlagsDb = {
 
   /**
    * Get all user overrides for a specific user (for efficient batch loading)
+   * USES openId (string), NOT numeric id
    */
-  async getAllUserOverridesForUser(
-    userOpenId: string
-  ): Promise<{ flagId: number; enabled: boolean }[]> {
+  async getAllUserOverrides(userOpenId: string): Promise<FeatureFlagUserOverride[]> {
     if (!db) {
       logger.warn("[FeatureFlags] Database not available");
       return [];
     }
     return db
-      .select({
-        flagId: featureFlagUserOverrides.flagId,
-        enabled: featureFlagUserOverrides.enabled,
-      })
+      .select()
       .from(featureFlagUserOverrides)
       .where(eq(featureFlagUserOverrides.userOpenId, userOpenId));
+  },
+
+  /**
+   * Get all user overrides for a specific flag
+   */
+  async getFlagUserOverrides(flagId: number): Promise<FeatureFlagUserOverride[]> {
+    if (!db) {
+      logger.warn("[FeatureFlags] Database not available");
+      return [];
+    }
+    return db
+      .select()
+      .from(featureFlagUserOverrides)
+      .where(eq(featureFlagUserOverrides.flagId, flagId));
   },
 };
