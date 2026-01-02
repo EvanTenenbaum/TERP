@@ -8151,3 +8151,93 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 - **UX-003.1: Enhance Data Tables:** Add bulk actions and column customization to the Client and Inventory tables.
 - **UX-003.2: Develop Placeholder Pages:** Implement baseline functional versions of the Analytics and Leaderboard pages, deployed behind feature flags.
 - **UX-003.3: Improve Empty States:** Add informative descriptions to all empty state pages.
+
+---
+
+### 📊 Comprehensive Sprint Overview (Updated Jan 2, 2026)
+
+**Research Foundation:** Comprehensive UX/UI analysis of the live TERP system, ERP best practices research from 9 authoritative sources, red hat analysis to identify and mitigate risks, and actionability audit of all data elements.
+
+**The Actionability Mandate:** No table, KPI card, or widget should be a dead end. Every data element must allow users to click and take action.
+
+**Specifications:** [`docs/specs/ux-improvements/README.md`](../specs/ux-improvements/README.md)
+
+| Phase | Focus | Tasks | Estimate | Priority |
+| :--- | :--- | :--- | :--- | :--- |
+| **Phase 1** | Stabilize the Core | STAB-001, STAB-002, STAB-003 | 18h | CRITICAL |
+| **Phase 2** | Universal Actionability | ACT-001, ACT-002, ACT-003 | 28h | HIGH |
+| **Phase 3** | Enhance and Refine | ENH-001, ENH-002, ENH-003 | 20h | MEDIUM |
+
+**Total Estimate:** 66h
+
+---
+
+### 🔴 Phase 1: Stabilize the Core (CRITICAL)
+
+**Goal:** Fix the 5 broken modules, data integrity issues, and UI bugs that undermine user trust.
+
+| Task ID | Title | Priority | Estimate | Spec |
+| :--- | :--- | :--- | :--- | :--- |
+| **STAB-001** | Fix Broken Modules (Tasks, Fulfillment, Procurement, Accounting, Sales Portal) | CRITICAL | 8h | [📋 Spec](../specs/ux-improvements/STAB-001-SPEC.md) |
+| **STAB-002** | Fix Data Integrity Issues (Orders mismatch, Profit calculation, Floating point) | CRITICAL | 6h | [📋 Spec](../specs/ux-improvements/STAB-002-SPEC.md) |
+| **STAB-003** | Fix UI Bugs (Duplicate nav, Non-functional KPI cards, Inconsistent empty states) | HIGH | 4h | [📋 Spec](../specs/ux-improvements/STAB-003-SPEC.md) |
+
+**Key Deliverables:**
+- All 27 navigation items lead to functional pages (0 404s, 0 infinite loading)
+- Orders KPI cards and table show consistent data
+- Profit calculation returns accurate values
+- No floating point display errors anywhere in the UI
+
+---
+
+### 🟡 Phase 2: Universal Actionability (HIGH)
+
+**Goal:** Make every data element (KPI cards, table rows, widgets) a starting point for action.
+
+| Task ID | Title | Priority | Estimate | Spec |
+| :--- | :--- | :--- | :--- | :--- |
+| **ACT-001** | Make KPI Cards Actionable (Click to filter table, URL state, visual feedback) | HIGH | 8h | [📋 Spec](../specs/ux-improvements/ACT-001-SPEC.md) |
+| **ACT-002** | Make Data Tables Actionable (Row click, bulk actions, clickable cells, action menus) | HIGH | 12h | [📋 Spec](../specs/ux-improvements/ACT-002-SPEC.md) |
+| **ACT-003** | Make Widgets Actionable (Clickable rows, chart segments, values with drill-down) | HIGH | 8h | [📋 Spec](../specs/ux-improvements/ACT-003-SPEC.md) |
+
+**Key Deliverables:**
+- Clicking a KPI card filters the corresponding table
+- Table rows are clickable (navigate to detail view)
+- Bulk actions available when rows are selected
+- Email/phone cells are clickable links
+- All dashboard widget elements drill down to filtered views
+
+---
+
+### 🟠 Phase 3: Enhance and Refine (MEDIUM)
+
+**Goal:** Improve navigation, empty states, and consolidate duplicate pages.
+
+| Task ID | Title | Priority | Estimate | Spec |
+| :--- | :--- | :--- | :--- | :--- |
+| **ENH-001** | Implement Collapsible Navigation (7 groups, pinned items, persistence) | MEDIUM | 10h | [📋 Spec](../specs/ux-improvements/ENH-001-SPEC.md) |
+| **ENH-002** | Improve Empty States (Icon, title, description, CTA for all pages) | MEDIUM | 6h | [📋 Spec](../specs/ux-improvements/ENH-002-SPEC.md) |
+| **ENH-003** | Consolidate Duplicate Pages (Locations → Settings, Pricing Rules + Profiles) | MEDIUM | 4h | [📋 Spec](../specs/ux-improvements/ENH-003-SPEC.md) |
+
+**Key Deliverables:**
+- Navigation grouped into 7 collapsible sections (Core, Sales, Fulfillment, Inventory, Finance, Insights, System)
+- All empty states include icon, title, description, and primary CTA
+- `/locations` redirects to `/settings?tab=locations`
+- `/pricing` shows tabbed interface with Rules and Profiles
+
+---
+
+### 📝 Red Hat Analysis Summary
+
+The following risks were identified and mitigated in the specification process:
+
+| Risk | Mitigation |
+| :--- | :--- |
+| KPI card click behavior undefined | Defined explicit pattern: click = filter table |
+| Table row click conflicts with action menu | Defined distinct click zones |
+| No performance baseline | Establish metrics before Phase 1 |
+| No rollback plan | Implement feature flags for major changes |
+| Sales consolidation too risky | Rejected; use cross-linking instead |
+| Credit Settings consolidation wrong persona | Rejected; keep standalone |
+
+---
