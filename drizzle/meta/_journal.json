@@ -190,6 +190,13 @@
       "when": 1766475541395,
       "tag": "0026_first_salo",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1735826400000,
+      "tag": "0044_add_admin_impersonation_tables",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -61,10 +67,11 @@ export function VIPPortalSettings({
   const utils = trpc.useUtils();
 
   // Get VIP portal configuration if enabled
-  const { data: config, isLoading: configLoading } = trpc.vipPortalAdmin.config.get.useQuery(
-    { clientId },
-    { enabled: vipPortalEnabled }
-  );
+  const { data: config, isLoading: configLoading } =
+    trpc.vipPortalAdmin.config.get.useQuery(
+      { clientId },
+      { enabled: vipPortalEnabled }
+    );
 
   // Get last login info
   const { data: loginInfo } = trpc.vipPortalAdmin.clients.getLastLogin.useQuery(
@@ -73,50 +80,52 @@ export function VIPPortalSettings({
   );
 
   // Enable VIP portal mutation
-  const enableMutation = trpc.vipPortalAdmin.clients.enableVipPortal.useMutation({
-    onSuccess: () => {
-      toast.success("VIP Portal enabled successfully");
-      setEnableDialogOpen(false);
-      setEmail("");
-      setPassword("");
-      utils.clients.getById.invalidate({ clientId });
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to enable VIP Portal");
-    },
-  });
+  const enableMutation =
+    trpc.vipPortalAdmin.clients.enableVipPortal.useMutation({
+      onSuccess: () => {
+        toast.success("VIP Portal enabled successfully");
+        setEnableDialogOpen(false);
+        setEmail("");
+        setPassword("");
+        utils.clients.getById.invalidate({ clientId });
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to enable VIP Portal");
+      },
+    });
 
   // Disable VIP portal mutation
-  const disableMutation = trpc.vipPortalAdmin.clients.disableVipPortal.useMutation({
-    onSuccess: () => {
-      toast.success("VIP Portal disabled");
-      setDisableDialogOpen(false);
-      utils.clients.getById.invalidate({ clientId });
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to disable VIP Portal");
-    },
-  });
+  const disableMutation =
+    trpc.vipPortalAdmin.clients.disableVipPortal.useMutation({
+      onSuccess: () => {
+        toast.success("VIP Portal disabled");
+        setDisableDialogOpen(false);
+        utils.clients.getById.invalidate({ clientId });
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to disable VIP Portal");
+      },
+    });
 
-  // Impersonation mutation
-  const impersonateMutation = trpc.vipPortalAdmin.clients.impersonate.useMutation({
-    onSuccess: (data) => {
-      // Store impersonation session
-      localStorage.setItem("vip_session_token", data.sessionToken);
-      localStorage.setItem("vip_client_id", clientId.toString());
-      localStorage.setItem("vip_client_name", clientName);
-      localStorage.setItem("vip_impersonation", "true");
-      
-      // Open VIP portal in new tab
-      window.open("/vip-portal/dashboard", "_blank");
-      setIsImpersonating(false);
-      toast.success(`Viewing portal as ${clientName}`);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to start impersonation session");
-      setIsImpersonating(false);
-    },
-  });
+  // Impersonation mutation - UPDATED: Uses new audited path (FEATURE-012)
+  // This now uses the audit.createImpersonationSession endpoint which:
+  // 1. Creates a server-side session with full audit trail
+  // 2. Uses sessionStorage instead of localStorage
+  // 3. Generates a one-time token for secure authentication
+  const impersonateMutation =
+    trpc.vipPortalAdmin.audit.createImpersonationSession.useMutation({
+      onSuccess: data => {
+        // Open VIP portal with one-time token (audited path)
+        const portalUrl = `/vip-portal/auth/impersonate?token=${encodeURIComponent(data.oneTimeToken)}`;
+        window.open(portalUrl, "_blank");
+        setIsImpersonating(false);
+        toast.success(`Viewing portal as ${clientName} (session audited)`);
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to start impersonation session");
+        setIsImpersonating(false);
+      },
+    });
 
   const handleEnablePortal = () => {
     if (!email || !password) {
@@ -136,7 +145,11 @@ export function VIPPortalSettings({
 
   const handleViewAsClient = () => {
     setIsImpersonating(true);
-    impersonateMutation.mutate({ clientId });
+    // Use the audited impersonation endpoint
+    impersonateMutation.mutate({
+      clientId,
+      reason: "Quick access from client profile",
+    });
   };
 
   const formatDate = (date: Date | string | null | undefined) => {
@@ -152,7 +165,8 @@ export function VIPPortalSettings({
 
   // Generate a random password
   const generatePassword = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
+    const chars =
+      "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
     let result = "";
     for (let i = 0; i < 12; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -307,7 +321,9 @@ export function VIPPortalSettings({
             <Button
               variant="ghost"
               className="w-full"
-              onClick={() => window.location.href = `/clients/${clientId}/vip-portal-config`}
+              onClick={() =>
+                (window.location.href = `/clients/${clientId}/vip-portal-config`)
+              }
             >
               <Settings className="h-4 w-4 mr-2" />
               Advanced Portal Configuration
@@ -323,7 +339,8 @@ export function VIPPortalSettings({
           <DialogHeader>
             <DialogTitle>Enable VIP Portal</DialogTitle>
             <DialogDescription>
-              Set up portal access for {clientName}. They will use these credentials to log in.
+              Set up portal access for {clientName}. They will use these
+              credentials to log in.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -337,7 +354,7 @@ export function VIPPortalSettings({
                 type="email"
                 placeholder="client@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 The email address the client will use to log in
@@ -352,7 +369,7 @@ export function VIPPortalSettings({
                     type={showPassword ? "text" : "password"}
                     placeholder="Initial password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                   />
                   <Button
                     type="button"
