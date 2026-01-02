@@ -968,6 +968,7 @@ export async function deactivateClientPriceAlert(alertId: number) {
 export interface CreateImpersonationSessionOptions {
   adminUserId: number;
   clientId: number;
+  reason?: string;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -977,7 +978,7 @@ export interface CreateImpersonationSessionOptions {
  * Returns a one-time-use token that must be exchanged for a portal session.
  */
 export async function createAuditedImpersonationSession(options: CreateImpersonationSessionOptions) {
-  const { adminUserId, clientId, ipAddress, userAgent } = options;
+  const { adminUserId, clientId, reason, ipAddress, userAgent } = options;
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 

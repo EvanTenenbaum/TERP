@@ -114,10 +114,18 @@ export function ReceivePaymentModal({
       utils.accounting.quickActions.getRecentClients.invalidate();
       
       // Show receipt preview if receipt was generated (WS-006)
-      if (result.receiptId) {
-        setReceiptId(result.receiptId);
-        setClientEmail(result.clientEmail);
-        setClientPhone(result.clientPhone);
+      // Note: Backend returns receiptUrl, not receiptId. Future enhancement may add
+      // receiptId, clientEmail, clientPhone for receipt preview functionality.
+      const extendedResult = result as typeof result & {
+        receiptId?: number;
+        clientEmail?: string;
+        clientPhone?: string;
+      };
+      
+      if (extendedResult.receiptId) {
+        setReceiptId(extendedResult.receiptId);
+        setClientEmail(extendedResult.clientEmail);
+        setClientPhone(extendedResult.clientPhone);
         setShowReceiptPreview(true);
       } else {
         onSuccess?.(result);

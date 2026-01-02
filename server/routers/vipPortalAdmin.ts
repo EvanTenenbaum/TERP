@@ -357,11 +357,13 @@ export const vipPortalAdminRouter = router({
       .use(requirePermission("admin:impersonate"))
       .input(z.object({
         clientId: z.number(),
+        reason: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         return await vipPortalAdminService.createAuditedImpersonationSession({
           adminUserId: ctx.user!.id,
           clientId: input.clientId,
+          reason: input.reason,
           ipAddress: ctx.req?.ip || undefined,
           userAgent: ctx.req?.headers?.['user-agent'] || undefined,
         });
@@ -386,7 +388,7 @@ export const vipPortalAdminRouter = router({
         actionType: z.string(),
         actionPath: z.string().optional(),
         actionMethod: z.string().optional(),
-        actionDetails: z.record(z.unknown()).optional(),
+        actionDetails: z.record(z.string(), z.unknown()).optional(),
       }))
       .mutation(async ({ input }) => {
         return await vipPortalAdminService.logImpersonationActionByGuid({
