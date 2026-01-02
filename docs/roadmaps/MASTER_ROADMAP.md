@@ -294,15 +294,29 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### 📚 QA Documentation
 
-| Document            | Location                                                       |
-| ------------------- | -------------------------------------------------------------- |
-| Final Summary       | `docs/qa-reviews/FEATURE_FLAG_FINAL_SUMMARY.md`                |
-| Database QA         | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_1_DATABASE.md`         |
-| Core Service QA     | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_2_CORE_SERVICE.md`     |
-| Backend API QA      | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_3_BACKEND_API.md`      |
+| Document | Location |
+|
+
+### 📋 Integration Requirements
+
+> **All new features MUST integrate with the feature flag system.**
+> See: [`docs/specs/FEATURE_FLAG_INTEGRATION_REQUIREMENTS.md`](../specs/FEATURE_FLAG_INTEGRATION_REQUIREMENTS.md)
+
+| Requirement   | Description                                |
+| ------------- | ------------------------------------------ |
+| Define Flag   | Add to `seedFeatureFlags.ts`               |
+| Frontend Gate | Wrap with `<FeatureFlag>` component        |
+| Backend Check | Add `featureFlagService.isEnabled()` check |
+| Documentation | Document flag key and default state        |
+
+------------------- | -------------------------------------------------------------- |
+| Final Summary | `docs/qa-reviews/FEATURE_FLAG_FINAL_SUMMARY.md` |
+| Database QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_1_DATABASE.md` |
+| Core Service QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_2_CORE_SERVICE.md` |
+| Backend API QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_3_BACKEND_API.md` |
 | Legacy Migration QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_4_LEGACY_MIGRATION.md` |
-| Frontend QA         | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_5_FRONTEND.md`         |
-| Additional QA       | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_ADDITIONAL.md`         |
+| Frontend QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_5_FRONTEND.md` |
+| Additional QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_ADDITIONAL.md` |
 
 ---
 
@@ -4027,6 +4041,7 @@ logger.error({ err: error }, "Error message");
   - Spec: [📋 Full Specification](../specs/FEATURE-005-SPEC.md)
   - Context: Automated sticker + QR code generation for individual units to track during intake, shopping, order prep, and shipping
   - **Scope:**
+  - **Feature Flag:** `feature-unit-tracking` (Parent: `module-inventory`, Default: Disabled (beta))
     - **Investigation Phase:**
       - Research QR code generation libraries (node-qrcode, qrcode-generator)
       - Investigate NFC tag options (NTAG213/215/216, cost analysis, read/write capabilities)
@@ -4062,6 +4077,7 @@ logger.error({ err: error }, "Error message");
   - Spec: [📋 Full Specification](../specs/FEATURE-006-SPEC.md)
   - Context: Allow clients to book appointments via VIP Portal with configurable approval workflows and notifications
   - **Scope:**
+  - **Feature Flag:** `feature-vip-booking` (Parent: `module-vip-portal`, Default: Disabled (gradual rollout))
     - **Booking Interface (VIP Portal):**
       - Calendar view showing available time slots
       - Appointment type selection (consultation, pickup, tour, etc.)
@@ -4097,6 +4113,7 @@ logger.error({ err: error }, "Error message");
   - Estimate: 1-2 weeks
   - Context: Automatically add buffer times between appointments with configurable durations per appointment type
   - **Scope:**
+  - **Feature Flag:** `feature-calendar-buffers` (Parent: `module-calendar`, Default: Enabled)
     - **Buffer Time Configuration:**
       - Global default buffer time setting (e.g., 15 min)
       - Per-appointment-type buffer override
@@ -4124,6 +4141,7 @@ logger.error({ err: error }, "Error message");
   - Spec: [📋 Full Specification](../specs/FEATURE-008-SPEC.md)
   - Context: Improve and standardize filtering and sorting capabilities across all list views in the system
   - **Scope:**
+  - **Feature Flag:** `feature-advanced-filters` (Parent: `None (system-wide)`, Default: Enabled)
     - **Filter Infrastructure:**
       - Reusable filter component library
       - Filter state persistence (remember user's last filters)
@@ -4168,6 +4186,7 @@ logger.error({ err: error }, "Error message");
   - Estimate: 2-3 weeks
   - Context: Improve permission management with role-based assignments and user-specific permission overrides
   - **Scope:**
+  - **Feature Flag:** `feature-enhanced-rbac` (Parent: `None (system-wide)`, Default: Disabled (breaking change))
     - **Role Management:**
       - Predefined roles (Admin, Manager, Sales Rep, Warehouse, Viewer, etc.)
       - Custom role creation with permission bundles
@@ -4209,6 +4228,7 @@ logger.error({ err: error }, "Error message");
   - Spec: [📋 Full Specification](../specs/FEATURE-010-SPEC.md)
   - Context: Link accounting with calendar for payment scheduling, cash flow forecasting, and variance analysis
   - **Scope:**
+  - **Feature Flag:** `feature-cashflow-forecast` (Parent: `module-accounting`, Default: Disabled (beta))
     - **Scheduled Payments View:**
       - Calendar view of upcoming payment collections (AR)
       - Calendar view of upcoming payment distributions (AP)
@@ -4258,6 +4278,7 @@ logger.error({ err: error }, "Error message");
   - Estimate: 2d
   - Context: Allow users to send messages to clients via the Signal app for secure, encrypted communication
   - **Scope:**
+  - **Feature Flag:** `feature-signal-messaging` (Parent: `None (communication)`, Default: Disabled (external))
     - **Signal Integration:**
       - Integration with Signal API (signal-cli or signald)
       - Secure credential storage for Signal account
@@ -4298,6 +4319,7 @@ logger.error({ err: error }, "Error message");
   - Spec: [📋 Full Specification](../specs/FEATURE-020-SPEC.md)
   - Context: Revamp the tagging system for products with improved UX during intake and automatic tag assignment rules
   - **Phase 1: Tags Revamp (Core)**
+  - **Feature Flag:** `feature-auto-tagging` (Parent: `None (system-wide)`, Default: Disabled (new behavior))
     - **Tag Management:**
       - Improved tag CRUD interface in settings
       - Tag categories/groups (strain type, effect, flavor, etc.)
@@ -4399,6 +4421,7 @@ logger.error({ err: error }, "Error message");
 - **Estimate:** 3-4 weeks
 - **Dependencies:** None (foundation for other features)
 - **Spec:** [📋 Full Specification](../specs/FEATURE-011-SPEC.md)
+- **Feature Flag:** `feature-unified-catalogue`
 - **Context:** Create a single source of truth for live inventory that powers all sales experiences
 - **Scope:**
   - **Core Catalogue Engine:**
@@ -4432,6 +4455,7 @@ logger.error({ err: error }, "Error message");
 - **Phase:** 3
 - **Priority:** HIGH
 - **Estimate:** 2-3 weeks
+- **Feature Flag:** `feature-sales-sheet-generator` (Parent: `module-sales`)
 - **Dependencies:** FEATURE-011 (Unified Catalogue)
 - **Context:** Allow staff to create customized sales sheets from the catalogue for specific clients
 - **Scope:**
@@ -4464,6 +4488,7 @@ logger.error({ err: error }, "Error message");
 - **Phase:** 3
 - **Priority:** MEDIUM
 - **Estimate:** 2 weeks
+- **Feature Flag:** `feature-quote-order-unified` (Parent: `module-sales`)
 - **Dependencies:** None (can be done in parallel)
 - **Context:** Merge the concepts of "Quote" and "Sale Order" into a single unified order flow
 - **Scope:**
@@ -4519,6 +4544,7 @@ logger.error({ err: error }, "Error message");
 - **Phase:** 4
 - **Priority:** MEDIUM
 - **Estimate:** 2-3 weeks
+- **Feature Flag:** `feature-vip-catalogue` (Parent: `module-vip-portal`)
 - **Dependencies:** FEATURE-011 (Unified Catalogue), FEATURE-006 (VIP Portal Booking)
 - **Context:** Expose the unified catalogue to VIP portal clients for self-service browsing and reservation
 - **Scope:**
@@ -7933,6 +7959,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
     - [ ] Ensure catalog media flows to existing live view/catalog components
     - [ ] All tests passing
     - [ ] Zero TypeScript errors
+
 ### 🔴 CRITICAL PRIORITY (P0) - Performance & Data Integrity
 
 - [ ] **PERF-004**: Refactor inventoryDb.getDashboardStats to use SQL Aggregation
@@ -8157,14 +8184,14 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 **Execution Strategy:** 5 sprints designed for maximum parallelization with zero file conflicts.
 
-| Sprint | Focus | Hours | Owner | Status |
-|--------|-------|-------|-------|--------|
-| **🔵 A** | Backend Infrastructure & Schema | 60h | DevOps Lead | ✅ COMPLETE (Jan 2, 2026) |
-| **🟢 B** | Frontend UX & UI Components | 66h | Frontend Agent | ✅ COMPLETE (Jan 2, 2026) |
-| **🟠 C** | Accounting & VIP Portal | 54h | Full-Stack Agent | ✅ COMPLETE (Jan 2, 2026) |
-| **🟣 D** | Sales, Inventory & QA | 58h | Full-Stack/QA Agent | ✅ COMPLETE (Jan 2, 2026) |
-| **🟤 E** | Calendar, Vendors & CRM | 58h | Full-Stack Agent | ✅ COMPLETE (Jan 2, 2026) |
-| **Total** | | **296h** | | |
+| Sprint    | Focus                           | Hours    | Owner               | Status                    |
+| --------- | ------------------------------- | -------- | ------------------- | ------------------------- |
+| **🔵 A**  | Backend Infrastructure & Schema | 60h      | DevOps Lead         | ✅ COMPLETE (Jan 2, 2026) |
+| **🟢 B**  | Frontend UX & UI Components     | 66h      | Frontend Agent      | ✅ COMPLETE (Jan 2, 2026) |
+| **🟠 C**  | Accounting & VIP Portal         | 54h      | Full-Stack Agent    | ✅ COMPLETE (Jan 2, 2026) |
+| **🟣 D**  | Sales, Inventory & QA           | 58h      | Full-Stack/QA Agent | ✅ COMPLETE (Jan 2, 2026) |
+| **🟤 E**  | Calendar, Vendors & CRM         | 58h      | Full-Stack Agent    | ✅ COMPLETE (Jan 2, 2026) |
+| **Total** |                                 | **296h** |                     |                           |
 
 **Execution Order:**
 
@@ -8770,48 +8797,48 @@ Adds high-value quality-of-life features: recurring events UI, vacation/time-off
 
 ### Parallel Sprint Completion Status
 
-| Sprint | Focus | Hours | Status | QA Result |
-|--------|-------|-------|--------|-----------|
-| **🔵 A** | Backend Infrastructure & Schema | 60h | ✅ COMPLETE | ✅ PASS |
-| **🟢 B** | Frontend UX & UI Components | 66h | ✅ COMPLETE | ✅ PASS |
-| **🟠 C** | Accounting & VIP Portal | 54h | ✅ COMPLETE | ✅ PASS |
-| **🟣 D** | Sales, Inventory & QA | 58h | ✅ COMPLETE | ✅ PASS |
-| **🟤 E** | Calendar, Vendors & CRM | 58h | ✅ COMPLETE | ✅ PASS |
-| **Total** | | **296h** | **100%** | **CONDITIONAL PASS** |
+| Sprint    | Focus                           | Hours    | Status      | QA Result            |
+| --------- | ------------------------------- | -------- | ----------- | -------------------- |
+| **🔵 A**  | Backend Infrastructure & Schema | 60h      | ✅ COMPLETE | ✅ PASS              |
+| **🟢 B**  | Frontend UX & UI Components     | 66h      | ✅ COMPLETE | ✅ PASS              |
+| **🟠 C**  | Accounting & VIP Portal         | 54h      | ✅ COMPLETE | ✅ PASS              |
+| **🟣 D**  | Sales, Inventory & QA           | 58h      | ✅ COMPLETE | ✅ PASS              |
+| **🟤 E**  | Calendar, Vendors & CRM         | 58h      | ✅ COMPLETE | ✅ PASS              |
+| **Total** |                                 | **296h** | **100%**    | **CONDITIONAL PASS** |
 
 ### QA Verification Summary
 
-| Category | Status | Details |
-|----------|--------|---------|
-| **UI Functionality** | 🟢 PASS | All 27 navigation items functional |
-| **Dashboard KPIs** | 🟢 PASS | All widgets render with real data |
-| **Accounting Module** | 🟢 PASS | AR/AP tracking, invoices, payments |
-| **VIP Portal** | 🟢 PASS | Impersonation with 3 active sessions |
-| **Sales Sheets** | 🟢 PASS | Draft save/load, client selector |
-| **Inventory** | 🟢 PASS | $62.3M inventory, KPIs, filters |
-| **Calendar** | 🟢 PASS | All views, events display |
-| **Locations** | 🟢 PASS | 9 warehouse locations |
+| Category              | Status  | Details                              |
+| --------------------- | ------- | ------------------------------------ |
+| **UI Functionality**  | 🟢 PASS | All 27 navigation items functional   |
+| **Dashboard KPIs**    | 🟢 PASS | All widgets render with real data    |
+| **Accounting Module** | 🟢 PASS | AR/AP tracking, invoices, payments   |
+| **VIP Portal**        | 🟢 PASS | Impersonation with 3 active sessions |
+| **Sales Sheets**      | 🟢 PASS | Draft save/load, client selector     |
+| **Inventory**         | 🟢 PASS | $62.3M inventory, KPIs, filters      |
+| **Calendar**          | 🟢 PASS | All views, events display            |
+| **Locations**         | 🟢 PASS | 9 warehouse locations                |
 
 ### Technical Debt Identified
 
-| Issue | Count | Severity | Recommendation |
-|-------|-------|----------|----------------|
-| TypeScript Errors | 240 | 🟡 Medium | Fix in next sprint |
-| Console.log Statements | 420 | 🟡 Medium | Replace with logging utility |
-| Any Type Usage | 564 | 🟡 Medium | Gradual type improvement |
-| TODO Comments | 28 | 🟢 Low | Non-blocking |
-| vendorReminders.ts null checks | 10 | 🔴 High | Fix before demo |
+| Issue                          | Count | Severity  | Recommendation               |
+| ------------------------------ | ----- | --------- | ---------------------------- |
+| TypeScript Errors              | 240   | 🟡 Medium | Fix in next sprint           |
+| Console.log Statements         | 420   | 🟡 Medium | Replace with logging utility |
+| Any Type Usage                 | 564   | 🟡 Medium | Gradual type improvement     |
+| TODO Comments                  | 28    | 🟢 Low    | Non-blocking                 |
+| vendorReminders.ts null checks | 10    | 🔴 High   | Fix before demo              |
 
 ### Files with Most TypeScript Errors
 
-| File | Errors | Priority |
-|------|--------|----------|
-| `server/routers/alerts.ts` | 31 | Medium |
-| `server/routers/inventoryShrinkage.ts` | 25 | Medium |
-| `server/routers/referrals.ts` | 23 | Medium |
-| `server/routers/audit.ts` | 21 | Medium |
-| `server/routers/photography.ts` | 20 | Medium |
-| `server/routers/vendorReminders.ts` | 10 | High |
+| File                                   | Errors | Priority |
+| -------------------------------------- | ------ | -------- |
+| `server/routers/alerts.ts`             | 31     | Medium   |
+| `server/routers/inventoryShrinkage.ts` | 25     | Medium   |
+| `server/routers/referrals.ts`          | 23     | Medium   |
+| `server/routers/audit.ts`              | 21     | Medium   |
+| `server/routers/photography.ts`        | 20     | Medium   |
+| `server/routers/vendorReminders.ts`    | 10     | High     |
 
 ### Tier 1 Customer Readiness Assessment
 
@@ -8826,14 +8853,13 @@ The application is ready for Tier 1 customer assessment with the following notes
 
 ### Recommended Pre-Demo Fixes
 
-| Priority | Task | Estimate |
-|----------|------|----------|
-| 🔴 HIGH | Fix vendorReminders.ts null checks | 2h |
-| 🔴 HIGH | Test VIP Portal impersonation E2E | 1h |
-| 🟡 MEDIUM | Document backup/restore procedures | 2h |
+| Priority  | Task                               | Estimate |
+| --------- | ---------------------------------- | -------- |
+| 🔴 HIGH   | Fix vendorReminders.ts null checks | 2h       |
+| 🔴 HIGH   | Test VIP Portal impersonation E2E  | 1h       |
+| 🟡 MEDIUM | Document backup/restore procedures | 2h       |
 
 ---
-
 
 ## 📦 Sample Management Enhancement (Jan 2026)
 
@@ -8844,6 +8870,12 @@ The application is ready for Tier 1 customer assessment with the following notes
 **Analysis Date:** January 2, 2026  
 **Total Effort:** 84 hours  
 **RedHat QA Score:** 8.5/10
+
+**Feature Flags:**
+
+- `feature-sample-management` (Parent: `module-inventory`, Default: Enabled)
+- `feature-sample-returns` (Parent: `module-inventory`, Default: Disabled)
+- `feature-vendor-sample-returns` (Parent: `module-inventory`, Default: Disabled)
 
 ### Current Implementation Status
 
