@@ -2,13 +2,28 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.21  
-**Last Updated:** December 31, 2025  
+**Version:** 2.22  
+**Last Updated:** January 1, 2026  
 **Status:** Active
+
+> 🔴 **FEATURE-012 POST-DEPLOYMENT: 3 CRITICAL ISSUES IDENTIFIED (Jan 1, 2026)**
+>
+> **Redhat QA Impact Analysis revealed critical issues requiring immediate action:**
+>
+> - **CRITICAL-001**: Dual impersonation paths (old path bypasses audit logging)
+> - **CRITICAL-002**: Database migration not auto-applied (tables missing)
+> - **CRITICAL-003**: Permissions not seeded (admin:impersonate missing)
+>
+> **Required Actions:**
+>
+> - P0: Run `npx tsx scripts/feature-012-deploy.ts` on production
+> - P0: Disable old impersonation button in VIPPortalSettings.tsx
+> - Full analysis: `docs/deployment/FEATURE-012-IMPACT-ANALYSIS.md`
 
 > ✅ **VIP PORTAL ADMIN ACCESS TOOL COMPLETE (Dec 31, 2025 - PR #104):**
 >
 > **Implementation Summary (FEATURE-012):**
+>
 > - VIP Portal Admin Impersonation Tool in Settings
 > - Server-side session tracking with full audit trail
 > - 2 new database tables (adminImpersonationSessions, adminImpersonationActions)
@@ -18,9 +33,10 @@
 > - 45 tests passing (16 unit + 15 E2E test cases)
 > - Full documentation in `docs/specs/FEATURE-012-IMPLEMENTATION-QA.md`
 
-> ✅ **FEATURE FLAG SYSTEM COMPLETE (Dec 31, 2025 - PR #103, Commit b86c9be5):"
+> ✅ \*\*FEATURE FLAG SYSTEM COMPLETE (Dec 31, 2025 - PR #103, Commit b86c9be5):"
 >
 > **Implementation Summary:**
+>
 > - Database-driven feature flags with 4 tables (flags, role_overrides, user_overrides, audit_logs)
 > - 20 tRPC endpoints for flag management
 > - Admin UI at `/settings/feature-flags`
@@ -30,11 +46,13 @@
 > - Full documentation in `docs/qa-reviews/FEATURE_FLAG_FINAL_SUMMARY.md`
 >
 > **Previous Sprint (Foundation Stabilization - Commit 8538adf3):**
+>
 > - FIX-001, FIX-002: Critical bug fixes
 > - DATA-005, QUAL-004: Data integrity improvements
 > - QUAL-005, QUAL-006, QUAL-007: Quality assurance
 >
 > **Previous Sprint (Cooper Rd Remediation):**
+>
 > - 15/15 tasks complete (WS-001 through WS-015)
 > - All bugs fixed (BUG-035, BUG-036, BUG-037)
 
@@ -64,12 +82,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 **ALL AI agents implementing tasks from this roadmap MUST review the corresponding specification BEFORE writing any code.**
 
-| Resource | Location | Description |
-|----------|----------|-------------|
-| **Specs Index** | [`docs/specs/README.md`](../specs/README.md) | Index of all 24 specifications with status and estimates |
-| **Spec Template** | [`docs/specs/SPEC_TEMPLATE.md`](../specs/SPEC_TEMPLATE.md) | Template for creating new specifications |
+| Resource          | Location                                                   | Description                                              |
+| ----------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
+| **Specs Index**   | [`docs/specs/README.md`](../specs/README.md)               | Index of all 24 specifications with status and estimates |
+| **Spec Template** | [`docs/specs/SPEC_TEMPLATE.md`](../specs/SPEC_TEMPLATE.md) | Template for creating new specifications                 |
 
 **Each specification contains:**
+
 - Problem statement and user stories
 - Functional requirements (Must Have / Should Have / Nice to Have)
 - Technical specification (data models, API contracts)
@@ -96,56 +115,85 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ✅ Sprint Completion Summary (Dec 31, 2025)
 
-| Category | Status | Details |
-| -------- | ------ | ------- |
-| WS-001 to WS-015 | ✅ COMPLETE | All 15 tasks implemented and deployed |
-| Schema Fixes | ✅ COMPLETE | productImages, vendorHarvestReminders added |
-| Router Fixes | ✅ COMPLETE | 7 routers fixed (import paths, table refs) |
-| E2E Testing | ✅ PASSED | Production verified on terp-app-b9s35.ondigitalocean.app |
-| Build Status | ✅ PASSED | Commit 841ea5f6 deployed successfully |
+| Category         | Status      | Details                                                  |
+| ---------------- | ----------- | -------------------------------------------------------- |
+| WS-001 to WS-015 | ✅ COMPLETE | All 15 tasks implemented and deployed                    |
+| Schema Fixes     | ✅ COMPLETE | productImages, vendorHarvestReminders added              |
+| Router Fixes     | ✅ COMPLETE | 7 routers fixed (import paths, table refs)               |
+| E2E Testing      | ✅ PASSED   | Production verified on terp-app-b9s35.ondigitalocean.app |
+| Build Status     | ✅ PASSED   | Commit 841ea5f6 deployed successfully                    |
 
 ### 🔄 Active Work
 
-| Task      | Description                        | Progress | Owner |
-| --------- | ---------------------------------- | -------- | ----- |
-| AUDIT-001 | Comprehensive System Code Review   | ~50%     | -     |
+| Task      | Description                      | Progress | Owner |
+| --------- | -------------------------------- | -------- | ----- |
+| AUDIT-001 | Comprehensive System Code Review | ~50%     | -     |
+
+### 🔴 FEATURE-012 Post-Deployment Tasks (P0 - BLOCKING)
+
+| Task           | Description                                | Priority | Status     | Owner  |
+| -------------- | ------------------------------------------ | -------- | ---------- | ------ |
+| DEPLOY-012-001 | Run database migration script              | P0       | ⏳ PENDING | DevOps |
+| DEPLOY-012-002 | Seed admin:impersonate permissions         | P0       | ⏳ PENDING | DevOps |
+| DEPLOY-012-003 | Disable old impersonation button           | P0       | ⏳ PENDING | Dev    |
+| DEPLOY-012-004 | Verify tables exist in production          | P0       | ⏳ PENDING | DevOps |
+| DEPLOY-012-005 | Verify permissions assigned to Super Admin | P0       | ⏳ PENDING | DevOps |
+| DEPLOY-012-006 | Test impersonation flow end-to-end         | P0       | ⏳ PENDING | QA     |
+
+**Command to run:** `npx tsx scripts/feature-012-deploy.ts`
+
+### 🟡 FEATURE-012 Short-Term Tasks (P1 - Within 1 Week)
+
+| Task        | Description                                        | Priority | Status  | Owner |
+| ----------- | -------------------------------------------------- | -------- | ------- | ----- |
+| FIX-012-001 | Add feature flag to control old impersonation path | P1       | 🟡 TODO | Dev   |
+| FIX-012-002 | Update VIPPortalSettings to use new audited API    | P1       | 🟡 TODO | Dev   |
+| FIX-012-003 | Add audit log retention policy                     | P2       | 🟡 TODO | Dev   |
+
+### 🟢 FEATURE-012 Long-Term Tasks (P3 - Within 1 Month)
+
+| Task            | Description                               | Priority | Status     | Owner  |
+| --------------- | ----------------------------------------- | -------- | ---------- | ------ |
+| CLEANUP-012-001 | Remove old impersonation code entirely    | P3       | 🟢 BACKLOG | Dev    |
+| CLEANUP-012-002 | Add database migration to CI/CD pipeline  | P3       | 🟢 BACKLOG | DevOps |
+| CLEANUP-012-003 | Add monitoring for impersonation sessions | P3       | 🟢 BACKLOG | DevOps |
 
 ### ✅ All Remaining Work COMPLETED (Dec 31, 2025)
 
-| Task    | Description                        | Priority | Status |
-| ------- | ---------------------------------- | -------- | ------ |
+| Task    | Description                        | Priority | Status      |
+| ------- | ---------------------------------- | -------- | ----------- |
 | WS-015  | Sales: Customer Wishlist Field     | MEDIUM   | ✅ COMPLETE |
-| BUG-035 | Admin Security Test Failures       | HIGH     | ✅ FIXED |
-| BUG-036 | priceAlertsService Test Failures   | MEDIUM   | ✅ FIXED |
-| BUG-037 | VIP Portal createdBy FK Constraint | HIGH     | ✅ FIXED |
+| BUG-035 | Admin Security Test Failures       | HIGH     | ✅ FIXED    |
+| BUG-036 | priceAlertsService Test Failures   | MEDIUM   | ✅ FIXED    |
+| BUG-037 | VIP Portal createdBy FK Constraint | HIGH     | ✅ FIXED    |
 
 ### ✅ UI Enhancements COMPLETED (Dec 31, 2025)
 
-| Feature | Implementation | Status |
-| ------- | -------------- | ------ |
+| Feature                     | Implementation                                                 | Status      |
+| --------------------------- | -------------------------------------------------------------- | ----------- |
 | UI-001 ReferralCreditsPanel | Enhanced with prominent green styling, shows available credits | ✅ COMPLETE |
-| UI-002 Audit Icons | AuditIcon component updated with entity-based pattern | ✅ COMPLETE |
-| UI-003 ReceiptPreview | Integrated into ReceivePaymentModal with success state | ✅ COMPLETE |
+| UI-002 Audit Icons          | AuditIcon component updated with entity-based pattern          | ✅ COMPLETE |
+| UI-003 ReceiptPreview       | Integrated into ReceivePaymentModal with success state         | ✅ COMPLETE |
 
 ### 📋 Completed Sprint Tasks (Cooper Rd Remediation)
 
-| Task   | Description                                        | Priority | Status |
-| ------ | -------------------------------------------------- | -------- | ------ |
-| WS-001 | Quick Action: Receive Client Payment               | CRITICAL | ✅ COMPLETE |
-| WS-002 | Quick Action: Pay Vendor                           | CRITICAL | ✅ COMPLETE |
-| WS-003 | Pick & Pack Module: Group Bagging                  | CRITICAL | ✅ COMPLETE |
-| WS-004 | Simultaneous Multi-Order & Referral Credit         | CRITICAL | ✅ COMPLETE |
-| WS-005 | No Black Box Audit Trail                           | CRITICAL | ✅ COMPLETE |
-| WS-006 | Immediate Tab Screenshot/Receipt                   | HIGH     | ✅ COMPLETE |
-| WS-007 | Complex Flower Intake Flow                         | HIGH     | ✅ COMPLETE |
-| WS-008 | Low Stock & Needs-Based Alerts                     | HIGH     | ✅ COMPLETE |
-| WS-009 | Pick & Pack: Inventory Movement SOP Flow           | HIGH     | ✅ COMPLETE |
-| WS-010 | Photography Module                                 | HIGH     | ✅ COMPLETE |
-| WS-011 | Sales: Quick Customer Creation                     | MEDIUM   | ✅ COMPLETE |
-| WS-012 | Customer Preferences & Purchase History            | MEDIUM   | ✅ COMPLETE |
-| WS-013 | Simple Task Management                             | MEDIUM   | ✅ COMPLETE |
-| WS-014 | Vendor "Harvesting Again" Reminder                 | MEDIUM   | ✅ COMPLETE |
-| WS-015 | Sales: Customer Wishlist Field                     | MEDIUM   | ✅ COMPLETE |
+| Task   | Description                                | Priority | Status      |
+| ------ | ------------------------------------------ | -------- | ----------- |
+| WS-001 | Quick Action: Receive Client Payment       | CRITICAL | ✅ COMPLETE |
+| WS-002 | Quick Action: Pay Vendor                   | CRITICAL | ✅ COMPLETE |
+| WS-003 | Pick & Pack Module: Group Bagging          | CRITICAL | ✅ COMPLETE |
+| WS-004 | Simultaneous Multi-Order & Referral Credit | CRITICAL | ✅ COMPLETE |
+| WS-005 | No Black Box Audit Trail                   | CRITICAL | ✅ COMPLETE |
+| WS-006 | Immediate Tab Screenshot/Receipt           | HIGH     | ✅ COMPLETE |
+| WS-007 | Complex Flower Intake Flow                 | HIGH     | ✅ COMPLETE |
+| WS-008 | Low Stock & Needs-Based Alerts             | HIGH     | ✅ COMPLETE |
+| WS-009 | Pick & Pack: Inventory Movement SOP Flow   | HIGH     | ✅ COMPLETE |
+| WS-010 | Photography Module                         | HIGH     | ✅ COMPLETE |
+| WS-011 | Sales: Quick Customer Creation             | MEDIUM   | ✅ COMPLETE |
+| WS-012 | Customer Preferences & Purchase History    | MEDIUM   | ✅ COMPLETE |
+| WS-013 | Simple Task Management                     | MEDIUM   | ✅ COMPLETE |
+| WS-014 | Vendor "Harvesting Again" Reminder         | MEDIUM   | ✅ COMPLETE |
+| WS-015 | Sales: Customer Wishlist Field             | MEDIUM   | ✅ COMPLETE |
 
 ### ✅ Recently Completed (This Sprint)
 
@@ -176,65 +224,65 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### 📊 Implementation Summary
 
-| Metric | Value |
-| ------ | ----- |
-| Files Created | 26 |
-| Files Modified | 10 |
-| Lines Added | 4,745 |
-| tRPC Endpoints | 20 |
-| QA Reviews | 11 |
-| Default Flags | 15 (all enabled) |
+| Metric         | Value            |
+| -------------- | ---------------- |
+| Files Created  | 26               |
+| Files Modified | 10               |
+| Lines Added    | 4,745            |
+| tRPC Endpoints | 20               |
+| QA Reviews     | 11               |
+| Default Flags  | 15 (all enabled) |
 
 ### 📋 Phase Breakdown - ALL COMPLETE
 
-| Phase | Description | Tasks | Hours | Status |
-| ----- | ----------- | ----- | ----- | ------ |
-| 0 | Legacy Migration | Deprecation notices | 1h | ✅ Complete |
-| 1 | Database Foundation | 1.1-1.4 | 3h | ✅ Complete |
-| 2 | Core Service | 2.1-2.9 | 4h | ✅ Complete |
-| 3 | Override Management | 3.1-3.3 | 2h | ✅ Complete |
-| 4 | Module Hierarchy | 4.1 | 1h | ✅ Complete |
-| 5 | Export/Import | 5.1-5.2 | - | ⏭️ Deferred |
-| 6 | tRPC Router | 6.1-6.4 | 3h | ✅ Complete |
-| 7 | Frontend Integration | 7.1-7.6 | 4h | ✅ Complete |
-| 8 | Admin UI | 8.1-8.7 | 3h | ✅ Complete |
-| 9 | Navigation & Seeding | 9.1-9.3 | 2h | ✅ Complete |
-| 10 | QA Reviews | 11 reviews | 3h | ✅ Complete |
+| Phase | Description          | Tasks               | Hours | Status      |
+| ----- | -------------------- | ------------------- | ----- | ----------- |
+| 0     | Legacy Migration     | Deprecation notices | 1h    | ✅ Complete |
+| 1     | Database Foundation  | 1.1-1.4             | 3h    | ✅ Complete |
+| 2     | Core Service         | 2.1-2.9             | 4h    | ✅ Complete |
+| 3     | Override Management  | 3.1-3.3             | 2h    | ✅ Complete |
+| 4     | Module Hierarchy     | 4.1                 | 1h    | ✅ Complete |
+| 5     | Export/Import        | 5.1-5.2             | -     | ⏭️ Deferred |
+| 6     | tRPC Router          | 6.1-6.4             | 3h    | ✅ Complete |
+| 7     | Frontend Integration | 7.1-7.6             | 4h    | ✅ Complete |
+| 8     | Admin UI             | 8.1-8.7             | 3h    | ✅ Complete |
+| 9     | Navigation & Seeding | 9.1-9.3             | 2h    | ✅ Complete |
+| 10    | QA Reviews           | 11 reviews          | 3h    | ✅ Complete |
 
 ### 📁 Key Files Created
 
-| File | Purpose |
-| ---- | ------- |
-| `drizzle/schema-feature-flags.ts` | Database schema for 4 tables |
-| `server/featureFlagsDb.ts` | Database access layer |
-| `server/services/featureFlagService.ts` | Evaluation logic with caching |
-| `server/services/seedFeatureFlags.ts` | Default flag seeding |
-| `server/routers/featureFlags.ts` | tRPC router (20 endpoints) |
-| `server/_core/featureFlagMiddleware.ts` | Route protection middleware |
-| `client/src/contexts/FeatureFlagContext.tsx` | React context provider |
-| `client/src/hooks/useFeatureFlag.ts` | React hooks |
-| `client/src/components/feature-flags/` | Declarative components |
-| `client/src/pages/settings/FeatureFlagsPage.tsx` | Admin UI |
+| File                                             | Purpose                       |
+| ------------------------------------------------ | ----------------------------- |
+| `drizzle/schema-feature-flags.ts`                | Database schema for 4 tables  |
+| `server/featureFlagsDb.ts`                       | Database access layer         |
+| `server/services/featureFlagService.ts`          | Evaluation logic with caching |
+| `server/services/seedFeatureFlags.ts`            | Default flag seeding          |
+| `server/routers/featureFlags.ts`                 | tRPC router (20 endpoints)    |
+| `server/_core/featureFlagMiddleware.ts`          | Route protection middleware   |
+| `client/src/contexts/FeatureFlagContext.tsx`     | React context provider        |
+| `client/src/hooks/useFeatureFlag.ts`             | React hooks                   |
+| `client/src/components/feature-flags/`           | Declarative components        |
+| `client/src/pages/settings/FeatureFlagsPage.tsx` | Admin UI                      |
 
 ### 🏷️ Default Feature Flags (15 total, all enabled)
 
-| Flag Key | Module | Description |
-| -------- | ------ | ----------- |
-| module-accounting | - | Accounting module |
-| module-inventory | - | Inventory module |
-| module-sales | - | Sales module |
-| module-vip-portal | - | VIP Portal module |
-| credit-management | accounting | Credit management |
-| bad-debt-write-off | accounting | Bad debt write-off |
-| automatic-gl-posting | accounting | Auto GL posting |
-| cogs-calculation | inventory | COGS calculation |
-| inventory-tracking | inventory | Inventory tracking |
-| live-catalog | vip-portal | Live catalog |
-| live-shopping | sales | Live shopping |
-| pick-pack | inventory | Pick & pack |
-| photography | inventory | Photography module |
-| leaderboard | sales | Sales leaderboard |
-| analytics-dashboard | - | Analytics dashboard |
+| Flag Key             | Module     | Description         |
+| -------------------- | ---------- | ------------------- |
+| module-accounting    | -          | Accounting module   |
+| module-inventory     | -          | Inventory module    |
+| module-sales         | -          | Sales module        |
+| module-vip-portal    | -          | VIP Portal module   |
+| credit-management    | accounting | Credit management   |
+| bad-debt-write-off   | accounting | Bad debt write-off  |
+| automatic-gl-posting | accounting | Auto GL posting     |
+| cogs-calculation     | inventory  | COGS calculation    |
+| inventory-tracking   | inventory  | Inventory tracking  |
+| live-catalog         | vip-portal | Live catalog        |
+| live-shopping        | sales      | Live shopping       |
+| pick-pack            | inventory  | Pick & pack         |
+| photography          | inventory  | Photography module  |
+| leaderboard          | sales      | Sales leaderboard   |
+| analytics-dashboard  | -          | Analytics dashboard |
 
 ### ✅ Success Criteria - ALL MET
 
@@ -249,15 +297,15 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### 📚 QA Documentation
 
-| Document | Location |
-| -------- | -------- |
-| Final Summary | `docs/qa-reviews/FEATURE_FLAG_FINAL_SUMMARY.md` |
-| Database QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_1_DATABASE.md` |
-| Core Service QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_2_CORE_SERVICE.md` |
-| Backend API QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_3_BACKEND_API.md` |
+| Document            | Location                                                       |
+| ------------------- | -------------------------------------------------------------- |
+| Final Summary       | `docs/qa-reviews/FEATURE_FLAG_FINAL_SUMMARY.md`                |
+| Database QA         | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_1_DATABASE.md`         |
+| Core Service QA     | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_2_CORE_SERVICE.md`     |
+| Backend API QA      | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_3_BACKEND_API.md`      |
 | Legacy Migration QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_4_LEGACY_MIGRATION.md` |
-| Frontend QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_5_FRONTEND.md` |
-| Additional QA | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_ADDITIONAL.md` |
+| Frontend QA         | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_5_FRONTEND.md`         |
+| Additional QA       | `docs/qa-reviews/FEATURE_FLAG_QA_REVIEW_ADDITIONAL.md`         |
 
 ---
 
@@ -270,12 +318,14 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 ### ⚠️ File Isolation Rules
 
 **DO NOT TOUCH (Feature Flag Sprint Territory):**
+
 - `drizzle/schema.ts`
 - `server/routers/clients.ts`, `orders.ts`, `inventory.ts`, `batches.ts`
 - `client/src/pages/ClientProfilePage.tsx`, `OrderCreatorPage.tsx`
 - `server/_core/*`
 
 **SAFE TO MODIFY:**
+
 - `docs/*` (all documentation)
 - `tests/*` (new test files)
 - `server/routers/analytics.ts`, `leaderboard.ts`, `search.ts`
@@ -284,12 +334,12 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### 📋 Phase Breakdown
 
-| Phase | Description | Hours | Status |
-| ----- | ----------- | ----- | ------ |
-| 1 | Documentation Overhaul | 36h | ⬜ Not Started |
-| 2 | Test Infrastructure | 36h | ⬜ Not Started |
-| 3 | Analytics & Leaderboard Enhancements | 16h | ⬜ Not Started |
-| 4 | CI/CD Improvements | 12h | ⬜ Not Started |
+| Phase | Description                          | Hours | Status         |
+| ----- | ------------------------------------ | ----- | -------------- |
+| 1     | Documentation Overhaul               | 36h   | ⬜ Not Started |
+| 2     | Test Infrastructure                  | 36h   | ⬜ Not Started |
+| 3     | Analytics & Leaderboard Enhancements | 16h   | ⬜ Not Started |
+| 4     | CI/CD Improvements                   | 12h   | ⬜ Not Started |
 
 ### 📝 Key Deliverables
 
@@ -305,11 +355,11 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### 🟢 Deferred from Foundation Sprint
 
-| Task | Description | Priority | Estimate | Rationale |
-| ---- | ----------- | -------- | -------- | --------- |
-| REFACTOR-001 | Codebase Duplication & Consistency Cleanup | MEDIUM | 24h | High-risk, needs dedicated sprint |
-| TEST-001 | Comprehensive Integration Testing | MEDIUM | 8h | After feature flag system complete |
-| DOCS-001 | User Documentation Update | LOW | 4h | Document new features for end users |
+| Task         | Description                                | Priority | Estimate | Rationale                           |
+| ------------ | ------------------------------------------ | -------- | -------- | ----------------------------------- |
+| REFACTOR-001 | Codebase Duplication & Consistency Cleanup | MEDIUM   | 24h      | High-risk, needs dedicated sprint   |
+| TEST-001     | Comprehensive Integration Testing          | MEDIUM   | 8h       | After feature flag system complete  |
+| DOCS-001     | User Documentation Update                  | LOW      | 4h       | Document new features for end users |
 
 ---
 
@@ -317,39 +367,39 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### Completion Statistics
 
-| Metric | Value |
-| ------ | ----- |
-| Tasks Planned | 15 |
-| Tasks Completed | 15 |
-| Completion Rate | 100% |
-| QA Issues Fixed | 6 |
-| E2E Tests Passed | 8/10 |
-| Build Status | ✅ Passing |
+| Metric           | Value      |
+| ---------------- | ---------- |
+| Tasks Planned    | 15         |
+| Tasks Completed  | 15         |
+| Completion Rate  | 100%       |
+| QA Issues Fixed  | 6          |
+| E2E Tests Passed | 8/10       |
+| Build Status     | ✅ Passing |
 
 ### Feature Breakdown by Module
 
-| Module | Features Completed | Status |
-| ------ | ------------------ | ------ |
-| Accounting | WS-001, WS-002, WS-006 | ✅ All Complete |
-| Pick & Pack | WS-003, WS-009 | ✅ All Complete |
-| Sales/Credit | WS-004, WS-011, WS-012 | ✅ All Complete |
-| System Core | WS-005 | ✅ Complete |
-| Inventory | WS-007, WS-008, WS-010 | ✅ All Complete |
-| General Utility | WS-013 | ✅ Complete |
-| Vendor/Calendar | WS-014 | ✅ Complete |
-| Sales | WS-015 | ✅ Complete |
+| Module          | Features Completed     | Status          |
+| --------------- | ---------------------- | --------------- |
+| Accounting      | WS-001, WS-002, WS-006 | ✅ All Complete |
+| Pick & Pack     | WS-003, WS-009         | ✅ All Complete |
+| Sales/Credit    | WS-004, WS-011, WS-012 | ✅ All Complete |
+| System Core     | WS-005                 | ✅ Complete     |
+| Inventory       | WS-007, WS-008, WS-010 | ✅ All Complete |
+| General Utility | WS-013                 | ✅ Complete     |
+| Vendor/Calendar | WS-014                 | ✅ Complete     |
+| Sales           | WS-015                 | ✅ Complete     |
 
 ### QA Fixes Applied (Dec 31, 2025)
 
-| Issue | Severity | Fix Applied |
-| ----- | -------- | ----------- |
-| Missing productImages schema | CRITICAL | Added table definition to drizzle/schema.ts |
-| Missing vendorHarvestReminders schema | CRITICAL | Added table definition to drizzle/schema.ts |
-| ReferralCreditsPanel not rendered | HIGH | Integrated into OrderCreatorPage with preview mode |
-| ReceiptPreview not integrated | HIGH | Integrated into ReceivePaymentModal |
-| Unpack action not logged | MEDIUM | Added audit logging to pickPack router |
-| PDF generation placeholder | MEDIUM | Implemented actual PDF generation with jsPDF |
-| Router import path errors | MEDIUM | Fixed 7 routers with correct ../_core/trpc path |
+| Issue                                 | Severity | Fix Applied                                        |
+| ------------------------------------- | -------- | -------------------------------------------------- |
+| Missing productImages schema          | CRITICAL | Added table definition to drizzle/schema.ts        |
+| Missing vendorHarvestReminders schema | CRITICAL | Added table definition to drizzle/schema.ts        |
+| ReferralCreditsPanel not rendered     | HIGH     | Integrated into OrderCreatorPage with preview mode |
+| ReceiptPreview not integrated         | HIGH     | Integrated into ReceivePaymentModal                |
+| Unpack action not logged              | MEDIUM   | Added audit logging to pickPack router             |
+| PDF generation placeholder            | MEDIUM   | Implemented actual PDF generation with jsPDF       |
+| Router import path errors             | MEDIUM   | Fixed 7 routers with correct ../\_core/trpc path   |
 
 ---
 
@@ -1419,6 +1469,7 @@ Previous: VIP Portal Admin diagnostic errors resolved (14 errors → 0). See `CO
 **Remaining Work:** Moved to separate tasks (QUAL-005, QUAL-006, QUAL-007)
 
 **Completion Notes (2025-12-30):**
+
 - Waves 0-3 completed successfully
 - Security TODOs resolved
 - Remaining feature TODOs moved to dedicated tasks below
@@ -3170,7 +3221,7 @@ logger.error({ err: error }, "Error message");
 **Priority:** ~~HIGH~~ N/A  
 **Estimate:** 4-6 hours  
 **Module:** `terp-commander/` (separate repository)  
-**Dependencies:** None  
+**Dependencies:** None
 
 **Deprecation Note:** This task has been deprecated. The Slack bot approach was abandoned in favor of other solutions. Last activity was November 25, 2025. The terp-commander repository remains but is not actively maintained.
 
@@ -5117,16 +5168,19 @@ This roadmap now includes a comprehensive 4-phase plan to address all technical 
 Address codebase duplication, overlapping functionality, and naming inconsistencies identified in the third-party code review. This task reduces technical debt and improves long-term maintainability.
 
 **Phase 1: High-Impact Consolidation (8h)**
+
 - Merge `inventory.ts`, `inventoryMovements.ts`, and `inventoryShrinkage.ts` routers
 - Merge `auditLogs`, `creditAuditLog`, and `orderAuditLog` tables into central `auditLogs`
 - Deprecate `dashboard.ts` in favor of `dashboardEnhanced.ts`
 
 **Phase 2: Schema & Naming Cleanup (8h)**
+
 - Rename `batches` table to `inventory` to align with domain naming
 - Create `vendor_notes` join table and deprecate standalone `vendorNotes` table
 - Rename `customerPreferences.ts` to `clientPreferences.ts`
 
 **Phase 3: Consistency & Deprecation (8h)**
+
 - Standardize all TRPC imports to use `../_core/trpc` path
 - Replace all usages of `empty.tsx` with `empty-state.tsx`
 - Add linter rule to enforce `camelCase` for new database columns
@@ -5135,6 +5189,7 @@ Address codebase duplication, overlapping functionality, and naming inconsistenc
 **Dependencies:** None
 
 **Success Criteria:**
+
 - All inventory logic consolidated into single router
 - All audit logs in single table with `domain` column
 - Consistent naming conventions across codebase
@@ -7946,42 +8001,42 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 **Strategic Focus:** Implement critical usability and complex sales features to achieve the "Save 20 hours/week" goal and address the "No Black Box" tenet.
 
 > ✅ **SPRINT STATUS: COMPLETE** (December 30, 2025)
+>
 > - 14 of 15 tasks implemented
 > - Final QA Review: PASSED
 > - See [`docs/qa/SPRINT_FINAL_REDHAT_QA.md`](../qa/SPRINT_FINAL_REDHAT_QA.md) for full QA report
 
 ### 🔴 P0 - CRITICAL
 
-| Task | Description | Priority | Estimate | Module | Status | Spec |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| WS-001 | **Quick Action: Receive Client Payment (Cash Drop-off)** | CRITICAL | 8h | Accounting | ✅ COMPLETE | [📋 Spec](../specs/WS-001-SPEC.md) |
-| WS-002 | **Quick Action: Pay Vendor (Cash Out)** | CRITICAL | 8h | Accounting | ✅ COMPLETE | [📋 Spec](../specs/WS-002-SPEC.md) |
-| WS-003 | **Pick & Pack Module: Group Bagging/Packing Action** | CRITICAL | 24h | Pick & Pack | ✅ COMPLETE | [📋 Spec](../specs/WS-003-SPEC.md) |
-| WS-004 | **Sales: Simultaneous Multi-Order & Referral Credit System** | CRITICAL | 40h | Sales/Credit | ✅ COMPLETE | [📋 Spec](../specs/WS-004-SPEC.md) |
-| WS-005 | **No Black Box Audit Trail (System-wide)** | CRITICAL | 30h | System Core | ✅ COMPLETE | [📋 Spec](../specs/WS-005-SPEC.md) |
+| Task   | Description                                                  | Priority | Estimate | Module       | Status      | Spec                               |
+| :----- | :----------------------------------------------------------- | :------- | :------- | :----------- | :---------- | :--------------------------------- |
+| WS-001 | **Quick Action: Receive Client Payment (Cash Drop-off)**     | CRITICAL | 8h       | Accounting   | ✅ COMPLETE | [📋 Spec](../specs/WS-001-SPEC.md) |
+| WS-002 | **Quick Action: Pay Vendor (Cash Out)**                      | CRITICAL | 8h       | Accounting   | ✅ COMPLETE | [📋 Spec](../specs/WS-002-SPEC.md) |
+| WS-003 | **Pick & Pack Module: Group Bagging/Packing Action**         | CRITICAL | 24h      | Pick & Pack  | ✅ COMPLETE | [📋 Spec](../specs/WS-003-SPEC.md) |
+| WS-004 | **Sales: Simultaneous Multi-Order & Referral Credit System** | CRITICAL | 40h      | Sales/Credit | ✅ COMPLETE | [📋 Spec](../specs/WS-004-SPEC.md) |
+| WS-005 | **No Black Box Audit Trail (System-wide)**                   | CRITICAL | 30h      | System Core  | ✅ COMPLETE | [📋 Spec](../specs/WS-005-SPEC.md) |
 
 ### 🟡 P1 - HIGH PRIORITY
 
-| Task | Description | Priority | Estimate | Module | Status | Spec |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| WS-006 | **Immediate Tab Screenshot/Receipt** | HIGH | 12h | Accounting/Client Profile | ✅ COMPLETE | [📋 Spec](../specs/WS-006-SPEC.md) |
-| WS-007 | **Complex Flower Intake Flow** | HIGH | 20h | Inventory/Accounting | ✅ COMPLETE | [📋 Spec](../specs/WS-007-SPEC.md) |
-| WS-008 | **Low Stock & Needs-Based Alerts (VIP Portal Integration)** | HIGH | 16h | Inventory/VIP Portal | ✅ COMPLETE | [📋 Spec](../specs/WS-008-SPEC.md) |
-| WS-009 | **Pick & Pack Module: Inventory Movement SOP Flow** | HIGH | 20h | Pick & Pack | ✅ COMPLETE | [📋 Spec](../specs/WS-009-SPEC.md) |
-| WS-010 | **Photography Module** | HIGH | 16h | Inventory | ✅ COMPLETE | [📋 Spec](../specs/WS-010-SPEC.md) |
+| Task   | Description                                                 | Priority | Estimate | Module                    | Status      | Spec                               |
+| :----- | :---------------------------------------------------------- | :------- | :------- | :------------------------ | :---------- | :--------------------------------- |
+| WS-006 | **Immediate Tab Screenshot/Receipt**                        | HIGH     | 12h      | Accounting/Client Profile | ✅ COMPLETE | [📋 Spec](../specs/WS-006-SPEC.md) |
+| WS-007 | **Complex Flower Intake Flow**                              | HIGH     | 20h      | Inventory/Accounting      | ✅ COMPLETE | [📋 Spec](../specs/WS-007-SPEC.md) |
+| WS-008 | **Low Stock & Needs-Based Alerts (VIP Portal Integration)** | HIGH     | 16h      | Inventory/VIP Portal      | ✅ COMPLETE | [📋 Spec](../specs/WS-008-SPEC.md) |
+| WS-009 | **Pick & Pack Module: Inventory Movement SOP Flow**         | HIGH     | 20h      | Pick & Pack               | ✅ COMPLETE | [📋 Spec](../specs/WS-009-SPEC.md) |
+| WS-010 | **Photography Module**                                      | HIGH     | 16h      | Inventory                 | ✅ COMPLETE | [📋 Spec](../specs/WS-010-SPEC.md) |
 
 ### 🟠 P2 - MEDIUM PRIORITY
 
-| Task | Description | Priority | Estimate | Module | Status | Spec |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| WS-011 | **Sales: Quick Customer Creation** | MEDIUM | 4h | Sales | ✅ COMPLETE | [📋 Spec](../specs/WS-011-SPEC.md) |
-| WS-012 | **Customer Preferences & Purchase History** | MEDIUM | 16h | Sales/CRM | ✅ COMPLETE | [📋 Spec](../specs/WS-012-SPEC.md) |
-| WS-013 | **Simple Task Management (Non-Inventory SOPs)** | MEDIUM | 12h | General Utility | ✅ COMPLETE | [📋 Spec](../specs/WS-013-SPEC.md) |
-| WS-014 | **Vendor "Harvesting Again" Reminder** | MEDIUM | 8h | Vendor/Calendar | ✅ COMPLETE | [📋 Spec](../specs/WS-014-SPEC.md) |
-| WS-015 | **Sales: Customer Wishlist Field** | MEDIUM | 4h | Sales | ✅ COMPLETE | [📋 Spec](../specs/WS-015-SPEC.md) |
+| Task   | Description                                     | Priority | Estimate | Module          | Status      | Spec                               |
+| :----- | :---------------------------------------------- | :------- | :------- | :-------------- | :---------- | :--------------------------------- |
+| WS-011 | **Sales: Quick Customer Creation**              | MEDIUM   | 4h       | Sales           | ✅ COMPLETE | [📋 Spec](../specs/WS-011-SPEC.md) |
+| WS-012 | **Customer Preferences & Purchase History**     | MEDIUM   | 16h      | Sales/CRM       | ✅ COMPLETE | [📋 Spec](../specs/WS-012-SPEC.md) |
+| WS-013 | **Simple Task Management (Non-Inventory SOPs)** | MEDIUM   | 12h      | General Utility | ✅ COMPLETE | [📋 Spec](../specs/WS-013-SPEC.md) |
+| WS-014 | **Vendor "Harvesting Again" Reminder**          | MEDIUM   | 8h       | Vendor/Calendar | ✅ COMPLETE | [📋 Spec](../specs/WS-014-SPEC.md) |
+| WS-015 | **Sales: Customer Wishlist Field**              | MEDIUM   | 4h       | Sales           | ✅ COMPLETE | [📋 Spec](../specs/WS-015-SPEC.md) |
 
 ---
-
 
 ---
 
@@ -7992,25 +8047,25 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 ### Sprint Task Overview
 
-| Task ID | Title | Priority | Estimate | Spec |
-| :--- | :--- | :--- | :--- | :--- |
-| **UX-001** | Foundational Stability: Critical Functionality Fixes | CRITICAL | 24h | [UX-001-SPEC.md](../specs/ux-sprint/UX-001-SPEC.md) |
-| **UX-002** | Development Standards: Error Handling & Data Formatting | HIGH | 16h | [UX-002-SPEC.md](../specs/ux-sprint/UX-002-SPEC.md) |
-| **UX-003** | UX Enhancements: Data Tables & Onboarding | MEDIUM | 20h | [UX-003-SPEC.md](../specs/ux-sprint/UX-003-SPEC.md) |
+| Task ID    | Title                                                   | Priority | Estimate | Spec                                                |
+| :--------- | :------------------------------------------------------ | :------- | :------- | :-------------------------------------------------- |
+| **UX-001** | Foundational Stability: Critical Functionality Fixes    | CRITICAL | 24h      | [UX-001-SPEC.md](../specs/ux-sprint/UX-001-SPEC.md) |
+| **UX-002** | Development Standards: Error Handling & Data Formatting | HIGH     | 16h      | [UX-002-SPEC.md](../specs/ux-sprint/UX-002-SPEC.md) |
+| **UX-003** | UX Enhancements: Data Tables & Onboarding               | MEDIUM   | 20h      | [UX-003-SPEC.md](../specs/ux-sprint/UX-003-SPEC.md) |
 
 ### Tier 1: Foundational Stability (CRITICAL)
 
--   **UX-001.1: Fix VIP Portal:** Resolve the infinite loading bug by fixing the authentication race condition and implementing proper error handling.
--   **UX-001.2: Unify Navigation:** Refactor the application to use a single, consistent sidebar layout, eliminating the duplicate navigation bug.
--   **UX-001.3: Correct Profit Calculation:** Implement the correct business logic for the "Total Profit" metric.
+- **UX-001.1: Fix VIP Portal:** Resolve the infinite loading bug by fixing the authentication race condition and implementing proper error handling.
+- **UX-001.2: Unify Navigation:** Refactor the application to use a single, consistent sidebar layout, eliminating the duplicate navigation bug.
+- **UX-001.3: Correct Profit Calculation:** Implement the correct business logic for the "Total Profit" metric.
 
 ### Tier 2: Development Standards (HIGH)
 
--   **UX-002.1: Standardize Error Handling:** Create and enforce a standard pattern for handling loading, error, and empty states for all data-fetching components.
--   **UX-002.2: Centralize Data Formatting:** Create and enforce the use of a single, centralized utility for all data formatting (currency, numbers, dates).
+- **UX-002.1: Standardize Error Handling:** Create and enforce a standard pattern for handling loading, error, and empty states for all data-fetching components.
+- **UX-002.2: Centralize Data Formatting:** Create and enforce the use of a single, centralized utility for all data formatting (currency, numbers, dates).
 
 ### Tier 3: UX Enhancements (MEDIUM)
 
--   **UX-003.1: Enhance Data Tables:** Add bulk actions and column customization to the Client and Inventory tables.
--   **UX-003.2: Develop Placeholder Pages:** Implement baseline functional versions of the Analytics and Leaderboard pages, deployed behind feature flags.
--   **UX-003.3: Improve Empty States:** Add informative descriptions to all empty state pages.
+- **UX-003.1: Enhance Data Tables:** Add bulk actions and column customization to the Client and Inventory tables.
+- **UX-003.2: Develop Placeholder Pages:** Implement baseline functional versions of the Analytics and Leaderboard pages, deployed behind feature flags.
+- **UX-003.3: Improve Empty States:** Add informative descriptions to all empty state pages.
