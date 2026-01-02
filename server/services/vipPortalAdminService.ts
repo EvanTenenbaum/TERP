@@ -968,6 +968,7 @@ export async function deactivateClientPriceAlert(alertId: number) {
 export interface CreateImpersonationSessionOptions {
   adminUserId: number;
   clientId: number;
+  reason?: string;
   ipAddress?: string;
   userAgent?: string;
 }
