@@ -1,12 +1,152 @@
 # 🟢 Sprint B: Frontend UX & UI Components
 
-## Agent Assignment Prompt
+---
+
+## Agent Identity & Context
+
+You are an AI agent working on TERP, a cannabis ERP system. Your prime directive: **Leave the code better than you found it.**
 
 You are assigned to execute **Sprint B** of the TERP ERP parallel sprint plan. This sprint focuses on Frontend UX and UI Components. You will work in parallel with two other agents (Sprint C and Sprint D) who are working on different file domains.
 
 ---
 
-## 🚨 CRITICAL: READ BEFORE STARTING
+## Before ANY Work
+
+1. Read `UNIVERSAL_AGENT_RULES.md` for complete protocols
+2. Pull latest: `git pull origin main`
+3. Check active sessions: `cat docs/ACTIVE_SESSIONS.md`
+4. Check roadmap: `cat docs/roadmaps/MASTER_ROADMAP.md`
+5. Register your session (mandatory)
+6. **Verify Sprint A is complete** - Schema must be stable
+
+---
+
+## Critical Rules (NEVER BREAK)
+
+- ❌ **NO `any` types** - Use proper TypeScript types always
+- ❌ **NO skipping tests** - TDD is mandatory (write tests BEFORE code)
+- ❌ **NO editing files another agent is working on** - Check ACTIVE_SESSIONS.md
+- ❌ **NO editing files outside your Sprint B domain** - See File Ownership below
+- ❌ **NO marking tasks complete without deployment verification**
+- ❌ **NO committing without validation** - Run `pnpm typecheck && pnpm lint && pnpm test`
+
+---
+
+## Session Registration (MANDATORY)
+
+Before starting work:
+```bash
+SESSION_ID="Session-$(date +%Y%m%d)-SPRINT-B-$(openssl rand -hex 3)"
+# Create docs/sessions/active/$SESSION_ID.md
+# Add to docs/ACTIVE_SESSIONS.md
+# Commit and push IMMEDIATELY
+```
+
+---
+
+## Development Standards
+
+### TypeScript
+- Explicit return types on all functions
+- Use type guards, not assertions
+- Handle null/undefined explicitly
+
+### React
+- Use `React.memo` for reusable components
+- Use `useCallback` for event handlers
+- Use `useMemo` for expensive computations
+
+### Testing
+- Write tests BEFORE implementation (TDD)
+- 80%+ coverage for business logic
+- Test behavior, not implementation
+
+### Database
+- snake_case for tables/columns
+- Index ALL foreign keys
+- Use soft deletes (`is_deleted`)
+
+---
+
+## Git Workflow
+
+```bash
+git pull origin main                         # Always pull first
+git checkout -b sprint-b/frontend-ux         # Your sprint branch
+git commit -m "feat(scope): description"     # Conventional commits
+git push origin sprint-b/frontend-ux         # Push after each phase
+```
+
+---
+
+## Deployment
+
+**Platform**: DigitalOcean App Platform
+**URL**: https://terp-app-b9s35.ondigitalocean.app
+
+```bash
+git push origin main                         # Triggers deployment (after merge)
+bash scripts/watch-deploy.sh                 # Monitor
+curl https://terp-app-b9s35.ondigitalocean.app/health  # Verify
+```
+
+---
+
+## Pre-Commit Checklist
+
+- [ ] `pnpm typecheck` - No errors
+- [ ] `pnpm lint` - No errors
+- [ ] `pnpm test` - All pass
+- [ ] `pnpm roadmap:validate` - If roadmap changed
+- [ ] `git pull origin main` - Latest code
+- [ ] Session file updated
+- [ ] No conflicts with active sessions
+- [ ] No files modified outside Sprint B domain
+
+---
+
+## Essential Commands
+
+```bash
+pnpm roadmap:validate          # Validate roadmap
+pnpm roadmap:capacity          # Check capacity
+pnpm test                      # Run tests
+pnpm typecheck                 # Check types
+pnpm lint                      # Check linting
+pnpm generate                  # Regenerate types after schema changes
+bash scripts/watch-deploy.sh   # Monitor deployment
+```
+
+---
+
+## Essential Files
+
+- `docs/roadmaps/MASTER_ROADMAP.md` - Task tracking
+- `docs/roadmaps/PARALLEL_SPRINT_PLAN.md` - Sprint coordination
+- `docs/ACTIVE_SESSIONS.md` - Who's working on what
+- `UNIVERSAL_AGENT_RULES.md` - Complete protocols
+- `docs/specs/ux-improvements/` - UX specifications for this sprint
+
+---
+
+## When Stuck
+
+1. Read `UNIVERSAL_AGENT_RULES.md`
+2. Check existing code for patterns
+3. Search: `grep -r "pattern" src/`
+4. Check spec files in `docs/specs/ux-improvements/`
+5. Ask user for clarification
+
+---
+
+**Follow these rules precisely. Your work affects other agents and production.**
+
+**#Terp-Dev #Sprint-B**
+
+---
+---
+
+## 🚨 SPRINT B SPECIFIC INSTRUCTIONS
 
 ### Prerequisites
 1. **Sprint A must be complete** - Verify schema is stable before starting
@@ -102,9 +242,10 @@ Before proceeding to Phase 2:
 □ Zero 404 errors
 □ Zero infinite loading states
 □ All Phase 1 deliverables verified
-□ Run: pnpm test (all tests pass)
+□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
-□ Commit with message: "SPRINT-B Phase 1: Stabilize Core [REDHAT QA PASSED]"
+□ Commit with message: "feat(sprint-b): Phase 1 - Stabilize Core [REDHAT QA PASSED]"
+□ Push to sprint-b/frontend-ux branch
 ```
 
 ---
@@ -173,10 +314,11 @@ Before proceeding to Phase 3:
 □ All KPI cards interactive
 □ All table rows clickable
 □ All widgets actionable
-□ Run: pnpm test (all tests pass)
+□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Manual E2E test of critical paths
-□ Commit with message: "SPRINT-B Phase 2: Universal Actionability [REDHAT QA PASSED]"
+□ Commit with message: "feat(sprint-b): Phase 2 - Universal Actionability [REDHAT QA PASSED]"
+□ Push to sprint-b/frontend-ux branch
 ```
 
 ---
@@ -238,11 +380,12 @@ Before marking ENH-002 complete:
 ```
 Before marking sprint complete:
 □ All Phase 3 deliverables verified
-□ Run: pnpm test (all tests pass)
+□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Full manual regression test
 □ No regressions from Phase 1 or 2
-□ Commit with message: "SPRINT-B Phase 3: Enhance & Refine [REDHAT QA PASSED]"
+□ Commit with message: "feat(sprint-b): Phase 3 - Enhance & Refine [REDHAT QA PASSED]"
+□ Push to sprint-b/frontend-ux branch
 ```
 
 ---
@@ -252,12 +395,14 @@ Before marking sprint complete:
 Before submitting your branch for merge:
 
 ### Code Quality
+- [ ] `pnpm typecheck` - No errors
+- [ ] `pnpm lint` - No errors
 - [ ] `pnpm test` - All tests pass
 - [ ] `pnpm build` - Zero TypeScript errors
-- [ ] `pnpm lint` - No linting errors
 - [ ] No `console.log` statements left in code
 - [ ] No commented-out code blocks
 - [ ] All new components have proper TypeScript types
+- [ ] No `any` types introduced
 
 ### Functional Verification
 - [ ] All 27 navigation items functional
@@ -272,16 +417,17 @@ Before submitting your branch for merge:
 - [ ] Update task status in MASTER_ROADMAP.md
 - [ ] Document any deviations from spec
 - [ ] Note any technical debt created
+- [ ] Update session file
 
 ### Git Hygiene
-- [ ] All commits have descriptive messages
+- [ ] All commits have descriptive messages (conventional commits)
 - [ ] No merge conflicts with main
 - [ ] Branch is rebased on latest main
 
 ### Final Commit
 ```bash
 git add .
-git commit -m "SPRINT-B Complete: Frontend UX & UI Components [REDHAT QA PASSED]
+git commit -m "feat(sprint-b): Complete - Frontend UX & UI Components [REDHAT QA PASSED]
 
 Phase 1: Stabilize Core (STAB-001, STAB-002, STAB-003)
 Phase 2: Universal Actionability (ACT-001, ACT-002, ACT-003)
@@ -292,6 +438,18 @@ Ready for integration."
 
 git push origin sprint-b/frontend-ux
 ```
+
+---
+
+## Completing Work
+
+1. Archive session: `mv docs/sessions/active/$SESSION_ID.md docs/sessions/completed/`
+2. Remove from `docs/ACTIVE_SESSIONS.md`
+3. Update `docs/roadmaps/MASTER_ROADMAP.md` - Mark Sprint B tasks as `complete`
+4. Run `pnpm roadmap:validate`
+5. Commit and push
+6. Create Pull Request to main
+7. Verify deployment succeeded after merge
 
 ---
 
@@ -348,5 +506,6 @@ Sprint B is successful when:
 3. Zero regressions in existing functionality
 4. Branch ready for merge (no conflicts)
 5. Documentation updated
+6. Session properly closed
 
 **DO NOT submit your branch until ALL criteria are met.**

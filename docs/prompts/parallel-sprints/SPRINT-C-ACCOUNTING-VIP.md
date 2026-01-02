@@ -1,12 +1,152 @@
 # 🟠 Sprint C: Accounting & VIP Portal Modules
 
-## Agent Assignment Prompt
+---
+
+## Agent Identity & Context
+
+You are an AI agent working on TERP, a cannabis ERP system. Your prime directive: **Leave the code better than you found it.**
 
 You are assigned to execute **Sprint C** of the TERP ERP parallel sprint plan. This sprint focuses on Accounting and VIP Portal modules. You will work in parallel with two other agents (Sprint B and Sprint D) who are working on different file domains.
 
 ---
 
-## 🚨 CRITICAL: READ BEFORE STARTING
+## Before ANY Work
+
+1. Read `UNIVERSAL_AGENT_RULES.md` for complete protocols
+2. Pull latest: `git pull origin main`
+3. Check active sessions: `cat docs/ACTIVE_SESSIONS.md`
+4. Check roadmap: `cat docs/roadmaps/MASTER_ROADMAP.md`
+5. Register your session (mandatory)
+6. **Verify Sprint A is complete** - Schema must be stable
+
+---
+
+## Critical Rules (NEVER BREAK)
+
+- ❌ **NO `any` types** - Use proper TypeScript types always
+- ❌ **NO skipping tests** - TDD is mandatory (write tests BEFORE code)
+- ❌ **NO editing files another agent is working on** - Check ACTIVE_SESSIONS.md
+- ❌ **NO editing files outside your Sprint C domain** - See File Ownership below
+- ❌ **NO marking tasks complete without deployment verification**
+- ❌ **NO committing without validation** - Run `pnpm typecheck && pnpm lint && pnpm test`
+
+---
+
+## Session Registration (MANDATORY)
+
+Before starting work:
+```bash
+SESSION_ID="Session-$(date +%Y%m%d)-SPRINT-C-$(openssl rand -hex 3)"
+# Create docs/sessions/active/$SESSION_ID.md
+# Add to docs/ACTIVE_SESSIONS.md
+# Commit and push IMMEDIATELY
+```
+
+---
+
+## Development Standards
+
+### TypeScript
+- Explicit return types on all functions
+- Use type guards, not assertions
+- Handle null/undefined explicitly
+
+### React
+- Use `React.memo` for reusable components
+- Use `useCallback` for event handlers
+- Use `useMemo` for expensive computations
+
+### Testing
+- Write tests BEFORE implementation (TDD)
+- 80%+ coverage for business logic
+- Test behavior, not implementation
+
+### Database
+- snake_case for tables/columns
+- Index ALL foreign keys
+- Use soft deletes (`is_deleted`)
+
+---
+
+## Git Workflow
+
+```bash
+git pull origin main                         # Always pull first
+git checkout -b sprint-c/accounting-vip      # Your sprint branch
+git commit -m "feat(scope): description"     # Conventional commits
+git push origin sprint-c/accounting-vip      # Push after each phase
+```
+
+---
+
+## Deployment
+
+**Platform**: DigitalOcean App Platform
+**URL**: https://terp-app-b9s35.ondigitalocean.app
+
+```bash
+git push origin main                         # Triggers deployment (after merge)
+bash scripts/watch-deploy.sh                 # Monitor
+curl https://terp-app-b9s35.ondigitalocean.app/health  # Verify
+```
+
+---
+
+## Pre-Commit Checklist
+
+- [ ] `pnpm typecheck` - No errors
+- [ ] `pnpm lint` - No errors
+- [ ] `pnpm test` - All pass
+- [ ] `pnpm roadmap:validate` - If roadmap changed
+- [ ] `git pull origin main` - Latest code
+- [ ] Session file updated
+- [ ] No conflicts with active sessions
+- [ ] No files modified outside Sprint C domain
+
+---
+
+## Essential Commands
+
+```bash
+pnpm roadmap:validate          # Validate roadmap
+pnpm roadmap:capacity          # Check capacity
+pnpm test                      # Run tests
+pnpm typecheck                 # Check types
+pnpm lint                      # Check linting
+pnpm generate                  # Regenerate types after schema changes
+bash scripts/watch-deploy.sh   # Monitor deployment
+```
+
+---
+
+## Essential Files
+
+- `docs/roadmaps/MASTER_ROADMAP.md` - Task tracking
+- `docs/roadmaps/PARALLEL_SPRINT_PLAN.md` - Sprint coordination
+- `docs/roadmaps/ATOMIC_RESOLUTION_ROADMAP_V1_2.md` - Schema sync tasks
+- `docs/ACTIVE_SESSIONS.md` - Who's working on what
+- `UNIVERSAL_AGENT_RULES.md` - Complete protocols
+
+---
+
+## When Stuck
+
+1. Read `UNIVERSAL_AGENT_RULES.md`
+2. Check existing code for patterns
+3. Search: `grep -r "pattern" src/`
+4. Check related router files for examples
+5. Ask user for clarification
+
+---
+
+**Follow these rules precisely. Your work affects other agents and production.**
+
+**#Terp-Dev #Sprint-C**
+
+---
+---
+
+## 🚨 SPRINT C SPECIFIC INSTRUCTIONS
 
 ### Prerequisites
 1. **Sprint A must be complete** - Verify schema is stable before starting
@@ -151,9 +291,10 @@ Before proceeding to Phase 2:
 □ Returns processing works
 □ Credit limit generation works
 □ Client profile COGS section clean
-□ Run: pnpm test (all tests pass)
+□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
-□ Commit with message: "SPRINT-C Phase 1: Critical Bug Fixes [REDHAT QA PASSED]"
+□ Commit with message: "fix(sprint-c): Phase 1 - Critical Bug Fixes [REDHAT QA PASSED]"
+□ Push to sprint-c/accounting-vip branch
 ```
 
 ---
@@ -240,9 +381,10 @@ Before proceeding to Phase 3:
 □ Can delete supplies
 □ Dashboard metrics show real data
 □ Metrics match database records
-□ Run: pnpm test (all tests pass)
+□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
-□ Commit with message: "SPRINT-C Phase 2: VIP Portal Enhancements [REDHAT QA PASSED]"
+□ Commit with message: "feat(sprint-c): Phase 2 - VIP Portal Enhancements [REDHAT QA PASSED]"
+□ Push to sprint-c/accounting-vip branch
 ```
 
 ---
@@ -290,10 +432,11 @@ Before marking sprint complete:
 □ Calendar events show financial impact
 □ All TODOs resolved or documented
 □ Accounting reports include COGS
-□ Run: pnpm test (all tests pass)
+□ Run: pnpm typecheck && pnpm lint && pnpm test (all pass)
 □ Run: pnpm build (no TypeScript errors)
 □ Full manual regression test
-□ Commit with message: "SPRINT-C Phase 3: Accounting Features [REDHAT QA PASSED]"
+□ Commit with message: "feat(sprint-c): Phase 3 - Accounting Features [REDHAT QA PASSED]"
+□ Push to sprint-c/accounting-vip branch
 ```
 
 ---
@@ -303,13 +446,15 @@ Before marking sprint complete:
 Before submitting your branch for merge:
 
 ### Code Quality
+- [ ] `pnpm typecheck` - No errors
+- [ ] `pnpm lint` - No errors
 - [ ] `pnpm test` - All tests pass
 - [ ] `pnpm build` - Zero TypeScript errors
-- [ ] `pnpm lint` - No linting errors
 - [ ] No `console.log` statements left in code
 - [ ] No commented-out code blocks
 - [ ] All new endpoints have proper TypeScript types
 - [ ] All new endpoints have error handling
+- [ ] No `any` types introduced
 
 ### Functional Verification
 - [ ] Live Shopping works end-to-end
@@ -332,16 +477,17 @@ Before submitting your branch for merge:
 - [ ] Document any deviations from spec
 - [ ] Note any technical debt created
 - [ ] Update API documentation if needed
+- [ ] Update session file
 
 ### Git Hygiene
-- [ ] All commits have descriptive messages
+- [ ] All commits have descriptive messages (conventional commits)
 - [ ] No merge conflicts with main
 - [ ] Branch is rebased on latest main
 
 ### Final Commit
 ```bash
 git add .
-git commit -m "SPRINT-C Complete: Accounting & VIP Portal Modules [REDHAT QA PASSED]
+git commit -m "feat(sprint-c): Complete - Accounting & VIP Portal Modules [REDHAT QA PASSED]
 
 Phase 1: Critical Bug Fixes (ATOMIC-2.1-2.3, BUG-038, BUG-039)
 Phase 2: VIP Portal Enhancements (DEPLOY-012-003, FIX-012-001/002, QUAL-006)
@@ -352,6 +498,18 @@ Ready for integration."
 
 git push origin sprint-c/accounting-vip
 ```
+
+---
+
+## Completing Work
+
+1. Archive session: `mv docs/sessions/active/$SESSION_ID.md docs/sessions/completed/`
+2. Remove from `docs/ACTIVE_SESSIONS.md`
+3. Update `docs/roadmaps/MASTER_ROADMAP.md` - Mark Sprint C tasks as `complete`
+4. Run `pnpm roadmap:validate`
+5. Commit and push
+6. Create Pull Request to main
+7. Verify deployment succeeded after merge
 
 ---
 
@@ -417,6 +575,7 @@ Sprint C is successful when:
 5. VIP Portal fully functional
 6. Branch ready for merge (no conflicts)
 7. Documentation updated
+8. Session properly closed
 
 **DO NOT submit your branch until ALL criteria are met.**
 
