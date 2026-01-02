@@ -8262,55 +8262,97 @@ The following risks were identified and mitigated in the specification process:
 
 ---
 
-## VIP Portal Sprint
+## VIP Portal Sprint (REVISED)
 
-**Goal:** Transform the VIP Portal from a pre-MVP state into a modern, mobile-first, fully actionable B2B portal.
+**Goal:** Fix frontend rendering issues and transform the VIP Portal into a mobile-first, fully actionable B2B portal.
 
-**Total Estimate:** 120 hours
+**Total Estimate:** 104 hours (reduced from 120h - backend is already ~90% complete)
 
-### Phase 0: Root Cause Investigation (4h)
+### Critical Correction
+
+A comprehensive backend audit revealed that the VIP Portal backend is **~90% complete** (1,614 lines of code). The issues observed in the live portal are **frontend integration failures**, not missing backend functionality.
+
+| Component | Backend Status |
+|-----------|----------------|
+| Authentication | ✅ Complete |
+| Dashboard KPIs | ✅ Complete |
+| Live Catalog | ✅ Complete |
+| Draft Interests & Interest Lists | ✅ Complete |
+| AR/AP (Invoices, Bills) | ✅ Complete |
+| Marketplace (Needs, Supply) | ✅ Complete |
+| Saved Views & Price Alerts | ✅ Complete |
+
+### Business Logic Clarification
+
+**The VIP Portal is NOT an e-commerce platform.** The correct workflow is:
+1. Client browses the Live Catalog
+2. Client adds items to a "Draft" (expressing interest)
+3. Client submits the draft as an "Interest List"
+4. Internal staff reviews the Interest List
+5. Staff manually creates a Quote or Order
+
+There is **no online payment** and **no direct purchasing**.
+
+---
+
+### Phase 1: Fix Frontend Rendering (24h) - CRITICAL
+
 | Task ID | Task | Priority | Estimate | Status |
 |---------|------|----------|----------|--------|
-| VIP-000 | Root Cause Investigation Spike | CRITICAL | 4h | 🔴 Not Started |
+| VIP-F-01 | Fix Dashboard KPI Rendering (display all 7+ KPIs) | CRITICAL | 8h | 🔴 Not Started |
+| VIP-F-02 | Fix Catalog Rendering (debug "No products found" bug) | CRITICAL | 12h | 🔴 Not Started |
+| VIP-F-03 | Fix AR/AP Amount Display | CRITICAL | 4h | 🔴 Not Started |
 
-### Phase 1: Stabilize & Secure (28h)
+**Key Deliverables:**
+- Dashboard displays all 7+ KPI cards with real data
+- Catalog displays browsable products with pricing
+- Invoices and bills show amounts formatted as currency
+
+---
+
+### Phase 2: Mobile-First UI & Actionability (48h) - HIGH
+
 | Task ID | Task | Priority | Estimate | Status |
 |---------|------|----------|----------|--------|
-| VIP-001-1 | Fix Broken Catalog | CRITICAL | 6h | 🔴 Not Started |
-| VIP-001-2 | Fix Missing Dashboard Data | CRITICAL | 4h | 🔴 Not Started |
-| VIP-001-3 | Fix Incorrect AR Data | CRITICAL | 4h | 🔴 Not Started |
-| VIP-001-4 | Fix Broken Marketplace | CRITICAL | 4h | 🔴 Not Started |
-| VIP-001-5 | Implement Real Password Reset | HIGH | 4h | 🔴 Not Started |
-| VIP-001-6 | Implement SSO (Google/Microsoft) | HIGH | 6h | 🔴 Not Started |
+| VIP-M-01 | Implement Mobile-First Navigation (bottom nav or hamburger) | HIGH | 16h | 🔴 Not Started |
+| VIP-A-01 | Make Dashboard KPIs Actionable (click-through to filtered views) | HIGH | 12h | 🔴 Not Started |
+| VIP-A-02 | Make Financials Actionable (invoice detail view, PDF placeholder) | HIGH | 8h | 🔴 Not Started |
+| VIP-A-03 | Implement Interest List Flow (Add to Draft, Submit List) | HIGH | 12h | 🔴 Not Started |
 
-### Phase 2: Core Functionality - Mobile-First (48h)
+**Key Deliverables:**
+- Portal is fully functional on 375px viewport (mobile-first)
+- All KPI cards are clickable and navigate to relevant views
+- Invoices can be expanded to show details
+- Clients can add products to draft and submit interest lists
+
+---
+
+### Phase 3: New Features (32h) - MEDIUM
+
 | Task ID | Task | Priority | Estimate | Status |
 |---------|------|----------|----------|--------|
-| VIP-002-1 | Implement Mobile-First Navigation | HIGH | 12h | 🔴 Not Started |
-| VIP-002-2 | Implement Actionable Dashboard | HIGH | 10h | 🔴 Not Started |
-| VIP-002-3 | Implement Actionable Receivables | HIGH | 10h | 🔴 Not Started |
-| VIP-002-4 | Build Core Ordering Workflow | HIGH | 12h | 🔴 Not Started |
-| VIP-002-5 | Implement Reorder from History | MEDIUM | 4h | 🔴 Not Started |
+| VIP-B-01 | Implement SSO (Google OAuth) | MEDIUM | 12h | 🔴 Not Started |
+| VIP-B-02 | Implement SSO (Microsoft OAuth) | MEDIUM | 12h | 🔴 Not Started |
+| VIP-B-03 | Implement PDF Generation for Invoices/Bills | MEDIUM | 8h | 🔴 Not Started |
 
-### Phase 3: Enhance & Differentiate (40h)
-| Task ID | Task | Priority | Estimate | Status |
-|---------|------|----------|----------|--------|
-| VIP-003-1 | Implement Quick Order by SKU | MEDIUM | 8h | 🔴 Not Started |
-| VIP-003-2 | Build My Needs Marketplace | MEDIUM | 12h | 🔴 Not Started |
-| VIP-003-3 | Implement Role-Based Access | LOW | 10h | 🔴 Not Started |
-| VIP-003-4 | Customizable Dashboard Widgets | LOW | 10h | 🔴 Not Started |
+**Key Deliverables:**
+- Users can log in with Google or Microsoft accounts
+- Users can download PDF versions of invoices and bills
 
-### Key Principles
-1. **Mobile-First Design:** All new UI must be designed for mobile viewports first.
-2. **Actionability Mandate:** Every data element must be clickable with meaningful actions.
-3. **Feature Flags:** Major UI changes deployed behind feature flags for safe rollback.
-
-### Dependencies
-- VIP-001 blocks VIP-002 (bugs must be fixed before new features)
-- User validation milestone after VIP-002 before starting VIP-003
+---
 
 ### Specifications
-- [VIP-000-SPEC](../specs/vip-portal-sprint/VIP-000-SPEC.md) - Root Cause Investigation
-- [VIP-001-SPEC](../specs/vip-portal-sprint/VIP-001-SPEC.md) - Stabilize & Secure
-- [VIP-002-SPEC](../specs/vip-portal-sprint/VIP-002-SPEC.md) - Core Functionality
-- [VIP-003-SPEC](../specs/vip-portal-sprint/VIP-003-SPEC.md) - Enhance & Differentiate
+
+| Spec ID | Title | File |
+|---------|-------|------|
+| VIP-F-001 | Fix Frontend Rendering Issues | [📋 Spec](../specs/vip-portal-sprint/VIP-F-001-SPEC.md) |
+| VIP-M-001 | Mobile-First UI Redesign | [📋 Spec](../specs/vip-portal-sprint/VIP-M-001-SPEC.md) |
+| VIP-A-001 | Actionability Implementation | [📋 Spec](../specs/vip-portal-sprint/VIP-A-001-SPEC.md) |
+| VIP-B-001 | New Backend Features (SSO, PDF) | [📋 Spec](../specs/vip-portal-sprint/VIP-B-001-SPEC.md) |
+
+### Dependencies
+
+- Phase 1 (VIP-F-*) must be complete before Phase 2
+- Phase 2 (VIP-M-*, VIP-A-*) should be validated with users before Phase 3
+
+---
