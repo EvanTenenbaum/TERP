@@ -28,6 +28,30 @@ const salesSheetItemSchema = z.object({
     .optional(),
 });
 
+// Draft item schema (same as sales sheet item but for drafts)
+const draftItemSchema = z.object({
+  id: z.number(),
+  name: z.string().max(255),
+  category: z.string().optional(),
+  subcategory: z.string().optional(),
+  strain: z.string().optional(),
+  basePrice: z.number().min(0).finite(),
+  retailPrice: z.number().min(0).finite(),
+  quantity: z.number().min(0).finite(),
+  grade: z.string().optional(),
+  vendor: z.string().optional(),
+  priceMarkup: z.number().finite(),
+  appliedRules: z
+    .array(
+      z.object({
+        ruleId: z.number(),
+        ruleName: z.string(),
+        adjustment: z.string(),
+      })
+    )
+    .optional(),
+});
+
 // Column config schema
 const columnConfigSchema = z
   .object({
@@ -146,5 +170,83 @@ export const salesSheetsRouter = router({
     .mutation(async ({ input }) => {
       await salesSheetsDb.deleteTemplate(input.templateId);
       return { success: true };
+    }),
+
+  // ============================================================================
+  // DRAFTS (QA-062)
+  // ============================================================================
+
+  /**
+   * Save or update a draft
+   * If draftId is provided, updates existing; otherwise creates new
+   */
+  saveDraft: protectedProcedure.use(requirePermission("orders:create"))
+    .input(
+      z.object({
+        draftId: z.number().positive().optional(),
+        clientId: z.number().positive(),
+        name: z.string().min(1).max(255),
+        items: z.array(draftItemSchema).max(1000),
+        totalValue: z.number().min(0).finite(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      const draftId = await salesSheetsDb.saveDraft({
+        draftId: input.draftId,
+        clientId: input.clientId,
+        name: input.name,
+        items: input.items,
+        totalValue: input.totalValue,
+        createdBy: userId,
+      });
+      return { draftId };
+    }),
+
+  /**
+   * Get all drafts for the current user
+   * Optionally filter by clientId
+   */
+  getDrafts: protectedProcedure.use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        clientId: z.number().positive().optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      return await salesSheetsDb.getDrafts(userId, input?.clientId);
+    }),
+
+  /**
+   * Get a specific draft by ID
+   */
+  getDraftById: protectedProcedure.use(requirePermission("orders:read"))
+    .input(z.object({ draftId: z.number().positive() }))
+    .query(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      return await salesSheetsDb.getDraftById(input.draftId, userId);
+    }),
+
+  /**
+   * Delete a draft
+   */
+  deleteDraft: protectedProcedure.use(requirePermission("orders:read"))
+    .input(z.object({ draftId: z.number().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      await salesSheetsDb.deleteDraft(input.draftId, userId);
+      return { success: true };
+    }),
+
+  /**
+   * Convert a draft to a finalized sales sheet
+   */
+  convertDraftToSheet: protectedProcedure.use(requirePermission("orders:create"))
+    .input(z.object({ draftId: z.number().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      const sheetId = await salesSheetsDb.convertDraftToSheet(input.draftId, userId);
+      return { sheetId };
     }),
 });
