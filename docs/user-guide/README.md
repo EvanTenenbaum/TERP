@@ -18,6 +18,8 @@ TERP is a comprehensive Cannabis ERP (Enterprise Resource Planning) system desig
 3. Use the **global search** (top bar) to quickly find clients, orders, or products
 4. Check the **Dashboard** for key metrics and alerts
 
+**New to TERP?** Start with the [Getting Started Guide](./getting-started.md) for a complete walkthrough.
+
 ---
 
 ## Feature Guides
@@ -125,6 +127,8 @@ Access common tasks quickly from the Dashboard:
 
 ### Support Resources
 
+- [Getting Started](./getting-started.md) - Quick start guide for new users
+- [Troubleshooting](./troubleshooting.md) - Common issues and solutions
 - [FAQ](./FAQ.md) - Frequently asked questions
 - [API Documentation](../api/README.md) - For developers
 - [Developer Guide](../dev-guide/README.md) - Technical documentation
