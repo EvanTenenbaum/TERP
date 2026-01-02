@@ -25,7 +25,7 @@
 | Session ID                              | Task                    | Branch | Module        | Status      | Started    | ETA |
 | --------------------------------------- | ----------------------- | ------ | ------------- | ----------- | ---------- | --- |
 | Session-20251230-ROADMAP-CLEANUP-39dfaf | ROADMAP-CLEANUP         | main   | docs          | In Progress | 2025-12-30 | TBA |
-| Session-20260102-SPRINT-A-INFRA-d7654e  | Sprint A Infrastructure | main   | scripts, docs | ✅ Complete | 2026-01-02 | -   |
+| Session-20260102-SPRINT-B-f0b134        | Sprint B Frontend UX    | main   | client/src    | In Progress | 2026-01-02 | -   |
 
 ## ⏸️ Paused / Waiting
 
