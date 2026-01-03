@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag, Bell } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag, Bell, Calendar } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
+import { CalendarSettings } from "@/components/calendar/CalendarSettings";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { UserManagement } from "@/components/UserManagement";
@@ -50,6 +51,7 @@ export default function Settings() {
             <TabsTrigger value="feature-flags" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Feature Flags</TabsTrigger>
             <TabsTrigger value="vip-impersonation" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">VIP Access</TabsTrigger>
             <TabsTrigger value="notifications" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Notifications</TabsTrigger>
+            <TabsTrigger value="calendars" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Calendars</TabsTrigger>
           </TabsList>
         </div>
 
@@ -129,6 +131,10 @@ export default function Settings() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="calendars" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          <CalendarSettings />
         </TabsContent>
       </Tabs>
     </div>

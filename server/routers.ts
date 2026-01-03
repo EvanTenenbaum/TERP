@@ -68,6 +68,7 @@ import { calendarRecurrenceRouter } from "./routers/calendarRecurrence";
 import { calendarMeetingsRouter } from "./routers/calendarMeetings";
 import { calendarFinancialsRouter } from "./routers/calendarFinancials";
 import { calendarInvitationsRouter } from "./routers/calendarInvitations";
+import { calendarsManagementRouter } from "./routers/calendarsManagement";
 import { rbacUsersRouter } from "./routers/rbac-users";
 import { rbacRolesRouter } from "./routers/rbac-roles";
 import { rbacPermissionsRouter } from "./routers/rbac-permissions";
@@ -177,6 +178,7 @@ export const appRouter = router({
   calendarMeetings: calendarMeetingsRouter,
   calendarFinancials: calendarFinancialsRouter,
   calendarInvitations: calendarInvitationsRouter,
+  calendarsManagement: calendarsManagementRouter, // CAL-001/CAL-002: Calendar Foundation
   rbacUsers: rbacUsersRouter,
   rbacRoles: rbacRolesRouter,
   rbacPermissions: rbacPermissionsRouter,

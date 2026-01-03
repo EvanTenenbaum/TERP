@@ -4397,6 +4397,9 @@ export const calendarEvents = mysqlTable(
       onDelete: "set null",
     }),
 
+    // CAL-001: Multi-calendar support - links event to a specific calendar
+    calendarId: int("calendar_id"),
+
     // v3.2: JSON metadata for v3.1 metadata system
     metadata: json("metadata"),
 
@@ -4440,6 +4443,8 @@ export const calendarEvents = mysqlTable(
     // v3.2: Indexes for explicit foreign keys
     clientIdIdx: index("idx_calendar_events_client_id").on(table.clientId),
     vendorIdIdx: index("idx_calendar_events_vendor_id").on(table.vendorId),
+    // CAL-001: Index for calendar filtering
+    calendarIdIdx: index("idx_calendar_events_calendar_id").on(table.calendarId),
   })
 );
 
@@ -5054,6 +5059,201 @@ export type CalendarInvitationHistory =
   typeof calendarInvitationHistory.$inferSelect;
 export type InsertCalendarInvitationHistory =
   typeof calendarInvitationHistory.$inferInsert;
+
+// ============================================================================
+// CAL-001: MULTI-CALENDAR ARCHITECTURE (Calendar Foundation)
+// ============================================================================
+
+/**
+ * Calendars table (CAL-001)
+ * Stores calendar definitions for multi-calendar support
+ * Enables segregation of duties (Accounting vs Office/Sales calendars)
+ */
+export const calendars = mysqlTable(
+  "calendars",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    color: varchar("color", { length: 7 }).notNull().default("#3B82F6"),
+    type: varchar("type", { length: 50 }).notNull().default("workspace"), // workspace, personal
+    isDefault: boolean("is_default").notNull().default(false),
+    isArchived: boolean("is_archived").notNull().default(false),
+    ownerId: int("owner_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    ownerIdx: index("idx_calendars_owner").on(table.ownerId),
+    isArchivedIdx: index("idx_calendars_archived").on(table.isArchived),
+    isDefaultIdx: index("idx_calendars_default").on(table.isDefault),
+  })
+);
+
+export type Calendar = typeof calendars.$inferSelect;
+export type InsertCalendar = typeof calendars.$inferInsert;
+
+/**
+ * Calendar User Access table (CAL-001)
+ * Manages user permissions for each calendar (view, edit, admin)
+ */
+export const calendarUserAccess = mysqlTable(
+  "calendar_user_access",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accessLevel: varchar("access_level", { length: 20 }).notNull().default("view"), // view, edit, admin
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    calendarIdx: index("idx_calendar_access_calendar").on(table.calendarId),
+    userIdx: index("idx_calendar_access_user").on(table.userId),
+    uniqueUserCalendar: unique("unique_user_calendar").on(table.calendarId, table.userId),
+  })
+);
+
+export type CalendarUserAccess = typeof calendarUserAccess.$inferSelect;
+export type InsertCalendarUserAccess = typeof calendarUserAccess.$inferInsert;
+
+// Relations for calendars
+export const calendarsRelations = relations(calendars, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [calendars.ownerId],
+    references: [users.id],
+  }),
+  userAccess: many(calendarUserAccess),
+  events: many(calendarEvents),
+  appointmentTypes: many(appointmentTypes),
+  availability: many(calendarAvailability),
+  blockedDates: many(calendarBlockedDates),
+}));
+
+export const calendarUserAccessRelations = relations(calendarUserAccess, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [calendarUserAccess.calendarId],
+    references: [calendars.id],
+  }),
+  user: one(users, {
+    fields: [calendarUserAccess.userId],
+    references: [users.id],
+  }),
+}));
+
+// ============================================================================
+// CAL-002: AVAILABILITY SYSTEM (Availability & Booking Foundation)
+// ============================================================================
+
+/**
+ * Appointment Types table (CAL-002)
+ * Defines the types of bookable events (e.g., "Payment Pickup", "Client Demo")
+ */
+export const appointmentTypes = mysqlTable(
+  "appointment_types",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    duration: int("duration").notNull(), // Duration in minutes
+    bufferBefore: int("buffer_before").notNull().default(0), // Prep time before event in minutes
+    bufferAfter: int("buffer_after").notNull().default(0), // Wrap-up time after event in minutes
+    minNoticeHours: int("min_notice_hours").notNull().default(24), // Minimum hours in advance for booking
+    maxAdvanceDays: int("max_advance_days").notNull().default(30), // Maximum days in the future for booking
+    color: varchar("color", { length: 7 }).notNull().default("#F59E0B"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    calendarIdx: index("idx_appointment_types_calendar").on(table.calendarId),
+    isActiveIdx: index("idx_appointment_types_active").on(table.isActive),
+  })
+);
+
+export type AppointmentType = typeof appointmentTypes.$inferSelect;
+export type InsertAppointmentType = typeof appointmentTypes.$inferInsert;
+
+/**
+ * Calendar Availability table (CAL-002)
+ * Defines recurring weekly availability for a calendar
+ * dayOfWeek: 0 = Sunday, 6 = Saturday (JavaScript convention)
+ */
+export const calendarAvailability = mysqlTable(
+  "calendar_availability",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    dayOfWeek: int("day_of_week").notNull(), // 0-6 where 0=Sunday, 6=Saturday
+    startTime: varchar("start_time", { length: 8 }).notNull(), // HH:MM:SS format
+    endTime: varchar("end_time", { length: 8 }).notNull(), // HH:MM:SS format
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    calendarIdx: index("idx_availability_calendar").on(table.calendarId),
+    dayIdx: index("idx_availability_day").on(table.dayOfWeek),
+  })
+);
+
+export type CalendarAvailabilityRow = typeof calendarAvailability.$inferSelect;
+export type InsertCalendarAvailability = typeof calendarAvailability.$inferInsert;
+
+/**
+ * Calendar Blocked Dates table (CAL-002)
+ * Defines specific dates on which a calendar is unavailable (holidays, etc.)
+ */
+export const calendarBlockedDates = mysqlTable(
+  "calendar_blocked_dates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    reason: varchar("reason", { length: 255 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    calendarIdx: index("idx_blocked_dates_calendar").on(table.calendarId),
+    dateIdx: index("idx_blocked_dates_date").on(table.date),
+  })
+);
+
+export type CalendarBlockedDate = typeof calendarBlockedDates.$inferSelect;
+export type InsertCalendarBlockedDate = typeof calendarBlockedDates.$inferInsert;
+
+// Relations for availability system
+export const appointmentTypesRelations = relations(appointmentTypes, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [appointmentTypes.calendarId],
+    references: [calendars.id],
+  }),
+}));
+
+export const calendarAvailabilityRelations = relations(calendarAvailability, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [calendarAvailability.calendarId],
+    references: [calendars.id],
+  }),
+}));
+
+export const calendarBlockedDatesRelations = relations(calendarBlockedDates, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [calendarBlockedDates.calendarId],
+    references: [calendars.id],
+  }),
+}));
 
 // ============================================================================
 // WORKFLOW QUEUE MANAGEMENT TABLES (Initiative 1.3)
