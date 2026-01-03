@@ -39,7 +39,7 @@ export function AppSidebar({ open = false, onClose }: AppSidebarProps) {
         )}
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-border">
-          <h1 className="text-xl font-bold text-foreground">{APP_TITLE}</h1>
+          <div className="flex items-center gap-2"><img src="/terp-icon.png" alt="TERP" className="w-8 h-8 rounded" /><h1 className="text-xl font-bold text-foreground">{APP_TITLE}</h1></div>
           <button
             onClick={onClose}
             className="md:hidden p-2 hover:bg-accent rounded-md"
