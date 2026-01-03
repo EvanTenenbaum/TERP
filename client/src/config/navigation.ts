@@ -34,6 +34,7 @@ import {
   Kanban,
   Camera,
   PackageSearch,
+  Beaker,
   type LucideIcon,
 } from "lucide-react";
 
@@ -51,7 +52,7 @@ export interface NavigationItem {
 /**
  * Main navigation items for the application sidebar.
  * Order matters - items appear in this order in the sidebar.
- * 
+ *
  * SALES FLOW:
  * 1. Clients - Who you're selling to
  * 2. Live Shopping - Real-time sales sessions
@@ -73,7 +74,12 @@ export const navigationItems: NavigationItem[] = [
   // ═══════════════════════════════════════════════════════════════
   { name: "Sales Portal", path: "/sales-portal", icon: Kanban, group: "sales" },
   { name: "Clients", path: "/clients", icon: Users, group: "sales" },
-  { name: "Live Shopping", path: "/live-shopping", icon: Video, group: "sales" },
+  {
+    name: "Live Shopping",
+    path: "/live-shopping",
+    icon: Video,
+    group: "sales",
+  },
   { name: "Sales Sheets", path: "/sales-sheets", icon: Layers, group: "sales" },
   { name: "Matchmaking", path: "/matchmaking", icon: Target, group: "sales" },
   { name: "Quotes", path: "/quotes", icon: FileText, group: "sales" },
@@ -82,27 +88,83 @@ export const navigationItems: NavigationItem[] = [
   // ═══════════════════════════════════════════════════════════════
   // FULFILLMENT - Order processing and inventory
   // ═══════════════════════════════════════════════════════════════
-  { name: "Fulfillment", path: "/workflow-queue", icon: PackageCheck, group: "fulfillment" },
-  { name: "Pick & Pack", path: "/pick-pack", icon: PackageSearch, group: "fulfillment" },
-  { name: "Photography", path: "/photography", icon: Camera, group: "fulfillment" },
-  { name: "Inventory", path: "/inventory", icon: Package, group: "fulfillment" },
-  { name: "Procurement", path: "/purchase-orders", icon: Truck, group: "fulfillment" },
+  {
+    name: "Fulfillment",
+    path: "/workflow-queue",
+    icon: PackageCheck,
+    group: "fulfillment",
+  },
+  {
+    name: "Pick & Pack",
+    path: "/pick-pack",
+    icon: PackageSearch,
+    group: "fulfillment",
+  },
+  {
+    name: "Photography",
+    path: "/photography",
+    icon: Camera,
+    group: "fulfillment",
+  },
+  {
+    name: "Inventory",
+    path: "/inventory",
+    icon: Package,
+    group: "fulfillment",
+  },
+  {
+    name: "Procurement",
+    path: "/purchase-orders",
+    icon: Truck,
+    group: "fulfillment",
+  },
   { name: "Returns", path: "/returns", icon: RefreshCw, group: "fulfillment" },
-  { name: "Locations", path: "/locations", icon: Warehouse, group: "fulfillment" },
+  { name: "Samples", path: "/samples", icon: Beaker, group: "fulfillment" },
+  {
+    name: "Locations",
+    path: "/locations",
+    icon: Warehouse,
+    group: "fulfillment",
+  },
 
   // ═══════════════════════════════════════════════════════════════
   // FINANCE - Money and accounting
   // ═══════════════════════════════════════════════════════════════
-  { name: "Accounting", path: "/accounting", icon: DollarSign, group: "finance" },
-  { name: "Pricing Rules", path: "/pricing/rules", icon: Tag, group: "finance" },
-  { name: "Pricing Profiles", path: "/pricing/profiles", icon: TrendingUp, group: "finance" },
-  { name: "Credit Settings", path: "/credit-settings", icon: TrendingUp, group: "finance" },
+  {
+    name: "Accounting",
+    path: "/accounting",
+    icon: DollarSign,
+    group: "finance",
+  },
+  {
+    name: "Pricing Rules",
+    path: "/pricing/rules",
+    icon: Tag,
+    group: "finance",
+  },
+  {
+    name: "Pricing Profiles",
+    path: "/pricing/profiles",
+    icon: TrendingUp,
+    group: "finance",
+  },
+  {
+    name: "Credit Settings",
+    path: "/credit-settings",
+    icon: TrendingUp,
+    group: "finance",
+  },
 
   // ═══════════════════════════════════════════════════════════════
   // SETTINGS - Analytics and configuration
   // ═══════════════════════════════════════════════════════════════
   { name: "Analytics", path: "/analytics", icon: BarChart3, group: "settings" },
-  { name: "Leaderboard", path: "/leaderboard", icon: Trophy, group: "settings" },
+  {
+    name: "Leaderboard",
+    path: "/leaderboard",
+    icon: Trophy,
+    group: "settings",
+  },
   { name: "Settings", path: "/settings", icon: Settings, group: "settings" },
   { name: "Help", path: "/help", icon: HelpCircle, group: "settings" },
 ];
