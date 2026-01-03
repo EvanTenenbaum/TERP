@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.30
+**Version:** 2.31
 **Last Updated:** January 3, 2026 (QA Technical Debt Added)
 **Status:** Active
 
@@ -9139,7 +9139,7 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 
 ## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
 
-**Version:** 2.30  
+**Version:** 2.31  
 **Added:** January 3, 2026  
 **Status:** 🟡 READY FOR EXECUTION  
 **Total Estimated Effort:** 92 hours
@@ -9425,7 +9425,7 @@ This section contains new work items identified during Tier 1 customer readiness
 
 ## 🎨 UI/UX Audit Findings - January 2026
 
-**Version:** 2.30  
+**Version:** 2.31  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA Specialist Audit  
 **Status:** 🟡 READY FOR EXECUTION  
@@ -9859,7 +9859,7 @@ These are major usability issues causing significant friction.
 
 ## 🔍 Additional UX Audit Findings - January 2026 (Supplemental)
 
-**Version:** 2.30  
+**Version:** 2.31  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA (Agent Mode) - Full Audit  
 **Status:** 🟡 READY FOR EXECUTION
@@ -10031,4 +10031,205 @@ The audit identified these systemic patterns that should inform future developme
 5. **UI assumes data always exists** → Silent failures when it doesn't
 
 These are captured for architectural awareness but not added as individual tasks since they are addressed by existing items (feature flags complete, empty states in progress, routing fixes in BUG-042).
+
+
+---
+
+## 📊 Roadmap Comprehensive Review (January 3, 2026)
+
+**Review Type:** Full Roadmap Audit  
+**Performed By:** Manus AI  
+**Protocol:** Redhat QA
+
+### Review Summary
+
+| Metric | Value |
+|--------|-------|
+| Total Task IDs | 233 |
+| Ready/TODO | 71 |
+| Complete | 110 |
+| In Progress | 1 |
+| **Gaps Identified** | 9 new tasks |
+
+---
+
+## 🆕 New Tasks Added (Gap Analysis)
+
+### CODE - Code Quality Cleanup
+
+#### CODE-001: TypeScript Error Cleanup
+- **Priority:** P1 (High)
+- **Estimate:** 16 hours
+- **Status:** READY
+- **Module:** Multiple files (see QA report)
+
+**Problem:** 240 TypeScript errors exist in the codebase, concentrated in:
+- `server/routers/alerts.ts` (31 errors)
+- `server/routers/inventoryShrinkage.ts` (25 errors)
+- `server/routers/vendorReminders.ts` (10 errors)
+- Various other files
+
+**Deliverables:**
+- [ ] Fix all TypeScript errors in alerts.ts
+- [ ] Fix all TypeScript errors in inventoryShrinkage.ts
+- [ ] Fix all TypeScript errors in vendorReminders.ts
+- [ ] Fix remaining TypeScript errors across codebase
+- [ ] `pnpm check` passes with 0 errors
+- [ ] No new `any` types introduced
+
+---
+
+#### CODE-002: Console.log Statement Removal
+- **Priority:** P2 (Medium)
+- **Estimate:** 8 hours
+- **Status:** READY
+- **Module:** Entire codebase
+
+**Problem:** 420 console.log statements exist in production code that should be removed or converted to structured logging.
+
+**Deliverables:**
+- [ ] Create logging utility (`lib/logger.ts`)
+- [ ] Replace console.log with structured logging where needed
+- [ ] Remove debug console.log statements
+- [ ] Add pre-commit hook to prevent new console.log
+- [ ] `grep -rn "console.log" --include="*.ts" --include="*.tsx" | wc -l` returns < 10
+
+---
+
+#### CODE-003: Any Type Elimination
+- **Priority:** P2 (Medium)
+- **Estimate:** 24 hours
+- **Status:** READY
+- **Module:** Entire codebase
+
+**Problem:** 564 instances of `any` type usage create type safety gaps.
+
+**Deliverables:**
+- [ ] Audit all `any` type usages
+- [ ] Replace with proper types (80%+ reduction)
+- [ ] Document remaining intentional `any` usages
+- [ ] Add ESLint rule to warn on new `any` usage
+- [ ] `grep -rn ": any\|as any" --include="*.ts" --include="*.tsx" | wc -l` returns < 100
+
+---
+
+### TEST - Test Coverage Expansion
+
+#### TEST-002: Unit Test Coverage Expansion
+- **Priority:** P2 (Medium)
+- **Estimate:** 16 hours
+- **Status:** READY
+- **Module:** `tests/`, `server/`, `client/`
+
+**Problem:** Unit test coverage is limited. Critical business logic needs test coverage.
+
+**Deliverables:**
+- [ ] Add unit tests for accounting calculations
+- [ ] Add unit tests for inventory logic
+- [ ] Add unit tests for credit limit calculations
+- [ ] Add unit tests for pricing rules
+- [ ] Achieve 60%+ coverage on critical modules
+- [ ] All tests pass
+
+---
+
+#### TEST-003: API Integration Test Suite
+- **Priority:** P2 (Medium)
+- **Estimate:** 12 hours
+- **Status:** READY
+- **Module:** `tests-e2e/api/`
+
+**Problem:** API endpoints lack integration tests for error handling and edge cases.
+
+**Deliverables:**
+- [ ] Create API test suite for orders endpoints
+- [ ] Create API test suite for inventory endpoints
+- [ ] Create API test suite for accounting endpoints
+- [ ] Test error responses and validation
+- [ ] All API tests pass
+
+---
+
+### INFRA - Infrastructure Hardening
+
+#### INFRA-004: Automated Backup Scripts
+- **Priority:** P1 (High)
+- **Estimate:** 8 hours
+- **Status:** READY
+- **Module:** `scripts/backup/`
+
+**Problem:** No automated backup scripts exist for database and critical data.
+
+**Deliverables:**
+- [ ] Create database backup script
+- [ ] Create S3 backup upload script
+- [ ] Create backup verification script
+- [ ] Create backup restore script
+- [ ] Document backup/restore procedures
+- [ ] Add cron job configuration
+
+---
+
+#### INFRA-005: Monitoring & Alerting Setup
+- **Priority:** P2 (Medium)
+- **Estimate:** 12 hours
+- **Status:** READY
+- **Module:** Infrastructure
+
+**Problem:** No monitoring or alerting for production issues.
+
+**Deliverables:**
+- [ ] Set up error tracking (Sentry or similar)
+- [ ] Set up uptime monitoring
+- [ ] Set up performance monitoring
+- [ ] Configure alert notifications
+- [ ] Document monitoring setup
+
+---
+
+### DOCS - Documentation
+
+#### DOCS-002: API Documentation (OpenAPI)
+- **Priority:** P2 (Medium)
+- **Estimate:** 8 hours
+- **Status:** READY
+- **Module:** `docs/api/`
+
+**Problem:** No formal API documentation for external integrations or developer reference.
+
+**Deliverables:**
+- [ ] Generate OpenAPI spec from tRPC routes
+- [ ] Create API reference documentation
+- [ ] Document authentication flow
+- [ ] Document rate limits and errors
+- [ ] Publish to docs site
+
+---
+
+#### DOCS-003: Developer Onboarding Guide
+- **Priority:** P3 (Low)
+- **Estimate:** 6 hours
+- **Status:** READY
+- **Module:** `docs/`
+
+**Problem:** New developers lack onboarding documentation.
+
+**Deliverables:**
+- [ ] Create CONTRIBUTING.md
+- [ ] Document local development setup
+- [ ] Document architecture overview
+- [ ] Document coding standards
+- [ ] Document PR process
+
+---
+
+## 📈 Updated Totals
+
+| Priority | Previous | Added | New Total |
+|----------|----------|-------|-----------|
+| P0 Critical | 9 (49h) | 0 | 9 (49h) |
+| P1 High | 14 (118h) | 2 (24h) | 16 (142h) |
+| P2 Medium | 15 (107h) | 6 (80h) | 21 (187h) |
+| P3 Low | 5 (30h) | 1 (6h) | 6 (36h) |
+| **Grand Total** | **43 (304h)** | **9 (110h)** | **52 (414h)** |
 
