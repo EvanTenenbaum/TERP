@@ -1,30 +1,40 @@
 import { z } from "zod";
 import { publicProcedure, router, vipPortalProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { 
-  clients, 
-  vipPortalAuth, 
-  vipPortalConfigurations,
-  clientNeeds,
-  vendorSupply,
-  invoices,
+import {
+  appointmentRequests,
+  appointmentTypes,
+  billLineItems,
   bills,
-  clientTransactions,
-  clientDraftInterests,
-  clientInterestLists,
-  clientInterestListItems,
+  calendarAvailability,
+  calendarBlockedDates,
+  calendarEvents,
+  calendars,
   clientCatalogViews,
+  clientDraftInterests,
+  clientInterestListItems,
+  clientInterestLists,
+  clientNeeds,
+  clientTransactions,
+  clients,
+  invoiceLineItems,
+  invoices,
   batches,
   products,
+  vendorSupply,
+  vipPortalAuth,
+  vipPortalConfigurations,
 } from "../../drizzle/schema";
 import * as liveCatalogService from "../services/liveCatalogService";
 import * as pricingEngine from "../pricingEngine";
 import * as priceAlertsService from "../services/priceAlertsService";
-import { eq, and, desc, gte, lte, sql, like, or, inArray } from "drizzle-orm";
+import { eq, and, desc, gte, lte, sql, like, or, inArray, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 import { requirePermission } from "../_core/permissionMiddleware";
 import type { MetricType } from "../services/leaderboard";
+import { jsPDF } from "jspdf";
+import { getNotificationRepository, resolveRecipient } from "../services/notificationRepository";
 
 /**
  * Map legacy leaderboard type to new metric type
@@ -46,6 +56,280 @@ function mapLegacyTypeToMetric(
     default:
       return "master_score";
   }
+}
+
+type Database = NonNullable<Awaited<ReturnType<typeof getDb>>>;
+type SlotMap = Record<string, string[]>;
+
+function toMinutes(time: string | null): number | null {
+  if (!time) return null;
+  const [hours, minutes] = time.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return null;
+  }
+  return hours * 60 + minutes;
+}
+
+function formatDateKey(date: Date | string): string {
+  const value = date instanceof Date ? date : new Date(date);
+  return value.toISOString().split("T")[0] ?? "";
+}
+
+function formatCurrencyValue(value: string | number | null | undefined): string {
+  const numericValue = typeof value === "number" ? value : Number(value ?? 0);
+  return numericValue.toFixed(2);
+}
+
+function formatQuantityValue(value: string | number | null | undefined): string {
+  const numericValue = typeof value === "number" ? value : Number(value ?? 0);
+  return numericValue.toFixed(2);
+}
+
+async function getActiveAppointmentType(
+  db: Database,
+  calendarId: number,
+  appointmentTypeId: number
+) {
+  const [appointmentType] = await db
+    .select()
+    .from(appointmentTypes)
+    .where(
+      and(
+        eq(appointmentTypes.id, appointmentTypeId),
+        eq(appointmentTypes.calendarId, calendarId),
+        eq(appointmentTypes.isActive, true)
+      )
+    )
+    .limit(1);
+
+  if (!appointmentType) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Appointment type not found or inactive",
+    });
+  }
+
+  return appointmentType;
+}
+
+async function buildAvailableSlots(
+  db: Database,
+  calendarId: number,
+  appointmentTypeId: number,
+  startDate: string,
+  endDate: string,
+  slotIntervalMinutes = 30
+): Promise<SlotMap> {
+  const appointmentType = await getActiveAppointmentType(
+    db,
+    calendarId,
+    appointmentTypeId
+  );
+
+  const availabilityRules = await db
+    .select()
+    .from(calendarAvailability)
+    .where(eq(calendarAvailability.calendarId, calendarId));
+
+  if (availabilityRules.length === 0) {
+    return {};
+  }
+
+  const blockedDates = await db
+    .select()
+    .from(calendarBlockedDates)
+    .where(
+      and(
+        eq(calendarBlockedDates.calendarId, calendarId),
+        gte(calendarBlockedDates.date, new Date(startDate)),
+        lte(calendarBlockedDates.date, new Date(endDate))
+      )
+    );
+
+  const blockedDateSet = new Set(
+    blockedDates.map((entry) => formatDateKey(entry.date))
+  );
+
+  const existingEvents = await db
+    .select({
+      startDate: calendarEvents.startDate,
+      startTime: calendarEvents.startTime,
+      endDate: calendarEvents.endDate,
+      endTime: calendarEvents.endTime,
+    })
+    .from(calendarEvents)
+    .where(
+      and(
+        eq(calendarEvents.calendarId, calendarId),
+        gte(calendarEvents.startDate, new Date(startDate)),
+        lte(calendarEvents.endDate, new Date(endDate)),
+        isNull(calendarEvents.deletedAt)
+      )
+    );
+
+  const pendingRequests = await db
+    .select({
+      requestedSlot: appointmentRequests.requestedSlot,
+      status: appointmentRequests.status,
+    })
+    .from(appointmentRequests)
+    .where(
+      and(
+        eq(appointmentRequests.calendarId, calendarId),
+        eq(appointmentRequests.appointmentTypeId, appointmentTypeId),
+        gte(appointmentRequests.requestedSlot, new Date(startDate)),
+        lte(appointmentRequests.requestedSlot, new Date(endDate)),
+        or(
+          eq(appointmentRequests.status, "pending"),
+          eq(appointmentRequests.status, "approved")
+        )
+      )
+    );
+
+  const pendingByDate = pendingRequests.reduce<Record<string, number[]>>(
+    (acc, request) => {
+      const pendingDate =
+        request.requestedSlot instanceof Date
+          ? request.requestedSlot
+          : new Date(request.requestedSlot);
+      const dateKey = formatDateKey(pendingDate);
+      const minutes = pendingDate.getHours() * 60 + pendingDate.getMinutes();
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push(minutes);
+      return acc;
+    },
+    {}
+  );
+
+  const availabilityByDay = availabilityRules.reduce<
+    Map<number, Array<{ start: string; end: string }>>
+  >((acc, rule) => {
+    if (!acc.has(rule.dayOfWeek)) {
+      acc.set(rule.dayOfWeek, []);
+    }
+    acc.get(rule.dayOfWeek)!.push({
+      start: rule.startTime,
+      end: rule.endTime,
+    });
+    return acc;
+  }, new Map());
+
+  const now = new Date();
+  const minBookingTime = new Date(
+    now.getTime() + appointmentType.minNoticeHours * 60 * 60 * 1000
+  );
+
+  const maxBookingDate = new Date(now);
+  maxBookingDate.setDate(maxBookingDate.getDate() + appointmentType.maxAdvanceDays);
+
+  const totalDuration =
+    appointmentType.bufferBefore +
+    appointmentType.duration +
+    appointmentType.bufferAfter;
+
+  const slots: SlotMap = {};
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const maxRangeEnd = new Date(start);
+  maxRangeEnd.setMonth(maxRangeEnd.getMonth() + 3);
+  if (end > maxRangeEnd) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Date range cannot exceed 3 months",
+    });
+  }
+
+  for (
+    const dateCursor = new Date(start);
+    dateCursor <= end;
+    dateCursor.setDate(dateCursor.getDate() + 1)
+  ) {
+    const dateKey = formatDateKey(dateCursor);
+
+    if (blockedDateSet.has(dateKey)) {
+      continue;
+    }
+
+    if (dateCursor > maxBookingDate) {
+      continue;
+    }
+
+    const dayAvailability = availabilityByDay.get(dateCursor.getDay());
+    if (!dayAvailability || dayAvailability.length === 0) {
+      continue;
+    }
+
+    const daySlots: string[] = [];
+
+    for (const window of dayAvailability) {
+      const windowStart = toMinutes(window.start);
+      const windowEnd = toMinutes(window.end);
+      if (windowStart === null || windowEnd === null) {
+        continue;
+      }
+
+      for (
+        let slotStart = windowStart;
+        slotStart + totalDuration <= windowEnd;
+        slotStart += slotIntervalMinutes
+      ) {
+        const slotHour = Math.floor(slotStart / 60);
+        const slotMinute = slotStart % 60;
+        const slotTime = `${slotHour.toString().padStart(2, "0")}:${slotMinute
+          .toString()
+          .padStart(2, "0")}`;
+
+        const slotDateTime = new Date(dateCursor);
+        slotDateTime.setHours(slotHour, slotMinute, 0, 0);
+
+        if (slotDateTime < minBookingTime) {
+          continue;
+        }
+
+        const slotEndMinutes = slotStart + totalDuration;
+        let hasConflict = false;
+
+        for (const event of existingEvents) {
+          const eventDateKey = formatDateKey(event.startDate);
+          if (eventDateKey !== dateKey) {
+            continue;
+          }
+
+          const eventStart = toMinutes(event.startTime ?? null);
+          const eventEnd = toMinutes(event.endTime ?? null);
+          if (eventStart === null || eventEnd === null) {
+            hasConflict = true;
+            break;
+          }
+
+          if (slotStart < eventEnd && slotEndMinutes > eventStart) {
+            hasConflict = true;
+            break;
+          }
+        }
+
+        if (!hasConflict) {
+          const pendingTimes = pendingByDate[dateKey] ?? [];
+          if (pendingTimes.some((pendingStart) => pendingStart === slotStart)) {
+            hasConflict = true;
+          }
+        }
+
+        if (!hasConflict) {
+          daySlots.push(slotTime);
+        }
+      }
+    }
+
+    if (daySlots.length > 0) {
+      slots[dateKey] = daySlots;
+    }
+  }
+
+  return slots;
 }
 
 /**
@@ -1005,6 +1289,430 @@ export const vipPortalRouter = router({
         return {
           metrics: customerMetrics,
           defaultPrimaryMetric: 'ytd_revenue',
+        };
+      }),
+  }),
+
+  // ============================================================================
+  // APPOINTMENT BOOKING (VIP-C-01)
+  // ============================================================================
+  appointments: router({
+    listCalendars: vipPortalProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      }
+
+      const availableCalendars = await db
+        .select()
+        .from(calendars)
+        .where(or(eq(calendars.isArchived, false), isNull(calendars.isArchived)));
+
+      if (availableCalendars.length === 0) {
+        return [];
+      }
+
+      const calendarIds = availableCalendars.map((calendar) => calendar.id);
+
+      const activeAppointmentTypes = await db
+        .select({
+          id: appointmentTypes.id,
+          calendarId: appointmentTypes.calendarId,
+          name: appointmentTypes.name,
+          description: appointmentTypes.description,
+          duration: appointmentTypes.duration,
+          color: appointmentTypes.color,
+        })
+        .from(appointmentTypes)
+        .where(
+          and(
+            inArray(appointmentTypes.calendarId, calendarIds),
+            eq(appointmentTypes.isActive, true)
+          )
+        );
+
+      const availability = await db
+        .select({
+          calendarId: calendarAvailability.calendarId,
+        })
+        .from(calendarAvailability)
+        .where(inArray(calendarAvailability.calendarId, calendarIds));
+
+      const calendarsWithTypes = availableCalendars
+        .filter((calendar) =>
+          availability.some((entry) => entry.calendarId === calendar.id)
+        )
+        .map((calendar) => ({
+          id: calendar.id,
+          name: calendar.name,
+          description: calendar.description ?? "",
+          appointmentTypes: activeAppointmentTypes
+            .filter((type) => type.calendarId === calendar.id)
+            .map((type) => ({
+              id: type.id,
+              name: type.name,
+              description: type.description ?? "",
+              durationMinutes: type.duration,
+              color: type.color,
+            })),
+        }))
+        .filter((calendar) => calendar.appointmentTypes.length > 0);
+
+      return calendarsWithTypes;
+    }),
+
+    getSlots: vipPortalProcedure
+      .input(
+        z.object({
+          calendarId: z.number(),
+          appointmentTypeId: z.number(),
+          startDate: z.string(),
+          endDate: z.string(),
+          slotIntervalMinutes: z.number().min(5).max(60).default(30).optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        }
+
+        const interval = input.slotIntervalMinutes ?? 30;
+        return buildAvailableSlots(
+          db,
+          input.calendarId,
+          input.appointmentTypeId,
+          input.startDate,
+          input.endDate,
+          interval
+        );
+      }),
+
+    request: vipPortalProcedure
+      .input(
+        z.object({
+          calendarId: z.number(),
+          appointmentTypeId: z.number(),
+          requestedSlot: z.string(),
+          notes: z.string().max(1000).optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        }
+
+        const { calendarId, appointmentTypeId, requestedSlot, notes } = input;
+        const clientId = ctx.clientId;
+
+        if (!clientId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+        }
+
+        const requestedDate = new Date(requestedSlot);
+        if (Number.isNaN(requestedDate.getTime())) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid requested time" });
+        }
+
+        const dateKey = formatDateKey(requestedDate);
+        const slotLabel = `${requestedDate
+          .getHours()
+          .toString()
+          .padStart(2, "0")}:${requestedDate.getMinutes().toString().padStart(2, "0")}`;
+
+        const available = await buildAvailableSlots(
+          db,
+          calendarId,
+          appointmentTypeId,
+          dateKey,
+          dateKey
+        );
+
+        if (!available[dateKey] || !available[dateKey]?.includes(slotLabel)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Selected time is no longer available",
+          });
+        }
+
+        const [created] = await db
+          .insert(appointmentRequests)
+          .values({
+            calendarId,
+            appointmentTypeId,
+            requestedById: clientId,
+            requestedSlot: requestedDate,
+            notes: notes ?? null,
+            status: "pending",
+          })
+          .$returningId();
+
+        return {
+          success: true,
+          requestId: created.id,
+          message: "Appointment request submitted successfully",
+        };
+      }),
+
+    listMyRequests: vipPortalProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      }
+
+      const clientId = ctx.clientId;
+      if (!clientId) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "VIP session required" });
+      }
+
+      const requests = await db
+        .select()
+        .from(appointmentRequests)
+        .where(eq(appointmentRequests.requestedById, clientId))
+        .orderBy(desc(appointmentRequests.createdAt));
+
+      const typeIds = Array.from(
+        new Set(requests.map((request) => request.appointmentTypeId))
+      );
+
+      const typeMap =
+        typeIds.length > 0
+          ? new Map(
+              (
+                await db
+                  .select({
+                    id: appointmentTypes.id,
+                    name: appointmentTypes.name,
+                    color: appointmentTypes.color,
+                  })
+                  .from(appointmentTypes)
+                  .where(inArray(appointmentTypes.id, typeIds))
+              ).map((type) => [type.id, type])
+            )
+          : new Map<number, { id: number; name: string; color: string | null }>();
+
+      return requests.map((request) => ({
+        id: request.id,
+        calendarId: request.calendarId,
+        appointmentTypeId: request.appointmentTypeId,
+        appointmentTypeName: typeMap.get(request.appointmentTypeId)?.name ?? "Appointment",
+        color: typeMap.get(request.appointmentTypeId)?.color ?? "#0EA5E9",
+        requestedSlot: request.requestedSlot,
+        status: request.status,
+        notes: request.notes ?? "",
+      }));
+    }),
+  }),
+
+  // ============================================================================
+  // IN-APP NOTIFICATIONS (VIP-C-02)
+  // ============================================================================
+  notifications: router({
+    list: vipPortalProcedure
+      .input(
+        z
+          .object({
+            limit: z.number().min(1).max(100).default(20),
+            offset: z.number().min(0).default(0),
+          })
+          .optional()
+      )
+      .query(async ({ input, ctx }) => {
+        const repo = await getNotificationRepository();
+        const recipient = resolveRecipient({
+          recipientType: "client",
+          clientId: ctx.clientId,
+        });
+
+        const limit = input?.limit ?? 20;
+        const offset = input?.offset ?? 0;
+
+        const items = await repo.listNotifications(recipient, limit, offset);
+        const unreadCount = await repo.countUnread(recipient);
+
+        return {
+          items,
+          unreadCount,
+        };
+      }),
+
+    markRead: vipPortalProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const repo = await getNotificationRepository();
+        const recipient = resolveRecipient({
+          recipientType: "client",
+          clientId: ctx.clientId,
+        });
+
+        await repo.markRead(input.id, recipient);
+        const unreadCount = await repo.countUnread(recipient);
+
+        return { success: true, unreadCount };
+      }),
+
+    markAllRead: vipPortalProcedure.mutation(async ({ ctx }) => {
+      const repo = await getNotificationRepository();
+      const recipient = resolveRecipient({
+        recipientType: "client",
+        clientId: ctx.clientId,
+      });
+
+      await repo.markAllRead(recipient);
+
+      return { success: true, unreadCount: 0 };
+    }),
+  }),
+
+  // ============================================================================
+  // DOCUMENT GENERATION (VIP-B-01)
+  // ============================================================================
+  documents: router({
+    downloadInvoicePdf: vipPortalProcedure
+      .input(z.object({ invoiceId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        }
+
+        const invoice = await db.query.invoices.findFirst({
+          where: eq(invoices.id, input.invoiceId),
+        });
+
+        if (!invoice || invoice.customerId !== ctx.clientId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have access to this invoice",
+          });
+        }
+
+        const lineItems = await db.query.invoiceLineItems.findMany({
+          where: eq(invoiceLineItems.invoiceId, invoice.id),
+        });
+
+        const client = await db.query.clients.findFirst({
+          where: eq(clients.id, invoice.customerId),
+        });
+
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("TERP VIP Portal", 14, 18);
+        doc.setFontSize(12);
+        doc.text(`Invoice ${invoice.invoiceNumber}`, 14, 28);
+        doc.text(`Client: ${client?.name ?? invoice.customerId}`, 14, 36);
+        doc.text(
+          `Date: ${formatDateKey(invoice.invoiceDate ?? new Date()).replace(/-/g, "/")}`,
+          14,
+          44
+        );
+
+        let y = 54;
+        doc.text("Line Items", 14, y);
+        y += 6;
+
+        if (lineItems.length === 0) {
+          doc.text("No line items", 14, y);
+          y += 8;
+        } else {
+          lineItems.forEach((item) => {
+            doc.text(
+              `${item.description} — ${formatQuantityValue(item.quantity)} x $${formatCurrencyValue(
+                item.unitPrice
+              )} = $${formatCurrencyValue(item.lineTotal)}`,
+              14,
+              y
+            );
+            y += 6;
+          });
+        }
+
+        y += 4;
+        doc.text(`Subtotal: $${formatCurrencyValue(invoice.subtotal)}`, 14, y);
+        y += 6;
+        doc.text(`Tax: $${formatCurrencyValue(invoice.taxAmount)}`, 14, y);
+        y += 6;
+        doc.text(`Total: $${formatCurrencyValue(invoice.totalAmount)}`, 14, y);
+        y += 6;
+        doc.text(`Amount Due: $${formatCurrencyValue(invoice.amountDue)}`, 14, y);
+
+        const pdfBase64 = doc.output("datauristring").split(",")[1] ?? "";
+
+        return {
+          pdf: pdfBase64,
+          fileName: `invoice-${invoice.invoiceNumber}.pdf`,
+        };
+      }),
+
+    downloadBillPdf: vipPortalProcedure
+      .input(z.object({ billId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        }
+
+        const bill = await db.query.bills.findFirst({
+          where: eq(bills.id, input.billId),
+        });
+
+        if (!bill || bill.vendorId !== ctx.clientId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have access to this bill",
+          });
+        }
+
+        const lineItems = await db.query.billLineItems.findMany({
+          where: eq(billLineItems.billId, bill.id),
+        });
+
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("TERP VIP Portal", 14, 18);
+        doc.setFontSize(12);
+        doc.text(`Bill ${bill.billNumber}`, 14, 28);
+        doc.text(
+          `Date: ${formatDateKey(bill.billDate ?? new Date()).replace(/-/g, "/")}`,
+          14,
+          36
+        );
+
+        let y = 46;
+        doc.text("Line Items", 14, y);
+        y += 6;
+
+        if (lineItems.length === 0) {
+          doc.text("No line items", 14, y);
+          y += 8;
+        } else {
+          lineItems.forEach((item) => {
+            doc.text(
+              `${item.description} — ${formatQuantityValue(item.quantity)} x $${formatCurrencyValue(
+                item.unitPrice
+              )} = $${formatCurrencyValue(item.lineTotal)}`,
+              14,
+              y
+            );
+            y += 6;
+          });
+        }
+
+        y += 4;
+        doc.text(`Subtotal: $${formatCurrencyValue(bill.subtotal)}`, 14, y);
+        y += 6;
+        doc.text(`Tax: $${formatCurrencyValue(bill.taxAmount)}`, 14, y);
+        y += 6;
+        doc.text(`Total: $${formatCurrencyValue(bill.totalAmount)}`, 14, y);
+        y += 6;
+        doc.text(`Amount Due: $${formatCurrencyValue(bill.amountDue)}`, 14, y);
+
+        const pdfBase64 = doc.output("datauristring").split(",")[1] ?? "";
+
+        return {
+          pdf: pdfBase64,
+          fileName: `bill-${bill.billNumber}.pdf`,
         };
       }),
   }),
