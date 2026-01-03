@@ -10,21 +10,26 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { APP_LOGO, APP_TITLE } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import { LogOut, LogIn, Settings, PanelLeft, Menu } from "lucide-react";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { navigationItems } from "@/config/navigation";
+import { buildNavigationGroups, navigationItems } from "@/config/navigation";
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -105,6 +110,11 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = navigationItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+  const { flags, isLoading: featureFlagsLoading } = useFeatureFlags();
+  const groupedNavigation = buildNavigationGroups({
+    flags,
+    flagsLoading: featureFlagsLoading,
+  });
 
   useEffect(() => {
     if (isCollapsed) {
@@ -183,27 +193,47 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {navigationItems.map(item => {
-                const isActive = location === item.path;
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.name}
-                      className={`h-10 transition-all font-normal`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.name}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+          <SidebarContent className="gap-1">
+            {groupedNavigation.map(group => (
+              <SidebarGroup key={group.key} className="px-1">
+                <SidebarGroupLabel
+                  data-testid="nav-group-label"
+                  className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  {group.label}
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu className="px-2 py-1">
+                    {group.items.map(item => {
+                      const isActive = location === item.path;
+                      return (
+                        <SidebarMenuItem key={item.path}>
+                          <SidebarMenuButton
+                            isActive={isActive}
+                            onClick={() => setLocation(item.path)}
+                            tooltip={item.name}
+                            className="h-10 transition-all font-normal"
+                          >
+                            <item.icon
+                              className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                            />
+                            <span>{item.name}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                    {featureFlagsLoading &&
+                      group.loadingFeatureItems.map(item => (
+                        <SidebarMenuItem key={`${item.path}-skeleton`}>
+                          <SidebarMenuSkeleton showIcon />
+                        </SidebarMenuItem>
+                      ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
 
+            <SidebarMenu className="px-2 py-1">
               {/* Dynamic Login/Logout Menu Item */}
               <SidebarMenuItem>
                 <SidebarMenuButton
