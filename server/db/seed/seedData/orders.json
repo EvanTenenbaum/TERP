@@ -1,0 +1,3878 @@
+[
+  {
+    "orderNumber": "O-202510-0001",
+    "clientCode": "CLI-0012",
+    "orderDate": "2025-10-13T15:46:47.166Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-ACCIDE-0156",
+        "quantity": 47,
+        "unitPrice": 37.66,
+        "unitCogs": 26.14,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-ABACUS-0138",
+        "quantity": 6,
+        "unitPrice": 50.44,
+        "unitCogs": 32.26,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-AFGHAN-0219",
+        "quantity": 22,
+        "unitPrice": 34.67,
+        "unitCogs": 20.88,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202507-0002",
+    "clientCode": "CLI-0053",
+    "orderDate": "2025-07-25T15:46:47.166Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-ACAI-0149",
+        "quantity": 24,
+        "unitPrice": 53.15,
+        "unitCogs": 32.05,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-AFGHAN-0210",
+        "quantity": 37,
+        "unitPrice": 53.48,
+        "unitCogs": 31,
+        "isSample": false
+      },
+      {
+        "sku": "EME-ACEOFS-0176",
+        "quantity": 16,
+        "unitPrice": 46.99,
+        "unitCogs": 30.9,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202508-0003",
+    "clientCode": "CLI-0034",
+    "orderDate": "2025-08-03T15:46:47.166Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-ADONIS-0192",
+        "quantity": 41,
+        "unitPrice": 48.64,
+        "unitCogs": 27.16,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-1NDUN-0023",
+        "quantity": 29,
+        "unitPrice": 32.73,
+        "unitCogs": 18.89,
+        "isSample": false
+      },
+      {
+        "sku": "EME-ACEOFS-0176",
+        "quantity": 13,
+        "unitPrice": 46.99,
+        "unitCogs": 30.9,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-86BLAC-0110",
+        "quantity": 25,
+        "unitPrice": 37.45,
+        "unitCogs": 26.23,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202509-0004",
+    "clientCode": "CLI-0052",
+    "orderDate": "2025-09-12T15:46:47.170Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "FRO-9MILL-0128",
+        "quantity": 36,
+        "unitPrice": 57.11,
+        "unitCogs": 31.95,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-509KUS-0069",
+        "quantity": 37,
+        "unitPrice": 34.84,
+        "unitCogs": 19.7,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-3TIMES-0050",
+        "quantity": 16,
+        "unitPrice": 46.9,
+        "unitCogs": 26.39,
+        "isSample": true
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202507-0005",
+    "clientCode": "CLI-0031",
+    "orderDate": "2025-07-08T15:46:47.170Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-1KPC-0022",
+        "quantity": 25,
+        "unitPrice": 35.33,
+        "unitCogs": 20.84,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-ABUSIV-0148",
+        "quantity": 24,
+        "unitPrice": 47.68,
+        "unitCogs": 31.96,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-24KTAN-0030",
+        "quantity": 32,
+        "unitPrice": 28.99,
+        "unitCogs": 18.59,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-ACAPUL-0154",
+        "quantity": 41,
+        "unitPrice": 49.34,
+        "unitCogs": 28.61,
+        "isSample": true
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202508-0006",
+    "clientCode": "CLI-0034",
+    "orderDate": "2025-08-17T15:46:47.170Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EVE-1K-0021",
+        "quantity": 40,
+        "unitPrice": 35.57,
+        "unitCogs": 21.22,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-ABULA-0147",
+        "quantity": 14,
+        "unitPrice": 57.38,
+        "unitCogs": 32.37,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202511-0007",
+    "clientCode": "CLI-0033",
+    "orderDate": "2025-11-16T15:46:47.170Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-5THELE-0079",
+        "quantity": 12,
+        "unitPrice": 45.2,
+        "unitCogs": 27.85,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-5GSBLU-0071",
+        "quantity": 18,
+        "unitPrice": 43.57,
+        "unitCogs": 28.4,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-9POUND-0129",
+        "quantity": 35,
+        "unitPrice": 37.76,
+        "unitCogs": 23.12,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202511-0008",
+    "clientCode": "CLI-0016",
+    "orderDate": "2025-11-25T15:46:47.170Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BLU-AFGHAN-0204",
+        "quantity": 46,
+        "unitPrice": 46.76,
+        "unitCogs": 29.84,
+        "isSample": true
+      },
+      {
+        "sku": "BEA-7GHOST-0099",
+        "quantity": 44,
+        "unitPrice": 53.56,
+        "unitCogs": 31.56,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-ADHD-0189",
+        "quantity": 34,
+        "unitPrice": 27.4,
+        "unitCogs": 18.3,
+        "isSample": true
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202508-0009",
+    "clientCode": "CLI-0019",
+    "orderDate": "2025-08-09T15:46:47.170Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-A3-0135",
+        "quantity": 26,
+        "unitPrice": 42.97,
+        "unitCogs": 25.76,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-90SGLU-0117",
+        "quantity": 17,
+        "unitPrice": 43.17,
+        "unitCogs": 29.26,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-A10-0130",
+        "quantity": 18,
+        "unitPrice": 35.36,
+        "unitCogs": 24.22,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202512-0010",
+    "clientCode": "CLI-0032",
+    "orderDate": "2025-12-09T15:46:47.170Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-78LAOG-0096",
+        "quantity": 29,
+        "unitPrice": 52.34,
+        "unitCogs": 30.19,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-360X-0041",
+        "quantity": 9,
+        "unitPrice": 51.65,
+        "unitCogs": 31.93,
+        "isSample": false
+      },
+      {
+        "sku": "COP-ACDCST-0165",
+        "quantity": 29,
+        "unitPrice": 32.3,
+        "unitCogs": 18.53,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-ACKLEB-0182",
+        "quantity": 40,
+        "unitPrice": 55.34,
+        "unitCogs": 31.24,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202508-0011",
+    "clientCode": "CLI-0004",
+    "orderDate": "2025-08-07T15:46:47.170Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-ADONIS-0192",
+        "quantity": 13,
+        "unitPrice": 48.64,
+        "unitCogs": 27.16,
+        "isSample": false
+      },
+      {
+        "sku": "EME-ABRACA-0146",
+        "quantity": 40,
+        "unitPrice": 38.35,
+        "unitCogs": 23,
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202507-0012",
+    "clientCode": "CLI-0026",
+    "orderDate": "2025-07-13T15:46:47.170Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "HOR-AFGHAN-0210",
+        "quantity": 20,
+        "unitPrice": 53.48,
+        "unitCogs": 31,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-1NDUN-0023",
+        "quantity": 23,
+        "unitPrice": 32.73,
+        "unitCogs": 18.89,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-ABERDE-0142",
+        "quantity": 23,
+        "unitPrice": 41.02,
+        "unitCogs": 24.6,
+        "isSample": false
+      },
+      {
+        "sku": "EME-10-0006",
+        "quantity": 36,
+        "unitPrice": 51.16,
+        "unitCogs": 32.38,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202511-0013",
+    "clientCode": "CLI-0012",
+    "orderDate": "2025-11-06T15:46:47.170Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-3DCBD-0043",
+        "quantity": 27,
+        "unitPrice": 41.71,
+        "unitCogs": 25.94,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-ABATIO-0139",
+        "quantity": 49,
+        "unitPrice": 43.64,
+        "unitCogs": 26.12,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202507-0014",
+    "clientCode": "CLI-0043",
+    "orderDate": "2025-07-31T15:46:47.170Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-A13-0132",
+        "quantity": 9,
+        "unitPrice": 32.93,
+        "unitCogs": 21.25,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-3RDCOA-0048",
+        "quantity": 49,
+        "unitPrice": 34.1,
+        "unitCogs": 24.09,
+        "isSample": false
+      },
+      {
+        "sku": "COP-ACRATA-0185",
+        "quantity": 29,
+        "unitPrice": 42.42,
+        "unitCogs": 26.09,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-ACDCMA-0164",
+        "quantity": 6,
+        "unitPrice": 38.72,
+        "unitCogs": 24.99,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202511-0015",
+    "clientCode": "CLI-0041",
+    "orderDate": "2025-11-05T15:46:47.170Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-818PUR-0107",
+        "quantity": 28,
+        "unitPrice": 43,
+        "unitCogs": 30.29,
+        "isSample": true
+      },
+      {
+        "sku": "EVE-ACIDDO-0181",
+        "quantity": 34,
+        "unitPrice": 55.76,
+        "unitCogs": 31.64,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-1NDUN-0023",
+        "quantity": 48,
+        "unitPrice": 32.73,
+        "unitCogs": 18.89,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202508-0016",
+    "clientCode": "CLI-0018",
+    "orderDate": "2025-08-13T15:46:47.170Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-98ALOH-0123",
+        "quantity": 12,
+        "unitPrice": 45.11,
+        "unitCogs": 29.68,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-5THELE-0079",
+        "quantity": 5,
+        "unitPrice": 45.2,
+        "unitCogs": 27.85,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-3PHENO-0047",
+        "quantity": 19,
+        "unitPrice": 48.81,
+        "unitCogs": 32.19,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-24GOLD-0027",
+        "quantity": 6,
+        "unitPrice": 28.72,
+        "unitCogs": 18.59,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202509-0017",
+    "clientCode": "CLI-0021",
+    "orderDate": "2025-09-18T15:46:47.170Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-2-0025",
+        "quantity": 25,
+        "unitPrice": 43.83,
+        "unitCogs": 29.94,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-AFGHAN-0219",
+        "quantity": 18,
+        "unitPrice": 34.67,
+        "unitCogs": 20.88,
+        "isSample": false
+      },
+      {
+        "sku": "EME-6PHENO-0086",
+        "quantity": 29,
+        "unitPrice": 48.92,
+        "unitCogs": 30.31,
+        "isSample": true
+      },
+      {
+        "sku": "SIE-100WAT-0007",
+        "quantity": 30,
+        "unitPrice": 37.54,
+        "unitCogs": 23.5,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0018",
+    "clientCode": "CLI-0041",
+    "orderDate": "2025-12-01T15:46:47.170Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-13DAWG-0017",
+        "quantity": 38,
+        "unitPrice": 26.84,
+        "unitCogs": 18.99,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-91OG-0121",
+        "quantity": 23,
+        "unitPrice": 46.22,
+        "unitCogs": 26.56,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202508-0019",
+    "clientCode": "CLI-0054",
+    "orderDate": "2025-08-04T15:46:47.170Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-13DAWG-0017",
+        "quantity": 48,
+        "unitPrice": 26.84,
+        "unitCogs": 18.99,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-2POUND-0034",
+        "quantity": 38,
+        "unitPrice": 33.23,
+        "unitCogs": 22.05,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-100OG-0001",
+        "quantity": 24,
+        "unitPrice": 45.39,
+        "unitCogs": 30.08,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-86BLAC-0110",
+        "quantity": 8,
+        "unitPrice": 37.45,
+        "unitCogs": 26.23,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202508-0020",
+    "clientCode": "CLI-0026",
+    "orderDate": "2025-08-01T15:46:47.170Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BLU-98LEMO-0124",
+        "quantity": 8,
+        "unitPrice": 39.99,
+        "unitCogs": 26.28,
+        "isSample": true
+      },
+      {
+        "sku": "SUM-60DAYW-0083",
+        "quantity": 24,
+        "unitPrice": 33.4,
+        "unitCogs": 23.7,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202508-0021",
+    "clientCode": "CLI-0012",
+    "orderDate": "2025-08-26T15:46:47.170Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-ACKONA-0183",
+        "quantity": 12,
+        "unitPrice": 26.51,
+        "unitCogs": 18.2,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-ACEHAT-0170",
+        "quantity": 40,
+        "unitPrice": 35.16,
+        "unitCogs": 20.96,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202508-0022",
+    "clientCode": "CLI-0007",
+    "orderDate": "2025-08-21T15:46:47.170Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EVE-ACEHIG-0171",
+        "quantity": 43,
+        "unitPrice": 36.32,
+        "unitCogs": 24.36,
+        "isSample": false
+      },
+      {
+        "sku": "COP-9LBSTR-0125",
+        "quantity": 48,
+        "unitPrice": 47.47,
+        "unitCogs": 31.13,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202512-0023",
+    "clientCode": "CLI-0011",
+    "orderDate": "2025-12-07T15:46:47.170Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-3RDDIM-0049",
+        "quantity": 12,
+        "unitPrice": 36.07,
+        "unitCogs": 22.23,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-AFFIEB-0198",
+        "quantity": 5,
+        "unitPrice": 36.85,
+        "unitCogs": 24.55,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202512-0024",
+    "clientCode": "CLI-0034",
+    "orderDate": "2025-12-27T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "FRO-3RDCOA-0048",
+        "quantity": 39,
+        "unitPrice": 34.1,
+        "unitCogs": 24.09,
+        "isSample": false
+      },
+      {
+        "sku": "EME-AFGHAN-0206",
+        "quantity": 6,
+        "unitPrice": 31.38,
+        "unitCogs": 20.41,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-747-0094",
+        "quantity": 27,
+        "unitPrice": 47.79,
+        "unitCogs": 28.8,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-86BLAC-0110",
+        "quantity": 29,
+        "unitPrice": 37.45,
+        "unitCogs": 26.23,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202507-0025",
+    "clientCode": "CLI-0031",
+    "orderDate": "2025-07-14T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-ACKLEB-0182",
+        "quantity": 20,
+        "unitPrice": 55.34,
+        "unitCogs": 31.24,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-7-0087",
+        "quantity": 32,
+        "unitPrice": 31.89,
+        "unitCogs": 18.51,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202508-0026",
+    "clientCode": "CLI-0034",
+    "orderDate": "2025-08-01T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-8MILES-0116",
+        "quantity": 32,
+        "unitPrice": 43.6,
+        "unitCogs": 30.76,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-4-0054",
+        "quantity": 42,
+        "unitPrice": 33.76,
+        "unitCogs": 22.3,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-9MILL-0128",
+        "quantity": 25,
+        "unitPrice": 57.11,
+        "unitCogs": 31.95,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-AFGHAN-0218",
+        "quantity": 23,
+        "unitPrice": 32.79,
+        "unitCogs": 21.51,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202508-0027",
+    "clientCode": "CLI-0041",
+    "orderDate": "2025-08-13T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-1KPC-0022",
+        "quantity": 46,
+        "unitPrice": 35.33,
+        "unitCogs": 20.84,
+        "isSample": true
+      },
+      {
+        "sku": "HOR-6-0080",
+        "quantity": 30,
+        "unitPrice": 42.05,
+        "unitCogs": 25.92,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202512-0028",
+    "clientCode": "CLI-0030",
+    "orderDate": "2025-12-01T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "FRO-AFFIEB-0198",
+        "quantity": 35,
+        "unitPrice": 36.85,
+        "unitCogs": 24.55,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-420GLU-0057",
+        "quantity": 30,
+        "unitPrice": 36.81,
+        "unitCogs": 24.44,
+        "isSample": false
+      },
+      {
+        "sku": "EME-10-0006",
+        "quantity": 11,
+        "unitPrice": 51.16,
+        "unitCogs": 32.38,
+        "isSample": true
+      },
+      {
+        "sku": "EVE-60-0081",
+        "quantity": 20,
+        "unitPrice": 43.8,
+        "unitCogs": 24.87,
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202509-0029",
+    "clientCode": "CLI-0058",
+    "orderDate": "2025-09-19T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "HOR-3TIMES-0050",
+        "quantity": 24,
+        "unitPrice": 46.9,
+        "unitCogs": 26.39,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-AFGANG-0199",
+        "quantity": 7,
+        "unitPrice": 32.86,
+        "unitCogs": 23.35,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-AFGHAN-0220",
+        "quantity": 13,
+        "unitPrice": 30.62,
+        "unitCogs": 18.96,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202508-0030",
+    "clientCode": "CLI-0006",
+    "orderDate": "2025-08-01T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-13ROSE-0019",
+        "quantity": 5,
+        "unitPrice": 52.35,
+        "unitCogs": 31.03,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-5PHENO-0078",
+        "quantity": 21,
+        "unitPrice": 27.96,
+        "unitCogs": 18.58,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-4D4THD-0062",
+        "quantity": 21,
+        "unitPrice": 44.53,
+        "unitCogs": 30.99,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-ACDCXQ-0167",
+        "quantity": 33,
+        "unitPrice": 30.18,
+        "unitCogs": 20.39,
+        "isSample": true
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202512-0031",
+    "clientCode": "CLI-0042",
+    "orderDate": "2025-12-17T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EVE-ACEHIG-0171",
+        "quantity": 36,
+        "unitPrice": 36.32,
+        "unitCogs": 24.36,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-4-0054",
+        "quantity": 22,
+        "unitPrice": 33.76,
+        "unitCogs": 22.3,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-ABOMB-0143",
+        "quantity": 49,
+        "unitPrice": 38.82,
+        "unitCogs": 24.5,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202509-0032",
+    "clientCode": "CLI-0044",
+    "orderDate": "2025-09-26T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-710STI-0093",
+        "quantity": 21,
+        "unitPrice": 45.88,
+        "unitCogs": 27.08,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-1KPC-0022",
+        "quantity": 38,
+        "unitPrice": 35.33,
+        "unitCogs": 20.84,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202508-0033",
+    "clientCode": "CLI-0001",
+    "orderDate": "2025-08-30T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-A3-0135",
+        "quantity": 26,
+        "unitPrice": 42.97,
+        "unitCogs": 25.76,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-AFGHAN-0211",
+        "quantity": 33,
+        "unitPrice": 45.82,
+        "unitCogs": 31.27,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-818PUR-0107",
+        "quantity": 40,
+        "unitPrice": 43,
+        "unitCogs": 30.29,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-7OF9-0101",
+        "quantity": 31,
+        "unitPrice": 45.31,
+        "unitCogs": 26.83,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202508-0034",
+    "clientCode": "CLI-0048",
+    "orderDate": "2025-08-05T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BLU-4-0054",
+        "quantity": 27,
+        "unitPrice": 33.76,
+        "unitCogs": 22.3,
+        "isSample": false
+      },
+      {
+        "sku": "COP-ACEOFS-0175",
+        "quantity": 26,
+        "unitPrice": 48.29,
+        "unitCogs": 28.29,
+        "isSample": false
+      },
+      {
+        "sku": "COP-3PAC-0045",
+        "quantity": 39,
+        "unitPrice": 37.89,
+        "unitCogs": 23.59,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-1NTHEP-0024",
+        "quantity": 17,
+        "unitPrice": 36.64,
+        "unitCogs": 22.98,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202509-0035",
+    "clientCode": "CLI-0057",
+    "orderDate": "2025-09-01T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-831OG-0109",
+        "quantity": 45,
+        "unitPrice": 43.83,
+        "unitCogs": 24.52,
+        "isSample": false
+      },
+      {
+        "sku": "COP-AFGHAN-0205",
+        "quantity": 11,
+        "unitPrice": 43.21,
+        "unitCogs": 25,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-AFGHAN-0208",
+        "quantity": 31,
+        "unitPrice": 46.26,
+        "unitCogs": 28.64,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202511-0036",
+    "clientCode": "CLI-0007",
+    "orderDate": "2025-11-23T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-3DCBD-0043",
+        "quantity": 30,
+        "unitPrice": 41.71,
+        "unitCogs": 25.94,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-ACDCGA-0162",
+        "quantity": 26,
+        "unitPrice": 31.06,
+        "unitCogs": 19.42,
+        "isSample": false
+      },
+      {
+        "sku": "COP-4WAY-0065",
+        "quantity": 22,
+        "unitPrice": 37.11,
+        "unitCogs": 24.32,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202507-0037",
+    "clientCode": "CLI-0029",
+    "orderDate": "2025-07-30T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-24KGOL-0029",
+        "quantity": 15,
+        "unitPrice": 48.69,
+        "unitCogs": 31.99,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-4KINGS-0064",
+        "quantity": 5,
+        "unitPrice": 46.47,
+        "unitCogs": 29.36,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202510-0038",
+    "clientCode": "CLI-0010",
+    "orderDate": "2025-10-04T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-ACEOFS-0176",
+        "quantity": 19,
+        "unitPrice": 46.99,
+        "unitCogs": 30.9,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-5GSYEL-0074",
+        "quantity": 26,
+        "unitPrice": 31.61,
+        "unitCogs": 21.38,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-7-0087",
+        "quantity": 24,
+        "unitPrice": 31.89,
+        "unitCogs": 18.51,
+        "isSample": true
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202511-0039",
+    "clientCode": "CLI-0025",
+    "orderDate": "2025-11-09T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-818OG-0106",
+        "quantity": 6,
+        "unitPrice": 39.58,
+        "unitCogs": 25.61,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-1988HA-0020",
+        "quantity": 11,
+        "unitPrice": 33.47,
+        "unitCogs": 22.73,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-A1HAZE-0133",
+        "quantity": 45,
+        "unitPrice": 41.12,
+        "unitCogs": 22.99,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-AFGHAN-0208",
+        "quantity": 5,
+        "unitPrice": 46.26,
+        "unitCogs": 28.64,
+        "isSample": true
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202509-0040",
+    "clientCode": "CLI-0037",
+    "orderDate": "2025-09-26T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-5THELE-0079",
+        "quantity": 27,
+        "unitPrice": 45.2,
+        "unitCogs": 27.85,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-3RDCOA-0048",
+        "quantity": 16,
+        "unitPrice": 34.1,
+        "unitCogs": 24.09,
+        "isSample": true
+      },
+      {
+        "sku": "BEA-3RDDIM-0049",
+        "quantity": 46,
+        "unitPrice": 36.07,
+        "unitCogs": 22.23,
+        "isSample": false
+      },
+      {
+        "sku": "EME-A5HAZE-0136",
+        "quantity": 30,
+        "unitPrice": 39.89,
+        "unitCogs": 27.81,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202508-0041",
+    "clientCode": "CLI-0015",
+    "orderDate": "2025-08-15T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-5THELE-0079",
+        "quantity": 48,
+        "unitPrice": 45.2,
+        "unitCogs": 27.85,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-ACAIBE-0150",
+        "quantity": 40,
+        "unitPrice": 40.39,
+        "unitCogs": 27.83,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-AFGHAN-0212",
+        "quantity": 34,
+        "unitPrice": 36.63,
+        "unitCogs": 22.39,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-4KINGS-0064",
+        "quantity": 16,
+        "unitPrice": 46.47,
+        "unitCogs": 29.36,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0042",
+    "clientCode": "CLI-0025",
+    "orderDate": "2025-12-03T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-7WAY-0103",
+        "quantity": 44,
+        "unitPrice": 35.06,
+        "unitCogs": 23.19,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-13ROSE-0019",
+        "quantity": 17,
+        "unitPrice": 52.35,
+        "unitCogs": 31.03,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202507-0043",
+    "clientCode": "CLI-0058",
+    "orderDate": "2025-07-10T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-ADONIS-0192",
+        "quantity": 6,
+        "unitPrice": 48.64,
+        "unitCogs": 27.16,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-AFGHAN-0204",
+        "quantity": 14,
+        "unitPrice": 46.76,
+        "unitCogs": 29.84,
+        "isSample": true
+      },
+      {
+        "sku": "BLU-ACDCMA-0164",
+        "quantity": 35,
+        "unitPrice": 38.72,
+        "unitCogs": 24.99,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202510-0044",
+    "clientCode": "CLI-0003",
+    "orderDate": "2025-10-24T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-ADUB-0193",
+        "quantity": 31,
+        "unitPrice": 38.72,
+        "unitCogs": 23.67,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-509KUS-0069",
+        "quantity": 47,
+        "unitPrice": 34.84,
+        "unitCogs": 19.7,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-707HEA-0088",
+        "quantity": 35,
+        "unitPrice": 32.45,
+        "unitCogs": 20.58,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-303OGK-0038",
+        "quantity": 45,
+        "unitPrice": 53.39,
+        "unitCogs": 31.67,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202509-0045",
+    "clientCode": "CLI-0019",
+    "orderDate": "2025-09-08T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-509KUS-0069",
+        "quantity": 9,
+        "unitPrice": 34.84,
+        "unitCogs": 19.7,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-5GSRED-0073",
+        "quantity": 24,
+        "unitPrice": 35.95,
+        "unitCogs": 23.33,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-24GOLD-0027",
+        "quantity": 39,
+        "unitPrice": 28.72,
+        "unitCogs": 18.59,
+        "isSample": false
+      },
+      {
+        "sku": "EME-AFCRAC-0196",
+        "quantity": 15,
+        "unitPrice": 45.65,
+        "unitCogs": 31.28,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202507-0046",
+    "clientCode": "CLI-0038",
+    "orderDate": "2025-07-31T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-AFGHAN-0212",
+        "quantity": 31,
+        "unitPrice": 36.63,
+        "unitCogs": 22.39,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-A10-0130",
+        "quantity": 6,
+        "unitPrice": 35.36,
+        "unitCogs": 24.22,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-ACEHAT-0170",
+        "quantity": 21,
+        "unitPrice": 35.16,
+        "unitCogs": 20.96,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202508-0047",
+    "clientCode": "CLI-0027",
+    "orderDate": "2025-08-04T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-8MILE-0115",
+        "quantity": 46,
+        "unitPrice": 45.61,
+        "unitCogs": 26.15,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-ACID-0179",
+        "quantity": 12,
+        "unitPrice": 35.5,
+        "unitCogs": 21.53,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202508-0048",
+    "clientCode": "CLI-0015",
+    "orderDate": "2025-08-11T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-100OGK-0002",
+        "quantity": 18,
+        "unitPrice": 32.12,
+        "unitCogs": 22.51,
+        "isSample": true
+      },
+      {
+        "sku": "BEA-AFGHAN-0219",
+        "quantity": 47,
+        "unitPrice": 34.67,
+        "unitCogs": 20.88,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-129-0012",
+        "quantity": 42,
+        "unitPrice": 38.06,
+        "unitCogs": 24.87,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-24KTAN-0030",
+        "quantity": 26,
+        "unitPrice": 28.99,
+        "unitCogs": 18.59,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202507-0049",
+    "clientCode": "CLI-0031",
+    "orderDate": "2025-07-08T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-5THELE-0079",
+        "quantity": 10,
+        "unitPrice": 45.2,
+        "unitCogs": 27.85,
+        "isSample": true
+      },
+      {
+        "sku": "EVE-A10-0131",
+        "quantity": 22,
+        "unitPrice": 34.77,
+        "unitCogs": 22.28,
+        "isSample": false
+      },
+      {
+        "sku": "EME-8MILES-0116",
+        "quantity": 48,
+        "unitPrice": 43.6,
+        "unitCogs": 30.76,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-ACDCXQ-0167",
+        "quantity": 23,
+        "unitPrice": 30.18,
+        "unitCogs": 20.39,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0050",
+    "clientCode": "CLI-0002",
+    "orderDate": "2025-12-20T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-1NDUN-0023",
+        "quantity": 34,
+        "unitPrice": 32.73,
+        "unitCogs": 18.89,
+        "isSample": true
+      },
+      {
+        "sku": "COP-ABOVEA-0145",
+        "quantity": 25,
+        "unitPrice": 38.36,
+        "unitCogs": 26.67,
+        "isSample": false
+      },
+      {
+        "sku": "EME-9LBSTR-0126",
+        "quantity": 23,
+        "unitPrice": 40.37,
+        "unitCogs": 23.44,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-1159AR-0010",
+        "quantity": 44,
+        "unitPrice": 36.52,
+        "unitCogs": 25.83,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202508-0051",
+    "clientCode": "CLI-0055",
+    "orderDate": "2025-08-15T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-2POUND-0033",
+        "quantity": 24,
+        "unitPrice": 46.22,
+        "unitCogs": 29.64,
+        "isSample": false
+      },
+      {
+        "sku": "COP-818HEA-0105",
+        "quantity": 6,
+        "unitPrice": 38.11,
+        "unitCogs": 21.27,
+        "isSample": true
+      },
+      {
+        "sku": "SUM-60DAYW-0083",
+        "quantity": 19,
+        "unitPrice": 33.4,
+        "unitCogs": 23.7,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202512-0052",
+    "clientCode": "CLI-0047",
+    "orderDate": "2025-12-21T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EVE-91OG-0121",
+        "quantity": 23,
+        "unitPrice": 46.22,
+        "unitCogs": 26.56,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-ABOMB-0143",
+        "quantity": 19,
+        "unitPrice": 38.82,
+        "unitCogs": 24.5,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-7GHOST-0099",
+        "quantity": 15,
+        "unitPrice": 53.56,
+        "unitCogs": 31.56,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-ACEBER-0168",
+        "quantity": 41,
+        "unitPrice": 55.56,
+        "unitCogs": 31.55,
+        "isSample": true
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202511-0053",
+    "clientCode": "CLI-0044",
+    "orderDate": "2025-11-06T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-5THELE-0079",
+        "quantity": 34,
+        "unitPrice": 45.2,
+        "unitCogs": 27.85,
+        "isSample": false
+      },
+      {
+        "sku": "COP-9LBSTR-0125",
+        "quantity": 5,
+        "unitPrice": 47.47,
+        "unitCogs": 31.13,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202511-0054",
+    "clientCode": "CLI-0052",
+    "orderDate": "2025-11-22T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-ACBD-0155",
+        "quantity": 10,
+        "unitPrice": 56.05,
+        "unitCogs": 31.74,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-512OG-0070",
+        "quantity": 25,
+        "unitPrice": 36.36,
+        "unitCogs": 24.53,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-303OG-0037",
+        "quantity": 35,
+        "unitPrice": 35.76,
+        "unitCogs": 20.37,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202507-0055",
+    "clientCode": "CLI-0060",
+    "orderDate": "2025-07-20T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "HOR-91KRYP-0120",
+        "quantity": 27,
+        "unitPrice": 45.38,
+        "unitCogs": 26.48,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-91CHEM-0119",
+        "quantity": 48,
+        "unitPrice": 52.55,
+        "unitCogs": 31.03,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202507-0056",
+    "clientCode": "CLI-0014",
+    "orderDate": "2025-07-08T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "FRO-818SFV-0108",
+        "quantity": 16,
+        "unitPrice": 43.42,
+        "unitCogs": 24.75,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-AFGHAN-0212",
+        "quantity": 43,
+        "unitPrice": 36.63,
+        "unitCogs": 22.39,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0057",
+    "clientCode": "CLI-0006",
+    "orderDate": "2025-12-19T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-5PHENO-0077",
+        "quantity": 16,
+        "unitPrice": 42.74,
+        "unitCogs": 26.31,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-9MILL-0128",
+        "quantity": 29,
+        "unitPrice": 57.11,
+        "unitCogs": 31.95,
+        "isSample": false
+      },
+      {
+        "sku": "COP-ACRATA-0185",
+        "quantity": 41,
+        "unitPrice": 42.42,
+        "unitCogs": 26.09,
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202508-0058",
+    "clientCode": "CLI-0026",
+    "orderDate": "2025-08-07T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-90SGLU-0117",
+        "quantity": 41,
+        "unitPrice": 43.17,
+        "unitCogs": 29.26,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-ACEHIG-0171",
+        "quantity": 38,
+        "unitPrice": 36.32,
+        "unitCogs": 24.36,
+        "isSample": false
+      },
+      {
+        "sku": "COP-4WAY-0065",
+        "quantity": 10,
+        "unitPrice": 37.11,
+        "unitCogs": 24.32,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202510-0059",
+    "clientCode": "CLI-0058",
+    "orderDate": "2025-10-25T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-ACDCGA-0163",
+        "quantity": 48,
+        "unitPrice": 54.36,
+        "unitCogs": 32.82,
+        "isSample": false
+      },
+      {
+        "sku": "COP-AFGHAN-0205",
+        "quantity": 13,
+        "unitPrice": 43.21,
+        "unitCogs": 25,
+        "isSample": true
+      },
+      {
+        "sku": "EME-ADAKOG-0186",
+        "quantity": 34,
+        "unitPrice": 34.34,
+        "unitCogs": 23.89,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202507-0060",
+    "clientCode": "CLI-0029",
+    "orderDate": "2025-07-28T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-88G13H-0112",
+        "quantity": 29,
+        "unitPrice": 42.41,
+        "unitCogs": 27.65,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-303STO-0039",
+        "quantity": 12,
+        "unitPrice": 35.99,
+        "unitCogs": 23.37,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0061",
+    "clientCode": "CLI-0041",
+    "orderDate": "2025-12-10T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "FRO-503OG-0068",
+        "quantity": 44,
+        "unitPrice": 43.17,
+        "unitCogs": 25.56,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-129-0012",
+        "quantity": 22,
+        "unitPrice": 38.06,
+        "unitCogs": 24.87,
+        "isSample": true
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202508-0062",
+    "clientCode": "CLI-0022",
+    "orderDate": "2025-08-09T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-5GSPUR-0072",
+        "quantity": 9,
+        "unitPrice": 37.87,
+        "unitCogs": 26.41,
+        "isSample": true
+      },
+      {
+        "sku": "FRO-91BUBB-0118",
+        "quantity": 27,
+        "unitPrice": 33.44,
+        "unitCogs": 23.42,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202509-0063",
+    "clientCode": "CLI-0009",
+    "orderDate": "2025-09-14T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-ACDCGA-0162",
+        "quantity": 42,
+        "unitPrice": 31.06,
+        "unitCogs": 19.42,
+        "isSample": false
+      },
+      {
+        "sku": "EME-10-0006",
+        "quantity": 16,
+        "unitPrice": 51.16,
+        "unitCogs": 32.38,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-5GSPUR-0072",
+        "quantity": 45,
+        "unitPrice": 37.87,
+        "unitCogs": 26.41,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0064",
+    "clientCode": "CLI-0055",
+    "orderDate": "2025-12-10T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "FRO-303OGK-0038",
+        "quantity": 5,
+        "unitPrice": 53.39,
+        "unitCogs": 31.67,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-100WAT-0007",
+        "quantity": 14,
+        "unitPrice": 37.54,
+        "unitCogs": 23.5,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202508-0065",
+    "clientCode": "CLI-0026",
+    "orderDate": "2025-08-26T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BLU-AE77CA-0194",
+        "quantity": 45,
+        "unitPrice": 44.87,
+        "unitCogs": 26.66,
+        "isSample": true
+      },
+      {
+        "sku": "BLU-AE77CA-0194",
+        "quantity": 44,
+        "unitPrice": 44.87,
+        "unitCogs": 26.66,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-12THMA-0013",
+        "quantity": 5,
+        "unitPrice": 34.73,
+        "unitCogs": 24.74,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202508-0066",
+    "clientCode": "CLI-0045",
+    "orderDate": "2025-08-14T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-ABRACA-0146",
+        "quantity": 49,
+        "unitPrice": 38.35,
+        "unitCogs": 23,
+        "isSample": false
+      },
+      {
+        "sku": "EME-10-0006",
+        "quantity": 16,
+        "unitPrice": 51.16,
+        "unitCogs": 32.38,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-3XCOOK-0051",
+        "quantity": 25,
+        "unitPrice": 36.16,
+        "unitCogs": 25.67,
+        "isSample": true
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202511-0067",
+    "clientCode": "CLI-0009",
+    "orderDate": "2025-11-10T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-78LAOG-0096",
+        "quantity": 14,
+        "unitPrice": 52.34,
+        "unitCogs": 30.19,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-ABBAZA-0140",
+        "quantity": 28,
+        "unitPrice": 48.98,
+        "unitCogs": 28.86,
+        "isSample": false
+      },
+      {
+        "sku": "COP-ACBD-0155",
+        "quantity": 5,
+        "unitPrice": 56.05,
+        "unitCogs": 31.74,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202510-0068",
+    "clientCode": "CLI-0041",
+    "orderDate": "2025-10-09T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-3PAC-0045",
+        "quantity": 24,
+        "unitPrice": 37.89,
+        "unitCogs": 23.59,
+        "isSample": true
+      },
+      {
+        "sku": "HOR-1159AR-0010",
+        "quantity": 12,
+        "unitPrice": 36.52,
+        "unitCogs": 25.83,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202512-0069",
+    "clientCode": "CLI-0051",
+    "orderDate": "2025-12-28T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "HOR-ACDCCA-0160",
+        "quantity": 25,
+        "unitPrice": 35.96,
+        "unitCogs": 24.62,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-AFGHAN-0207",
+        "quantity": 28,
+        "unitPrice": 39.32,
+        "unitCogs": 27.25,
+        "isSample": false
+      },
+      {
+        "sku": "COP-ACDCST-0165",
+        "quantity": 28,
+        "unitPrice": 32.3,
+        "unitCogs": 18.53,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202507-0070",
+    "clientCode": "CLI-0037",
+    "orderDate": "2025-07-14T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-ACEOFS-0177",
+        "quantity": 26,
+        "unitPrice": 30.64,
+        "unitCogs": 21.23,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-5THELE-0079",
+        "quantity": 36,
+        "unitPrice": 45.2,
+        "unitCogs": 27.85,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202509-0071",
+    "clientCode": "CLI-0044",
+    "orderDate": "2025-09-21T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BLU-AFGHAN-0214",
+        "quantity": 36,
+        "unitPrice": 41.66,
+        "unitCogs": 27.19,
+        "isSample": false
+      },
+      {
+        "sku": "COP-9LBSTR-0125",
+        "quantity": 13,
+        "unitPrice": 47.47,
+        "unitCogs": 31.13,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202510-0072",
+    "clientCode": "CLI-0029",
+    "orderDate": "2025-10-10T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-AFGHAN-0217",
+        "quantity": 35,
+        "unitPrice": 33.64,
+        "unitCogs": 22.25,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-12THMA-0013",
+        "quantity": 45,
+        "unitPrice": 34.73,
+        "unitCogs": 24.74,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202511-0073",
+    "clientCode": "CLI-0038",
+    "orderDate": "2025-11-04T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-5GSPUR-0072",
+        "quantity": 29,
+        "unitPrice": 37.87,
+        "unitCogs": 26.41,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-ACORN-0184",
+        "quantity": 48,
+        "unitPrice": 57.38,
+        "unitCogs": 32.36,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-ACDC-0158",
+        "quantity": 34,
+        "unitPrice": 47.19,
+        "unitCogs": 26.72,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-5GSYEL-0074",
+        "quantity": 18,
+        "unitPrice": 31.61,
+        "unitCogs": 21.38,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202510-0074",
+    "clientCode": "CLI-0055",
+    "orderDate": "2025-10-17T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EVE-88G13-0111",
+        "quantity": 24,
+        "unitPrice": 36.03,
+        "unitCogs": 20.24,
+        "isSample": true
+      },
+      {
+        "sku": "CAS-ADONIS-0192",
+        "quantity": 19,
+        "unitPrice": 48.64,
+        "unitCogs": 27.16,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-1K-0021",
+        "quantity": 28,
+        "unitPrice": 35.57,
+        "unitCogs": 21.22,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-A2COOK-0134",
+        "quantity": 48,
+        "unitPrice": 42.97,
+        "unitCogs": 27.92,
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202509-0075",
+    "clientCode": "CLI-0034",
+    "orderDate": "2025-09-22T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-ACBD-0155",
+        "quantity": 49,
+        "unitPrice": 56.05,
+        "unitCogs": 31.74,
+        "isSample": true
+      },
+      {
+        "sku": "CAS-3XCRAZ-0052",
+        "quantity": 46,
+        "unitPrice": 51.93,
+        "unitCogs": 31.61,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-3DCBD-0043",
+        "quantity": 34,
+        "unitPrice": 41.71,
+        "unitCogs": 25.94,
+        "isSample": true
+      },
+      {
+        "sku": "EME-ADAKOG-0186",
+        "quantity": 7,
+        "unitPrice": 34.34,
+        "unitCogs": 23.89,
+        "isSample": true
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202510-0076",
+    "clientCode": "CLI-0059",
+    "orderDate": "2025-10-18T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-13ROSE-0019",
+        "quantity": 28,
+        "unitPrice": 52.35,
+        "unitCogs": 31.03,
+        "isSample": false
+      },
+      {
+        "sku": "COP-3PAC-0045",
+        "quantity": 35,
+        "unitPrice": 37.89,
+        "unitCogs": 23.59,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-303OGK-0038",
+        "quantity": 42,
+        "unitPrice": 53.39,
+        "unitCogs": 31.67,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202509-0077",
+    "clientCode": "CLI-0053",
+    "orderDate": "2025-09-03T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-9MILE-0127",
+        "quantity": 31,
+        "unitPrice": 35.95,
+        "unitCogs": 20.62,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-3RDCOA-0048",
+        "quantity": 48,
+        "unitPrice": 34.1,
+        "unitCogs": 24.09,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-747-0094",
+        "quantity": 6,
+        "unitPrice": 47.79,
+        "unitCogs": 28.8,
+        "isSample": true
+      },
+      {
+        "sku": "CAS-AFGHAA-0202",
+        "quantity": 6,
+        "unitPrice": 47.66,
+        "unitCogs": 29.51,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202507-0078",
+    "clientCode": "CLI-0042",
+    "orderDate": "2025-07-21T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EVE-ACDCCB-0161",
+        "quantity": 15,
+        "unitPrice": 35.62,
+        "unitCogs": 19.94,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-4CORNE-0061",
+        "quantity": 31,
+        "unitPrice": 38.54,
+        "unitCogs": 24.14,
+        "isSample": false
+      },
+      {
+        "sku": "EME-AFGHAN-0206",
+        "quantity": 25,
+        "unitPrice": 31.38,
+        "unitCogs": 20.41,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-ACHARL-0178",
+        "quantity": 7,
+        "unitPrice": 28.71,
+        "unitCogs": 19.39,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202512-0079",
+    "clientCode": "CLI-0035",
+    "orderDate": "2025-12-24T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-8BALLK-0113",
+        "quantity": 44,
+        "unitPrice": 31.4,
+        "unitCogs": 18.94,
+        "isSample": true
+      },
+      {
+        "sku": "BEA-91CHEM-0119",
+        "quantity": 29,
+        "unitPrice": 52.55,
+        "unitCogs": 31.03,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-831OG-0109",
+        "quantity": 45,
+        "unitPrice": 43.83,
+        "unitCogs": 24.52,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-60DAYL-0082",
+        "quantity": 15,
+        "unitPrice": 35.61,
+        "unitCogs": 23.41,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202512-0080",
+    "clientCode": "CLI-0016",
+    "orderDate": "2025-12-08T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-ACEOFS-0176",
+        "quantity": 26,
+        "unitPrice": 46.99,
+        "unitCogs": 30.9,
+        "isSample": true
+      },
+      {
+        "sku": "BLU-747-0094",
+        "quantity": 24,
+        "unitPrice": 47.79,
+        "unitCogs": 28.8,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202508-0081",
+    "clientCode": "CLI-0023",
+    "orderDate": "2025-08-05T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-3XCRAZ-0053",
+        "quantity": 48,
+        "unitPrice": 32.77,
+        "unitCogs": 18.93,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-24KTAN-0030",
+        "quantity": 38,
+        "unitPrice": 28.99,
+        "unitCogs": 18.59,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202509-0082",
+    "clientCode": "CLI-0025",
+    "orderDate": "2025-09-02T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-303STO-0039",
+        "quantity": 6,
+        "unitPrice": 35.99,
+        "unitCogs": 23.37,
+        "isSample": true
+      },
+      {
+        "sku": "COP-5KOGCU-0075",
+        "quantity": 21,
+        "unitPrice": 45.93,
+        "unitCogs": 32.59,
+        "isSample": false
+      },
+      {
+        "sku": "EME-303KUS-0036",
+        "quantity": 14,
+        "unitPrice": 34.72,
+        "unitCogs": 24.67,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202509-0083",
+    "clientCode": "CLI-0014",
+    "orderDate": "2025-09-29T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-ACAI-0149",
+        "quantity": 38,
+        "unitPrice": 53.15,
+        "unitCogs": 32.05,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-5PHENO-0078",
+        "quantity": 23,
+        "unitPrice": 27.96,
+        "unitCogs": 18.58,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-ACDCGA-0162",
+        "quantity": 21,
+        "unitPrice": 31.06,
+        "unitCogs": 19.42,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-11GCBD-0011",
+        "quantity": 7,
+        "unitPrice": 46.75,
+        "unitCogs": 28.9,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202510-0084",
+    "clientCode": "CLI-0050",
+    "orderDate": "2025-10-01T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-129-0012",
+        "quantity": 34,
+        "unitPrice": 38.06,
+        "unitCogs": 24.87,
+        "isSample": false
+      },
+      {
+        "sku": "COP-ABOVEA-0145",
+        "quantity": 20,
+        "unitPrice": 38.36,
+        "unitCogs": 26.67,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-AFGHAN-0210",
+        "quantity": 41,
+        "unitPrice": 53.48,
+        "unitCogs": 31,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202512-0085",
+    "clientCode": "CLI-0025",
+    "orderDate": "2025-12-30T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-925-0122",
+        "quantity": 7,
+        "unitPrice": 46.6,
+        "unitCogs": 27.24,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-24KGOL-0029",
+        "quantity": 30,
+        "unitPrice": 48.69,
+        "unitCogs": 31.99,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-ACAPUL-0154",
+        "quantity": 17,
+        "unitPrice": 49.34,
+        "unitCogs": 28.61,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0086",
+    "clientCode": "CLI-0024",
+    "orderDate": "2025-12-27T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-A1HAZE-0133",
+        "quantity": 28,
+        "unitPrice": 41.12,
+        "unitCogs": 22.99,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-9MILL-0128",
+        "quantity": 38,
+        "unitPrice": 57.11,
+        "unitCogs": 31.95,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0087",
+    "clientCode": "CLI-0037",
+    "orderDate": "2025-12-14T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-78OGAF-0097",
+        "quantity": 44,
+        "unitPrice": 29.81,
+        "unitCogs": 18.23,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-AFGHAN-0214",
+        "quantity": 25,
+        "unitPrice": 41.66,
+        "unitCogs": 27.19,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202511-0088",
+    "clientCode": "CLI-0034",
+    "orderDate": "2025-11-24T15:46:47.171Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-4D4THD-0062",
+        "quantity": 40,
+        "unitPrice": 44.53,
+        "unitCogs": 30.99,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-3KINGS-0044",
+        "quantity": 27,
+        "unitPrice": 54.04,
+        "unitCogs": 31.04,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-24K-0028",
+        "quantity": 13,
+        "unitPrice": 46.97,
+        "unitCogs": 29.73,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-420GLU-0057",
+        "quantity": 7,
+        "unitPrice": 36.81,
+        "unitCogs": 24.44,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202508-0089",
+    "clientCode": "CLI-0023",
+    "orderDate": "2025-08-31T15:46:47.171Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-ACEOFS-0175",
+        "quantity": 39,
+        "unitPrice": 48.29,
+        "unitCogs": 28.29,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-707SOU-0089",
+        "quantity": 46,
+        "unitPrice": 36.93,
+        "unitCogs": 22.85,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-ACORN-0184",
+        "quantity": 15,
+        "unitPrice": 57.38,
+        "unitCogs": 32.36,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202510-0090",
+    "clientCode": "CLI-0010",
+    "orderDate": "2025-10-06T15:46:47.171Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "FRO-101HEA-0008",
+        "quantity": 35,
+        "unitPrice": 31.32,
+        "unitCogs": 21.91,
+        "isSample": true
+      },
+      {
+        "sku": "CAS-4D4THD-0062",
+        "quantity": 40,
+        "unitPrice": 44.53,
+        "unitCogs": 30.99,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-1NTHEP-0024",
+        "quantity": 31,
+        "unitPrice": 36.64,
+        "unitCogs": 22.98,
+        "isSample": false
+      },
+      {
+        "sku": "COP-3PAC-0045",
+        "quantity": 41,
+        "unitPrice": 37.89,
+        "unitCogs": 23.59,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202509-0091",
+    "clientCode": "CLI-0039",
+    "orderDate": "2025-09-25T15:46:47.171Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BLU-60INDI-0084",
+        "quantity": 27,
+        "unitPrice": 35.69,
+        "unitCogs": 20.49,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-AFGHAN-0213",
+        "quantity": 12,
+        "unitPrice": 33.25,
+        "unitCogs": 20.54,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-ACDCAC-0159",
+        "quantity": 20,
+        "unitPrice": 41.51,
+        "unitCogs": 29.29,
+        "isSample": false
+      },
+      {
+        "sku": "EME-AFGHAN-0206",
+        "quantity": 11,
+        "unitPrice": 31.38,
+        "unitCogs": 20.41,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202509-0092",
+    "clientCode": "CLI-0051",
+    "orderDate": "2025-09-09T15:46:47.172Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EVE-A10-0131",
+        "quantity": 13,
+        "unitPrice": 34.77,
+        "unitCogs": 22.28,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-ACEOFS-0177",
+        "quantity": 18,
+        "unitPrice": 30.64,
+        "unitCogs": 21.23,
+        "isSample": true
+      },
+      {
+        "sku": "CAS-1KPC-0022",
+        "quantity": 7,
+        "unitPrice": 35.33,
+        "unitCogs": 20.84,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-6-0080",
+        "quantity": 7,
+        "unitPrice": 42.05,
+        "unitCogs": 25.92,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202509-0093",
+    "clientCode": "CLI-0015",
+    "orderDate": "2025-09-23T15:46:47.172Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "HOR-86BLAC-0110",
+        "quantity": 31,
+        "unitPrice": 37.45,
+        "unitCogs": 26.23,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-8BALLK-0113",
+        "quantity": 22,
+        "unitPrice": 31.4,
+        "unitCogs": 18.94,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202508-0094",
+    "clientCode": "CLI-0039",
+    "orderDate": "2025-08-20T15:46:47.172Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-AFGHAN-0216",
+        "quantity": 26,
+        "unitPrice": 37.58,
+        "unitCogs": 23.44,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-12THMA-0013",
+        "quantity": 12,
+        "unitPrice": 34.73,
+        "unitCogs": 24.74,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202512-0095",
+    "clientCode": "CLI-0003",
+    "orderDate": "2025-12-16T15:46:47.172Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-24CARA-0026",
+        "quantity": 25,
+        "unitPrice": 43.1,
+        "unitCogs": 24.41,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-ACAIBE-0150",
+        "quantity": 32,
+        "unitPrice": 40.39,
+        "unitCogs": 27.83,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-512OG-0070",
+        "quantity": 19,
+        "unitPrice": 36.36,
+        "unitCogs": 24.53,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-100WAT-0007",
+        "quantity": 24,
+        "unitPrice": 37.54,
+        "unitCogs": 23.5,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202511-0096",
+    "clientCode": "CLI-0039",
+    "orderDate": "2025-11-05T15:46:47.172Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-9LBSTR-0126",
+        "quantity": 14,
+        "unitPrice": 40.37,
+        "unitCogs": 23.44,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-ACDCXQ-0167",
+        "quantity": 13,
+        "unitPrice": 30.18,
+        "unitCogs": 20.39,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202510-0097",
+    "clientCode": "CLI-0023",
+    "orderDate": "2025-10-07T15:46:47.172Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-3PHENO-0047",
+        "quantity": 25,
+        "unitPrice": 48.81,
+        "unitCogs": 32.19,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-AFFI-0197",
+        "quantity": 37,
+        "unitPrice": 35.27,
+        "unitCogs": 20.56,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-ACDCMA-0164",
+        "quantity": 20,
+        "unitPrice": 38.72,
+        "unitCogs": 24.99,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-13DAWG-0017",
+        "quantity": 11,
+        "unitPrice": 26.84,
+        "unitCogs": 18.99,
+        "isSample": true
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202512-0098",
+    "clientCode": "CLI-0039",
+    "orderDate": "2025-12-19T15:46:47.172Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-ACCIDE-0156",
+        "quantity": 45,
+        "unitPrice": 37.66,
+        "unitCogs": 26.14,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-91KRYP-0120",
+        "quantity": 14,
+        "unitPrice": 45.38,
+        "unitCogs": 26.48,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202512-0099",
+    "clientCode": "CLI-0009",
+    "orderDate": "2025-12-16T15:46:47.172Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-24KGOL-0029",
+        "quantity": 5,
+        "unitPrice": 48.69,
+        "unitCogs": 31.99,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-00SWER-0004",
+        "quantity": 33,
+        "unitPrice": 41.92,
+        "unitCogs": 28.38,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-ADONAI-0191",
+        "quantity": 8,
+        "unitPrice": 58.56,
+        "unitCogs": 32.95,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202510-0100",
+    "clientCode": "CLI-0022",
+    "orderDate": "2025-10-31T15:46:47.172Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-8MILES-0116",
+        "quantity": 35,
+        "unitPrice": 43.6,
+        "unitCogs": 30.76,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-98ALOH-0123",
+        "quantity": 38,
+        "unitPrice": 45.11,
+        "unitCogs": 29.68,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-98LEMO-0124",
+        "quantity": 32,
+        "unitPrice": 39.99,
+        "unitCogs": 26.28,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-5GSBLU-0071",
+        "quantity": 7,
+        "unitPrice": 43.57,
+        "unitCogs": 28.4,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202510-0101",
+    "clientCode": "CLI-0037",
+    "orderDate": "2025-10-25T15:46:47.172Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-ACID-0179",
+        "quantity": 42,
+        "unitPrice": 35.5,
+        "unitCogs": 21.53,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-3DCBD-0043",
+        "quantity": 11,
+        "unitPrice": 41.71,
+        "unitCogs": 25.94,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202509-0102",
+    "clientCode": "CLI-0060",
+    "orderDate": "2025-09-24T15:46:47.172Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BLU-60INDI-0084",
+        "quantity": 19,
+        "unitPrice": 35.69,
+        "unitCogs": 20.49,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-78OGAF-0097",
+        "quantity": 37,
+        "unitPrice": 29.81,
+        "unitCogs": 18.23,
+        "isSample": false
+      },
+      {
+        "sku": "COP-8MILE-0115",
+        "quantity": 33,
+        "unitPrice": 45.61,
+        "unitCogs": 26.15,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-AFGHAN-0211",
+        "quantity": 21,
+        "unitPrice": 45.82,
+        "unitCogs": 31.27,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202508-0103",
+    "clientCode": "CLI-0024",
+    "orderDate": "2025-08-07T15:46:47.172Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-91CHEM-0119",
+        "quantity": 25,
+        "unitPrice": 52.55,
+        "unitCogs": 31.03,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-88G13-0111",
+        "quantity": 42,
+        "unitPrice": 36.03,
+        "unitCogs": 20.24,
+        "isSample": false
+      },
+      {
+        "sku": "EME-AFCRAC-0196",
+        "quantity": 16,
+        "unitPrice": 45.65,
+        "unitCogs": 31.28,
+        "isSample": false
+      },
+      {
+        "sku": "EME-AFCRAC-0196",
+        "quantity": 27,
+        "unitPrice": 45.65,
+        "unitCogs": 31.28,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202510-0104",
+    "clientCode": "CLI-0008",
+    "orderDate": "2025-10-19T15:46:47.172Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-ACDCST-0165",
+        "quantity": 20,
+        "unitPrice": 32.3,
+        "unitCogs": 18.53,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-ABATIO-0139",
+        "quantity": 5,
+        "unitPrice": 43.64,
+        "unitCogs": 26.12,
+        "isSample": true
+      },
+      {
+        "sku": "COP-4WAY-0065",
+        "quantity": 17,
+        "unitPrice": 37.11,
+        "unitCogs": 24.32,
+        "isSample": true
+      },
+      {
+        "sku": "EVE-91OG-0121",
+        "quantity": 9,
+        "unitPrice": 46.22,
+        "unitCogs": 26.56,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0105",
+    "clientCode": "CLI-0055",
+    "orderDate": "2025-12-29T15:46:47.172Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-AFGHAN-0217",
+        "quantity": 10,
+        "unitPrice": 33.64,
+        "unitCogs": 22.25,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-13DAWG-0017",
+        "quantity": 28,
+        "unitPrice": 26.84,
+        "unitCogs": 18.99,
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202508-0106",
+    "clientCode": "CLI-0033",
+    "orderDate": "2025-08-01T15:46:47.172Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EVE-ACEHIG-0171",
+        "quantity": 37,
+        "unitPrice": 36.32,
+        "unitCogs": 24.36,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-ABERDE-0142",
+        "quantity": 11,
+        "unitPrice": 41.02,
+        "unitCogs": 24.6,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-ACEOFH-0173",
+        "quantity": 23,
+        "unitPrice": 50.19,
+        "unitCogs": 28.74,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202509-0107",
+    "clientCode": "CLI-0033",
+    "orderDate": "2025-09-21T15:46:47.172Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-10-0006",
+        "quantity": 45,
+        "unitPrice": 51.16,
+        "unitCogs": 32.38,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-710STI-0093",
+        "quantity": 49,
+        "unitPrice": 45.88,
+        "unitCogs": 27.08,
+        "isSample": true
+      },
+      {
+        "sku": "BEA-425-0059",
+        "quantity": 27,
+        "unitPrice": 48.9,
+        "unitCogs": 29.48,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-4CORNE-0061",
+        "quantity": 28,
+        "unitPrice": 38.54,
+        "unitCogs": 24.14,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202509-0108",
+    "clientCode": "CLI-0001",
+    "orderDate": "2025-09-15T15:46:47.172Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "CAS-129-0012",
+        "quantity": 37,
+        "unitPrice": 38.06,
+        "unitCogs": 24.87,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-3D-0042",
+        "quantity": 29,
+        "unitPrice": 34.27,
+        "unitCogs": 22.85,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-ACCORN-0157",
+        "quantity": 12,
+        "unitPrice": 53.73,
+        "unitCogs": 32.47,
+        "isSample": false
+      },
+      {
+        "sku": "BEA-ADHD-0189",
+        "quantity": 18,
+        "unitPrice": 27.4,
+        "unitCogs": 18.3,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202509-0109",
+    "clientCode": "CLI-0059",
+    "orderDate": "2025-09-13T15:46:47.172Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "COP-619OG-0085",
+        "quantity": 7,
+        "unitPrice": 45.57,
+        "unitCogs": 32.48,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-ABOMIN-0144",
+        "quantity": 21,
+        "unitPrice": 48.78,
+        "unitCogs": 28.61,
+        "isSample": false
+      },
+      {
+        "sku": "COP-619OG-0085",
+        "quantity": 47,
+        "unitPrice": 45.57,
+        "unitCogs": 32.48,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202512-0110",
+    "clientCode": "CLI-0037",
+    "orderDate": "2025-12-15T15:46:47.172Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BLU-ACAPUL-0154",
+        "quantity": 26,
+        "unitPrice": 49.34,
+        "unitCogs": 28.61,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-ACEHAT-0170",
+        "quantity": 47,
+        "unitPrice": 35.16,
+        "unitCogs": 20.96,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202512-0111",
+    "clientCode": "CLI-0025",
+    "orderDate": "2025-12-19T15:46:47.172Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "HOR-AFGANI-0200",
+        "quantity": 19,
+        "unitPrice": 30.35,
+        "unitCogs": 18.15,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-A2COOK-0134",
+        "quantity": 36,
+        "unitPrice": 42.97,
+        "unitCogs": 27.92,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-2PHENO-0032",
+        "quantity": 26,
+        "unitPrice": 35.99,
+        "unitCogs": 21.32,
+        "isSample": false
+      },
+      {
+        "sku": "COP-9LBSTR-0125",
+        "quantity": 45,
+        "unitPrice": 47.47,
+        "unitCogs": 31.13,
+        "isSample": true
+      }
+    ],
+    "notes": "Standard shipping"
+  },
+  {
+    "orderNumber": "O-202509-0112",
+    "clientCode": "CLI-0057",
+    "orderDate": "2025-09-21T15:46:47.172Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-24CARA-0026",
+        "quantity": 49,
+        "unitPrice": 43.1,
+        "unitCogs": 24.41,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-ACEBER-0168",
+        "quantity": 13,
+        "unitPrice": 55.56,
+        "unitCogs": 31.55,
+        "isSample": false
+      },
+      {
+        "sku": "SUM-ABOMB-0143",
+        "quantity": 20,
+        "unitPrice": 38.82,
+        "unitCogs": 24.5,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202508-0113",
+    "clientCode": "CLI-0004",
+    "orderDate": "2025-08-30T15:46:47.172Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SIE-90SGLU-0117",
+        "quantity": 38,
+        "unitPrice": 43.17,
+        "unitCogs": 29.26,
+        "isSample": true
+      },
+      {
+        "sku": "HOR-1159AR-0010",
+        "quantity": 44,
+        "unitPrice": 36.52,
+        "unitCogs": 25.83,
+        "isSample": false
+      }
+    ],
+    "notes": "Priority customer"
+  },
+  {
+    "orderNumber": "O-202508-0114",
+    "clientCode": "CLI-0048",
+    "orderDate": "2025-08-11T15:46:47.172Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "EME-303KUS-0036",
+        "quantity": 25,
+        "unitPrice": 34.72,
+        "unitCogs": 24.67,
+        "isSample": false
+      },
+      {
+        "sku": "EME-818OG-0106",
+        "quantity": 44,
+        "unitPrice": 39.58,
+        "unitCogs": 25.61,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-101HEA-0008",
+        "quantity": 16,
+        "unitPrice": 31.32,
+        "unitCogs": 21.91,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-ACORN-0184",
+        "quantity": 12,
+        "unitPrice": 57.38,
+        "unitCogs": 32.36,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202510-0115",
+    "clientCode": "CLI-0048",
+    "orderDate": "2025-10-18T15:46:47.172Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "HOR-ACDCCA-0160",
+        "quantity": 20,
+        "unitPrice": 35.96,
+        "unitCogs": 24.62,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-ABULA-0147",
+        "quantity": 17,
+        "unitPrice": 57.38,
+        "unitCogs": 32.37,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-3D-0042",
+        "quantity": 31,
+        "unitPrice": 34.27,
+        "unitCogs": 22.85,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202512-0116",
+    "clientCode": "CLI-0047",
+    "orderDate": "2025-12-28T15:46:47.172Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "SUM-00KUSH-0003",
+        "quantity": 26,
+        "unitPrice": 43.8,
+        "unitCogs": 28.15,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-707TRU-0090",
+        "quantity": 11,
+        "unitPrice": 42.18,
+        "unitCogs": 27.33,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-AFFI-0197",
+        "quantity": 21,
+        "unitPrice": 35.27,
+        "unitCogs": 20.56,
+        "isSample": false
+      },
+      {
+        "sku": "BLU-ACEOFS-0174",
+        "quantity": 23,
+        "unitPrice": 44.66,
+        "unitCogs": 29.05,
+        "isSample": true
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202511-0117",
+    "clientCode": "CLI-0037",
+    "orderDate": "2025-11-10T15:46:47.172Z",
+    "paymentTerms": "NET_7",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "FRO-AFGHAN-0218",
+        "quantity": 43,
+        "unitPrice": 32.79,
+        "unitCogs": 21.51,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-AFGHAN-0207",
+        "quantity": 29,
+        "unitPrice": 39.32,
+        "unitCogs": 27.25,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-ADONAI-0191",
+        "quantity": 38,
+        "unitPrice": 58.56,
+        "unitCogs": 32.95,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-501STO-0067",
+        "quantity": 17,
+        "unitPrice": 52.4,
+        "unitCogs": 30.46,
+        "isSample": false
+      }
+    ],
+    "notes": "Add marketing samples"
+  },
+  {
+    "orderNumber": "O-202512-0118",
+    "clientCode": "CLI-0043",
+    "orderDate": "2025-12-14T15:46:47.172Z",
+    "paymentTerms": "NET_15",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-91CHEM-0119",
+        "quantity": 32,
+        "unitPrice": 52.55,
+        "unitCogs": 31.03,
+        "isSample": false
+      },
+      {
+        "sku": "COP-5KOGCU-0075",
+        "quantity": 29,
+        "unitPrice": 45.93,
+        "unitCogs": 32.59,
+        "isSample": false
+      },
+      {
+        "sku": "SIE-501STO-0067",
+        "quantity": 49,
+        "unitPrice": 52.4,
+        "unitCogs": 30.46,
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "orderNumber": "O-202509-0119",
+    "clientCode": "CLI-0035",
+    "orderDate": "2025-09-03T15:46:47.172Z",
+    "paymentTerms": "NET_30",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-ACAI-0149",
+        "quantity": 10,
+        "unitPrice": 53.15,
+        "unitCogs": 32.05,
+        "isSample": false
+      },
+      {
+        "sku": "FRO-420KUS-0058",
+        "quantity": 13,
+        "unitPrice": 48.7,
+        "unitCogs": 29.34,
+        "isSample": false
+      },
+      {
+        "sku": "CAS-4D4THD-0062",
+        "quantity": 6,
+        "unitPrice": 44.53,
+        "unitCogs": 30.99,
+        "isSample": false
+      }
+    ],
+    "notes": "Requested terpene report"
+  },
+  {
+    "orderNumber": "O-202512-0120",
+    "clientCode": "CLI-0017",
+    "orderDate": "2025-12-02T15:46:47.172Z",
+    "paymentTerms": "COD",
+    "saleStatus": "PAID",
+    "fulfillmentStatus": "SHIPPED",
+    "items": [
+      {
+        "sku": "BEA-831OG-0109",
+        "quantity": 14,
+        "unitPrice": 43.83,
+        "unitCogs": 24.52,
+        "isSample": false
+      },
+      {
+        "sku": "EVE-88G13-0111",
+        "quantity": 37,
+        "unitPrice": 36.03,
+        "unitCogs": 20.24,
+        "isSample": false
+      },
+      {
+        "sku": "HOR-AFGHAN-0210",
+        "quantity": 35,
+        "unitPrice": 53.48,
+        "unitCogs": 31,
+        "isSample": true
+      },
+      {
+        "sku": "FRO-9MILL-0128",
+        "quantity": 30,
+        "unitPrice": 57.11,
+        "unitCogs": 31.95,
+        "isSample": false
+      }
+    ],
+    "notes": "Standard shipping"
+  }
+]
