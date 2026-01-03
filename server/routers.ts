@@ -58,6 +58,7 @@ import { todoTasksRouter } from "./routers/todoTasks";
 import { commentsRouter } from "./routers/comments";
 import { usersRouter } from "./routers/users";
 import { inboxRouter } from "./routers/inbox";
+import { notificationsRouter } from "./routers/notifications";
 import { todoActivityRouter } from "./routers/todoActivity";
 import { calendarRouter } from "./routers/calendar";
 import { calendarParticipantsRouter } from "./routers/calendarParticipants";
@@ -166,6 +167,7 @@ export const appRouter = router({
   comments: commentsRouter,
   users: usersRouter,
   inbox: inboxRouter,
+  notifications: notificationsRouter,
   todoActivity: todoActivityRouter,
   calendar: calendarRouter,
   calendarParticipants: calendarParticipantsRouter,

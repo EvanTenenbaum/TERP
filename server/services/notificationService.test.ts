@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock the logger module
+vi.mock("../db", () => ({
+  getDb: vi.fn(async () => null),
+}));
+
 vi.mock("../_core/logger", () => ({
   logger: {
     info: vi.fn(),
@@ -11,215 +14,149 @@ vi.mock("../_core/logger", () => ({
 }));
 
 import {
-  sendNotification,
+  deleteNotification,
+  getNotificationPreferences,
+  getUnreadCount,
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  processNotificationQueue,
+  queueNotification,
+  resetNotificationStateForTests,
   sendBulkNotification,
-  sendReminder,
-  type NotificationPayload,
+  sendNotification,
+  updateNotificationPreferences,
 } from "./notificationService";
-import { logger } from "../_core/logger";
 
-describe("notificationService", () => {
+describe("notificationService - queue and delivery", () => {
   beforeEach(() => {
+    resetNotificationStateForTests();
     vi.clearAllMocks();
   });
 
-  describe("sendNotification", () => {
-    it("should log email notification correctly", async () => {
-      const payload: NotificationPayload = {
-        userId: 1,
-        title: "Test Email",
-        message: "This is a test email",
-        method: "email",
-      };
-
-      await sendNotification(payload);
-
-      expect(logger.info).toHaveBeenCalledWith(
-        { payload },
-        "Notification requested"
-      );
-      expect(logger.info).toHaveBeenCalledWith(
-        { to: 1, subject: "Test Email" },
-        "Email notification (stub)"
-      );
+  it("queues and processes in-app notifications with defaults", async () => {
+    await sendNotification({
+      userId: 1,
+      type: "info",
+      title: "Welcome",
+      message: "Hello there",
     });
 
-    it("should log SMS notification correctly", async () => {
-      const payload: NotificationPayload = {
-        userId: 2,
-        title: "Test SMS",
-        message: "This is a test SMS",
-        method: "sms",
-      };
-
-      await sendNotification(payload);
-
-      expect(logger.info).toHaveBeenCalledWith(
-        { payload },
-        "Notification requested"
-      );
-      expect(logger.info).toHaveBeenCalledWith(
-        { to: 2 },
-        "SMS notification (stub)"
-      );
-    });
-
-    it("should log push notification correctly", async () => {
-      const payload: NotificationPayload = {
-        userId: 3,
-        title: "Test Push",
-        message: "This is a test push notification",
-        method: "push",
-      };
-
-      await sendNotification(payload);
-
-      expect(logger.info).toHaveBeenCalledWith(
-        { payload },
-        "Notification requested"
-      );
-      expect(logger.info).toHaveBeenCalledWith(
-        { to: 3 },
-        "Push notification (stub)"
-      );
-    });
-
-    it("should log in-app notification correctly", async () => {
-      const payload: NotificationPayload = {
-        userId: 4,
-        title: "Test In-App",
-        message: "This is a test in-app notification",
-        method: "in-app",
-      };
-
-      await sendNotification(payload);
-
-      expect(logger.info).toHaveBeenCalledWith(
-        { payload },
-        "Notification requested"
-      );
-      expect(logger.info).toHaveBeenCalledWith(
-        { to: 4 },
-        "In-app notification (stub)"
-      );
-    });
-
-    it("should include metadata in payload logging", async () => {
-      const payload: NotificationPayload = {
-        userId: 5,
-        title: "Test with Metadata",
-        message: "This notification has metadata",
-        method: "email",
-        metadata: { orderId: 123, type: "order_confirmation" },
-      };
-
-      await sendNotification(payload);
-
-      expect(logger.info).toHaveBeenCalledWith(
-        { payload },
-        "Notification requested"
-      );
-    });
+    const result = await processNotificationQueue();
+    expect(result.processed).toBe(1);
+    const notifications = await listNotifications({ userId: 1 }, { limit: 10, offset: 0 });
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]?.read).toBe(false);
+    expect(notifications[0]?.channel).toBe("in_app");
+    expect(notifications[0]?.type).toBe("info");
   });
 
-  describe("sendBulkNotification", () => {
-    it("should send notification to all users", async () => {
-      const userIds = [1, 2, 3];
-      const notification = {
-        title: "Bulk Test",
-        message: "This is a bulk notification",
-        method: "in-app" as const,
-      };
+  it("supports bulk queueing across users", async () => {
+    await sendBulkNotification(
+      [11, 22],
+      {
+        type: "warning",
+        title: "System Warning",
+        message: "Check your tasks",
+      }
+    );
 
-      await sendBulkNotification(userIds, notification);
+    const result = await processNotificationQueue({ batchSize: 10 });
+    expect(result.processed).toBe(2);
 
-      // Should be called 3 times (once for each user) + 3 times for method-specific logs
-      expect(logger.info).toHaveBeenCalledTimes(6);
-    });
+    const userOne = await listNotifications({ userId: 11 }, { limit: 5, offset: 0 });
+    const userTwo = await listNotifications({ userId: 22 }, { limit: 5, offset: 0 });
 
-    it("should handle empty user array", async () => {
-      const userIds: number[] = [];
-      const notification = {
-        title: "Empty Test",
-        message: "No users to notify",
-        method: "email" as const,
-      };
-
-      await sendBulkNotification(userIds, notification);
-
-      // Should not be called at all
-      expect(logger.info).not.toHaveBeenCalled();
-    });
-
-    it("should send to single user in array", async () => {
-      const userIds = [42];
-      const notification = {
-        title: "Single User",
-        message: "Only one user",
-        method: "push" as const,
-      };
-
-      await sendBulkNotification(userIds, notification);
-
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: expect.objectContaining({ userId: 42 }),
-        }),
-        "Notification requested"
-      );
-    });
+    expect(userOne).toHaveLength(1);
+    expect(userTwo).toHaveLength(1);
+    expect(userOne[0]?.title).toBe("System Warning");
+    expect(userTwo[0]?.title).toBe("System Warning");
   });
 
-  describe("sendReminder", () => {
-    it("should format reminder message correctly", async () => {
-      await sendReminder(1, "payment due", 123, "invoice");
-
-      expect(logger.info).toHaveBeenCalledWith(
-        {
-          payload: {
-            userId: 1,
-            title: "Reminder: payment due",
-            message: "You have a payment due for invoice #123",
-            method: "in-app",
-            metadata: {
-              entityId: 123,
-              entityType: "invoice",
-              reminderType: "payment due",
-            },
-          },
-        },
-        "Notification requested"
-      );
+  it("respects in-app preference toggles when processing queue", async () => {
+    await updateNotificationPreferences(5, { inAppEnabled: false });
+    await queueNotification({
+      userId: 5,
+      type: "error",
+      title: "Blocked",
+      message: "This should not deliver",
     });
 
-    it("should include correct metadata in reminder", async () => {
-      await sendReminder(5, "appointment", 456, "event");
+    const result = await processNotificationQueue();
+    expect(result.skipped).toBe(1);
 
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            metadata: {
-              entityId: 456,
-              entityType: "event",
-              reminderType: "appointment",
-            },
-          }),
-        }),
-        "Notification requested"
-      );
+    const notifications = await listNotifications({ userId: 5 }, { limit: 5, offset: 0 });
+    expect(notifications).toHaveLength(0);
+  });
+
+  it("marks notifications as read individually and in bulk", async () => {
+    await sendNotification({
+      userId: 2,
+      type: "success",
+      title: "Ready",
+      message: "Processing complete",
+    });
+    await sendNotification({
+      userId: 2,
+      type: "info",
+      title: "Another",
+      message: "Check again",
+    });
+    await processNotificationQueue();
+
+    const firstBatch = await listNotifications({ userId: 2 }, { limit: 10, offset: 0 });
+    const targetId = firstBatch[0]?.id;
+    expect(targetId).toBeDefined();
+
+    if (!targetId) {
+      throw new Error("Notification id missing in test setup");
+    }
+
+    await markNotificationRead(targetId, { userId: 2 });
+    let unread = await getUnreadCount({ userId: 2 });
+    expect(unread).toBe(1);
+
+    await markAllNotificationsRead({ userId: 2 });
+    unread = await getUnreadCount({ userId: 2 });
+    expect(unread).toBe(0);
+  });
+
+  it("uses soft delete semantics and excludes deleted notifications", async () => {
+    await sendNotification({
+      userId: 3,
+      type: "info",
+      title: "Remove me",
+      message: "Soon deleted",
+    });
+    await processNotificationQueue();
+    const existing = await listNotifications({ userId: 3 }, { limit: 5, offset: 0 });
+    const idToDelete = existing[0]?.id;
+    expect(idToDelete).toBeDefined();
+
+    if (!idToDelete) {
+      throw new Error("Notification id missing for delete test");
+    }
+
+    await deleteNotification(idToDelete, { userId: 3 });
+    const afterDelete = await listNotifications({ userId: 3 }, { limit: 5, offset: 0 });
+    expect(afterDelete).toHaveLength(0);
+    const unread = await getUnreadCount({ userId: 3 });
+    expect(unread).toBe(0);
+  });
+
+  it("creates default preferences and persists updates", async () => {
+    const prefs = await getNotificationPreferences({ userId: 7 });
+    expect(prefs.inAppEnabled).toBe(true);
+    expect(prefs.emailEnabled).toBe(true);
+    expect(prefs.systemAlerts).toBe(true);
+
+    await updateNotificationPreferences({ userId: 7 }, {
+      inAppEnabled: false,
+      systemAlerts: false,
     });
 
-    it("should use in-app method for reminders", async () => {
-      await sendReminder(10, "follow-up", 789, "order");
-
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            method: "in-app",
-          }),
-        }),
-        "Notification requested"
-      );
-    });
+    const updated = await getNotificationPreferences({ userId: 7 });
+    expect(updated.inAppEnabled).toBe(false);
+    expect(updated.systemAlerts).toBe(false);
   });
 });

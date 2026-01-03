@@ -4175,6 +4175,97 @@ export type InsertCommentMention = typeof commentMentions.$inferInsert;
 // ============================================================================
 
 /**
+ * Unified notifications table
+ * Supports multi-channel delivery with soft deletes
+ */
+export const notifications = mysqlTable(
+  "notifications",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    recipientType: mysqlEnum("recipient_type", ["user", "client"])
+      .notNull()
+      .default("user"),
+    userId: int("user_id").references(() => users.id, { onDelete: "cascade" }),
+    clientId: int("client_id").references(() => clients.id, { onDelete: "cascade" }),
+    type: mysqlEnum("type", ["info", "warning", "success", "error"]).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message"),
+    link: varchar("link", { length: 500 }),
+    channel: mysqlEnum("channel", ["in_app", "email", "sms"])
+      .notNull()
+      .default("in_app"),
+    read: boolean("read").notNull().default(false),
+    metadata: json("metadata"),
+    isDeleted: boolean("is_deleted").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    recipientChannelIdx: index("idx_notifications_recipient_channel").on(
+      table.recipientType,
+      table.userId,
+      table.clientId,
+      table.channel
+    ),
+    recipientReadIdx: index("idx_notifications_recipient_read").on(
+      table.recipientType,
+      table.userId,
+      table.clientId,
+      table.read
+    ),
+    recipientCreatedIdx: index("idx_notifications_recipient_created").on(
+      table.recipientType,
+      table.userId,
+      table.clientId,
+      table.createdAt
+    ),
+  })
+);
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
+ * Notification preferences table
+ * Stores per-user delivery controls
+ */
+export const notificationPreferences = mysqlTable(
+  "notification_preferences",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    recipientType: mysqlEnum("recipient_type", ["user", "client"])
+      .notNull()
+      .default("user"),
+    userId: int("user_id").references(() => users.id, { onDelete: "cascade" }),
+    clientId: int("client_id").references(() => clients.id, { onDelete: "cascade" }),
+    inAppEnabled: boolean("in_app_enabled").notNull().default(true),
+    emailEnabled: boolean("email_enabled").notNull().default(true),
+    appointmentReminders: boolean("appointment_reminders")
+      .notNull()
+      .default(true),
+    orderUpdates: boolean("order_updates").notNull().default(true),
+    systemAlerts: boolean("system_alerts").notNull().default(true),
+    isDeleted: boolean("is_deleted").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    recipientIdx: index("idx_notification_preferences_recipient").on(
+      table.recipientType,
+      table.userId,
+      table.clientId
+    ),
+    recipientUnique: uniqueIndex(
+      "uid_notification_preferences_recipient"
+    ).on(table.recipientType, table.userId, table.clientId),
+  })
+);
+
+export type NotificationPreference = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreference =
+  typeof notificationPreferences.$inferInsert;
+
+/**
  * Inbox Items table
  * Unified inbox for mentions and task assignments
  */

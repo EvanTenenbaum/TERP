@@ -246,14 +246,16 @@ export const vipPortalRouter = router({
           const appUrl = process.env.APP_URL || "https://terp-app-b9s35.ondigitalocean.app";
           await sendNotification({
             userId: authRecord.clientId,
+            type: "warning",
             title: "Password Reset Request",
             message: `Click here to reset your VIP Portal password: ${appUrl}/vip-portal/reset-password?token=${resetToken}`,
-            method: "email",
+            channels: ["email"],
             metadata: {
               type: "password_reset",
               token: resetToken,
               expiresAt: resetTokenExpiresAt.toISOString(),
             },
+            category: "system",
           });
         } catch (emailError) {
           // Log but don't fail - user can still use the token

@@ -1,8 +1,7 @@
 /**
  * AppHeader Tests
  *
- * Tests for the AppHeader component, specifically the Inbox dropdown functionality.
- * Ensures the Inbox button opens a dropdown menu instead of navigating directly.
+ * Tests for the AppHeader component, focusing on the Notification bell rendering.
  *
  * @vitest-environment jsdom
  */
@@ -26,29 +25,36 @@ vi.mock("../../../version.json", () => ({
   },
 }));
 
-// Mock tRPC with specific inbox data
+// Mock tRPC with notification data
 vi.mock("@/lib/trpc", () => ({
   trpc: {
-    inbox: {
-      getStats: {
+    notifications: {
+      getUnreadCount: {
         useQuery: vi.fn(() => ({
-          data: { unread: 3, total: 10 },
+          data: { unread: 2 },
           isLoading: false,
           isError: false,
         })),
       },
-      getUnread: {
+      list: {
         useQuery: vi.fn(() => ({
-          data: [
-            { id: 1, title: "Test Item 1", createdAt: new Date() },
-            { id: 2, title: "Test Item 2", createdAt: new Date() },
-            { id: 3, title: "Test Item 3", createdAt: new Date() },
-          ],
+          data: {
+            items: [],
+            total: 0,
+            unread: 2,
+            pagination: { limit: 5, offset: 0 },
+          },
           isLoading: false,
           isError: false,
         })),
       },
-      bulkMarkAsSeen: {
+      markRead: {
+        useMutation: vi.fn(() => ({
+          mutate: vi.fn(),
+          isLoading: false,
+        })),
+      },
+      markAllRead: {
         useMutation: vi.fn(() => ({
           mutate: vi.fn(),
           isLoading: false,
@@ -56,64 +62,31 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     useContext: vi.fn(() => ({
-      inbox: {
-        getMyItems: { invalidate: vi.fn() },
-        getStats: { invalidate: vi.fn() },
-        getUnread: { invalidate: vi.fn() },
+      notifications: {
+        list: { invalidate: vi.fn() },
+        getUnreadCount: { invalidate: vi.fn() },
       },
     })),
   },
 }));
 
-describe("AppHeader - Inbox Dropdown", () => {
+describe("AppHeader - Notification Bell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("should render the Inbox button with unread badge", () => {
+  it("renders the notification bell with unread badge", () => {
     render(
       <ThemeProvider>
         <AppHeader />
       </ThemeProvider>
     );
 
-    const inboxButton = screen.getByTitle("Inbox");
-    expect(inboxButton).toBeInTheDocument();
+    const notificationsButton = screen.getByLabelText("Notifications");
+    expect(notificationsButton).toBeInTheDocument();
 
-    // Check for unread badge - should show "3" based on mock data
-    const badge = screen.getByText("3");
+    // Check for unread badge - should show the mocked unread count
+    const badge = screen.getByText("2");
     expect(badge).toBeInTheDocument();
-  });
-
-  it("should render Inbox button as a dropdown trigger, not a direct link", () => {
-    render(
-      <ThemeProvider>
-        <AppHeader />
-      </ThemeProvider>
-    );
-
-    const inboxButton = screen.getByTitle("Inbox");
-
-    // The button should not have an onClick that directly navigates
-    // Instead, it should be wrapped in a DropdownMenuTrigger
-    expect(inboxButton).toBeInTheDocument();
-
-    // Verify it's part of a dropdown menu structure
-    expect(
-      inboxButton.closest('[data-slot="dropdown-menu-trigger"]')
-    ).toBeInTheDocument();
-  });
-
-  it("should display correct unread count in badge", () => {
-    render(
-      <ThemeProvider>
-        <AppHeader />
-      </ThemeProvider>
-    );
-
-    // Should show "3" based on mock data
-    const badge = screen.getByText("3");
-    expect(badge).toBeInTheDocument();
-    expect(badge).toHaveClass("absolute", "-top-1", "-right-1");
   });
 });

@@ -24,6 +24,7 @@ import CreditSettingsPage from "@/pages/CreditSettingsPage";
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
+import { NotificationPreferencesPage } from "@/pages/settings/NotificationPreferences";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import Orders from "@/pages/Orders";
 import Quotes from "@/pages/Quotes";
@@ -52,6 +53,7 @@ import SessionEndedPage from "@/pages/vip-portal/SessionEndedPage";
 import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
 import { InboxPage } from "@/pages/InboxPage";
+import { NotificationsPage } from "@/pages/NotificationsPage";
 import CalendarPage from "@/pages/CalendarPage";
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
@@ -130,6 +132,10 @@ function Router() {
               <Route path="/orders/create" component={OrderCreatorPage} />
               <Route path="/quotes" component={Quotes} />
               <Route path="/settings/cogs" component={CogsSettingsPage} />
+              <Route
+                path="/settings/notifications"
+                component={NotificationPreferencesPage}
+              />
               <Route path="/settings/feature-flags" component={FeatureFlagsPage} />
               <Route path="/settings" component={Settings} />
               <Route path="/credit-settings" component={CreditSettingsPage} />
@@ -158,6 +164,7 @@ function Router() {
               <Route path="/todo" component={TodoListsPage} />
               <Route path="/todos" component={TodoListsPage} />
               <Route path="/todos/:listId" component={TodoListDetailPage} />
+              <Route path="/notifications" component={NotificationsPage} />
               <Route path="/inbox" component={InboxPage} />
               <Route path="/calendar" component={CalendarPage} />
               <Route path="/workflow-queue" component={WorkflowQueuePage} />

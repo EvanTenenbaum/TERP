@@ -8535,7 +8535,7 @@ Core systems are foundational components that:
 ### NOTIF-001: Unified Notification System Architecture (32h)
 
 **Priority:** HIGH
-**Status:** 🔴 Not Started
+**Status:** 🟡 In Progress
 **Blocking:** VIP-C-001 (Appointment Scheduling System)
 
 Replaces the current "Inbox" with a unified "Notifications" system that serves both ERP users and VIP Portal clients.
@@ -8562,13 +8562,13 @@ Replaces the current "Inbox" with a unified "Notifications" system that serves b
 
 | Task ID  | Task                                  | Estimate | Status         |
 | -------- | ------------------------------------- | -------- | -------------- |
-| NOTIF-01 | Database schema changes & migration   | 4h       | 🔴 Not Started |
-| NOTIF-02 | Notification service refactor         | 8h       | 🔴 Not Started |
-| NOTIF-03 | Notifications router refactor         | 4h       | 🔴 Not Started |
-| NOTIF-04 | VIP Portal notification endpoints     | 4h       | 🔴 Not Started |
-| NOTIF-05 | ERP UI rename (Inbox → Notifications) | 4h       | 🔴 Not Started |
-| NOTIF-06 | VIP Portal notification bell UI       | 4h       | 🔴 Not Started |
-| NOTIF-07 | Notification preferences UI           | 4h       | 🔴 Not Started |
+| NOTIF-01 | Database schema changes & migration   | 4h       | 🟡 In Progress |
+| NOTIF-02 | Notification service refactor         | 8h       | 🟡 In Progress |
+| NOTIF-03 | Notifications router refactor         | 4h       | 🟡 In Progress |
+| NOTIF-04 | VIP Portal notification endpoints     | 4h       | 🟡 In Progress |
+| NOTIF-05 | ERP UI rename (Inbox → Notifications) | 4h       | 🟡 In Progress |
+| NOTIF-06 | VIP Portal notification bell UI       | 4h       | 🟡 In Progress |
+| NOTIF-07 | Notification preferences UI           | 4h       | 🟡 In Progress |
 
 #### Specifications
 
