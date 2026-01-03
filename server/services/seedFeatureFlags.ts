@@ -109,6 +109,14 @@ const DEFAULT_FLAGS = [
     systemEnabled: true,
     defaultEnabled: true, // Enabled by default for all users
   },
+  {
+    key: "vip-admin-impersonation",
+    name: "VIP Admin Impersonation",
+    description: "Enable admin impersonation for VIP portal access with full audit logging (FEATURE-012)",
+    module: "module-vip-portal",
+    systemEnabled: true,
+    defaultEnabled: true, // Enabled for production use
+  },
 
   // ========================================================================
   // NEW FEATURE FLAGS
