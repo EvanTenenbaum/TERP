@@ -36,6 +36,7 @@ export default function EventFormDialog({
   const [isRecurring, setIsRecurring] = useState(false);
   const [attendees, setAttendees] = useState<number[]>([]);
   const [clientId, setClientId] = useState<number | null>(initialClientId || null);
+  const [calendarId, setCalendarId] = useState<number | null>(null);
 
   // Recurrence state
   const [recurrenceFrequency, setRecurrenceFrequency] = useState("WEEKLY");
@@ -46,6 +47,7 @@ export default function EventFormDialog({
   const { data: users } = trpc.userManagement.listUsers.useQuery();
   const { data: clientsData } = trpc.clients.list.useQuery({ limit: 1000 });
   const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
+  const { data: calendarsData } = trpc.calendarsManagement.list.useQuery({});
 
   // Mutations
   const createEvent = trpc.calendar.createEvent.useMutation();
@@ -89,6 +91,10 @@ export default function EventFormDialog({
       if (eventData.clientId) {
         setClientId(eventData.clientId);
       }
+      // Load calendarId from event data
+      if ((eventData as any).calendarId) {
+        setCalendarId((eventData as any).calendarId);
+      }
     } else {
       // Reset form for new event
       const dateToUse = initialDate || new Date();
@@ -112,8 +118,11 @@ export default function EventFormDialog({
       setAttendees([]);
       setRecurrenceEndDate("");
       setClientId(initialClientId || null);
+      // Set default calendar
+      const defaultCalendar = calendarsData?.find((c: any) => c.isDefault);
+      setCalendarId(defaultCalendar?.id || calendarsData?.[0]?.id || null);
     }
-  }, [eventData, initialDate, initialClientId]);
+  }, [eventData, initialDate, initialClientId, calendarsData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,23 +308,43 @@ export default function EventFormDialog({
               </div>
             )}
 
-            {/* Client */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Client
-              </label>
-              <select
-                value={clientId || ""}
-                onChange={(e) => setClientId(e.target.value ? parseInt(e.target.value, 10) : null)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">None</option>
-                {clients.map((client: any) => (
-                  <option key={client.id} value={client.id}>
-                    {client.name || `Client #${client.id}`}
-                  </option>
-                ))}
-              </select>
+            {/* Calendar and Client */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  <Calendar className="inline h-4 w-4 mr-1" />
+                  Calendar *
+                </label>
+                <select
+                  value={calendarId || ""}
+                  onChange={(e) => setCalendarId(e.target.value ? parseInt(e.target.value, 10) : null)}
+                  required
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {calendarsData?.map((calendar: any) => (
+                    <option key={calendar.id} value={calendar.id}>
+                      {calendar.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Client
+                </label>
+                <select
+                  value={clientId || ""}
+                  onChange={(e) => setClientId(e.target.value ? parseInt(e.target.value, 10) : null)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">None</option>
+                  {clients.map((client: any) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name || `Client #${client.id}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Meeting Type and Event Type */}

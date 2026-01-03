@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.29  
-**Last Updated:** January 2, 2026 (Added QA-075 SKU Photo Management)  
+**Version:** 2.30
+**Last Updated:** January 3, 2026 (CAL-001, CAL-002 Calendar Foundation Complete)
 **Status:** Active
 
 > ✅ **FEATURE-012 POST-DEPLOYMENT: ALL CRITICAL ISSUES RESOLVED (Jan 2, 2026)**
@@ -8616,23 +8616,24 @@ All specifications have been reviewed for accuracy, efficacy, robustness, and re
 
 ### CAL-001: Calendar Foundation (24h)
 
-**Priority:** HIGH  
-**Status:** 🔴 Not Started  
+**Priority:** HIGH
+**Status:** ✅ Complete
 **Dependencies:** None
+**Completed:** January 3, 2026
 
 Establishes the multi-calendar architecture, enabling separate calendars for different business functions.
 
 #### Task Breakdown
 
-| Task ID   | Task                                                              | Estimate | Status         |
-| --------- | ----------------------------------------------------------------- | -------- | -------------- |
-| CAL-01-01 | Create `calendars` and `calendar_user_access` tables              | 4h       | 🔴 Not Started |
-| CAL-01-02 | Add `calendarId` FK to `calendarEvents` table                     | 2h       | 🔴 Not Started |
-| CAL-01-03 | Data migration: create default calendars, migrate existing events | 2h       | 🔴 Not Started |
-| CAL-01-04 | tRPC endpoints for calendar CRUD and user access management       | 4h       | 🔴 Not Started |
-| CAL-01-05 | Settings UI: Calendar management page                             | 8h       | 🔴 Not Started |
-| CAL-01-06 | Event forms: Add calendar selector dropdown                       | 2h       | 🔴 Not Started |
-| CAL-01-07 | Calendar view: Add calendar filter and legend                     | 2h       | 🔴 Not Started |
+| Task ID   | Task                                                              | Estimate | Status     |
+| --------- | ----------------------------------------------------------------- | -------- | ---------- |
+| CAL-01-01 | Create `calendars` and `calendar_user_access` tables              | 4h       | ✅ Complete |
+| CAL-01-02 | Add `calendarId` FK to `calendarEvents` table                     | 2h       | ✅ Complete |
+| CAL-01-03 | Data migration: create default calendars, migrate existing events | 2h       | ✅ Complete |
+| CAL-01-04 | tRPC endpoints for calendar CRUD and user access management       | 4h       | ✅ Complete |
+| CAL-01-05 | Settings UI: Calendar management page                             | 8h       | ✅ Complete |
+| CAL-01-06 | Event forms: Add calendar selector dropdown                       | 2h       | ✅ Complete |
+| CAL-01-07 | Calendar view: Add calendar filter and legend                     | 2h       | ✅ Complete |
 
 #### Deliverables
 
@@ -8652,24 +8653,25 @@ Establishes the multi-calendar architecture, enabling separate calendars for dif
 
 ### CAL-002: Availability & Booking Foundation (32h)
 
-**Priority:** HIGH  
-**Status:** 🔴 Not Started  
+**Priority:** HIGH
+**Status:** ✅ Complete
 **Dependencies:** CAL-001
+**Completed:** January 3, 2026
 
 Introduces Calendly-like availability configuration, enabling administrators to define when calendars are available for booking.
 
 #### Task Breakdown
 
-| Task ID   | Task                                                 | Estimate | Status         |
-| --------- | ---------------------------------------------------- | -------- | -------------- |
-| CAL-02-01 | Create `appointmentTypes` table                      | 2h       | 🔴 Not Started |
-| CAL-02-02 | Create `calendarAvailability` table                  | 2h       | 🔴 Not Started |
-| CAL-02-03 | Create `calendarBlockedDates` table                  | 1h       | 🔴 Not Started |
-| CAL-02-04 | tRPC endpoints for appointment type CRUD             | 3h       | 🔴 Not Started |
-| CAL-02-05 | tRPC endpoints for availability rule management      | 3h       | 🔴 Not Started |
-| CAL-02-06 | Core `availability.getSlots` endpoint implementation | 9h       | 🔴 Not Started |
-| CAL-02-07 | Settings UI: Appointment Types management            | 6h       | 🔴 Not Started |
-| CAL-02-08 | Settings UI: Weekly availability schedule            | 6h       | 🔴 Not Started |
+| Task ID   | Task                                                 | Estimate | Status     |
+| --------- | ---------------------------------------------------- | -------- | ---------- |
+| CAL-02-01 | Create `appointmentTypes` table                      | 2h       | ✅ Complete |
+| CAL-02-02 | Create `calendarAvailability` table                  | 2h       | ✅ Complete |
+| CAL-02-03 | Create `calendarBlockedDates` table                  | 1h       | ✅ Complete |
+| CAL-02-04 | tRPC endpoints for appointment type CRUD             | 3h       | ✅ Complete |
+| CAL-02-05 | tRPC endpoints for availability rule management      | 3h       | ✅ Complete |
+| CAL-02-06 | Core `availability.getSlots` endpoint implementation | 9h       | ✅ Complete |
+| CAL-02-07 | Settings UI: Appointment Types management            | 6h       | ✅ Complete |
+| CAL-02-08 | Settings UI: Weekly availability schedule            | 6h       | ✅ Complete |
 
 #### Deliverables
 
@@ -8762,8 +8764,8 @@ Adds high-value quality-of-life features: recurring events UI, vacation/time-off
 
 | Spec ID   | Title                             | File                                                   | Status   |
 | --------- | --------------------------------- | ------------------------------------------------------ | -------- |
-| CAL-001   | Calendar Foundation               | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md)    | DRAFT    |
-| CAL-002   | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md)    | DRAFT    |
+| CAL-001   | Calendar Foundation               | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md)    | COMPLETE |
+| CAL-002   | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md)    | COMPLETE |
 | CAL-003   | Request/Approval Workflow         | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md)    | DRAFT    |
 | CAL-004   | Enhanced Features                 | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md)    | DRAFT    |
 | QA Review | Red Hat QA Review                 | [📋 Review](../specs/calendar-sprint/CAL_QA_REVIEW.md) | COMPLETE |

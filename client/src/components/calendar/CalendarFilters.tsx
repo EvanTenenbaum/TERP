@@ -1,12 +1,41 @@
-import { useState } from "react";
-import { Filter, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Filter, X, Calendar } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
-export default function CalendarFilters() {
+interface CalendarFiltersProps {
+  onCalendarFilterChange?: (calendarIds: number[]) => void;
+}
+
+export default function CalendarFilters({ onCalendarFilterChange }: CalendarFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
+  const [selectedCalendars, setSelectedCalendars] = useState<number[]>([]);
+
+  // Fetch available calendars
+  const { data: calendarsData } = trpc.calendarsManagement.list.useQuery({});
+
+  // Initialize with all calendars selected
+  useEffect(() => {
+    if (calendarsData && selectedCalendars.length === 0) {
+      const allCalendarIds = calendarsData.map((c: any) => c.id);
+      setSelectedCalendars(allCalendarIds);
+      onCalendarFilterChange?.(allCalendarIds);
+    }
+  }, [calendarsData]);
+
+  const toggleCalendarFilter = (calendarId: number) => {
+    let newSelection: number[];
+    if (selectedCalendars.includes(calendarId)) {
+      newSelection = selectedCalendars.filter((id) => id !== calendarId);
+    } else {
+      newSelection = [...selectedCalendars, calendarId];
+    }
+    setSelectedCalendars(newSelection);
+    onCalendarFilterChange?.(newSelection);
+  };
 
   const modules = [
     "INVENTORY",
@@ -51,13 +80,20 @@ export default function CalendarFilters() {
     setSelectedEventTypes([]);
     setSelectedStatuses([]);
     setSelectedPriorities([]);
+    // Reset calendars to all selected
+    if (calendarsData) {
+      const allCalendarIds = calendarsData.map((c: any) => c.id);
+      setSelectedCalendars(allCalendarIds);
+      onCalendarFilterChange?.(allCalendarIds);
+    }
   };
 
   const activeFilterCount =
     selectedModules.length +
     selectedEventTypes.length +
     selectedStatuses.length +
-    selectedPriorities.length;
+    selectedPriorities.length +
+    (calendarsData && selectedCalendars.length < calendarsData.length ? 1 : 0);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white">
@@ -87,6 +123,45 @@ export default function CalendarFilters() {
           </button>
         )}
       </button>
+
+      {/* Calendar Legend - Always visible */}
+      {calendarsData && calendarsData.length > 0 && (
+        <div className="border-t border-gray-200 p-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-xs font-semibold uppercase text-gray-500 flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              Calendars
+            </span>
+            {calendarsData.map((calendar: any) => (
+              <label
+                key={calendar.id}
+                className="flex items-center gap-2 cursor-pointer hover:opacity-80"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedCalendars.includes(calendar.id)}
+                  onChange={() => toggleCalendarFilter(calendar.id)}
+                  className="sr-only"
+                />
+                <div
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-opacity ${
+                    selectedCalendars.includes(calendar.id)
+                      ? "opacity-100"
+                      : "opacity-40"
+                  }`}
+                  style={{ backgroundColor: calendar.color + "20", color: calendar.color }}
+                >
+                  <div
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: calendar.color }}
+                  />
+                  {calendar.name}
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filter Options */}
       {isExpanded && (
