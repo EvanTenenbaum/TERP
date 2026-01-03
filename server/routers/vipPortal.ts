@@ -230,8 +230,11 @@ async function buildAvailableSlots(
     appointmentType.bufferAfter;
 
   const slots: SlotMap = {};
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  // Parse dates as local dates to avoid timezone issues
+  const [startYear, startMonth, startDay] = startDate.split("-").map(Number);
+  const [endYear, endMonth, endDay] = endDate.split("-").map(Number);
+  const start = new Date(startYear, startMonth - 1, startDay);
+  const end = new Date(endYear, endMonth - 1, endDay);
 
   const maxRangeEnd = new Date(start);
   maxRangeEnd.setMonth(maxRangeEnd.getMonth() + 3);
@@ -350,7 +353,6 @@ export const vipPortalRouter = router({
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const authRecord = await db.query.vipPortalAuth.findFirst({
           where: eq(vipPortalAuth.email, input.email),
@@ -484,7 +486,6 @@ export const vipPortalRouter = router({
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         await db.update(vipPortalAuth)
           .set({
@@ -503,7 +504,6 @@ export const vipPortalRouter = router({
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const authRecord = await db.query.vipPortalAuth.findFirst({
           where: eq(vipPortalAuth.email, input.email),
@@ -557,7 +557,6 @@ export const vipPortalRouter = router({
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const authRecord = await db.query.vipPortalAuth.findFirst({
           where: and(
@@ -599,7 +598,6 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const config = await db.query.vipPortalConfigurations.findFirst({
           where: eq(vipPortalConfigurations.clientId, input.clientId),
@@ -642,7 +640,6 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const client = await db.query.clients.findFirst({
           where: eq(clients.id, input.clientId),
@@ -718,7 +715,6 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const { clientId, search, status } = input;
         
@@ -777,7 +773,6 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const { clientId, search, status } = input;
         
@@ -837,7 +832,6 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const { clientId, search, type, status } = input;
         
@@ -897,7 +891,6 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         const needs = await db
           .select()
@@ -1014,7 +1007,6 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         // For now, returning empty array as vendorSupply uses vendorId
         // In production, this would require a schema update or junction table
@@ -1160,7 +1152,6 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         
         // Get client's VIP portal configuration
@@ -1416,10 +1407,11 @@ export const vipPortalRouter = router({
         }
 
         const dateKey = formatDateKey(requestedDate);
+        // Use UTC hours/minutes since the input is in ISO format (UTC)
         const slotLabel = `${requestedDate
-          .getHours()
+          .getUTCHours()
           .toString()
-          .padStart(2, "0")}:${requestedDate.getMinutes().toString().padStart(2, "0")}`;
+          .padStart(2, "0")}:${requestedDate.getUTCMinutes().toString().padStart(2, "0")}`;
 
         const available = await buildAvailableSlots(
           db,
@@ -1739,7 +1731,6 @@ export const vipPortalRouter = router({
       }))
       .query(async ({ input, ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         
         const clientId = ctx.vipPortalClientId;
@@ -1795,7 +1786,6 @@ export const vipPortalRouter = router({
     getFilterOptions: publicProcedure
       .query(async ({ ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         
         const clientId = ctx.vipPortalClientId;
@@ -1814,7 +1804,6 @@ export const vipPortalRouter = router({
     getDraftInterests: publicProcedure
       .query(async ({ ctx }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         
         const clientId = ctx.vipPortalClientId;
@@ -2150,8 +2139,7 @@ export const vipPortalRouter = router({
       list: publicProcedure
         .query(async ({ ctx }) => {
           const db = await getDb();
-        if (!db) throw new Error("Database not available");
-          if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
           
           const clientId = ctx.vipPortalClientId;
           if (!clientId) {
