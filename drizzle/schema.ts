@@ -2890,17 +2890,37 @@ export type InsertInventoryMovement = typeof inventoryMovements.$inferInsert;
 /**
  * Sample Request Status Enum
  * Tracks the lifecycle of a sample request
+ * Extended with return workflow statuses (SAMPLE-006, SAMPLE-007)
  */
 export const sampleRequestStatusEnum = mysqlEnum("sampleRequestStatus", [
   "PENDING",
   "FULFILLED",
   "CANCELLED",
+  "RETURN_REQUESTED",
+  "RETURN_APPROVED",
+  "RETURNED",
+  "VENDOR_RETURN_REQUESTED",
+  "SHIPPED_TO_VENDOR",
+  "VENDOR_CONFIRMED",
+]);
+
+/**
+ * Sample Location Enum (SAMPLE-008)
+ * Tracks where each sample is physically located
+ */
+export const sampleLocationEnum = mysqlEnum("sampleLocation", [
+  "WAREHOUSE",
+  "WITH_CLIENT",
+  "WITH_SALES_REP",
+  "RETURNED",
+  "LOST",
 ]);
 
 /**
  * Sample Requests Table
  * Tracks all sample requests from clients
  * Includes monthly allocation tracking and conversion metrics
+ * Extended with return workflow, location, and expiration fields (SAMPLE-006 to SAMPLE-009)
  */
 export const sampleRequests = mysqlTable(
   "sampleRequests",
@@ -2926,6 +2946,22 @@ export const sampleRequests = mysqlTable(
     totalCost: decimal("totalCost", { precision: 10, scale: 2 }), // COGS of samples
     relatedOrderId: int("relatedOrderId").references(() => orders.id), // If sample led to order
     conversionDate: timestamp("conversionDate"), // When sample converted to sale
+    // Return workflow fields (SAMPLE-006)
+    returnRequestedDate: timestamp("returnRequestedDate"),
+    returnRequestedBy: int("returnRequestedBy").references(() => users.id),
+    returnReason: text("returnReason"),
+    returnCondition: varchar("returnCondition", { length: 50 }), // e.g., "GOOD", "DAMAGED", "OPENED"
+    returnApprovedDate: timestamp("returnApprovedDate"),
+    returnApprovedBy: int("returnApprovedBy").references(() => users.id),
+    returnDate: timestamp("returnDate"),
+    // Vendor return workflow fields (SAMPLE-007)
+    vendorReturnTrackingNumber: varchar("vendorReturnTrackingNumber", { length: 100 }),
+    vendorShippedDate: timestamp("vendorShippedDate"),
+    vendorConfirmedDate: timestamp("vendorConfirmedDate"),
+    // Location tracking (SAMPLE-008)
+    location: sampleLocationEnum.default("WAREHOUSE"),
+    // Expiration tracking (SAMPLE-009)
+    expirationDate: timestamp("expirationDate"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -2938,6 +2974,8 @@ export const sampleRequests = mysqlTable(
     relatedOrderIdx: index("idx_sample_requests_order").on(
       table.relatedOrderId
     ),
+    locationIdx: index("idx_sample_requests_location").on(table.location),
+    expirationIdx: index("idx_sample_requests_expiration").on(table.expirationDate),
   })
 );
 
@@ -2978,6 +3016,34 @@ export const sampleAllocations = mysqlTable(
 
 export type SampleAllocation = typeof sampleAllocations.$inferSelect;
 export type InsertSampleAllocation = typeof sampleAllocations.$inferInsert;
+
+/**
+ * Sample Location History Table (SAMPLE-008)
+ * Tracks the history of location changes for each sample
+ */
+export const sampleLocationHistory = mysqlTable(
+  "sampleLocationHistory",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    sampleRequestId: int("sampleRequestId")
+      .notNull()
+      .references(() => sampleRequests.id, { onDelete: "cascade" }),
+    fromLocation: sampleLocationEnum,
+    toLocation: sampleLocationEnum.notNull(),
+    changedBy: int("changedBy")
+      .notNull()
+      .references(() => users.id),
+    changedAt: timestamp("changedAt").defaultNow().notNull(),
+    notes: text("notes"),
+  },
+  table => ({
+    sampleIdIdx: index("idx_sample_location_history_sample").on(table.sampleRequestId),
+    changedAtIdx: index("idx_sample_location_history_date").on(table.changedAt),
+  })
+);
+
+export type SampleLocationHistory = typeof sampleLocationHistory.$inferSelect;
+export type InsertSampleLocationHistory = typeof sampleLocationHistory.$inferInsert;
 
 // ============================================================================
 // DASHBOARD ENHANCEMENTS (Phase 7)
@@ -4397,6 +4463,9 @@ export const calendarEvents = mysqlTable(
       onDelete: "set null",
     }),
 
+    // CAL-001: Multi-calendar support - links event to a specific calendar
+    calendarId: int("calendar_id"),
+
     // v3.2: JSON metadata for v3.1 metadata system
     metadata: json("metadata"),
 
@@ -4440,6 +4509,8 @@ export const calendarEvents = mysqlTable(
     // v3.2: Indexes for explicit foreign keys
     clientIdIdx: index("idx_calendar_events_client_id").on(table.clientId),
     vendorIdIdx: index("idx_calendar_events_vendor_id").on(table.vendorId),
+    // CAL-001: Index for calendar filtering
+    calendarIdIdx: index("idx_calendar_events_calendar_id").on(table.calendarId),
   })
 );
 
@@ -5054,6 +5125,322 @@ export type CalendarInvitationHistory =
   typeof calendarInvitationHistory.$inferSelect;
 export type InsertCalendarInvitationHistory =
   typeof calendarInvitationHistory.$inferInsert;
+
+// ============================================================================
+// CAL-001: MULTI-CALENDAR ARCHITECTURE (Calendar Foundation)
+// ============================================================================
+
+/**
+ * Calendars table (CAL-001)
+ * Stores calendar definitions for multi-calendar support
+ * Enables segregation of duties (Accounting vs Office/Sales calendars)
+ */
+export const calendars = mysqlTable(
+  "calendars",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    color: varchar("color", { length: 7 }).notNull().default("#3B82F6"),
+    type: varchar("type", { length: 50 }).notNull().default("workspace"), // workspace, personal
+    isDefault: boolean("is_default").notNull().default(false),
+    isArchived: boolean("is_archived").notNull().default(false),
+    ownerId: int("owner_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    ownerIdx: index("idx_calendars_owner").on(table.ownerId),
+    isArchivedIdx: index("idx_calendars_archived").on(table.isArchived),
+    isDefaultIdx: index("idx_calendars_default").on(table.isDefault),
+  })
+);
+
+export type Calendar = typeof calendars.$inferSelect;
+export type InsertCalendar = typeof calendars.$inferInsert;
+
+/**
+ * Calendar User Access table (CAL-001)
+ * Manages user permissions for each calendar (view, edit, admin)
+ */
+export const calendarUserAccess = mysqlTable(
+  "calendar_user_access",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accessLevel: varchar("access_level", { length: 20 }).notNull().default("view"), // view, edit, admin
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    calendarIdx: index("idx_calendar_access_calendar").on(table.calendarId),
+    userIdx: index("idx_calendar_access_user").on(table.userId),
+    uniqueUserCalendar: unique("unique_user_calendar").on(table.calendarId, table.userId),
+  })
+);
+
+export type CalendarUserAccess = typeof calendarUserAccess.$inferSelect;
+export type InsertCalendarUserAccess = typeof calendarUserAccess.$inferInsert;
+
+// Relations for calendars
+export const calendarsRelations = relations(calendars, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [calendars.ownerId],
+    references: [users.id],
+  }),
+  userAccess: many(calendarUserAccess),
+  events: many(calendarEvents),
+  appointmentTypes: many(appointmentTypes),
+  availability: many(calendarAvailability),
+  blockedDates: many(calendarBlockedDates),
+}));
+
+export const calendarUserAccessRelations = relations(calendarUserAccess, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [calendarUserAccess.calendarId],
+    references: [calendars.id],
+  }),
+  user: one(users, {
+    fields: [calendarUserAccess.userId],
+    references: [users.id],
+  }),
+}));
+
+// ============================================================================
+// CAL-002: AVAILABILITY SYSTEM (Availability & Booking Foundation)
+// ============================================================================
+
+/**
+ * Appointment Types table (CAL-002)
+ * Defines the types of bookable events (e.g., "Payment Pickup", "Client Demo")
+ */
+export const appointmentTypes = mysqlTable(
+  "appointment_types",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    duration: int("duration").notNull(), // Duration in minutes
+    bufferBefore: int("buffer_before").notNull().default(0), // Prep time before event in minutes
+    bufferAfter: int("buffer_after").notNull().default(0), // Wrap-up time after event in minutes
+    minNoticeHours: int("min_notice_hours").notNull().default(24), // Minimum hours in advance for booking
+    maxAdvanceDays: int("max_advance_days").notNull().default(30), // Maximum days in the future for booking
+    color: varchar("color", { length: 7 }).notNull().default("#F59E0B"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    calendarIdx: index("idx_appointment_types_calendar").on(table.calendarId),
+    isActiveIdx: index("idx_appointment_types_active").on(table.isActive),
+  })
+);
+
+export type AppointmentType = typeof appointmentTypes.$inferSelect;
+export type InsertAppointmentType = typeof appointmentTypes.$inferInsert;
+
+/**
+ * Calendar Availability table (CAL-002)
+ * Defines recurring weekly availability for a calendar
+ * dayOfWeek: 0 = Sunday, 6 = Saturday (JavaScript convention)
+ */
+export const calendarAvailability = mysqlTable(
+  "calendar_availability",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    dayOfWeek: int("day_of_week").notNull(), // 0-6 where 0=Sunday, 6=Saturday
+    startTime: varchar("start_time", { length: 8 }).notNull(), // HH:MM:SS format
+    endTime: varchar("end_time", { length: 8 }).notNull(), // HH:MM:SS format
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    calendarIdx: index("idx_availability_calendar").on(table.calendarId),
+    dayIdx: index("idx_availability_day").on(table.dayOfWeek),
+  })
+);
+
+export type CalendarAvailabilityRow = typeof calendarAvailability.$inferSelect;
+export type InsertCalendarAvailability = typeof calendarAvailability.$inferInsert;
+
+/**
+ * Calendar Blocked Dates table (CAL-002)
+ * Defines specific dates on which a calendar is unavailable (holidays, etc.)
+ */
+export const calendarBlockedDates = mysqlTable(
+  "calendar_blocked_dates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    reason: varchar("reason", { length: 255 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    calendarIdx: index("idx_blocked_dates_calendar").on(table.calendarId),
+    dateIdx: index("idx_blocked_dates_date").on(table.date),
+  })
+);
+
+export type CalendarBlockedDate = typeof calendarBlockedDates.$inferSelect;
+export type InsertCalendarBlockedDate = typeof calendarBlockedDates.$inferInsert;
+
+// Relations for availability system
+export const appointmentTypesRelations = relations(appointmentTypes, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [appointmentTypes.calendarId],
+    references: [calendars.id],
+  }),
+}));
+
+export const calendarAvailabilityRelations = relations(calendarAvailability, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [calendarAvailability.calendarId],
+    references: [calendars.id],
+  }),
+}));
+
+export const calendarBlockedDatesRelations = relations(calendarBlockedDates, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [calendarBlockedDates.calendarId],
+    references: [calendars.id],
+  }),
+}));
+
+// ============================================================================
+// CAL-003: APPOINTMENT REQUESTS (Request/Approval Workflow)
+// ============================================================================
+
+/**
+ * Appointment Requests table (CAL-003)
+ * Manages the request/approval workflow for appointment bookings
+ * VIP clients submit requests, staff approves/rejects them
+ */
+export const appointmentRequests = mysqlTable(
+  "appointment_requests",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    appointmentTypeId: int("appointment_type_id")
+      .notNull()
+      .references(() => appointmentTypes.id, { onDelete: "cascade" }),
+    requestedById: int("requested_by_id").notNull(), // Client ID who requested
+    requestedSlot: timestamp("requested_slot").notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, approved, rejected, cancelled
+    notes: text("notes"), // Notes from the client
+    responseNotes: text("response_notes"), // Notes from manager when responding
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    respondedAt: timestamp("responded_at"),
+    respondedById: int("responded_by_id").references(() => users.id, { onDelete: "set null" }),
+    calendarEventId: int("calendar_event_id").references(() => calendarEvents.id, { onDelete: "set null" }), // Populated upon approval
+  },
+  table => ({
+    calendarIdx: index("idx_appointment_requests_calendar").on(table.calendarId),
+    statusIdx: index("idx_appointment_requests_status").on(table.status),
+    requestedByIdx: index("idx_appointment_requests_requested_by").on(table.requestedById),
+    respondedByIdx: index("idx_appointment_requests_responded_by").on(table.respondedById),
+    createdAtIdx: index("idx_appointment_requests_created_at").on(table.createdAt),
+  })
+);
+
+export type AppointmentRequest = typeof appointmentRequests.$inferSelect;
+export type InsertAppointmentRequest = typeof appointmentRequests.$inferInsert;
+
+// Relations for appointment requests
+export const appointmentRequestsRelations = relations(appointmentRequests, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [appointmentRequests.calendarId],
+    references: [calendars.id],
+  }),
+  appointmentType: one(appointmentTypes, {
+    fields: [appointmentRequests.appointmentTypeId],
+    references: [appointmentTypes.id],
+  }),
+  respondedBy: one(users, {
+    fields: [appointmentRequests.respondedById],
+    references: [users.id],
+  }),
+  calendarEvent: one(calendarEvents, {
+    fields: [appointmentRequests.calendarEventId],
+    references: [calendarEvents.id],
+  }),
+}));
+
+// ============================================================================
+// CAL-004: TIME OFF REQUESTS (Enhanced Features)
+// ============================================================================
+
+/**
+ * Time Off Requests table (CAL-004)
+ * Manages vacation, sick, and personal time-off requests
+ * Integrates with calendar availability to block booking slots
+ */
+export const timeOffRequests = mysqlTable(
+  "time_off_requests",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    timeOffType: varchar("time_off_type", { length: 20 }).notNull(), // vacation, sick, personal
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(),
+    startTime: varchar("start_time", { length: 8 }), // HH:MM:SS for partial day off
+    endTime: varchar("end_time", { length: 8 }), // HH:MM:SS for partial day off
+    isFullDay: boolean("is_full_day").notNull().default(true),
+    status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, approved, rejected
+    notes: text("notes"), // Employee notes
+    responseNotes: text("response_notes"), // Manager response notes
+    calendarEventId: int("calendar_event_id").references(() => calendarEvents.id, { onDelete: "set null" }), // Created upon approval
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    respondedAt: timestamp("responded_at"),
+    respondedById: int("responded_by_id").references(() => users.id, { onDelete: "set null" }),
+  },
+  table => ({
+    userIdx: index("idx_time_off_requests_user").on(table.userId),
+    statusIdx: index("idx_time_off_requests_status").on(table.status),
+    startDateIdx: index("idx_time_off_requests_start_date").on(table.startDate),
+    endDateIdx: index("idx_time_off_requests_end_date").on(table.endDate),
+    typeIdx: index("idx_time_off_requests_type").on(table.timeOffType),
+  })
+);
+
+export type TimeOffRequest = typeof timeOffRequests.$inferSelect;
+export type InsertTimeOffRequest = typeof timeOffRequests.$inferInsert;
+
+// Relations for time off requests
+export const timeOffRequestsRelations = relations(timeOffRequests, ({ one }) => ({
+  user: one(users, {
+    fields: [timeOffRequests.userId],
+    references: [users.id],
+  }),
+  respondedBy: one(users, {
+    fields: [timeOffRequests.respondedById],
+    references: [users.id],
+    relationName: "timeOffResponder",
+  }),
+  calendarEvent: one(calendarEvents, {
+    fields: [timeOffRequests.calendarEventId],
+    references: [calendarEvents.id],
+  }),
+}));
 
 // ============================================================================
 // WORKFLOW QUEUE MANAGEMENT TABLES (Initiative 1.3)

@@ -2,9 +2,22 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.29  
-**Last Updated:** January 2, 2026 (Added QA-075 SKU Photo Management)  
+**Version:** 2.30
+**Last Updated:** January 3, 2026 (UX Enhancement Wave 2 + CAL-001/002 Calendar Foundation Complete)
 **Status:** Active
+
+> ✅ **UX ENHANCEMENT WAVE 2 COMPLETE (Jan 3, 2026)**
+>
+> **Implementation Summary (ACT-001 through ENH-003):**
+>
+> - ✅ **ACT-001**: Dashboard KPIs made actionable with clickable rows and navigation
+> - ✅ **ACT-002**: Financials made actionable - Invoice detail modal with quick actions (Mark Paid, Send Reminder, Download PDF)
+> - ✅ **ACT-003**: Interest List page implemented at `/interest-list` with product tracking and order conversion
+> - ✅ **ENH-001**: Keyboard shortcuts added (Ctrl+K search, Ctrl+N new order, ? for shortcuts help)
+> - ✅ **ENH-002**: Generic BulkActionsBar component created for data tables with selection and actions
+> - ✅ **ENH-003**: ExportButton component with CSV and Excel export support
+>
+> **New Components:** `InterestListPage`, `KeyboardShortcutsModal`, `BulkActionsBar`, `ExportButton`
 
 > ✅ **FEATURE-012 POST-DEPLOYMENT: ALL CRITICAL ISSUES RESOLVED (Jan 2, 2026)**
 >
@@ -8616,23 +8629,24 @@ All specifications have been reviewed for accuracy, efficacy, robustness, and re
 
 ### CAL-001: Calendar Foundation (24h)
 
-**Priority:** HIGH  
-**Status:** 🔴 Not Started  
+**Priority:** HIGH
+**Status:** ✅ Complete
 **Dependencies:** None
+**Completed:** January 3, 2026
 
 Establishes the multi-calendar architecture, enabling separate calendars for different business functions.
 
 #### Task Breakdown
 
-| Task ID   | Task                                                              | Estimate | Status         |
-| --------- | ----------------------------------------------------------------- | -------- | -------------- |
-| CAL-01-01 | Create `calendars` and `calendar_user_access` tables              | 4h       | 🔴 Not Started |
-| CAL-01-02 | Add `calendarId` FK to `calendarEvents` table                     | 2h       | 🔴 Not Started |
-| CAL-01-03 | Data migration: create default calendars, migrate existing events | 2h       | 🔴 Not Started |
-| CAL-01-04 | tRPC endpoints for calendar CRUD and user access management       | 4h       | 🔴 Not Started |
-| CAL-01-05 | Settings UI: Calendar management page                             | 8h       | 🔴 Not Started |
-| CAL-01-06 | Event forms: Add calendar selector dropdown                       | 2h       | 🔴 Not Started |
-| CAL-01-07 | Calendar view: Add calendar filter and legend                     | 2h       | 🔴 Not Started |
+| Task ID   | Task                                                              | Estimate | Status     |
+| --------- | ----------------------------------------------------------------- | -------- | ---------- |
+| CAL-01-01 | Create `calendars` and `calendar_user_access` tables              | 4h       | ✅ Complete |
+| CAL-01-02 | Add `calendarId` FK to `calendarEvents` table                     | 2h       | ✅ Complete |
+| CAL-01-03 | Data migration: create default calendars, migrate existing events | 2h       | ✅ Complete |
+| CAL-01-04 | tRPC endpoints for calendar CRUD and user access management       | 4h       | ✅ Complete |
+| CAL-01-05 | Settings UI: Calendar management page                             | 8h       | ✅ Complete |
+| CAL-01-06 | Event forms: Add calendar selector dropdown                       | 2h       | ✅ Complete |
+| CAL-01-07 | Calendar view: Add calendar filter and legend                     | 2h       | ✅ Complete |
 
 #### Deliverables
 
@@ -8652,24 +8666,25 @@ Establishes the multi-calendar architecture, enabling separate calendars for dif
 
 ### CAL-002: Availability & Booking Foundation (32h)
 
-**Priority:** HIGH  
-**Status:** 🔴 Not Started  
+**Priority:** HIGH
+**Status:** ✅ Complete
 **Dependencies:** CAL-001
+**Completed:** January 3, 2026
 
 Introduces Calendly-like availability configuration, enabling administrators to define when calendars are available for booking.
 
 #### Task Breakdown
 
-| Task ID   | Task                                                 | Estimate | Status         |
-| --------- | ---------------------------------------------------- | -------- | -------------- |
-| CAL-02-01 | Create `appointmentTypes` table                      | 2h       | 🔴 Not Started |
-| CAL-02-02 | Create `calendarAvailability` table                  | 2h       | 🔴 Not Started |
-| CAL-02-03 | Create `calendarBlockedDates` table                  | 1h       | 🔴 Not Started |
-| CAL-02-04 | tRPC endpoints for appointment type CRUD             | 3h       | 🔴 Not Started |
-| CAL-02-05 | tRPC endpoints for availability rule management      | 3h       | 🔴 Not Started |
-| CAL-02-06 | Core `availability.getSlots` endpoint implementation | 9h       | 🔴 Not Started |
-| CAL-02-07 | Settings UI: Appointment Types management            | 6h       | 🔴 Not Started |
-| CAL-02-08 | Settings UI: Weekly availability schedule            | 6h       | 🔴 Not Started |
+| Task ID   | Task                                                 | Estimate | Status     |
+| --------- | ---------------------------------------------------- | -------- | ---------- |
+| CAL-02-01 | Create `appointmentTypes` table                      | 2h       | ✅ Complete |
+| CAL-02-02 | Create `calendarAvailability` table                  | 2h       | ✅ Complete |
+| CAL-02-03 | Create `calendarBlockedDates` table                  | 1h       | ✅ Complete |
+| CAL-02-04 | tRPC endpoints for appointment type CRUD             | 3h       | ✅ Complete |
+| CAL-02-05 | tRPC endpoints for availability rule management      | 3h       | ✅ Complete |
+| CAL-02-06 | Core `availability.getSlots` endpoint implementation | 9h       | ✅ Complete |
+| CAL-02-07 | Settings UI: Appointment Types management            | 6h       | ✅ Complete |
+| CAL-02-08 | Settings UI: Weekly availability schedule            | 6h       | ✅ Complete |
 
 #### Deliverables
 
@@ -8689,23 +8704,23 @@ Introduces Calendly-like availability configuration, enabling administrators to 
 
 ### CAL-003: Request/Approval Workflow (24h)
 
-**Priority:** HIGH  
-**Status:** 🔴 Not Started  
+**Priority:** HIGH
+**Status:** ✅ Complete
 **Dependencies:** CAL-002, NOTIF-001
 
 Implements the critical request/approval workflow for appointment bookings, ensuring business control over the schedule.
 
 #### Task Breakdown
 
-| Task ID   | Task                                                        | Estimate | Status         |
-| --------- | ----------------------------------------------------------- | -------- | -------------- |
-| CAL-03-01 | Create `appointmentRequests` table                          | 2h       | 🔴 Not Started |
-| CAL-03-02 | `appointment.request` endpoint (for VIP Portal)             | 4h       | 🔴 Not Started |
-| CAL-03-03 | `appointment.approve` endpoint with transaction and locking | 4h       | 🔴 Not Started |
-| CAL-03-04 | `appointment.reject` endpoint                               | 2h       | 🔴 Not Started |
-| CAL-03-05 | Notification integration (NOTIF-001)                        | 4h       | 🔴 Not Started |
-| CAL-03-06 | Pending Requests UI: List view with filtering               | 4h       | 🔴 Not Started |
-| CAL-03-07 | Request Detail Modal: Approve/Reject actions                | 4h       | 🔴 Not Started |
+| Task ID   | Task                                                        | Estimate | Status     |
+| --------- | ----------------------------------------------------------- | -------- | ---------- |
+| CAL-03-01 | Create `appointmentRequests` table                          | 2h       | ✅ Complete |
+| CAL-03-02 | `appointment.request` endpoint (for VIP Portal)             | 4h       | ✅ Complete |
+| CAL-03-03 | `appointment.approve` endpoint with transaction and locking | 4h       | ✅ Complete |
+| CAL-03-04 | `appointment.reject` endpoint                               | 2h       | ✅ Complete |
+| CAL-03-05 | Notification integration (NOTIF-001)                        | 4h       | ✅ Complete |
+| CAL-03-06 | Pending Requests UI: List view with filtering               | 4h       | ✅ Complete |
+| CAL-03-07 | Request Detail Modal: Approve/Reject actions                | 4h       | ✅ Complete |
 
 #### Deliverables
 
@@ -8725,23 +8740,23 @@ Implements the critical request/approval workflow for appointment bookings, ensu
 
 ### CAL-004: Enhanced Features (20h)
 
-**Priority:** MEDIUM  
-**Status:** 🔴 Not Started  
+**Priority:** MEDIUM
+**Status:** ✅ Complete
 **Dependencies:** CAL-003
 
 Adds high-value quality-of-life features: recurring events UI, vacation/time-off tracking, and mobile optimization.
 
 #### Task Breakdown
 
-| Task ID   | Task                                                      | Estimate | Status         |
-| --------- | --------------------------------------------------------- | -------- | -------------- |
-| CAL-04-01 | Recurring events UI: Recurrence rule builder              | 4h       | 🔴 Not Started |
-| CAL-04-02 | Recurring events: Edit/delete single vs. series logic     | 4h       | 🔴 Not Started |
-| CAL-04-03 | Time-off: Schema additions (`isTimeOff`, `timeOffStatus`) | 1h       | 🔴 Not Started |
-| CAL-04-04 | Time-off: Request and approval workflow                   | 3h       | 🔴 Not Started |
-| CAL-04-05 | Time-off: Integration with availability blocking          | 2h       | 🔴 Not Started |
-| CAL-04-06 | Mobile: Responsive calendar grid (week/day view default)  | 3h       | 🔴 Not Started |
-| CAL-04-07 | Mobile: Full-screen modals and bottom sheets              | 3h       | 🔴 Not Started |
+| Task ID   | Task                                                      | Estimate | Status     |
+| --------- | --------------------------------------------------------- | -------- | ---------- |
+| CAL-04-01 | Recurring events UI: Recurrence rule builder              | 4h       | ✅ Complete |
+| CAL-04-02 | Recurring events: Edit/delete single vs. series logic     | 4h       | ✅ Complete |
+| CAL-04-03 | Time-off: Schema additions (`isTimeOff`, `timeOffStatus`) | 1h       | ✅ Complete |
+| CAL-04-04 | Time-off: Request and approval workflow                   | 3h       | ✅ Complete |
+| CAL-04-05 | Time-off: Integration with availability blocking          | 2h       | ✅ Complete |
+| CAL-04-06 | Mobile: Responsive calendar grid (week/day view default)  | 3h       | ✅ Complete |
+| CAL-04-07 | Mobile: Full-screen modals and bottom sheets              | 3h       | ✅ Complete |
 
 #### Deliverables
 
@@ -8762,10 +8777,10 @@ Adds high-value quality-of-life features: recurring events UI, vacation/time-off
 
 | Spec ID   | Title                             | File                                                   | Status   |
 | --------- | --------------------------------- | ------------------------------------------------------ | -------- |
-| CAL-001   | Calendar Foundation               | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md)    | DRAFT    |
-| CAL-002   | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md)    | DRAFT    |
-| CAL-003   | Request/Approval Workflow         | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md)    | DRAFT    |
-| CAL-004   | Enhanced Features                 | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md)    | DRAFT    |
+| CAL-001   | Calendar Foundation               | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md)    | COMPLETE |
+| CAL-002   | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md)    | COMPLETE |
+| CAL-003   | Request/Approval Workflow         | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md)    | COMPLETE |
+| CAL-004   | Enhanced Features                 | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md)    | COMPLETE |
 | QA Review | Red Hat QA Review                 | [📋 Review](../specs/calendar-sprint/CAL_QA_REVIEW.md) | COMPLETE |
 
 ---
@@ -8965,10 +8980,10 @@ The application is ready for Tier 1 customer assessment with the following notes
 
 | Task ID    | Description                      | Priority | Estimate | Status  |
 | ---------- | -------------------------------- | -------- | -------- | ------- |
-| SAMPLE-006 | Implement sample return workflow | P0       | 16h      | 🟡 TODO |
-| SAMPLE-007 | Implement vendor return workflow | P1       | 12h      | 🟡 TODO |
-| SAMPLE-008 | Add location tracking            | P2       | 8h       | 🟡 TODO |
-| SAMPLE-009 | Add expiration tracking          | P2       | 8h       | 🟡 TODO |
+| SAMPLE-006 | Implement sample return workflow | P0       | 16h      | ✅ DONE |
+| SAMPLE-007 | Implement vendor return workflow | P1       | 12h      | ✅ DONE |
+| SAMPLE-008 | Add location tracking            | P2       | 8h       | ✅ DONE |
+| SAMPLE-009 | Add expiration tracking          | P2       | 8h       | ✅ DONE |
 
 ### Implementation Dependencies
 
@@ -9016,3 +9031,59 @@ A significant **migration gap** was discovered, analyzed, and fully remediated i
 For the detailed plan, tools developed, and the new protocol, please see the full document:
 
 [**Migration Gap Remediation Plan & Protocol**](../technical/MIGRATION_REMEDIATION_PLAN.md)
+
+### SPRINT-DEBT-001: TypeScript & Test Remediation Sprint
+
+**Status:** 🟡 **BACKLOG**
+**Priority:** P1 (HIGH - PRE-PRODUCTION BLOCKER)
+**Estimated Effort:** 3-5 days
+**QA Report:** [`docs/qa/redhat-qa-report-20260103.md`](../qa/redhat-qa-report-20260103.md)
+
+**Context:** Red Hat QA analysis (Jan 3, 2026) identified pre-existing technical debt unrelated to recent PRs #106-108. This debt must be addressed before the next major production release.
+
+#### Sprint Objectives
+
+1. **Fix TypeScript Compilation Errors (188 errors)**
+2. **Repair Broken Test Mocks (46 failing tests)**
+3. **Address React Hooks Violations (4 errors)**
+4. **Clean Up Linting Issues**
+
+#### Task Breakdown
+
+| Task ID       | Description                               | Priority | Effort | Status     |
+| ------------- | ----------------------------------------- | -------- | ------ | ---------- |
+| DEBT-001-TS01 | Fix AuditModal.tsx undefined checks (20)  | P1       | 2h     | 🟡 BACKLOG |
+| DEBT-001-TS02 | Fix unifiedSalesPortal.ts enum mismatch   | P0       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TS03 | Fix vendorReminders.ts db null checks     | P1       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TS04 | Fix VIPImpersonationManager.tsx types     | P1       | 30m    | 🟡 BACKLOG |
+| DEBT-001-TS05 | Fix featureFlagService missing method     | P1       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TS06 | Fix remaining TypeScript errors (~150)    | P2       | 4h     | 🟡 BACKLOG |
+| DEBT-001-TF01 | Fix liveCatalogService.test.ts (7 fails)  | P1       | 2h     | 🟡 BACKLOG |
+| DEBT-001-TF02 | Fix calendarFinancials.test.ts (8 fails)  | P1       | 2h     | 🟡 BACKLOG |
+| DEBT-001-TF03 | Fix clients.test.ts pagination mocks      | P1       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TF04 | Fix inventory.test.ts vendor/brand mocks  | P1       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TF05 | Fix analytics.test.ts error handling      | P2       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TF06 | Fix orders.test.ts filter mocks           | P2       | 1h     | 🟡 BACKLOG |
+| DEBT-001-RH01 | Fix AccountSelector.tsx conditional hooks | P0       | 30m    | 🟡 BACKLOG |
+| DEBT-001-RH02 | Fix FiscalPeriodSelector.tsx hooks        | P0       | 30m    | 🟡 BACKLOG |
+| DEBT-001-LT01 | Clean up ~50 unused variable warnings     | P3       | 2h     | 🟡 BACKLOG |
+| DEBT-001-LT02 | Add missing React imports (~20 files)     | P2       | 1h     | 🟡 BACKLOG |
+
+#### Acceptance Criteria
+
+- [ ] `pnpm check` passes with 0 TypeScript errors
+- [ ] `pnpm test` achieves >95% pass rate (currently 91%)
+- [ ] No React Hooks rule violations
+- [ ] ESLint errors reduced by 80%
+
+#### Dependencies
+
+- None (standalone remediation sprint)
+
+#### Risk Assessment
+
+| Risk                       | Mitigation                               |
+| -------------------------- | ---------------------------------------- |
+| Enum changes break runtime | Add migration script for saleStatus      |
+| Test fixes cascade         | Fix in order of dependency (mocks first) |
+| Large scope creep          | Strict task boundaries, no new features  |

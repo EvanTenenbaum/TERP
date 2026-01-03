@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export interface SampleFormValues {
   productId: number;
@@ -105,7 +106,11 @@ export const SampleForm = React.memo(function SampleForm({
       onOpenChange(false);
     } catch (error) {
       // Keep the form open to allow user to retry
-      console.error(error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to create sample request"
+      );
     }
   });
 
