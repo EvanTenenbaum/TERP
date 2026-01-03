@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.29
+**Version:** 2.30
 **Last Updated:** January 3, 2026 (QA Technical Debt Added)
 **Status:** Active
 
@@ -9139,7 +9139,7 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 
 ## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
 
-**Version:** 2.29  
+**Version:** 2.30  
 **Added:** January 3, 2026  
 **Status:** 🟡 READY FOR EXECUTION  
 **Total Estimated Effort:** 92 hours
@@ -9425,7 +9425,7 @@ This section contains new work items identified during Tier 1 customer readiness
 
 ## 🎨 UI/UX Audit Findings - January 2026
 
-**Version:** 2.29  
+**Version:** 2.30  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA Specialist Audit  
 **Status:** 🟡 READY FOR EXECUTION  
@@ -9852,4 +9852,183 @@ These are major usability issues causing significant friction.
 
 **Sprint K: Low Priority Refinement (16h)**
 - UX-040 through UX-043
+
+
+
+---
+
+## 🔍 Additional UX Audit Findings - January 2026 (Supplemental)
+
+**Version:** 2.30  
+**Added:** January 3, 2026  
+**Source:** Senior UI/UX Designer & Product QA (Agent Mode) - Full Audit  
+**Status:** 🟡 READY FOR EXECUTION
+
+These items supplement the existing UI/UX audit findings with additional issues not previously captured.
+
+---
+
+### 🔴 P0 - CRITICAL (New Items)
+
+#### BUG-044: Developer Messages Visible in Production
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** Dashboard widgets, empty states throughout
+- **Category:** Copy + Code
+
+**Problem:** Dashboard shows developer instruction "To see data here, seed the database with: pnpm seed" to end users. This exposes internal tooling and signals "unfinished / internal tool" instead of production system.
+
+**Acceptance Criteria:**
+- [ ] Remove all developer-only messages from production UI
+- [ ] Replace with user-safe empty states: "No data yet — create your first X" with CTA
+- [ ] Audit all components for similar developer-facing text
+- [ ] Add lint rule to detect "pnpm" or "seed" in UI strings
+
+---
+
+#### BUG-045: New Invoice Button Non-Functional
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 3 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/pages/AccountingPage.tsx`
+- **Category:** Routing / Code
+
+**Problem:** "New Invoice" button in Accounting does nothing when clicked. Core accounting workflow is broken.
+
+**Acceptance Criteria:**
+- [ ] New Invoice button opens invoice creation modal or page
+- [ ] onClick handler properly implemented
+- [ ] Success/error feedback after creation
+- [ ] Invoice appears in list after creation
+
+---
+
+#### BUG-046: Data Fetch Failures Block Progress Without Feedback
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Module:** All data-fetching components
+- **Category:** Code / Data
+
+**Problem:** When API calls fail (e.g., "Failed to fetch inventory"), the UI still shows action buttons like "Add Item". Users attempt actions that will fail. No retry mechanism provided.
+
+**Acceptance Criteria:**
+- [ ] Error state disables dependent action buttons
+- [ ] Clear error message displayed with retry button
+- [ ] Loading states prevent premature interaction
+- [ ] Global error boundary for unhandled failures
+
+---
+
+### 🟡 P1 - HIGH PRIORITY (New Items)
+
+#### UX-044: Page-Level Hierarchy Missing (H1, Subhead, CTA)
+- **Priority:** P1 (HIGH)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** All pages
+- **Category:** Design / Visual Hierarchy
+
+**Problem:** Many pages lack a clear H1 heading. Tables appear without context. Users must infer purpose from column names.
+
+**Acceptance Criteria:**
+- [ ] Every page has H1 (What am I looking at?)
+- [ ] Every page has subhead (What can I do here?)
+- [ ] Primary CTA visible above the fold
+- [ ] Consistent page header component used across app
+
+---
+
+#### UX-045: Tables Need Sticky Headers and Responsive Behavior
+- **Priority:** P1 (HIGH)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Module:** All table components
+- **Category:** Design
+
+**Problem:** Extremely wide tables with no sticky headers. On scroll, users lose context of what column they're viewing. No responsive behavior for smaller screens.
+
+**Acceptance Criteria:**
+- [ ] Sticky headers on all data tables
+- [ ] Horizontal scroll indicator when table exceeds viewport
+- [ ] Column visibility toggle for wide tables
+- [ ] Card view alternative on mobile
+
+---
+
+#### UX-046: UI Renders Before Data Ready
+- **Priority:** P1 (HIGH)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** All async data components
+- **Category:** Code / Architecture
+
+**Problem:** UI often renders before data is ready. Many actions depend on data that fails silently. This is a systemic issue causing unreliable user experience.
+
+**Acceptance Criteria:**
+- [ ] Skeleton loaders for all data-dependent components
+- [ ] Action buttons disabled until data loaded
+- [ ] Consistent loading state pattern across app
+- [ ] Data readiness check before rendering interactive elements
+
+---
+
+### 🟢 P2 - MEDIUM PRIORITY (New Items)
+
+#### UX-047: Placeholder/Nonsense Copy in Task Names
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 2 hours
+- **Status:** 🟡 READY
+- **Module:** Tasks, sample data
+- **Category:** Copy / Data
+
+**Problem:** Random task names like "Polarized zero tolerance installation" appear in the UI. This reduces confidence in data accuracy and signals unstable system.
+
+**Acceptance Criteria:**
+- [ ] Review and clean all seeded/sample data
+- [ ] Use realistic business-relevant sample data
+- [ ] Document sample data standards for future seeding
+
+---
+
+#### UX-048: Visible Focus States Missing
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** All interactive elements
+- **Category:** Accessibility
+
+**Problem:** No visible focus states on interactive elements. Keyboard users cannot see which element is focused.
+
+**Acceptance Criteria:**
+- [ ] Visible focus ring on all focusable elements
+- [ ] Focus ring meets WCAG contrast requirements
+- [ ] Focus order follows logical reading order
+- [ ] Skip links for keyboard navigation
+
+---
+
+### Summary of New Items
+
+| Priority | Count | Hours | Focus |
+|----------|-------|-------|-------|
+| 🔴 P0 Critical | 3 | 13h | Developer messages, broken buttons, API failures |
+| 🟡 P1 High | 3 | 22h | Page hierarchy, tables, data loading |
+| 🟢 P2 Medium | 2 | 6h | Sample data, focus states |
+| **Total** | **8** | **41h** | |
+
+---
+
+### Systemic Issues Identified (For Architecture Review)
+
+The audit identified these systemic patterns that should inform future development:
+
+1. **Feature flags missing** → Unfinished work leaks to users
+2. **Generic components reused without context** → Inconsistent UX
+3. **Weak empty-state strategy** → Users confused when no data
+4. **Routing logic not centralized** → Fragile navigation
+5. **UI assumes data always exists** → Silent failures when it doesn't
+
+These are captured for architectural awareness but not added as individual tasks since they are addressed by existing items (feature flags complete, empty states in progress, routing fixes in BUG-042).
 
