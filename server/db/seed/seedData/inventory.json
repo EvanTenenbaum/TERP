@@ -1,0 +1,4402 @@
+[
+  {
+    "sku": "EVE-100OG-0001",
+    "strain": "$100 OG",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 30.08,
+    "unitPrice": 45.39,
+    "onHandQty": 509,
+    "reservedQty": 25,
+    "sampleQty": 10,
+    "harvestDate": "2025-09-03T15:46:47.159Z",
+    "packageDate": "2025-09-23T15:46:47.159Z",
+    "potency": {
+      "thc": 22.1,
+      "cbd": 0.1
+    },
+    "lotCode": "EVERGREEN-00101"
+  },
+  {
+    "sku": "CAS-100OGK-0002",
+    "strain": "$100 OG Kush",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 22.51,
+    "unitPrice": 32.12,
+    "onHandQty": 576,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.161Z",
+    "packageDate": "2025-08-20T15:46:47.161Z",
+    "potency": {
+      "thc": 26.9,
+      "cbd": 0
+    },
+    "lotCode": "CASCADE-00102"
+  },
+  {
+    "sku": "SUM-00KUSH-0003",
+    "strain": "00 Kush Breath",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 28.15,
+    "unitPrice": 43.8,
+    "onHandQty": 476,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-07-03T15:46:47.161Z",
+    "packageDate": "2025-07-26T15:46:47.161Z",
+    "potency": {
+      "thc": 22.9,
+      "cbd": 1.3
+    },
+    "lotCode": "SUMMIT-00103"
+  },
+  {
+    "sku": "BLU-00SWER-0004",
+    "strain": "0-0-Swerdlow",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 28.38,
+    "unitPrice": 41.92,
+    "onHandQty": 528,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-08-03T15:46:47.161Z",
+    "packageDate": "2025-08-21T15:46:47.161Z",
+    "potency": {
+      "thc": 28.2,
+      "cbd": 1.7
+    },
+    "lotCode": "BLUE-00104"
+  },
+  {
+    "sku": "COP-1-0005",
+    "strain": "1",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 32.7,
+    "unitPrice": 53.84,
+    "onHandQty": 691,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-12-03T15:46:47.161Z",
+    "packageDate": "2025-12-22T15:46:47.161Z",
+    "potency": {
+      "thc": 26.4,
+      "cbd": 0.4
+    },
+    "lotCode": "COPPERSTATE-00105"
+  },
+  {
+    "sku": "EME-10-0006",
+    "strain": "10",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 32.38,
+    "unitPrice": 51.16,
+    "onHandQty": 652,
+    "reservedQty": 32,
+    "sampleQty": 13,
+    "harvestDate": "2025-07-03T15:46:47.161Z",
+    "packageDate": "2025-07-20T15:46:47.161Z",
+    "potency": {
+      "thc": 18.2,
+      "cbd": 1
+    },
+    "lotCode": "EMERALD-00106"
+  },
+  {
+    "sku": "SIE-100WAT-0007",
+    "strain": "100 Watt Kind",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 23.5,
+    "unitPrice": 37.54,
+    "onHandQty": 734,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-10-03T15:46:47.161Z",
+    "packageDate": "2025-10-19T15:46:47.161Z",
+    "potency": {
+      "thc": 20.6,
+      "cbd": 1.6
+    },
+    "lotCode": "SIERRA-00107"
+  },
+  {
+    "sku": "FRO-101HEA-0008",
+    "strain": "101 Headband",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 21.91,
+    "unitPrice": 31.32,
+    "onHandQty": 774,
+    "reservedQty": 38,
+    "sampleQty": 15,
+    "harvestDate": "2025-07-03T15:46:47.161Z",
+    "packageDate": "2025-07-18T15:46:47.161Z",
+    "potency": {
+      "thc": 20.5,
+      "cbd": 1.1
+    },
+    "lotCode": "FRONTIER-00108"
+  },
+  {
+    "sku": "BEA-1024-0009",
+    "strain": "1024",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 25.41,
+    "unitPrice": 37.05,
+    "onHandQty": 441,
+    "reservedQty": 22,
+    "sampleQty": 8,
+    "harvestDate": "2025-11-03T15:46:47.161Z",
+    "packageDate": "2025-11-21T15:46:47.161Z",
+    "potency": {
+      "thc": 25.9,
+      "cbd": 0.1
+    },
+    "lotCode": "BEACON-00109"
+  },
+  {
+    "sku": "HOR-1159AR-0010",
+    "strain": "11:59 Armageddon Skunk",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 25.83,
+    "unitPrice": 36.52,
+    "onHandQty": 547,
+    "reservedQty": 27,
+    "sampleQty": 10,
+    "harvestDate": "2025-07-03T15:46:47.161Z",
+    "packageDate": "2025-07-23T15:46:47.161Z",
+    "potency": {
+      "thc": 22.9,
+      "cbd": 0
+    },
+    "lotCode": "HORIZON-00110"
+  },
+  {
+    "sku": "EVE-11GCBD-0011",
+    "strain": "1:1 G - CBDiesel",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 28.9,
+    "unitPrice": 46.75,
+    "onHandQty": 648,
+    "reservedQty": 32,
+    "sampleQty": 12,
+    "harvestDate": "2025-10-03T15:46:47.161Z",
+    "packageDate": "2025-10-22T15:46:47.161Z",
+    "potency": {
+      "thc": 21.3,
+      "cbd": 1.3
+    },
+    "lotCode": "EVERGREEN-00111"
+  },
+  {
+    "sku": "CAS-129-0012",
+    "strain": "#129",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 24.87,
+    "unitPrice": 38.06,
+    "onHandQty": 696,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-07-03T15:46:47.161Z",
+    "packageDate": "2025-07-19T15:46:47.161Z",
+    "potency": {
+      "thc": 28.9,
+      "cbd": 1.2
+    },
+    "lotCode": "CASCADE-00112"
+  },
+  {
+    "sku": "SUM-12THMA-0013",
+    "strain": "12th Man",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 24.74,
+    "unitPrice": 34.73,
+    "onHandQty": 601,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-12-03T15:46:47.161Z",
+    "packageDate": "2025-12-22T15:46:47.161Z",
+    "potency": {
+      "thc": 18.7,
+      "cbd": 0.8
+    },
+    "lotCode": "SUMMIT-00113"
+  },
+  {
+    "sku": "BLU-12THMA-0014",
+    "strain": "12th Man Down",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 19.58,
+    "unitPrice": 33.59,
+    "onHandQty": 497,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-09-03T15:46:47.161Z",
+    "packageDate": "2025-09-17T15:46:47.161Z",
+    "potency": {
+      "thc": 30.6,
+      "cbd": 1.9
+    },
+    "lotCode": "BLUE-00114"
+  },
+  {
+    "sku": "COP-12THMA-0015",
+    "strain": "12th Man OG",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 21.3,
+    "unitPrice": 33.63,
+    "onHandQty": 567,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-12-03T15:46:47.161Z",
+    "packageDate": "2025-12-17T15:46:47.161Z",
+    "potency": {
+      "thc": 28.3,
+      "cbd": 2
+    },
+    "lotCode": "COPPERSTATE-00115"
+  },
+  {
+    "sku": "EME-13BUBB-0016",
+    "strain": "13 Bubbas",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 20.86,
+    "unitPrice": 32.7,
+    "onHandQty": 596,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-12-03T15:46:47.161Z",
+    "packageDate": "2025-12-25T15:46:47.161Z",
+    "potency": {
+      "thc": 30.4,
+      "cbd": 1.3
+    },
+    "lotCode": "EMERALD-00116"
+  },
+  {
+    "sku": "SIE-13DAWG-0017",
+    "strain": "13 Dawgs",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 18.99,
+    "unitPrice": 26.84,
+    "onHandQty": 747,
+    "reservedQty": 37,
+    "sampleQty": 14,
+    "harvestDate": "2025-09-03T15:46:47.161Z",
+    "packageDate": "2025-09-21T15:46:47.161Z",
+    "potency": {
+      "thc": 25.6,
+      "cbd": 1.8
+    },
+    "lotCode": "SIERRA-00117"
+  },
+  {
+    "sku": "FRO-13G-0018",
+    "strain": "1.3G",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 18.65,
+    "unitPrice": 26.63,
+    "onHandQty": 699,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-11-03T15:46:47.161Z",
+    "packageDate": "2025-11-19T15:46:47.161Z",
+    "potency": {
+      "thc": 24,
+      "cbd": 0.8
+    },
+    "lotCode": "FRONTIER-00118"
+  },
+  {
+    "sku": "BEA-13ROSE-0019",
+    "strain": "13 Roses",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 31.03,
+    "unitPrice": 52.35,
+    "onHandQty": 490,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-11-03T15:46:47.161Z",
+    "packageDate": "2025-11-22T15:46:47.161Z",
+    "potency": {
+      "thc": 24.1,
+      "cbd": 1.1
+    },
+    "lotCode": "BEACON-00119"
+  },
+  {
+    "sku": "HOR-1988HA-0020",
+    "strain": "1988 Hash Plant",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 22.73,
+    "unitPrice": 33.47,
+    "onHandQty": 612,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-11-03T15:46:47.161Z",
+    "packageDate": "2025-11-26T15:46:47.161Z",
+    "potency": {
+      "thc": 26.5,
+      "cbd": 0.9
+    },
+    "lotCode": "HORIZON-00120"
+  },
+  {
+    "sku": "EVE-1K-0021",
+    "strain": "#1K",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 21.22,
+    "unitPrice": 35.57,
+    "onHandQty": 599,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-25T15:46:47.162Z",
+    "potency": {
+      "thc": 27,
+      "cbd": 0.8
+    },
+    "lotCode": "EVERGREEN-00121"
+  },
+  {
+    "sku": "CAS-1KPC-0022",
+    "strain": "#1K PC",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 20.84,
+    "unitPrice": 35.33,
+    "onHandQty": 739,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-26T15:46:47.162Z",
+    "potency": {
+      "thc": 29.5,
+      "cbd": 1.8
+    },
+    "lotCode": "CASCADE-00122"
+  },
+  {
+    "sku": "SUM-1NDUN-0023",
+    "strain": "1'n Dun",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 18.89,
+    "unitPrice": 32.73,
+    "onHandQty": 685,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-12-03T15:46:47.162Z",
+    "packageDate": "2025-12-24T15:46:47.162Z",
+    "potency": {
+      "thc": 26.5,
+      "cbd": 2
+    },
+    "lotCode": "SUMMIT-00123"
+  },
+  {
+    "sku": "BLU-1NTHEP-0024",
+    "strain": "1 'n the Pink",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 22.98,
+    "unitPrice": 36.64,
+    "onHandQty": 595,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-12-03T15:46:47.162Z",
+    "packageDate": "2025-12-22T15:46:47.162Z",
+    "potency": {
+      "thc": 25.9,
+      "cbd": 1.8
+    },
+    "lotCode": "BLUE-00124"
+  },
+  {
+    "sku": "COP-2-0025",
+    "strain": "2",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 29.94,
+    "unitPrice": 43.83,
+    "onHandQty": 650,
+    "reservedQty": 32,
+    "sampleQty": 13,
+    "harvestDate": "2025-12-03T15:46:47.162Z",
+    "packageDate": "2025-12-20T15:46:47.162Z",
+    "potency": {
+      "thc": 22.8,
+      "cbd": 1.6
+    },
+    "lotCode": "COPPERSTATE-00125"
+  },
+  {
+    "sku": "EME-24CARA-0026",
+    "strain": "24 Carat",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 24.41,
+    "unitPrice": 43.1,
+    "onHandQty": 688,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-19T15:46:47.162Z",
+    "potency": {
+      "thc": 27.3,
+      "cbd": 2
+    },
+    "lotCode": "EMERALD-00126"
+  },
+  {
+    "sku": "SIE-24GOLD-0027",
+    "strain": "24 Gold",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 18.59,
+    "unitPrice": 28.72,
+    "onHandQty": 791,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-26T15:46:47.162Z",
+    "potency": {
+      "thc": 32.5,
+      "cbd": 1
+    },
+    "lotCode": "SIERRA-00127"
+  },
+  {
+    "sku": "FRO-24K-0028",
+    "strain": "24k",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 29.73,
+    "unitPrice": 46.97,
+    "onHandQty": 470,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-17T15:46:47.162Z",
+    "potency": {
+      "thc": 21.8,
+      "cbd": 1.7
+    },
+    "lotCode": "FRONTIER-00128"
+  },
+  {
+    "sku": "BEA-24KGOL-0029",
+    "strain": "24K Gold",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 31.99,
+    "unitPrice": 48.69,
+    "onHandQty": 617,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-19T15:46:47.162Z",
+    "potency": {
+      "thc": 32.1,
+      "cbd": 0.7
+    },
+    "lotCode": "BEACON-00129"
+  },
+  {
+    "sku": "HOR-24KTAN-0030",
+    "strain": "24k tangie",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 18.59,
+    "unitPrice": 28.99,
+    "onHandQty": 630,
+    "reservedQty": 31,
+    "sampleQty": 12,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-18T15:46:47.162Z",
+    "potency": {
+      "thc": 21.7,
+      "cbd": 0.1
+    },
+    "lotCode": "HORIZON-00130"
+  },
+  {
+    "sku": "EVE-26COOK-0031",
+    "strain": "26 Cookies",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 30.79,
+    "unitPrice": 49.62,
+    "onHandQty": 584,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-22T15:46:47.162Z",
+    "potency": {
+      "thc": 20.2,
+      "cbd": 0.5
+    },
+    "lotCode": "EVERGREEN-00131"
+  },
+  {
+    "sku": "CAS-2PHENO-0032",
+    "strain": "#2 Pheno KFx2",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 21.32,
+    "unitPrice": 35.99,
+    "onHandQty": 494,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-24T15:46:47.162Z",
+    "potency": {
+      "thc": 27.5,
+      "cbd": 0.9
+    },
+    "lotCode": "CASCADE-00132"
+  },
+  {
+    "sku": "SUM-2POUND-0033",
+    "strain": "2 Pounder",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 29.64,
+    "unitPrice": 46.22,
+    "onHandQty": 491,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-24T15:46:47.162Z",
+    "potency": {
+      "thc": 19.6,
+      "cbd": 0
+    },
+    "lotCode": "SUMMIT-00133"
+  },
+  {
+    "sku": "BLU-2POUND-0034",
+    "strain": "2-Pounder",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 22.05,
+    "unitPrice": 33.23,
+    "onHandQty": 412,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-19T15:46:47.162Z",
+    "potency": {
+      "thc": 24,
+      "cbd": 0.3
+    },
+    "lotCode": "BLUE-00134"
+  },
+  {
+    "sku": "COP-3-0035",
+    "strain": "3",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 23.64,
+    "unitPrice": 36.41,
+    "onHandQty": 681,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-25T15:46:47.162Z",
+    "potency": {
+      "thc": 27.2,
+      "cbd": 1.6
+    },
+    "lotCode": "COPPERSTATE-00135"
+  },
+  {
+    "sku": "EME-303KUS-0036",
+    "strain": "303 Kush",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 24.67,
+    "unitPrice": 34.72,
+    "onHandQty": 569,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-25T15:46:47.162Z",
+    "potency": {
+      "thc": 24.6,
+      "cbd": 1.8
+    },
+    "lotCode": "EMERALD-00136"
+  },
+  {
+    "sku": "SIE-303OG-0037",
+    "strain": "303 OG",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 20.37,
+    "unitPrice": 35.76,
+    "onHandQty": 527,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-26T15:46:47.162Z",
+    "potency": {
+      "thc": 26.2,
+      "cbd": 1.2
+    },
+    "lotCode": "SIERRA-00137"
+  },
+  {
+    "sku": "FRO-303OGK-0038",
+    "strain": "303 OG Kush",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 31.67,
+    "unitPrice": 53.39,
+    "onHandQty": 691,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-19T15:46:47.162Z",
+    "potency": {
+      "thc": 24.2,
+      "cbd": 0.8
+    },
+    "lotCode": "FRONTIER-00138"
+  },
+  {
+    "sku": "BEA-303STO-0039",
+    "strain": "303 Stooges",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 23.37,
+    "unitPrice": 35.99,
+    "onHandQty": 526,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-26T15:46:47.162Z",
+    "potency": {
+      "thc": 22,
+      "cbd": 1.6
+    },
+    "lotCode": "BEACON-00139"
+  },
+  {
+    "sku": "HOR-32-0040",
+    "strain": "#32",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 32.15,
+    "unitPrice": 52.58,
+    "onHandQty": 613,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-12-03T15:46:47.162Z",
+    "packageDate": "2025-12-21T15:46:47.162Z",
+    "potency": {
+      "thc": 29.5,
+      "cbd": 0.4
+    },
+    "lotCode": "HORIZON-00140"
+  },
+  {
+    "sku": "EVE-360X-0041",
+    "strain": "360X",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 31.93,
+    "unitPrice": 51.65,
+    "onHandQty": 411,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-26T15:46:47.162Z",
+    "potency": {
+      "thc": 22.5,
+      "cbd": 1.6
+    },
+    "lotCode": "EVERGREEN-00141"
+  },
+  {
+    "sku": "CAS-3D-0042",
+    "strain": "3D",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 22.85,
+    "unitPrice": 34.27,
+    "onHandQty": 652,
+    "reservedQty": 32,
+    "sampleQty": 13,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-18T15:46:47.162Z",
+    "potency": {
+      "thc": 22.9,
+      "cbd": 0
+    },
+    "lotCode": "CASCADE-00142"
+  },
+  {
+    "sku": "SUM-3DCBD-0043",
+    "strain": "3D CBD",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 25.94,
+    "unitPrice": 41.71,
+    "onHandQty": 786,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-26T15:46:47.162Z",
+    "potency": {
+      "thc": 28.7,
+      "cbd": 0
+    },
+    "lotCode": "SUMMIT-00143"
+  },
+  {
+    "sku": "BLU-3KINGS-0044",
+    "strain": "3 Kings",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 31.04,
+    "unitPrice": 54.04,
+    "onHandQty": 652,
+    "reservedQty": 32,
+    "sampleQty": 13,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-25T15:46:47.162Z",
+    "potency": {
+      "thc": 27,
+      "cbd": 0.8
+    },
+    "lotCode": "BLUE-00144"
+  },
+  {
+    "sku": "COP-3PAC-0045",
+    "strain": "3PAC",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 23.59,
+    "unitPrice": 37.89,
+    "onHandQty": 649,
+    "reservedQty": 32,
+    "sampleQty": 12,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-25T15:46:47.162Z",
+    "potency": {
+      "thc": 24.1,
+      "cbd": 0.2
+    },
+    "lotCode": "COPPERSTATE-00145"
+  },
+  {
+    "sku": "EME-3PHENO-0046",
+    "strain": "#3 Pheno GAL6174",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 29.73,
+    "unitPrice": 49.28,
+    "onHandQty": 461,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-22T15:46:47.162Z",
+    "potency": {
+      "thc": 32.9,
+      "cbd": 0.1
+    },
+    "lotCode": "EMERALD-00146"
+  },
+  {
+    "sku": "SIE-3PHENO-0047",
+    "strain": "#3 Pheno GAL6175",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 32.19,
+    "unitPrice": 48.81,
+    "onHandQty": 449,
+    "reservedQty": 22,
+    "sampleQty": 8,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-20T15:46:47.162Z",
+    "potency": {
+      "thc": 23.6,
+      "cbd": 1.8
+    },
+    "lotCode": "SIERRA-00147"
+  },
+  {
+    "sku": "FRO-3RDCOA-0048",
+    "strain": "3rd Coast Panama Chunk",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 24.09,
+    "unitPrice": 34.1,
+    "onHandQty": 466,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-24T15:46:47.162Z",
+    "potency": {
+      "thc": 27.7,
+      "cbd": 1.1
+    },
+    "lotCode": "FRONTIER-00148"
+  },
+  {
+    "sku": "BEA-3RDDIM-0049",
+    "strain": "3rd Dimension",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 22.23,
+    "unitPrice": 36.07,
+    "onHandQty": 401,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-26T15:46:47.162Z",
+    "potency": {
+      "thc": 18.5,
+      "cbd": 1.5
+    },
+    "lotCode": "BEACON-00149"
+  },
+  {
+    "sku": "HOR-3TIMES-0050",
+    "strain": "3 Times Crazy",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 26.39,
+    "unitPrice": 46.9,
+    "onHandQty": 467,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-23T15:46:47.162Z",
+    "potency": {
+      "thc": 25.8,
+      "cbd": 0.1
+    },
+    "lotCode": "HORIZON-00150"
+  },
+  {
+    "sku": "EVE-3XCOOK-0051",
+    "strain": "3x Cookies",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 25.67,
+    "unitPrice": 36.16,
+    "onHandQty": 577,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-22T15:46:47.162Z",
+    "potency": {
+      "thc": 28,
+      "cbd": 0.2
+    },
+    "lotCode": "EVERGREEN-00151"
+  },
+  {
+    "sku": "CAS-3XCRAZ-0052",
+    "strain": "3X Crazy",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 31.61,
+    "unitPrice": 51.93,
+    "onHandQty": 790,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-20T15:46:47.162Z",
+    "potency": {
+      "thc": 20.5,
+      "cbd": 1.9
+    },
+    "lotCode": "CASCADE-00152"
+  },
+  {
+    "sku": "SUM-3XCRAZ-0053",
+    "strain": "3X Crazy (Three Times Crazy)",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 18.93,
+    "unitPrice": 32.77,
+    "onHandQty": 699,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-12-03T15:46:47.162Z",
+    "packageDate": "2025-12-22T15:46:47.162Z",
+    "potency": {
+      "thc": 18.5,
+      "cbd": 0.3
+    },
+    "lotCode": "SUMMIT-00153"
+  },
+  {
+    "sku": "BLU-4-0054",
+    "strain": "4",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 22.3,
+    "unitPrice": 33.76,
+    "onHandQty": 666,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-18T15:46:47.162Z",
+    "potency": {
+      "thc": 32.8,
+      "cbd": 1.8
+    },
+    "lotCode": "BLUE-00154"
+  },
+  {
+    "sku": "COP-4077ME-0055",
+    "strain": "4077 Med Leaf",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 30.37,
+    "unitPrice": 44.26,
+    "onHandQty": 647,
+    "reservedQty": 32,
+    "sampleQty": 12,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-19T15:46:47.162Z",
+    "potency": {
+      "thc": 18.7,
+      "cbd": 1.5
+    },
+    "lotCode": "COPPERSTATE-00155"
+  },
+  {
+    "sku": "EME-420-0056",
+    "strain": "420",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 20.5,
+    "unitPrice": 31.24,
+    "onHandQty": 659,
+    "reservedQty": 32,
+    "sampleQty": 13,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-21T15:46:47.162Z",
+    "potency": {
+      "thc": 21.9,
+      "cbd": 1.2
+    },
+    "lotCode": "EMERALD-00156"
+  },
+  {
+    "sku": "SIE-420GLU-0057",
+    "strain": "420 Glue",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 24.44,
+    "unitPrice": 36.81,
+    "onHandQty": 608,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-17T15:46:47.162Z",
+    "potency": {
+      "thc": 21.3,
+      "cbd": 0.9
+    },
+    "lotCode": "SIERRA-00157"
+  },
+  {
+    "sku": "FRO-420KUS-0058",
+    "strain": "420 Kush",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 29.34,
+    "unitPrice": 48.7,
+    "onHandQty": 542,
+    "reservedQty": 27,
+    "sampleQty": 10,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-21T15:46:47.162Z",
+    "potency": {
+      "thc": 25,
+      "cbd": 1.4
+    },
+    "lotCode": "FRONTIER-00158"
+  },
+  {
+    "sku": "BEA-425-0059",
+    "strain": "425",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 29.48,
+    "unitPrice": 48.9,
+    "onHandQty": 719,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-25T15:46:47.162Z",
+    "potency": {
+      "thc": 28.6,
+      "cbd": 0
+    },
+    "lotCode": "BEACON-00159"
+  },
+  {
+    "sku": "HOR-4BEST4-0060",
+    "strain": "4 Best 4 You",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 33,
+    "unitPrice": 50.09,
+    "onHandQty": 700,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-23T15:46:47.162Z",
+    "potency": {
+      "thc": 25.5,
+      "cbd": 0.5
+    },
+    "lotCode": "HORIZON-00160"
+  },
+  {
+    "sku": "EVE-4CORNE-0061",
+    "strain": "4 Corners",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 24.14,
+    "unitPrice": 38.54,
+    "onHandQty": 438,
+    "reservedQty": 21,
+    "sampleQty": 8,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-18T15:46:47.162Z",
+    "potency": {
+      "thc": 25.2,
+      "cbd": 0.4
+    },
+    "lotCode": "EVERGREEN-00161"
+  },
+  {
+    "sku": "CAS-4D4THD-0062",
+    "strain": "4D (4th Dimension)",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 30.99,
+    "unitPrice": 44.53,
+    "onHandQty": 644,
+    "reservedQty": 32,
+    "sampleQty": 12,
+    "harvestDate": "2025-12-03T15:46:47.162Z",
+    "packageDate": "2025-12-23T15:46:47.162Z",
+    "potency": {
+      "thc": 26,
+      "cbd": 0.2
+    },
+    "lotCode": "CASCADE-00162"
+  },
+  {
+    "sku": "SUM-4HORSE-0063",
+    "strain": "4 Horseman Haze",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 26.64,
+    "unitPrice": 39.74,
+    "onHandQty": 606,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-23T15:46:47.162Z",
+    "potency": {
+      "thc": 29.8,
+      "cbd": 1.2
+    },
+    "lotCode": "SUMMIT-00163"
+  },
+  {
+    "sku": "BLU-4KINGS-0064",
+    "strain": "4 Kings",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 29.36,
+    "unitPrice": 46.47,
+    "onHandQty": 671,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-22T15:46:47.162Z",
+    "potency": {
+      "thc": 19.7,
+      "cbd": 2
+    },
+    "lotCode": "BLUE-00164"
+  },
+  {
+    "sku": "COP-4WAY-0065",
+    "strain": "4 Way",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 24.32,
+    "unitPrice": 37.11,
+    "onHandQty": 622,
+    "reservedQty": 31,
+    "sampleQty": 12,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-22T15:46:47.162Z",
+    "potency": {
+      "thc": 22.1,
+      "cbd": 1.2
+    },
+    "lotCode": "COPPERSTATE-00165"
+  },
+  {
+    "sku": "EME-5-0066",
+    "strain": "5",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 18.83,
+    "unitPrice": 27.86,
+    "onHandQty": 634,
+    "reservedQty": 31,
+    "sampleQty": 12,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-23T15:46:47.162Z",
+    "potency": {
+      "thc": 22.3,
+      "cbd": 1.7
+    },
+    "lotCode": "EMERALD-00166"
+  },
+  {
+    "sku": "SIE-501STO-0067",
+    "strain": "501st OG",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 30.46,
+    "unitPrice": 52.4,
+    "onHandQty": 634,
+    "reservedQty": 31,
+    "sampleQty": 12,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-26T15:46:47.162Z",
+    "potency": {
+      "thc": 25.8,
+      "cbd": 0.1
+    },
+    "lotCode": "SIERRA-00167"
+  },
+  {
+    "sku": "FRO-503OG-0068",
+    "strain": "503 OG",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 25.56,
+    "unitPrice": 43.17,
+    "onHandQty": 598,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-22T15:46:47.162Z",
+    "potency": {
+      "thc": 32.5,
+      "cbd": 0.2
+    },
+    "lotCode": "FRONTIER-00168"
+  },
+  {
+    "sku": "BEA-509KUS-0069",
+    "strain": "509 Kush",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 19.7,
+    "unitPrice": 34.84,
+    "onHandQty": 666,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-21T15:46:47.162Z",
+    "potency": {
+      "thc": 31.6,
+      "cbd": 0.9
+    },
+    "lotCode": "BEACON-00169"
+  },
+  {
+    "sku": "HOR-512OG-0070",
+    "strain": "512 OG",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 24.53,
+    "unitPrice": 36.36,
+    "onHandQty": 457,
+    "reservedQty": 22,
+    "sampleQty": 9,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-18T15:46:47.162Z",
+    "potency": {
+      "thc": 31,
+      "cbd": 1.1
+    },
+    "lotCode": "HORIZON-00170"
+  },
+  {
+    "sku": "EVE-5GSBLU-0071",
+    "strain": "5G's Blue",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 28.4,
+    "unitPrice": 43.57,
+    "onHandQty": 700,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-26T15:46:47.162Z",
+    "potency": {
+      "thc": 19.4,
+      "cbd": 1.4
+    },
+    "lotCode": "EVERGREEN-00171"
+  },
+  {
+    "sku": "CAS-5GSPUR-0072",
+    "strain": "5G's Purple",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 26.41,
+    "unitPrice": 37.87,
+    "onHandQty": 416,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-23T15:46:47.162Z",
+    "potency": {
+      "thc": 31.3,
+      "cbd": 0.8
+    },
+    "lotCode": "CASCADE-00172"
+  },
+  {
+    "sku": "SUM-5GSRED-0073",
+    "strain": "5G's Red",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 23.33,
+    "unitPrice": 35.95,
+    "onHandQty": 400,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-25T15:46:47.162Z",
+    "potency": {
+      "thc": 20.9,
+      "cbd": 1.4
+    },
+    "lotCode": "SUMMIT-00173"
+  },
+  {
+    "sku": "BLU-5GSYEL-0074",
+    "strain": "5G's Yellow",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 21.38,
+    "unitPrice": 31.61,
+    "onHandQty": 715,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-24T15:46:47.162Z",
+    "potency": {
+      "thc": 23.8,
+      "cbd": 0.8
+    },
+    "lotCode": "BLUE-00174"
+  },
+  {
+    "sku": "COP-5KOGCU-0075",
+    "strain": "5K OG (cut)",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 32.59,
+    "unitPrice": 45.93,
+    "onHandQty": 616,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-23T15:46:47.162Z",
+    "potency": {
+      "thc": 29.6,
+      "cbd": 1.5
+    },
+    "lotCode": "COPPERSTATE-00175"
+  },
+  {
+    "sku": "EME-5KPUFF-0076",
+    "strain": "5K Puff",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 31.38,
+    "unitPrice": 53.33,
+    "onHandQty": 559,
+    "reservedQty": 27,
+    "sampleQty": 11,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-25T15:46:47.162Z",
+    "potency": {
+      "thc": 27.1,
+      "cbd": 1.5
+    },
+    "lotCode": "EMERALD-00176"
+  },
+  {
+    "sku": "SIE-5PHENO-0077",
+    "strain": "#5 Pheno",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 26.31,
+    "unitPrice": 42.74,
+    "onHandQty": 430,
+    "reservedQty": 21,
+    "sampleQty": 8,
+    "harvestDate": "2025-11-03T15:46:47.162Z",
+    "packageDate": "2025-11-23T15:46:47.162Z",
+    "potency": {
+      "thc": 26.3,
+      "cbd": 1.5
+    },
+    "lotCode": "SIERRA-00177"
+  },
+  {
+    "sku": "FRO-5PHENO-0078",
+    "strain": "#5 Pheno Afghan Dom",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 18.58,
+    "unitPrice": 27.96,
+    "onHandQty": 604,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-22T15:46:47.162Z",
+    "potency": {
+      "thc": 29.5,
+      "cbd": 0
+    },
+    "lotCode": "FRONTIER-00178"
+  },
+  {
+    "sku": "BEA-5THELE-0079",
+    "strain": "5th Element",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 27.85,
+    "unitPrice": 45.2,
+    "onHandQty": 490,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-17T15:46:47.162Z",
+    "potency": {
+      "thc": 26.7,
+      "cbd": 1.2
+    },
+    "lotCode": "BEACON-00179"
+  },
+  {
+    "sku": "HOR-6-0080",
+    "strain": "6",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 25.92,
+    "unitPrice": 42.05,
+    "onHandQty": 775,
+    "reservedQty": 38,
+    "sampleQty": 15,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-26T15:46:47.162Z",
+    "potency": {
+      "thc": 18.6,
+      "cbd": 1
+    },
+    "lotCode": "HORIZON-00180"
+  },
+  {
+    "sku": "EVE-60-0081",
+    "strain": "60",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 24.87,
+    "unitPrice": 43.8,
+    "onHandQty": 677,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-18T15:46:47.162Z",
+    "potency": {
+      "thc": 19.6,
+      "cbd": 1.5
+    },
+    "lotCode": "EVERGREEN-00181"
+  },
+  {
+    "sku": "CAS-60DAYL-0082",
+    "strain": "60 Day Lemon (auto)",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 23.41,
+    "unitPrice": 35.61,
+    "onHandQty": 759,
+    "reservedQty": 37,
+    "sampleQty": 15,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-23T15:46:47.162Z",
+    "potency": {
+      "thc": 26.7,
+      "cbd": 1.4
+    },
+    "lotCode": "CASCADE-00182"
+  },
+  {
+    "sku": "SUM-60DAYW-0083",
+    "strain": "60 Day Wonder",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 23.7,
+    "unitPrice": 33.4,
+    "onHandQty": 522,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-10-03T15:46:47.162Z",
+    "packageDate": "2025-10-25T15:46:47.162Z",
+    "potency": {
+      "thc": 24.6,
+      "cbd": 2
+    },
+    "lotCode": "SUMMIT-00183"
+  },
+  {
+    "sku": "BLU-60INDI-0084",
+    "strain": "60% Indica / 60% Sativa",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 20.49,
+    "unitPrice": 35.69,
+    "onHandQty": 721,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-22T15:46:47.162Z",
+    "potency": {
+      "thc": 19.7,
+      "cbd": 2
+    },
+    "lotCode": "BLUE-00184"
+  },
+  {
+    "sku": "COP-619OG-0085",
+    "strain": "619 OG",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 32.48,
+    "unitPrice": 45.57,
+    "onHandQty": 762,
+    "reservedQty": 38,
+    "sampleQty": 15,
+    "harvestDate": "2025-12-03T15:46:47.162Z",
+    "packageDate": "2025-12-17T15:46:47.162Z",
+    "potency": {
+      "thc": 28.3,
+      "cbd": 0.4
+    },
+    "lotCode": "COPPERSTATE-00185"
+  },
+  {
+    "sku": "EME-6PHENO-0086",
+    "strain": "#6 Pheno",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 30.31,
+    "unitPrice": 48.92,
+    "onHandQty": 667,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-07-03T15:46:47.162Z",
+    "packageDate": "2025-07-21T15:46:47.162Z",
+    "potency": {
+      "thc": 31.9,
+      "cbd": 1.3
+    },
+    "lotCode": "EMERALD-00186"
+  },
+  {
+    "sku": "SIE-7-0087",
+    "strain": "7",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 18.51,
+    "unitPrice": 31.89,
+    "onHandQty": 662,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-24T15:46:47.162Z",
+    "potency": {
+      "thc": 18.4,
+      "cbd": 1.5
+    },
+    "lotCode": "SIERRA-00187"
+  },
+  {
+    "sku": "FRO-707HEA-0088",
+    "strain": "707 Headband",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 20.58,
+    "unitPrice": 32.45,
+    "onHandQty": 458,
+    "reservedQty": 22,
+    "sampleQty": 9,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-23T15:46:47.162Z",
+    "potency": {
+      "thc": 29.4,
+      "cbd": 1.9
+    },
+    "lotCode": "FRONTIER-00188"
+  },
+  {
+    "sku": "BEA-707SOU-0089",
+    "strain": "707 Sour Diesel",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 22.85,
+    "unitPrice": 36.93,
+    "onHandQty": 615,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-09-03T15:46:47.162Z",
+    "packageDate": "2025-09-20T15:46:47.162Z",
+    "potency": {
+      "thc": 20.1,
+      "cbd": 1.5
+    },
+    "lotCode": "BEACON-00189"
+  },
+  {
+    "sku": "HOR-707TRU-0090",
+    "strain": "707 Truthband",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 27.33,
+    "unitPrice": 42.18,
+    "onHandQty": 566,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.162Z",
+    "packageDate": "2025-08-17T15:46:47.162Z",
+    "potency": {
+      "thc": 23.6,
+      "cbd": 1.1
+    },
+    "lotCode": "HORIZON-00190"
+  },
+  {
+    "sku": "EVE-710CHE-0091",
+    "strain": "710 Cheese",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 26.12,
+    "unitPrice": 46.98,
+    "onHandQty": 736,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-12-03T15:46:47.162Z",
+    "packageDate": "2025-12-25T15:46:47.162Z",
+    "potency": {
+      "thc": 20.5,
+      "cbd": 1.5
+    },
+    "lotCode": "EVERGREEN-00191"
+  },
+  {
+    "sku": "CAS-710MAN-0092",
+    "strain": "710 Mango",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 20.03,
+    "unitPrice": 29.86,
+    "onHandQty": 468,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-11-03T15:46:47.163Z",
+    "packageDate": "2025-11-17T15:46:47.163Z",
+    "potency": {
+      "thc": 27.8,
+      "cbd": 1.5
+    },
+    "lotCode": "CASCADE-00192"
+  },
+  {
+    "sku": "SUM-710STI-0093",
+    "strain": "710 Stick Icky",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 27.08,
+    "unitPrice": 45.88,
+    "onHandQty": 577,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-09-03T15:46:47.163Z",
+    "packageDate": "2025-09-20T15:46:47.163Z",
+    "potency": {
+      "thc": 21.5,
+      "cbd": 0.8
+    },
+    "lotCode": "SUMMIT-00193"
+  },
+  {
+    "sku": "BLU-747-0094",
+    "strain": "747",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 28.8,
+    "unitPrice": 47.79,
+    "onHandQty": 427,
+    "reservedQty": 21,
+    "sampleQty": 8,
+    "harvestDate": "2025-07-03T15:46:47.163Z",
+    "packageDate": "2025-07-17T15:46:47.163Z",
+    "potency": {
+      "thc": 20.9,
+      "cbd": 1.2
+    },
+    "lotCode": "BLUE-00194"
+  },
+  {
+    "sku": "COP-76THAI-0095",
+    "strain": "76' Thai Stick",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 28.38,
+    "unitPrice": 44.58,
+    "onHandQty": 497,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-09-03T15:46:47.163Z",
+    "packageDate": "2025-09-19T15:46:47.163Z",
+    "potency": {
+      "thc": 27.9,
+      "cbd": 1.3
+    },
+    "lotCode": "COPPERSTATE-00195"
+  },
+  {
+    "sku": "EME-78LAOG-0096",
+    "strain": "'78 LA OG Affie",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 30.19,
+    "unitPrice": 52.34,
+    "onHandQty": 753,
+    "reservedQty": 37,
+    "sampleQty": 15,
+    "harvestDate": "2025-07-03T15:46:47.163Z",
+    "packageDate": "2025-07-25T15:46:47.163Z",
+    "potency": {
+      "thc": 24.5,
+      "cbd": 0
+    },
+    "lotCode": "EMERALD-00196"
+  },
+  {
+    "sku": "SIE-78OGAF-0097",
+    "strain": "'78 OG AFFIE",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 18.23,
+    "unitPrice": 29.81,
+    "onHandQty": 674,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-12-03T15:46:47.163Z",
+    "packageDate": "2025-12-22T15:46:47.163Z",
+    "potency": {
+      "thc": 18.2,
+      "cbd": 0.4
+    },
+    "lotCode": "SIERRA-00197"
+  },
+  {
+    "sku": "FRO-78SOUR-0098",
+    "strain": "7/8 Sour",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 26.79,
+    "unitPrice": 44.99,
+    "onHandQty": 515,
+    "reservedQty": 25,
+    "sampleQty": 10,
+    "harvestDate": "2025-10-03T15:46:47.163Z",
+    "packageDate": "2025-10-19T15:46:47.163Z",
+    "potency": {
+      "thc": 25.4,
+      "cbd": 1.5
+    },
+    "lotCode": "FRONTIER-00198"
+  },
+  {
+    "sku": "BEA-7GHOST-0099",
+    "strain": "7 Ghosts",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 31.56,
+    "unitPrice": 53.56,
+    "onHandQty": 486,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-12-03T15:46:47.163Z",
+    "packageDate": "2025-12-22T15:46:47.163Z",
+    "potency": {
+      "thc": 27.9,
+      "cbd": 0.2
+    },
+    "lotCode": "BEACON-00199"
+  },
+  {
+    "sku": "HOR-7KINGD-0100",
+    "strain": "7 Kingdoms",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 23.93,
+    "unitPrice": 39.9,
+    "onHandQty": 406,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-08-03T15:46:47.163Z",
+    "packageDate": "2025-08-24T15:46:47.163Z",
+    "potency": {
+      "thc": 27.5,
+      "cbd": 1
+    },
+    "lotCode": "HORIZON-00200"
+  },
+  {
+    "sku": "EVE-7OF9-0101",
+    "strain": "7 of 9",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 26.83,
+    "unitPrice": 45.31,
+    "onHandQty": 774,
+    "reservedQty": 38,
+    "sampleQty": 15,
+    "harvestDate": "2025-08-03T15:46:47.163Z",
+    "packageDate": "2025-08-22T15:46:47.163Z",
+    "potency": {
+      "thc": 18.6,
+      "cbd": 0.5
+    },
+    "lotCode": "EVERGREEN-00201"
+  },
+  {
+    "sku": "CAS-7STARS-0102",
+    "strain": "7 Stars Cookies",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 22.49,
+    "unitPrice": 39.77,
+    "onHandQty": 775,
+    "reservedQty": 38,
+    "sampleQty": 15,
+    "harvestDate": "2025-07-03T15:46:47.163Z",
+    "packageDate": "2025-07-26T15:46:47.163Z",
+    "potency": {
+      "thc": 31.3,
+      "cbd": 0.5
+    },
+    "lotCode": "CASCADE-00202"
+  },
+  {
+    "sku": "SUM-7WAY-0103",
+    "strain": "7-Way",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 23.19,
+    "unitPrice": 35.06,
+    "onHandQty": 682,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-09-03T15:46:47.163Z",
+    "packageDate": "2025-09-25T15:46:47.163Z",
+    "potency": {
+      "thc": 31.1,
+      "cbd": 1.2
+    },
+    "lotCode": "SUMMIT-00203"
+  },
+  {
+    "sku": "BLU-8-0104",
+    "strain": "8",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 28.3,
+    "unitPrice": 48.55,
+    "onHandQty": 477,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-12-03T15:46:47.163Z",
+    "packageDate": "2025-12-18T15:46:47.163Z",
+    "potency": {
+      "thc": 26.1,
+      "cbd": 0.4
+    },
+    "lotCode": "BLUE-00204"
+  },
+  {
+    "sku": "COP-818HEA-0105",
+    "strain": "818 Headband",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 21.27,
+    "unitPrice": 38.11,
+    "onHandQty": 486,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-12-03T15:46:47.164Z",
+    "packageDate": "2025-12-22T15:46:47.164Z",
+    "potency": {
+      "thc": 24.4,
+      "cbd": 0.4
+    },
+    "lotCode": "COPPERSTATE-00205"
+  },
+  {
+    "sku": "EME-818OG-0106",
+    "strain": "818 OG",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 25.61,
+    "unitPrice": 39.58,
+    "onHandQty": 591,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-22T15:46:47.164Z",
+    "potency": {
+      "thc": 20.6,
+      "cbd": 0
+    },
+    "lotCode": "EMERALD-00206"
+  },
+  {
+    "sku": "SIE-818PUR-0107",
+    "strain": "818 Pure SFV OG S1",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 30.29,
+    "unitPrice": 43,
+    "onHandQty": 659,
+    "reservedQty": 32,
+    "sampleQty": 13,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-23T15:46:47.164Z",
+    "potency": {
+      "thc": 18.1,
+      "cbd": 1.6
+    },
+    "lotCode": "SIERRA-00207"
+  },
+  {
+    "sku": "FRO-818SFV-0108",
+    "strain": "818 SFV Fire OG",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 24.75,
+    "unitPrice": 43.42,
+    "onHandQty": 437,
+    "reservedQty": 21,
+    "sampleQty": 8,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-23T15:46:47.164Z",
+    "potency": {
+      "thc": 22.4,
+      "cbd": 0.8
+    },
+    "lotCode": "FRONTIER-00208"
+  },
+  {
+    "sku": "BEA-831OG-0109",
+    "strain": "831 OG",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 24.52,
+    "unitPrice": 43.83,
+    "onHandQty": 517,
+    "reservedQty": 25,
+    "sampleQty": 10,
+    "harvestDate": "2025-10-03T15:46:47.164Z",
+    "packageDate": "2025-10-20T15:46:47.164Z",
+    "potency": {
+      "thc": 22.8,
+      "cbd": 1.9
+    },
+    "lotCode": "BEACON-00209"
+  },
+  {
+    "sku": "HOR-86BLAC-0110",
+    "strain": "'86 Black UW",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 26.23,
+    "unitPrice": 37.45,
+    "onHandQty": 688,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-25T15:46:47.164Z",
+    "potency": {
+      "thc": 32.4,
+      "cbd": 1.8
+    },
+    "lotCode": "HORIZON-00210"
+  },
+  {
+    "sku": "EVE-88G13-0111",
+    "strain": "88 G-13",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 20.24,
+    "unitPrice": 36.03,
+    "onHandQty": 461,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-11-03T15:46:47.164Z",
+    "packageDate": "2025-11-24T15:46:47.164Z",
+    "potency": {
+      "thc": 18.7,
+      "cbd": 1.4
+    },
+    "lotCode": "EVERGREEN-00211"
+  },
+  {
+    "sku": "CAS-88G13H-0112",
+    "strain": "88 G-13 Hashplant",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 27.65,
+    "unitPrice": 42.41,
+    "onHandQty": 519,
+    "reservedQty": 25,
+    "sampleQty": 10,
+    "harvestDate": "2025-11-03T15:46:47.164Z",
+    "packageDate": "2025-11-19T15:46:47.164Z",
+    "potency": {
+      "thc": 24.9,
+      "cbd": 0.6
+    },
+    "lotCode": "CASCADE-00212"
+  },
+  {
+    "sku": "SUM-8BALLK-0113",
+    "strain": "8 Ball Kush",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 18.94,
+    "unitPrice": 31.4,
+    "onHandQty": 598,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-25T15:46:47.164Z",
+    "potency": {
+      "thc": 30.8,
+      "cbd": 1.9
+    },
+    "lotCode": "SUMMIT-00213"
+  },
+  {
+    "sku": "BLU-8K-0114",
+    "strain": "8-K",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 22.5,
+    "unitPrice": 35.23,
+    "onHandQty": 723,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-10-03T15:46:47.164Z",
+    "packageDate": "2025-10-22T15:46:47.164Z",
+    "potency": {
+      "thc": 31.8,
+      "cbd": 0.5
+    },
+    "lotCode": "BLUE-00214"
+  },
+  {
+    "sku": "COP-8MILE-0115",
+    "strain": "8 Mile",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 26.15,
+    "unitPrice": 45.61,
+    "onHandQty": 472,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-22T15:46:47.164Z",
+    "potency": {
+      "thc": 19.7,
+      "cbd": 1.4
+    },
+    "lotCode": "COPPERSTATE-00215"
+  },
+  {
+    "sku": "EME-8MILES-0116",
+    "strain": "8 Miles High",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 30.76,
+    "unitPrice": 43.6,
+    "onHandQty": 539,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-12-03T15:46:47.164Z",
+    "packageDate": "2025-12-19T15:46:47.164Z",
+    "potency": {
+      "thc": 19.9,
+      "cbd": 1.7
+    },
+    "lotCode": "EMERALD-00216"
+  },
+  {
+    "sku": "SIE-90SGLU-0117",
+    "strain": "90's Glue",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 29.26,
+    "unitPrice": 43.17,
+    "onHandQty": 664,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-09-03T15:46:47.164Z",
+    "packageDate": "2025-09-24T15:46:47.164Z",
+    "potency": {
+      "thc": 32,
+      "cbd": 1.5
+    },
+    "lotCode": "SIERRA-00217"
+  },
+  {
+    "sku": "FRO-91BUBB-0118",
+    "strain": "91 Bubbleberry",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 23.42,
+    "unitPrice": 33.44,
+    "onHandQty": 778,
+    "reservedQty": 38,
+    "sampleQty": 15,
+    "harvestDate": "2025-12-03T15:46:47.164Z",
+    "packageDate": "2025-12-19T15:46:47.164Z",
+    "potency": {
+      "thc": 32.6,
+      "cbd": 1.7
+    },
+    "lotCode": "FRONTIER-00218"
+  },
+  {
+    "sku": "BEA-91CHEM-0119",
+    "strain": "'91 Chemdawg",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 31.03,
+    "unitPrice": 52.55,
+    "onHandQty": 575,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-24T15:46:47.164Z",
+    "potency": {
+      "thc": 28.6,
+      "cbd": 1.9
+    },
+    "lotCode": "BEACON-00219"
+  },
+  {
+    "sku": "HOR-91KRYP-0120",
+    "strain": "91 Krypt",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 26.48,
+    "unitPrice": 45.38,
+    "onHandQty": 466,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-12-03T15:46:47.164Z",
+    "packageDate": "2025-12-24T15:46:47.164Z",
+    "potency": {
+      "thc": 31.5,
+      "cbd": 1.8
+    },
+    "lotCode": "HORIZON-00220"
+  },
+  {
+    "sku": "EVE-91OG-0121",
+    "strain": "91 OG",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 26.56,
+    "unitPrice": 46.22,
+    "onHandQty": 798,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-24T15:46:47.164Z",
+    "potency": {
+      "thc": 29.7,
+      "cbd": 1.2
+    },
+    "lotCode": "EVERGREEN-00221"
+  },
+  {
+    "sku": "CAS-925-0122",
+    "strain": "925",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 27.24,
+    "unitPrice": 46.6,
+    "onHandQty": 499,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-11-03T15:46:47.164Z",
+    "packageDate": "2025-11-23T15:46:47.164Z",
+    "potency": {
+      "thc": 27.5,
+      "cbd": 1.7
+    },
+    "lotCode": "CASCADE-00222"
+  },
+  {
+    "sku": "SUM-98ALOH-0123",
+    "strain": "'98 Aloha White Widow",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 29.68,
+    "unitPrice": 45.11,
+    "onHandQty": 459,
+    "reservedQty": 22,
+    "sampleQty": 9,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-22T15:46:47.164Z",
+    "potency": {
+      "thc": 25.2,
+      "cbd": 0
+    },
+    "lotCode": "SUMMIT-00223"
+  },
+  {
+    "sku": "BLU-98LEMO-0124",
+    "strain": "'98 Lemon Haze",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 26.28,
+    "unitPrice": 39.99,
+    "onHandQty": 430,
+    "reservedQty": 21,
+    "sampleQty": 8,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-21T15:46:47.164Z",
+    "potency": {
+      "thc": 23.1,
+      "cbd": 1.2
+    },
+    "lotCode": "BLUE-00224"
+  },
+  {
+    "sku": "COP-9LBSTR-0125",
+    "strain": "9lb. Strawberry",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 31.13,
+    "unitPrice": 47.47,
+    "onHandQty": 780,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-11-03T15:46:47.164Z",
+    "packageDate": "2025-11-23T15:46:47.164Z",
+    "potency": {
+      "thc": 25.2,
+      "cbd": 0.4
+    },
+    "lotCode": "COPPERSTATE-00225"
+  },
+  {
+    "sku": "EME-9LBSTR-0126",
+    "strain": "9lb. Strawberry cough",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 23.44,
+    "unitPrice": 40.37,
+    "onHandQty": 577,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-09-03T15:46:47.164Z",
+    "packageDate": "2025-09-24T15:46:47.164Z",
+    "potency": {
+      "thc": 29.6,
+      "cbd": 0.8
+    },
+    "lotCode": "EMERALD-00226"
+  },
+  {
+    "sku": "SIE-9MILE-0127",
+    "strain": "9 mile",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 20.62,
+    "unitPrice": 35.95,
+    "onHandQty": 428,
+    "reservedQty": 21,
+    "sampleQty": 8,
+    "harvestDate": "2025-12-03T15:46:47.164Z",
+    "packageDate": "2025-12-22T15:46:47.164Z",
+    "potency": {
+      "thc": 24.7,
+      "cbd": 1.1
+    },
+    "lotCode": "SIERRA-00227"
+  },
+  {
+    "sku": "FRO-9MILL-0128",
+    "strain": "9 Mill",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 31.95,
+    "unitPrice": 57.11,
+    "onHandQty": 545,
+    "reservedQty": 27,
+    "sampleQty": 10,
+    "harvestDate": "2025-10-03T15:46:47.164Z",
+    "packageDate": "2025-10-26T15:46:47.164Z",
+    "potency": {
+      "thc": 32.1,
+      "cbd": 1.2
+    },
+    "lotCode": "FRONTIER-00228"
+  },
+  {
+    "sku": "BEA-9POUND-0129",
+    "strain": "9 Pound Hammer",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 23.12,
+    "unitPrice": 37.76,
+    "onHandQty": 417,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-26T15:46:47.164Z",
+    "potency": {
+      "thc": 22.9,
+      "cbd": 0.2
+    },
+    "lotCode": "BEACON-00229"
+  },
+  {
+    "sku": "HOR-A10-0130",
+    "strain": "A-10",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 24.22,
+    "unitPrice": 35.36,
+    "onHandQty": 737,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-24T15:46:47.164Z",
+    "potency": {
+      "thc": 25.3,
+      "cbd": 0.5
+    },
+    "lotCode": "HORIZON-00230"
+  },
+  {
+    "sku": "EVE-A10-0131",
+    "strain": "A10",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 22.28,
+    "unitPrice": 34.77,
+    "onHandQty": 522,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-12-03T15:46:47.164Z",
+    "packageDate": "2025-12-22T15:46:47.164Z",
+    "potency": {
+      "thc": 31.2,
+      "cbd": 1.1
+    },
+    "lotCode": "EVERGREEN-00231"
+  },
+  {
+    "sku": "CAS-A13-0132",
+    "strain": "A-13",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 21.25,
+    "unitPrice": 32.93,
+    "onHandQty": 784,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-11-03T15:46:47.164Z",
+    "packageDate": "2025-11-23T15:46:47.164Z",
+    "potency": {
+      "thc": 18.3,
+      "cbd": 0.5
+    },
+    "lotCode": "CASCADE-00232"
+  },
+  {
+    "sku": "SUM-A1HAZE-0133",
+    "strain": "A-1 Haze",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 22.99,
+    "unitPrice": 41.12,
+    "onHandQty": 481,
+    "reservedQty": 24,
+    "sampleQty": 9,
+    "harvestDate": "2025-09-03T15:46:47.164Z",
+    "packageDate": "2025-09-18T15:46:47.164Z",
+    "potency": {
+      "thc": 26.3,
+      "cbd": 0.6
+    },
+    "lotCode": "SUMMIT-00233"
+  },
+  {
+    "sku": "BLU-A2COOK-0134",
+    "strain": "A2 Cookies",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 27.92,
+    "unitPrice": 42.97,
+    "onHandQty": 754,
+    "reservedQty": 37,
+    "sampleQty": 15,
+    "harvestDate": "2025-10-03T15:46:47.164Z",
+    "packageDate": "2025-10-19T15:46:47.164Z",
+    "potency": {
+      "thc": 28.2,
+      "cbd": 0.2
+    },
+    "lotCode": "BLUE-00234"
+  },
+  {
+    "sku": "COP-A3-0135",
+    "strain": "A3",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 25.76,
+    "unitPrice": 42.97,
+    "onHandQty": 702,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-12-03T15:46:47.164Z",
+    "packageDate": "2025-12-21T15:46:47.164Z",
+    "potency": {
+      "thc": 20.6,
+      "cbd": 0
+    },
+    "lotCode": "COPPERSTATE-00235"
+  },
+  {
+    "sku": "EME-A5HAZE-0136",
+    "strain": "A5 Haze",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 27.81,
+    "unitPrice": 39.89,
+    "onHandQty": 678,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-20T15:46:47.164Z",
+    "potency": {
+      "thc": 20.4,
+      "cbd": 0.5
+    },
+    "lotCode": "EMERALD-00236"
+  },
+  {
+    "sku": "SIE-AAA-0137",
+    "strain": "AAA",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 27.18,
+    "unitPrice": 39.62,
+    "onHandQty": 409,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-18T15:46:47.164Z",
+    "potency": {
+      "thc": 22.4,
+      "cbd": 0.5
+    },
+    "lotCode": "SIERRA-00237"
+  },
+  {
+    "sku": "FRO-ABACUS-0138",
+    "strain": "Abacus",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 32.26,
+    "unitPrice": 50.44,
+    "onHandQty": 527,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-11-03T15:46:47.164Z",
+    "packageDate": "2025-11-20T15:46:47.164Z",
+    "potency": {
+      "thc": 33,
+      "cbd": 0.6
+    },
+    "lotCode": "FRONTIER-00238"
+  },
+  {
+    "sku": "BEA-ABATIO-0139",
+    "strain": "Abatiol",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 26.12,
+    "unitPrice": 43.64,
+    "onHandQty": 606,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-11-03T15:46:47.164Z",
+    "packageDate": "2025-11-22T15:46:47.164Z",
+    "potency": {
+      "thc": 23.5,
+      "cbd": 0.8
+    },
+    "lotCode": "BEACON-00239"
+  },
+  {
+    "sku": "HOR-ABBAZA-0140",
+    "strain": "Abba Zabba",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 28.86,
+    "unitPrice": 48.98,
+    "onHandQty": 713,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-10-03T15:46:47.164Z",
+    "packageDate": "2025-10-26T15:46:47.164Z",
+    "potency": {
+      "thc": 25.3,
+      "cbd": 1.9
+    },
+    "lotCode": "HORIZON-00240"
+  },
+  {
+    "sku": "EVE-ABCAUS-0141",
+    "strain": "ABC (Australian Bastard Cannabis)",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 30.21,
+    "unitPrice": 44.63,
+    "onHandQty": 511,
+    "reservedQty": 25,
+    "sampleQty": 10,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-21T15:46:47.164Z",
+    "potency": {
+      "thc": 20.3,
+      "cbd": 1.2
+    },
+    "lotCode": "EVERGREEN-00241"
+  },
+  {
+    "sku": "CAS-ABERDE-0142",
+    "strain": "Aberdeen",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 24.6,
+    "unitPrice": 41.02,
+    "onHandQty": 577,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-19T15:46:47.164Z",
+    "potency": {
+      "thc": 27.1,
+      "cbd": 0.1
+    },
+    "lotCode": "CASCADE-00242"
+  },
+  {
+    "sku": "SUM-ABOMB-0143",
+    "strain": "A-Bomb",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 24.5,
+    "unitPrice": 38.82,
+    "onHandQty": 547,
+    "reservedQty": 27,
+    "sampleQty": 10,
+    "harvestDate": "2025-10-03T15:46:47.164Z",
+    "packageDate": "2025-10-25T15:46:47.164Z",
+    "potency": {
+      "thc": 26.9,
+      "cbd": 1
+    },
+    "lotCode": "SUMMIT-00243"
+  },
+  {
+    "sku": "BLU-ABOMIN-0144",
+    "strain": "Abominable Snowman",
+    "strainType": "INDICA/SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 28.61,
+    "unitPrice": 48.78,
+    "onHandQty": 687,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-17T15:46:47.164Z",
+    "potency": {
+      "thc": 23.8,
+      "cbd": 0.7
+    },
+    "lotCode": "BLUE-00244"
+  },
+  {
+    "sku": "COP-ABOVEA-0145",
+    "strain": "Above and Beyond",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 26.67,
+    "unitPrice": 38.36,
+    "onHandQty": 466,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-18T15:46:47.164Z",
+    "potency": {
+      "thc": 19.7,
+      "cbd": 1.4
+    },
+    "lotCode": "COPPERSTATE-00245"
+  },
+  {
+    "sku": "EME-ABRACA-0146",
+    "strain": "Abra Cadabra",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 23,
+    "unitPrice": 38.35,
+    "onHandQty": 636,
+    "reservedQty": 31,
+    "sampleQty": 12,
+    "harvestDate": "2025-12-03T15:46:47.164Z",
+    "packageDate": "2025-12-24T15:46:47.164Z",
+    "potency": {
+      "thc": 26.2,
+      "cbd": 0.7
+    },
+    "lotCode": "EMERALD-00246"
+  },
+  {
+    "sku": "SIE-ABULA-0147",
+    "strain": "Abula",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 32.37,
+    "unitPrice": 57.38,
+    "onHandQty": 683,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-09-03T15:46:47.164Z",
+    "packageDate": "2025-09-23T15:46:47.164Z",
+    "potency": {
+      "thc": 19.9,
+      "cbd": 0.3
+    },
+    "lotCode": "SIERRA-00247"
+  },
+  {
+    "sku": "FRO-ABUSIV-0148",
+    "strain": "Abusive OG",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 31.96,
+    "unitPrice": 47.68,
+    "onHandQty": 565,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-18T15:46:47.164Z",
+    "potency": {
+      "thc": 18.4,
+      "cbd": 1.6
+    },
+    "lotCode": "FRONTIER-00248"
+  },
+  {
+    "sku": "BEA-ACAI-0149",
+    "strain": "Acai",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 32.05,
+    "unitPrice": 53.15,
+    "onHandQty": 641,
+    "reservedQty": 32,
+    "sampleQty": 12,
+    "harvestDate": "2025-12-03T15:46:47.164Z",
+    "packageDate": "2025-12-18T15:46:47.164Z",
+    "potency": {
+      "thc": 28.9,
+      "cbd": 1.6
+    },
+    "lotCode": "BEACON-00249"
+  },
+  {
+    "sku": "HOR-ACAIBE-0150",
+    "strain": "Acai Berry Gelato",
+    "strainType": "SATIVA/INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 27.83,
+    "unitPrice": 40.39,
+    "onHandQty": 667,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-10-03T15:46:47.164Z",
+    "packageDate": "2025-10-22T15:46:47.164Z",
+    "potency": {
+      "thc": 27.9,
+      "cbd": 0.5
+    },
+    "lotCode": "HORIZON-00250"
+  },
+  {
+    "sku": "EVE-ACAPUL-0151",
+    "strain": "Acapulco Gold",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 25.21,
+    "unitPrice": 36.29,
+    "onHandQty": 719,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-26T15:46:47.164Z",
+    "potency": {
+      "thc": 24.1,
+      "cbd": 0
+    },
+    "lotCode": "EVERGREEN-00251"
+  },
+  {
+    "sku": "CAS-ACAPUL-0152",
+    "strain": "Acapulco Gold GAL6141",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 31.2,
+    "unitPrice": 48.2,
+    "onHandQty": 733,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-24T15:46:47.164Z",
+    "potency": {
+      "thc": 21.9,
+      "cbd": 1.4
+    },
+    "lotCode": "CASCADE-00252"
+  },
+  {
+    "sku": "SUM-ACAPUL-0153",
+    "strain": "Acapulco Gold GAL6443",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 26.47,
+    "unitPrice": 47.09,
+    "onHandQty": 400,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-11-03T15:46:47.164Z",
+    "packageDate": "2025-11-19T15:46:47.164Z",
+    "potency": {
+      "thc": 27.4,
+      "cbd": 0.4
+    },
+    "lotCode": "SUMMIT-00253"
+  },
+  {
+    "sku": "BLU-ACAPUL-0154",
+    "strain": "Acapulco Gold Landrace",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 28.61,
+    "unitPrice": 49.34,
+    "onHandQty": 403,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-20T15:46:47.164Z",
+    "potency": {
+      "thc": 23.8,
+      "cbd": 0.8
+    },
+    "lotCode": "BLUE-00254"
+  },
+  {
+    "sku": "COP-ACBD-0155",
+    "strain": "ACBD",
+    "strainType": "CBD",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 31.74,
+    "unitPrice": 56.05,
+    "onHandQty": 607,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-18T15:46:47.164Z",
+    "potency": {
+      "thc": 23.1,
+      "cbd": 0
+    },
+    "lotCode": "COPPERSTATE-00255"
+  },
+  {
+    "sku": "EME-ACCIDE-0156",
+    "strain": "Accidental Tourist",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 26.14,
+    "unitPrice": 37.66,
+    "onHandQty": 567,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.164Z",
+    "packageDate": "2025-08-26T15:46:47.164Z",
+    "potency": {
+      "thc": 19,
+      "cbd": 1.5
+    },
+    "lotCode": "EMERALD-00256"
+  },
+  {
+    "sku": "SIE-ACCORN-0157",
+    "strain": "ACCORN SNOWBUD",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 32.47,
+    "unitPrice": 53.73,
+    "onHandQty": 502,
+    "reservedQty": 25,
+    "sampleQty": 10,
+    "harvestDate": "2025-11-03T15:46:47.164Z",
+    "packageDate": "2025-11-22T15:46:47.164Z",
+    "potency": {
+      "thc": 28,
+      "cbd": 1.1
+    },
+    "lotCode": "SIERRA-00257"
+  },
+  {
+    "sku": "FRO-ACDC-0158",
+    "strain": "AC/DC",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 26.72,
+    "unitPrice": 47.19,
+    "onHandQty": 725,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-21T15:46:47.164Z",
+    "potency": {
+      "thc": 23.4,
+      "cbd": 1.1
+    },
+    "lotCode": "FRONTIER-00258"
+  },
+  {
+    "sku": "BEA-ACDCAC-0159",
+    "strain": "ACDC (AC/DC)",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 29.29,
+    "unitPrice": 41.51,
+    "onHandQty": 644,
+    "reservedQty": 32,
+    "sampleQty": 12,
+    "harvestDate": "2025-07-03T15:46:47.164Z",
+    "packageDate": "2025-07-25T15:46:47.164Z",
+    "potency": {
+      "thc": 31,
+      "cbd": 0.2
+    },
+    "lotCode": "BEACON-00259"
+  },
+  {
+    "sku": "HOR-ACDCCA-0160",
+    "strain": "ACDC/Cannatonic",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 24.62,
+    "unitPrice": 35.96,
+    "onHandQty": 424,
+    "reservedQty": 21,
+    "sampleQty": 8,
+    "harvestDate": "2025-10-03T15:46:47.164Z",
+    "packageDate": "2025-10-26T15:46:47.164Z",
+    "potency": {
+      "thc": 18.7,
+      "cbd": 0.4
+    },
+    "lotCode": "HORIZON-00260"
+  },
+  {
+    "sku": "EVE-ACDCCB-0161",
+    "strain": "ACDC / CB Diesel",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 19.94,
+    "unitPrice": 35.62,
+    "onHandQty": 529,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-10-03T15:46:47.164Z",
+    "packageDate": "2025-10-26T15:46:47.164Z",
+    "potency": {
+      "thc": 22.8,
+      "cbd": 1.2
+    },
+    "lotCode": "EVERGREEN-00261"
+  },
+  {
+    "sku": "CAS-ACDCGA-0162",
+    "strain": "AC/DC GAL5817",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 19.42,
+    "unitPrice": 31.06,
+    "onHandQty": 553,
+    "reservedQty": 27,
+    "sampleQty": 11,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-22T15:46:47.165Z",
+    "potency": {
+      "thc": 30.5,
+      "cbd": 1.8
+    },
+    "lotCode": "CASCADE-00262"
+  },
+  {
+    "sku": "SUM-ACDCGA-0163",
+    "strain": "AC/DC GAL6140",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 32.82,
+    "unitPrice": 54.36,
+    "onHandQty": 591,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-25T15:46:47.165Z",
+    "potency": {
+      "thc": 20.7,
+      "cbd": 1.6
+    },
+    "lotCode": "SUMMIT-00263"
+  },
+  {
+    "sku": "BLU-ACDCMA-0164",
+    "strain": "AC/DC Maui Bubble Gift",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 24.99,
+    "unitPrice": 38.72,
+    "onHandQty": 610,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-17T15:46:47.165Z",
+    "potency": {
+      "thc": 28.4,
+      "cbd": 1.5
+    },
+    "lotCode": "BLUE-00264"
+  },
+  {
+    "sku": "COP-ACDCST-0165",
+    "strain": "ACDC / Stardust",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 18.53,
+    "unitPrice": 32.3,
+    "onHandQty": 544,
+    "reservedQty": 27,
+    "sampleQty": 10,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-23T15:46:47.165Z",
+    "potency": {
+      "thc": 32.9,
+      "cbd": 1.2
+    },
+    "lotCode": "COPPERSTATE-00265"
+  },
+  {
+    "sku": "EME-ACDCXL-0166",
+    "strain": "ACDC x Lilly",
+    "strainType": "-UNKNOWN-",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 29.26,
+    "unitPrice": 52.08,
+    "onHandQty": 639,
+    "reservedQty": 31,
+    "sampleQty": 12,
+    "harvestDate": "2025-08-03T15:46:47.165Z",
+    "packageDate": "2025-08-22T15:46:47.165Z",
+    "potency": {
+      "thc": 26.2,
+      "cbd": 0.7
+    },
+    "lotCode": "EMERALD-00266"
+  },
+  {
+    "sku": "SIE-ACDCXQ-0167",
+    "strain": "ACDC x Querkle",
+    "strainType": "-UNKNOWN-",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 20.39,
+    "unitPrice": 30.18,
+    "onHandQty": 766,
+    "reservedQty": 38,
+    "sampleQty": 15,
+    "harvestDate": "2025-11-03T15:46:47.165Z",
+    "packageDate": "2025-11-21T15:46:47.165Z",
+    "potency": {
+      "thc": 31.8,
+      "cbd": 0.8
+    },
+    "lotCode": "SIERRA-00267"
+  },
+  {
+    "sku": "FRO-ACEBER-0168",
+    "strain": "AceBerry",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 31.55,
+    "unitPrice": 55.56,
+    "onHandQty": 799,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-17T15:46:47.165Z",
+    "potency": {
+      "thc": 18.7,
+      "cbd": 0.5
+    },
+    "lotCode": "FRONTIER-00268"
+  },
+  {
+    "sku": "BEA-ACEH-0169",
+    "strain": "Aceh",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 19.32,
+    "unitPrice": 33.48,
+    "onHandQty": 650,
+    "reservedQty": 32,
+    "sampleQty": 13,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-18T15:46:47.165Z",
+    "potency": {
+      "thc": 27.2,
+      "cbd": 1.3
+    },
+    "lotCode": "BEACON-00269"
+  },
+  {
+    "sku": "HOR-ACEHAT-0170",
+    "strain": "Aceh (Atjeh)",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 20.96,
+    "unitPrice": 35.16,
+    "onHandQty": 599,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.165Z",
+    "packageDate": "2025-08-24T15:46:47.165Z",
+    "potency": {
+      "thc": 29,
+      "cbd": 0.5
+    },
+    "lotCode": "HORIZON-00270"
+  },
+  {
+    "sku": "EVE-ACEHIG-0171",
+    "strain": "Ace High",
+    "strainType": "SATIVA/INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 24.36,
+    "unitPrice": 36.32,
+    "onHandQty": 652,
+    "reservedQty": 32,
+    "sampleQty": 13,
+    "harvestDate": "2025-10-03T15:46:47.165Z",
+    "packageDate": "2025-10-21T15:46:47.165Z",
+    "potency": {
+      "thc": 28.5,
+      "cbd": 0.1
+    },
+    "lotCode": "EVERGREEN-00271"
+  },
+  {
+    "sku": "CAS-ACEKIL-0172",
+    "strain": "Ace Killer OG",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 29.26,
+    "unitPrice": 44.18,
+    "onHandQty": 537,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-09-03T15:46:47.165Z",
+    "packageDate": "2025-09-20T15:46:47.165Z",
+    "potency": {
+      "thc": 22.3,
+      "cbd": 0.2
+    },
+    "lotCode": "CASCADE-00272"
+  },
+  {
+    "sku": "SUM-ACEOFH-0173",
+    "strain": "Ace of Haze",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 28.74,
+    "unitPrice": 50.19,
+    "onHandQty": 686,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-26T15:46:47.165Z",
+    "potency": {
+      "thc": 21.1,
+      "cbd": 1.6
+    },
+    "lotCode": "SUMMIT-00273"
+  },
+  {
+    "sku": "BLU-ACEOFS-0174",
+    "strain": "Ace of Spades",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 29.05,
+    "unitPrice": 44.66,
+    "onHandQty": 401,
+    "reservedQty": 20,
+    "sampleQty": 8,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-24T15:46:47.165Z",
+    "potency": {
+      "thc": 23.4,
+      "cbd": 1.7
+    },
+    "lotCode": "BLUE-00274"
+  },
+  {
+    "sku": "COP-ACEOFS-0175",
+    "strain": "Ace of Spades GAL5983",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 28.29,
+    "unitPrice": 48.29,
+    "onHandQty": 669,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-09-03T15:46:47.165Z",
+    "packageDate": "2025-09-19T15:46:47.165Z",
+    "potency": {
+      "thc": 24,
+      "cbd": 1.4
+    },
+    "lotCode": "COPPERSTATE-00275"
+  },
+  {
+    "sku": "EME-ACEOFS-0176",
+    "strain": "Ace of Spades GAL6064",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 30.9,
+    "unitPrice": 46.99,
+    "onHandQty": 445,
+    "reservedQty": 22,
+    "sampleQty": 8,
+    "harvestDate": "2025-11-03T15:46:47.165Z",
+    "packageDate": "2025-11-21T15:46:47.165Z",
+    "potency": {
+      "thc": 23,
+      "cbd": 1.8
+    },
+    "lotCode": "EMERALD-00276"
+  },
+  {
+    "sku": "SIE-ACEOFS-0177",
+    "strain": "Ace of Spades GAL6379",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 21.23,
+    "unitPrice": 30.64,
+    "onHandQty": 735,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-09-03T15:46:47.165Z",
+    "packageDate": "2025-09-19T15:46:47.165Z",
+    "potency": {
+      "thc": 25.3,
+      "cbd": 1.5
+    },
+    "lotCode": "SIERRA-00277"
+  },
+  {
+    "sku": "FRO-ACHARL-0178",
+    "strain": "A Charlot's Web",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 19.39,
+    "unitPrice": 28.71,
+    "onHandQty": 712,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-09-03T15:46:47.165Z",
+    "packageDate": "2025-09-26T15:46:47.165Z",
+    "potency": {
+      "thc": 29.8,
+      "cbd": 0.4
+    },
+    "lotCode": "FRONTIER-00278"
+  },
+  {
+    "sku": "BEA-ACID-0179",
+    "strain": "Acid",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 21.53,
+    "unitPrice": 35.5,
+    "onHandQty": 717,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-10-03T15:46:47.165Z",
+    "packageDate": "2025-10-17T15:46:47.165Z",
+    "potency": {
+      "thc": 30.4,
+      "cbd": 1.1
+    },
+    "lotCode": "BEACON-00279"
+  },
+  {
+    "sku": "HOR-ACIDDI-0180",
+    "strain": "Acid Diesel Hog",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 32.88,
+    "unitPrice": 59.13,
+    "onHandQty": 634,
+    "reservedQty": 31,
+    "sampleQty": 12,
+    "harvestDate": "2025-11-03T15:46:47.165Z",
+    "packageDate": "2025-11-17T15:46:47.165Z",
+    "potency": {
+      "thc": 27.4,
+      "cbd": 1.2
+    },
+    "lotCode": "HORIZON-00280"
+  },
+  {
+    "sku": "EVE-ACIDDO-0181",
+    "strain": "Acid Dough",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 31.64,
+    "unitPrice": 55.76,
+    "onHandQty": 728,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-09-03T15:46:47.165Z",
+    "packageDate": "2025-09-22T15:46:47.165Z",
+    "potency": {
+      "thc": 23.1,
+      "cbd": 0
+    },
+    "lotCode": "EVERGREEN-00281"
+  },
+  {
+    "sku": "CAS-ACKLEB-0182",
+    "strain": "Ackleberry",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 31.24,
+    "unitPrice": 55.34,
+    "onHandQty": 471,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-19T15:46:47.165Z",
+    "potency": {
+      "thc": 24,
+      "cbd": 1.7
+    },
+    "lotCode": "CASCADE-00282"
+  },
+  {
+    "sku": "SUM-ACKONA-0183",
+    "strain": "Ackona",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 18.2,
+    "unitPrice": 26.51,
+    "onHandQty": 782,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-11-03T15:46:47.165Z",
+    "packageDate": "2025-11-25T15:46:47.165Z",
+    "potency": {
+      "thc": 26.8,
+      "cbd": 1.4
+    },
+    "lotCode": "SUMMIT-00283"
+  },
+  {
+    "sku": "BLU-ACORN-0184",
+    "strain": "Acorn",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 32.36,
+    "unitPrice": 57.38,
+    "onHandQty": 734,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-10-03T15:46:47.165Z",
+    "packageDate": "2025-10-24T15:46:47.165Z",
+    "potency": {
+      "thc": 23.7,
+      "cbd": 1
+    },
+    "lotCode": "BLUE-00284"
+  },
+  {
+    "sku": "COP-ACRATA-0185",
+    "strain": "Acrata Trainwreck",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 26.09,
+    "unitPrice": 42.42,
+    "onHandQty": 699,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-20T15:46:47.165Z",
+    "potency": {
+      "thc": 32.5,
+      "cbd": 0.3
+    },
+    "lotCode": "COPPERSTATE-00285"
+  },
+  {
+    "sku": "EME-ADAKOG-0186",
+    "strain": "Adak OG",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 23.89,
+    "unitPrice": 34.34,
+    "onHandQty": 571,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-22T15:46:47.165Z",
+    "potency": {
+      "thc": 27.3,
+      "cbd": 1.4
+    },
+    "lotCode": "EMERALD-00286"
+  },
+  {
+    "sku": "SIE-ADAMAN-0187",
+    "strain": "Adamantium",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 24.5,
+    "unitPrice": 43.2,
+    "onHandQty": 797,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-10-03T15:46:47.165Z",
+    "packageDate": "2025-10-18T15:46:47.165Z",
+    "potency": {
+      "thc": 20.2,
+      "cbd": 1.8
+    },
+    "lotCode": "SIERRA-00287"
+  },
+  {
+    "sku": "FRO-ADAWG-0188",
+    "strain": "A-Dawg",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 29.16,
+    "unitPrice": 41.19,
+    "onHandQty": 646,
+    "reservedQty": 32,
+    "sampleQty": 12,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-18T15:46:47.165Z",
+    "potency": {
+      "thc": 24.3,
+      "cbd": 0.6
+    },
+    "lotCode": "FRONTIER-00288"
+  },
+  {
+    "sku": "BEA-ADHD-0189",
+    "strain": "ADHD",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 18.3,
+    "unitPrice": 27.4,
+    "onHandQty": 460,
+    "reservedQty": 23,
+    "sampleQty": 9,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-24T15:46:47.165Z",
+    "potency": {
+      "thc": 21,
+      "cbd": 1.8
+    },
+    "lotCode": "BEACON-00289"
+  },
+  {
+    "sku": "HOR-ADHOC-0190",
+    "strain": "Ad Hoc",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 20.41,
+    "unitPrice": 29.49,
+    "onHandQty": 589,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-23T15:46:47.165Z",
+    "potency": {
+      "thc": 29.1,
+      "cbd": 1.4
+    },
+    "lotCode": "HORIZON-00290"
+  },
+  {
+    "sku": "EVE-ADONAI-0191",
+    "strain": "Adonai Kush",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 32.95,
+    "unitPrice": 58.56,
+    "onHandQty": 694,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-10-03T15:46:47.165Z",
+    "packageDate": "2025-10-23T15:46:47.165Z",
+    "potency": {
+      "thc": 27.9,
+      "cbd": 1.7
+    },
+    "lotCode": "EVERGREEN-00291"
+  },
+  {
+    "sku": "CAS-ADONIS-0192",
+    "strain": "Adonis",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 27.16,
+    "unitPrice": 48.64,
+    "onHandQty": 536,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-10-03T15:46:47.165Z",
+    "packageDate": "2025-10-21T15:46:47.165Z",
+    "potency": {
+      "thc": 25.7,
+      "cbd": 0.9
+    },
+    "lotCode": "CASCADE-00292"
+  },
+  {
+    "sku": "SUM-ADUB-0193",
+    "strain": "A-Dub",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 23.67,
+    "unitPrice": 38.72,
+    "onHandQty": 725,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-09-03T15:46:47.165Z",
+    "packageDate": "2025-09-20T15:46:47.165Z",
+    "potency": {
+      "thc": 30.3,
+      "cbd": 1.5
+    },
+    "lotCode": "SUMMIT-00293"
+  },
+  {
+    "sku": "BLU-AE77CA-0194",
+    "strain": "AE77 Cali-O",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 26.66,
+    "unitPrice": 44.87,
+    "onHandQty": 597,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.165Z",
+    "packageDate": "2025-08-23T15:46:47.165Z",
+    "potency": {
+      "thc": 28.3,
+      "cbd": 2
+    },
+    "lotCode": "BLUE-00294"
+  },
+  {
+    "sku": "COP-AEONFL-0195",
+    "strain": "Aeon Flux",
+    "strainType": "SATIVA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 21.24,
+    "unitPrice": 32.92,
+    "onHandQty": 713,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-21T15:46:47.165Z",
+    "potency": {
+      "thc": 24.8,
+      "cbd": 0.8
+    },
+    "lotCode": "COPPERSTATE-00295"
+  },
+  {
+    "sku": "EME-AFCRAC-0196",
+    "strain": "Afcrack",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 31.28,
+    "unitPrice": 45.65,
+    "onHandQty": 690,
+    "reservedQty": 34,
+    "sampleQty": 13,
+    "harvestDate": "2025-11-03T15:46:47.165Z",
+    "packageDate": "2025-11-22T15:46:47.165Z",
+    "potency": {
+      "thc": 19.7,
+      "cbd": 0.1
+    },
+    "lotCode": "EMERALD-00296"
+  },
+  {
+    "sku": "SIE-AFFI-0197",
+    "strain": "Affi",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 20.56,
+    "unitPrice": 35.27,
+    "onHandQty": 585,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-19T15:46:47.165Z",
+    "potency": {
+      "thc": 32.6,
+      "cbd": 0.5
+    },
+    "lotCode": "SIERRA-00297"
+  },
+  {
+    "sku": "FRO-AFFIEB-0198",
+    "strain": "Affie Bubba",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 24.55,
+    "unitPrice": 36.85,
+    "onHandQty": 673,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-10-03T15:46:47.165Z",
+    "packageDate": "2025-10-23T15:46:47.165Z",
+    "potency": {
+      "thc": 31,
+      "cbd": 1.7
+    },
+    "lotCode": "FRONTIER-00298"
+  },
+  {
+    "sku": "BEA-AFGANG-0199",
+    "strain": "Afgan Goo",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 23.35,
+    "unitPrice": 32.86,
+    "onHandQty": 744,
+    "reservedQty": 37,
+    "sampleQty": 14,
+    "harvestDate": "2025-08-03T15:46:47.165Z",
+    "packageDate": "2025-08-25T15:46:47.165Z",
+    "potency": {
+      "thc": 20.4,
+      "cbd": 1.9
+    },
+    "lotCode": "BEACON-00299"
+  },
+  {
+    "sku": "HOR-AFGANI-0200",
+    "strain": "Afgani Skunk",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 18.15,
+    "unitPrice": 30.35,
+    "onHandQty": 756,
+    "reservedQty": 37,
+    "sampleQty": 15,
+    "harvestDate": "2025-09-03T15:46:47.165Z",
+    "packageDate": "2025-09-20T15:46:47.165Z",
+    "potency": {
+      "thc": 31.1,
+      "cbd": 1.1
+    },
+    "lotCode": "HORIZON-00300"
+  },
+  {
+    "sku": "EVE-AFGANK-0201",
+    "strain": "Afgan Kush",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 28.07,
+    "unitPrice": 50.47,
+    "onHandQty": 705,
+    "reservedQty": 35,
+    "sampleQty": 14,
+    "harvestDate": "2025-09-03T15:46:47.165Z",
+    "packageDate": "2025-09-23T15:46:47.165Z",
+    "potency": {
+      "thc": 25.1,
+      "cbd": 1.3
+    },
+    "lotCode": "EVERGREEN-00301"
+  },
+  {
+    "sku": "CAS-AFGHAA-0202",
+    "strain": "Afghaan",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 29.51,
+    "unitPrice": 47.66,
+    "onHandQty": 586,
+    "reservedQty": 29,
+    "sampleQty": 11,
+    "harvestDate": "2025-08-03T15:46:47.165Z",
+    "packageDate": "2025-08-23T15:46:47.165Z",
+    "potency": {
+      "thc": 20.7,
+      "cbd": 1
+    },
+    "lotCode": "CASCADE-00302"
+  },
+  {
+    "sku": "SUM-AFGHAA-0203",
+    "strain": "Afghaan Dream",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 19.4,
+    "unitPrice": 32.71,
+    "onHandQty": 742,
+    "reservedQty": 37,
+    "sampleQty": 14,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-26T15:46:47.165Z",
+    "potency": {
+      "thc": 23.9,
+      "cbd": 1.9
+    },
+    "lotCode": "SUMMIT-00303"
+  },
+  {
+    "sku": "BLU-AFGHAN-0204",
+    "strain": "Afghan",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 29.84,
+    "unitPrice": 46.76,
+    "onHandQty": 532,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-19T15:46:47.165Z",
+    "potency": {
+      "thc": 19.8,
+      "cbd": 0.7
+    },
+    "lotCode": "BLUE-00304"
+  },
+  {
+    "sku": "COP-AFGHAN-0205",
+    "strain": "Afghan #1",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 25,
+    "unitPrice": 43.21,
+    "onHandQty": 781,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-25T15:46:47.165Z",
+    "potency": {
+      "thc": 32.6,
+      "cbd": 0.4
+    },
+    "lotCode": "COPPERSTATE-00305"
+  },
+  {
+    "sku": "EME-AFGHAN-0206",
+    "strain": "Afghan #1/10",
+    "strainType": "INDICA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 20.41,
+    "unitPrice": 31.38,
+    "onHandQty": 507,
+    "reservedQty": 25,
+    "sampleQty": 10,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-20T15:46:47.165Z",
+    "potency": {
+      "thc": 28.9,
+      "cbd": 1.3
+    },
+    "lotCode": "EMERALD-00306"
+  },
+  {
+    "sku": "SIE-AFGHAN-0207",
+    "strain": "Afghan Abusive",
+    "strainType": "SATIVA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 27.25,
+    "unitPrice": 39.32,
+    "onHandQty": 567,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-10-03T15:46:47.165Z",
+    "packageDate": "2025-10-19T15:46:47.165Z",
+    "potency": {
+      "thc": 32.8,
+      "cbd": 0.6
+    },
+    "lotCode": "SIERRA-00307"
+  },
+  {
+    "sku": "FRO-AFGHAN-0208",
+    "strain": "Afghan Big Bud",
+    "strainType": "HYBRID",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 28.64,
+    "unitPrice": 46.26,
+    "onHandQty": 437,
+    "reservedQty": 21,
+    "sampleQty": 8,
+    "harvestDate": "2025-10-03T15:46:47.165Z",
+    "packageDate": "2025-10-21T15:46:47.165Z",
+    "potency": {
+      "thc": 31.7,
+      "cbd": 0.2
+    },
+    "lotCode": "FRONTIER-00308"
+  },
+  {
+    "sku": "BEA-AFGHAN-0209",
+    "strain": "Afghan Blue",
+    "strainType": "INDICA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 29.75,
+    "unitPrice": 41.76,
+    "onHandQty": 421,
+    "reservedQty": 21,
+    "sampleQty": 8,
+    "harvestDate": "2025-11-03T15:46:47.165Z",
+    "packageDate": "2025-11-20T15:46:47.165Z",
+    "potency": {
+      "thc": 22.5,
+      "cbd": 1.1
+    },
+    "lotCode": "BEACON-00309"
+  },
+  {
+    "sku": "HOR-AFGHAN-0210",
+    "strain": "Afghan Bullrider",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 31,
+    "unitPrice": 53.48,
+    "onHandQty": 456,
+    "reservedQty": 22,
+    "sampleQty": 9,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-21T15:46:47.165Z",
+    "potency": {
+      "thc": 26.8,
+      "cbd": 0.5
+    },
+    "lotCode": "HORIZON-00310"
+  },
+  {
+    "sku": "EVE-AFGHAN-0211",
+    "strain": "Afghan Bull Rider",
+    "strainType": "HYBRID",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Evergreen Farms",
+    "unitCogs": 31.27,
+    "unitPrice": 45.82,
+    "onHandQty": 601,
+    "reservedQty": 30,
+    "sampleQty": 12,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-20T15:46:47.165Z",
+    "potency": {
+      "thc": 27.3,
+      "cbd": 0.6
+    },
+    "lotCode": "EVERGREEN-00311"
+  },
+  {
+    "sku": "CAS-AFGHAN-0212",
+    "strain": "Afghan Cookies",
+    "strainType": "INDICA",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Cascade Craft",
+    "unitCogs": 22.39,
+    "unitPrice": 36.63,
+    "onHandQty": 671,
+    "reservedQty": 33,
+    "sampleQty": 13,
+    "harvestDate": "2025-09-03T15:46:47.165Z",
+    "packageDate": "2025-09-21T15:46:47.165Z",
+    "potency": {
+      "thc": 24.7,
+      "cbd": 1
+    },
+    "lotCode": "CASCADE-00312"
+  },
+  {
+    "sku": "SUM-AFGHAN-0213",
+    "strain": "Afghan Cow",
+    "strainType": "SATIVA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Summit Reserve",
+    "unitCogs": 20.54,
+    "unitPrice": 33.25,
+    "onHandQty": 578,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-25T15:46:47.165Z",
+    "potency": {
+      "thc": 32.6,
+      "cbd": 0.4
+    },
+    "lotCode": "SUMMIT-00313"
+  },
+  {
+    "sku": "BLU-AFGHAN-0214",
+    "strain": "Afghan Delight",
+    "strainType": "HYBRID",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Blue River Labs",
+    "unitCogs": 27.19,
+    "unitPrice": 41.66,
+    "onHandQty": 571,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-25T15:46:47.165Z",
+    "potency": {
+      "thc": 18.6,
+      "cbd": 1
+    },
+    "lotCode": "BLUE-00314"
+  },
+  {
+    "sku": "COP-AFGHAN-0215",
+    "strain": "Afghan Diesel",
+    "strainType": "INDICA",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Copperstate Botanicals",
+    "unitCogs": 31.3,
+    "unitPrice": 51.27,
+    "onHandQty": 508,
+    "reservedQty": 25,
+    "sampleQty": 10,
+    "harvestDate": "2025-07-03T15:46:47.165Z",
+    "packageDate": "2025-07-21T15:46:47.165Z",
+    "potency": {
+      "thc": 30.2,
+      "cbd": 1
+    },
+    "lotCode": "COPPERSTATE-00315"
+  },
+  {
+    "sku": "EME-AFGHAN-0216",
+    "strain": "Afghan Face-Off",
+    "strainType": "SATIVA",
+    "category": "Flower",
+    "subcategory": "Premium Indoor",
+    "brand": "Emerald Bay Gardens",
+    "unitCogs": 23.44,
+    "unitPrice": 37.58,
+    "onHandQty": 732,
+    "reservedQty": 36,
+    "sampleQty": 14,
+    "harvestDate": "2025-08-03T15:46:47.165Z",
+    "packageDate": "2025-08-22T15:46:47.165Z",
+    "potency": {
+      "thc": 27.7,
+      "cbd": 1.7
+    },
+    "lotCode": "EMERALD-00316"
+  },
+  {
+    "sku": "SIE-AFGHAN-0217",
+    "strain": "Afghan GAL5955",
+    "strainType": "HYBRID",
+    "category": "Pre-Roll",
+    "subcategory": "Infused 1g",
+    "brand": "Sierra Peaks",
+    "unitCogs": 22.25,
+    "unitPrice": 33.64,
+    "onHandQty": 568,
+    "reservedQty": 28,
+    "sampleQty": 11,
+    "harvestDate": "2025-11-03T15:46:47.165Z",
+    "packageDate": "2025-11-21T15:46:47.165Z",
+    "potency": {
+      "thc": 29,
+      "cbd": 0.2
+    },
+    "lotCode": "SIERRA-00317"
+  },
+  {
+    "sku": "FRO-AFGHAN-0218",
+    "strain": "Afghan GAL6448",
+    "strainType": "INDICA",
+    "category": "Vape",
+    "subcategory": "Live Resin",
+    "brand": "Frontier Flower Co",
+    "unitCogs": 21.51,
+    "unitPrice": 32.79,
+    "onHandQty": 447,
+    "reservedQty": 22,
+    "sampleQty": 8,
+    "harvestDate": "2025-12-03T15:46:47.165Z",
+    "packageDate": "2025-12-24T15:46:47.165Z",
+    "potency": {
+      "thc": 27.6,
+      "cbd": 1.2
+    },
+    "lotCode": "FRONTIER-00318"
+  },
+  {
+    "sku": "BEA-AFGHAN-0219",
+    "strain": "Afghan Ghost",
+    "strainType": "SATIVA",
+    "category": "Edible",
+    "subcategory": "Gummies",
+    "brand": "Beacon Extracts",
+    "unitCogs": 20.88,
+    "unitPrice": 34.67,
+    "onHandQty": 539,
+    "reservedQty": 26,
+    "sampleQty": 10,
+    "harvestDate": "2025-08-03T15:46:47.165Z",
+    "packageDate": "2025-08-26T15:46:47.165Z",
+    "potency": {
+      "thc": 25.4,
+      "cbd": 1.3
+    },
+    "lotCode": "BEACON-00319"
+  },
+  {
+    "sku": "HOR-AFGHAN-0220",
+    "strain": "Afghan Goo",
+    "strainType": "HYBRID",
+    "category": "Extract",
+    "subcategory": "Rosin",
+    "brand": "Horizon Hills",
+    "unitCogs": 18.96,
+    "unitPrice": 30.62,
+    "onHandQty": 798,
+    "reservedQty": 39,
+    "sampleQty": 15,
+    "harvestDate": "2025-11-03T15:46:47.165Z",
+    "packageDate": "2025-11-19T15:46:47.165Z",
+    "potency": {
+      "thc": 30.4,
+      "cbd": 1.2
+    },
+    "lotCode": "HORIZON-00320"
+  }
+]

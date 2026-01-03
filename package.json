@@ -23,6 +23,7 @@
     "slack-bot:health": "tsx scripts/slack-bot-health-check.ts",
     "slack-bot:fix": "tsx scripts/fix-slack-bot-autonomous.ts",
     "slack-bot:verify": "tsx scripts/slack-bot-verify.ts",
+    "db:seed:production": "tsx server/db/seed/productionSeed.ts",
     "test:env:up": "tsx testing/db-util.ts start",
     "test:env:down": "tsx testing/db-util.ts stop",
     "test:db:reset": "tsx testing/db-util.ts reset light",
