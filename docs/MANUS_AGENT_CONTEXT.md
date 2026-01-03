@@ -5,24 +5,6 @@
 
 ---
 
-## 🚨 MANDATORY: Gemini API Usage
-
-**IF YOU ARE AN AI AGENT ON THE MANUS PLATFORM:**
-
-You **MUST** use the Google Gemini API for all code generation, complex reasoning, and bulk operations.
-
-```python
-import os
-from google import genai
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-MODEL_ID = "gemini-2.0-flash-exp"
-```
-
-**Why?** Gemini provides superior code generation and reasoning capabilities. Using it is a **protocol requirement**, not a suggestion.
-
-**Full documentation:** `docs/GEMINI_API_USAGE.md`
-
----
 
 ## Current State
 - React 19 + tRPC + MySQL ERP system

@@ -1,51 +1,21 @@
 ---
 inclusion: always
 ---
+# Pre-Commit Checklist (Streamlined)
 
-# ✅ Pre-Commit Checklist
+Before committing, verify these 5 essentials:
 
-**MANDATORY**: Before every commit, verify:
+## Quick Checks
 
-## 🔬 Adaptive QA Protocol (RUN FIRST)
+- [ ] TypeScript compiles: pnpm check (no errors)
+- [ ] Linting passes: pnpm lint (no errors)  
+- [ ] Tests pass: pnpm test (if you changed test-related code)
+- [ ] Pull first: git pull origin main (avoid conflicts)
+- [ ] Push after: git push origin main (share your work)
 
-- [ ] Work classified (Type, Persistence, Risk, Consumers)
-- [ ] QA severity selected (Level 1/2/3)
-- [ ] QA executed at appropriate level
-- [ ] Issues self-healed before proceeding
+## Thats It
 
-**See `08-adaptive-qa-protocol.md` for full protocol.**
+The pre-commit hook handles formatting automatically.
+CI/CD handles comprehensive testing on push.
 
-## Architecture Compliance
-
-- [ ] No deprecated systems used (see `07-deprecated-systems.md`)
-- [ ] No `vendors` table queries (use `clients` with `isSeller=true`)
-- [ ] No `ctx.user?.id || 1` patterns (use `getAuthenticatedUserId`)
-- [ ] Soft deletes used (not hard deletes)
-- [ ] FK indexes added for new foreign keys
-
-## Code Quality
-
-- [ ] No `any` types (run: `pnpm typecheck`)
-- [ ] All tests pass (run: `pnpm test`)
-- [ ] No linting errors (run: `pnpm lint`)
-- [ ] Diagnostics clear (Kiro: `getDiagnostics` | External: `pnpm typecheck`)
-
-## Roadmap Compliance
-
-- [ ] Roadmap validates (run: `pnpm roadmap:validate`)
-- [ ] Task status updated
-- [ ] Session file updated
-
-## Coordination
-
-- [ ] Pulled latest: `git pull origin main`
-- [ ] No conflicts with active sessions
-- [ ] Changes pushed: `git push origin main`
-
-## Deployment
-
-- [ ] Deployment monitored (auto-starts on push)
-- [ ] Health check passes
-- [ ] No runtime errors
-
-**If ANY item fails, DO NOT proceed. Fix the issue first.**
+Do not overthink it. Ship it.

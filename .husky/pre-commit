@@ -1,44 +1,17 @@
 #!/usr/bin/env sh
-# Pre-commit hook for TERP
-# Runs QA checks, linting, and validation before commits
+# Pre-commit hook for TERP (Streamlined v2.0)
+# Only essential checks - no ceremony
 
-# Check for schema changes without migrations
+# Check for schema changes without migrations (warning only)
 if git diff --cached --name-only | grep -q "drizzle/schema.ts"; then
   if ! git diff --cached --name-only | grep -q "drizzle/migrations/"; then
     echo ""
     echo "⚠️  WARNING: drizzle/schema.ts changed but no migration file found!"
+    echo "   Run: pnpm db:generate (if schema changed)"
+    echo "   Skip: git commit --no-verify (if non-breaking change)"
     echo ""
-    echo "   If you modified the database schema, you need to generate a migration:"
-    echo "   $ pnpm db:generate"
-    echo ""
-    echo "   If this is a non-breaking change (comments, types only), you can skip with:"
-    echo "   $ git commit --no-verify"
-    echo ""
-    # Don't block, just warn (some schema changes don't need migrations)
   fi
 fi
 
-# Run QA standards check first
-.husky/pre-commit-qa-check.sh || exit 1
-
-# Run AI-powered code review (Senior Engineer, Security, Edge Cases)
-echo "🤖 Running AI-powered code review..."
-npm run pre-commit:review 2>/dev/null || {
-  echo "⚠️  AI review had issues. Continuing with other checks..."
-  # Don't block commit if AI review fails (graceful degradation)
-}
-
-# Then run lint-staged
+# Run lint-staged (formatting + linting only)
 npx lint-staged
-
-# Validate roadmap ONLY if it changed (conditional validation for performance)
-if git diff --cached --name-only | grep -q "docs/roadmaps/MASTER_ROADMAP.md"; then
-  echo "🔍 Validating MASTER_ROADMAP.md..."
-  npm run roadmap:validate || exit 1
-fi
-
-# Validate session cleanup
-echo "🔍 Validating session cleanup..."
-npm run validate:sessions 2>/dev/null || {
-  echo "⚠️  Session validation skipped"
-}

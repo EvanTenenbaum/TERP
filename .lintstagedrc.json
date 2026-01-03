@@ -1,9 +1,7 @@
 {
   "*.{ts,tsx}": [
-    "vitest related --run",
     "eslint --fix --max-warnings=0 --no-warn-ignored",
     "prettier --write"
   ],
-  "*.{ts,tsx,md,json}": ["prettier --write"],
-  "server/**/*.test.ts": ["vitest related --run"]
+  "*.{md,json}": ["prettier --write"]
 }

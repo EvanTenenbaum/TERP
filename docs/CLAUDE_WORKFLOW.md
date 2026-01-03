@@ -7,32 +7,6 @@
 
 ---
 
-## 🚨 MANDATORY: Gemini API for Code Generation
-
-**ALL AI agents on the Manus platform MUST use the Google Gemini API for:**
-
-1. **Code Generation** - Writing new code, refactoring, or creating scripts
-2. **Complex Reasoning** - Multi-step analysis, architectural decisions, system design
-3. **Bulk Operations** - Processing multiple files, generating tests, batch refactoring
-
-### Standard Setup
-
-```python
-import os
-from google import genai
-from google.genai import types
-
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-MODEL_ID = "gemini-2.0-flash-exp"  # Default model
-```
-
-**Environment:** `GEMINI_API_KEY` is pre-configured in Manus platform.
-
-**Full Instructions:** See `docs/GEMINI_API_USAGE.md` for complete setup and examples.
-
-**This is non-negotiable.** Failure to use Gemini API for code generation is a protocol violation.
-
----
 
 ## Core Principle: Test-Driven Quality
 
