@@ -5584,7 +5584,7 @@ The "List Name" field in the "Create New List" modal is required but not visuall
 
 #### QA-041: Merge Inbox and To-Do List Modules
 
-**Priority:** P2 | **Status:** REMOVED - deferred post-pilot | **Effort:** 24-40h
+**Priority:** P2 | **Status:** ready | **Effort:** 24-40h
 The current "Inbox" and "To-Do List" features should be consolidated into a single, unified system for managing tasks and notifications.
 
 ---
@@ -7451,7 +7451,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-021: Customizable Quick Actions Dropdown
 
-**Status:** REMOVED - deferred post-pilot  
+**Status:** ready  
 **Priority:** MEDIUM  
 **Estimate:** 8h  
 **Module:** `client/src/components/layout/AppHeader.tsx`, `server/routers/userPreferences.ts`  
@@ -7553,7 +7553,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-023: In-Context Module Settings Access
 
-**Status:** REMOVED - deferred post-pilot  
+**Status:** ready  
 **Priority:** MEDIUM  
 **Estimate:** 12-16h  
 **Module:** Multiple module pages across the application  
