@@ -68,7 +68,7 @@ import { calendarRecurrenceRouter } from "./routers/calendarRecurrence";
 import { calendarMeetingsRouter } from "./routers/calendarMeetings";
 import { calendarFinancialsRouter } from "./routers/calendarFinancials";
 import { calendarInvitationsRouter } from "./routers/calendarInvitations";
-import { calendarsManagementRouter } from "./routers/calendarsManagement";
+import { calendarsManagementRouter } from "./routers/calendars"; // Refactored per QA review (PR #110)
 import { appointmentRequestsRouter } from "./routers/appointmentRequests";
 import { timeOffRequestsRouter } from "./routers/timeOffRequests";
 import { rbacUsersRouter } from "./routers/rbac-users";

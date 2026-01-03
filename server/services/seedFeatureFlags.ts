@@ -161,6 +161,50 @@ const DEFAULT_FLAGS = [
     systemEnabled: true,
     defaultEnabled: true,
   },
+
+  // ========================================================================
+  // CALENDAR MODULE FLAGS (CAL-003/CAL-004)
+  // ========================================================================
+  {
+    key: "module-calendar",
+    name: "Calendar Module",
+    description: "Enable calendar and scheduling features",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "calendar-appointments",
+    name: "Appointment Booking",
+    description: "Enable appointment request and approval workflow",
+    module: "module-calendar",
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "calendar-time-off",
+    name: "Time Off Management",
+    description: "Enable time-off request and approval workflow with availability integration",
+    module: "module-calendar",
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "calendar-recurrence",
+    name: "Recurring Events",
+    description: "Enable recurring event patterns (daily, weekly, monthly, yearly)",
+    module: "module-calendar",
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "calendar-multi-calendar",
+    name: "Multi-Calendar Support",
+    description: "Enable multiple calendars per user with different settings",
+    module: "module-calendar",
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
 ];
 
 /**
