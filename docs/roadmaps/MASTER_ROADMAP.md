@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.30
-**Last Updated:** January 3, 2026 (UX Enhancement Wave 2 + CAL-001/002 Calendar Foundation Complete)
+**Version:** 2.31
+**Last Updated:** January 3, 2026 (QA Technical Debt Added)
 **Status:** Active
 
 > ✅ **UX ENHANCEMENT WAVE 2 COMPLETE (Jan 3, 2026)**
@@ -8638,8 +8638,8 @@ Establishes the multi-calendar architecture, enabling separate calendars for dif
 
 #### Task Breakdown
 
-| Task ID   | Task                                                              | Estimate | Status     |
-| --------- | ----------------------------------------------------------------- | -------- | ---------- |
+| Task ID   | Task                                                              | Estimate | Status      |
+| --------- | ----------------------------------------------------------------- | -------- | ----------- |
 | CAL-01-01 | Create `calendars` and `calendar_user_access` tables              | 4h       | ✅ Complete |
 | CAL-01-02 | Add `calendarId` FK to `calendarEvents` table                     | 2h       | ✅ Complete |
 | CAL-01-03 | Data migration: create default calendars, migrate existing events | 2h       | ✅ Complete |
@@ -8675,8 +8675,8 @@ Introduces Calendly-like availability configuration, enabling administrators to 
 
 #### Task Breakdown
 
-| Task ID   | Task                                                 | Estimate | Status     |
-| --------- | ---------------------------------------------------- | -------- | ---------- |
+| Task ID   | Task                                                 | Estimate | Status      |
+| --------- | ---------------------------------------------------- | -------- | ----------- |
 | CAL-02-01 | Create `appointmentTypes` table                      | 2h       | ✅ Complete |
 | CAL-02-02 | Create `calendarAvailability` table                  | 2h       | ✅ Complete |
 | CAL-02-03 | Create `calendarBlockedDates` table                  | 1h       | ✅ Complete |
@@ -8712,8 +8712,8 @@ Implements the critical request/approval workflow for appointment bookings, ensu
 
 #### Task Breakdown
 
-| Task ID   | Task                                                        | Estimate | Status     |
-| --------- | ----------------------------------------------------------- | -------- | ---------- |
+| Task ID   | Task                                                        | Estimate | Status      |
+| --------- | ----------------------------------------------------------- | -------- | ----------- |
 | CAL-03-01 | Create `appointmentRequests` table                          | 2h       | ✅ Complete |
 | CAL-03-02 | `appointment.request` endpoint (for VIP Portal)             | 4h       | ✅ Complete |
 | CAL-03-03 | `appointment.approve` endpoint with transaction and locking | 4h       | ✅ Complete |
@@ -8748,8 +8748,8 @@ Adds high-value quality-of-life features: recurring events UI, vacation/time-off
 
 #### Task Breakdown
 
-| Task ID   | Task                                                      | Estimate | Status     |
-| --------- | --------------------------------------------------------- | -------- | ---------- |
+| Task ID   | Task                                                      | Estimate | Status      |
+| --------- | --------------------------------------------------------- | -------- | ----------- |
 | CAL-04-01 | Recurring events UI: Recurrence rule builder              | 4h       | ✅ Complete |
 | CAL-04-02 | Recurring events: Edit/delete single vs. series logic     | 4h       | ✅ Complete |
 | CAL-04-03 | Time-off: Schema additions (`isTimeOff`, `timeOffStatus`) | 1h       | ✅ Complete |
@@ -9087,3 +9087,49 @@ For the detailed plan, tools developed, and the new protocol, please see the ful
 | Enum changes break runtime | Add migration script for saleStatus      |
 | Test fixes cascade         | Fix in order of dependency (mocks first) |
 | Large scope creep          | Strict task boundaries, no new features  |
+
+---
+
+## 🔧 Technical Debt from QA Review (Jan 3, 2026)
+
+Based on comprehensive RedHat QA review of PRs #106-#115.
+
+### Critical Fixes (P0)
+
+| ID          | Issue                          | File                                                | Description                                                                                     |
+| ----------- | ------------------------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| QA-CRIT-002 | Calendar time validation       | `server/routers/calendars/calendarsAvailability.ts` | No validation that startTime < endTime in availability slots                                    |
+| QA-CRIT-003 | Sample fulfillment transaction | `server/samplesDb.ts:67`                            | `fulfillSampleRequest` lacks database transaction wrapper - partial updates possible on failure |
+
+### High Priority Fixes (P1)
+
+| ID          | Issue                          | File                                           | Description                                                      |
+| ----------- | ------------------------------ | ---------------------------------------------- | ---------------------------------------------------------------- |
+| QA-HIGH-001 | Missing error boundaries       | `SampleManagement.tsx`, `CalendarSettings.tsx` | Complex pages need error boundaries to prevent full-page crashes |
+| QA-HIGH-002 | Bulk action loading states     | `bulk-actions.tsx`                             | Missing loading indicators during bulk operations                |
+| QA-HIGH-003 | Calendar access race condition | `calendarsAccess.ts`                           | Potential race condition when checking access permissions        |
+
+### Database Improvements (P2)
+
+| ID        | Issue                    | Table                   | Description                                                                                   |
+| --------- | ------------------------ | ----------------------- | --------------------------------------------------------------------------------------------- |
+| QA-DB-001 | Missing composite index  | `calendar_events`       | Need composite index on (calendar_id, start_date, end_date, deleted_at) for query performance |
+| QA-DB-002 | Missing time constraints | `calendar_availability` | No DB-level constraint ensuring startTime < endTime                                           |
+
+### E2E Test Coverage Gaps
+
+| Feature                            | Current Coverage | Priority |
+| ---------------------------------- | ---------------- | -------- |
+| Calendar availability management   | None             | P1       |
+| Sample return workflows            | Partial          | P1       |
+| Notification preferences           | None             | P2       |
+| Bulk operations                    | None             | P2       |
+| Command palette keyboard shortcuts | None             | P3       |
+
+### Technical Debt Summary
+
+- **TODOs in codebase:** 29 (server/)
+- **Files reviewed:** 47
+- **Lines analyzed:** ~15,000
+- **Passing checks:** 308
+- **Issues identified:** 44 (3 critical, 14 high, 27 medium)
