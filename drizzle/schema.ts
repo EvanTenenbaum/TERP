@@ -2890,17 +2890,37 @@ export type InsertInventoryMovement = typeof inventoryMovements.$inferInsert;
 /**
  * Sample Request Status Enum
  * Tracks the lifecycle of a sample request
+ * Extended with return workflow statuses (SAMPLE-006, SAMPLE-007)
  */
 export const sampleRequestStatusEnum = mysqlEnum("sampleRequestStatus", [
   "PENDING",
   "FULFILLED",
   "CANCELLED",
+  "RETURN_REQUESTED",
+  "RETURN_APPROVED",
+  "RETURNED",
+  "VENDOR_RETURN_REQUESTED",
+  "SHIPPED_TO_VENDOR",
+  "VENDOR_CONFIRMED",
+]);
+
+/**
+ * Sample Location Enum (SAMPLE-008)
+ * Tracks where each sample is physically located
+ */
+export const sampleLocationEnum = mysqlEnum("sampleLocation", [
+  "WAREHOUSE",
+  "WITH_CLIENT",
+  "WITH_SALES_REP",
+  "RETURNED",
+  "LOST",
 ]);
 
 /**
  * Sample Requests Table
  * Tracks all sample requests from clients
  * Includes monthly allocation tracking and conversion metrics
+ * Extended with return workflow, location, and expiration fields (SAMPLE-006 to SAMPLE-009)
  */
 export const sampleRequests = mysqlTable(
   "sampleRequests",
@@ -2926,6 +2946,22 @@ export const sampleRequests = mysqlTable(
     totalCost: decimal("totalCost", { precision: 10, scale: 2 }), // COGS of samples
     relatedOrderId: int("relatedOrderId").references(() => orders.id), // If sample led to order
     conversionDate: timestamp("conversionDate"), // When sample converted to sale
+    // Return workflow fields (SAMPLE-006)
+    returnRequestedDate: timestamp("returnRequestedDate"),
+    returnRequestedBy: int("returnRequestedBy").references(() => users.id),
+    returnReason: text("returnReason"),
+    returnCondition: varchar("returnCondition", { length: 50 }), // e.g., "GOOD", "DAMAGED", "OPENED"
+    returnApprovedDate: timestamp("returnApprovedDate"),
+    returnApprovedBy: int("returnApprovedBy").references(() => users.id),
+    returnDate: timestamp("returnDate"),
+    // Vendor return workflow fields (SAMPLE-007)
+    vendorReturnTrackingNumber: varchar("vendorReturnTrackingNumber", { length: 100 }),
+    vendorShippedDate: timestamp("vendorShippedDate"),
+    vendorConfirmedDate: timestamp("vendorConfirmedDate"),
+    // Location tracking (SAMPLE-008)
+    location: sampleLocationEnum.default("WAREHOUSE"),
+    // Expiration tracking (SAMPLE-009)
+    expirationDate: timestamp("expirationDate"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -2938,6 +2974,8 @@ export const sampleRequests = mysqlTable(
     relatedOrderIdx: index("idx_sample_requests_order").on(
       table.relatedOrderId
     ),
+    locationIdx: index("idx_sample_requests_location").on(table.location),
+    expirationIdx: index("idx_sample_requests_expiration").on(table.expirationDate),
   })
 );
 
@@ -2978,6 +3016,34 @@ export const sampleAllocations = mysqlTable(
 
 export type SampleAllocation = typeof sampleAllocations.$inferSelect;
 export type InsertSampleAllocation = typeof sampleAllocations.$inferInsert;
+
+/**
+ * Sample Location History Table (SAMPLE-008)
+ * Tracks the history of location changes for each sample
+ */
+export const sampleLocationHistory = mysqlTable(
+  "sampleLocationHistory",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    sampleRequestId: int("sampleRequestId")
+      .notNull()
+      .references(() => sampleRequests.id, { onDelete: "cascade" }),
+    fromLocation: sampleLocationEnum,
+    toLocation: sampleLocationEnum.notNull(),
+    changedBy: int("changedBy")
+      .notNull()
+      .references(() => users.id),
+    changedAt: timestamp("changedAt").defaultNow().notNull(),
+    notes: text("notes"),
+  },
+  table => ({
+    sampleIdIdx: index("idx_sample_location_history_sample").on(table.sampleRequestId),
+    changedAtIdx: index("idx_sample_location_history_date").on(table.changedAt),
+  })
+);
+
+export type SampleLocationHistory = typeof sampleLocationHistory.$inferSelect;
+export type InsertSampleLocationHistory = typeof sampleLocationHistory.$inferInsert;
 
 // ============================================================================
 // DASHBOARD ENHANCEMENTS (Phase 7)
