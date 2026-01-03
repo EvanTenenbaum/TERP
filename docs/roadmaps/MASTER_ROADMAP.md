@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.28  
+**Version:** 2.29  
 **Last Updated:** January 2, 2026 (Added QA-075 SKU Photo Management)  
 **Status:** Active
 
@@ -126,26 +126,26 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | --------- | -------------------------------- | -------- | ----- |
 | AUDIT-001 | Comprehensive System Code Review | ~50%     | -     |
 
-### 🔴 FEATURE-012 Post-Deployment Tasks (P0 - BLOCKING)
+### ✅ FEATURE-012 Post-Deployment Tasks (P0 - COMPLETE)
 
-| Task           | Description                                | Priority | Status     | Owner  |
-| -------------- | ------------------------------------------ | -------- | ---------- | ------ |
-| DEPLOY-012-001 | Run database migration script              | P0       | ⏳ PENDING | DevOps |
-| DEPLOY-012-002 | Seed admin:impersonate permissions         | P0       | ⏳ PENDING | DevOps |
-| DEPLOY-012-003 | Disable old impersonation button           | P0       | ⏳ PENDING | Dev    |
-| DEPLOY-012-004 | Verify tables exist in production          | P0       | ⏳ PENDING | DevOps |
-| DEPLOY-012-005 | Verify permissions assigned to Super Admin | P0       | ⏳ PENDING | DevOps |
-| DEPLOY-012-006 | Test impersonation flow end-to-end         | P0       | ⏳ PENDING | QA     |
+| Task           | Description                                | Priority | Status  | Owner  |
+| -------------- | ------------------------------------------ | -------- | ------- | ------ |
+| DEPLOY-012-001 | Run database migration script              | P0       | ✅ AUTO | DevOps |
+| DEPLOY-012-002 | Seed admin:impersonate permissions         | P0       | ✅ DONE | DevOps |
+| DEPLOY-012-003 | Disable old impersonation button           | P0       | ✅ DONE | Dev    |
+| DEPLOY-012-004 | Verify tables exist in production          | P0       | ✅ AUTO | DevOps |
+| DEPLOY-012-005 | Verify permissions assigned to Super Admin | P0       | ✅ DONE | DevOps |
+| DEPLOY-012-006 | Test impersonation flow end-to-end         | P0       | ✅ DONE | QA     |
 
 **Command to run:** `npx tsx scripts/feature-012-deploy.ts`
 
-### 🟡 FEATURE-012 Short-Term Tasks (P1 - Within 1 Week)
+### ✅ FEATURE-012 Short-Term Tasks (P1 - COMPLETE)
 
 | Task        | Description                                        | Priority | Status      | Owner |
 | ----------- | -------------------------------------------------- | -------- | ----------- | ----- |
-| FIX-012-001 | Add feature flag to control old impersonation path | P1       | 🟡 TODO     | Dev   |
+| FIX-012-001 | Add feature flag to control old impersonation path | P1       | ✅ DONE     | Dev   |
 | FIX-012-002 | Update VIPPortalSettings to use new audited API    | P1       | ✅ COMPLETE | Dev   |
-| FIX-012-003 | Add audit log retention policy                     | P2       | 🟡 TODO     | Dev   |
+| FIX-012-003 | Add audit log retention policy                     | P2       | 🟢 BACKLOG  | Dev   |
 
 ### 🟢 FEATURE-012 Long-Term Tasks (P3 - Within 1 Month)
 
@@ -9000,7 +9000,6 @@ Sprint A (COMPLETE)
 - [ ] Location and expiration tracking fields added
 - [ ] All endpoints have proper RBAC enforcement
 - [ ] E2E tests passing for sample workflows
-
 
 ---
 
