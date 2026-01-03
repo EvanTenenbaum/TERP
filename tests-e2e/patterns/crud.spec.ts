@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
-import { CRUDPage } from '../page-objects/CRUDPage';
-import crudEntities from '../fixtures/crud-entities.json';
+import { test } from "@playwright/test";
+import { CRUDPage } from "../page-objects/CRUDPage";
+import crudEntities from "../fixtures/crud-entities.json" with { type: "json" };
 
 // Parameterized test for all CRUD entities
 for (const entity of crudEntities) {
