@@ -8704,23 +8704,23 @@ Introduces Calendly-like availability configuration, enabling administrators to 
 
 ### CAL-003: Request/Approval Workflow (24h)
 
-**Priority:** HIGH  
-**Status:** 🔴 Not Started  
+**Priority:** HIGH
+**Status:** ✅ Complete
 **Dependencies:** CAL-002, NOTIF-001
 
 Implements the critical request/approval workflow for appointment bookings, ensuring business control over the schedule.
 
 #### Task Breakdown
 
-| Task ID   | Task                                                        | Estimate | Status         |
-| --------- | ----------------------------------------------------------- | -------- | -------------- |
-| CAL-03-01 | Create `appointmentRequests` table                          | 2h       | 🔴 Not Started |
-| CAL-03-02 | `appointment.request` endpoint (for VIP Portal)             | 4h       | 🔴 Not Started |
-| CAL-03-03 | `appointment.approve` endpoint with transaction and locking | 4h       | 🔴 Not Started |
-| CAL-03-04 | `appointment.reject` endpoint                               | 2h       | 🔴 Not Started |
-| CAL-03-05 | Notification integration (NOTIF-001)                        | 4h       | 🔴 Not Started |
-| CAL-03-06 | Pending Requests UI: List view with filtering               | 4h       | 🔴 Not Started |
-| CAL-03-07 | Request Detail Modal: Approve/Reject actions                | 4h       | 🔴 Not Started |
+| Task ID   | Task                                                        | Estimate | Status     |
+| --------- | ----------------------------------------------------------- | -------- | ---------- |
+| CAL-03-01 | Create `appointmentRequests` table                          | 2h       | ✅ Complete |
+| CAL-03-02 | `appointment.request` endpoint (for VIP Portal)             | 4h       | ✅ Complete |
+| CAL-03-03 | `appointment.approve` endpoint with transaction and locking | 4h       | ✅ Complete |
+| CAL-03-04 | `appointment.reject` endpoint                               | 2h       | ✅ Complete |
+| CAL-03-05 | Notification integration (NOTIF-001)                        | 4h       | ✅ Complete |
+| CAL-03-06 | Pending Requests UI: List view with filtering               | 4h       | ✅ Complete |
+| CAL-03-07 | Request Detail Modal: Approve/Reject actions                | 4h       | ✅ Complete |
 
 #### Deliverables
 
@@ -8740,23 +8740,23 @@ Implements the critical request/approval workflow for appointment bookings, ensu
 
 ### CAL-004: Enhanced Features (20h)
 
-**Priority:** MEDIUM  
-**Status:** 🔴 Not Started  
+**Priority:** MEDIUM
+**Status:** ✅ Complete
 **Dependencies:** CAL-003
 
 Adds high-value quality-of-life features: recurring events UI, vacation/time-off tracking, and mobile optimization.
 
 #### Task Breakdown
 
-| Task ID   | Task                                                      | Estimate | Status         |
-| --------- | --------------------------------------------------------- | -------- | -------------- |
-| CAL-04-01 | Recurring events UI: Recurrence rule builder              | 4h       | 🔴 Not Started |
-| CAL-04-02 | Recurring events: Edit/delete single vs. series logic     | 4h       | 🔴 Not Started |
-| CAL-04-03 | Time-off: Schema additions (`isTimeOff`, `timeOffStatus`) | 1h       | 🔴 Not Started |
-| CAL-04-04 | Time-off: Request and approval workflow                   | 3h       | 🔴 Not Started |
-| CAL-04-05 | Time-off: Integration with availability blocking          | 2h       | 🔴 Not Started |
-| CAL-04-06 | Mobile: Responsive calendar grid (week/day view default)  | 3h       | 🔴 Not Started |
-| CAL-04-07 | Mobile: Full-screen modals and bottom sheets              | 3h       | 🔴 Not Started |
+| Task ID   | Task                                                      | Estimate | Status     |
+| --------- | --------------------------------------------------------- | -------- | ---------- |
+| CAL-04-01 | Recurring events UI: Recurrence rule builder              | 4h       | ✅ Complete |
+| CAL-04-02 | Recurring events: Edit/delete single vs. series logic     | 4h       | ✅ Complete |
+| CAL-04-03 | Time-off: Schema additions (`isTimeOff`, `timeOffStatus`) | 1h       | ✅ Complete |
+| CAL-04-04 | Time-off: Request and approval workflow                   | 3h       | ✅ Complete |
+| CAL-04-05 | Time-off: Integration with availability blocking          | 2h       | ✅ Complete |
+| CAL-04-06 | Mobile: Responsive calendar grid (week/day view default)  | 3h       | ✅ Complete |
+| CAL-04-07 | Mobile: Full-screen modals and bottom sheets              | 3h       | ✅ Complete |
 
 #### Deliverables
 
@@ -8779,8 +8779,8 @@ Adds high-value quality-of-life features: recurring events UI, vacation/time-off
 | --------- | --------------------------------- | ------------------------------------------------------ | -------- |
 | CAL-001   | Calendar Foundation               | [📋 Spec](../specs/calendar-sprint/CAL-001-SPEC.md)    | COMPLETE |
 | CAL-002   | Availability & Booking Foundation | [📋 Spec](../specs/calendar-sprint/CAL-002-SPEC.md)    | COMPLETE |
-| CAL-003   | Request/Approval Workflow         | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md)    | DRAFT    |
-| CAL-004   | Enhanced Features                 | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md)    | DRAFT    |
+| CAL-003   | Request/Approval Workflow         | [📋 Spec](../specs/calendar-sprint/CAL-003-SPEC.md)    | COMPLETE |
+| CAL-004   | Enhanced Features                 | [📋 Spec](../specs/calendar-sprint/CAL-004-SPEC.md)    | COMPLETE |
 | QA Review | Red Hat QA Review                 | [📋 Review](../specs/calendar-sprint/CAL_QA_REVIEW.md) | COMPLETE |
 
 ---

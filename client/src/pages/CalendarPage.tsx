@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, List, Grid3x3, Clock } from "lucide-react";
+import { Calendar, List, Grid3x3, Clock, Inbox, Palmtree } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import MonthView from "../components/calendar/MonthView";
 import WeekView from "../components/calendar/WeekView";
@@ -7,6 +7,9 @@ import DayView from "../components/calendar/DayView";
 import AgendaView from "../components/calendar/AgendaView";
 import CalendarFilters from "../components/calendar/CalendarFilters";
 import EventFormDialog from "../components/calendar/EventFormDialog";
+import AppointmentRequestsList from "../components/calendar/AppointmentRequestsList";
+import AppointmentRequestModal from "../components/calendar/AppointmentRequestModal";
+import TimeOffRequestsList from "../components/calendar/TimeOffRequestsList";
 import { trpc } from "../lib/trpc";
 
 /**
@@ -17,13 +20,21 @@ import { trpc } from "../lib/trpc";
  */
 
 type ViewType = "MONTH" | "WEEK" | "DAY" | "AGENDA";
+type TabType = "calendar" | "requests" | "timeoff";
 
 export default function CalendarPage() {
+  const [activeTab, setActiveTab] = useState<TabType>("calendar");
   const [currentView, setCurrentView] = useState<ViewType>("MONTH");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+
+  // Get pending counts for badges
+  const { data: pendingRequestCount } = trpc.appointmentRequests.getPendingCount.useQuery({});
+  const { data: teamTimeOffCount } = trpc.timeOffRequests.getTeamPendingCount.useQuery();
 
   // Load user's default view (for future use)
   // const { data: defaultView } = trpc.calendarViews.getDefaultView.useQuery();
@@ -224,42 +235,111 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="mt-3 sm:mt-4">
-          <CalendarFilters />
+        {/* Filters - only show on calendar tab */}
+        {activeTab === "calendar" && (
+          <div className="mt-3 sm:mt-4">
+            <CalendarFilters />
+          </div>
+        )}
+
+        {/* Tab Bar */}
+        <div className="mt-3 flex border-b border-border sm:mt-4">
+          <button
+            onClick={() => setActiveTab("calendar")}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "calendar"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">Calendar</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("requests")}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "requests"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Inbox className="h-4 w-4" />
+            <span className="hidden sm:inline">Requests</span>
+            {pendingRequestCount && pendingRequestCount.count > 0 && (
+              <span className="inline-flex items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                {pendingRequestCount.count}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("timeoff")}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "timeoff"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Palmtree className="h-4 w-4" />
+            <span className="hidden sm:inline">Time Off</span>
+            {teamTimeOffCount && teamTimeOffCount.count > 0 && (
+              <span className="inline-flex items-center justify-center rounded-full bg-orange-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                {teamTimeOffCount.count}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Calendar View */}
+      {/* Content Area */}
       <div className="flex-1 overflow-auto p-3 sm:p-6">
-        {currentView === "MONTH" && (
-          <MonthView
-            currentDate={currentDate}
-            events={formattedEvents}
-            onEventClick={handleEventClick}
-            onDateClick={handleDateClick}
+        {/* Calendar Tab */}
+        {activeTab === "calendar" && (
+          <>
+            {currentView === "MONTH" && (
+              <MonthView
+                currentDate={currentDate}
+                events={formattedEvents}
+                onEventClick={handleEventClick}
+                onDateClick={handleDateClick}
+              />
+            )}
+            {currentView === "WEEK" && (
+              <WeekView
+                currentDate={currentDate}
+                events={formattedEvents}
+                onEventClick={handleEventClick}
+              />
+            )}
+            {currentView === "DAY" && (
+              <DayView
+                currentDate={currentDate}
+                events={formattedEvents}
+                onEventClick={handleEventClick}
+              />
+            )}
+            {currentView === "AGENDA" && (
+              <AgendaView
+                currentDate={currentDate}
+                events={formattedEvents}
+                onEventClick={handleEventClick}
+              />
+            )}
+          </>
+        )}
+
+        {/* Requests Tab */}
+        {activeTab === "requests" && (
+          <AppointmentRequestsList
+            onSelectRequest={(id) => {
+              setSelectedRequestId(id);
+              setIsRequestModalOpen(true);
+            }}
           />
         )}
-        {currentView === "WEEK" && (
-          <WeekView
-            currentDate={currentDate}
-            events={formattedEvents}
-            onEventClick={handleEventClick}
-          />
-        )}
-        {currentView === "DAY" && (
-          <DayView
-            currentDate={currentDate}
-            events={formattedEvents}
-            onEventClick={handleEventClick}
-          />
-        )}
-        {currentView === "AGENDA" && (
-          <AgendaView
-            currentDate={currentDate}
-            events={formattedEvents}
-            onEventClick={handleEventClick}
-          />
+
+        {/* Time Off Tab */}
+        {activeTab === "timeoff" && (
+          <TimeOffRequestsList isAdmin={true} />
         )}
       </div>
 
@@ -270,6 +350,19 @@ export default function CalendarPage() {
         eventId={selectedEventId}
         initialDate={selectedDate}
         onSaved={handleEventSaved}
+      />
+
+      {/* Appointment Request Modal */}
+      <AppointmentRequestModal
+        requestId={selectedRequestId}
+        isOpen={isRequestModalOpen}
+        onClose={() => {
+          setIsRequestModalOpen(false);
+          setSelectedRequestId(null);
+        }}
+        onAction={() => {
+          // Refetch happens inside the component
+        }}
       />
     </div>
   );
