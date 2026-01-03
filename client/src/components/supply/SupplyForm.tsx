@@ -20,13 +20,44 @@ import { StrainInput } from "@/components/inventory/StrainInput";
  * Form for creating or editing vendor supply items with validation
  */
 
+type SupplyFormMode = "create" | "edit";
+
+interface SupplyFormState {
+  strain: string;
+  productName: string;
+  strainId: number | null;
+  category: string;
+  subcategory: string;
+  grade: string;
+  quantityAvailable: string;
+  unitPrice: string;
+  availableUntil: string;
+  notes: string;
+  internalNotes: string;
+}
+
+interface SupplyFormPayload {
+  vendorId: number;
+  strain?: string;
+  productName?: string;
+  strainId?: number | null;
+  category?: string;
+  subcategory?: string;
+  grade?: string;
+  quantityAvailable: number;
+  unitPrice?: number;
+  availableUntil?: string;
+  notes?: string;
+  internalNotes?: string;
+}
+
 interface SupplyFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vendorId: number;
-  onSubmit: (data: any) => Promise<void>;
-  initialData?: any;
-  mode?: "create" | "edit";
+  onSubmit: (data: SupplyFormPayload) => Promise<void>;
+  initialData?: Partial<SupplyFormPayload>;
+  mode?: SupplyFormMode;
 }
 
 export function SupplyForm({
@@ -40,15 +71,19 @@ export function SupplyForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SupplyFormState>({
     strain: initialData?.strain || "",
     productName: initialData?.productName || "",
-    strainId: initialData?.strainId || null,
+    strainId: initialData?.strainId ?? null,
     category: initialData?.category || "",
     subcategory: initialData?.subcategory || "",
     grade: initialData?.grade || "",
-    quantityAvailable: initialData?.quantityAvailable || "",
-    unitPrice: initialData?.unitPrice || "",
+    quantityAvailable:
+      initialData?.quantityAvailable !== undefined
+        ? String(initialData.quantityAvailable)
+        : "",
+    unitPrice:
+      initialData?.unitPrice !== undefined ? String(initialData.unitPrice) : "",
     availableUntil: initialData?.availableUntil
       ? new Date(initialData.availableUntil).toISOString().split("T")[0]
       : "",
@@ -57,15 +92,35 @@ export function SupplyForm({
   });
 
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
     setError(null);
   };
 
+  const parseNumericValue = (value: string) => {
+    const parsed = Number.parseFloat(value);
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+    return parsed;
+  };
+
   const validateForm = () => {
+    let validationError: string | null = null;
+
     // Validate quantity
-    if (!formData.quantityAvailable || parseFloat(formData.quantityAvailable) <= 0) {
-      setError("Quantity available must be greater than 0");
-      return false;
+    const quantity = parseNumericValue(formData.quantityAvailable);
+    if (quantity === null) {
+      validationError = "Enter a valid quantity available (numbers only)";
+    } else if (quantity <= 0) {
+      validationError = "Quantity available must be greater than 0";
+    }
+
+    // Validate unit price if provided
+    if (formData.unitPrice) {
+      const unitPrice = parseNumericValue(formData.unitPrice);
+      if (unitPrice === null || unitPrice < 0) {
+        validationError = "Enter a valid unit price";
+      }
     }
 
     // Validate based on category (flower vs non-flower)
@@ -76,14 +131,13 @@ export function SupplyForm({
     if (isFlower) {
       // Flower: strain is required
       if (!formData.strain) {
-        setError("Strain is required for flower products");
-        return false;
+        validationError = "Strain is required for flower products";
       }
     } else {
       // Non-flower: product name OR strain required (at least one)
       if (!formData.productName && !formData.strain) {
-        setError("Product name or strain is required for non-flower products");
-        return false;
+        validationError =
+          "Product name or strain is required for non-flower products";
       }
     }
 
@@ -95,27 +149,35 @@ export function SupplyForm({
       !formData.subcategory &&
       !formData.grade
     ) {
-      setError("Please specify at least one product criteria");
+      validationError = "Please specify at least one product criteria";
+    }
+
+    if (validationError) {
+      setError(validationError);
       return false;
     }
 
+    setError(null);
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
     if (!validateForm()) {
       return;
     }
 
+    setError(null);
     setIsSubmitting(true);
 
     try {
       await onSubmit({
         ...formData,
         vendorId,
+        quantityAvailable: parseNumericValue(formData.quantityAvailable) ?? 0,
+        unitPrice: formData.unitPrice
+          ? (parseNumericValue(formData.unitPrice) ?? 0)
+          : undefined,
       });
 
       // Reset form on success
@@ -134,9 +196,13 @@ export function SupplyForm({
       });
 
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error submitting supply:", err);
-      setError(err.message || "Failed to save supply. Please try again.");
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to save supply. Please try again.";
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -150,7 +216,8 @@ export function SupplyForm({
             {mode === "create" ? "Add Vendor Supply" : "Edit Vendor Supply"}
           </DialogTitle>
           <DialogDescription>
-            Record what this vendor has available. The system will automatically find matching client needs.
+            Record what this vendor has available. The system will automatically
+            find matching client needs.
           </DialogDescription>
         </DialogHeader>
 
@@ -172,7 +239,7 @@ export function SupplyForm({
                 <Input
                   id="category"
                   value={formData.category}
-                  onChange={(e) => handleChange("category", e.target.value)}
+                  onChange={e => handleChange("category", e.target.value)}
                   placeholder="e.g., Flower, Vape, Edible"
                 />
               </div>
@@ -186,7 +253,7 @@ export function SupplyForm({
                   <StrainInput
                     value={formData.strainId}
                     onChange={(strainId, strainName) => {
-                      setFormData((prev) => ({
+                      setFormData(prev => ({
                         ...prev,
                         strain: strainName,
                         strainId,
@@ -206,7 +273,9 @@ export function SupplyForm({
                     <Input
                       id="productName"
                       value={formData.productName}
-                      onChange={(e) => handleChange("productName", e.target.value)}
+                      onChange={e =>
+                        handleChange("productName", e.target.value)
+                      }
                       placeholder="e.g., Ceramic 510 Cart, Mixed Fruit Gummies"
                     />
                   </div>
@@ -216,7 +285,7 @@ export function SupplyForm({
                     <StrainInput
                       value={formData.strainId}
                       onChange={(strainId, strainName) => {
-                        setFormData((prev) => ({
+                        setFormData(prev => ({
                           ...prev,
                           strain: strainName,
                           strainId,
@@ -234,7 +303,7 @@ export function SupplyForm({
                 <Input
                   id="subcategory"
                   value={formData.subcategory}
-                  onChange={(e) => handleChange("subcategory", e.target.value)}
+                  onChange={e => handleChange("subcategory", e.target.value)}
                   placeholder="e.g., Indoor"
                 />
               </div>
@@ -244,7 +313,7 @@ export function SupplyForm({
                 <Input
                   id="grade"
                   value={formData.grade}
-                  onChange={(e) => handleChange("grade", e.target.value)}
+                  onChange={e => handleChange("grade", e.target.value)}
                   placeholder="e.g., A+"
                 />
               </div>
@@ -263,10 +332,29 @@ export function SupplyForm({
                   type="number"
                   step="0.01"
                   value={formData.quantityAvailable}
-                  onChange={(e) => handleChange("quantityAvailable", e.target.value)}
+                  onChange={e =>
+                    handleChange("quantityAvailable", e.target.value)
+                  }
                   placeholder="0"
                   required
+                  aria-invalid={
+                    error?.toLowerCase().includes("quantity") || undefined
+                  }
+                  aria-describedby={
+                    error?.toLowerCase().includes("quantity")
+                      ? "quantity-error"
+                      : undefined
+                  }
                 />
+                {error?.toLowerCase().includes("quantity") && (
+                  <p
+                    className="text-destructive text-sm"
+                    role="alert"
+                    id="quantity-error"
+                  >
+                    {error}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -276,7 +364,7 @@ export function SupplyForm({
                   type="number"
                   step="0.01"
                   value={formData.unitPrice}
-                  onChange={(e) => handleChange("unitPrice", e.target.value)}
+                  onChange={e => handleChange("unitPrice", e.target.value)}
                   placeholder="0.00"
                 />
               </div>
@@ -287,7 +375,7 @@ export function SupplyForm({
                   id="availableUntil"
                   type="date"
                   value={formData.availableUntil}
-                  onChange={(e) => handleChange("availableUntil", e.target.value)}
+                  onChange={e => handleChange("availableUntil", e.target.value)}
                 />
               </div>
             </div>
@@ -302,7 +390,7 @@ export function SupplyForm({
               <Textarea
                 id="notes"
                 value={formData.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
+                onChange={e => handleChange("notes", e.target.value)}
                 placeholder="Additional information about this supply..."
                 rows={2}
               />
@@ -313,7 +401,7 @@ export function SupplyForm({
               <Textarea
                 id="internalNotes"
                 value={formData.internalNotes}
-                onChange={(e) => handleChange("internalNotes", e.target.value)}
+                onChange={e => handleChange("internalNotes", e.target.value)}
                 placeholder="Internal notes not visible to vendor..."
                 rows={2}
               />
@@ -347,4 +435,3 @@ export function SupplyForm({
     </Dialog>
   );
 }
-
