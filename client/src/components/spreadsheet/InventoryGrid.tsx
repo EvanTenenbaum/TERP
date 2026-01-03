@@ -136,8 +136,8 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
       }
 
       if (event.colDef.field === "confirm") {
-        const status = String(event.newValue || "");
-        if (!status) {
+        const status = String(event.newValue || "") as typeof statusOptions[number];
+        if (!status || !statusOptions.includes(status)) {
           event.node.setDataValue("confirm", event.oldValue);
           return;
         }
