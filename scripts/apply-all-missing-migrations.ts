@@ -14,15 +14,59 @@
  * Task: Migration Gap Analysis Remediation
  */
 
-import { sql } from "drizzle-orm";
+import { config } from "dotenv";
+import mysql from "mysql2/promise";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 
-// Import database connection
-const getDb = async () => {
-  const { getDb: getDatabase } = await import("../server/db.js");
-  return getDatabase();
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables (only if not already set - preserves server env vars)
+if (!process.env.DATABASE_URL) {
+  config();
+  if (!process.env.DATABASE_URL) {
+    config({ path: ".env.production" });
+  }
+}
+
+// Database connection setup
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  console.error("❌ DATABASE_URL environment variable is required");
+  process.exit(1);
+}
+
+// Parse SSL configuration - DigitalOcean requires SSL
+const needsSSL = databaseUrl.includes('digitalocean.com') || 
+                 databaseUrl.includes('ssl=') ||
+                 databaseUrl.includes('ssl-mode=REQUIRED') || 
+                 databaseUrl.includes('sslmode=require');
+
+const cleanDatabaseUrl = databaseUrl
+  .replace(/[?&]ssl=[^&]*/gi, '')
+  .replace(/[?&]ssl-mode=[^&]*/gi, '')
+  .replace(/[?&]sslmode=[^&]*/gi, '');
+
+const poolConfig: mysql.PoolOptions = {
+  uri: cleanDatabaseUrl,
+  waitForConnections: true,
+  connectionLimit: 5,
+  maxIdle: 2,
+  idleTimeout: 60000,
+  queueLimit: 0,
+  connectTimeout: 30000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
 };
+
+if (needsSSL) {
+  poolConfig.ssl = {
+    rejectUnauthorized: false
+  };
+}
 
 interface Migration {
   id: string;
@@ -209,23 +253,23 @@ const MIGRATIONS: Migration[] = [
   }
 ];
 
-async function checkMigrationApplied(db: any, migration: Migration): Promise<boolean> {
+async function checkMigrationApplied(pool: mysql.Pool, migration: Migration): Promise<boolean> {
   try {
-    const result = await db.execute(sql.raw(migration.verifyQuery));
-    const rows = result[0] as any[];
+    const [rows] = await pool.execute(migration.verifyQuery);
+    const resultRows = rows as any[];
     
     // Handle COUNT queries
-    if (rows && rows.length > 0 && 'cnt' in rows[0]) {
-      return rows[0].cnt > 0;
+    if (resultRows && resultRows.length > 0 && 'cnt' in resultRows[0]) {
+      return resultRows[0].cnt > 0;
     }
     
-    return rows && rows.length > 0;
+    return resultRows && resultRows.length > 0;
   } catch (error) {
     return false;
   }
 }
 
-async function applyMigration(db: any, migration: Migration): Promise<{ success: boolean; error?: string }> {
+async function applyMigration(pool: mysql.Pool, migration: Migration): Promise<{ success: boolean; error?: string }> {
   const filePath = path.join(__dirname, "..", "drizzle", migration.file);
   
   if (!fs.existsSync(filePath)) {
@@ -243,7 +287,7 @@ async function applyMigration(db: any, migration: Migration): Promise<{ success:
     
     for (const stmt of statements) {
       try {
-        await db.execute(sql.raw(stmt));
+        await pool.execute(stmt);
       } catch (stmtError: any) {
         // Ignore "already exists" errors
         if (!stmtError.message.includes("already exists") && 
@@ -262,7 +306,7 @@ async function applyMigration(db: any, migration: Migration): Promise<{ success:
 
 async function main() {
   console.log("╔════════════════════════════════════════════════════════════════╗");
-  console.log("║        TERP Apply All Missing Migrations Script v1.0           ║");
+  console.log("║        TERP Apply All Missing Migrations Script v1.1           ║");
   console.log("║        Created: 2026-01-02 | Author: Manus AI                  ║");
   console.log("╚════════════════════════════════════════════════════════════════╝\n");
 
@@ -276,15 +320,19 @@ async function main() {
     console.log("⚠️  APPLY MODE - Migrations will be applied to the database\n");
   }
 
-  // Get database connection
+  // Create database connection pool
   console.log("🔌 Connecting to database...");
-  const db = await getDb();
+  let pool: mysql.Pool;
   
-  if (!db) {
-    console.error("❌ Failed to connect to database");
+  try {
+    pool = mysql.createPool(poolConfig);
+    // Test connection
+    await pool.execute("SELECT 1");
+    console.log("✅ Connected to database\n");
+  } catch (error: any) {
+    console.error(`❌ Failed to connect to database: ${error.message}`);
     process.exit(1);
   }
-  console.log("✅ Connected to database\n");
 
   // Check which migrations need to be applied
   console.log("📋 Checking migration status...\n");
@@ -293,7 +341,7 @@ async function main() {
   const alreadyApplied: Migration[] = [];
   
   for (const migration of MIGRATIONS) {
-    const isApplied = await checkMigrationApplied(db, migration);
+    const isApplied = await checkMigrationApplied(pool, migration);
     
     if (isApplied) {
       alreadyApplied.push(migration);
@@ -309,6 +357,7 @@ async function main() {
 
   if (toApply.length === 0) {
     console.log("✅ All migrations have been applied! Nothing to do.");
+    await pool.end();
     process.exit(0);
   }
 
@@ -329,6 +378,7 @@ async function main() {
   if (!applyMode) {
     console.log("\n💡 To apply these migrations, run:");
     console.log("   npx tsx scripts/apply-all-missing-migrations.ts --apply\n");
+    await pool.end();
     process.exit(0);
   }
 
@@ -342,12 +392,12 @@ async function main() {
   for (const migration of toApply) {
     console.log(`\n📦 Applying [${migration.id}] ${migration.file}...`);
     
-    const result = await applyMigration(db, migration);
+    const result = await applyMigration(pool, migration);
     results.push({ migration, ...result });
     
     if (result.success) {
       // Verify the migration was applied
-      const verified = await checkMigrationApplied(db, migration);
+      const verified = await checkMigrationApplied(pool, migration);
       if (verified) {
         console.log(`   ✅ Successfully applied and verified`);
         successCount++;
@@ -377,18 +427,18 @@ async function main() {
   console.log(`   ⏭️ Skipped: ${toApply.length - successCount - failCount}`);
 
   // Generate report
-  const reportPath = path.join(__dirname, "..", "docs", "qa", "MIGRATION_APPLICATION_REPORT.md");
-  const report = generateReport(results, alreadyApplied);
-  
-  // Ensure directory exists
-  const reportDir = path.dirname(reportPath);
+  const reportDir = path.join(__dirname, "..", "docs", "qa");
   if (!fs.existsSync(reportDir)) {
     fs.mkdirSync(reportDir, { recursive: true });
   }
-  
+  const reportPath = path.join(reportDir, "MIGRATION_APPLICATION_REPORT.md");
+  const report = generateReport(results, alreadyApplied);
   fs.writeFileSync(reportPath, report);
   console.log(`\n📄 Report saved to: ${reportPath}`);
 
+  // Close pool
+  await pool.end();
+  
   process.exit(failCount > 0 ? 1 : 0);
 }
 
