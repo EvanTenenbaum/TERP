@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.27
+**Version:** 2.28
 **Last Updated:** January 3, 2026 (QA Technical Debt Added)
 **Status:** Active
 
@@ -9139,7 +9139,7 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 
 ## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
 
-**Version:** 2.27  
+**Version:** 2.28  
 **Added:** January 3, 2026  
 **Status:** 🟡 READY FOR EXECUTION  
 **Total Estimated Effort:** 92 hours
@@ -9418,4 +9418,472 @@ This section contains new work items identified during Tier 1 customer readiness
 | Logic verification coverage | All modules |
 | Credit limit enforcement | 100% accurate |
 | Product credit system | Fully functional |
+
+
+
+---
+
+## 🎨 UI/UX Audit Findings - January 2026
+
+**Version:** 2.28  
+**Added:** January 3, 2026  
+**Source:** Senior UI/UX Designer & Product QA Specialist Audit  
+**Status:** 🟡 READY FOR EXECUTION  
+**Total Items:** 28 issues across 7 categories
+
+This section documents findings from a comprehensive UI/UX audit conducted on January 2, 2026. Items are categorized by severity and grouped by functional area.
+
+---
+
+### 🔴 P0 - CRITICAL BUGS (Must Fix Immediately)
+
+These are functional bugs that break core workflows or block users.
+
+#### BUG-040: Task/Client Edit Modal Shows Empty Fields
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/components/modals/TaskModal.tsx`, `ClientModal.tsx`
+- **Category:** E. Conversion Friction
+
+**Problem:** Editing a task or client opens a modal where Title and Description fields are empty instead of showing existing values. Users risk overwriting data.
+
+**Acceptance Criteria:**
+- [ ] Edit modals pre-populate all fields with current values
+- [ ] Required fields clearly highlighted
+- [ ] Save button disabled until required fields completed
+- [ ] Cancel button available and functional
+
+---
+
+#### BUG-041: Fulfillment Batch Status Update Fails
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** `server/routers/fulfillment.ts`, `client/src/pages/FulfillmentPage.tsx`
+- **Category:** E. Conversion Friction
+
+**Problem:** Clicking a batch card in Fulfillment shows error "Failed to update batch status". Core workflow is broken.
+
+**Acceptance Criteria:**
+- [ ] Batch status updates successfully
+- [ ] Meaningful error messages displayed on failure
+- [ ] Errors logged for debugging
+- [ ] Retry mechanism available
+
+---
+
+#### BUG-042: Misleading CTA Redirects (Add Need, New Quote)
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/pages/MatchmakingPage.tsx`, `QuotesPage.tsx`
+- **Category:** B. Navigation
+
+**Problem:** "Add Need" redirects to Clients page instead of opening a form. "New Quote" redirects to "Create Sales Order" instead of quote builder.
+
+**Acceptance Criteria:**
+- [ ] "Add Need" opens modal or page to capture client needs
+- [ ] "New Quote" leads to quote creation form
+- [ ] All CTAs reviewed and corrected
+- [ ] User flow tests added
+
+---
+
+#### BUG-043: Form Validation Missing - Silent Failures
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** All form components
+- **Category:** D. Copy Clarity
+
+**Problem:** Creating a transaction without required fields causes silent failure - clicking "Create Transaction" does nothing with no feedback.
+
+**Acceptance Criteria:**
+- [ ] Inline validation with clear error messages
+- [ ] Required fields highlighted on validation failure
+- [ ] Toast/success message after successful creation
+- [ ] Submit button shows loading state
+
+---
+
+### 🟡 P1 - HIGH PRIORITY (Should Fix for Pilot)
+
+These are major usability issues causing significant friction.
+
+#### UX-024: Onboarding & First-Time User Experience
+- **Priority:** P1 (HIGH)
+- **Estimate:** 12 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/components/Onboarding.tsx` (new)
+- **Category:** A. First Impressions
+
+**Problem:** Dashboard opens immediately into complex data hub without onboarding. No welcome message or explanation of what TERP does. Cognitive overload for new users.
+
+**Deliverables:**
+1. Welcome overlay/panel explaining platform purpose
+2. Highlight primary modules with brief descriptions
+3. Link to tutorial or help center
+4. Dismissible with option to revisit from help icon
+5. First-time user detection logic
+
+---
+
+#### UX-025: Navigation Consolidation (20+ Items to ~10)
+- **Priority:** P1 (HIGH)
+- **Estimate:** 16 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/components/Sidebar.tsx`
+- **Category:** B. Navigation
+
+**Problem:** Side menu has 20+ items requiring memorization and independent scrolling. Items at bottom are hard to discover.
+
+**Proposed Grouping:**
+
+| Group | Items |
+|-------|-------|
+| **Home** | Dashboard |
+| **Sales** | Sales Portal, Quotes, Orders, Fulfillment, Pick & Pack |
+| **Clients** | Clients, Live Shopping, Sales Sheets, Matchmaking |
+| **Inventory** | Inventory, Procurement, Returns, Samples, Locations |
+| **Finance** | Accounting, Pricing Rules, Pricing Profiles, Credit Settings |
+| **Operations** | Tasks, Calendar, Photography |
+| **Insights** | Analytics, Leaderboard |
+| **System** | Settings, Help |
+
+**Acceptance Criteria:**
+- [ ] Navigation grouped under collapsible headings
+- [ ] Search/filter function for nav items
+- [ ] Fixed menu using browser scroll (no nested scroll)
+- [ ] Navigation depth max 2 levels
+
+---
+
+#### UX-026: Missing Trust Signals (Legal, Contact, About)
+- **Priority:** P1 (HIGH)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/components/Footer.tsx` (new), Help page
+- **Category:** D. Copy Clarity
+
+**Problem:** No visible contact information, privacy policy, terms of service, or About page. Erodes trust for enterprise customers.
+
+**Acceptance Criteria:**
+- [ ] Footer with About, Privacy Policy, Terms of Service, Support links
+- [ ] Company information in Help section
+- [ ] Support contact visible
+- [ ] Legal pages created or linked
+
+---
+
+#### UX-027: Accessibility - Missing Form Labels
+- **Priority:** P1 (HIGH)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** All form components
+- **Category:** F. Accessibility
+
+**Problem:** Many fields use placeholder text as only label. Screen readers don't announce placeholders reliably.
+
+**Acceptance Criteria:**
+- [ ] Persistent labels above each input
+- [ ] `aria-label` attributes on all inputs
+- [ ] Labels associated via `for`/`id`
+- [ ] Placeholder text supplementary only
+
+---
+
+#### UX-028: Accessibility - Keyboard Navigation Issues
+- **Priority:** P1 (HIGH)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** Modals, toggle switches, interactive elements
+- **Category:** F. Accessibility
+
+**Problem:** Modals trap focus inconsistently. Some toggles (Credit Settings) not reachable via keyboard.
+
+**Acceptance Criteria:**
+- [ ] All focusable elements reachable via Tab/Shift+Tab
+- [ ] Visible focus states on all elements
+- [ ] Enter and Space work for toggles
+- [ ] Modal close buttons keyboard accessible
+- [ ] Focus trapped correctly in modals
+
+---
+
+#### UX-029: Mobile Responsive Layout
+- **Priority:** P1 (HIGH)
+- **Estimate:** 16 hours
+- **Status:** 🟡 READY
+- **Module:** Sidebar, all pages
+- **Category:** G. Mobile
+
+**Problem:** Side menu remains fixed on mobile, occupying significant space. Content requires horizontal scrolling.
+
+**Acceptance Criteria:**
+- [ ] Hamburger menu on mobile viewports
+- [ ] Drawer pattern slides over content
+- [ ] Full-width content on small screens
+- [ ] No horizontal scrolling required
+
+---
+
+### 🟢 P2 - MEDIUM PRIORITY (Should Fix for Production)
+
+#### UX-030: Nested Scrollbars on Dashboard
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/pages/DashboardPage.tsx`
+- **Category:** A. First Impressions
+
+**Problem:** Dashboard has nested vertical scrollbar inside browser scroll. Unclear if more content exists below.
+
+**Acceptance Criteria:**
+- [ ] Remove nested scroll containers
+- [ ] Page uses browser's primary scroll
+- [ ] Fixed side navigation with independent content scroll
+
+---
+
+#### UX-031: Top Bar Icons Need Tooltips
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 2 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/components/TopBar.tsx`
+- **Category:** A. First Impressions
+
+**Problem:** Icons (bell, moon, gear, user) have no labels or tooltips. Gear navigates to full Settings page unexpectedly.
+
+**Acceptance Criteria:**
+- [ ] Tooltips on hover for all icons
+- [ ] Avatar with dropdown for account actions
+- [ ] Gear opens lightweight preferences popover
+
+---
+
+#### UX-032: Hidden Horizontal Scroll in Sales Portal
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/pages/SalesPortalPage.tsx`
+- **Category:** B. Navigation
+
+**Problem:** Kanban columns extend beyond viewport with thin, non-obvious scrollbar.
+
+**Acceptance Criteria:**
+- [ ] Visible navigation arrows for horizontal scroll
+- [ ] Drag-to-scroll enabled
+- [ ] Mouse wheel horizontal scroll support
+- [ ] Visual indicator of off-screen content
+
+---
+
+#### UX-033: Long Modal Forms Need Wizard Pattern
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** Calendar event modal, Quote creation, PO modals
+- **Category:** C. Visual Hierarchy
+
+**Problem:** Create Event modal has many fields in scrollable area. Users must scroll within modal to see all fields.
+
+**Acceptance Criteria:**
+- [ ] Multi-step wizard for complex forms
+- [ ] Progress indicators
+- [ ] Clear primary button per step
+- [ ] Back/Next navigation
+
+---
+
+#### UX-034: Technical Jargon Needs Tooltips
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** Dashboard, Navigation, all modules
+- **Category:** D. Copy Clarity
+
+**Problem:** Terms like "Matchmaking Opportunities", "Pricing Rules", "VIP Access", "CashFlow" appear without definitions.
+
+**Acceptance Criteria:**
+- [ ] Hover tooltips or info icons explaining each term
+- [ ] Short descriptions under menu items
+- [ ] Glossary in Help section
+
+---
+
+#### UX-035: Empty States Need Guidance
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Module:** All pages with data tables
+- **Category:** D. Copy Clarity
+
+**Problem:** Pages show "No data available" without guidance. Discouraging and unhelpful.
+
+**Acceptance Criteria:**
+- [ ] Friendly empty state illustrations
+- [ ] Brief explanation of what should appear
+- [ ] Call-to-action button (e.g., "Create your first quote")
+- [ ] Consistent empty state design across app
+
+---
+
+#### UX-036: Date/Time Validation Missing
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 3 hours
+- **Status:** 🟡 READY
+- **Module:** Calendar event creation, all date pickers
+- **Category:** E. Conversion Friction
+
+**Problem:** Event creation allows end date before start date. Invalid data can be created.
+
+**Acceptance Criteria:**
+- [ ] Real-time validation for date ranges
+- [ ] End date auto-adjusts if before start date
+- [ ] Create button disabled until valid
+- [ ] Clear error message if invalid
+
+---
+
+#### UX-037: Color-Only Status Indicators
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** Pricing Rules, status indicators throughout
+- **Category:** F. Accessibility
+
+**Problem:** "Active" (green) and negative adjustments (red) distinguished only by color. Color-blind users affected.
+
+**Acceptance Criteria:**
+- [ ] Icons or text indicators added (checkmark for active)
+- [ ] Accessible labels for screen readers
+- [ ] Pattern or shape differentiation
+
+---
+
+#### UX-038: Low Contrast Text
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** Charts, Help page, dark mode
+- **Category:** F. Accessibility
+
+**Problem:** Secondary text is small and light grey. Dark mode has insufficient contrast.
+
+**Acceptance Criteria:**
+- [ ] Body text minimum 14px
+- [ ] WCAG-compliant contrast ratios (4.5:1)
+- [ ] Font size adjustment option
+- [ ] Dark mode contrast audit
+
+---
+
+#### UX-039: Mobile Tables Need Card View
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** Inventory, Analytics tables
+- **Category:** G. Mobile
+
+**Problem:** Multi-column tables require horizontal scrolling on mobile, making data unreadable.
+
+**Acceptance Criteria:**
+- [ ] Card-based summaries on mobile
+- [ ] Key metrics at a glance
+- [ ] Tap to view details
+- [ ] Column visibility controls on desktop
+
+---
+
+### 🔵 P3 - LOW PRIORITY (Nice to Have)
+
+#### UX-040: Redundant Pricing Menu Items
+- **Priority:** P3 (LOW)
+- **Estimate:** 2 hours
+- **Status:** 🟡 READY
+- **Module:** Sidebar navigation
+- **Category:** B. Navigation
+
+**Problem:** "Pricing Rules" and "Pricing Profiles" appear separately though related.
+
+**Acceptance Criteria:**
+- [ ] Consolidate into single "Pricing" menu
+- [ ] Sub-tabs for Rules and Profiles
+
+---
+
+#### UX-041: Inconsistent Spacing and Alignment
+- **Priority:** P3 (LOW)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Module:** Sales Portal, Dashboard cards
+- **Category:** C. Visual Hierarchy
+
+**Problem:** Cards have unequal widths and inconsistent margins. Skeleton loaders cause layout jumps.
+
+**Acceptance Criteria:**
+- [ ] Grid system with consistent gutters
+- [ ] Skeleton loaders match final content size
+- [ ] Consistent card dimensions
+
+---
+
+#### UX-042: Mixed Tone and Capitalization
+- **Priority:** P3 (LOW)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** All buttons and labels
+- **Category:** D. Copy Clarity
+
+**Problem:** Inconsistent case ("Create event" vs "New Sample") and abbreviations ("Cr Rcv").
+
+**Acceptance Criteria:**
+- [ ] Style guide established (sentence case for actions)
+- [ ] Consistent capitalization applied
+- [ ] Abbreviations expanded or explained
+
+---
+
+#### UX-043: Small Touch Targets on Mobile
+- **Priority:** P3 (LOW)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** Navigation icons, table actions
+- **Category:** G. Mobile
+
+**Problem:** Icons and delete buttons are small and close together, causing mis-taps.
+
+**Acceptance Criteria:**
+- [ ] Hit areas minimum 44x44px
+- [ ] Adequate spacing between interactive elements
+
+---
+
+### Summary Table
+
+| Priority | Count | Total Hours | Focus Area |
+|----------|-------|-------------|------------|
+| 🔴 P0 Critical | 4 | 22h | Broken workflows, silent failures |
+| 🟡 P1 High | 6 | 64h | Onboarding, navigation, accessibility, mobile |
+| 🟢 P2 Medium | 10 | 47h | Polish, UX improvements, validation |
+| 🔵 P3 Low | 4 | 16h | Consistency, minor polish |
+| **Total** | **24** | **149h** | |
+
+---
+
+### Recommended Execution Order
+
+**Sprint H: Critical Bug Fixes (22h)**
+- BUG-040, BUG-041, BUG-042, BUG-043
+
+**Sprint I: High Priority UX (64h)**
+- UX-024 (Onboarding), UX-025 (Navigation), UX-026 (Trust Signals)
+- UX-027, UX-028 (Accessibility), UX-029 (Mobile)
+
+**Sprint J: Medium Priority Polish (47h)**
+- UX-030 through UX-039
+
+**Sprint K: Low Priority Refinement (16h)**
+- UX-040 through UX-043
 
