@@ -1,5 +1,11 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,25 +16,84 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Receipt, Search, Download, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import {
+  Receipt,
+  Search,
+  Download,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { JSX } from "react";
+
+type PayableStatus =
+  | "PAID"
+  | "OVERDUE"
+  | "PARTIAL"
+  | "PENDING"
+  | "APPROVED"
+  | string;
+
+interface PayableFeatures {
+  showSummaryTotals?: boolean;
+  allowFilters?: boolean;
+  showInvoiceDetails?: boolean;
+  highlightOverdue?: boolean;
+}
+
+interface AccountsPayableConfig {
+  featuresConfig?: {
+    ap?: PayableFeatures;
+  };
+}
+
+interface PayableSummary {
+  totalOwed?: number;
+  overdueAmount?: number;
+  openBillCount?: number;
+}
+
+interface PayableBill {
+  id: number;
+  billNumber: string;
+  billDate: string | Date;
+  totalAmount: number | string;
+  amountDue: number | string;
+  amountPaid: number | string;
+  dueDate: string | Date;
+  status: PayableStatus;
+  paymentTerms?: string | null;
+  notes?: string | null;
+}
+
+interface AccountsPayableData {
+  summary?: PayableSummary;
+  bills?: PayableBill[];
+}
 
 interface AccountsPayableProps {
   clientId: number;
-  config: any;
+  config: { featuresConfig?: { ap?: PayableFeatures } | null };
 }
 
-export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
+export function AccountsPayable({
+  clientId,
+  config,
+}: AccountsPayableProps): JSX.Element {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: apData } = trpc.vipPortal.ap.getBills.useQuery({
+  const { data: apResponse, isLoading } = trpc.vipPortal.ap.getBills.useQuery({
     clientId,
     search: searchTerm || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
+  const apData = apResponse as AccountsPayableData | undefined;
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: PayableStatus) => {
     switch (status) {
       case "PAID":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -41,7 +106,9 @@ export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
     }
   };
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusVariant = (
+    status: PayableStatus
+  ): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case "PAID":
         return "secondary";
@@ -54,30 +121,71 @@ export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
     }
   };
 
+  const summary = useMemo(() => apData?.summary, [apData]);
+  const bills = useMemo(() => apData?.bills ?? [], [apData]);
+  const showPayableDetails =
+    config.featuresConfig?.ap?.showInvoiceDetails ??
+    (config.featuresConfig?.ap as { showBillDetails?: boolean } | undefined)
+      ?.showBillDetails ??
+    false;
+  const allowPayableDownload =
+    (config.featuresConfig?.ap as { allowPdfDownload?: boolean } | undefined)
+      ?.allowPdfDownload ?? false;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <Skeleton className="h-6 w-40" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Card key={index} className="p-4">
+              <Skeleton className="h-4 w-24 mb-3" />
+              <Skeleton className="h-6 w-28" />
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="space-y-3 pt-6">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div key={index} className="space-y-2">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div>
         <h2 className="text-xl md:text-2xl font-bold">Accounts Payable</h2>
-        <p className="text-sm text-muted-foreground">Bills and payments you owe</p>
+        <p className="text-sm text-muted-foreground">
+          Bills and payments you owe
+        </p>
       </div>
 
       {/* Summary Cards */}
-      {config.featuresConfig?.ap?.showSummaryTotals && apData?.summary && (
+      {config.featuresConfig?.ap?.showSummaryTotals && summary && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
           <Card>
             <CardHeader className="pb-3">
               <CardDescription className="text-xs">Total Owed</CardDescription>
               <CardTitle className="text-xl md:text-2xl">
-                ${apData.summary.totalOwed.toLocaleString()}
+                {formatCurrency(summary.totalOwed)}
               </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription className="text-xs">Overdue Amount</CardDescription>
+              <CardDescription className="text-xs">
+                Overdue Amount
+              </CardDescription>
               <CardTitle className="text-xl md:text-2xl text-destructive">
-                ${apData.summary.overdueAmount.toLocaleString()}
+                {formatCurrency(summary.overdueAmount)}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -85,7 +193,7 @@ export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
             <CardHeader className="pb-3">
               <CardDescription className="text-xs">Open Bills</CardDescription>
               <CardTitle className="text-xl md:text-2xl">
-                {apData.summary.openBillCount}
+                {summary.openBillCount}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -102,7 +210,7 @@ export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
                 <Input
                   placeholder="Search bills..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -126,12 +234,13 @@ export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
 
       {/* Bills List - Mobile-First Card Layout */}
       <div className="space-y-3">
-        {apData?.bills && apData.bills.length > 0 ? (
-          apData.bills.map((bill: any) => (
-            <Card 
-              key={bill.id} 
+        {bills.length > 0 ? (
+          bills.map(bill => (
+            <Card
+              key={bill.id}
               className={`overflow-hidden ${
-                config.featuresConfig?.ap?.highlightOverdue && bill.status === "OVERDUE"
+                config.featuresConfig?.ap?.highlightOverdue &&
+                bill.status === "OVERDUE"
                   ? "border-destructive"
                   : ""
               }`}
@@ -144,44 +253,57 @@ export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
                       <span className="truncate">{bill.billNumber}</span>
                     </CardTitle>
                     <CardDescription className="text-sm mt-1">
-                      Date: {new Date(bill.billDate).toLocaleDateString()}
+                      Date: {formatDate(bill.billDate)}
                     </CardDescription>
                   </div>
-                  <Badge variant={getStatusVariant(bill.status)} className="flex-shrink-0">
+                  <Badge
+                    variant={getStatusVariant(bill.status)}
+                    className="flex-shrink-0"
+                  >
                     {bill.status}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {/* Financial Details Grid */}
-                {config.featuresConfig?.ap?.showBillDetails && (
+                {showPayableDetails && (
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-muted-foreground text-xs">Total Amount</p>
+                      <p className="text-muted-foreground text-xs">
+                        Total Amount
+                      </p>
                       <p className="font-medium text-base">
-                        ${bill.totalAmount.toLocaleString()}
+                        {formatCurrency(bill.totalAmount)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs">Amount Due</p>
+                      <p className="text-muted-foreground text-xs">
+                        Amount Due
+                      </p>
                       <p className="font-medium text-base">
-                        ${bill.amountDue.toLocaleString()}
+                        {formatCurrency(bill.amountDue)}
                       </p>
                     </div>
-                    {bill.amountPaid > 0 && (
+                    {(typeof bill.amountPaid === "string"
+                      ? parseFloat(bill.amountPaid)
+                      : (bill.amountPaid ?? 0)) > 0 && (
                       <div>
-                        <p className="text-muted-foreground text-xs">Amount Paid</p>
+                        <p className="text-muted-foreground text-xs">
+                          Amount Paid
+                        </p>
                         <p className="font-medium text-green-600">
-                          ${bill.amountPaid.toLocaleString()}
+                          {formatCurrency(bill.amountPaid)}
                         </p>
                       </div>
                     )}
                     <div>
                       <p className="text-muted-foreground text-xs">Due Date</p>
-                      <p className={`font-medium ${
-                        bill.status === "OVERDUE" ? "text-destructive" : ""
-                      }`}>
-                        {new Date(bill.dueDate).toLocaleDateString()}
+                      <p
+                        className={`font-medium ${
+                          bill.status === "OVERDUE" ? "text-destructive" : ""
+                        }`}
+                      >
+                        {formatDate(bill.dueDate)}
                       </p>
                     </div>
                   </div>
@@ -190,13 +312,15 @@ export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
                 {/* Payment Terms */}
                 {bill.paymentTerms && (
                   <div className="text-sm">
-                    <p className="text-muted-foreground text-xs mb-1">Payment Terms</p>
+                    <p className="text-muted-foreground text-xs mb-1">
+                      Payment Terms
+                    </p>
                     <p className="text-sm">{bill.paymentTerms}</p>
                   </div>
                 )}
 
                 {/* Notes */}
-                {bill.notes && config.featuresConfig?.ap?.showBillDetails && (
+                {bill.notes && showPayableDetails && (
                   <div className="text-sm">
                     <p className="text-muted-foreground text-xs mb-1">Notes</p>
                     <p className="text-sm line-clamp-2">{bill.notes}</p>
@@ -204,7 +328,7 @@ export function AccountsPayable({ clientId, config }: AccountsPayableProps) {
                 )}
 
                 {/* Actions */}
-                {config.featuresConfig?.ap?.allowPdfDownload && (
+                {allowPayableDownload && (
                   <div className="pt-2">
                     <Button variant="outline" size="sm" className="w-full">
                       <Download className="h-4 w-4 mr-2" />
