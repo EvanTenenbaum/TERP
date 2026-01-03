@@ -7277,7 +7277,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-015: Group Sidebar Menu Items
 
-**Status:** ready  
+**Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 4h  
 **Module:** `client/src/components/DashboardLayout.tsx`  
@@ -10260,7 +10260,7 @@ These are captured for architectural awareness but not added as individual tasks
 ---
 
 #### UX-050: Add Sidebar Access to Spreadsheet View
-**Status:** ready  
+**Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 4h  
 **Module:** `client/src/components/DashboardLayout.tsx`, sidebar navigation
@@ -10278,7 +10278,7 @@ These are captured for architectural awareness but not added as individual tasks
 ### BUG - Bug Fixes
 
 #### BUG-047: Make KPI Cards Actionable When Clicked
-**Status:** ready  
+**Status:** complete  
 **Priority:** HIGH  
 **Estimate:** 6h  
 **Module:** `client/src/components/dashboard/`, all pages with KPI cards
