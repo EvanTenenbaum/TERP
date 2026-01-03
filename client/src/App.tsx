@@ -62,6 +62,7 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import LiveShoppingPage from "@/pages/LiveShoppingPage";
+import SpreadsheetViewPage from "@/pages/SpreadsheetViewPage";
 import UnifiedSalesPortalPage from "@/pages/UnifiedSalesPortalPage";
 import PickPackPage from "@/pages/PickPackPage";
 import PhotographyPage from "@/pages/PhotographyPage";
@@ -164,6 +165,7 @@ function Router() {
                 path="/live-shopping/:sessionId"
                 component={LiveShoppingPage}
               />
+              <Route path="/spreadsheet-view" component={SpreadsheetViewPage} />
               <Route path="/help" component={Help} />
               <Route
                 path="/clients/:clientId/vip-portal-config"

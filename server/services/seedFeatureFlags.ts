@@ -161,6 +161,14 @@ const DEFAULT_FLAGS = [
     systemEnabled: true,
     defaultEnabled: true,
   },
+  {
+    key: "spreadsheet-view",
+    name: "Spreadsheet View",
+    description: "Enable unified spreadsheet interface for inventory, intake, and pick & pack workflows",
+    module: "module-inventory",
+    systemEnabled: true,
+    defaultEnabled: false,
+  },
 
   // ========================================================================
   // CALENDAR MODULE FLAGS (CAL-003/CAL-004)
