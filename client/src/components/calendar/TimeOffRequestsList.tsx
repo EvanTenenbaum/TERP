@@ -16,7 +16,7 @@ interface TimeOffRequest {
   notes: string | null;
   responseNotes: string | null;
   createdAt: Date | string;
-  userName: string;
+  userName: string | null;
 }
 
 interface TimeOffRequestsListProps {

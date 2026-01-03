@@ -215,7 +215,7 @@ export const appointmentRequestsRouter = router({
           userId: admin.userId,
           type: "info",
           title: "New Appointment Request",
-          message: `${client.businessName || client.firstName + " " + client.lastName} has requested an appointment on ${slotDateStr} at ${slotTimeStr}`,
+          message: `${client.name} has requested an appointment on ${slotDateStr} at ${slotTimeStr}`,
           link: `/calendar?tab=requests&requestId=${newRequest.id}`,
           category: "appointment",
         });
@@ -336,7 +336,7 @@ export const appointmentRequestsRouter = router({
       const [newEvent] = await db
         .insert(calendarEvents)
         .values({
-          title: `${appointmentType.name}${client ? ` - ${client.businessName || client.firstName}` : ""}`,
+          title: `${appointmentType.name}${client ? ` - ${client?.name || 'Client'}` : ""}`,
           description: request.notes || null,
           startDate: new Date(slotDateStr),
           endDate: new Date(slotDateStr),
@@ -540,9 +540,7 @@ export const appointmentRequestsRouter = router({
           appointmentTypeName: appointmentTypes.name,
           appointmentTypeColor: appointmentTypes.color,
           appointmentTypeDuration: appointmentTypes.duration,
-          clientBusinessName: clients.businessName,
-          clientFirstName: clients.firstName,
-          clientLastName: clients.lastName,
+          clientName: clients.name,
         })
         .from(appointmentRequests)
         .leftJoin(calendars, eq(appointmentRequests.calendarId, calendars.id))
@@ -556,7 +554,7 @@ export const appointmentRequestsRouter = router({
       return {
         requests: requests.map((r) => ({
           ...r,
-          clientName: r.clientBusinessName || `${r.clientFirstName || ""} ${r.clientLastName || ""}`.trim(),
+          // clientName already set from clients.name
         })),
         total: countResult.count,
       };
@@ -593,11 +591,9 @@ export const appointmentRequestsRouter = router({
           appointmentTypeDescription: appointmentTypes.description,
           appointmentTypeColor: appointmentTypes.color,
           appointmentTypeDuration: appointmentTypes.duration,
-          clientBusinessName: clients.businessName,
-          clientFirstName: clients.firstName,
-          clientLastName: clients.lastName,
+          clientName: clients.name,
           clientEmail: clients.email,
-          clientPhone: clients.primaryPhone,
+          clientPhone: clients.phone,
         })
         .from(appointmentRequests)
         .leftJoin(calendars, eq(appointmentRequests.calendarId, calendars.id))
@@ -628,7 +624,7 @@ export const appointmentRequestsRouter = router({
 
       return {
         ...request,
-        clientName: request.clientBusinessName || `${request.clientFirstName || ""} ${request.clientLastName || ""}`.trim(),
+        // clientName already set from clients.name
       };
     }),
 

@@ -16,7 +16,7 @@ interface AppointmentRequest {
   appointmentTypeName: string | null;
   appointmentTypeColor: string | null;
   appointmentTypeDuration: number | null;
-  clientName: string;
+  clientName: string | null;
 }
 
 interface AppointmentRequestsListProps {

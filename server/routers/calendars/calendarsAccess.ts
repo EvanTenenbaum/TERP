@@ -39,7 +39,7 @@ export const calendarsAccessRouter = router({
           userId: calendarUserAccess.userId,
           accessLevel: calendarUserAccess.accessLevel,
           addedAt: calendarUserAccess.createdAt,
-          userName: users.firstName,
+          userName: users.name,
           userEmail: users.email,
         })
         .from(calendarUserAccess)

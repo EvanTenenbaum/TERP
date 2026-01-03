@@ -129,7 +129,7 @@ export const timeOffRequestsRouter = router({
             userId: admin.id,
             type: "info",
             title: "Time Off Request",
-            message: `${user?.firstName || "A user"} ${user?.lastName || ""} has requested ${input.timeOffType} time off from ${input.startDate} to ${input.endDate}`,
+            message: `${user?.name || "A user"} has requested ${input.timeOffType} time off from ${input.startDate} to ${input.endDate}`,
             link: `/calendar?tab=timeoff&requestId=${newRequest.id}`,
             category: "system",
           });
@@ -208,7 +208,7 @@ export const timeOffRequestsRouter = router({
       const [newEvent] = await db
         .insert(calendarEvents)
         .values({
-          title: `${timeOffLabels[request.timeOffType as keyof typeof timeOffLabels]} - ${requestUser?.firstName || "User"} ${requestUser?.lastName || ""}`.trim(),
+          title: `${timeOffLabels[request.timeOffType as keyof typeof timeOffLabels]} - ${requestUser?.name || "User"}`.trim(),
           description: request.notes || null,
           startDate: startDateObj,
           endDate: endDateObj,
@@ -404,8 +404,7 @@ export const timeOffRequestsRouter = router({
           createdAt: timeOffRequests.createdAt,
           respondedAt: timeOffRequests.respondedAt,
           respondedById: timeOffRequests.respondedById,
-          userFirstName: users.firstName,
-          userLastName: users.lastName,
+          userName: users.name,
           userEmail: users.email,
         })
         .from(timeOffRequests)
@@ -418,7 +417,7 @@ export const timeOffRequestsRouter = router({
       return {
         requests: requests.map((r) => ({
           ...r,
-          userName: `${r.userFirstName || ""} ${r.userLastName || ""}`.trim(),
+          // userName already set from users.name
         })),
         total: countResult.count,
       };
@@ -452,8 +451,7 @@ export const timeOffRequestsRouter = router({
           createdAt: timeOffRequests.createdAt,
           respondedAt: timeOffRequests.respondedAt,
           respondedById: timeOffRequests.respondedById,
-          userFirstName: users.firstName,
-          userLastName: users.lastName,
+          userName: users.name,
           userEmail: users.email,
         })
         .from(timeOffRequests)
@@ -480,7 +478,7 @@ export const timeOffRequestsRouter = router({
 
       return {
         ...request,
-        userName: `${request.userFirstName || ""} ${request.userLastName || ""}`.trim(),
+        // userName already set from users.name
       };
     }),
 
