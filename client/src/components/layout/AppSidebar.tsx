@@ -2,7 +2,9 @@ import { Link, useLocation } from "wouter";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { APP_TITLE } from "@/const";
-import { navigationItems } from "@/config/navigation";
+import { buildNavigationGroups } from "@/config/navigation";
+import { useFeatureFlags } from "@/hooks/useFeatureFlag";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AppSidebarProps {
   open?: boolean;
@@ -11,6 +13,11 @@ interface AppSidebarProps {
 
 export function AppSidebar({ open = false, onClose }: AppSidebarProps) {
   const [location] = useLocation();
+  const { flags, isLoading: featureFlagsLoading } = useFeatureFlags();
+  const groupedNavigation = buildNavigationGroups({
+    flags,
+    flagsLoading: featureFlagsLoading,
+  });
 
   return (
     <>
@@ -42,32 +49,53 @@ export function AppSidebar({ open = false, onClose }: AppSidebarProps) {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-4">
-          <ul className="space-y-1">
-            {navigationItems.map(item => {
-              const isActive = location === item.path;
-              const Icon = item.icon;
+        <nav className="flex-1 overflow-y-auto p-4 space-y-4">
+          {groupedNavigation.map(group => (
+            <div key={group.key} className="space-y-2">
+              <p
+                className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                data-testid="nav-group-label"
+              >
+                {group.label}
+              </p>
+              <ul className="space-y-1">
+                {group.items.map(item => {
+                  const isActive = location === item.path;
+                  const Icon = item.icon;
 
-              return (
-                <li key={item.path}>
-                  <Link href={item.path}>
-                    <a
-                      onClick={onClose}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                      )}
+                  return (
+                    <li key={item.path}>
+                      <Link href={item.path}>
+                        <a
+                          onClick={onClose}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          )}
+                          aria-current={isActive ? "page" : undefined}
+                        >
+                          <Icon className="h-5 w-5" />
+                          {item.name}
+                        </a>
+                      </Link>
+                    </li>
+                  );
+                })}
+                {featureFlagsLoading &&
+                  group.loadingFeatureItems.map(item => (
+                    <li
+                      key={`${item.path}-skeleton`}
+                      className="flex items-center gap-3 px-3 py-2 rounded-md"
                     >
-                      <Icon className="h-5 w-5" />
-                      {item.name}
-                    </a>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+                      <Skeleton className="h-5 w-5 rounded-md" />
+                      <Skeleton className="h-4 w-24" />
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          ))}
         </nav>
       </aside>
     </>

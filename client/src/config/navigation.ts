@@ -12,6 +12,7 @@
 import {
   LayoutDashboard,
   FileText,
+  FileSpreadsheet,
   ShoppingCart,
   Package,
   Users,
@@ -47,7 +48,22 @@ export interface NavigationItem {
   icon: LucideIcon;
   /** Optional: Group this item belongs to */
   group?: "core" | "sales" | "fulfillment" | "finance" | "settings";
+  /** Optional: Feature flag required to show the item */
+  featureFlag?: string;
 }
+
+export type NavigationGroupKey = NonNullable<NavigationItem["group"]>;
+
+export const navigationGroups: Array<{
+  key: NavigationGroupKey;
+  label: string;
+}> = [
+  { key: "core", label: "Core" },
+  { key: "sales", label: "Sales" },
+  { key: "fulfillment", label: "Fulfillment" },
+  { key: "finance", label: "Finance" },
+  { key: "settings", label: "Settings" },
+];
 
 /**
  * Main navigation items for the application sidebar.
@@ -68,6 +84,13 @@ export const navigationItems: NavigationItem[] = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, group: "core" },
   { name: "Tasks", path: "/todos", icon: ListTodo, group: "core" },
   { name: "Calendar", path: "/calendar", icon: Calendar, group: "core" },
+  {
+    name: "Spreadsheet",
+    path: "/spreadsheet-view",
+    icon: FileSpreadsheet,
+    group: "core",
+    featureFlag: "spreadsheet-view",
+  },
 
   // ═══════════════════════════════════════════════════════════════
   // SALES - All tools for selling (grouped together)
@@ -177,4 +200,47 @@ export function getNavigationItems(
 ): NavigationItem[] {
   if (!group) return navigationItems;
   return navigationItems.filter(item => item.group === group);
+}
+
+export type NavigationGroup = {
+  key: NavigationGroupKey;
+  label: string;
+  items: NavigationItem[];
+  loadingFeatureItems: NavigationItem[];
+};
+
+export function buildNavigationGroups(options?: {
+  flags?: Record<string, boolean>;
+  flagsLoading?: boolean;
+}): NavigationGroup[] {
+  const { flags = {}, flagsLoading = false } = options ?? {};
+
+  return navigationGroups.map(group => {
+    const itemsInGroup = navigationItems.filter(
+      item => item.group === group.key
+    );
+
+    const items = itemsInGroup.filter(item => {
+      if (!item.featureFlag) {
+        return true;
+      }
+
+      if (flagsLoading) {
+        return false;
+      }
+
+      return flags[item.featureFlag] ?? false;
+    });
+
+    const loadingFeatureItems = flagsLoading
+      ? itemsInGroup.filter(item => Boolean(item.featureFlag))
+      : [];
+
+    return {
+      key: group.key,
+      label: group.label,
+      items,
+      loadingFeatureItems,
+    };
+  });
 }
