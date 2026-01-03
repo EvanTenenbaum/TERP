@@ -76,7 +76,7 @@ interface AccountsReceivableData {
 
 interface AccountsReceivableProps {
   clientId: number;
-  config: AccountsReceivableConfig;
+  config: { featuresConfig?: { ar?: ReceivableFeatures } | null };
 }
 
 export function AccountsReceivable({

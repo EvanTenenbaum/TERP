@@ -76,7 +76,7 @@ interface AccountsPayableData {
 
 interface AccountsPayableProps {
   clientId: number;
-  config: AccountsPayableConfig;
+  config: { featuresConfig?: { ap?: PayableFeatures } | null };
 }
 
 export function AccountsPayable({
