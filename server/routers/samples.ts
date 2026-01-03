@@ -9,6 +9,23 @@ import * as samplesAnalytics from "../samplesAnalytics";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 
+// Location enum for type safety
+const sampleLocationSchema = z.enum([
+  "WAREHOUSE",
+  "WITH_CLIENT",
+  "WITH_SALES_REP",
+  "RETURNED",
+  "LOST",
+]);
+
+// Return condition enum
+const returnConditionSchema = z.enum([
+  "GOOD",
+  "DAMAGED",
+  "OPENED",
+  "EXPIRED",
+]);
+
 export const samplesRouter = router({
   // Create a new sample request
   createRequest: strictlyProtectedProcedure
@@ -215,5 +232,183 @@ export const samplesRouter = router({
         new Date(input.startDate),
         new Date(input.endDate)
       );
+    }),
+
+  // ============================================================================
+  // SAMPLE RETURN WORKFLOW (SAMPLE-006)
+  // ============================================================================
+
+  // Request a sample return
+  requestReturn: strictlyProtectedProcedure
+    .use(requirePermission("samples:return"))
+    .input(z.object({
+      requestId: z.number(),
+      requestedBy: z.number(),
+      reason: z.string().min(1, "Reason is required"),
+      condition: returnConditionSchema,
+      returnDate: z.string().optional()
+    }))
+    .mutation(async ({ input }) => {
+      return await samplesDb.requestSampleReturn(
+        input.requestId,
+        input.requestedBy,
+        input.reason,
+        input.condition,
+        input.returnDate ? new Date(input.returnDate) : undefined
+      );
+    }),
+
+  // Approve a sample return
+  approveReturn: strictlyProtectedProcedure
+    .use(requirePermission("samples:approve"))
+    .input(z.object({
+      requestId: z.number(),
+      approvedBy: z.number()
+    }))
+    .mutation(async ({ input }) => {
+      return await samplesDb.approveSampleReturn(input.requestId, input.approvedBy);
+    }),
+
+  // Complete a sample return
+  completeReturn: strictlyProtectedProcedure
+    .use(requirePermission("samples:return"))
+    .input(z.object({
+      requestId: z.number(),
+      completedBy: z.number()
+    }))
+    .mutation(async ({ input }) => {
+      return await samplesDb.completeSampleReturn(input.requestId, input.completedBy);
+    }),
+
+  // ============================================================================
+  // VENDOR RETURN WORKFLOW (SAMPLE-007)
+  // ============================================================================
+
+  // Request a vendor return
+  requestVendorReturn: strictlyProtectedProcedure
+    .use(requirePermission("samples:vendorReturn"))
+    .input(z.object({
+      requestId: z.number(),
+      requestedBy: z.number(),
+      reason: z.string().min(1, "Reason is required")
+    }))
+    .mutation(async ({ input }) => {
+      return await samplesDb.requestVendorReturn(
+        input.requestId,
+        input.requestedBy,
+        input.reason
+      );
+    }),
+
+  // Ship sample to vendor
+  shipToVendor: strictlyProtectedProcedure
+    .use(requirePermission("samples:vendorReturn"))
+    .input(z.object({
+      requestId: z.number(),
+      shippedBy: z.number(),
+      trackingNumber: z.string().min(1, "Tracking number is required")
+    }))
+    .mutation(async ({ input }) => {
+      return await samplesDb.shipToVendor(
+        input.requestId,
+        input.shippedBy,
+        input.trackingNumber
+      );
+    }),
+
+  // Confirm vendor received the sample
+  confirmVendorReturn: strictlyProtectedProcedure
+    .use(requirePermission("samples:vendorReturn"))
+    .input(z.object({
+      requestId: z.number(),
+      confirmedBy: z.number()
+    }))
+    .mutation(async ({ input }) => {
+      return await samplesDb.confirmVendorReturn(input.requestId, input.confirmedBy);
+    }),
+
+  // ============================================================================
+  // LOCATION TRACKING (SAMPLE-008)
+  // ============================================================================
+
+  // Update sample location
+  updateLocation: strictlyProtectedProcedure
+    .use(requirePermission("samples:track"))
+    .input(z.object({
+      requestId: z.number(),
+      location: sampleLocationSchema,
+      changedBy: z.number(),
+      notes: z.string().optional()
+    }))
+    .mutation(async ({ input }) => {
+      return await samplesDb.updateSampleLocation(
+        input.requestId,
+        input.location,
+        input.changedBy,
+        input.notes
+      );
+    }),
+
+  // Get location history for a sample
+  getLocationHistory: protectedProcedure
+    .use(requirePermission("samples:read"))
+    .input(z.object({
+      requestId: z.number()
+    }))
+    .query(async ({ input }) => {
+      return await samplesDb.getSampleLocationHistory(input.requestId);
+    }),
+
+  // ============================================================================
+  // EXPIRATION TRACKING (SAMPLE-009)
+  // ============================================================================
+
+  // Get samples expiring within N days
+  getExpiring: protectedProcedure
+    .use(requirePermission("samples:read"))
+    .input(z.object({
+      daysAhead: z.number().default(30)
+    }))
+    .query(async ({ input }) => {
+      return await samplesDb.getExpiringSamples(input.daysAhead);
+    }),
+
+  // Set expiration date for a sample
+  setExpirationDate: strictlyProtectedProcedure
+    .use(requirePermission("samples:track"))
+    .input(z.object({
+      requestId: z.number(),
+      expirationDate: z.string()
+    }))
+    .mutation(async ({ input }) => {
+      return await samplesDb.setSampleExpirationDate(
+        input.requestId,
+        new Date(input.expirationDate)
+      );
+    }),
+
+  // ============================================================================
+  // ADDITIONAL ENDPOINTS
+  // ============================================================================
+
+  // Get all sample requests (not just pending)
+  getAll: protectedProcedure
+    .use(requirePermission("samples:read"))
+    .input(z.object({
+      limit: z.number().optional()
+    }))
+    .query(async ({ input }) => {
+      const requests = await samplesDb.getAllSampleRequests(input.limit);
+      return createSafeUnifiedResponse(requests, requests.length, input.limit || 100, 0);
+    }),
+
+  // Get a single sample request by ID
+  getById: protectedProcedure
+    .use(requirePermission("samples:read"))
+    .input(z.object({
+      requestId: z.number()
+    }))
+    .query(async ({ input }) => {
+      return await samplesDb.getSampleRequestById(input.requestId);
     }),
 });

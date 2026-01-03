@@ -1,15 +1,18 @@
 import { getDb } from "./db";
-import { 
-  sampleRequests, 
-  sampleAllocations, 
-  batches, 
+import {
+  sampleRequests,
+  sampleAllocations,
+  sampleLocationHistory,
+  batches,
   orders,
   inventoryMovements,
   type InsertSampleRequest,
   type InsertSampleAllocation,
-  type SampleRequest
+  type SampleRequest,
+  type SampleLocationHistory,
+  type InsertSampleLocationHistory
 } from "../drizzle/schema";
-import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, or, isNull } from "drizzle-orm";
 
 /**
  * Create a new sample request
@@ -438,6 +441,480 @@ export async function setMonthlyAllocation(
     }
   } catch (error) {
     throw new Error(`Failed to set monthly allocation: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// ============================================================================
+// SAMPLE RETURN WORKFLOW (SAMPLE-006)
+// ============================================================================
+
+/**
+ * Request a sample return
+ */
+export async function requestSampleReturn(
+  requestId: number,
+  requestedBy: number,
+  reason: string,
+  condition: string,
+  returnDate?: Date
+): Promise<SampleRequest> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const [request] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    if (!request) {
+      throw new Error("Sample request not found");
+    }
+
+    if (request.sampleRequestStatus !== "FULFILLED") {
+      throw new Error("Only fulfilled samples can be returned");
+    }
+
+    await db.update(sampleRequests)
+      .set({
+        sampleRequestStatus: "RETURN_REQUESTED",
+        returnRequestedDate: new Date(),
+        returnRequestedBy: requestedBy,
+        returnReason: reason,
+        returnCondition: condition,
+        returnDate: returnDate || null,
+        updatedAt: new Date()
+      })
+      .where(eq(sampleRequests.id, requestId));
+
+    const [updated] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to request sample return: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Approve a sample return request
+ */
+export async function approveSampleReturn(
+  requestId: number,
+  approvedBy: number
+): Promise<SampleRequest> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const [request] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    if (!request) {
+      throw new Error("Sample request not found");
+    }
+
+    if (request.sampleRequestStatus !== "RETURN_REQUESTED") {
+      throw new Error("Sample is not in return requested status");
+    }
+
+    await db.update(sampleRequests)
+      .set({
+        sampleRequestStatus: "RETURN_APPROVED",
+        returnApprovedDate: new Date(),
+        returnApprovedBy: approvedBy,
+        updatedAt: new Date()
+      })
+      .where(eq(sampleRequests.id, requestId));
+
+    const [updated] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to approve sample return: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Complete a sample return
+ */
+export async function completeSampleReturn(
+  requestId: number,
+  completedBy: number
+): Promise<SampleRequest> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const [request] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    if (!request) {
+      throw new Error("Sample request not found");
+    }
+
+    if (request.sampleRequestStatus !== "RETURN_APPROVED") {
+      throw new Error("Sample return is not approved");
+    }
+
+    await db.update(sampleRequests)
+      .set({
+        sampleRequestStatus: "RETURNED",
+        returnDate: new Date(),
+        location: "RETURNED",
+        updatedAt: new Date()
+      })
+      .where(eq(sampleRequests.id, requestId));
+
+    // Log location change
+    await db.insert(sampleLocationHistory).values({
+      sampleRequestId: requestId,
+      fromLocation: request.location || "WITH_CLIENT",
+      toLocation: "RETURNED",
+      changedBy: completedBy,
+      notes: "Sample returned"
+    });
+
+    const [updated] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to complete sample return: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// ============================================================================
+// VENDOR RETURN WORKFLOW (SAMPLE-007)
+// ============================================================================
+
+/**
+ * Request a vendor return
+ */
+export async function requestVendorReturn(
+  requestId: number,
+  requestedBy: number,
+  reason: string
+): Promise<SampleRequest> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const [request] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    if (!request) {
+      throw new Error("Sample request not found");
+    }
+
+    // Can initiate vendor return from RETURNED status or FULFILLED status
+    if (request.sampleRequestStatus !== "RETURNED" && request.sampleRequestStatus !== "FULFILLED") {
+      throw new Error("Sample must be returned or fulfilled to initiate vendor return");
+    }
+
+    await db.update(sampleRequests)
+      .set({
+        sampleRequestStatus: "VENDOR_RETURN_REQUESTED",
+        returnReason: reason,
+        returnRequestedBy: requestedBy,
+        returnRequestedDate: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(sampleRequests.id, requestId));
+
+    const [updated] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to request vendor return: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Ship sample to vendor
+ */
+export async function shipToVendor(
+  requestId: number,
+  shippedBy: number,
+  trackingNumber: string
+): Promise<SampleRequest> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const [request] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    if (!request) {
+      throw new Error("Sample request not found");
+    }
+
+    if (request.sampleRequestStatus !== "VENDOR_RETURN_REQUESTED") {
+      throw new Error("Sample is not in vendor return requested status");
+    }
+
+    await db.update(sampleRequests)
+      .set({
+        sampleRequestStatus: "SHIPPED_TO_VENDOR",
+        vendorReturnTrackingNumber: trackingNumber,
+        vendorShippedDate: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(sampleRequests.id, requestId));
+
+    const [updated] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to ship to vendor: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Confirm vendor received the sample
+ */
+export async function confirmVendorReturn(
+  requestId: number,
+  confirmedBy: number
+): Promise<SampleRequest> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const [request] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    if (!request) {
+      throw new Error("Sample request not found");
+    }
+
+    if (request.sampleRequestStatus !== "SHIPPED_TO_VENDOR") {
+      throw new Error("Sample is not shipped to vendor");
+    }
+
+    await db.update(sampleRequests)
+      .set({
+        sampleRequestStatus: "VENDOR_CONFIRMED",
+        vendorConfirmedDate: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(sampleRequests.id, requestId));
+
+    const [updated] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to confirm vendor return: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// ============================================================================
+// LOCATION TRACKING (SAMPLE-008)
+// ============================================================================
+
+type SampleLocation = "WAREHOUSE" | "WITH_CLIENT" | "WITH_SALES_REP" | "RETURNED" | "LOST";
+
+/**
+ * Update sample location
+ */
+export async function updateSampleLocation(
+  requestId: number,
+  newLocation: SampleLocation,
+  changedBy: number,
+  notes?: string
+): Promise<SampleRequest> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const [request] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    if (!request) {
+      throw new Error("Sample request not found");
+    }
+
+    const oldLocation = request.location;
+
+    await db.update(sampleRequests)
+      .set({
+        location: newLocation,
+        updatedAt: new Date()
+      })
+      .where(eq(sampleRequests.id, requestId));
+
+    // Log location change
+    await db.insert(sampleLocationHistory).values({
+      sampleRequestId: requestId,
+      fromLocation: oldLocation,
+      toLocation: newLocation,
+      changedBy,
+      notes
+    });
+
+    const [updated] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to update sample location: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Get location history for a sample
+ */
+export async function getSampleLocationHistory(
+  requestId: number
+): Promise<SampleLocationHistory[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const history = await db.select()
+      .from(sampleLocationHistory)
+      .where(eq(sampleLocationHistory.sampleRequestId, requestId))
+      .orderBy(desc(sampleLocationHistory.changedAt));
+
+    return history;
+  } catch (error) {
+    throw new Error(`Failed to get location history: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// ============================================================================
+// EXPIRATION TRACKING (SAMPLE-009)
+// ============================================================================
+
+/**
+ * Get samples expiring within the next N days
+ */
+export async function getExpiringSamples(
+  daysAhead: number = 30
+): Promise<SampleRequest[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+
+    const samples = await db.select()
+      .from(sampleRequests)
+      .where(and(
+        // Has expiration date
+        sql`${sampleRequests.expirationDate} IS NOT NULL`,
+        // Not already fully returned or vendor confirmed
+        sql`${sampleRequests.sampleRequestStatus} NOT IN ('RETURNED', 'VENDOR_CONFIRMED', 'CANCELLED')`,
+        // Expiring within the specified days
+        lte(sampleRequests.expirationDate, futureDate)
+      ))
+      .orderBy(sampleRequests.expirationDate);
+
+    return samples;
+  } catch (error) {
+    throw new Error(`Failed to get expiring samples: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Set expiration date for a sample
+ */
+export async function setSampleExpirationDate(
+  requestId: number,
+  expirationDate: Date
+): Promise<SampleRequest> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    await db.update(sampleRequests)
+      .set({
+        expirationDate,
+        updatedAt: new Date()
+      })
+      .where(eq(sampleRequests.id, requestId));
+
+    const [updated] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    return updated;
+  } catch (error) {
+    throw new Error(`Failed to set expiration date: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Get all sample requests (not just pending)
+ */
+export async function getAllSampleRequests(
+  limit: number = 100
+): Promise<SampleRequest[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const requests = await db.select()
+      .from(sampleRequests)
+      .orderBy(desc(sampleRequests.requestDate))
+      .limit(limit);
+
+    return requests;
+  } catch (error) {
+    throw new Error(`Failed to get all sample requests: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Get sample request by ID
+ */
+export async function getSampleRequestById(
+  requestId: number
+): Promise<SampleRequest | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const [request] = await db.select()
+      .from(sampleRequests)
+      .where(eq(sampleRequests.id, requestId))
+      .limit(1);
+
+    return request || null;
+  } catch (error) {
+    throw new Error(`Failed to get sample request: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

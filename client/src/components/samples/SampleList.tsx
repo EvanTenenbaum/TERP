@@ -11,10 +11,41 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ArrowUpDown, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ArrowUpDown,
+  Trash2,
+  MoreHorizontal,
+  RotateCcw,
+  MapPin,
+  Truck,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
+import { format, differenceInDays, isPast } from "date-fns";
 
-export type SampleStatus = "PENDING" | "FULFILLED" | "CANCELLED" | "RETURNED";
+export type SampleStatus =
+  | "PENDING"
+  | "FULFILLED"
+  | "CANCELLED"
+  | "RETURNED"
+  | "RETURN_REQUESTED"
+  | "RETURN_APPROVED"
+  | "VENDOR_RETURN_REQUESTED"
+  | "SHIPPED_TO_VENDOR"
+  | "VENDOR_CONFIRMED";
+
+export type SampleLocation =
+  | "WAREHOUSE"
+  | "WITH_CLIENT"
+  | "WITH_SALES_REP"
+  | "RETURNED"
+  | "LOST";
 
 export interface SampleListItem {
   id: number;
@@ -24,6 +55,9 @@ export interface SampleListItem {
   requestedDate: string;
   dueDate?: string | null;
   notes?: string | null;
+  location?: SampleLocation | null;
+  expirationDate?: string | null;
+  vendorReturnTrackingNumber?: string | null;
 }
 
 export interface SampleListProps {
@@ -32,6 +66,13 @@ export interface SampleListProps {
   searchQuery: string;
   isLoading?: boolean;
   onDelete?: (sampleId: number) => void;
+  onRequestReturn?: (sampleId: number) => void;
+  onApproveReturn?: (sampleId: number) => void;
+  onCompleteReturn?: (sampleId: number) => void;
+  onRequestVendorReturn?: (sampleId: number) => void;
+  onShipToVendor?: (sampleId: number) => void;
+  onConfirmVendorReturn?: (sampleId: number) => void;
+  onUpdateLocation?: (sampleId: number) => void;
   pageSize?: number;
 }
 
@@ -50,15 +91,33 @@ const statusLabels: Record<SampleStatus, string> = {
   FULFILLED: "Approved",
   CANCELLED: "Cancelled",
   RETURNED: "Returned",
+  RETURN_REQUESTED: "Return Requested",
+  RETURN_APPROVED: "Return Approved",
+  VENDOR_RETURN_REQUESTED: "Vendor Return Requested",
+  SHIPPED_TO_VENDOR: "Shipped to Vendor",
+  VENDOR_CONFIRMED: "Vendor Confirmed",
 };
 
-const statusVariant: Record<SampleStatus, "default" | "secondary" | "outline"> =
+const statusVariant: Record<SampleStatus, "default" | "secondary" | "outline" | "destructive"> =
   {
     PENDING: "secondary",
     FULFILLED: "default",
     CANCELLED: "outline",
     RETURNED: "outline",
+    RETURN_REQUESTED: "secondary",
+    RETURN_APPROVED: "secondary",
+    VENDOR_RETURN_REQUESTED: "secondary",
+    SHIPPED_TO_VENDOR: "default",
+    VENDOR_CONFIRMED: "default",
   };
+
+const locationLabels: Record<SampleLocation, string> = {
+  WAREHOUSE: "Warehouse",
+  WITH_CLIENT: "With Client",
+  WITH_SALES_REP: "With Sales Rep",
+  RETURNED: "Returned",
+  LOST: "Lost",
+};
 
 function formatDate(dateValue: string | null | undefined): string {
   if (!dateValue) return "Not set";
@@ -67,12 +126,41 @@ function formatDate(dateValue: string | null | undefined): string {
   return format(parsed, "MMM dd, yyyy");
 }
 
+function getExpirationIndicator(expirationDate: string | null | undefined): {
+  color: string;
+  label: string;
+} | null {
+  if (!expirationDate) return null;
+  const parsed = new Date(expirationDate);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  const daysUntilExpiry = differenceInDays(parsed, new Date());
+
+  if (isPast(parsed)) {
+    return { color: "text-red-600", label: "Expired" };
+  }
+  if (daysUntilExpiry <= 7) {
+    return { color: "text-red-500", label: `${daysUntilExpiry}d` };
+  }
+  if (daysUntilExpiry <= 30) {
+    return { color: "text-yellow-500", label: `${daysUntilExpiry}d` };
+  }
+  return null;
+}
+
 export const SampleList = React.memo(function SampleList({
   samples,
   statusFilter,
   searchQuery,
   isLoading = false,
   onDelete,
+  onRequestReturn,
+  onApproveReturn,
+  onCompleteReturn,
+  onRequestVendorReturn,
+  onShipToVendor,
+  onConfirmVendorReturn,
+  onUpdateLocation,
   pageSize = 10,
 }: SampleListProps) {
   const [sortKey, setSortKey] = useState<SortKey>("requestedDate");
@@ -260,43 +348,127 @@ export const SampleList = React.memo(function SampleList({
                   <ArrowUpDown className="h-4 w-4" />
                 </button>
               </TableHead>
+              <TableHead>Location</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedSamples.map(sample => (
-              <TableRow key={sample.id}>
-                <TableCell>{sample.id}</TableCell>
-                <TableCell className="max-w-[240px]">
-                  <div className="font-medium text-foreground">
-                    {sample.productSummary}
-                  </div>
-                  {sample.notes && (
-                    <div className="text-xs text-muted-foreground">
-                      {sample.notes}
+            {paginatedSamples.map(sample => {
+              const expirationIndicator = getExpirationIndicator(sample.expirationDate);
+              return (
+                <TableRow key={sample.id}>
+                  <TableCell>{sample.id}</TableCell>
+                  <TableCell className="max-w-[240px]">
+                    <div className="font-medium text-foreground flex items-center gap-2">
+                      {sample.productSummary}
+                      {expirationIndicator && (
+                        <span className={`flex items-center gap-1 text-xs ${expirationIndicator.color}`}>
+                          <AlertTriangle className="h-3 w-3" />
+                          {expirationIndicator.label}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </TableCell>
-                <TableCell>{sample.clientName}</TableCell>
-                <TableCell>
-                  <Badge variant={statusVariant[sample.status]}>
-                    {statusLabels[sample.status]}
-                  </Badge>
-                </TableCell>
-                <TableCell>{formatDate(sample.requestedDate)}</TableCell>
-                <TableCell>{formatDate(sample.dueDate ?? null)}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Delete sample ${sample.id}`}
-                    onClick={() => setPendingDeleteId(sample.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                    {sample.notes && (
+                      <div className="text-xs text-muted-foreground">
+                        {sample.notes}
+                      </div>
+                    )}
+                    {sample.vendorReturnTrackingNumber && (
+                      <div className="text-xs text-blue-600">
+                        Tracking: {sample.vendorReturnTrackingNumber}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>{sample.clientName}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[sample.status]}>
+                      {statusLabels[sample.status]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{formatDate(sample.requestedDate)}</TableCell>
+                  <TableCell>{formatDate(sample.dueDate ?? null)}</TableCell>
+                  <TableCell>
+                    {sample.location && (
+                      <span className="text-sm flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {locationLabels[sample.location]}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Actions for sample {sample.id}</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {/* Request Return - only for FULFILLED samples */}
+                        {sample.status === "FULFILLED" && onRequestReturn && (
+                          <DropdownMenuItem onClick={() => onRequestReturn(sample.id)}>
+                            <RotateCcw className="h-4 w-4 mr-2" />
+                            Request Return
+                          </DropdownMenuItem>
+                        )}
+                        {/* Approve Return - only for RETURN_REQUESTED samples */}
+                        {sample.status === "RETURN_REQUESTED" && onApproveReturn && (
+                          <DropdownMenuItem onClick={() => onApproveReturn(sample.id)}>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Approve Return
+                          </DropdownMenuItem>
+                        )}
+                        {/* Complete Return - only for RETURN_APPROVED samples */}
+                        {sample.status === "RETURN_APPROVED" && onCompleteReturn && (
+                          <DropdownMenuItem onClick={() => onCompleteReturn(sample.id)}>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Complete Return
+                          </DropdownMenuItem>
+                        )}
+                        {/* Request Vendor Return - for RETURNED or FULFILLED samples */}
+                        {(sample.status === "RETURNED" || sample.status === "FULFILLED") && onRequestVendorReturn && (
+                          <DropdownMenuItem onClick={() => onRequestVendorReturn(sample.id)}>
+                            <Truck className="h-4 w-4 mr-2" />
+                            Request Vendor Return
+                          </DropdownMenuItem>
+                        )}
+                        {/* Ship to Vendor - only for VENDOR_RETURN_REQUESTED samples */}
+                        {sample.status === "VENDOR_RETURN_REQUESTED" && onShipToVendor && (
+                          <DropdownMenuItem onClick={() => onShipToVendor(sample.id)}>
+                            <Truck className="h-4 w-4 mr-2" />
+                            Ship to Vendor
+                          </DropdownMenuItem>
+                        )}
+                        {/* Confirm Vendor Return - only for SHIPPED_TO_VENDOR samples */}
+                        {sample.status === "SHIPPED_TO_VENDOR" && onConfirmVendorReturn && (
+                          <DropdownMenuItem onClick={() => onConfirmVendorReturn(sample.id)}>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Confirm Vendor Received
+                          </DropdownMenuItem>
+                        )}
+                        {/* Update Location - available for most active samples */}
+                        {!["CANCELLED", "VENDOR_CONFIRMED"].includes(sample.status) && onUpdateLocation && (
+                          <DropdownMenuItem onClick={() => onUpdateLocation(sample.id)}>
+                            <MapPin className="h-4 w-4 mr-2" />
+                            Update Location
+                          </DropdownMenuItem>
+                        )}
+                        {/* Delete - always available */}
+                        {onDelete && (
+                          <DropdownMenuItem
+                            onClick={() => setPendingDeleteId(sample.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

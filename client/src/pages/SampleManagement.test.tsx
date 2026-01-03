@@ -56,9 +56,23 @@ vi.mock("@/hooks/useAuth", () => ({
   }),
 }));
 
+// Mock mutation helper
+const mockMutation = () => ({
+  mutateAsync: vi.fn(),
+  mutate: vi.fn(),
+  isPending: false,
+  isLoading: false,
+});
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     samples: {
+      getAll: {
+        useQuery: () => ({
+          data: { items: sampleItems, pagination: { total: 1 } },
+          isLoading: false,
+        }),
+      },
       getPending: {
         useQuery: () => ({
           data: { items: sampleItems, pagination: { total: 1 } },
@@ -66,16 +80,47 @@ vi.mock("@/lib/trpc", () => ({
         }),
       },
       createRequest: {
-        useMutation: () => ({
-          mutateAsync: vi.fn(),
-          isPending: false,
-        }),
+        useMutation: () => mockMutation(),
       },
       cancelRequest: {
-        useMutation: () => ({
-          mutateAsync: vi.fn(),
-          isPending: false,
-        }),
+        useMutation: () => mockMutation(),
+      },
+      fulfillRequest: {
+        useMutation: () => mockMutation(),
+      },
+      // SAMPLE-006: Sample Return Workflow
+      requestReturn: {
+        useMutation: () => mockMutation(),
+      },
+      approveReturn: {
+        useMutation: () => mockMutation(),
+      },
+      completeReturn: {
+        useMutation: () => mockMutation(),
+      },
+      // SAMPLE-007: Vendor Return Workflow
+      requestVendorReturn: {
+        useMutation: () => mockMutation(),
+      },
+      shipToVendor: {
+        useMutation: () => mockMutation(),
+      },
+      confirmVendorReturn: {
+        useMutation: () => mockMutation(),
+      },
+      // SAMPLE-008: Location Tracking
+      updateLocation: {
+        useMutation: () => mockMutation(),
+      },
+      getLocationHistory: {
+        useQuery: () => ({ data: [], isLoading: false }),
+      },
+      // SAMPLE-009: Expiration Tracking
+      getExpiring: {
+        useQuery: () => ({ data: [], isLoading: false }),
+      },
+      setExpirationDate: {
+        useMutation: () => mockMutation(),
       },
     },
     clients: {
@@ -89,7 +134,10 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     useUtils: () => ({
-      samples: { getPending: { invalidate: vi.fn() } },
+      samples: {
+        getAll: { invalidate: vi.fn() },
+        getPending: { invalidate: vi.fn() },
+      },
     }),
   },
 }));

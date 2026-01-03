@@ -8965,10 +8965,10 @@ The application is ready for Tier 1 customer assessment with the following notes
 
 | Task ID    | Description                      | Priority | Estimate | Status  |
 | ---------- | -------------------------------- | -------- | -------- | ------- |
-| SAMPLE-006 | Implement sample return workflow | P0       | 16h      | 🟡 TODO |
-| SAMPLE-007 | Implement vendor return workflow | P1       | 12h      | 🟡 TODO |
-| SAMPLE-008 | Add location tracking            | P2       | 8h       | 🟡 TODO |
-| SAMPLE-009 | Add expiration tracking          | P2       | 8h       | 🟡 TODO |
+| SAMPLE-006 | Implement sample return workflow | P0       | 16h      | ✅ DONE |
+| SAMPLE-007 | Implement vendor return workflow | P1       | 12h      | ✅ DONE |
+| SAMPLE-008 | Add location tracking            | P2       | 8h       | ✅ DONE |
+| SAMPLE-009 | Add expiration tracking          | P2       | 8h       | ✅ DONE |
 
 ### Implementation Dependencies
 

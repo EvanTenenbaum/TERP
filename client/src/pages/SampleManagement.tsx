@@ -10,7 +10,21 @@ import {
   SampleList,
   type SampleListItem,
   type SampleStatus,
+  type SampleLocation,
 } from "@/components/samples/SampleList";
+import {
+  SampleReturnDialog,
+  type SampleReturnFormValues,
+} from "@/components/samples/SampleReturnDialog";
+import {
+  VendorShipDialog,
+  type VendorShipFormValues,
+} from "@/components/samples/VendorShipDialog";
+import {
+  LocationUpdateDialog,
+  type LocationUpdateFormValues,
+} from "@/components/samples/LocationUpdateDialog";
+import { ExpiringSamplesWidget } from "@/components/samples/ExpiringSamplesWidget";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -39,10 +53,37 @@ function normalizeProducts(
 function normalizeStatus(
   status: string | SampleStatus | null | undefined
 ): SampleStatus {
-  if (status === "FULFILLED") return "FULFILLED";
-  if (status === "CANCELLED") return "CANCELLED";
-  if (status === "RETURNED") return "RETURNED";
+  const validStatuses: SampleStatus[] = [
+    "PENDING",
+    "FULFILLED",
+    "CANCELLED",
+    "RETURNED",
+    "RETURN_REQUESTED",
+    "RETURN_APPROVED",
+    "VENDOR_RETURN_REQUESTED",
+    "SHIPPED_TO_VENDOR",
+    "VENDOR_CONFIRMED",
+  ];
+  if (status && validStatuses.includes(status as SampleStatus)) {
+    return status as SampleStatus;
+  }
   return "PENDING";
+}
+
+function normalizeLocation(
+  location: string | SampleLocation | null | undefined
+): SampleLocation | null {
+  const validLocations: SampleLocation[] = [
+    "WAREHOUSE",
+    "WITH_CLIENT",
+    "WITH_SALES_REP",
+    "RETURNED",
+    "LOST",
+  ];
+  if (location && validLocations.includes(location as SampleLocation)) {
+    return location as SampleLocation;
+  }
+  return null;
 }
 
 function extractDueDate(notes?: string | null): string | null {
@@ -57,13 +98,22 @@ export default function SampleManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [productSearch, setProductSearch] = useState("");
 
+  // Return workflow dialog states
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [returnDialogType, setReturnDialogType] = useState<"sample" | "vendor">("sample");
+  const [selectedSampleId, setSelectedSampleId] = useState<number | null>(null);
+  const [vendorShipDialogOpen, setVendorShipDialogOpen] = useState(false);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [selectedSampleLocation, setSelectedSampleLocation] = useState<SampleLocation | null>(null);
+
   const debouncedProductSearch = useDebounce(productSearch, 300);
 
   const utils = trpc.useUtils();
   const { user } = useAuth();
 
+  // Fetch all samples instead of just pending
   const { data: samplesData, isLoading: samplesLoading } =
-    trpc.samples.getPending.useQuery();
+    trpc.samples.getAll.useQuery({ limit: 200 });
 
   const { data: clientsData } = trpc.clients.list.useQuery(
     { limit: 200 },
@@ -157,31 +207,45 @@ export default function SampleManagement() {
             : format(sample.requestDate, "yyyy-MM-dd"),
         dueDate: extractDueDate(sample.notes),
         notes: sample.notes ?? null,
+        location: normalizeLocation(sample.location),
+        expirationDate: sample.expirationDate
+          ? typeof sample.expirationDate === "string"
+            ? sample.expirationDate
+            : format(sample.expirationDate, "yyyy-MM-dd")
+          : null,
+        vendorReturnTrackingNumber: sample.vendorReturnTrackingNumber ?? null,
       };
     });
   }, [clientNameMap, samplesData]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<TabFilter, number> = {
+    const counts: Record<string, number> = {
       ALL: samples.length,
       PENDING: 0,
       FULFILLED: 0,
       CANCELLED: 0,
       RETURNED: 0,
+      RETURN_REQUESTED: 0,
+      RETURN_APPROVED: 0,
+      VENDOR_RETURN_REQUESTED: 0,
+      SHIPPED_TO_VENDOR: 0,
+      VENDOR_CONFIRMED: 0,
     };
 
     samples.forEach(sample => {
-      counts[normalizeStatus(sample.status)] += 1;
+      if (counts[sample.status] !== undefined) {
+        counts[sample.status] += 1;
+      }
     });
 
     return counts;
   }, [samples]);
 
+  // Mutations
   const createSampleMutation = trpc.samples.createRequest.useMutation({
     onSuccess: async () => {
-      await utils.samples.getPending.invalidate();
+      await utils.samples.getAll.invalidate();
       toast.success("Sample request created.");
-      // TODO(NOTIF-001): trigger notification when notification service is available.
     },
     onError: error => {
       toast.error(error.message);
@@ -190,15 +254,85 @@ export default function SampleManagement() {
 
   const deleteSampleMutation = trpc.samples.cancelRequest.useMutation({
     onSuccess: async () => {
-      await utils.samples.getPending.invalidate();
+      await utils.samples.getAll.invalidate();
       toast.success("Sample request deleted.");
-      // TODO(NOTIF-001): trigger notification when notification service is available.
     },
     onError: error => {
       toast.error(error.message);
     },
   });
 
+  const requestReturnMutation = trpc.samples.requestReturn.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Return request submitted.");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  const approveReturnMutation = trpc.samples.approveReturn.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Return approved.");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  const completeReturnMutation = trpc.samples.completeReturn.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Return completed.");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  const requestVendorReturnMutation = trpc.samples.requestVendorReturn.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Vendor return requested.");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  const shipToVendorMutation = trpc.samples.shipToVendor.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Marked as shipped to vendor.");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  const confirmVendorReturnMutation = trpc.samples.confirmVendorReturn.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Vendor return confirmed.");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  const updateLocationMutation = trpc.samples.updateLocation.useMutation({
+    onSuccess: async () => {
+      await utils.samples.getAll.invalidate();
+      toast.success("Location updated.");
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  // Handlers
   const handleSubmit = useCallback(
     async (values: SampleFormValues) => {
       if (!user?.id) {
@@ -239,6 +373,140 @@ export default function SampleManagement() {
     [deleteSampleMutation, user?.id]
   );
 
+  const handleRequestReturn = useCallback((sampleId: number) => {
+    setSelectedSampleId(sampleId);
+    setReturnDialogType("sample");
+    setReturnDialogOpen(true);
+  }, []);
+
+  const handleApproveReturn = useCallback(
+    async (sampleId: number) => {
+      if (!user?.id) {
+        toast.error("You need to be logged in.");
+        return;
+      }
+      await approveReturnMutation.mutateAsync({
+        requestId: sampleId,
+        approvedBy: user.id,
+      });
+    },
+    [approveReturnMutation, user?.id]
+  );
+
+  const handleCompleteReturn = useCallback(
+    async (sampleId: number) => {
+      if (!user?.id) {
+        toast.error("You need to be logged in.");
+        return;
+      }
+      await completeReturnMutation.mutateAsync({
+        requestId: sampleId,
+        completedBy: user.id,
+      });
+    },
+    [completeReturnMutation, user?.id]
+  );
+
+  const handleRequestVendorReturn = useCallback((sampleId: number) => {
+    setSelectedSampleId(sampleId);
+    setReturnDialogType("vendor");
+    setReturnDialogOpen(true);
+  }, []);
+
+  const handleShipToVendor = useCallback((sampleId: number) => {
+    setSelectedSampleId(sampleId);
+    setVendorShipDialogOpen(true);
+  }, []);
+
+  const handleConfirmVendorReturn = useCallback(
+    async (sampleId: number) => {
+      if (!user?.id) {
+        toast.error("You need to be logged in.");
+        return;
+      }
+      await confirmVendorReturnMutation.mutateAsync({
+        requestId: sampleId,
+        confirmedBy: user.id,
+      });
+    },
+    [confirmVendorReturnMutation, user?.id]
+  );
+
+  const handleUpdateLocation = useCallback(
+    (sampleId: number) => {
+      const sample = samples.find(s => s.id === sampleId);
+      setSelectedSampleId(sampleId);
+      setSelectedSampleLocation(sample?.location ?? null);
+      setLocationDialogOpen(true);
+    },
+    [samples]
+  );
+
+  const handleReturnSubmit = useCallback(
+    async (values: SampleReturnFormValues) => {
+      if (!user?.id || !selectedSampleId) {
+        toast.error("You need to be logged in.");
+        return;
+      }
+
+      if (returnDialogType === "sample") {
+        await requestReturnMutation.mutateAsync({
+          requestId: selectedSampleId,
+          requestedBy: user.id,
+          reason: values.reason,
+          condition: values.condition,
+          returnDate: values.returnDate,
+        });
+      } else {
+        await requestVendorReturnMutation.mutateAsync({
+          requestId: selectedSampleId,
+          requestedBy: user.id,
+          reason: values.reason,
+        });
+      }
+    },
+    [
+      user?.id,
+      selectedSampleId,
+      returnDialogType,
+      requestReturnMutation,
+      requestVendorReturnMutation,
+    ]
+  );
+
+  const handleVendorShipSubmit = useCallback(
+    async (values: VendorShipFormValues) => {
+      if (!user?.id || !selectedSampleId) {
+        toast.error("You need to be logged in.");
+        return;
+      }
+
+      await shipToVendorMutation.mutateAsync({
+        requestId: selectedSampleId,
+        shippedBy: user.id,
+        trackingNumber: values.trackingNumber,
+      });
+    },
+    [user?.id, selectedSampleId, shipToVendorMutation]
+  );
+
+  const handleLocationSubmit = useCallback(
+    async (values: LocationUpdateFormValues) => {
+      if (!user?.id || !selectedSampleId) {
+        toast.error("You need to be logged in.");
+        return;
+      }
+
+      await updateLocationMutation.mutateAsync({
+        requestId: selectedSampleId,
+        location: values.location,
+        changedBy: user.id,
+        notes: values.notes,
+      });
+    },
+    [user?.id, selectedSampleId, updateLocationMutation]
+  );
+
   const combinedProductOptions =
     productOptions.length > 0 ? productOptions : fallbackProductOptions;
 
@@ -261,21 +529,33 @@ export default function SampleManagement() {
         <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
       </div>
 
-      <Card className="p-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search samples..."
-              value={searchQuery}
-              onChange={event => setSearchQuery(event.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="secondary">All {statusCounts.ALL}</Badge>
-            <Badge variant="secondary">Pending {statusCounts.PENDING}</Badge>
-          </div>
+      {/* Expiring Samples Widget */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="p-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Search samples..."
+                  value={searchQuery}
+                  onChange={event => setSearchQuery(event.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                <Badge variant="secondary">All {statusCounts.ALL}</Badge>
+                <Badge variant="secondary">Pending {statusCounts.PENDING}</Badge>
+                <Badge variant="secondary">Approved {statusCounts.FULFILLED}</Badge>
+                {statusCounts.RETURN_REQUESTED > 0 && (
+                  <Badge variant="outline">Returns {statusCounts.RETURN_REQUESTED}</Badge>
+                )}
+              </div>
+            </div>
+          </Card>
         </div>
-      </Card>
+        <div>
+          <ExpiringSamplesWidget daysAhead={30} limit={5} />
+        </div>
+      </div>
 
       <div
         className="flex flex-wrap gap-2"
@@ -286,7 +566,9 @@ export default function SampleManagement() {
           { value: "ALL" as TabFilter, label: "All Samples" },
           { value: "PENDING" as TabFilter, label: "Pending" },
           { value: "FULFILLED" as TabFilter, label: "Approved" },
+          { value: "RETURN_REQUESTED" as TabFilter, label: "Return Requested" },
           { value: "RETURNED" as TabFilter, label: "Returned" },
+          { value: "VENDOR_RETURN_REQUESTED" as TabFilter, label: "Vendor Returns" },
         ].map(tab => (
           <Button
             key={tab.value}
@@ -297,6 +579,11 @@ export default function SampleManagement() {
             onClick={() => setStatusFilter(tab.value)}
           >
             {tab.label}
+            {statusCounts[tab.value] > 0 && tab.value !== "ALL" && (
+              <Badge variant="secondary" className="ml-2">
+                {statusCounts[tab.value]}
+              </Badge>
+            )}
           </Button>
         ))}
       </div>
@@ -307,6 +594,13 @@ export default function SampleManagement() {
         searchQuery={searchQuery}
         isLoading={samplesLoading}
         onDelete={handleDelete}
+        onRequestReturn={handleRequestReturn}
+        onApproveReturn={handleApproveReturn}
+        onCompleteReturn={handleCompleteReturn}
+        onRequestVendorReturn={handleRequestVendorReturn}
+        onShipToVendor={handleShipToVendor}
+        onConfirmVendorReturn={handleConfirmVendorReturn}
+        onUpdateLocation={handleUpdateLocation}
         pageSize={10}
       />
 
@@ -319,6 +613,34 @@ export default function SampleManagement() {
         onProductSearch={setProductSearch}
         isSubmitting={createSampleMutation.isPending}
         isProductSearchLoading={productSearchLoading}
+      />
+
+      <SampleReturnDialog
+        open={returnDialogOpen}
+        onOpenChange={setReturnDialogOpen}
+        onSubmit={handleReturnSubmit}
+        type={returnDialogType}
+        sampleId={selectedSampleId}
+        isSubmitting={
+          requestReturnMutation.isPending || requestVendorReturnMutation.isPending
+        }
+      />
+
+      <VendorShipDialog
+        open={vendorShipDialogOpen}
+        onOpenChange={setVendorShipDialogOpen}
+        onSubmit={handleVendorShipSubmit}
+        sampleId={selectedSampleId}
+        isSubmitting={shipToVendorMutation.isPending}
+      />
+
+      <LocationUpdateDialog
+        open={locationDialogOpen}
+        onOpenChange={setLocationDialogOpen}
+        onSubmit={handleLocationSubmit}
+        sampleId={selectedSampleId}
+        currentLocation={selectedSampleLocation}
+        isSubmitting={updateLocationMutation.isPending}
       />
     </div>
   );
