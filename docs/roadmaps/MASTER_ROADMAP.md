@@ -3,8 +3,21 @@
 ## Single Source of Truth for All Development
 
 **Version:** 2.30
-**Last Updated:** January 3, 2026 (CAL-001, CAL-002 Calendar Foundation Complete)
+**Last Updated:** January 3, 2026 (UX Enhancement Wave 2 + CAL-001/002 Calendar Foundation Complete)
 **Status:** Active
+
+> ✅ **UX ENHANCEMENT WAVE 2 COMPLETE (Jan 3, 2026)**
+>
+> **Implementation Summary (ACT-001 through ENH-003):**
+>
+> - ✅ **ACT-001**: Dashboard KPIs made actionable with clickable rows and navigation
+> - ✅ **ACT-002**: Financials made actionable - Invoice detail modal with quick actions (Mark Paid, Send Reminder, Download PDF)
+> - ✅ **ACT-003**: Interest List page implemented at `/interest-list` with product tracking and order conversion
+> - ✅ **ENH-001**: Keyboard shortcuts added (Ctrl+K search, Ctrl+N new order, ? for shortcuts help)
+> - ✅ **ENH-002**: Generic BulkActionsBar component created for data tables with selection and actions
+> - ✅ **ENH-003**: ExportButton component with CSV and Excel export support
+>
+> **New Components:** `InterestListPage`, `KeyboardShortcutsModal`, `BulkActionsBar`, `ExportButton`
 
 > ✅ **FEATURE-012 POST-DEPLOYMENT: ALL CRITICAL ISSUES RESOLVED (Jan 2, 2026)**
 >

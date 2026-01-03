@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import {
   CommandDialog,
@@ -15,11 +14,12 @@ import {
   Package,
   Users,
   Calendar,
-  FileText,
   Settings,
   ListTodo,
   HelpCircle,
   Plus,
+  Heart,
+  DollarSign,
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -95,6 +95,24 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           },
         },
         {
+          id: "interest-list",
+          label: "Interest List",
+          icon: Heart,
+          action: () => {
+            setLocation("/interest-list");
+            onOpenChange(false);
+          },
+        },
+        {
+          id: "invoices",
+          label: "Invoices",
+          icon: DollarSign,
+          action: () => {
+            setLocation("/accounting/invoices");
+            onOpenChange(false);
+          },
+        },
+        {
           id: "settings",
           label: "Settings",
           icon: Settings,
@@ -138,9 +156,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        {commands.map((group) => (
+        {commands.map(group => (
           <CommandGroup key={group.group} heading={group.group}>
-            {group.items.map((item) => {
+            {group.items.map(item => {
               const Icon = item.icon;
               return (
                 <CommandItem
@@ -151,9 +169,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   <Icon className="mr-2 h-4 w-4" />
                   <span>{item.label}</span>
                   {item.shortcut && (
-                    <CommandShortcut>
-                      {item.shortcut}
-                    </CommandShortcut>
+                    <CommandShortcut>{item.shortcut}</CommandShortcut>
                   )}
                 </CommandItem>
               );
@@ -164,4 +180,3 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     </CommandDialog>
   );
 }
-

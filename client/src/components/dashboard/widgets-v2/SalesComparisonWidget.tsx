@@ -1,4 +1,10 @@
+/**
+ * Sales Comparison Widget
+ * ACT-001: Made actionable with clickable rows navigating to analytics
+ */
+
 import { memo } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -9,9 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
+  const [, setLocation] = useLocation();
   const { data, isLoading } = trpc.dashboard.getSalesComparison.useQuery(
     undefined,
     { refetchInterval: 60000 }
@@ -30,10 +39,18 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold">
           Sales - Time Period Comparison
         </CardTitle>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation("/analytics")}
+          className="text-xs"
+        >
+          View Analytics <ArrowRight className="h-3 w-3 ml-1" />
+        </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -54,7 +71,10 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
             </TableHeader>
             <TableBody>
               {/* Weekly */}
-              <TableRow>
+              <TableRow
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setLocation("/analytics")}
+              >
                 <TableCell className="font-medium">Weekly</TableCell>
                 <TableCell className="text-right font-mono">
                   {formatCurrency(data.weekly.last7Days)}
@@ -81,7 +101,10 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
               </TableRow>
 
               {/* Monthly */}
-              <TableRow>
+              <TableRow
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setLocation("/analytics")}
+              >
                 <TableCell className="font-medium">Monthly</TableCell>
                 <TableCell className="text-right font-mono">
                   {formatCurrency(data.monthly.last30Days)}
@@ -108,7 +131,10 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
               </TableRow>
 
               {/* 6 Month */}
-              <TableRow>
+              <TableRow
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setLocation("/analytics")}
+              >
                 <TableCell className="font-medium">6 Month</TableCell>
                 <TableCell className="text-right font-mono">
                   {formatCurrency(data.sixMonth.last6Months)}
@@ -137,7 +163,10 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
               </TableRow>
 
               {/* Yearly */}
-              <TableRow>
+              <TableRow
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setLocation("/analytics")}
+              >
                 <TableCell className="font-medium">Yearly</TableCell>
                 <TableCell className="text-right font-mono">
                   {formatCurrency(data.yearly.last365)}

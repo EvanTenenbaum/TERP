@@ -33,6 +33,7 @@ import CogsSettingsPage from "@/pages/CogsSettingsPage";
 import FeatureFlagsPage from "@/pages/settings/FeatureFlagsPage";
 import AdminSetupPage from "@/pages/AdminSetupPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
+import InterestListPage from "@/pages/InterestListPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
 // DEPRECATED: VendorsPage and VendorProfilePage are replaced by redirects
 // import VendorsPage from "@/pages/VendorsPage";
@@ -67,7 +68,9 @@ import PhotographyPage from "@/pages/PhotographyPage";
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
+import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
 
 function Router() {
@@ -144,6 +147,7 @@ function Router() {
               <Route path="/settings" component={Settings} />
               <Route path="/credit-settings" component={CreditSettingsPage} />
               <Route path="/needs" component={NeedsManagementPage} />
+              <Route path="/interest-list" component={InterestListPage} />
               <Route path="/vendor-supply" component={VendorSupplyPage} />
               {/* DEPRECATED: /vendors routes redirect to /clients with supplier filter */}
               <Route path="/vendors/:id" component={VendorRedirect} />
@@ -197,10 +201,12 @@ function Router() {
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
+  const [, setLocation] = useLocation();
   const [showQuickAddTask, setShowQuickAddTask] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
-  // Global keyboard shortcuts
+  // Global keyboard shortcuts (ENH-001)
   useKeyboardShortcuts([
     {
       key: "k",
@@ -209,11 +215,22 @@ function App() {
       description: "Open command palette",
     },
     {
+      key: "n",
+      ctrl: true,
+      callback: () => setLocation("/orders/create"),
+      description: "Create new order",
+    },
+    {
       key: "t",
       ctrl: true,
       shift: true,
       callback: () => setShowQuickAddTask(true),
       description: "Quick add task",
+    },
+    {
+      key: "?",
+      callback: () => setShowKeyboardShortcuts(true),
+      description: "Show keyboard shortcuts",
     },
   ]);
 
@@ -231,6 +248,10 @@ function App() {
           <QuickAddTaskModal
             isOpen={showQuickAddTask}
             onClose={() => setShowQuickAddTask(false)}
+          />
+          <KeyboardShortcutsModal
+            open={showKeyboardShortcuts}
+            onOpenChange={setShowKeyboardShortcuts}
           />
         </TooltipProvider>
       </ThemeProvider>
