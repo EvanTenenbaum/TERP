@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.28
+**Version:** 2.29
 **Last Updated:** January 3, 2026 (QA Technical Debt Added)
 **Status:** Active
 
@@ -9139,7 +9139,7 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 
 ## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
 
-**Version:** 2.28  
+**Version:** 2.29  
 **Added:** January 3, 2026  
 **Status:** 🟡 READY FOR EXECUTION  
 **Total Estimated Effort:** 92 hours
@@ -9425,7 +9425,7 @@ This section contains new work items identified during Tier 1 customer readiness
 
 ## 🎨 UI/UX Audit Findings - January 2026
 
-**Version:** 2.28  
+**Version:** 2.29  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA Specialist Audit  
 **Status:** 🟡 READY FOR EXECUTION  
@@ -9511,23 +9511,6 @@ These are functional bugs that break core workflows or block users.
 
 These are major usability issues causing significant friction.
 
-#### UX-024: Onboarding & First-Time User Experience
-- **Priority:** P1 (HIGH)
-- **Estimate:** 12 hours
-- **Status:** 🟡 READY
-- **Module:** `client/src/components/Onboarding.tsx` (new)
-- **Category:** A. First Impressions
-
-**Problem:** Dashboard opens immediately into complex data hub without onboarding. No welcome message or explanation of what TERP does. Cognitive overload for new users.
-
-**Deliverables:**
-1. Welcome overlay/panel explaining platform purpose
-2. Highlight primary modules with brief descriptions
-3. Link to tutorial or help center
-4. Dismissible with option to revisit from help icon
-5. First-time user detection logic
-
----
 
 #### UX-025: Navigation Consolidation (20+ Items to ~10)
 - **Priority:** P1 (HIGH)
@@ -9556,23 +9539,6 @@ These are major usability issues causing significant friction.
 - [ ] Search/filter function for nav items
 - [ ] Fixed menu using browser scroll (no nested scroll)
 - [ ] Navigation depth max 2 levels
-
----
-
-#### UX-026: Missing Trust Signals (Legal, Contact, About)
-- **Priority:** P1 (HIGH)
-- **Estimate:** 4 hours
-- **Status:** 🟡 READY
-- **Module:** `client/src/components/Footer.tsx` (new), Help page
-- **Category:** D. Copy Clarity
-
-**Problem:** No visible contact information, privacy policy, terms of service, or About page. Erodes trust for enterprise customers.
-
-**Acceptance Criteria:**
-- [ ] Footer with About, Privacy Policy, Terms of Service, Support links
-- [ ] Company information in Help section
-- [ ] Support contact visible
-- [ ] Legal pages created or linked
 
 ---
 
@@ -9868,7 +9834,7 @@ These are major usability issues causing significant friction.
 | 🟡 P1 High | 6 | 64h | Onboarding, navigation, accessibility, mobile |
 | 🟢 P2 Medium | 10 | 47h | Polish, UX improvements, validation |
 | 🔵 P3 Low | 4 | 16h | Consistency, minor polish |
-| **Total** | **24** | **149h** | |
+| **Total** | **22** | **133h** | |
 
 ---
 
@@ -9878,7 +9844,7 @@ These are major usability issues causing significant friction.
 - BUG-040, BUG-041, BUG-042, BUG-043
 
 **Sprint I: High Priority UX (64h)**
-- UX-024 (Onboarding), UX-025 (Navigation), UX-026 (Trust Signals)
+- UX-025 (Navigation)
 - UX-027, UX-028 (Accessibility), UX-029 (Mobile)
 
 **Sprint J: Medium Priority Polish (47h)**
