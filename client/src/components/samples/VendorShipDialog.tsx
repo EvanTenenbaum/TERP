@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export interface VendorShipFormValues {
   trackingNumber: string;
@@ -34,7 +35,7 @@ export const VendorShipDialog = React.memo(function VendorShipDialog({
   onOpenChange,
   onSubmit,
   isSubmitting = false,
-  sampleId,
+  sampleId: _sampleId,
 }: VendorShipDialogProps) {
   const {
     register,
@@ -54,7 +55,11 @@ export const VendorShipDialog = React.memo(function VendorShipDialog({
       reset();
       onOpenChange(false);
     } catch (error) {
-      console.error(error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to submit tracking number"
+      );
     }
   });
 

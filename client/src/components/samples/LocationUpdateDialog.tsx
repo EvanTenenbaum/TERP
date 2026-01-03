@@ -12,6 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import type { SampleLocation } from "./SampleList";
 
 export interface LocationUpdateFormValues {
@@ -29,7 +30,13 @@ export interface LocationUpdateDialogProps {
 }
 
 const formSchema = z.object({
-  location: z.enum(["WAREHOUSE", "WITH_CLIENT", "WITH_SALES_REP", "RETURNED", "LOST"]),
+  location: z.enum([
+    "WAREHOUSE",
+    "WITH_CLIENT",
+    "WITH_SALES_REP",
+    "RETURNED",
+    "LOST",
+  ]),
   notes: z.string().optional(),
 });
 
@@ -46,7 +53,7 @@ export const LocationUpdateDialog = React.memo(function LocationUpdateDialog({
   onOpenChange,
   onSubmit,
   isSubmitting = false,
-  sampleId,
+  sampleId: _sampleId,
   currentLocation,
 }: LocationUpdateDialogProps) {
   const {
@@ -68,7 +75,9 @@ export const LocationUpdateDialog = React.memo(function LocationUpdateDialog({
       reset();
       onOpenChange(false);
     } catch (error) {
-      console.error(error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update location"
+      );
     }
   });
 

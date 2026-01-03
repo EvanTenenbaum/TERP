@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export type ReturnType = "sample" | "vendor";
 
@@ -52,7 +53,7 @@ export const SampleReturnDialog = React.memo(function SampleReturnDialog({
   onSubmit,
   type,
   isSubmitting = false,
-  sampleId,
+  sampleId: _sampleId,
 }: SampleReturnDialogProps) {
   const {
     register,
@@ -75,11 +76,16 @@ export const SampleReturnDialog = React.memo(function SampleReturnDialog({
       reset();
       onOpenChange(false);
     } catch (error) {
-      console.error(error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to submit return request"
+      );
     }
   });
 
-  const title = type === "sample" ? "Request Sample Return" : "Request Vendor Return";
+  const title =
+    type === "sample" ? "Request Sample Return" : "Request Vendor Return";
   const description =
     type === "sample"
       ? "Submit a request to return this sample. An admin will review and approve the return."
@@ -103,7 +109,9 @@ export const SampleReturnDialog = React.memo(function SampleReturnDialog({
               {...register("reason")}
             />
             {errors.reason && (
-              <p className="text-sm text-destructive">{errors.reason.message}</p>
+              <p className="text-sm text-destructive">
+                {errors.reason.message}
+              </p>
             )}
           </div>
 
