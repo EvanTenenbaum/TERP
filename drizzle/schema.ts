@@ -6150,3 +6150,93 @@ export * from "./schema-live-shopping";
 // FEATURE FLAGS MODULE
 // ============================================================================
 export * from "./schema-feature-flags";
+
+// ============================================================================
+// ACCOUNTING MODULE RELATIONS (BUG-046 FIX)
+// ============================================================================
+
+// Relations for invoices
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  customer: one(clients, {
+    fields: [invoices.customerId],
+    references: [clients.id],
+  }),
+  createdByUser: one(users, {
+    fields: [invoices.createdBy],
+    references: [users.id],
+  }),
+  lineItems: many(invoiceLineItems),
+}));
+
+// Relations for invoiceLineItems
+export const invoiceLineItemsRelations = relations(invoiceLineItems, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [invoiceLineItems.invoiceId],
+    references: [invoices.id],
+  }),
+}));
+
+// Relations for bills
+export const billsRelations = relations(bills, ({ one, many }) => ({
+  vendor: one(vendors, {
+    fields: [bills.vendorId],
+    references: [vendors.id],
+  }),
+  createdByUser: one(users, {
+    fields: [bills.createdBy],
+    references: [users.id],
+  }),
+  lineItems: many(billLineItems),
+}));
+
+// Relations for billLineItems
+export const billLineItemsRelations = relations(billLineItems, ({ one }) => ({
+  bill: one(bills, {
+    fields: [billLineItems.billId],
+    references: [bills.id],
+  }),
+}));
+
+// Relations for payments
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  client: one(clients, {
+    fields: [payments.clientId],
+    references: [clients.id],
+  }),
+  createdByUser: one(users, {
+    fields: [payments.createdBy],
+    references: [users.id],
+  }),
+}));
+
+// Relations for orders
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [orders.clientId],
+    references: [clients.id],
+  }),
+  createdByUser: one(users, {
+    fields: [orders.createdBy],
+    references: [users.id],
+  }),
+  lineItems: many(orderLineItems),
+}));
+
+// Relations for orderLineItems
+export const orderLineItemsRelations = relations(orderLineItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderLineItems.orderId],
+    references: [orders.id],
+  }),
+  batch: one(batches, {
+    fields: [orderLineItems.batchId],
+    references: [batches.id],
+  }),
+}));
+
+// Relations for clients
+export const clientsRelations = relations(clients, ({ many }) => ({
+  orders: many(orders),
+  invoices: many(invoices),
+  payments: many(payments),
+}));

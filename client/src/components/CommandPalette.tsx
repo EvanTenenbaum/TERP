@@ -108,7 +108,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           label: "Invoices",
           icon: DollarSign,
           action: () => {
-            setLocation("/accounting/invoices");
+            setLocation("/accounting?tab=invoices");
             onOpenChange(false);
           },
         },

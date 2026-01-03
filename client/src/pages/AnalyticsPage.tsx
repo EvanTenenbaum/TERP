@@ -102,7 +102,7 @@ export default function AnalyticsPage() {
           )}
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard title="Total Revenue" value={formatCurrency(data?.totalRevenue ?? 0)} subtitle="Total from all orders" icon={DollarSign} isLoading={isLoading} />
+            <MetricCard title="Total Revenue" href="/accounting" value={formatCurrency(data?.totalRevenue ?? 0)} subtitle="Total from all orders" icon={DollarSign} isLoading={isLoading} />
             <MetricCard title="Period Revenue" value={formatCurrency(data?.revenueThisPeriod ?? 0)} icon={BarChart3} isLoading={isLoading}
               trend={data?.growthRate !== undefined ? { value: data.growthRate, label: "vs previous period" } : undefined} />
             <MetricCard title="Avg Order Value" value={formatCurrency(data?.averageOrderValue ?? 0)} subtitle="Average per order" icon={CreditCard} isLoading={isLoading} />
@@ -110,7 +110,7 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard title="Total Orders" value={(data?.totalOrders ?? 0).toLocaleString()} subtitle={`${data?.ordersThisPeriod ?? 0} this period`} icon={TrendingUp} isLoading={isLoading} />
+            <MetricCard title="Total Orders" href="/orders" value={(data?.totalOrders ?? 0).toLocaleString()} subtitle={`${data?.ordersThisPeriod ?? 0} this period`} icon={TrendingUp} isLoading={isLoading} />
             <MetricCard title="Active Clients" value={(data?.totalClients ?? 0).toLocaleString()} subtitle={`${data?.newClientsThisPeriod ?? 0} new this period`} icon={Users} isLoading={isLoading} />
             <MetricCard title="Inventory Items" value={(data?.totalInventoryItems ?? 0).toLocaleString()} subtitle="Active batches in inventory" icon={Package} isLoading={isLoading} />
             <MetricCard title="Payments Received" value={formatCurrency(data?.totalPaymentsReceived ?? 0)} subtitle="Total collected" icon={DollarSign} isLoading={isLoading} />
@@ -222,7 +222,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
           <div className="grid gap-4 md:grid-cols-2">
-            <MetricCard title="Total Clients" value={(data?.totalClients ?? 0).toLocaleString()} subtitle="All clients in system" icon={Users} isLoading={isLoading} />
+            <MetricCard title="Total Clients" href="/clients" value={(data?.totalClients ?? 0).toLocaleString()} subtitle="All clients in system" icon={Users} isLoading={isLoading} />
             <MetricCard title="New Clients" value={(data?.newClientsThisPeriod ?? 0).toLocaleString()} subtitle={`Added in ${periodLabels[period].toLowerCase()}`} icon={Users} isLoading={isLoading} />
           </div>
         </TabsContent>
