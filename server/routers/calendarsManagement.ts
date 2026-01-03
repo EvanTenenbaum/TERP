@@ -8,6 +8,7 @@ import {
   appointmentTypes,
   calendarAvailability,
   calendarBlockedDates,
+  timeOffRequests,
 } from "../../drizzle/schema";
 import { and, eq, gte, lte, desc, asc, isNull, inArray } from "drizzle-orm";
 
@@ -967,6 +968,58 @@ export const calendarsManagementRouter = router({
           )
         );
 
+      // CAL-04-05: Get approved time-off to block availability
+      const approvedTimeOff = await db
+        .select({
+          userId: timeOffRequests.userId,
+          startDate: timeOffRequests.startDate,
+          endDate: timeOffRequests.endDate,
+          startTime: timeOffRequests.startTime,
+          endTime: timeOffRequests.endTime,
+          isFullDay: timeOffRequests.isFullDay,
+        })
+        .from(timeOffRequests)
+        .where(
+          and(
+            eq(timeOffRequests.status, "approved"),
+            lte(timeOffRequests.startDate, new Date(input.endDate)),
+            gte(timeOffRequests.endDate, new Date(input.startDate))
+          )
+        );
+
+      // Convert time-off to blocked time ranges per date
+      const timeOffByDate: Map<string, Array<{ start: number; end: number }>> = new Map();
+      for (const timeOff of approvedTimeOff) {
+        const toStartDate = timeOff.startDate instanceof Date
+          ? timeOff.startDate
+          : new Date(timeOff.startDate);
+        const toEndDate = timeOff.endDate instanceof Date
+          ? timeOff.endDate
+          : new Date(timeOff.endDate);
+
+        // Iterate through each day of the time-off period
+        for (let d = new Date(toStartDate); d <= toEndDate; d.setDate(d.getDate() + 1)) {
+          const dStr = d.toISOString().split("T")[0];
+
+          if (!timeOffByDate.has(dStr)) {
+            timeOffByDate.set(dStr, []);
+          }
+
+          if (timeOff.isFullDay) {
+            // Full day off - block entire day (0 to 1440 minutes)
+            timeOffByDate.get(dStr)!.push({ start: 0, end: 1440 });
+          } else if (timeOff.startTime && timeOff.endTime) {
+            // Partial day off
+            const [startHr, startMn] = timeOff.startTime.split(":").map(Number);
+            const [endHr, endMn] = timeOff.endTime.split(":").map(Number);
+            timeOffByDate.get(dStr)!.push({
+              start: startHr * 60 + startMn,
+              end: endHr * 60 + endMn,
+            });
+          }
+        }
+      }
+
       // Build availability map by day of week
       const availabilityByDay: Map<number, Array<{ start: string; end: string }>> = new Map();
       for (const rule of availabilityRules) {
@@ -1084,6 +1137,19 @@ export const calendarsManagementRouter = router({
               if (effectiveSlotStart < eventEndMinutes && effectiveSlotEnd > eventStartMinutes) {
                 hasConflict = true;
                 break;
+              }
+            }
+
+            // CAL-04-05: Check if slot conflicts with approved time-off
+            if (!hasConflict) {
+              const dateTimeOff = timeOffByDate.get(dateStr);
+              if (dateTimeOff) {
+                for (const block of dateTimeOff) {
+                  if (slotStart < block.end && slotEndMinutes > block.start) {
+                    hasConflict = true;
+                    break;
+                  }
+                }
               }
             }
 

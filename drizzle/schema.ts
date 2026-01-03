@@ -5322,6 +5322,127 @@ export const calendarBlockedDatesRelations = relations(calendarBlockedDates, ({ 
 }));
 
 // ============================================================================
+// CAL-003: APPOINTMENT REQUESTS (Request/Approval Workflow)
+// ============================================================================
+
+/**
+ * Appointment Requests table (CAL-003)
+ * Manages the request/approval workflow for appointment bookings
+ * VIP clients submit requests, staff approves/rejects them
+ */
+export const appointmentRequests = mysqlTable(
+  "appointment_requests",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    calendarId: int("calendar_id")
+      .notNull()
+      .references(() => calendars.id, { onDelete: "cascade" }),
+    appointmentTypeId: int("appointment_type_id")
+      .notNull()
+      .references(() => appointmentTypes.id, { onDelete: "cascade" }),
+    requestedById: int("requested_by_id").notNull(), // Client ID who requested
+    requestedSlot: timestamp("requested_slot").notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, approved, rejected, cancelled
+    notes: text("notes"), // Notes from the client
+    responseNotes: text("response_notes"), // Notes from manager when responding
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    respondedAt: timestamp("responded_at"),
+    respondedById: int("responded_by_id").references(() => users.id, { onDelete: "set null" }),
+    calendarEventId: int("calendar_event_id").references(() => calendarEvents.id, { onDelete: "set null" }), // Populated upon approval
+  },
+  table => ({
+    calendarIdx: index("idx_appointment_requests_calendar").on(table.calendarId),
+    statusIdx: index("idx_appointment_requests_status").on(table.status),
+    requestedByIdx: index("idx_appointment_requests_requested_by").on(table.requestedById),
+    respondedByIdx: index("idx_appointment_requests_responded_by").on(table.respondedById),
+    createdAtIdx: index("idx_appointment_requests_created_at").on(table.createdAt),
+  })
+);
+
+export type AppointmentRequest = typeof appointmentRequests.$inferSelect;
+export type InsertAppointmentRequest = typeof appointmentRequests.$inferInsert;
+
+// Relations for appointment requests
+export const appointmentRequestsRelations = relations(appointmentRequests, ({ one }) => ({
+  calendar: one(calendars, {
+    fields: [appointmentRequests.calendarId],
+    references: [calendars.id],
+  }),
+  appointmentType: one(appointmentTypes, {
+    fields: [appointmentRequests.appointmentTypeId],
+    references: [appointmentTypes.id],
+  }),
+  respondedBy: one(users, {
+    fields: [appointmentRequests.respondedById],
+    references: [users.id],
+  }),
+  calendarEvent: one(calendarEvents, {
+    fields: [appointmentRequests.calendarEventId],
+    references: [calendarEvents.id],
+  }),
+}));
+
+// ============================================================================
+// CAL-004: TIME OFF REQUESTS (Enhanced Features)
+// ============================================================================
+
+/**
+ * Time Off Requests table (CAL-004)
+ * Manages vacation, sick, and personal time-off requests
+ * Integrates with calendar availability to block booking slots
+ */
+export const timeOffRequests = mysqlTable(
+  "time_off_requests",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    timeOffType: varchar("time_off_type", { length: 20 }).notNull(), // vacation, sick, personal
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(),
+    startTime: varchar("start_time", { length: 8 }), // HH:MM:SS for partial day off
+    endTime: varchar("end_time", { length: 8 }), // HH:MM:SS for partial day off
+    isFullDay: boolean("is_full_day").notNull().default(true),
+    status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, approved, rejected
+    notes: text("notes"), // Employee notes
+    responseNotes: text("response_notes"), // Manager response notes
+    calendarEventId: int("calendar_event_id").references(() => calendarEvents.id, { onDelete: "set null" }), // Created upon approval
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+    respondedAt: timestamp("responded_at"),
+    respondedById: int("responded_by_id").references(() => users.id, { onDelete: "set null" }),
+  },
+  table => ({
+    userIdx: index("idx_time_off_requests_user").on(table.userId),
+    statusIdx: index("idx_time_off_requests_status").on(table.status),
+    startDateIdx: index("idx_time_off_requests_start_date").on(table.startDate),
+    endDateIdx: index("idx_time_off_requests_end_date").on(table.endDate),
+    typeIdx: index("idx_time_off_requests_type").on(table.timeOffType),
+  })
+);
+
+export type TimeOffRequest = typeof timeOffRequests.$inferSelect;
+export type InsertTimeOffRequest = typeof timeOffRequests.$inferInsert;
+
+// Relations for time off requests
+export const timeOffRequestsRelations = relations(timeOffRequests, ({ one }) => ({
+  user: one(users, {
+    fields: [timeOffRequests.userId],
+    references: [users.id],
+  }),
+  respondedBy: one(users, {
+    fields: [timeOffRequests.respondedById],
+    references: [users.id],
+    relationName: "timeOffResponder",
+  }),
+  calendarEvent: one(calendarEvents, {
+    fields: [timeOffRequests.calendarEventId],
+    references: [calendarEvents.id],
+  }),
+}));
+
+// ============================================================================
 // WORKFLOW QUEUE MANAGEMENT TABLES (Initiative 1.3)
 // ============================================================================
 
