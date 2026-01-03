@@ -41,6 +41,7 @@ import VendorRedirect from "@/components/VendorRedirect";
 import { Redirect } from "wouter";
 import PurchaseOrdersPage from "@/pages/PurchaseOrdersPage";
 import ReturnsPage from "@/pages/ReturnsPage";
+import SampleManagement from "@/pages/SampleManagement";
 import LocationsPage from "@/pages/LocationsPage";
 import MatchmakingServicePage from "@/pages/MatchmakingServicePage";
 import Login from "@/pages/Login";
@@ -136,7 +137,10 @@ function Router() {
                 path="/settings/notifications"
                 component={NotificationPreferencesPage}
               />
-              <Route path="/settings/feature-flags" component={FeatureFlagsPage} />
+              <Route
+                path="/settings/feature-flags"
+                component={FeatureFlagsPage}
+              />
               <Route path="/settings" component={Settings} />
               <Route path="/credit-settings" component={CreditSettingsPage} />
               <Route path="/needs" component={NeedsManagementPage} />
@@ -148,6 +152,7 @@ function Router() {
               </Route>
               <Route path="/purchase-orders" component={PurchaseOrdersPage} />
               <Route path="/returns" component={ReturnsPage} />
+              <Route path="/samples" component={SampleManagement} />
               <Route path="/locations" component={LocationsPage} />
               <Route path="/matchmaking" component={MatchmakingServicePage} />
               <Route path="/live-shopping" component={LiveShoppingPage} />

@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import {
+  protectedProcedure,
+  router,
+  strictlyProtectedProcedure,
+} from "../_core/trpc";
 import * as samplesDb from "../samplesDb";
 import * as samplesAnalytics from "../samplesAnalytics";
 import { requirePermission } from "../_core/permissionMiddleware";
@@ -7,7 +11,8 @@ import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const samplesRouter = router({
   // Create a new sample request
-  createRequest: publicProcedure
+  createRequest: strictlyProtectedProcedure
+    .use(requirePermission("samples:create"))
     .input(z.object({
       clientId: z.number(),
       requestedBy: z.number(),
@@ -27,7 +32,8 @@ export const samplesRouter = router({
     }),
 
   // Fulfill a sample request
-  fulfillRequest: publicProcedure
+  fulfillRequest: strictlyProtectedProcedure
+    .use(requirePermission("samples:allocate"))
     .input(z.object({
       requestId: z.number(),
       fulfilledBy: z.number()
@@ -37,7 +43,8 @@ export const samplesRouter = router({
     }),
 
   // Cancel a sample request
-  cancelRequest: publicProcedure
+  cancelRequest: strictlyProtectedProcedure
+    .use(requirePermission("samples:delete"))
     .input(z.object({
       requestId: z.number(),
       cancelledBy: z.number(),
@@ -52,7 +59,8 @@ export const samplesRouter = router({
     }),
 
   // Link an order to a sample request (conversion tracking)
-  linkOrderToSample: publicProcedure
+  linkOrderToSample: strictlyProtectedProcedure
+    .use(requirePermission("samples:track"))
     .input(z.object({
       orderId: z.number(),
       sampleRequestId: z.number()
@@ -63,7 +71,8 @@ export const samplesRouter = router({
     }),
 
   // Get sample requests by client
-  getByClient: publicProcedure
+  getByClient: protectedProcedure
+    .use(requirePermission("samples:read"))
     .input(z.object({
       clientId: z.number(),
       limit: z.number().optional()
@@ -74,14 +83,16 @@ export const samplesRouter = router({
 
   // Get all pending sample requests
   // BUG-034: Standardized pagination response
-  getPending: publicProcedure
+  getPending: protectedProcedure
+    .use(requirePermission("samples:read"))
     .query(async () => {
       const requests = await samplesDb.getPendingSampleRequests();
       return createSafeUnifiedResponse(requests, requests.length, 50, 0);
     }),
 
   // Get monthly allocation for a client
-  getMonthlyAllocation: publicProcedure
+  getMonthlyAllocation: protectedProcedure
+    .use(requirePermission("samples:read"))
     .input(z.object({
       clientId: z.number(),
       monthYear: z.string().optional()
@@ -91,7 +102,8 @@ export const samplesRouter = router({
     }),
 
   // Set monthly allocation for a client
-  setMonthlyAllocation: publicProcedure
+  setMonthlyAllocation: strictlyProtectedProcedure
+    .use(requirePermission("samples:allocate"))
     .input(z.object({
       clientId: z.number(),
       monthYear: z.string(),
@@ -107,7 +119,8 @@ export const samplesRouter = router({
     }),
 
   // Check monthly allocation
-  checkAllocation: publicProcedure
+  checkAllocation: protectedProcedure
+    .use(requirePermission("samples:read"))
     .input(z.object({
       clientId: z.number(),
       requestedQuantity: z.string()
@@ -121,7 +134,8 @@ export const samplesRouter = router({
     }),
 
   // Analytics: Sample distribution report
-  getDistributionReport: publicProcedure
+  getDistributionReport: protectedProcedure
+    .use(requirePermission("samples:track"))
     .input(z.object({
       startDate: z.string(),
       endDate: z.string()
@@ -134,7 +148,8 @@ export const samplesRouter = router({
     }),
 
   // Analytics: Sample conversion report
-  getConversionReport: publicProcedure
+  getConversionReport: protectedProcedure
+    .use(requirePermission("samples:track"))
     .input(z.object({
       startDate: z.string(),
       endDate: z.string()
@@ -147,7 +162,8 @@ export const samplesRouter = router({
     }),
 
   // Analytics: Sample effectiveness by product
-  getEffectivenessByProduct: publicProcedure
+  getEffectivenessByProduct: protectedProcedure
+    .use(requirePermission("samples:track"))
     .input(z.object({
       startDate: z.string(),
       endDate: z.string()
@@ -160,7 +176,8 @@ export const samplesRouter = router({
     }),
 
   // Analytics: Sample cost by product
-  getCostByProduct: publicProcedure
+  getCostByProduct: protectedProcedure
+    .use(requirePermission("samples:track"))
     .input(z.object({
       startDate: z.string(),
       endDate: z.string()
@@ -173,7 +190,8 @@ export const samplesRouter = router({
     }),
 
   // Analytics: Sample cost by client
-  getCostByClient: publicProcedure
+  getCostByClient: protectedProcedure
+    .use(requirePermission("samples:track"))
     .input(z.object({
       startDate: z.string(),
       endDate: z.string()
@@ -186,7 +204,8 @@ export const samplesRouter = router({
     }),
 
   // Analytics: Sample ROI analysis
-  getROIAnalysis: publicProcedure
+  getROIAnalysis: protectedProcedure
+    .use(requirePermission("samples:track"))
     .input(z.object({
       startDate: z.string(),
       endDate: z.string()
@@ -198,4 +217,3 @@ export const samplesRouter = router({
       );
     }),
 });
-
