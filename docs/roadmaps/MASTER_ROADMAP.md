@@ -9016,3 +9016,59 @@ A significant **migration gap** was discovered, analyzed, and fully remediated i
 For the detailed plan, tools developed, and the new protocol, please see the full document:
 
 [**Migration Gap Remediation Plan & Protocol**](../technical/MIGRATION_REMEDIATION_PLAN.md)
+
+### SPRINT-DEBT-001: TypeScript & Test Remediation Sprint
+
+**Status:** 🟡 **BACKLOG**
+**Priority:** P1 (HIGH - PRE-PRODUCTION BLOCKER)
+**Estimated Effort:** 3-5 days
+**QA Report:** [`docs/qa/redhat-qa-report-20260103.md`](../qa/redhat-qa-report-20260103.md)
+
+**Context:** Red Hat QA analysis (Jan 3, 2026) identified pre-existing technical debt unrelated to recent PRs #106-108. This debt must be addressed before the next major production release.
+
+#### Sprint Objectives
+
+1. **Fix TypeScript Compilation Errors (188 errors)**
+2. **Repair Broken Test Mocks (46 failing tests)**
+3. **Address React Hooks Violations (4 errors)**
+4. **Clean Up Linting Issues**
+
+#### Task Breakdown
+
+| Task ID       | Description                               | Priority | Effort | Status     |
+| ------------- | ----------------------------------------- | -------- | ------ | ---------- |
+| DEBT-001-TS01 | Fix AuditModal.tsx undefined checks (20)  | P1       | 2h     | 🟡 BACKLOG |
+| DEBT-001-TS02 | Fix unifiedSalesPortal.ts enum mismatch   | P0       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TS03 | Fix vendorReminders.ts db null checks     | P1       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TS04 | Fix VIPImpersonationManager.tsx types     | P1       | 30m    | 🟡 BACKLOG |
+| DEBT-001-TS05 | Fix featureFlagService missing method     | P1       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TS06 | Fix remaining TypeScript errors (~150)    | P2       | 4h     | 🟡 BACKLOG |
+| DEBT-001-TF01 | Fix liveCatalogService.test.ts (7 fails)  | P1       | 2h     | 🟡 BACKLOG |
+| DEBT-001-TF02 | Fix calendarFinancials.test.ts (8 fails)  | P1       | 2h     | 🟡 BACKLOG |
+| DEBT-001-TF03 | Fix clients.test.ts pagination mocks      | P1       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TF04 | Fix inventory.test.ts vendor/brand mocks  | P1       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TF05 | Fix analytics.test.ts error handling      | P2       | 1h     | 🟡 BACKLOG |
+| DEBT-001-TF06 | Fix orders.test.ts filter mocks           | P2       | 1h     | 🟡 BACKLOG |
+| DEBT-001-RH01 | Fix AccountSelector.tsx conditional hooks | P0       | 30m    | 🟡 BACKLOG |
+| DEBT-001-RH02 | Fix FiscalPeriodSelector.tsx hooks        | P0       | 30m    | 🟡 BACKLOG |
+| DEBT-001-LT01 | Clean up ~50 unused variable warnings     | P3       | 2h     | 🟡 BACKLOG |
+| DEBT-001-LT02 | Add missing React imports (~20 files)     | P2       | 1h     | 🟡 BACKLOG |
+
+#### Acceptance Criteria
+
+- [ ] `pnpm check` passes with 0 TypeScript errors
+- [ ] `pnpm test` achieves >95% pass rate (currently 91%)
+- [ ] No React Hooks rule violations
+- [ ] ESLint errors reduced by 80%
+
+#### Dependencies
+
+- None (standalone remediation sprint)
+
+#### Risk Assessment
+
+| Risk                       | Mitigation                               |
+| -------------------------- | ---------------------------------------- |
+| Enum changes break runtime | Add migration script for saleStatus      |
+| Test fixes cascade         | Fix in order of dependency (mocks first) |
+| Large scope creep          | Strict task boundaries, no new features  |
