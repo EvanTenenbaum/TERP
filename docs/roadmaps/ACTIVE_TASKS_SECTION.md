@@ -173,6 +173,7 @@
 **Module:** `client/src/pages/`, `server/routers/`  
 **Dependencies:** None  
 **Spec:** [`docs/specs/FEATURE-SPREADSHEET-VIEW-SPEC.md`](../specs/FEATURE-SPREADSHEET-VIEW-SPEC.md)
+**Prompt:** [`docs/prompts/FEATURE-021.md`](../prompts/FEATURE-021.md)
 
 **Objectives:**
 
