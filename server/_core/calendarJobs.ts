@@ -57,14 +57,15 @@ export async function reminderNotificationJob(): Promise<void> {
         if (reminder.method === "IN_APP" || reminder.method === "BOTH") {
           await sendNotification({
             userId: reminder.userId,
+            type: "info",
             title: notificationTitle,
             message: notificationMessage,
-            method: "in-app",
             metadata: {
               eventId: event.id,
               type: "calendar_reminder",
               startTime: event.startDate.toISOString(),
             },
+            category: "appointment",
           });
         }
 
@@ -286,13 +287,14 @@ export async function collectionsAlertJob(): Promise<void> {
     if (highPriorityClients.length > 0) {
       await sendNotification({
         userId: 1,
+        type: "warning",
         title: "Collections Queue Updated",
         message: `${highPriorityClients.length} high-priority clients need collections calls today.`,
-        method: "in-app",
         metadata: {
           type: "collections_alert",
           clientCount: highPriorityClients.length,
         },
+        category: "system",
       });
     }
 

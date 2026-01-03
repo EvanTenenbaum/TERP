@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag, Bell } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -49,6 +49,7 @@ export default function Settings() {
             <TabsTrigger value="database" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Database</TabsTrigger>
             <TabsTrigger value="feature-flags" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Feature Flags</TabsTrigger>
             <TabsTrigger value="vip-impersonation" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">VIP Access</TabsTrigger>
+            <TabsTrigger value="notifications" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Notifications</TabsTrigger>
           </TabsList>
         </div>
 
@@ -108,6 +109,26 @@ export default function Settings() {
 
         <TabsContent value="vip-impersonation" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
           <VIPImpersonationManager />
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Notification Preferences
+              </CardTitle>
+              <CardDescription>Control how you receive alerts and reminders.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Configure in-app and email notifications along with reminders for appointments, orders, and system alerts.
+              </p>
+              <Button asChild>
+                <a href="/settings/notifications">Open Notification Preferences</a>
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
@@ -708,4 +729,3 @@ function GradesManager() {
     </Card>
   );
 }
-

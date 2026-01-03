@@ -95,15 +95,16 @@ export const calendarParticipantsRouter = router({
           const { sendNotification } = await import("../services/notificationService");
           await sendNotification({
             userId: input.userId,
+            type: "info",
             title: "Calendar Invitation",
             message: `You've been invited to "${event.title}" on ${new Date(event.startDate).toLocaleDateString()}`,
-            method: "in-app",
             metadata: {
               eventId: input.eventId,
               type: "calendar_invitation",
               startTime: event.startDate.toISOString(),
               role: input.role,
             },
+            category: "appointment",
           });
         }
         
