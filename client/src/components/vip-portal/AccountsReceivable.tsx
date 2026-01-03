@@ -1,5 +1,12 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import type { JSX } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,25 +17,84 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Search, Download, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import {
+  FileText,
+  Search,
+  Download,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+
+type ReceivableStatus =
+  | "PAID"
+  | "OVERDUE"
+  | "PARTIAL"
+  | "SENT"
+  | "VIEWED"
+  | string;
+
+interface ReceivableFeatures {
+  showSummaryTotals?: boolean;
+  allowFilters?: boolean;
+  showInvoiceDetails?: boolean;
+  highlightOverdue?: boolean;
+}
+
+interface AccountsReceivableConfig {
+  featuresConfig?: {
+    ar?: ReceivableFeatures;
+  };
+}
+
+interface ReceivableSummary {
+  totalOutstanding?: number;
+  overdueAmount?: number;
+  openInvoiceCount?: number;
+}
+
+interface ReceivableInvoice {
+  id: number;
+  invoiceNumber: string;
+  invoiceDate: string | Date;
+  totalAmount: number | string;
+  amountDue: number | string;
+  amountPaid: number | string;
+  dueDate: string | Date;
+  status: ReceivableStatus;
+  paymentTerms?: string | null;
+  notes?: string | null;
+}
+
+interface AccountsReceivableData {
+  summary?: ReceivableSummary;
+  invoices?: ReceivableInvoice[];
+}
 
 interface AccountsReceivableProps {
   clientId: number;
-  config: any;
+  config: AccountsReceivableConfig;
 }
 
-export function AccountsReceivable({ clientId, config }: AccountsReceivableProps) {
+export function AccountsReceivable({
+  clientId,
+  config,
+}: AccountsReceivableProps): JSX.Element {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: arData } = trpc.vipPortal.ar.getInvoices.useQuery({
-    clientId,
-    search: searchTerm || undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-  });
+  const { data: arResponse, isLoading } =
+    trpc.vipPortal.ar.getInvoices.useQuery({
+      clientId,
+      search: searchTerm || undefined,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+    });
+  const arData = arResponse as AccountsReceivableData | undefined;
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: ReceivableStatus) => {
     switch (status) {
       case "PAID":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -41,7 +107,9 @@ export function AccountsReceivable({ clientId, config }: AccountsReceivableProps
     }
   };
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusVariant = (
+    status: ReceivableStatus
+  ): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case "PAID":
         return "secondary";
@@ -54,38 +122,80 @@ export function AccountsReceivable({ clientId, config }: AccountsReceivableProps
     }
   };
 
+  const summary = useMemo(() => arData?.summary, [arData]);
+  const invoices = useMemo(() => arData?.invoices ?? [], [arData]);
+  const showReceivableDetails =
+    config.featuresConfig?.ar?.showInvoiceDetails ?? false;
+  const allowReceivableDownload =
+    (config.featuresConfig?.ar as { allowPdfDownload?: boolean } | undefined)
+      ?.allowPdfDownload ?? false;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <Skeleton className="h-6 w-40" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Card key={index} className="p-4">
+              <Skeleton className="h-4 w-24 mb-3" />
+              <Skeleton className="h-6 w-28" />
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="space-y-3 pt-6">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div key={index} className="space-y-2">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div>
         <h2 className="text-xl md:text-2xl font-bold">Accounts Receivable</h2>
-        <p className="text-sm text-muted-foreground">Outstanding invoices and payments owed</p>
+        <p className="text-sm text-muted-foreground">
+          Outstanding invoices and payments owed
+        </p>
       </div>
 
       {/* Summary Cards */}
-      {config.featuresConfig?.ar?.showSummaryTotals && arData?.summary && (
+      {config.featuresConfig?.ar?.showSummaryTotals && summary && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription className="text-xs">Total Outstanding</CardDescription>
+              <CardDescription className="text-xs">
+                Total Outstanding
+              </CardDescription>
               <CardTitle className="text-xl md:text-2xl">
-                ${arData.summary.totalOutstanding.toLocaleString()}
+                {formatCurrency(summary.totalOutstanding)}
               </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription className="text-xs">Overdue Amount</CardDescription>
+              <CardDescription className="text-xs">
+                Overdue Amount
+              </CardDescription>
               <CardTitle className="text-xl md:text-2xl text-destructive">
-                ${arData.summary.overdueAmount.toLocaleString()}
+                {formatCurrency(summary.overdueAmount)}
               </CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription className="text-xs">Open Invoices</CardDescription>
+              <CardDescription className="text-xs">
+                Open Invoices
+              </CardDescription>
               <CardTitle className="text-xl md:text-2xl">
-                {arData.summary.openInvoiceCount}
+                {summary.openInvoiceCount}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -102,7 +212,7 @@ export function AccountsReceivable({ clientId, config }: AccountsReceivableProps
                 <Input
                   placeholder="Search invoices..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -126,12 +236,13 @@ export function AccountsReceivable({ clientId, config }: AccountsReceivableProps
 
       {/* Invoices List - Mobile-First Card Layout */}
       <div className="space-y-3">
-        {arData?.invoices && arData.invoices.length > 0 ? (
-          arData.invoices.map((invoice: any) => (
-            <Card 
-              key={invoice.id} 
+        {invoices.length > 0 ? (
+          invoices.map(invoice => (
+            <Card
+              key={invoice.id}
               className={`overflow-hidden ${
-                config.featuresConfig?.ar?.highlightOverdue && invoice.status === "OVERDUE"
+                config.featuresConfig?.ar?.highlightOverdue &&
+                invoice.status === "OVERDUE"
                   ? "border-destructive"
                   : ""
               }`}
@@ -144,46 +255,59 @@ export function AccountsReceivable({ clientId, config }: AccountsReceivableProps
                       <span className="truncate">{invoice.invoiceNumber}</span>
                     </CardTitle>
                     <CardDescription className="text-sm mt-1">
-                      Issued: {new Date(invoice.invoiceDate).toLocaleDateString()}
+                      Issued: {formatDate(invoice.invoiceDate)}
                     </CardDescription>
                   </div>
-                  <Badge variant={getStatusVariant(invoice.status)} className="flex-shrink-0">
+                  <Badge
+                    variant={getStatusVariant(invoice.status)}
+                    className="flex-shrink-0"
+                  >
                     {invoice.status}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {/* Financial Details Grid */}
-                {config.featuresConfig?.ar?.showInvoiceDetails && (
+                {showReceivableDetails && (
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-muted-foreground text-xs">Total Amount</p>
+                      <p className="text-muted-foreground text-xs">
+                        Total Amount
+                      </p>
                       <p className="font-medium text-base">
-                        ${invoice.totalAmount.toLocaleString()}
+                        {formatCurrency(invoice.totalAmount)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs">Amount Due</p>
+                      <p className="text-muted-foreground text-xs">
+                        Amount Due
+                      </p>
                       <p className="font-medium text-base">
-                        ${invoice.amountDue.toLocaleString()}
+                        {formatCurrency(invoice.amountDue)}
                       </p>
                     </div>
-                    {invoice.amountPaid > 0 && (
+                    {(typeof invoice.amountPaid === "string"
+                      ? parseFloat(invoice.amountPaid)
+                      : (invoice.amountPaid ?? 0)) > 0 && (
                       <>
                         <div>
-                          <p className="text-muted-foreground text-xs">Amount Paid</p>
+                          <p className="text-muted-foreground text-xs">
+                            Amount Paid
+                          </p>
                           <p className="font-medium text-green-600">
-                            ${invoice.amountPaid.toLocaleString()}
+                            {formatCurrency(invoice.amountPaid)}
                           </p>
                         </div>
                       </>
                     )}
                     <div>
                       <p className="text-muted-foreground text-xs">Due Date</p>
-                      <p className={`font-medium ${
-                        invoice.status === "OVERDUE" ? "text-destructive" : ""
-                      }`}>
-                        {new Date(invoice.dueDate).toLocaleDateString()}
+                      <p
+                        className={`font-medium ${
+                          invoice.status === "OVERDUE" ? "text-destructive" : ""
+                        }`}
+                      >
+                        {formatDate(invoice.dueDate)}
                       </p>
                     </div>
                   </div>
@@ -192,13 +316,15 @@ export function AccountsReceivable({ clientId, config }: AccountsReceivableProps
                 {/* Payment Terms */}
                 {invoice.paymentTerms && (
                   <div className="text-sm">
-                    <p className="text-muted-foreground text-xs mb-1">Payment Terms</p>
+                    <p className="text-muted-foreground text-xs mb-1">
+                      Payment Terms
+                    </p>
                     <p className="text-sm">{invoice.paymentTerms}</p>
                   </div>
                 )}
 
                 {/* Notes */}
-                {invoice.notes && config.featuresConfig?.ar?.showInvoiceDetails && (
+                {invoice.notes && showReceivableDetails && (
                   <div className="text-sm">
                     <p className="text-muted-foreground text-xs mb-1">Notes</p>
                     <p className="text-sm line-clamp-2">{invoice.notes}</p>
@@ -206,7 +332,7 @@ export function AccountsReceivable({ clientId, config }: AccountsReceivableProps
                 )}
 
                 {/* Actions */}
-                {config.featuresConfig?.ar?.allowPdfDownload && (
+                {allowReceivableDownload && (
                   <div className="pt-2">
                     <Button variant="outline" size="sm" className="w-full">
                       <Download className="h-4 w-4 mr-2" />

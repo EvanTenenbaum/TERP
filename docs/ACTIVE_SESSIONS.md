@@ -17,20 +17,15 @@
 - If task is abandoned → Move to `docs/sessions/abandoned/`
 
 ## **On task completion, archive session in the SAME commit as your final code changes.**
-
 ## 🟢 Currently Working
-
 | Session ID                              | Task                 | Branch                           | Module                     | Status      | Started    | ETA |
 | --------------------------------------- | -------------------- | -------------------------------- | -------------------------- | ----------- | ---------- | --- |
 | Session-20251230-ROADMAP-CLEANUP-39dfaf | ROADMAP-CLEANUP      | main                             | docs                       | In Progress | 2025-12-30 | TBA |
 | Session-20260102-SPRINT-B-f0b134        | Sprint B Frontend UX | main                             | client/src                 | In Progress | 2026-01-02 | -   |
 | Session-20260103-SAMPLE-001-005-0f896c  | Sample Management UI | codex/build-sample-management-ui | client/src                 | In Progress | 2026-01-03 | TBA |
 | Session-20260103-FEATURE-021-ef9784     | FEATURE-021          | feature/FEATURE-021              | client/src, server/routers | In Progress | 2026-01-03 | TBA |
-
+| Session-20260103-VIP-F-01-c9de7f        | VIP Portal KPIs      | claude/vip-f-01-c9de7f           | client/src                 | In Progress | 2026-01-03 | TBA |
 ## ⏸️ Paused / Waiting
-
-## ⏸️ Paused / Waiting
-
 | Session ID | Task | Branch | Reason | Paused At | Resume When |
 | ---------- | ---- | ------ | ------ | --------- | ----------- |
 | _(none)_   | -    | -      | -      | -         | -           |
