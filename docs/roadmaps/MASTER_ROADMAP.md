@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.31
+**Version:** 2.32
 **Last Updated:** January 3, 2026 (QA Technical Debt Added)
 **Status:** Active
 
@@ -5584,7 +5584,7 @@ The "List Name" field in the "Create New List" modal is required but not visuall
 
 #### QA-041: Merge Inbox and To-Do List Modules
 
-**Priority:** P2 | **Status:** ready | **Effort:** 24-40h
+**Priority:** P2 | **Status:** REMOVED - deferred post-pilot | **Effort:** 24-40h
 The current "Inbox" and "To-Do List" features should be consolidated into a single, unified system for managing tasks and notifications.
 
 ---
@@ -7111,7 +7111,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-009: Implement Breadcrumb Navigation
 
-**Status:** ready  
+**Status:** complete (verified live Jan 2026)  
 **Priority:** MEDIUM  
 **Estimate:** 4h  
 **Module:** `client/src/components/DashboardLayout.tsx`, all pages  
@@ -7141,7 +7141,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-010: Add Empty States to All Widgets/Lists
 
-**Status:** ready  
+**Status:** complete (verified live Jan 2026)  
 **Priority:** HIGH  
 **Estimate:** 4h  
 **Module:** `client/src/components/dashboard/widgets-v2/`, list pages  
@@ -7224,7 +7224,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-013: Add Search to Client Dropdown
 
-**Status:** ready  
+**Status:** complete (verified live Jan 2026)  
 **Priority:** HIGH  
 **Estimate:** 2h  
 **Module:** `client/src/pages/OrderCreatorPage.tsx`  
@@ -7425,7 +7425,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-020: Add Configurable Low Stock Threshold
 
-**Status:** ready  
+**Status:** complete (verified live Jan 2026)  
 **Priority:** MEDIUM  
 **Estimate:** 2h  
 **Module:** `client/src/pages/Inventory.tsx`, `server/inventoryDb.ts`  
@@ -7451,7 +7451,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-021: Customizable Quick Actions Dropdown
 
-**Status:** ready  
+**Status:** REMOVED - deferred post-pilot  
 **Priority:** MEDIUM  
 **Estimate:** 8h  
 **Module:** `client/src/components/layout/AppHeader.tsx`, `server/routers/userPreferences.ts`  
@@ -7481,7 +7481,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-022: Table Navigation Audit & Search/Filter/Sort Improvements
 
-**Status:** ready  
+**Status:** complete (verified live Jan 2026)  
 **Priority:** HIGH  
 **Estimate:** 16-24h  
 **Module:** Multiple list pages across the application  
@@ -7553,7 +7553,7 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 #### UX-023: In-Context Module Settings Access
 
-**Status:** ready  
+**Status:** REMOVED - deferred post-pilot  
 **Priority:** MEDIUM  
 **Estimate:** 12-16h  
 **Module:** Multiple module pages across the application  
@@ -9139,7 +9139,7 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 
 ## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
 
-**Version:** 2.31  
+**Version:** 2.32  
 **Added:** January 3, 2026  
 **Status:** 🟡 READY FOR EXECUTION  
 **Total Estimated Effort:** 92 hours
@@ -9425,7 +9425,7 @@ This section contains new work items identified during Tier 1 customer readiness
 
 ## 🎨 UI/UX Audit Findings - January 2026
 
-**Version:** 2.31  
+**Version:** 2.32  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA Specialist Audit  
 **Status:** 🟡 READY FOR EXECUTION  
@@ -9859,7 +9859,7 @@ These are major usability issues causing significant friction.
 
 ## 🔍 Additional UX Audit Findings - January 2026 (Supplemental)
 
-**Version:** 2.31  
+**Version:** 2.32  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA (Agent Mode) - Full Audit  
 **Status:** 🟡 READY FOR EXECUTION
@@ -10232,4 +10232,83 @@ These are captured for architectural awareness but not added as individual tasks
 | P2 Medium | 15 (107h) | 6 (80h) | 21 (187h) |
 | P3 Low | 5 (30h) | 1 (6h) | 6 (36h) |
 | **Grand Total** | **43 (304h)** | **9 (110h)** | **52 (414h)** |
+
+
+
+---
+
+## 🆕 New Tasks Added (January 3, 2026 - User Request)
+
+### UX - User Experience Improvements
+
+#### UX-049: Improve Filter and Sorting UI/Functionality
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 8h  
+**Module:** `client/src/components/ui/data-table.tsx`, all table pages
+
+**Problem:** Current filter and sorting UI across data tables lacks visual clarity and intuitive controls. Users need better feedback on active filters and easier access to sorting options.
+
+**Deliverables:**
+- [ ] Add clear visual indicators for active filters
+- [ ] Improve sort direction icons and click targets
+- [ ] Add "Clear all filters" button when filters are active
+- [ ] Persist filter state in URL for shareable filtered views
+- [ ] Add filter presets/saved views where applicable
+- [ ] Ensure consistent filter behavior across all modules
+
+---
+
+#### UX-050: Add Sidebar Access to Spreadsheet View
+**Status:** ready  
+**Priority:** MEDIUM  
+**Estimate:** 4h  
+**Module:** `client/src/components/DashboardLayout.tsx`, sidebar navigation
+
+**Problem:** Users cannot easily access spreadsheet/bulk data view from the main navigation. Need a dedicated sidebar entry for spreadsheet-style data editing.
+
+**Deliverables:**
+- [ ] Add "Spreadsheet" or "Data View" item to sidebar navigation
+- [ ] Create route for spreadsheet view if not exists
+- [ ] Ensure spreadsheet view provides bulk editing capabilities
+- [ ] Add appropriate icon and positioning in sidebar
+
+---
+
+### BUG - Bug Fixes
+
+#### BUG-047: Make KPI Cards Actionable When Clicked
+**Status:** ready  
+**Priority:** HIGH  
+**Estimate:** 6h  
+**Module:** `client/src/components/dashboard/`, all pages with KPI cards
+
+**Problem:** KPI metric cards (Total Clients, Low Stock, Active Buyers, etc.) highlight blue on click but don't perform any action. Users expect clicking these cards to drill down into relevant filtered data or show a detail modal.
+
+**Deliverables:**
+- [ ] Audit all KPI cards across the application
+- [ ] Add onClick handlers to navigate to filtered views:
+  - "Total Clients" → Clients page
+  - "Low Stock" → Inventory filtered to low stock items
+  - "Active Buyers" → Clients filtered to buyers
+  - "Clients with Debt" → Clients filtered to those with debt
+  - etc.
+- [ ] Add cursor:pointer and proper hover states
+- [ ] Consider adding tooltip explaining what click will do
+- [ ] Test all KPI card click actions work correctly
+
+---
+
+## 📈 Updated Totals (Post-Verification)
+
+| Category | Count | Hours |
+|----------|-------|-------|
+| Verified Complete (this session) | +6 | -40h |
+| Removed/Deferred | +3 | -20h |
+| New Tasks Added | +3 | +18h |
+| **Net Change** | -6 pending | -42h |
+
+**Roadmap Version:** 2.32  
+**Last Updated:** January 3, 2026  
+**Update Type:** Live site verification + user-requested features
 
