@@ -103,7 +103,7 @@ import { spreadsheetRouter } from "./routers/spreadsheet";
 let debugRouter: any = null;
 // TEMPORARY: Enable debug router in production for diagnostics (REMOVE AFTER DEBUGGING)
 // Original: if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
-if (process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     debugRouter = require("./routers/debug").debugRouter;

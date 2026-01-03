@@ -81,6 +81,16 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
 
     const batchId = active.id as number;
     const newStatusId = over.id as number;
+    // If dropped over a batch card, find its status ID
+    let targetStatusId = newStatusId;
+    if (!statuses.some(s => s.id === targetStatusId)) {
+      for (const statusId in queues) {
+        if (queues[statusId].some((b: any) => b.id === targetStatusId)) {
+          targetStatusId = parseInt(statusId);
+          break;
+        }
+      }
+    }
 
     // Find current status
     let currentStatusId: number | null = null;
@@ -92,12 +102,12 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
     }
 
     // If status hasn't changed, do nothing
-    if (currentStatusId === newStatusId) return;
+    if (currentStatusId === targetStatusId) return;
 
     // Update batch status
     updateBatchStatus.mutate({
       batchId,
-      toStatusId: newStatusId,
+      toStatusId: targetStatusId,
     });
   };
 

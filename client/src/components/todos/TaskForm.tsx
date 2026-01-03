@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,7 +60,17 @@ export function TaskForm({
     task?.dueDate ? new Date(task.dueDate) : undefined
   );
 
-  const utils = trpc.useContext();
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title || "");
+      setDescription(task.description || "");
+      setStatus(task.status || "todo");
+      setPriority(task.priority || "");
+      setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
+    }
+  }, [task]);
+
+  const utils = trpc.useUtils();
 
   const createTask = trpc.todoTasks.create.useMutation({
     onSuccess: () => {
@@ -85,14 +95,13 @@ export function TaskForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!title.trim()) return;
 
     const taskData = {
       title,
       description: description || undefined,
       status,
-      priority: priority || undefined,
+      priority: priority || (undefined as any),
       dueDate: dueDate || undefined,
     };
 
@@ -110,11 +119,13 @@ export function TaskForm({
   };
 
   const handleClose = () => {
-    setTitle("");
-    setDescription("");
-    setStatus("todo");
-    setPriority("");
-    setDueDate(undefined);
+    if (!task) {
+      setTitle("");
+      setDescription("");
+      setStatus("todo");
+      setPriority("");
+      setDueDate(undefined);
+    }
     onClose();
   };
 
@@ -202,7 +213,7 @@ export function TaskForm({
                   <Calendar
                     mode="single"
                     selected={dueDate}
-                    onSelect={setDueDate}
+                    onSelect={setDueDate as any}
                     initialFocus
                   />
                 </PopoverContent>

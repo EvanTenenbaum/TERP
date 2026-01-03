@@ -925,7 +925,7 @@ export default function ClientProfilePage() {
                     <Checkbox
                       id="edit-isBuyer"
                       name="isBuyer"
-                      defaultChecked={client.isBuyer || false}
+                      checked={client.isBuyer || false}
                     />
                     <Label
                       htmlFor="edit-isBuyer"
@@ -938,7 +938,7 @@ export default function ClientProfilePage() {
                     <Checkbox
                       id="edit-isSeller"
                       name="isSeller"
-                      defaultChecked={client.isSeller || false}
+                      checked={client.isSeller || false}
                     />
                     <Label
                       htmlFor="edit-isSeller"
@@ -951,7 +951,7 @@ export default function ClientProfilePage() {
                     <Checkbox
                       id="edit-isBrand"
                       name="isBrand"
-                      defaultChecked={client.isBrand || false}
+                      checked={client.isBrand || false}
                     />
                     <Label
                       htmlFor="edit-isBrand"
@@ -964,7 +964,7 @@ export default function ClientProfilePage() {
                     <Checkbox
                       id="edit-isReferee"
                       name="isReferee"
-                      defaultChecked={client.isReferee || false}
+                      checked={client.isReferee || false}
                     />
                     <Label
                       htmlFor="edit-isReferee"
@@ -977,7 +977,7 @@ export default function ClientProfilePage() {
                     <Checkbox
                       id="edit-isContractor"
                       name="isContractor"
-                      defaultChecked={client.isContractor || false}
+                      checked={client.isContractor || false}
                     />
                     <Label
                       htmlFor="edit-isContractor"

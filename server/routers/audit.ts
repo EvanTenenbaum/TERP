@@ -18,6 +18,7 @@ import {
   vendors,
 } from "../../drizzle/schema";
 import { adminProcedure, router } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 
 export const auditRouter = router({
   /**
@@ -50,7 +51,7 @@ export const auditRouter = router({
         .limit(1);
 
       if (!client) {
-        return { error: "Client not found" };
+        throw new TRPCError({ code: "NOT_FOUND", message: "Client not found" });
       }
 
       // Build date filter
@@ -204,7 +205,7 @@ export const auditRouter = router({
         .limit(1);
 
       if (!batch) {
-        return { error: "Batch not found" };
+        throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
       }
 
       // Build date filter
@@ -302,7 +303,7 @@ export const auditRouter = router({
         .limit(1);
 
       if (!order) {
-        return { error: "Order not found" };
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
 
       // Get line items from orderLineItems table
@@ -398,7 +399,7 @@ export const auditRouter = router({
         .limit(1);
 
       if (!vendor) {
-        return { error: "Vendor not found" };
+        throw new TRPCError({ code: "NOT_FOUND", message: "Vendor not found" });
       }
 
       // Build date filter for bills
