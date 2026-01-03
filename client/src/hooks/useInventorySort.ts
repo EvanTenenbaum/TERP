@@ -3,10 +3,10 @@
  * Manages inventory table sorting state and logic
  */
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 export type SortDirection = "asc" | "desc" | null;
-export type SortableColumn = 
+export type SortableColumn =
   | "sku"
   | "product"
   | "brand"
@@ -22,19 +22,39 @@ interface SortState {
   direction: SortDirection;
 }
 
+export interface InventorySortableRow {
+  batch?: {
+    sku?: string;
+    grade?: string;
+    batchStatus?: string;
+    onHandQty?: string | number;
+    reservedQty?: string | number;
+    quarantineQty?: string | number;
+    holdQty?: string | number;
+  };
+  product?: { nameCanonical?: string };
+  brand?: { name?: string };
+  vendor?: { name?: string };
+}
+
 export function useInventorySort() {
   const [sortState, setSortState] = useState<SortState>({
     column: null,
     direction: null,
   });
 
+  const toNumber = (value: string | number | undefined | null) => {
+    const parsed = Number.parseFloat(String(value ?? "0"));
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
   const toggleSort = (column: SortableColumn) => {
-    setSortState((prev) => {
+    setSortState(prev => {
       if (prev.column !== column) {
         // New column: start with ascending
         return { column, direction: "asc" };
       }
-      
+
       // Same column: cycle through asc -> desc -> null
       if (prev.direction === "asc") {
         return { column, direction: "desc" };
@@ -46,14 +66,14 @@ export function useInventorySort() {
     });
   };
 
-  const sortData = <T extends any[]>(data: T): T => {
+  const sortData = <T extends InventorySortableRow[]>(data: T): T => {
     if (!sortState.column || !sortState.direction) {
       return data;
     }
 
     const sorted = [...data].sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
+      let aVal: string | number = 0;
+      let bVal: string | number = 0;
 
       switch (sortState.column) {
         case "sku":
@@ -77,29 +97,31 @@ export function useInventorySort() {
           bVal = b.batch?.grade || "";
           break;
         case "status":
-          aVal = a.batch?.status || "";
-          bVal = b.batch?.status || "";
+          aVal = a.batch?.batchStatus || "";
+          bVal = b.batch?.batchStatus || "";
           break;
         case "onHand":
-          aVal = parseFloat(a.batch?.onHandQty || "0");
-          bVal = parseFloat(b.batch?.onHandQty || "0");
+          aVal = toNumber(a.batch?.onHandQty);
+          bVal = toNumber(b.batch?.onHandQty);
           break;
         case "reserved":
-          aVal = parseFloat(a.batch?.reservedQty || "0");
-          bVal = parseFloat(b.batch?.reservedQty || "0");
+          aVal = toNumber(a.batch?.reservedQty);
+          bVal = toNumber(b.batch?.reservedQty);
           break;
         case "available":
-          const aOnHand = parseFloat(a.batch?.onHandQty || "0");
-          const aReserved = parseFloat(a.batch?.reservedQty || "0");
-          const aQuarantine = parseFloat(a.batch?.quarantineQty || "0");
-          const aHold = parseFloat(a.batch?.holdQty || "0");
-          aVal = aOnHand - aReserved - aQuarantine - aHold;
-          
-          const bOnHand = parseFloat(b.batch?.onHandQty || "0");
-          const bReserved = parseFloat(b.batch?.reservedQty || "0");
-          const bQuarantine = parseFloat(b.batch?.quarantineQty || "0");
-          const bHold = parseFloat(b.batch?.holdQty || "0");
-          bVal = bOnHand - bReserved - bQuarantine - bHold;
+          {
+            const aOnHand = toNumber(a.batch?.onHandQty);
+            const aReserved = toNumber(a.batch?.reservedQty);
+            const aQuarantine = toNumber(a.batch?.quarantineQty);
+            const aHold = toNumber(a.batch?.holdQty);
+            aVal = aOnHand - aReserved - aQuarantine - aHold;
+
+            const bOnHand = toNumber(b.batch?.onHandQty);
+            const bReserved = toNumber(b.batch?.reservedQty);
+            const bQuarantine = toNumber(b.batch?.quarantineQty);
+            const bHold = toNumber(b.batch?.holdQty);
+            bVal = bOnHand - bReserved - bQuarantine - bHold;
+          }
           break;
         default:
           return 0;
@@ -124,4 +146,3 @@ export function useInventorySort() {
     sortData,
   };
 }
-

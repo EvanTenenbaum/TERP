@@ -8318,6 +8318,8 @@ _Deprecated duplicate entries removed:_ Command palette, debug dashboard, and an
 
 **Goal:** Fix the 5 broken modules, data integrity issues, and UI bugs that undermine user trust.
 
+**Status:** ✅ COMPLETE (Jan 3, 2026) — STAB-001, STAB-002, and STAB-003 stabilized dashboard KPIs, validation, and table interactions.
+
 | Task ID      | Title                                                                            | Priority | Estimate | Spec                                                 |
 | :----------- | :------------------------------------------------------------------------------- | :------- | :------- | :--------------------------------------------------- |
 | **STAB-001** | Fix Broken Modules (Tasks, Fulfillment, Procurement, Accounting, Sales Portal)   | CRITICAL | 8h       | [📋 Spec](../specs/ux-improvements/STAB-001-SPEC.md) |
