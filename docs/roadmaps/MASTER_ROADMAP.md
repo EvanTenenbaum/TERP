@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.31
+**Version:** 2.27
 **Last Updated:** January 3, 2026 (QA Technical Debt Added)
 **Status:** Active
 
@@ -9133,3 +9133,289 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 - **Lines analyzed:** ~15,000
 - **Passing checks:** 308
 - **Issues identified:** 44 (3 critical, 14 high, 27 medium)
+
+
+---
+
+## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
+
+**Version:** 2.27  
+**Added:** January 3, 2026  
+**Status:** 🟡 READY FOR EXECUTION  
+**Total Estimated Effort:** 92 hours
+
+This section contains new work items identified during Tier 1 customer readiness review. Items are triaged by priority and grouped into two logical sprints.
+
+### Sprint Overview
+
+| Sprint | Focus | Hours | Priority Items |
+|--------|-------|-------|----------------|
+| **Sprint F** | Verification & Validation | 44h | QA-076 through QA-080 |
+| **Sprint G** | Logic Testing & Credit System | 48h | QA-081 through QA-083, FEATURE-023 |
+
+---
+
+### 🔴 P0 - CRITICAL PRIORITY (Must Complete Before Customer Demo)
+
+#### QA-076: Live Site Feature Verification Audit
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** All pages (production site)
+- **Dependency:** None
+
+**Description:** Comprehensive audit to confirm all Sprint A-E features are visible and usable on the production site. This includes verifying all UX/UI changes were actually implemented and work correctly.
+
+**Deliverables:**
+1. Verify all 27 navigation items are accessible and functional
+2. Test all actionable KPI cards navigate to correct filtered views
+3. Confirm all dashboard widgets display real data
+4. Verify all CRUD operations work on production
+5. Document any gaps between expected and actual functionality
+6. Create remediation list for any missing features
+
+**Acceptance Criteria:**
+- [ ] All Sprint A features (Feature Flags, VIP Impersonation) verified working
+- [ ] All Sprint B features (Navigation, KPIs, Tables) verified working
+- [ ] All Sprint C features (Accounting, VIP Portal) verified working
+- [ ] All Sprint D features (Sales Sheets, Inventory, Locations) verified working
+- [ ] All Sprint E features (Calendar, Vendors, CRM) verified working
+- [ ] Gap analysis document produced
+
+---
+
+#### QA-077: Navigation Sidebar Simplification
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/components/Sidebar.tsx`, Navigation components
+- **Dependency:** None
+
+**Description:** Audit current navigation item count, identify redundant or confusing navigation paths, and simplify flows to reduce cognitive load for users.
+
+**Deliverables:**
+1. Audit current navigation structure (count all items)
+2. Identify redundant navigation paths
+3. Propose simplified navigation hierarchy
+4. Implement navigation consolidation
+5. Update navigation tests
+
+**Acceptance Criteria:**
+- [ ] Navigation audit document completed
+- [ ] Redundant items identified and removed
+- [ ] Navigation depth reduced where possible
+- [ ] User flows simplified
+- [ ] All navigation tests passing
+
+---
+
+### 🟡 P1 - HIGH PRIORITY (Should Complete for Pilot)
+
+#### QA-078: Comprehensive Button & Save Testing
+- **Priority:** P1 (HIGH)
+- **Estimate:** 12 hours
+- **Status:** 🟡 READY
+- **Module:** All pages
+- **Dependency:** None
+
+**Description:** Systematic testing of ALL buttons across all pages to ensure they function correctly, and ALL save operations persist data properly.
+
+**Deliverables:**
+1. Create button inventory across all pages
+2. Test each button for correct functionality
+3. Test all form save operations
+4. Document any broken or non-functional buttons
+5. Fix identified issues
+
+**Acceptance Criteria:**
+- [ ] Button inventory document created
+- [ ] All buttons tested and documented
+- [ ] All save operations verified
+- [ ] Broken buttons fixed or documented
+- [ ] E2E tests added for critical buttons
+
+---
+
+#### QA-079: Inventory Logic Verification
+- **Priority:** P1 (HIGH)
+- **Estimate:** 10 hours
+- **Status:** 🟡 READY
+- **Module:** `server/routers/inventory.ts`, `client/src/pages/InventoryPage.tsx`
+- **Dependency:** None
+
+**Description:** Comprehensive testing of all inventory calculations, batch tracking, location logic, and stock level calculations.
+
+**Deliverables:**
+1. Test inventory quantity calculations
+2. Verify inventory value calculations
+3. Test batch tracking and location logic
+4. Verify intake/outtake workflows
+5. Test stock level and reorder point calculations
+
+**Acceptance Criteria:**
+- [ ] All quantity calculations verified correct
+- [ ] All value calculations verified correct
+- [ ] Batch tracking working correctly
+- [ ] Location assignments working correctly
+- [ ] Stock level alerts functioning
+
+---
+
+#### QA-080: Money/Accounting Logic Verification
+- **Priority:** P1 (HIGH)
+- **Estimate:** 10 hours
+- **Status:** 🟡 READY
+- **Module:** `server/routers/accounting.ts`, Accounting pages
+- **Dependency:** None
+
+**Description:** Comprehensive testing of all financial calculations including AR, AP, payments, invoices, and COGS.
+
+**Deliverables:**
+1. Test AR/AP calculations
+2. Verify invoice total calculations
+3. Test payment application logic
+4. Verify fiscal period calculations
+5. Test COGS calculations
+
+**Acceptance Criteria:**
+- [ ] AR totals match expected values
+- [ ] AP totals match expected values
+- [ ] Payment applications correct
+- [ ] Fiscal period boundaries respected
+- [ ] COGS calculations accurate
+
+---
+
+#### QA-081: Client Logic Verification
+- **Priority:** P1 (HIGH)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** `server/routers/clients.ts`, `client/src/pages/ClientsPage.tsx`
+- **Dependency:** None
+
+**Description:** Comprehensive testing of client CRUD operations, debt tracking, aging calculations, tier assignments, and purchase history.
+
+**Deliverables:**
+1. Test client CRUD operations
+2. Verify debt tracking calculations
+3. Test aging calculations (30/60/90 day buckets)
+4. Verify client tier assignments
+5. Test purchase history tracking
+
+**Acceptance Criteria:**
+- [ ] Client create/read/update/delete working
+- [ ] Debt totals calculated correctly
+- [ ] Aging buckets assigned correctly
+- [ ] Tier assignments working
+- [ ] Purchase history accurate
+
+---
+
+#### QA-082: Credit Limit Logic Testing & Improvement
+- **Priority:** P1 (HIGH)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** `server/routers/clients.ts`, `server/routers/orders.ts`
+- **Dependency:** QA-081
+
+**Description:** Test current credit limit enforcement, verify warnings and blocks, test override workflows, and improve UX feedback.
+
+**Deliverables:**
+1. Test credit limit enforcement on order creation
+2. Verify credit limit warning messages
+3. Test credit limit block behavior
+4. Test credit limit override workflows
+5. Improve credit limit UX feedback
+
+**Acceptance Criteria:**
+- [ ] Credit limits enforced on orders
+- [ ] Warning messages displayed at 80% utilization
+- [ ] Orders blocked at 100% utilization (unless override)
+- [ ] Override workflow documented and working
+- [ ] UX feedback clear and actionable
+
+---
+
+### 🟢 P2 - MEDIUM PRIORITY (Nice to Have)
+
+#### QA-083: Bulk SKU Product Image Addition
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Module:** `scripts/seed/`, Inventory components
+- **Dependency:** None
+
+**Description:** Add bulk product images to mock/seed data to ensure all SKUs have representative images for demos and testing.
+
+**Deliverables:**
+1. Source representative product images by category
+2. Update seed scripts to assign images to SKUs
+3. Support multiple images per SKU
+4. Ensure images display correctly in UI
+
+**Acceptance Criteria:**
+- [ ] All seeded SKUs have at least one image
+- [ ] Images appropriate for product category
+- [ ] Multiple images supported per SKU
+- [ ] Images display correctly in inventory views
+
+---
+
+#### FEATURE-023: Product-as-Credit/Payment System
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 24 hours
+- **Status:** 🟡 READY
+- **Module:** `server/routers/accounting.ts`, `server/routers/clients.ts`, `server/routers/inventory.ts`
+- **Dependency:** QA-080, QA-081
+
+**Description:** Enable product to be used as credit against client debt, or as payment from user to client for open AP balances. This creates a barter/trade system within the accounting framework.
+
+**Deliverables:**
+1. Design product credit transaction schema
+2. Implement product-as-credit against AR (client owes us)
+3. Implement product-as-payment against AP (we owe client)
+4. Track product credit transactions in accounting
+5. Integrate with existing AR/AP aging reports
+6. Create UI for product credit transactions
+
+**Acceptance Criteria:**
+- [ ] Product can be applied as credit to client AR balance
+- [ ] Product can be applied as payment to vendor AP balance
+- [ ] Transactions tracked in accounting ledger
+- [ ] Product credit appears in AR/AP aging reports
+- [ ] UI allows creating product credit transactions
+- [ ] Inventory adjusted when product used as credit/payment
+
+**Technical Notes:**
+- New transaction type: `PRODUCT_CREDIT` and `PRODUCT_PAYMENT`
+- Links inventory batch to accounting transaction
+- Requires fair market value assignment for product
+- Should integrate with existing payment application logic
+
+---
+
+### Sprint Execution Order
+
+**Recommended Sequence:**
+
+1. **Week 1:** QA-076 (Live Verification) + QA-077 (Navigation) = 14h
+2. **Week 2:** QA-078 (Buttons) + QA-079 (Inventory) = 22h
+3. **Week 3:** QA-080 (Money) + QA-081 (Clients) = 18h
+4. **Week 4:** QA-082 (Credit Limits) + QA-083 (Images) = 14h
+5. **Week 5-6:** FEATURE-023 (Product-as-Credit) = 24h
+
+**Total:** 92 hours over 6 weeks
+
+---
+
+### Success Metrics
+
+| Metric | Target |
+|--------|--------|
+| Live site features verified | 100% |
+| Navigation items optimized | Reduce by 20% |
+| Button functionality | 100% working |
+| Logic verification coverage | All modules |
+| Credit limit enforcement | 100% accurate |
+| Product credit system | Fully functional |
+
