@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import {
   notificationPreferences,
   notifications,
@@ -168,7 +168,7 @@ const notificationRecipientWhere = (recipient: ResolvedRecipient) =>
     recipient.recipientType === "user"
       ? eq(notifications.userId, ensureIdentifier(recipient.userId))
       : eq(notifications.clientId, ensureIdentifier(recipient.clientId)),
-    eq(notifications.isDeleted, false)
+    or(eq(notifications.isDeleted, false), isNull(notifications.isDeleted))
   );
 
 const preferenceRecipientWhere = (recipient: ResolvedRecipient) =>
