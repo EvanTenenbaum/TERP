@@ -1,14 +1,12 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { useLocation } from "wouter";
-import { AppSidebar } from "./AppSidebar";
-import { AppHeader } from "./AppHeader";
+import { Layout } from "./Layout";
 
 interface AppShellProps {
   children: ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [location] = useLocation();
 
   // Authentication removed - app is now publicly accessible
@@ -22,19 +20,6 @@ export function AppShell({ children }: AppShellProps) {
     location === "/" ||
     location === "/dashboard" ||
     location.startsWith("/dashboard/");
-  const shouldShowAppSidebar = !isDashboardRoute;
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {shouldShowAppSidebar && (
-        <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      )}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        {shouldShowAppSidebar && (
-          <AppHeader onMenuClick={() => setSidebarOpen(true)} />
-        )}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
-      </div>
-    </div>
-  );
+  return <Layout showSidebar={!isDashboardRoute}>{children}</Layout>;
 }
