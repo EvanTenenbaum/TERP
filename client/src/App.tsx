@@ -6,6 +6,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardV3 from "./pages/DashboardV3";
 import Inventory from "@/pages/Inventory";
+import ProductsPage from "@/pages/ProductsPage";
+import VendorsPage from "@/pages/VendorsPage";
+import UsersPage from "@/pages/UsersPage";
 import { AppShell } from "./components/layout/AppShell";
 import Settings from "@/pages/Settings";
 import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
@@ -35,11 +38,7 @@ import AdminSetupPage from "@/pages/AdminSetupPage";
 import NeedsManagementPage from "@/pages/NeedsManagementPage";
 import InterestListPage from "@/pages/InterestListPage";
 import VendorSupplyPage from "@/pages/VendorSupplyPage";
-// DEPRECATED: VendorsPage and VendorProfilePage are replaced by redirects
-// import VendorsPage from "@/pages/VendorsPage";
-// import VendorProfilePage from "@/pages/VendorProfilePage";
 import VendorRedirect from "@/components/VendorRedirect";
-import { Redirect } from "wouter";
 import PurchaseOrdersPage from "@/pages/PurchaseOrdersPage";
 import ReturnsPage from "@/pages/ReturnsPage";
 import SampleManagement from "@/pages/SampleManagement";
@@ -95,6 +94,7 @@ function Router() {
               <Route path="/dashboard" component={DashboardV3} />
               <Route path="/inventory" component={Inventory} />
               <Route path="/inventory/:id" component={Inventory} />
+              <Route path="/products" component={ProductsPage} />
               {/* Accounting - redirect /accounting to /accounting/dashboard */}
               <Route path="/accounting" component={AccountingDashboard} />
               <Route
@@ -127,6 +127,7 @@ function Router() {
               <Route path="/accounting/expenses" component={Expenses} />
               <Route path="/clients" component={ClientsListPage} />
               <Route path="/clients/:id" component={ClientProfilePage} />
+              <Route path="/users" component={UsersPage} />
               <Route path="/pricing/rules" component={PricingRulesPage} />
               <Route path="/pricing/profiles" component={PricingProfilesPage} />
               <Route path="/sales-sheets" component={SalesSheetCreatorPage} />
@@ -150,11 +151,8 @@ function Router() {
               <Route path="/needs" component={NeedsManagementPage} />
               <Route path="/interest-list" component={InterestListPage} />
               <Route path="/vendor-supply" component={VendorSupplyPage} />
-              {/* DEPRECATED: /vendors routes redirect to /clients with supplier filter */}
+              <Route path="/vendors" component={VendorsPage} />
               <Route path="/vendors/:id" component={VendorRedirect} />
-              <Route path="/vendors">
-                {() => <Redirect to="/clients?clientTypes=seller" />}
-              </Route>
               <Route path="/purchase-orders" component={PurchaseOrdersPage} />
               <Route path="/returns" component={ReturnsPage} />
               <Route path="/samples" component={SampleManagement} />

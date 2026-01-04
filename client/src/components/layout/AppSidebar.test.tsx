@@ -7,7 +7,7 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { AppSidebar } from "./AppSidebar";
+import { Sidebar } from "./Sidebar";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 let mockLocation = "/";
@@ -51,30 +51,58 @@ describe("AppSidebar navigation", () => {
   it("renders grouped navigation labels in order", () => {
     render(
       <ThemeProvider>
-        <AppSidebar open />
+        <Sidebar open />
       </ThemeProvider>
     );
 
     const groupLabels = screen.getAllByTestId("nav-group-label");
     const labelTexts = groupLabels.map(label => label.textContent?.trim());
 
-    expect(labelTexts).toEqual([
-      "Core",
-      "Sales",
-      "Fulfillment",
-      "Finance",
-      "Settings",
-    ]);
+    expect(labelTexts).toEqual(["Sales", "Inventory", "Finance", "Admin"]);
   });
 
-  it("includes a Spreadsheet navigation link", () => {
+  it("collapses and expands sections", async () => {
     render(
       <ThemeProvider>
-        <AppSidebar open />
+        <Sidebar open />
       </ThemeProvider>
     );
 
-    const spreadsheetLink = screen.getByRole("link", { name: /Spreadsheet/i });
-    expect(spreadsheetLink).toHaveAttribute("href", "/spreadsheet-view");
+    const salesToggle = screen.getByRole("button", { name: /Sales/i });
+    expect(screen.getByRole("link", { name: /Dashboard/i })).toBeVisible();
+
+    salesToggle.click();
+
+    expect(
+      screen.queryByRole("link", { name: /Dashboard/i })
+    ).not.toBeInTheDocument();
+
+    salesToggle.click();
+
+    expect(screen.getByRole("link", { name: /Dashboard/i })).toBeVisible();
+  });
+
+  it("highlights active navigation item", () => {
+    mockLocation = "/orders";
+    render(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByRole("link", { name: /Orders/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
+
+  it("shows user actions", () => {
+    render(
+      <ThemeProvider>
+        <Sidebar open />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByRole("button", { name: /Logout/i })).toBeInTheDocument();
   });
 });
