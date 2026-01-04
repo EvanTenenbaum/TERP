@@ -9134,7 +9134,6 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 - **Passing checks:** 308
 - **Issues identified:** 44 (3 critical, 14 high, 27 medium)
 
-
 ---
 
 ## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
@@ -9148,16 +9147,17 @@ This section contains new work items identified during Tier 1 customer readiness
 
 ### Sprint Overview
 
-| Sprint | Focus | Hours | Priority Items |
-|--------|-------|-------|----------------|
-| **Sprint F** | Verification & Validation | 44h | QA-076 through QA-080 |
-| **Sprint G** | Logic Testing & Credit System | 48h | QA-081 through QA-083, FEATURE-023 |
+| Sprint       | Focus                         | Hours | Priority Items                     |
+| ------------ | ----------------------------- | ----- | ---------------------------------- |
+| **Sprint F** | Verification & Validation     | 44h   | QA-076 through QA-080              |
+| **Sprint G** | Logic Testing & Credit System | 48h   | QA-081 through QA-083, FEATURE-023 |
 
 ---
 
 ### 🔴 P0 - CRITICAL PRIORITY (Must Complete Before Customer Demo)
 
 #### QA-076: Live Site Feature Verification Audit
+
 - **Priority:** P0 (CRITICAL)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9167,6 +9167,7 @@ This section contains new work items identified during Tier 1 customer readiness
 **Description:** Comprehensive audit to confirm all Sprint A-E features are visible and usable on the production site. This includes verifying all UX/UI changes were actually implemented and work correctly.
 
 **Deliverables:**
+
 1. Verify all 27 navigation items are accessible and functional
 2. Test all actionable KPI cards navigate to correct filtered views
 3. Confirm all dashboard widgets display real data
@@ -9175,6 +9176,7 @@ This section contains new work items identified during Tier 1 customer readiness
 6. Create remediation list for any missing features
 
 **Acceptance Criteria:**
+
 - [ ] All Sprint A features (Feature Flags, VIP Impersonation) verified working
 - [ ] All Sprint B features (Navigation, KPIs, Tables) verified working
 - [ ] All Sprint C features (Accounting, VIP Portal) verified working
@@ -9185,6 +9187,7 @@ This section contains new work items identified during Tier 1 customer readiness
 ---
 
 #### QA-077: Navigation Sidebar Simplification
+
 - **Priority:** P0 (CRITICAL)
 - **Estimate:** 6 hours
 - **Status:** 🟡 READY
@@ -9194,6 +9197,7 @@ This section contains new work items identified during Tier 1 customer readiness
 **Description:** Audit current navigation item count, identify redundant or confusing navigation paths, and simplify flows to reduce cognitive load for users.
 
 **Deliverables:**
+
 1. Audit current navigation structure (count all items)
 2. Identify redundant navigation paths
 3. Propose simplified navigation hierarchy
@@ -9201,6 +9205,7 @@ This section contains new work items identified during Tier 1 customer readiness
 5. Update navigation tests
 
 **Acceptance Criteria:**
+
 - [ ] Navigation audit document completed
 - [ ] Redundant items identified and removed
 - [ ] Navigation depth reduced where possible
@@ -9212,6 +9217,7 @@ This section contains new work items identified during Tier 1 customer readiness
 ### 🟡 P1 - HIGH PRIORITY (Should Complete for Pilot)
 
 #### QA-078: Comprehensive Button & Save Testing
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 12 hours
 - **Status:** 🟡 READY
@@ -9221,6 +9227,7 @@ This section contains new work items identified during Tier 1 customer readiness
 **Description:** Systematic testing of ALL buttons across all pages to ensure they function correctly, and ALL save operations persist data properly.
 
 **Deliverables:**
+
 1. Create button inventory across all pages
 2. Test each button for correct functionality
 3. Test all form save operations
@@ -9228,6 +9235,7 @@ This section contains new work items identified during Tier 1 customer readiness
 5. Fix identified issues
 
 **Acceptance Criteria:**
+
 - [ ] Button inventory document created
 - [ ] All buttons tested and documented
 - [ ] All save operations verified
@@ -9237,6 +9245,7 @@ This section contains new work items identified during Tier 1 customer readiness
 ---
 
 #### QA-079: Inventory Logic Verification
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 10 hours
 - **Status:** 🟡 READY
@@ -9246,6 +9255,7 @@ This section contains new work items identified during Tier 1 customer readiness
 **Description:** Comprehensive testing of all inventory calculations, batch tracking, location logic, and stock level calculations.
 
 **Deliverables:**
+
 1. Test inventory quantity calculations
 2. Verify inventory value calculations
 3. Test batch tracking and location logic
@@ -9253,6 +9263,7 @@ This section contains new work items identified during Tier 1 customer readiness
 5. Test stock level and reorder point calculations
 
 **Acceptance Criteria:**
+
 - [ ] All quantity calculations verified correct
 - [ ] All value calculations verified correct
 - [ ] Batch tracking working correctly
@@ -9262,6 +9273,7 @@ This section contains new work items identified during Tier 1 customer readiness
 ---
 
 #### QA-080: Money/Accounting Logic Verification
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 10 hours
 - **Status:** 🟡 READY
@@ -9271,6 +9283,7 @@ This section contains new work items identified during Tier 1 customer readiness
 **Description:** Comprehensive testing of all financial calculations including AR, AP, payments, invoices, and COGS.
 
 **Deliverables:**
+
 1. Test AR/AP calculations
 2. Verify invoice total calculations
 3. Test payment application logic
@@ -9278,6 +9291,7 @@ This section contains new work items identified during Tier 1 customer readiness
 5. Test COGS calculations
 
 **Acceptance Criteria:**
+
 - [ ] AR totals match expected values
 - [ ] AP totals match expected values
 - [ ] Payment applications correct
@@ -9287,6 +9301,7 @@ This section contains new work items identified during Tier 1 customer readiness
 ---
 
 #### QA-081: Client Logic Verification
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9296,6 +9311,7 @@ This section contains new work items identified during Tier 1 customer readiness
 **Description:** Comprehensive testing of client CRUD operations, debt tracking, aging calculations, tier assignments, and purchase history.
 
 **Deliverables:**
+
 1. Test client CRUD operations
 2. Verify debt tracking calculations
 3. Test aging calculations (30/60/90 day buckets)
@@ -9303,6 +9319,7 @@ This section contains new work items identified during Tier 1 customer readiness
 5. Test purchase history tracking
 
 **Acceptance Criteria:**
+
 - [ ] Client create/read/update/delete working
 - [ ] Debt totals calculated correctly
 - [ ] Aging buckets assigned correctly
@@ -9312,6 +9329,7 @@ This section contains new work items identified during Tier 1 customer readiness
 ---
 
 #### QA-082: Credit Limit Logic Testing & Improvement
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9321,6 +9339,7 @@ This section contains new work items identified during Tier 1 customer readiness
 **Description:** Test current credit limit enforcement, verify warnings and blocks, test override workflows, and improve UX feedback.
 
 **Deliverables:**
+
 1. Test credit limit enforcement on order creation
 2. Verify credit limit warning messages
 3. Test credit limit block behavior
@@ -9328,6 +9347,7 @@ This section contains new work items identified during Tier 1 customer readiness
 5. Improve credit limit UX feedback
 
 **Acceptance Criteria:**
+
 - [ ] Credit limits enforced on orders
 - [ ] Warning messages displayed at 80% utilization
 - [ ] Orders blocked at 100% utilization (unless override)
@@ -9339,6 +9359,7 @@ This section contains new work items identified during Tier 1 customer readiness
 ### 🟢 P2 - MEDIUM PRIORITY (Nice to Have)
 
 #### QA-083: Bulk SKU Product Image Addition
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 6 hours
 - **Status:** 🟡 READY
@@ -9348,12 +9369,14 @@ This section contains new work items identified during Tier 1 customer readiness
 **Description:** Add bulk product images to mock/seed data to ensure all SKUs have representative images for demos and testing.
 
 **Deliverables:**
+
 1. Source representative product images by category
 2. Update seed scripts to assign images to SKUs
 3. Support multiple images per SKU
 4. Ensure images display correctly in UI
 
 **Acceptance Criteria:**
+
 - [ ] All seeded SKUs have at least one image
 - [ ] Images appropriate for product category
 - [ ] Multiple images supported per SKU
@@ -9362,6 +9385,7 @@ This section contains new work items identified during Tier 1 customer readiness
 ---
 
 #### FEATURE-023: Product-as-Credit/Payment System
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 24 hours
 - **Status:** 🟡 READY
@@ -9371,6 +9395,7 @@ This section contains new work items identified during Tier 1 customer readiness
 **Description:** Enable product to be used as credit against client debt, or as payment from user to client for open AP balances. This creates a barter/trade system within the accounting framework.
 
 **Deliverables:**
+
 1. Design product credit transaction schema
 2. Implement product-as-credit against AR (client owes us)
 3. Implement product-as-payment against AP (we owe client)
@@ -9379,6 +9404,7 @@ This section contains new work items identified during Tier 1 customer readiness
 6. Create UI for product credit transactions
 
 **Acceptance Criteria:**
+
 - [ ] Product can be applied as credit to client AR balance
 - [ ] Product can be applied as payment to vendor AP balance
 - [ ] Transactions tracked in accounting ledger
@@ -9387,6 +9413,7 @@ This section contains new work items identified during Tier 1 customer readiness
 - [ ] Inventory adjusted when product used as credit/payment
 
 **Technical Notes:**
+
 - New transaction type: `PRODUCT_CREDIT` and `PRODUCT_PAYMENT`
 - Links inventory batch to accounting transaction
 - Requires fair market value assignment for product
@@ -9410,16 +9437,14 @@ This section contains new work items identified during Tier 1 customer readiness
 
 ### Success Metrics
 
-| Metric | Target |
-|--------|--------|
-| Live site features verified | 100% |
-| Navigation items optimized | Reduce by 20% |
-| Button functionality | 100% working |
-| Logic verification coverage | All modules |
-| Credit limit enforcement | 100% accurate |
-| Product credit system | Fully functional |
-
-
+| Metric                      | Target           |
+| --------------------------- | ---------------- |
+| Live site features verified | 100%             |
+| Navigation items optimized  | Reduce by 20%    |
+| Button functionality        | 100% working     |
+| Logic verification coverage | All modules      |
+| Credit limit enforcement    | 100% accurate    |
+| Product credit system       | Fully functional |
 
 ---
 
@@ -9440,6 +9465,7 @@ This section documents findings from a comprehensive UI/UX audit conducted on Ja
 These are functional bugs that break core workflows or block users.
 
 #### BUG-040: Task/Client Edit Modal Shows Empty Fields
+
 - **Priority:** P0 (CRITICAL)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9449,6 +9475,7 @@ These are functional bugs that break core workflows or block users.
 **Problem:** Editing a task or client opens a modal where Title and Description fields are empty instead of showing existing values. Users risk overwriting data.
 
 **Acceptance Criteria:**
+
 - [ ] Edit modals pre-populate all fields with current values
 - [ ] Required fields clearly highlighted
 - [ ] Save button disabled until required fields completed
@@ -9457,6 +9484,7 @@ These are functional bugs that break core workflows or block users.
 ---
 
 #### BUG-041: Fulfillment Batch Status Update Fails
+
 - **Priority:** P0 (CRITICAL)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9466,6 +9494,7 @@ These are functional bugs that break core workflows or block users.
 **Problem:** Clicking a batch card in Fulfillment shows error "Failed to update batch status". Core workflow is broken.
 
 **Acceptance Criteria:**
+
 - [ ] Batch status updates successfully
 - [ ] Meaningful error messages displayed on failure
 - [ ] Errors logged for debugging
@@ -9474,6 +9503,7 @@ These are functional bugs that break core workflows or block users.
 ---
 
 #### BUG-042: Misleading CTA Redirects (Add Need, New Quote)
+
 - **Priority:** P0 (CRITICAL)
 - **Estimate:** 6 hours
 - **Status:** 🟡 READY
@@ -9483,6 +9513,7 @@ These are functional bugs that break core workflows or block users.
 **Problem:** "Add Need" redirects to Clients page instead of opening a form. "New Quote" redirects to "Create Sales Order" instead of quote builder.
 
 **Acceptance Criteria:**
+
 - [ ] "Add Need" opens modal or page to capture client needs
 - [ ] "New Quote" leads to quote creation form
 - [ ] All CTAs reviewed and corrected
@@ -9491,6 +9522,7 @@ These are functional bugs that break core workflows or block users.
 ---
 
 #### BUG-043: Form Validation Missing - Silent Failures
+
 - **Priority:** P0 (CRITICAL)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9500,6 +9532,7 @@ These are functional bugs that break core workflows or block users.
 **Problem:** Creating a transaction without required fields causes silent failure - clicking "Create Transaction" does nothing with no feedback.
 
 **Acceptance Criteria:**
+
 - [ ] Inline validation with clear error messages
 - [ ] Required fields highlighted on validation failure
 - [ ] Toast/success message after successful creation
@@ -9511,8 +9544,8 @@ These are functional bugs that break core workflows or block users.
 
 These are major usability issues causing significant friction.
 
-
 #### UX-025: Navigation Consolidation (20+ Items to ~10)
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 16 hours
 - **Status:** 🟡 READY
@@ -9523,18 +9556,19 @@ These are major usability issues causing significant friction.
 
 **Proposed Grouping:**
 
-| Group | Items |
-|-------|-------|
-| **Home** | Dashboard |
-| **Sales** | Sales Portal, Quotes, Orders, Fulfillment, Pick & Pack |
-| **Clients** | Clients, Live Shopping, Sales Sheets, Matchmaking |
-| **Inventory** | Inventory, Procurement, Returns, Samples, Locations |
-| **Finance** | Accounting, Pricing Rules, Pricing Profiles, Credit Settings |
-| **Operations** | Tasks, Calendar, Photography |
-| **Insights** | Analytics, Leaderboard |
-| **System** | Settings, Help |
+| Group          | Items                                                        |
+| -------------- | ------------------------------------------------------------ |
+| **Home**       | Dashboard                                                    |
+| **Sales**      | Sales Portal, Quotes, Orders, Fulfillment, Pick & Pack       |
+| **Clients**    | Clients, Live Shopping, Sales Sheets, Matchmaking            |
+| **Inventory**  | Inventory, Procurement, Returns, Samples, Locations          |
+| **Finance**    | Accounting, Pricing Rules, Pricing Profiles, Credit Settings |
+| **Operations** | Tasks, Calendar, Photography                                 |
+| **Insights**   | Analytics, Leaderboard                                       |
+| **System**     | Settings, Help                                               |
 
 **Acceptance Criteria:**
+
 - [ ] Navigation grouped under collapsible headings
 - [ ] Search/filter function for nav items
 - [ ] Fixed menu using browser scroll (no nested scroll)
@@ -9543,6 +9577,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-027: Accessibility - Missing Form Labels
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9552,6 +9587,7 @@ These are major usability issues causing significant friction.
 **Problem:** Many fields use placeholder text as only label. Screen readers don't announce placeholders reliably.
 
 **Acceptance Criteria:**
+
 - [ ] Persistent labels above each input
 - [ ] `aria-label` attributes on all inputs
 - [ ] Labels associated via `for`/`id`
@@ -9560,6 +9596,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-028: Accessibility - Keyboard Navigation Issues
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9569,6 +9606,7 @@ These are major usability issues causing significant friction.
 **Problem:** Modals trap focus inconsistently. Some toggles (Credit Settings) not reachable via keyboard.
 
 **Acceptance Criteria:**
+
 - [ ] All focusable elements reachable via Tab/Shift+Tab
 - [ ] Visible focus states on all elements
 - [ ] Enter and Space work for toggles
@@ -9578,6 +9616,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-029: Mobile Responsive Layout
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 16 hours
 - **Status:** 🟡 READY
@@ -9587,6 +9626,7 @@ These are major usability issues causing significant friction.
 **Problem:** Side menu remains fixed on mobile, occupying significant space. Content requires horizontal scrolling.
 
 **Acceptance Criteria:**
+
 - [ ] Hamburger menu on mobile viewports
 - [ ] Drawer pattern slides over content
 - [ ] Full-width content on small screens
@@ -9597,6 +9637,7 @@ These are major usability issues causing significant friction.
 ### 🟢 P2 - MEDIUM PRIORITY (Should Fix for Production)
 
 #### UX-030: Nested Scrollbars on Dashboard
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9606,6 +9647,7 @@ These are major usability issues causing significant friction.
 **Problem:** Dashboard has nested vertical scrollbar inside browser scroll. Unclear if more content exists below.
 
 **Acceptance Criteria:**
+
 - [ ] Remove nested scroll containers
 - [ ] Page uses browser's primary scroll
 - [ ] Fixed side navigation with independent content scroll
@@ -9613,6 +9655,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-031: Top Bar Icons Need Tooltips
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 2 hours
 - **Status:** 🟡 READY
@@ -9622,6 +9665,7 @@ These are major usability issues causing significant friction.
 **Problem:** Icons (bell, moon, gear, user) have no labels or tooltips. Gear navigates to full Settings page unexpectedly.
 
 **Acceptance Criteria:**
+
 - [ ] Tooltips on hover for all icons
 - [ ] Avatar with dropdown for account actions
 - [ ] Gear opens lightweight preferences popover
@@ -9629,6 +9673,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-032: Hidden Horizontal Scroll in Sales Portal
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9638,6 +9683,7 @@ These are major usability issues causing significant friction.
 **Problem:** Kanban columns extend beyond viewport with thin, non-obvious scrollbar.
 
 **Acceptance Criteria:**
+
 - [ ] Visible navigation arrows for horizontal scroll
 - [ ] Drag-to-scroll enabled
 - [ ] Mouse wheel horizontal scroll support
@@ -9646,6 +9692,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-033: Long Modal Forms Need Wizard Pattern
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9655,6 +9702,7 @@ These are major usability issues causing significant friction.
 **Problem:** Create Event modal has many fields in scrollable area. Users must scroll within modal to see all fields.
 
 **Acceptance Criteria:**
+
 - [ ] Multi-step wizard for complex forms
 - [ ] Progress indicators
 - [ ] Clear primary button per step
@@ -9663,6 +9711,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-034: Technical Jargon Needs Tooltips
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9672,6 +9721,7 @@ These are major usability issues causing significant friction.
 **Problem:** Terms like "Matchmaking Opportunities", "Pricing Rules", "VIP Access", "CashFlow" appear without definitions.
 
 **Acceptance Criteria:**
+
 - [ ] Hover tooltips or info icons explaining each term
 - [ ] Short descriptions under menu items
 - [ ] Glossary in Help section
@@ -9679,6 +9729,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-035: Empty States Need Guidance
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 6 hours
 - **Status:** 🟡 READY
@@ -9688,6 +9739,7 @@ These are major usability issues causing significant friction.
 **Problem:** Pages show "No data available" without guidance. Discouraging and unhelpful.
 
 **Acceptance Criteria:**
+
 - [ ] Friendly empty state illustrations
 - [ ] Brief explanation of what should appear
 - [ ] Call-to-action button (e.g., "Create your first quote")
@@ -9696,6 +9748,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-036: Date/Time Validation Missing
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 3 hours
 - **Status:** 🟡 READY
@@ -9705,6 +9758,7 @@ These are major usability issues causing significant friction.
 **Problem:** Event creation allows end date before start date. Invalid data can be created.
 
 **Acceptance Criteria:**
+
 - [ ] Real-time validation for date ranges
 - [ ] End date auto-adjusts if before start date
 - [ ] Create button disabled until valid
@@ -9713,6 +9767,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-037: Color-Only Status Indicators
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9722,6 +9777,7 @@ These are major usability issues causing significant friction.
 **Problem:** "Active" (green) and negative adjustments (red) distinguished only by color. Color-blind users affected.
 
 **Acceptance Criteria:**
+
 - [ ] Icons or text indicators added (checkmark for active)
 - [ ] Accessible labels for screen readers
 - [ ] Pattern or shape differentiation
@@ -9729,6 +9785,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-038: Low Contrast Text
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9738,6 +9795,7 @@ These are major usability issues causing significant friction.
 **Problem:** Secondary text is small and light grey. Dark mode has insufficient contrast.
 
 **Acceptance Criteria:**
+
 - [ ] Body text minimum 14px
 - [ ] WCAG-compliant contrast ratios (4.5:1)
 - [ ] Font size adjustment option
@@ -9746,6 +9804,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-039: Mobile Tables Need Card View
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9755,6 +9814,7 @@ These are major usability issues causing significant friction.
 **Problem:** Multi-column tables require horizontal scrolling on mobile, making data unreadable.
 
 **Acceptance Criteria:**
+
 - [ ] Card-based summaries on mobile
 - [ ] Key metrics at a glance
 - [ ] Tap to view details
@@ -9765,6 +9825,7 @@ These are major usability issues causing significant friction.
 ### 🔵 P3 - LOW PRIORITY (Nice to Have)
 
 #### UX-040: Redundant Pricing Menu Items
+
 - **Priority:** P3 (LOW)
 - **Estimate:** 2 hours
 - **Status:** 🟡 READY
@@ -9774,12 +9835,14 @@ These are major usability issues causing significant friction.
 **Problem:** "Pricing Rules" and "Pricing Profiles" appear separately though related.
 
 **Acceptance Criteria:**
+
 - [ ] Consolidate into single "Pricing" menu
 - [ ] Sub-tabs for Rules and Profiles
 
 ---
 
 #### UX-041: Inconsistent Spacing and Alignment
+
 - **Priority:** P3 (LOW)
 - **Estimate:** 6 hours
 - **Status:** 🟡 READY
@@ -9789,6 +9852,7 @@ These are major usability issues causing significant friction.
 **Problem:** Cards have unequal widths and inconsistent margins. Skeleton loaders cause layout jumps.
 
 **Acceptance Criteria:**
+
 - [ ] Grid system with consistent gutters
 - [ ] Skeleton loaders match final content size
 - [ ] Consistent card dimensions
@@ -9796,6 +9860,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-042: Mixed Tone and Capitalization
+
 - **Priority:** P3 (LOW)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9805,6 +9870,7 @@ These are major usability issues causing significant friction.
 **Problem:** Inconsistent case ("Create event" vs "New Sample") and abbreviations ("Cr Rcv").
 
 **Acceptance Criteria:**
+
 - [ ] Style guide established (sentence case for actions)
 - [ ] Consistent capitalization applied
 - [ ] Abbreviations expanded or explained
@@ -9812,6 +9878,7 @@ These are major usability issues causing significant friction.
 ---
 
 #### UX-043: Small Touch Targets on Mobile
+
 - **Priority:** P3 (LOW)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9821,6 +9888,7 @@ These are major usability issues causing significant friction.
 **Problem:** Icons and delete buttons are small and close together, causing mis-taps.
 
 **Acceptance Criteria:**
+
 - [ ] Hit areas minimum 44x44px
 - [ ] Adequate spacing between interactive elements
 
@@ -9828,32 +9896,34 @@ These are major usability issues causing significant friction.
 
 ### Summary Table
 
-| Priority | Count | Total Hours | Focus Area |
-|----------|-------|-------------|------------|
-| 🔴 P0 Critical | 4 | 22h | Broken workflows, silent failures |
-| 🟡 P1 High | 6 | 64h | Onboarding, navigation, accessibility, mobile |
-| 🟢 P2 Medium | 10 | 47h | Polish, UX improvements, validation |
-| 🔵 P3 Low | 4 | 16h | Consistency, minor polish |
-| **Total** | **22** | **133h** | |
+| Priority       | Count  | Total Hours | Focus Area                                    |
+| -------------- | ------ | ----------- | --------------------------------------------- |
+| 🔴 P0 Critical | 4      | 22h         | Broken workflows, silent failures             |
+| 🟡 P1 High     | 6      | 64h         | Onboarding, navigation, accessibility, mobile |
+| 🟢 P2 Medium   | 10     | 47h         | Polish, UX improvements, validation           |
+| 🔵 P3 Low      | 4      | 16h         | Consistency, minor polish                     |
+| **Total**      | **22** | **133h**    |                                               |
 
 ---
 
 ### Recommended Execution Order
 
 **Sprint H: Critical Bug Fixes (22h)**
+
 - BUG-040, BUG-041, BUG-042, BUG-043
 
 **Sprint I: High Priority UX (64h)**
+
 - UX-025 (Navigation)
 - UX-027, UX-028 (Accessibility), UX-029 (Mobile)
 
 **Sprint J: Medium Priority Polish (47h)**
+
 - UX-030 through UX-039
 
 **Sprint K: Low Priority Refinement (16h)**
+
 - UX-040 through UX-043
-
-
 
 ---
 
@@ -9871,6 +9941,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 ### 🔴 P0 - CRITICAL (New Items)
 
 #### BUG-044: Developer Messages Visible in Production
+
 - **Priority:** P0 (CRITICAL)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -9880,6 +9951,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 **Problem:** Dashboard shows developer instruction "To see data here, seed the database with: pnpm seed" to end users. This exposes internal tooling and signals "unfinished / internal tool" instead of production system.
 
 **Acceptance Criteria:**
+
 - [ ] Remove all developer-only messages from production UI
 - [ ] Replace with user-safe empty states: "No data yet — create your first X" with CTA
 - [ ] Audit all components for similar developer-facing text
@@ -9888,6 +9960,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 ---
 
 #### BUG-045: New Invoice Button Non-Functional
+
 - **Priority:** P0 (CRITICAL)
 - **Estimate:** 3 hours
 - **Status:** 🟡 READY
@@ -9897,6 +9970,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 **Problem:** "New Invoice" button in Accounting does nothing when clicked. Core accounting workflow is broken.
 
 **Acceptance Criteria:**
+
 - [ ] New Invoice button opens invoice creation modal or page
 - [ ] onClick handler properly implemented
 - [ ] Success/error feedback after creation
@@ -9905,6 +9979,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 ---
 
 #### BUG-046: Data Fetch Failures Block Progress Without Feedback
+
 - **Priority:** P0 (CRITICAL)
 - **Estimate:** 6 hours
 - **Status:** 🟡 READY
@@ -9914,6 +9989,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 **Problem:** When API calls fail (e.g., "Failed to fetch inventory"), the UI still shows action buttons like "Add Item". Users attempt actions that will fail. No retry mechanism provided.
 
 **Acceptance Criteria:**
+
 - [ ] Error state disables dependent action buttons
 - [ ] Clear error message displayed with retry button
 - [ ] Loading states prevent premature interaction
@@ -9924,6 +10000,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 ### 🟡 P1 - HIGH PRIORITY (New Items)
 
 #### UX-044: Page-Level Hierarchy Missing (H1, Subhead, CTA)
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9933,6 +10010,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 **Problem:** Many pages lack a clear H1 heading. Tables appear without context. Users must infer purpose from column names.
 
 **Acceptance Criteria:**
+
 - [ ] Every page has H1 (What am I looking at?)
 - [ ] Every page has subhead (What can I do here?)
 - [ ] Primary CTA visible above the fold
@@ -9941,6 +10019,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 ---
 
 #### UX-045: Tables Need Sticky Headers and Responsive Behavior
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 6 hours
 - **Status:** 🟡 READY
@@ -9950,6 +10029,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 **Problem:** Extremely wide tables with no sticky headers. On scroll, users lose context of what column they're viewing. No responsive behavior for smaller screens.
 
 **Acceptance Criteria:**
+
 - [ ] Sticky headers on all data tables
 - [ ] Horizontal scroll indicator when table exceeds viewport
 - [ ] Column visibility toggle for wide tables
@@ -9958,6 +10038,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 ---
 
 #### UX-046: UI Renders Before Data Ready
+
 - **Priority:** P1 (HIGH)
 - **Estimate:** 8 hours
 - **Status:** 🟡 READY
@@ -9967,6 +10048,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 **Problem:** UI often renders before data is ready. Many actions depend on data that fails silently. This is a systemic issue causing unreliable user experience.
 
 **Acceptance Criteria:**
+
 - [ ] Skeleton loaders for all data-dependent components
 - [ ] Action buttons disabled until data loaded
 - [ ] Consistent loading state pattern across app
@@ -9977,6 +10059,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 ### 🟢 P2 - MEDIUM PRIORITY (New Items)
 
 #### UX-047: Placeholder/Nonsense Copy in Task Names
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 2 hours
 - **Status:** 🟡 READY
@@ -9986,6 +10069,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 **Problem:** Random task names like "Polarized zero tolerance installation" appear in the UI. This reduces confidence in data accuracy and signals unstable system.
 
 **Acceptance Criteria:**
+
 - [ ] Review and clean all seeded/sample data
 - [ ] Use realistic business-relevant sample data
 - [ ] Document sample data standards for future seeding
@@ -9993,6 +10077,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 ---
 
 #### UX-048: Visible Focus States Missing
+
 - **Priority:** P2 (MEDIUM)
 - **Estimate:** 4 hours
 - **Status:** 🟡 READY
@@ -10002,6 +10087,7 @@ These items supplement the existing UI/UX audit findings with additional issues 
 **Problem:** No visible focus states on interactive elements. Keyboard users cannot see which element is focused.
 
 **Acceptance Criteria:**
+
 - [ ] Visible focus ring on all focusable elements
 - [ ] Focus ring meets WCAG contrast requirements
 - [ ] Focus order follows logical reading order
@@ -10011,12 +10097,12 @@ These items supplement the existing UI/UX audit findings with additional issues 
 
 ### Summary of New Items
 
-| Priority | Count | Hours | Focus |
-|----------|-------|-------|-------|
-| 🔴 P0 Critical | 3 | 13h | Developer messages, broken buttons, API failures |
-| 🟡 P1 High | 3 | 22h | Page hierarchy, tables, data loading |
-| 🟢 P2 Medium | 2 | 6h | Sample data, focus states |
-| **Total** | **8** | **41h** | |
+| Priority       | Count | Hours   | Focus                                            |
+| -------------- | ----- | ------- | ------------------------------------------------ |
+| 🔴 P0 Critical | 3     | 13h     | Developer messages, broken buttons, API failures |
+| 🟡 P1 High     | 3     | 22h     | Page hierarchy, tables, data loading             |
+| 🟢 P2 Medium   | 2     | 6h      | Sample data, focus states                        |
+| **Total**      | **8** | **41h** |                                                  |
 
 ---
 
@@ -10032,7 +10118,6 @@ The audit identified these systemic patterns that should inform future developme
 
 These are captured for architectural awareness but not added as individual tasks since they are addressed by existing items (feature flags complete, empty states in progress, routing fixes in BUG-042).
 
-
 ---
 
 ## 📊 Roadmap Comprehensive Review (January 3, 2026)
@@ -10043,12 +10128,12 @@ These are captured for architectural awareness but not added as individual tasks
 
 ### Review Summary
 
-| Metric | Value |
-|--------|-------|
-| Total Task IDs | 233 |
-| Ready/TODO | 71 |
-| Complete | 110 |
-| In Progress | 1 |
+| Metric              | Value       |
+| ------------------- | ----------- |
+| Total Task IDs      | 233         |
+| Ready/TODO          | 71          |
+| Complete            | 110         |
+| In Progress         | 1           |
 | **Gaps Identified** | 9 new tasks |
 
 ---
@@ -10058,18 +10143,21 @@ These are captured for architectural awareness but not added as individual tasks
 ### CODE - Code Quality Cleanup
 
 #### CODE-001: TypeScript Error Cleanup
+
 - **Priority:** P1 (High)
 - **Estimate:** 16 hours
 - **Status:** READY
 - **Module:** Multiple files (see QA report)
 
 **Problem:** 240 TypeScript errors exist in the codebase, concentrated in:
+
 - `server/routers/alerts.ts` (31 errors)
 - `server/routers/inventoryShrinkage.ts` (25 errors)
 - `server/routers/vendorReminders.ts` (10 errors)
 - Various other files
 
 **Deliverables:**
+
 - [ ] Fix all TypeScript errors in alerts.ts
 - [ ] Fix all TypeScript errors in inventoryShrinkage.ts
 - [ ] Fix all TypeScript errors in vendorReminders.ts
@@ -10080,6 +10168,7 @@ These are captured for architectural awareness but not added as individual tasks
 ---
 
 #### CODE-002: Console.log Statement Removal
+
 - **Priority:** P2 (Medium)
 - **Estimate:** 8 hours
 - **Status:** READY
@@ -10088,6 +10177,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** 420 console.log statements exist in production code that should be removed or converted to structured logging.
 
 **Deliverables:**
+
 - [ ] Create logging utility (`lib/logger.ts`)
 - [ ] Replace console.log with structured logging where needed
 - [ ] Remove debug console.log statements
@@ -10097,6 +10187,7 @@ These are captured for architectural awareness but not added as individual tasks
 ---
 
 #### CODE-003: Any Type Elimination
+
 - **Priority:** P2 (Medium)
 - **Estimate:** 24 hours
 - **Status:** READY
@@ -10105,6 +10196,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** 564 instances of `any` type usage create type safety gaps.
 
 **Deliverables:**
+
 - [ ] Audit all `any` type usages
 - [ ] Replace with proper types (80%+ reduction)
 - [ ] Document remaining intentional `any` usages
@@ -10116,6 +10208,7 @@ These are captured for architectural awareness but not added as individual tasks
 ### TEST - Test Coverage Expansion
 
 #### TEST-002: Unit Test Coverage Expansion
+
 - **Priority:** P2 (Medium)
 - **Estimate:** 16 hours
 - **Status:** READY
@@ -10124,6 +10217,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** Unit test coverage is limited. Critical business logic needs test coverage.
 
 **Deliverables:**
+
 - [ ] Add unit tests for accounting calculations
 - [ ] Add unit tests for inventory logic
 - [ ] Add unit tests for credit limit calculations
@@ -10134,6 +10228,7 @@ These are captured for architectural awareness but not added as individual tasks
 ---
 
 #### TEST-003: API Integration Test Suite
+
 - **Priority:** P2 (Medium)
 - **Estimate:** 12 hours
 - **Status:** READY
@@ -10142,6 +10237,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** API endpoints lack integration tests for error handling and edge cases.
 
 **Deliverables:**
+
 - [ ] Create API test suite for orders endpoints
 - [ ] Create API test suite for inventory endpoints
 - [ ] Create API test suite for accounting endpoints
@@ -10153,6 +10249,7 @@ These are captured for architectural awareness but not added as individual tasks
 ### INFRA - Infrastructure Hardening
 
 #### INFRA-004: Automated Backup Scripts
+
 - **Priority:** P1 (High)
 - **Estimate:** 8 hours
 - **Status:** READY
@@ -10161,6 +10258,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** No automated backup scripts exist for database and critical data.
 
 **Deliverables:**
+
 - [ ] Create database backup script
 - [ ] Create S3 backup upload script
 - [ ] Create backup verification script
@@ -10171,6 +10269,7 @@ These are captured for architectural awareness but not added as individual tasks
 ---
 
 #### INFRA-005: Monitoring & Alerting Setup
+
 - **Priority:** P2 (Medium)
 - **Estimate:** 12 hours
 - **Status:** READY
@@ -10179,6 +10278,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** No monitoring or alerting for production issues.
 
 **Deliverables:**
+
 - [ ] Set up error tracking (Sentry or similar)
 - [ ] Set up uptime monitoring
 - [ ] Set up performance monitoring
@@ -10190,6 +10290,7 @@ These are captured for architectural awareness but not added as individual tasks
 ### DOCS - Documentation
 
 #### DOCS-002: API Documentation (OpenAPI)
+
 - **Priority:** P2 (Medium)
 - **Estimate:** 8 hours
 - **Status:** READY
@@ -10198,6 +10299,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** No formal API documentation for external integrations or developer reference.
 
 **Deliverables:**
+
 - [ ] Generate OpenAPI spec from tRPC routes
 - [ ] Create API reference documentation
 - [ ] Document authentication flow
@@ -10207,6 +10309,7 @@ These are captured for architectural awareness but not added as individual tasks
 ---
 
 #### DOCS-003: Developer Onboarding Guide
+
 - **Priority:** P3 (Low)
 - **Estimate:** 6 hours
 - **Status:** READY
@@ -10215,6 +10318,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** New developers lack onboarding documentation.
 
 **Deliverables:**
+
 - [ ] Create CONTRIBUTING.md
 - [ ] Document local development setup
 - [ ] Document architecture overview
@@ -10225,15 +10329,13 @@ These are captured for architectural awareness but not added as individual tasks
 
 ## 📈 Updated Totals
 
-| Priority | Previous | Added | New Total |
-|----------|----------|-------|-----------|
-| P0 Critical | 9 (49h) | 0 | 9 (49h) |
-| P1 High | 14 (118h) | 2 (24h) | 16 (142h) |
-| P2 Medium | 15 (107h) | 6 (80h) | 21 (187h) |
-| P3 Low | 5 (30h) | 1 (6h) | 6 (36h) |
+| Priority        | Previous      | Added        | New Total     |
+| --------------- | ------------- | ------------ | ------------- |
+| P0 Critical     | 9 (49h)       | 0            | 9 (49h)       |
+| P1 High         | 14 (118h)     | 2 (24h)      | 16 (142h)     |
+| P2 Medium       | 15 (107h)     | 6 (80h)      | 21 (187h)     |
+| P3 Low          | 5 (30h)       | 1 (6h)       | 6 (36h)       |
 | **Grand Total** | **43 (304h)** | **9 (110h)** | **52 (414h)** |
-
-
 
 ---
 
@@ -10242,6 +10344,7 @@ These are captured for architectural awareness but not added as individual tasks
 ### UX - User Experience Improvements
 
 #### UX-049: Improve Filter and Sorting UI/Functionality
+
 **Status:** ready  
 **Priority:** HIGH  
 **Estimate:** 8h  
@@ -10250,6 +10353,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** Current filter and sorting UI across data tables lacks visual clarity and intuitive controls. Users need better feedback on active filters and easier access to sorting options.
 
 **Deliverables:**
+
 - [ ] Add clear visual indicators for active filters
 - [ ] Improve sort direction icons and click targets
 - [ ] Add "Clear all filters" button when filters are active
@@ -10260,6 +10364,7 @@ These are captured for architectural awareness but not added as individual tasks
 ---
 
 #### UX-050: Add Sidebar Access to Spreadsheet View
+
 **Status:** complete  
 **Priority:** MEDIUM  
 **Estimate:** 4h  
@@ -10268,6 +10373,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** Users cannot easily access spreadsheet/bulk data view from the main navigation. Need a dedicated sidebar entry for spreadsheet-style data editing.
 
 **Deliverables:**
+
 - [ ] Add "Spreadsheet" or "Data View" item to sidebar navigation
 - [ ] Create route for spreadsheet view if not exists
 - [ ] Ensure spreadsheet view provides bulk editing capabilities
@@ -10278,6 +10384,7 @@ These are captured for architectural awareness but not added as individual tasks
 ### BUG - Bug Fixes
 
 #### BUG-047: Make KPI Cards Actionable When Clicked
+
 **Status:** complete  
 **Priority:** HIGH  
 **Estimate:** 6h  
@@ -10286,6 +10393,7 @@ These are captured for architectural awareness but not added as individual tasks
 **Problem:** KPI metric cards (Total Clients, Low Stock, Active Buyers, etc.) highlight blue on click but don't perform any action. Users expect clicking these cards to drill down into relevant filtered data or show a detail modal.
 
 **Deliverables:**
+
 - [ ] Audit all KPI cards across the application
 - [ ] Add onClick handlers to navigate to filtered views:
   - "Total Clients" → Clients page
@@ -10301,14 +10409,73 @@ These are captured for architectural awareness but not added as individual tasks
 
 ## 📈 Updated Totals (Post-Verification)
 
-| Category | Count | Hours |
-|----------|-------|-------|
-| Verified Complete (this session) | +6 | -40h |
-| Removed/Deferred | +3 | -20h |
-| New Tasks Added | +3 | +18h |
-| **Net Change** | -6 pending | -42h |
+| Category                         | Count      | Hours |
+| -------------------------------- | ---------- | ----- |
+| Verified Complete (this session) | +6         | -40h  |
+| Removed/Deferred                 | +3         | -20h  |
+| New Tasks Added                  | +3         | +18h  |
+| **Net Change**                   | -6 pending | -42h  |
 
 **Roadmap Version:** 2.32  
 **Last Updated:** January 3, 2026  
 **Update Type:** Live site verification + user-requested features
 
+---
+
+## REVISED STRATEGIC EXECUTION PLAN (v3.0) - 2026-01-03
+
+**Redhat QA Analysis:** A comprehensive review of all task specs and the strategic execution plan was performed. 12 critical issues, 28 improvements, and 8 missed opportunities were identified. The roadmap has been updated with improved specifications, consolidated tasks, and a more efficient wave structure.
+
+**Key Changes:**
+
+- **390 TypeScript errors** identified and slated for fixing in Wave 1.
+- **Consolidated 4 sets of overlapping tasks**, reducing total effort by ~25%.
+- **Added 8 new tasks** for missed opportunities (performance, security, accessibility).
+- **Created missing spec files** for VIP Portal and Notification Sprint.
+- **Verified all file paths** and task dependencies.
+- **Standardized acceptance criteria** and test requirements for all tasks.
+- **Regenerated all waves** with improved specs and more accurate estimates.
+
+### Wave 0: Prerequisites (4h)
+
+- Verify current state of all "broken" features
+- Update TypeScript error count
+- Verify notification sprint status
+- Create missing spec files
+
+### Wave 1: Critical Fixes (60h)
+
+- **CODE-001:** TypeScript cleanup (24h) - updated estimate
+- **BUG-043:** Comprehensive Form Validation (12h) - consolidated
+- **BUG-040:** Modal/data population (8h) - verified files
+- **BUG-042:** Navigation/CTA fixes (8h) - verified issues
+- **BUG-044:** Production cleanup (8h) - console.log removal
+
+### Wave 2: UX Foundation (70h)
+
+- **UX-011:** Loading States & Skeleton Loaders (16h) - consolidated
+- **UX-015:** Sidebar improvements (12h) - with spec
+- **UX-022:** Table Filter/Sort/Search Improvements (12h) - consolidated
+- **UX-029:** Mobile Responsiveness (20h) - cross-cutting
+- **NOTIF-008:** Notification Integration (10h) - verify status
+
+### Wave 3: Features (80h)
+
+- **CAL-003:** Calendar Advanced (24h)
+- **VIP-C-01:** VIP Portal Completion (24h) - with specs
+- **SAMPLE-003:** Sample Management (16h)
+- **CREDIT-005:** Credit System Phase 5 (16h)
+
+### Wave 4: Polish (50h)
+
+- **DOCS-001:** Documentation (16h)
+- **TEST-001:** Testing (20h)
+- **PERF-001:** Performance (14h)
+
+### Wave 5: Integration (24h)
+
+- Final QA
+- Deployment
+- Verification
+
+**Total Estimated Remaining: ~288h**
