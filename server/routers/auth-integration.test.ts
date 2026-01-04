@@ -348,40 +348,38 @@ describe("Authentication Integration Tests", () => {
   });
 
   describe("Edge cases", () => {
-    it("should handle user with id = 0 as potentially problematic", async () => {
-      // Note: Currently the system only specifically rejects id = -1 (demo user)
-      // User with id = 0 passes through - this test documents current behavior
-      // A future security enhancement could reject all non-positive IDs
+    it("should reject user with id = 0 as invalid", async () => {
+      // Security: All non-positive IDs (including 0) are rejected
       const userWithZeroId = {
         ...mockAuthenticatedUser,
         id: 0,
       };
       const caller = await createCallerWithUser(userWithZeroId);
 
-      // Currently succeeds - documenting actual behavior
-      // The getAuthenticatedUserId helper only checks for -1
-      const result = await caller.calendarRecurrence.modifyInstance({
-        eventId: 1,
-        instanceDate: "2025-01-15",
-        modifications: {},
-      });
-      expect(result).toEqual({ success: true });
+      // Should reject - id <= 0 is treated as public/demo user
+      await expect(
+        caller.calendarRecurrence.modifyInstance({
+          eventId: 1,
+          instanceDate: "2025-01-15",
+          modifications: {},
+        })
+      ).rejects.toThrow();
     });
 
-    it("should handle negative user IDs other than -1", async () => {
-      // Note: Currently only -1 (demo user) is specifically rejected
-      // Other negative IDs pass through - this test documents current behavior
+    it("should reject all negative user IDs", async () => {
+      // Security: All negative IDs are rejected, not just -1
       const userWithNegativeId = {
         ...mockAuthenticatedUser,
         id: -5,
       };
       const caller = await createCallerWithUser(userWithNegativeId);
 
-      // Currently succeeds - documenting actual behavior
-      const result = await caller.calendarRecurrence.deleteRecurrenceRule({
-        eventId: 1,
-      });
-      expect(result).toEqual({ success: true });
+      // Should reject - all negative IDs are treated as invalid
+      await expect(
+        caller.calendarRecurrence.deleteRecurrenceRule({
+          eventId: 1,
+        })
+      ).rejects.toThrow();
     });
 
     it("should accept positive user IDs", async () => {

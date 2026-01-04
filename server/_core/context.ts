@@ -23,7 +23,7 @@ export function isPublicDemoUser(user: User | null | undefined): boolean {
   }
 
   return (
-    user.id === -1 ||
+    user.id <= 0 ||
     user.openId === PUBLIC_USER_ID ||
     user.email === PUBLIC_USER_EMAIL
   );
