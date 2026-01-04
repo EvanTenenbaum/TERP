@@ -22,7 +22,7 @@ import { eq, and, gt } from "drizzle-orm";
  * @throws TRPCError with code UNAUTHORIZED if not authenticated
  */
 export function getAuthenticatedUserId(ctx: {
-  user?: { id: number; email?: string; openId?: string } | null;
+  user?: { id: number; email?: string | null; openId?: string } | null;
 }): number {
   if (!ctx.user || isPublicDemoUser(ctx.user)) {
     throw new TRPCError({

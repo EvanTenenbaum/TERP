@@ -6200,7 +6200,7 @@ export const billLineItemsRelations = relations(billLineItems, ({ one }) => ({
 // Relations for payments
 export const paymentsRelations = relations(payments, ({ one }) => ({
   client: one(clients, {
-    fields: [payments.clientId],
+    fields: [payments.customerId],
     references: [clients.id],
   }),
   createdByUser: one(users, {

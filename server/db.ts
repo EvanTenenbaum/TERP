@@ -9,7 +9,7 @@ import { logger } from './_core/logger';
 let _db: MySql2Database<typeof schema> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
-export async function getDb() {
+export async function getDb(): Promise<MySql2Database<typeof schema>> {
   if (!_db) {
     try {
       // Use connection pool for better performance
@@ -19,8 +19,8 @@ export async function getDb() {
       _db = drizzle(pool as any, { schema, mode: 'default' }); // Pool is compatible with drizzle
       logger.info("Database connection established with connection pooling");
     } catch (error) {
-      logger.warn({ msg: "Failed to connect to database", error });
-      _db = null;
+      logger.error({ msg: "Failed to connect to database", error });
+      throw new Error("Database connection failed - cannot start server without database");
     }
   }
   return _db;
@@ -30,33 +30,37 @@ export async function getDb() {
 // This is initialized lazily on first access
 let _syncDb: MySql2Database<typeof schema> | null = null;
 
-function initSyncDb(): MySql2Database<typeof schema> | null {
+function initSyncDb(): MySql2Database<typeof schema> {
   if (!_syncDb) {
     try {
       const pool = getConnectionPool();
       _syncDb = drizzle(pool as any, { schema, mode: 'default' });
     } catch (error) {
-      logger.warn({ msg: "Failed to initialize sync db", error });
-      _syncDb = null;
+      // In development/test environments without a database, create a placeholder
+      // that will throw meaningful errors when accessed
+      logger.warn({ msg: "Database not available - operations will fail", error });
+      // Return a proxy that throws on any operation
+      return new Proxy({} as MySql2Database<typeof schema>, {
+        get(_target, prop) {
+          if (prop === 'then') return undefined; // Allow promise checks
+          throw new Error(`Database not available - cannot perform operation: ${String(prop)}`);
+        }
+      });
     }
   }
   return _syncDb;
 }
 
-// Export db - may be null if database is not available
-// Callers should check for null before using
-export const db = initSyncDb();
+// Export db - guaranteed non-null for TypeScript
+// Will throw at runtime if database operations are attempted without a connection
+export const db: MySql2Database<typeof schema> = initSyncDb();
 
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
   }
 
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
+  const database = await getDb();
 
   try {
     const values: InsertUser = {
@@ -97,7 +101,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await database.insert(users).values(values).onDuplicateKeyUpdate({
       set: updateSet,
     });
   } catch (error) {
@@ -107,25 +111,17 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 }
 
 export async function getUser(openId: string) {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
+  const database = await getDb();
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await database.select().from(users).where(eq(users.openId, openId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }
 
 export async function getUserByEmail(email: string) {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
+  const database = await getDb();
 
-  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const result = await database.select().from(users).where(eq(users.email, email)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }

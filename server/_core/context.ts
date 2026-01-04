@@ -17,7 +17,7 @@ export const PUBLIC_USER_EMAIL =
   env.PUBLIC_DEMO_USER_EMAIL || "demo+public@terp-app.local";
 export const PUBLIC_USER_ID = env.PUBLIC_DEMO_USER_ID || "public-demo-user";
 
-export function isPublicDemoUser(user: User | null | undefined): boolean {
+export function isPublicDemoUser(user: { id: number; openId?: string; email?: string | null } | null | undefined): boolean {
   if (!user) {
     return false;
   }
