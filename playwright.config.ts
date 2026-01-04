@@ -20,8 +20,8 @@ const isCloud =
   process.env.SKIP_E2E_SETUP === "true";
 
 export default defineConfig({
-  testDir: "./tests-e2e",
-  testMatch: ["**/*.spec.ts", "**/ai-generated/**/*.spec.ts"],
+  testDir: ".",
+  testMatch: ["tests-e2e/**/*.spec.ts", "tests/e2e/**/*.spec.ts"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
