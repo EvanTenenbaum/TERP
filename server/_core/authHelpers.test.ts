@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { getCurrentUserId, getCurrentUserIdOrNull } from "./authHelpers";
 import type { TrpcContext } from "./context";
+import { isPublicDemoUser } from "./context";
 import { TRPCError } from "@trpc/server";
 
 // Mock the trpc module
@@ -18,10 +19,8 @@ vi.mock("./trpc", () => ({
 
 // Helper to create mock context
 function createMockContext(userId: number | null): TrpcContext {
-  return {
-    req: {} as TrpcContext["req"],
-    res: {} as TrpcContext["res"],
-    user: userId !== null
+  const user =
+    userId !== null
       ? {
           id: userId,
           openId: "test-open-id",
@@ -34,7 +33,13 @@ function createMockContext(userId: number | null): TrpcContext {
           updatedAt: new Date(),
           lastSignedIn: new Date(),
         }
-      : ({} as TrpcContext["user"]),
+      : null;
+
+  return {
+    req: {} as TrpcContext["req"],
+    res: {} as TrpcContext["res"],
+    user: user ?? ({} as TrpcContext["user"]),
+    isPublicDemoUser: isPublicDemoUser(user),
   };
 }
 

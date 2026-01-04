@@ -9,12 +9,25 @@ export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: User; // Always non-null - public user is provisioned if no authenticated user
+  isPublicDemoUser: boolean;
   vipPortalClientId?: number; // Set by VIP Portal authentication middleware
 };
 
-const PUBLIC_USER_EMAIL =
+export const PUBLIC_USER_EMAIL =
   env.PUBLIC_DEMO_USER_EMAIL || "demo+public@terp-app.local";
-const PUBLIC_USER_ID = env.PUBLIC_DEMO_USER_ID || "public-demo-user";
+export const PUBLIC_USER_ID = env.PUBLIC_DEMO_USER_ID || "public-demo-user";
+
+export function isPublicDemoUser(user: User | null | undefined): boolean {
+  if (!user) {
+    return false;
+  }
+
+  return (
+    user.id <= 0 ||
+    user.openId === PUBLIC_USER_ID ||
+    user.email === PUBLIC_USER_EMAIL
+  );
+}
 
 /**
  * Get or create public demo user
@@ -64,10 +77,10 @@ async function getOrCreatePublicUser(): Promise<User> {
 
 /**
  * Create tRPC context for each request
- * 
+ *
  * CRITICAL: This function MUST NEVER throw - it must always return a valid context.
  * Based on tRPC best practices: https://trpc.io/docs/server/context
- * 
+ *
  * Pattern: Always return context, even if authentication fails.
  * Public users are automatically provisioned for anonymous access.
  */
@@ -93,7 +106,7 @@ export async function createContext(
 
   // Try to get authenticated user (completely optional - never throw)
   let user: User | null = null;
-  
+
   try {
     // Check if there's a session token first (avoid calling authenticateRequest if no token)
     const cookies = opts.req.cookies || {};
@@ -102,7 +115,7 @@ export async function createContext(
       try {
         user = await simpleAuth.authenticateRequest(opts.req);
         logger.debug({ userId: user.id }, "Authenticated user in context");
-      } catch (authError) {
+      } catch (_authError) {
         // Authentication failed - this is expected for anonymous users
         // Continue to public user provisioning
         logger.debug("No valid auth token, using public user");
@@ -120,7 +133,10 @@ export async function createContext(
       logger.debug({ userId: user.id }, "Public user provisioned");
     } catch (error) {
       // Database error - use synthetic user
-      logger.warn({ error }, "Failed to provision public user from DB, using synthetic");
+      logger.warn(
+        { error },
+        "Failed to provision public user from DB, using synthetic"
+      );
       user = createSyntheticUser();
     }
   }
@@ -136,6 +152,6 @@ export async function createContext(
     req: opts.req,
     res: opts.res,
     user, // Guaranteed to be non-null
+    isPublicDemoUser: isPublicDemoUser(user),
   };
 }
-
