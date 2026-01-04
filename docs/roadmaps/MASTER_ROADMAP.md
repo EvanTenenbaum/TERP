@@ -10468,8 +10468,10 @@ These are captured for architectural awareness but not added as individual tasks
 
 ### Wave 4: Polish (50h)
 
-- **DOCS-001:** Documentation (16h)
-- **TEST-001:** Testing (20h)
+- **DOCS-001:** Documentation (16h) ✅
+- **DOCS-002:** VIP Portal Guide (6h) ✅
+- **TEST-001:** Testing (20h) ✅ (scaffolding)
+- **TEST-002:** Testing (8h) ✅ (scaffolding)
 - **PERF-001:** Performance (14h)
 
 ### Wave 5: Integration (24h)
