@@ -5,6 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { notificationsRouter } from "./notifications";
 import type { TrpcContext } from "../_core/context";
+import { isPublicDemoUser } from "../_core/context";
 
 const serviceMocks = vi.hoisted(() => ({
   mockListNotifications: vi.fn(),
@@ -43,6 +44,7 @@ const baseContext: TrpcContext = {
   user: baseUser,
   req: { headers: {} } as TrpcContext["req"],
   res: {} as TrpcContext["res"],
+  isPublicDemoUser: isPublicDemoUser(baseUser),
 };
 
 const createCaller = () => notificationsRouter.createCaller(baseContext);
@@ -53,7 +55,9 @@ describe("notificationsRouter", () => {
   });
 
   it("lists notifications with pagination data", async () => {
-    serviceMocks.mockListNotifications.mockResolvedValue([{ id: 1, title: "Test" }]);
+    serviceMocks.mockListNotifications.mockResolvedValue([
+      { id: 1, title: "Test" },
+    ]);
     serviceMocks.mockUnread.mockResolvedValue(2);
     const caller = createCaller();
 
@@ -115,8 +119,8 @@ describe("notificationsRouter", () => {
     expect(serviceMocks.mockUpdatePreferences).toHaveBeenCalledWith(
       { userId: 10 },
       {
-      inAppEnabled: false,
-    },
+        inAppEnabled: false,
+      }
     );
   });
 });

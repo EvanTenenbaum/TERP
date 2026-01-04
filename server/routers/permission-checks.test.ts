@@ -62,6 +62,7 @@ vi.mock("../_core/permissionService", () => ({
 
 import { appRouter } from "../routers";
 import type { TrpcContext } from "../_core/context";
+import { isPublicDemoUser } from "../_core/context";
 import * as permissionService from "../services/permissionService";
 
 // User type that matches the context user type
@@ -113,6 +114,7 @@ const createCallerWithUser = async (user: MockUser) => {
     user,
     req: { headers: {}, cookies: {} } as TrpcContext["req"],
     res: {} as TrpcContext["res"],
+    isPublicDemoUser: isPublicDemoUser(user),
   };
 
   return appRouter.createCaller(ctx as unknown as TrpcContext);
@@ -210,7 +212,10 @@ describe("Permission Checks Integration Tests", () => {
         const caller = await createCallerWithUser(mockUser);
 
         await expect(
-          caller.rbacUsers.grantPermission({ userId: "user_123", permissionId: 1 })
+          caller.rbacUsers.grantPermission({
+            userId: "user_123",
+            permissionId: 1,
+          })
         ).rejects.toThrow();
       });
     });
@@ -223,7 +228,10 @@ describe("Permission Checks Integration Tests", () => {
         const caller = await createCallerWithUser(mockUser);
 
         await expect(
-          caller.rbacUsers.revokePermission({ userId: "user_123", permissionId: 1 })
+          caller.rbacUsers.revokePermission({
+            userId: "user_123",
+            permissionId: 1,
+          })
         ).rejects.toThrow();
       });
     });
@@ -303,7 +311,10 @@ describe("Permission Checks Integration Tests", () => {
 
         // Will fail on DB but not on permission
         try {
-          await caller.rbacUsers.replaceRoles({ userId: "user_123", roleIds: [1, 2] });
+          await caller.rbacUsers.replaceRoles({
+            userId: "user_123",
+            roleIds: [1, 2],
+          });
         } catch (error) {
           if (error instanceof TRPCError) {
             expect(error.code).not.toBe("FORBIDDEN");
@@ -362,7 +373,9 @@ describe("Permission Checks Integration Tests", () => {
 
   describe("Edge Cases", () => {
     it("should handle permission check for user with empty permissions", async () => {
-      vi.mocked(permissionService.getUserPermissions).mockResolvedValue(new Set());
+      vi.mocked(permissionService.getUserPermissions).mockResolvedValue(
+        new Set()
+      );
       vi.mocked(permissionService.hasPermission).mockResolvedValue(false);
       vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
 

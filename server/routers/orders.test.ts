@@ -27,10 +27,9 @@ vi.mock("../utils/softDelete", () => ({
 }));
 
 import { appRouter } from "../routers";
-import { createContext } from "../_core/context";
-import { db } from "../db";
+import { createContext, isPublicDemoUser } from "../_core/context";
 import * as ordersDb from "../ordersDb";
-import { softDelete, restoreDeleted } from "../utils/softDelete";
+import { softDelete } from "../utils/softDelete";
 
 // Mock user for authenticated requests
 const mockUser = {
@@ -51,6 +50,7 @@ const createCaller = async () => {
   return appRouter.createCaller({
     ...ctx,
     user: mockUser,
+    isPublicDemoUser: isPublicDemoUser(mockUser),
   });
 };
 
