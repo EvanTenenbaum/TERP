@@ -77,11 +77,16 @@ export default function Invoices() {
   // PERF-003: Pagination state
   const { page, pageSize, offset, setPage, setPageSize } = usePagination(50);
 
+  // tRPC utils for cache invalidation
+  const utils = trpc.useUtils();
+
   // Mutation for marking invoice as paid (using updateStatus endpoint)
   const markPaidMutation = trpc.accounting.invoices.updateStatus.useMutation({
     onSuccess: () => {
       toast.success("Invoice marked as paid");
       setSelectedInvoice(null);
+      // Invalidate invoices list to refresh data
+      utils.accounting.invoices.list.invalidate();
     },
     onError: (error: { message?: string }) => {
       toast.error(error.message || "Failed to mark invoice as paid");
