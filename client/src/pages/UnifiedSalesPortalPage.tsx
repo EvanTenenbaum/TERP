@@ -1,10 +1,9 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 /**
  * Unified Sales Portal Page
- * 
+ *
  * A unified pipeline view combining sales sheets, quotes, and orders
  * with drag-and-drop stage management and conversion tracking.
- * 
+ *
  * USP-002: Frontend Implementation
  * USP-005: Enhanced Features
  * - Drag-and-drop conversion with @dnd-kit
@@ -18,6 +17,7 @@ import { useState, useMemo } from "react";
 import {
   DndContext,
   DragEndEvent,
+  DragOverEvent,
   DragOverlay,
   DragStartEvent,
   PointerSensor,
@@ -29,13 +29,7 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { trpc } from "@/lib/trpc";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -100,7 +94,6 @@ import {
   ArrowRight,
   Trash2,
   RotateCcw,
-  Calendar,
   DollarSign,
   User,
   Clock,
@@ -115,26 +108,51 @@ import { format } from "date-fns";
 
 // Pipeline stages configuration
 const PIPELINE_STAGES = [
-  { id: 'SALES_SHEET', label: 'Sales Sheets', icon: FileText, color: 'bg-blue-500', dropColor: 'bg-blue-100 border-blue-500' },
-  { id: 'QUOTE', label: 'Quotes', icon: FileCheck, color: 'bg-yellow-500', dropColor: 'bg-yellow-100 border-yellow-500' },
-  { id: 'SALE', label: 'Sales', icon: ShoppingCart, color: 'bg-green-500', dropColor: 'bg-green-100 border-green-500' },
-  { id: 'FULFILLED', label: 'Fulfilled', icon: Package, color: 'bg-purple-500', dropColor: 'bg-purple-100 border-purple-500' },
+  {
+    id: "SALES_SHEET",
+    label: "Sales Sheets",
+    icon: FileText,
+    color: "bg-blue-500",
+    dropColor: "bg-blue-100 border-blue-500",
+  },
+  {
+    id: "QUOTE",
+    label: "Quotes",
+    icon: FileCheck,
+    color: "bg-yellow-500",
+    dropColor: "bg-yellow-100 border-yellow-500",
+  },
+  {
+    id: "SALE",
+    label: "Sales",
+    icon: ShoppingCart,
+    color: "bg-green-500",
+    dropColor: "bg-green-100 border-green-500",
+  },
+  {
+    id: "FULFILLED",
+    label: "Fulfilled",
+    icon: Package,
+    color: "bg-purple-500",
+    dropColor: "bg-purple-100 border-purple-500",
+  },
 ] as const;
 
-type PipelineStage = typeof PIPELINE_STAGES[number]['id'];
+type PipelineStage = (typeof PIPELINE_STAGES)[number]["id"];
 
 // Valid drag-and-drop transitions
 const VALID_TRANSITIONS: Record<PipelineStage, PipelineStage[]> = {
-  'SALES_SHEET': ['QUOTE'],
-  'QUOTE': ['SALE'],
-  'SALE': ['FULFILLED'],
-  'FULFILLED': [],
+  SALES_SHEET: ["QUOTE"],
+  QUOTE: ["SALE"],
+  SALE: ["FULFILLED"],
+  FULFILLED: [],
 };
 
 // Pipeline item type from the backend
+// tRPC with superjson deserializes dates, so we expect Date objects
 interface PipelineItem {
   id: string;
-  sourceType: 'SALES_SHEET' | 'QUOTE' | 'SALE';
+  sourceType: "SALES_SHEET" | "QUOTE" | "SALE";
   sourceId: number;
   stage: PipelineStage;
   clientId: number;
@@ -142,20 +160,20 @@ interface PipelineItem {
   clientTeriCode: string;
   totalValue: number;
   itemCount: number;
-  createdAt: string;
+  createdAt: Date;
   createdBy: number;
   createdByName: string;
-  updatedAt: string | null;
+  updatedAt: Date | null;
   convertedFromId: string | null;
   convertedToId: string | null;
-  convertedAt: string | null;
+  convertedAt: Date | null;
   orderNumber?: string;
   orderStatus?: string;
   quoteStatus?: string;
   saleStatus?: string;
-  validUntil?: string | null;
+  validUntil?: Date | null;
   isExpired?: boolean;
-  deletedAt: string | null;
+  deletedAt: Date | null;
 }
 
 // Draggable pipeline item card component
@@ -170,10 +188,11 @@ function DraggablePipelineItemCard({
   onDelete: (item: PipelineItem) => void;
   onRestore: (item: PipelineItem) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: item.id,
-    data: { item },
-  });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: item.id,
+      data: { item },
+    });
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -182,7 +201,7 @@ function DraggablePipelineItemCard({
 
   const isDeleted = item.deletedAt !== null;
   const canDrag = !isDeleted && VALID_TRANSITIONS[item.stage].length > 0;
-  
+
   const getStageConfig = (stage: PipelineStage) => {
     return PIPELINE_STAGES.find(s => s.id === stage) || PIPELINE_STAGES[0];
   };
@@ -192,7 +211,9 @@ function DraggablePipelineItemCard({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className={`mb-3 ${isDeleted ? 'opacity-50' : ''} ${isDragging ? 'shadow-lg ring-2 ring-primary' : ''}`}>
+      <Card
+        className={`mb-3 ${isDeleted ? "opacity-50" : ""} ${isDragging ? "shadow-lg ring-2 ring-primary" : ""}`}
+      >
         <CardContent className="p-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -210,7 +231,9 @@ function DraggablePipelineItemCard({
               </div>
               <div>
                 <div className="font-medium">{item.clientName}</div>
-                <div className="text-sm text-muted-foreground">{item.clientTeriCode}</div>
+                <div className="text-sm text-muted-foreground">
+                  {item.clientTeriCode}
+                </div>
               </div>
             </div>
             <DropdownMenu>
@@ -220,13 +243,13 @@ function DraggablePipelineItemCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {!isDeleted && item.stage === 'SALES_SHEET' && (
+                {!isDeleted && item.stage === "SALES_SHEET" && (
                   <DropdownMenuItem onClick={() => onConvert(item)}>
                     <ArrowRight className="h-4 w-4 mr-2" />
                     Convert to Quote
                   </DropdownMenuItem>
                 )}
-                {!isDeleted && item.stage === 'QUOTE' && (
+                {!isDeleted && item.stage === "QUOTE" && (
                   <DropdownMenuItem onClick={() => onConvert(item)}>
                     <ArrowRight className="h-4 w-4 mr-2" />
                     Convert to Sale
@@ -239,7 +262,10 @@ function DraggablePipelineItemCard({
                     Restore
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem onClick={() => onDelete(item)} className="text-destructive">
+                  <DropdownMenuItem
+                    onClick={() => onDelete(item)}
+                    className="text-destructive"
+                  >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
                   </DropdownMenuItem>
@@ -259,7 +285,7 @@ function DraggablePipelineItemCard({
             </div>
             <div className="flex items-center gap-1 text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>{format(new Date(item.createdAt), 'MMM d, yyyy')}</span>
+              <span>{format(new Date(item.createdAt), "MMM d, yyyy")}</span>
             </div>
             {item.orderNumber && (
               <div className="flex items-center gap-1 text-muted-foreground">
@@ -304,7 +330,7 @@ function DroppablePipelineColumn({
   onRestore,
   isOver,
 }: {
-  stage: typeof PIPELINE_STAGES[number];
+  stage: (typeof PIPELINE_STAGES)[number];
   items: PipelineItem[];
   count: number;
   value: number;
@@ -323,7 +349,7 @@ function DroppablePipelineColumn({
     <div
       ref={setNodeRef}
       className={`flex-1 min-w-[300px] p-3 rounded-lg transition-colors ${
-        isOver ? `${stage.dropColor} border-2 border-dashed` : 'bg-muted/30'
+        isOver ? `${stage.dropColor} border-2 border-dashed` : "bg-muted/30"
       }`}
     >
       <div className="flex items-center gap-2 mb-4">
@@ -338,7 +364,7 @@ function DroppablePipelineColumn({
         </div>
       </div>
       <ScrollArea className="h-[calc(100vh-400px)]">
-        {items.map((item) => (
+        {items.map(item => (
           <DraggablePipelineItemCard
             key={item.id}
             item={item}
@@ -349,7 +375,7 @@ function DroppablePipelineColumn({
         ))}
         {items.length === 0 && (
           <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-            {isOver ? 'Drop here to convert' : 'No items in this stage'}
+            {isOver ? "Drop here to convert" : "No items in this stage"}
           </div>
         )}
       </ScrollArea>
@@ -370,11 +396,12 @@ function PipelineListRow({
   onRestore: (item: PipelineItem) => void;
 }) {
   const isDeleted = item.deletedAt !== null;
-  const stageConfig = PIPELINE_STAGES.find(s => s.id === item.stage) || PIPELINE_STAGES[0];
+  const stageConfig =
+    PIPELINE_STAGES.find(s => s.id === item.stage) || PIPELINE_STAGES[0];
   const StageIcon = stageConfig.icon;
 
   return (
-    <TableRow className={isDeleted ? 'opacity-50' : ''}>
+    <TableRow className={isDeleted ? "opacity-50" : ""}>
       <TableCell>
         <div className="flex items-center gap-2">
           <div className={`p-1.5 rounded ${stageConfig.color} text-white`}>
@@ -387,19 +414,27 @@ function PipelineListRow({
       <TableCell>
         <div>
           <div className="font-medium">{item.clientName}</div>
-          <div className="text-sm text-muted-foreground">{item.clientTeriCode}</div>
+          <div className="text-sm text-muted-foreground">
+            {item.clientTeriCode}
+          </div>
         </div>
       </TableCell>
-      <TableCell className="text-right">${item.totalValue.toLocaleString()}</TableCell>
+      <TableCell className="text-right">
+        ${item.totalValue.toLocaleString()}
+      </TableCell>
       <TableCell>{item.createdByName}</TableCell>
-      <TableCell>{format(new Date(item.createdAt), 'MMM d, yyyy')}</TableCell>
+      <TableCell>{format(new Date(item.createdAt), "MMM d, yyyy")}</TableCell>
       <TableCell>
         <div className="flex gap-1">
           {item.isExpired && (
-            <Badge variant="destructive" className="text-xs">Expired</Badge>
+            <Badge variant="destructive" className="text-xs">
+              Expired
+            </Badge>
           )}
           {isDeleted && (
-            <Badge variant="destructive" className="text-xs">Deleted</Badge>
+            <Badge variant="destructive" className="text-xs">
+              Deleted
+            </Badge>
           )}
         </div>
       </TableCell>
@@ -414,7 +449,10 @@ function PipelineListRow({
             {!isDeleted && VALID_TRANSITIONS[item.stage].length > 0 && (
               <DropdownMenuItem onClick={() => onConvert(item)}>
                 <ArrowRight className="h-4 w-4 mr-2" />
-                Convert to {VALID_TRANSITIONS[item.stage][0] === 'QUOTE' ? 'Quote' : 'Sale'}
+                Convert to{" "}
+                {VALID_TRANSITIONS[item.stage][0] === "QUOTE"
+                  ? "Quote"
+                  : "Sale"}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
@@ -424,7 +462,10 @@ function PipelineListRow({
                 Restore
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onClick={() => onDelete(item)} className="text-destructive">
+              <DropdownMenuItem
+                onClick={() => onDelete(item)}
+                className="text-destructive"
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </DropdownMenuItem>
@@ -438,10 +479,10 @@ function PipelineListRow({
 
 export default function UnifiedSalesPortalPage() {
   const { toast } = useToast();
-  
+
   // View state
-  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
-  
+  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
+
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStages, setSelectedStages] = useState<PipelineStage[]>([]);
@@ -452,18 +493,23 @@ export default function UnifiedSalesPortalPage() {
   const [minValue, setMinValue] = useState("");
   const [maxValue, setMaxValue] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  
+
   // Dialog state
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PipelineItem | null>(null);
   const [validUntil, setValidUntil] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentTerms, setPaymentTerms] = useState<string>("NET_30");
-  
+  const [paymentTerms, setPaymentTerms] = useState<
+    "NET_7" | "NET_15" | "NET_30" | "COD" | "PARTIAL" | "CONSIGNMENT"
+  >("NET_30");
+
   // Drag state
   const [activeItem, setActiveItem] = useState<PipelineItem | null>(null);
-  const [pendingDrop, setPendingDrop] = useState<{ item: PipelineItem; targetStage: PipelineStage } | null>(null);
+  const [pendingDrop, setPendingDrop] = useState<{
+    item: PipelineItem;
+    targetStage: PipelineStage;
+  } | null>(null);
   const [overStage, setOverStage] = useState<PipelineStage | null>(null);
 
   // Configure drag sensors
@@ -492,66 +538,69 @@ export default function UnifiedSalesPortalPage() {
     limit: 500,
   });
 
-  // Fetch stats
-  const { data: stats } = trpc.unifiedSalesPortal.getStats.useQuery({
+  // Fetch stats (available for future use)
+  const { data: _stats } = trpc.unifiedSalesPortal.getStats.useQuery({
     includeClosed,
   });
 
   // Check quote conversion (for confirmation dialog)
-  const { data: quoteCheckData } = trpc.unifiedSalesPortal.checkQuoteConversion.useQuery(
-    { orderId: pendingDrop?.item.sourceId || 0 },
-    { enabled: !!pendingDrop && pendingDrop.targetStage === 'SALE' }
-  );
+  const { data: quoteCheckData } =
+    trpc.unifiedSalesPortal.checkQuoteConversion.useQuery(
+      { orderId: pendingDrop?.item.sourceId || 0 },
+      { enabled: !!pendingDrop && pendingDrop.targetStage === "SALE" }
+    );
 
   // Mutations
-  const convertToQuoteMutation = trpc.unifiedSalesPortal.convertSalesSheetToQuote.useMutation({
-    onSuccess: (data) => {
-      toast({
-        title: "Conversion Successful",
-        description: data.message,
-      });
-      setConvertDialogOpen(false);
-      setPendingDrop(null);
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Conversion Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const convertToQuoteMutation =
+    trpc.unifiedSalesPortal.convertSalesSheetToQuote.useMutation({
+      onSuccess: data => {
+        toast({
+          title: "Conversion Successful",
+          description: data.message,
+        });
+        setConvertDialogOpen(false);
+        setPendingDrop(null);
+        refetch();
+      },
+      onError: error => {
+        toast({
+          title: "Conversion Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
 
-  const convertToSaleMutation = trpc.unifiedSalesPortal.convertQuoteToSale.useMutation({
-    onSuccess: (data) => {
-      toast({
-        title: "Conversion Successful",
-        description: data.message,
-      });
-      setConvertDialogOpen(false);
-      setConfirmDialogOpen(false);
-      setPendingDrop(null);
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Conversion Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const convertToSaleMutation =
+    trpc.unifiedSalesPortal.convertQuoteToSale.useMutation({
+      onSuccess: data => {
+        toast({
+          title: "Conversion Successful",
+          description: data.message,
+        });
+        setConvertDialogOpen(false);
+        setConfirmDialogOpen(false);
+        setPendingDrop(null);
+        refetch();
+      },
+      onError: error => {
+        toast({
+          title: "Conversion Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
 
   const softDeleteMutation = trpc.unifiedSalesPortal.softDelete.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast({
         title: "Item Deleted",
         description: data.message,
       });
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Delete Failed",
         description: error.message,
@@ -561,14 +610,14 @@ export default function UnifiedSalesPortalPage() {
   });
 
   const restoreMutation = trpc.unifiedSalesPortal.restore.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast({
         title: "Item Restored",
         description: data.message,
       });
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Restore Failed",
         description: error.message,
@@ -603,7 +652,7 @@ export default function UnifiedSalesPortalPage() {
     setActiveItem(item);
   };
 
-  const handleDragOver = (event: any) => {
+  const handleDragOver = (event: DragOverEvent) => {
     const overId = event.over?.id as PipelineStage | null;
     setOverStage(overId);
   };
@@ -629,7 +678,7 @@ export default function UnifiedSalesPortalPage() {
     }
 
     // For Quote -> Sale, show confirmation dialog
-    if (item.stage === 'QUOTE' && targetStage === 'SALE') {
+    if (item.stage === "QUOTE" && targetStage === "SALE") {
       setPendingDrop({ item, targetStage });
       setSelectedItem(item);
       setConfirmDialogOpen(true);
@@ -651,8 +700,8 @@ export default function UnifiedSalesPortalPage() {
     setSelectedItem(item);
     setValidUntil("");
     setNotes("");
-    
-    if (item.stage === 'QUOTE') {
+
+    if (item.stage === "QUOTE") {
       // For quotes, show confirmation dialog first
       setConfirmDialogOpen(true);
     } else {
@@ -674,7 +723,7 @@ export default function UnifiedSalesPortalPage() {
   const handleConversionSubmit = () => {
     if (!selectedItem) return;
 
-    if (selectedItem.stage === 'SALES_SHEET') {
+    if (selectedItem.stage === "SALES_SHEET") {
       convertToQuoteMutation.mutate({
         salesSheetId: selectedItem.sourceId,
         validUntil: validUntil || undefined,
@@ -689,7 +738,7 @@ export default function UnifiedSalesPortalPage() {
 
     convertToSaleMutation.mutate({
       orderId: selectedItem.sourceId,
-      paymentTerms: paymentTerms as any,
+      paymentTerms,
       notes: notes || undefined,
       confirmExpired,
     });
@@ -707,7 +756,15 @@ export default function UnifiedSalesPortalPage() {
     setMaxValue("");
   };
 
-  const hasActiveFilters = searchQuery || selectedStages.length > 0 || includeDeleted || includeClosed || dateFrom || dateTo || minValue || maxValue;
+  const hasActiveFilters =
+    searchQuery ||
+    selectedStages.length > 0 ||
+    includeDeleted ||
+    includeClosed ||
+    dateFrom ||
+    dateTo ||
+    minValue ||
+    maxValue;
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
@@ -722,17 +779,17 @@ export default function UnifiedSalesPortalPage() {
         <div className="flex items-center gap-2">
           <div className="flex items-center border rounded-lg">
             <Button
-              variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+              variant={viewMode === "kanban" ? "secondary" : "ghost"}
               size="sm"
-              onClick={() => setViewMode('kanban')}
+              onClick={() => setViewMode("kanban")}
               className="rounded-r-none"
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
             <Button
-              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              variant={viewMode === "list" ? "secondary" : "ghost"}
               size="sm"
-              onClick={() => setViewMode('list')}
+              onClick={() => setViewMode("list")}
               className="rounded-l-none"
             >
               <List className="h-4 w-4" />
@@ -747,9 +804,12 @@ export default function UnifiedSalesPortalPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {PIPELINE_STAGES.map((stage) => {
+        {PIPELINE_STAGES.map(stage => {
           const StageIcon = stage.icon;
-          const stageStats = pipelineData?.stages?.[stage.id] || { count: 0, value: 0 };
+          const stageStats = pipelineData?.stages?.[stage.id] || {
+            count: 0,
+            value: 0,
+          };
           const count = stageStats.count || 0;
           const value = stageStats.value || 0;
 
@@ -761,7 +821,9 @@ export default function UnifiedSalesPortalPage() {
                     <StageIcon className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{stage.label}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {stage.label}
+                    </p>
                     <p className="text-2xl font-bold">{count}</p>
                     <p className="text-sm text-muted-foreground">
                       ${value.toLocaleString()}
@@ -784,21 +846,25 @@ export default function UnifiedSalesPortalPage() {
                 <Input
                   placeholder="Search by client, order number..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
-            
+
             <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
               <CollapsibleTrigger asChild>
                 <Button variant="outline" size="sm">
                   <Filter className="h-4 w-4 mr-2" />
                   Filters
                   {hasActiveFilters && (
-                    <Badge variant="secondary" className="ml-2">Active</Badge>
+                    <Badge variant="secondary" className="ml-2">
+                      Active
+                    </Badge>
                   )}
-                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 ml-2 transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+                  />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="w-full mt-4">
@@ -808,7 +874,7 @@ export default function UnifiedSalesPortalPage() {
                     <Input
                       type="date"
                       value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
+                      onChange={e => setDateFrom(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -816,7 +882,7 @@ export default function UnifiedSalesPortalPage() {
                     <Input
                       type="date"
                       value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
+                      onChange={e => setDateTo(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -825,7 +891,7 @@ export default function UnifiedSalesPortalPage() {
                       type="number"
                       placeholder="0"
                       value={minValue}
-                      onChange={(e) => setMinValue(e.target.value)}
+                      onChange={e => setMinValue(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -834,14 +900,16 @@ export default function UnifiedSalesPortalPage() {
                       type="number"
                       placeholder="No limit"
                       value={maxValue}
-                      onChange={(e) => setMaxValue(e.target.value)}
+                      onChange={e => setMaxValue(e.target.value)}
                     />
                   </div>
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="includeDeleted"
                       checked={includeDeleted}
-                      onCheckedChange={(checked) => setIncludeDeleted(checked as boolean)}
+                      onCheckedChange={checked =>
+                        setIncludeDeleted(checked as boolean)
+                      }
                     />
                     <Label htmlFor="includeDeleted">Show deleted</Label>
                   </div>
@@ -849,7 +917,9 @@ export default function UnifiedSalesPortalPage() {
                     <Checkbox
                       id="includeClosed"
                       checked={includeClosed}
-                      onCheckedChange={(checked) => setIncludeClosed(checked as boolean)}
+                      onCheckedChange={checked =>
+                        setIncludeClosed(checked as boolean)
+                      }
                     />
                     <Label htmlFor="includeClosed">Show closed/expired</Label>
                   </div>
@@ -868,7 +938,7 @@ export default function UnifiedSalesPortalPage() {
       {/* Pipeline View */}
       {isLoading ? (
         <div className="flex gap-4">
-          {PIPELINE_STAGES.map((stage) => (
+          {PIPELINE_STAGES.map(stage => (
             <div key={stage.id} className="flex-1 min-w-[300px]">
               <Skeleton className="h-8 w-32 mb-4" />
               <Skeleton className="h-32 w-full mb-3" />
@@ -877,7 +947,7 @@ export default function UnifiedSalesPortalPage() {
             </div>
           ))}
         </div>
-      ) : viewMode === 'kanban' ? (
+      ) : viewMode === "kanban" ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -887,8 +957,11 @@ export default function UnifiedSalesPortalPage() {
           onDragCancel={handleDragCancel}
         >
           <div className="flex gap-4 overflow-x-auto pb-4">
-            {PIPELINE_STAGES.map((stage) => {
-              const stageStats = pipelineData?.stages?.[stage.id] || { count: 0, value: 0 };
+            {PIPELINE_STAGES.map(stage => {
+              const stageStats = pipelineData?.stages?.[stage.id] || {
+                count: 0,
+                value: 0,
+              };
               return (
                 <DroppablePipelineColumn
                   key={stage.id}
@@ -911,8 +984,12 @@ export default function UnifiedSalesPortalPage() {
               <Card className="w-[280px] shadow-lg ring-2 ring-primary opacity-90">
                 <CardContent className="p-4">
                   <div className="font-medium">{activeItem.clientName}</div>
-                  <div className="text-sm text-muted-foreground">{activeItem.clientTeriCode}</div>
-                  <div className="mt-2 text-sm">${activeItem.totalValue.toLocaleString()}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {activeItem.clientTeriCode}
+                  </div>
+                  <div className="mt-2 text-sm">
+                    ${activeItem.totalValue.toLocaleString()}
+                  </div>
                 </CardContent>
               </Card>
             ) : null}
@@ -934,7 +1011,7 @@ export default function UnifiedSalesPortalPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pipelineData?.items.map((item) => (
+              {pipelineData?.items.map(item => (
                 <PipelineListRow
                   key={item.id}
                   item={item}
@@ -945,7 +1022,10 @@ export default function UnifiedSalesPortalPage() {
               ))}
               {(!pipelineData?.items || pipelineData.items.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={8}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     No items found
                   </TableCell>
                 </TableRow>
@@ -961,7 +1041,8 @@ export default function UnifiedSalesPortalPage() {
           <DialogHeader>
             <DialogTitle>Convert to Quote</DialogTitle>
             <DialogDescription>
-              Create a quote from this sales sheet. The original sales sheet will be linked to the new quote.
+              Create a quote from this sales sheet. The original sales sheet
+              will be linked to the new quote.
             </DialogDescription>
           </DialogHeader>
 
@@ -971,14 +1052,14 @@ export default function UnifiedSalesPortalPage() {
               <Input
                 type="date"
                 value={validUntil}
-                onChange={(e) => setValidUntil(e.target.value)}
+                onChange={e => setValidUntil(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>Notes (Optional)</Label>
               <Input
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={e => setNotes(e.target.value)}
                 placeholder="Add any notes..."
               />
             </div>
@@ -987,21 +1068,27 @@ export default function UnifiedSalesPortalPage() {
               <div className="bg-muted p-3 rounded-lg">
                 <p className="text-sm font-medium">Converting:</p>
                 <p className="text-sm text-muted-foreground">
-                  {selectedItem.clientName} - ${selectedItem.totalValue.toLocaleString()}
+                  {selectedItem.clientName} - $
+                  {selectedItem.totalValue.toLocaleString()}
                 </p>
               </div>
             )}
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConvertDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setConvertDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               onClick={handleConversionSubmit}
               disabled={convertToQuoteMutation.isPending}
             >
-              {convertToQuoteMutation.isPending ? 'Converting...' : 'Convert to Quote'}
+              {convertToQuoteMutation.isPending
+                ? "Converting..."
+                : "Convert to Quote"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1018,17 +1105,20 @@ export default function UnifiedSalesPortalPage() {
                   Expired Quote Warning
                 </span>
               ) : (
-                'Confirm Conversion to Sale'
+                "Confirm Conversion to Sale"
               )}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               {quoteCheckData?.warnings?.map((warning, i) => (
-                <div key={i} className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+                <div
+                  key={i}
+                  className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800"
+                >
                   <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <span className="text-sm">{warning}</span>
                 </div>
               ))}
-              
+
               <p className="pt-2">
                 This will convert the quote to a sale order and:
               </p>
@@ -1042,17 +1132,25 @@ export default function UnifiedSalesPortalPage() {
                 <div className="bg-muted p-3 rounded-lg mt-3">
                   <p className="text-sm font-medium">Quote Details:</p>
                   <p className="text-sm">
-                    {selectedItem.clientName} - ${selectedItem.totalValue.toLocaleString()}
+                    {selectedItem.clientName} - $
+                    {selectedItem.totalValue.toLocaleString()}
                   </p>
                   {selectedItem.orderNumber && (
-                    <p className="text-sm text-muted-foreground">{selectedItem.orderNumber}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedItem.orderNumber}
+                    </p>
                   )}
                 </div>
               )}
 
               <div className="space-y-2 pt-2">
                 <Label>Payment Terms</Label>
-                <Select value={paymentTerms} onValueChange={setPaymentTerms}>
+                <Select
+                  value={paymentTerms}
+                  onValueChange={value =>
+                    setPaymentTerms(value as typeof paymentTerms)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -1069,22 +1167,30 @@ export default function UnifiedSalesPortalPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setConfirmDialogOpen(false);
-              setPendingDrop(null);
-            }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setConfirmDialogOpen(false);
+                setPendingDrop(null);
+              }}
+            >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => handleQuoteToSaleConfirm(quoteCheckData?.isExpired || false)}
+              onClick={() =>
+                handleQuoteToSaleConfirm(quoteCheckData?.isExpired || false)
+              }
               disabled={convertToSaleMutation.isPending}
-              className={quoteCheckData?.isExpired ? 'bg-destructive hover:bg-destructive/90' : ''}
+              className={
+                quoteCheckData?.isExpired
+                  ? "bg-destructive hover:bg-destructive/90"
+                  : ""
+              }
             >
-              {convertToSaleMutation.isPending 
-                ? 'Converting...' 
-                : quoteCheckData?.isExpired 
-                  ? 'Convert Anyway' 
-                  : 'Confirm Conversion'}
+              {convertToSaleMutation.isPending
+                ? "Converting..."
+                : quoteCheckData?.isExpired
+                  ? "Convert Anyway"
+                  : "Confirm Conversion"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
