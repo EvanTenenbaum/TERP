@@ -1,7 +1,9 @@
-// @ts-nocheck - TEMPORARY: Schema mismatch errors, needs Wave 1 fix
 /**
  * WS-004: Referrals Router
  * Handles referral credit management for VIP customers
+ *
+ * NOTE: Client tier-based referral percentages disabled - clients.tier doesn't exist.
+ * Uses global default percentage for all referrals.
  */
 
 import { TRPCError } from "@trpc/server";
@@ -27,14 +29,14 @@ export const referralsRouter = router({
       .where(eq(referralSettings.isActive, true))
       .orderBy(referralSettings.clientTier);
 
-    const globalSetting = settings.find((s) => s.clientTier === null);
-    const tierSettings = settings.filter((s) => s.clientTier !== null);
+    const globalSetting = settings.find(s => s.clientTier === null);
+    const tierSettings = settings.filter(s => s.clientTier !== null);
 
     return {
       globalPercentage: globalSetting
         ? parseFloat(globalSetting.creditPercentage)
         : 10.0,
-      tierSettings: tierSettings.map((s) => ({
+      tierSettings: tierSettings.map(s => ({
         tier: s.clientTier,
         percentage: parseFloat(s.creditPercentage),
         minOrderAmount: s.minOrderAmount ? parseFloat(s.minOrderAmount) : 0,
@@ -145,17 +147,17 @@ export const referralsRouter = router({
         .orderBy(desc(referralCredits.createdAt));
 
       const totalPending = credits
-        .filter((c) => c.status === "PENDING")
+        .filter(c => c.status === "PENDING")
         .reduce((sum, c) => sum + parseFloat(c.creditAmount), 0);
 
       const totalAvailable = credits
-        .filter((c) => c.status === "AVAILABLE")
+        .filter(c => c.status === "AVAILABLE")
         .reduce((sum, c) => sum + parseFloat(c.creditAmount), 0);
 
       return {
         totalPending,
         totalAvailable,
-        credits: credits.map((c) => ({
+        credits: credits.map(c => ({
           id: c.id,
           referredClientName: c.referredClientName,
           referredOrderNumber: c.referredOrderNumber,
@@ -214,7 +216,7 @@ export const referralsRouter = router({
         )
         .orderBy(desc(referralCredits.createdAt));
 
-      return credits.map((c) => ({
+      return credits.map(c => ({
         id: c.id,
         referredClientName: c.referredClientName,
         referredOrderNumber: c.referredOrderNumber,
@@ -253,48 +255,22 @@ export const referralsRouter = router({
         });
       }
 
-      // Get referral percentage (check tier first, then global)
-      const referrer = await db
-        .select({ tier: clients.tier })
-        .from(clients)
-        .where(eq(clients.id, input.referrerClientId))
-        .limit(1);
-
+      // Get referral percentage (global setting only - clients.tier doesn't exist)
       let creditPercentage = 10.0; // Default
 
-      if (referrer[0]?.tier) {
-        const tierSetting = await db
-          .select()
-          .from(referralSettings)
-          .where(
-            and(
-              eq(referralSettings.clientTier, referrer[0].tier),
-              eq(referralSettings.isActive, true)
-            )
+      const globalSetting = await db
+        .select()
+        .from(referralSettings)
+        .where(
+          and(
+            isNull(referralSettings.clientTier),
+            eq(referralSettings.isActive, true)
           )
-          .limit(1);
+        )
+        .limit(1);
 
-        if (tierSetting[0]) {
-          creditPercentage = parseFloat(tierSetting[0].creditPercentage);
-        }
-      }
-
-      // Fall back to global if no tier setting
-      if (creditPercentage === 10.0) {
-        const globalSetting = await db
-          .select()
-          .from(referralSettings)
-          .where(
-            and(
-              isNull(referralSettings.clientTier),
-              eq(referralSettings.isActive, true)
-            )
-          )
-          .limit(1);
-
-        if (globalSetting[0]) {
-          creditPercentage = parseFloat(globalSetting[0].creditPercentage);
-        }
+      if (globalSetting[0]) {
+        creditPercentage = parseFloat(globalSetting[0].creditPercentage);
       }
 
       const creditAmount = (input.orderTotal * creditPercentage) / 100;
@@ -519,7 +495,8 @@ export const referralsRouter = router({
     }),
 
   /**
-   * Get eligible referrers (VIP clients) for dropdown
+   * Get eligible referrers (all clients) for dropdown
+   * NOTE: clients.tier and clients.isActive don't exist in schema
    */
   getEligibleReferrers: adminProcedure
     .input(
@@ -529,12 +506,11 @@ export const referralsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      // Get clients who can be referrers (typically VIPs or all clients)
+      // Get clients who can be referrers
       const eligibleClients = await db
         .select({
           id: clients.id,
           name: clients.name,
-          tier: clients.tier,
         })
         .from(clients)
         .where(
@@ -544,14 +520,17 @@ export const referralsRouter = router({
               : undefined,
             input.search
               ? sql`${clients.name} LIKE ${`%${input.search}%`}`
-              : undefined,
-            eq(clients.isActive, true)
+              : undefined
           )
         )
         .orderBy(clients.name)
         .limit(50);
 
-      return eligibleClients;
+      // Add tier field for frontend compatibility (always null - field doesn't exist)
+      return eligibleClients.map(c => ({
+        ...c,
+        tier: null as string | null,
+      }));
     }),
 
   /**
@@ -611,12 +590,12 @@ export const referralsRouter = router({
       return {
         totalCreditsCreated: totalCreated.count || 0,
         totalCreditAmount: totalCreated.totalAmount || 0,
-        byStatus: byStatus.map((s) => ({
+        byStatus: byStatus.map(s => ({
           status: s.status,
           count: s.count,
           totalAmount: s.totalAmount || 0,
         })),
-        topReferrers: topReferrers.map((r) => ({
+        topReferrers: topReferrers.map(r => ({
           clientId: r.clientId,
           clientName: r.clientName,
           referralCount: r.referralCount,
