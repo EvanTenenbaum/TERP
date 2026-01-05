@@ -23,10 +23,10 @@ export type InterestItem = {
   productCategory: string;
   productDescription: string;
   quantityNeeded: number;
-  maxPrice: number | null;
+  maxPrice?: number;
   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-  status: "ACTIVE" | "FULFILLED" | "CANCELLED";
-  neededBy: string | null;
+  status: "ACTIVE" | "FULFILLED" | "CANCELLED" | "EXPIRED";
+  neededBy?: string;
   createdAt: string;
   matchCount: number;
 };

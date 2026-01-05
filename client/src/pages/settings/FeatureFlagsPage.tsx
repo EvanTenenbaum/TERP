@@ -1,7 +1,6 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 /**
  * Feature Flags Admin Page
- * 
+ *
  * Allows administrators to manage feature flags, including:
  * - Viewing all flags and their status
  * - Toggling system-wide enable/disable
@@ -41,7 +40,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from "../../components/ui/dialog";
 import {
   Tabs,
@@ -50,14 +48,6 @@ import {
   TabsTrigger,
 } from "../../components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import {
-  AlertCircle,
   Check,
   Flag,
   History,
@@ -78,53 +68,82 @@ export default function FeatureFlagsPage() {
   const [selectedFlag, setSelectedFlag] = useState<number | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isOverrideDialogOpen, setIsOverrideDialogOpen] = useState(false);
-  
+
   // Queries
-  const { data: flags, isLoading, refetch } = trpc.featureFlags.getAll.useQuery();
-  const { data: auditHistory, refetch: refetchAudit } = trpc.featureFlags.getAuditHistory.useQuery({ limit: 50 });
+  const {
+    data: flags,
+    isLoading,
+    refetch,
+  } = trpc.featureFlags.getAll.useQuery();
+  const { data: auditHistory, refetch: refetchAudit } =
+    trpc.featureFlags.getAuditHistory.useQuery({ limit: 50 });
   const { data: users } = trpc.userManagement.listUsers.useQuery();
-  const { data: rolesData } = trpc.rbacRoles.list.useQuery({ includeSystemRoles: true });
-  
+  const { data: rolesData } = trpc.rbacRoles.list.useQuery({
+    includeSystemRoles: true,
+  });
+
   // Mutations
   const toggleMutation = trpc.featureFlags.toggleSystemEnabled.useMutation({
     onSuccess: () => {
-      toast({ title: "Flag updated", description: "System enabled status changed." });
+      toast({
+        title: "Flag updated",
+        description: "System enabled status changed.",
+      });
       refetch();
       refetchAudit();
     },
-    onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    onError: error => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
-  
+
   const createMutation = trpc.featureFlags.create.useMutation({
     onSuccess: () => {
-      toast({ title: "Flag created", description: "New feature flag has been created." });
+      toast({
+        title: "Flag created",
+        description: "New feature flag has been created.",
+      });
       setIsCreateDialogOpen(false);
       refetch();
       refetchAudit();
     },
-    onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
-  
-  const invalidateCachesMutation = trpc.featureFlags.invalidateAllCaches.useMutation({
-    onSuccess: () => {
-      toast({ title: "Caches cleared", description: "All feature flag caches have been invalidated." });
+    onError: error => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
+  const invalidateCachesMutation =
+    trpc.featureFlags.invalidateAllCaches.useMutation({
+      onSuccess: () => {
+        toast({
+          title: "Caches cleared",
+          description: "All feature flag caches have been invalidated.",
+        });
+      },
+    });
+
   const seedDefaultsMutation = trpc.featureFlags.seedDefaults.useMutation({
-    onSuccess: (result) => {
+    onSuccess: result => {
       toast({
         title: "Seed complete",
         description: `Created ${result.created} flags, skipped ${result.skipped} existing.`,
       });
       refetch();
     },
-    onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    onError: error => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -163,7 +182,9 @@ export default function FeatureFlagsPage() {
             onClick={() => seedDefaultsMutation.mutate()}
             disabled={seedDefaultsMutation.isPending}
           >
-            <Settings className={`h-4 w-4 mr-2 ${seedDefaultsMutation.isPending ? "animate-spin" : ""}`} />
+            <Settings
+              className={`h-4 w-4 mr-2 ${seedDefaultsMutation.isPending ? "animate-spin" : ""}`}
+            />
             Seed Defaults
           </Button>
           <Button
@@ -172,10 +193,15 @@ export default function FeatureFlagsPage() {
             onClick={() => invalidateCachesMutation.mutate()}
             disabled={invalidateCachesMutation.isPending}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${invalidateCachesMutation.isPending ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${invalidateCachesMutation.isPending ? "animate-spin" : ""}`}
+            />
             Clear Caches
           </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
@@ -183,7 +209,7 @@ export default function FeatureFlagsPage() {
               </Button>
             </DialogTrigger>
             <CreateFlagDialog
-              onSubmit={(data) => createMutation.mutate(data)}
+              onSubmit={data => createMutation.mutate(data)}
               isLoading={createMutation.isPending}
             />
           </Dialog>
@@ -217,7 +243,7 @@ export default function FeatureFlagsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {flags?.map((flag) => (
+                  {flags?.map(flag => (
                     <TableRow key={flag.id}>
                       <TableCell>
                         <div>
@@ -237,7 +263,9 @@ export default function FeatureFlagsPage() {
                       <TableCell>
                         <Switch
                           checked={flag.systemEnabled}
-                          onCheckedChange={() => handleToggle(flag.id, flag.systemEnabled)}
+                          onCheckedChange={() =>
+                            handleToggle(flag.id, flag.systemEnabled)
+                          }
                           disabled={toggleMutation.isPending}
                         />
                       </TableCell>
@@ -256,7 +284,10 @@ export default function FeatureFlagsPage() {
                       </TableCell>
                       <TableCell>
                         {flag.dependsOn ? (
-                          <Badge variant="outline" className="font-mono text-xs">
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-xs"
+                          >
                             {flag.dependsOn}
                           </Badge>
                         ) : (
@@ -302,9 +333,7 @@ export default function FeatureFlagsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Audit History</CardTitle>
-              <CardDescription>
-                Recent changes to feature flags
-              </CardDescription>
+              <CardDescription>Recent changes to feature flags</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -317,10 +346,12 @@ export default function FeatureFlagsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {auditHistory?.map((entry) => (
+                  {auditHistory?.map(entry => (
                     <TableRow key={entry.id}>
                       <TableCell className="text-muted-foreground">
-                        {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(entry.createdAt), {
+                          addSuffix: true,
+                        })}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         {entry.flagKey}
@@ -335,7 +366,10 @@ export default function FeatureFlagsPage() {
                   ))}
                   {(!auditHistory || auditHistory.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         No audit history yet
                       </TableCell>
                     </TableRow>
@@ -348,7 +382,10 @@ export default function FeatureFlagsPage() {
       </Tabs>
 
       {/* Override Management Dialog */}
-      <Dialog open={isOverrideDialogOpen} onOpenChange={setIsOverrideDialogOpen}>
+      <Dialog
+        open={isOverrideDialogOpen}
+        onOpenChange={setIsOverrideDialogOpen}
+      >
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -383,79 +420,125 @@ export default function FeatureFlagsPage() {
 interface OverrideManagementProps {
   flagId: number;
   flagKey: string;
-  users: Array<{ id: number; openId: string; name: string; email: string }>;
+  users: Array<{
+    id: number;
+    openId: string;
+    name: string | null;
+    email: string | null;
+  }>;
   roles: Array<{ id: number; name: string; description: string | null }>;
   onUpdate: () => void;
 }
 
-function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: OverrideManagementProps) {
+function OverrideManagement({
+  flagId,
+  flagKey: _flagKey,
+  users,
+  roles,
+  onUpdate,
+}: OverrideManagementProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
   const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+  const [_selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
   // Queries for existing overrides
-  const { data: roleOverrides, refetch: refetchRoleOverrides } = 
+  const { data: roleOverrides, refetch: refetchRoleOverrides } =
     trpc.featureFlags.getRoleOverrides.useQuery({ flagId });
 
   // Mutations
-  const setUserOverrideMutation = trpc.featureFlags.setUserOverride.useMutation({
-    onSuccess: () => {
-      toast({ title: "User override set", description: "The user override has been saved." });
-      setSelectedUserId("");
-      onUpdate();
-    },
-    onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
+  const setUserOverrideMutation = trpc.featureFlags.setUserOverride.useMutation(
+    {
+      onSuccess: () => {
+        toast({
+          title: "User override set",
+          description: "The user override has been saved.",
+        });
+        setSelectedUserId("");
+        onUpdate();
+      },
+      onError: error => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    }
+  );
 
-  const removeUserOverrideMutation = trpc.featureFlags.removeUserOverride.useMutation({
-    onSuccess: () => {
-      toast({ title: "Override removed", description: "The user override has been removed." });
-      onUpdate();
-    },
-    onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
+  const removeUserOverrideMutation =
+    trpc.featureFlags.removeUserOverride.useMutation({
+      onSuccess: () => {
+        toast({
+          title: "Override removed",
+          description: "The user override has been removed.",
+        });
+        onUpdate();
+      },
+      onError: error => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
 
-  const setRoleOverrideMutation = trpc.featureFlags.setRoleOverride.useMutation({
-    onSuccess: () => {
-      toast({ title: "Role override set", description: "The role override has been saved." });
-      setSelectedRoleId("");
-      refetchRoleOverrides();
-      onUpdate();
-    },
-    onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
+  const setRoleOverrideMutation = trpc.featureFlags.setRoleOverride.useMutation(
+    {
+      onSuccess: () => {
+        toast({
+          title: "Role override set",
+          description: "The role override has been saved.",
+        });
+        setSelectedRoleId("");
+        refetchRoleOverrides();
+        onUpdate();
+      },
+      onError: error => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    }
+  );
 
-  const removeRoleOverrideMutation = trpc.featureFlags.removeRoleOverride.useMutation({
-    onSuccess: () => {
-      toast({ title: "Override removed", description: "The role override has been removed." });
-      refetchRoleOverrides();
-      onUpdate();
-    },
-    onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
+  const removeRoleOverrideMutation =
+    trpc.featureFlags.removeRoleOverride.useMutation({
+      onSuccess: () => {
+        toast({
+          title: "Override removed",
+          description: "The role override has been removed.",
+        });
+        refetchRoleOverrides();
+        onUpdate();
+      },
+      onError: error => {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
 
   // Filter users based on search query
-  const filteredUsers = users.filter(user => 
-    user.name?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-    user.email?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-    user.openId?.toLowerCase().includes(userSearchQuery.toLowerCase())
+  const filteredUsers = users.filter(
+    user =>
+      user.name?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+      user.openId?.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
 
   const handleSetUserOverride = (userOpenId: string, enabled: boolean) => {
     setUserOverrideMutation.mutate({ flagId, userOpenId, enabled });
   };
 
-  const handleRemoveUserOverride = (userOpenId: string) => {
+  const _handleRemoveUserOverride = (userOpenId: string) => {
     removeUserOverrideMutation.mutate({ flagId, userOpenId });
   };
 
@@ -474,7 +557,10 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "users" | "roles")}>
+      <Tabs
+        value={activeTab}
+        onValueChange={v => setActiveTab(v as "users" | "roles")}
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="users">
             <User className="h-4 w-4 mr-2" />
@@ -501,11 +587,11 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                   <Input
                     placeholder="Search users by name, email, or ID..."
                     value={userSearchQuery}
-                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    onChange={e => setUserSearchQuery(e.target.value)}
                   />
                 </div>
               </div>
-              
+
               {userSearchQuery && (
                 <div className="border rounded-md max-h-48 overflow-y-auto">
                   {filteredUsers.length === 0 ? (
@@ -513,22 +599,30 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                       No users found
                     </div>
                   ) : (
-                    filteredUsers.slice(0, 10).map((user) => (
+                    filteredUsers.slice(0, 10).map(user => (
                       <div
                         key={user.openId}
                         className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-muted/50"
                       >
                         <div>
-                          <div className="font-medium">{user.name || "Unknown"}</div>
-                          <div className="text-sm text-muted-foreground">{user.email}</div>
-                          <div className="text-xs text-muted-foreground font-mono">{user.openId}</div>
+                          <div className="font-medium">
+                            {user.name || "Unknown"}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {user.email}
+                          </div>
+                          <div className="text-xs text-muted-foreground font-mono">
+                            {user.openId}
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             className="bg-green-50 hover:bg-green-100 text-green-700"
-                            onClick={() => handleSetUserOverride(user.openId, true)}
+                            onClick={() =>
+                              handleSetUserOverride(user.openId, true)
+                            }
                             disabled={setUserOverrideMutation.isPending}
                           >
                             <Check className="h-3 w-3 mr-1" />
@@ -538,7 +632,9 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                             size="sm"
                             variant="outline"
                             className="bg-red-50 hover:bg-red-100 text-red-700"
-                            onClick={() => handleSetUserOverride(user.openId, false)}
+                            onClick={() =>
+                              handleSetUserOverride(user.openId, false)
+                            }
                             disabled={setUserOverrideMutation.isPending}
                           >
                             <X className="h-3 w-3 mr-1" />
@@ -550,7 +646,8 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                   )}
                   {filteredUsers.length > 10 && (
                     <div className="p-2 text-center text-sm text-muted-foreground bg-muted/30">
-                      Showing 10 of {filteredUsers.length} users. Refine your search.
+                      Showing 10 of {filteredUsers.length} users. Refine your
+                      search.
                     </div>
                   )}
                 </div>
@@ -560,7 +657,9 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Quick Override by User ID</CardTitle>
+              <CardTitle className="text-base">
+                Quick Override by User ID
+              </CardTitle>
               <CardDescription>
                 Directly enter a user's OpenID to set an override
               </CardDescription>
@@ -570,7 +669,7 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                 <Input
                   placeholder="Enter user OpenID..."
                   value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  onChange={e => setSelectedUserId(e.target.value)}
                   className="flex-1"
                 />
                 <Button
@@ -578,7 +677,9 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                   variant="outline"
                   className="bg-green-50 hover:bg-green-100 text-green-700"
                   onClick={() => handleSetUserOverride(selectedUserId, true)}
-                  disabled={!selectedUserId || setUserOverrideMutation.isPending}
+                  disabled={
+                    !selectedUserId || setUserOverrideMutation.isPending
+                  }
                 >
                   <Check className="h-3 w-3 mr-1" />
                   Enable
@@ -588,7 +689,9 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                   variant="outline"
                   className="bg-red-50 hover:bg-red-100 text-red-700"
                   onClick={() => handleSetUserOverride(selectedUserId, false)}
-                  disabled={!selectedUserId || setUserOverrideMutation.isPending}
+                  disabled={
+                    !selectedUserId || setUserOverrideMutation.isPending
+                  }
                 >
                   <X className="h-3 w-3 mr-1" />
                   Disable
@@ -604,7 +707,8 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
             <CardHeader>
               <CardTitle className="text-base">Role Overrides</CardTitle>
               <CardDescription>
-                Set overrides for entire roles. Users with multiple roles get the most permissive override.
+                Set overrides for entire roles. Users with multiple roles get
+                the most permissive override.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -618,11 +722,13 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {roles.map((role) => {
+                  {roles.map(role => {
                     const override = getRoleOverride(role.id);
                     return (
                       <TableRow key={role.id}>
-                        <TableCell className="font-medium">{role.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {role.name}
+                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {role.description || "—"}
                         </TableCell>
@@ -649,7 +755,9 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                               size="sm"
                               variant="ghost"
                               className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                              onClick={() => handleSetRoleOverride(role.id, true)}
+                              onClick={() =>
+                                handleSetRoleOverride(role.id, true)
+                              }
                               disabled={setRoleOverrideMutation.isPending}
                               title="Enable for this role"
                             >
@@ -659,7 +767,9 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                               size="sm"
                               variant="ghost"
                               className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => handleSetRoleOverride(role.id, false)}
+                              onClick={() =>
+                                handleSetRoleOverride(role.id, false)
+                              }
                               disabled={setRoleOverrideMutation.isPending}
                               title="Disable for this role"
                             >
@@ -670,7 +780,9 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                                 size="sm"
                                 variant="ghost"
                                 className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                                onClick={() => handleRemoveRoleOverride(role.id)}
+                                onClick={() =>
+                                  handleRemoveRoleOverride(role.id)
+                                }
                                 disabled={removeRoleOverrideMutation.isPending}
                                 title="Remove override"
                               >
@@ -684,7 +796,10 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
                   })}
                   {roles.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         No roles available
                       </TableCell>
                     </TableRow>
@@ -704,7 +819,13 @@ function OverrideManagement({ flagId, flagKey, users, roles, onUpdate }: Overrid
 // ============================================================================
 
 function ActionBadge({ action }: { action: string }) {
-  const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+  const variants: Record<
+    string,
+    {
+      variant: "default" | "secondary" | "destructive" | "outline";
+      label: string;
+    }
+  > = {
     created: { variant: "default", label: "Created" },
     updated: { variant: "secondary", label: "Updated" },
     deleted: { variant: "destructive", label: "Deleted" },
@@ -713,13 +834,22 @@ function ActionBadge({ action }: { action: string }) {
     override_added: { variant: "outline", label: "Override Added" },
     override_removed: { variant: "outline", label: "Override Removed" },
     user_override_set: { variant: "outline", label: "User Override Set" },
-    user_override_removed: { variant: "outline", label: "User Override Removed" },
+    user_override_removed: {
+      variant: "outline",
+      label: "User Override Removed",
+    },
     role_override_set: { variant: "outline", label: "Role Override Set" },
-    role_override_removed: { variant: "outline", label: "Role Override Removed" },
+    role_override_removed: {
+      variant: "outline",
+      label: "Role Override Removed",
+    },
   };
-  
-  const config = variants[action] || { variant: "outline" as const, label: action };
-  
+
+  const config = variants[action] || {
+    variant: "outline" as const,
+    label: action,
+  };
+
   return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
@@ -774,7 +904,9 @@ function CreateFlagDialog({ onSubmit, isLoading }: CreateFlagDialogProps) {
               id="key"
               placeholder="my-feature"
               value={key}
-              onChange={(e) => setKey(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+              onChange={e =>
+                setKey(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))
+              }
               required
             />
             <p className="text-xs text-muted-foreground">
@@ -787,7 +919,7 @@ function CreateFlagDialog({ onSubmit, isLoading }: CreateFlagDialogProps) {
               id="name"
               placeholder="My Feature"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               required
             />
           </div>
@@ -797,7 +929,7 @@ function CreateFlagDialog({ onSubmit, isLoading }: CreateFlagDialogProps) {
               id="description"
               placeholder="What this flag controls..."
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
             />
           </div>
           <div className="grid gap-2">
@@ -806,7 +938,7 @@ function CreateFlagDialog({ onSubmit, isLoading }: CreateFlagDialogProps) {
               id="module"
               placeholder="module-accounting"
               value={module}
-              onChange={(e) => setModule(e.target.value)}
+              onChange={e => setModule(e.target.value)}
             />
           </div>
           <div className="grid gap-2">
@@ -815,7 +947,7 @@ function CreateFlagDialog({ onSubmit, isLoading }: CreateFlagDialogProps) {
               id="dependsOn"
               placeholder="parent-flag-key"
               value={dependsOn}
-              onChange={(e) => setDependsOn(e.target.value)}
+              onChange={e => setDependsOn(e.target.value)}
             />
           </div>
           <div className="flex items-center justify-between">

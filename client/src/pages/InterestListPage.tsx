@@ -1,4 +1,3 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 /**
  * Interest List Page
  * ACT-003: Implements interest list flow with product tracking and order conversion
@@ -114,40 +113,24 @@ export default function InterestListPage() {
   });
 
   // Extract items from response
-  type RawNeedItem = {
-    id: number;
-    clientId: number;
-    clientName?: string;
-    category?: string;
-    productCategory?: string;
-    description?: string;
-    productDescription?: string;
-    quantityNeeded?: number;
-    quantity?: number;
-    maxPrice?: number;
-    priority?: string;
-    status?: string;
-    neededBy?: string;
-    createdAt: string;
-    matchCount?: number;
-  };
-
   const items: InterestItem[] = useMemo(() => {
     const rawItems = needsData?.data || [];
     if (!Array.isArray(rawItems)) return [];
 
-    return rawItems.map((item: RawNeedItem) => ({
+    return rawItems.map(item => ({
       id: item.id,
       clientId: item.clientId,
-      clientName: item.clientName || `Client #${item.clientId}`,
-      productCategory: item.category || item.productCategory || "General",
-      productDescription: item.description || item.productDescription || "",
-      quantityNeeded: item.quantityNeeded || item.quantity || 0,
-      maxPrice: item.maxPrice,
-      priority: item.priority || "MEDIUM",
-      status: item.status || "ACTIVE",
-      neededBy: item.neededBy,
-      createdAt: item.createdAt,
+      clientName: `Client #${item.clientId}`,
+      productCategory: item.category || "General",
+      productDescription: item.strain || item.productName || "",
+      quantityNeeded: parseFloat((item.quantityMin as string) || "0"),
+      maxPrice: item.priceMax ? parseFloat(item.priceMax as string) : undefined,
+      priority: item.priority,
+      status: item.status,
+      neededBy: item.neededBy ? String(item.neededBy) : undefined,
+      createdAt: item.createdAt
+        ? new Date(item.createdAt).toISOString()
+        : new Date().toISOString(),
       matchCount: item.matchCount || 0,
     }));
   }, [needsData]);
