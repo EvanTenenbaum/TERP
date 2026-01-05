@@ -1,4 +1,3 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 /**
  * Invoices Page
  * ACT-002: Made actionable with clickable rows, detail modal, and quick actions
@@ -78,20 +77,20 @@ export default function Invoices() {
   // PERF-003: Pagination state
   const { page, pageSize, offset, setPage, setPageSize } = usePagination(50);
 
-  // Mutation for marking invoice as paid
-  const markPaidMutation = trpc.accounting.invoices.markPaid.useMutation({
+  // Mutation for marking invoice as paid (using updateStatus endpoint)
+  const markPaidMutation = trpc.accounting.invoices.updateStatus.useMutation({
     onSuccess: () => {
       toast.success("Invoice marked as paid");
       setSelectedInvoice(null);
     },
-    onError: error => {
+    onError: (error: { message?: string }) => {
       toast.error(error.message || "Failed to mark invoice as paid");
     },
   });
 
   // Handle quick actions
   const handleMarkPaid = (invoice: Invoice) => {
-    markPaidMutation.mutate({ id: invoice.id });
+    markPaidMutation.mutate({ id: invoice.id, status: "PAID" });
   };
 
   const handleSendReminder = (invoice: Invoice) => {

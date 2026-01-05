@@ -1,4 +1,3 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 /**
  * useInventorySort Hook
  * Manages inventory table sorting state and logic
@@ -24,18 +23,30 @@ interface SortState {
 }
 
 export interface InventorySortableRow {
-  batch?: {
-    sku?: string;
-    grade?: string;
-    batchStatus?: string;
-    onHandQty?: string | number;
-    reservedQty?: string | number;
-    quarantineQty?: string | number;
-    holdQty?: string | number;
-  };
-  product?: { nameCanonical?: string };
-  brand?: { name?: string };
-  vendor?: { name?: string };
+  batch: {
+    id: number;
+    sku: string;
+    code: string;
+    grade: string | null;
+    batchStatus: string;
+    onHandQty: string;
+    reservedQty: string;
+    quarantineQty: string;
+    holdQty: string;
+    unitCogs: string | null;
+    createdAt: Date;
+    [key: string]: unknown;
+  } | null;
+  product: {
+    id: number;
+    nameCanonical: string;
+    category: string | null;
+    subcategory: string | null;
+    [key: string]: unknown;
+  } | null;
+  brand: { id: number; name: string; [key: string]: unknown } | null;
+  vendor: { id: number; name: string; [key: string]: unknown } | null;
+  lot?: { id: number; [key: string]: unknown } | null;
 }
 
 export function useInventorySort() {
@@ -134,7 +145,9 @@ export function useInventorySort() {
           ? aVal.localeCompare(bVal)
           : bVal.localeCompare(aVal);
       } else {
-        return sortState.direction === "asc" ? aVal - bVal : bVal - aVal;
+        const aNum = Number(aVal);
+        const bNum = Number(bVal);
+        return sortState.direction === "asc" ? aNum - bNum : bNum - aNum;
       }
     });
 

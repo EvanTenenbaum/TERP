@@ -1,4 +1,3 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 import React, { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useRoute } from "wouter";
@@ -236,7 +235,14 @@ export default function Inventory() {
     if (bulkAction.type === "status" && bulkAction.value) {
       bulkUpdateStatusMutation.mutate({
         batchIds,
-        newStatus: bulkAction.value,
+        newStatus: bulkAction.value as
+          | "AWAITING_INTAKE"
+          | "LIVE"
+          | "PHOTOGRAPHY_COMPLETE"
+          | "ON_HOLD"
+          | "QUARANTINED"
+          | "SOLD_OUT"
+          | "CLOSED",
       });
     } else if (bulkAction.type === "delete") {
       bulkDeleteMutation.mutate(batchIds);

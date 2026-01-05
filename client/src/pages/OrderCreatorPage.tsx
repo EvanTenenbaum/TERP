@@ -1,4 +1,3 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 /**
  * OrderCreatorPage V2.0
  * Complete sales order creation with COGS visibility, margin management,
@@ -47,7 +46,10 @@ import { CreditWarningDialog } from "@/components/orders/CreditWarningDialog";
 import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
 import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
-import { useOrderCalculations, calculateLineItem } from "@/hooks/orders/useOrderCalculations";
+import {
+  useOrderCalculations,
+  calculateLineItem,
+} from "@/hooks/orders/useOrderCalculations";
 
 interface CreditCheckResult {
   allowed: boolean;
@@ -77,37 +79,51 @@ export default function OrderCreatorPageV2() {
     useState(true);
   const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
-  
+
   // Credit check state
   const [showCreditWarning, setShowCreditWarning] = useState(false);
-  const [creditCheckResult, setCreditCheckResult] = useState<CreditCheckResult | null>(null);
-  const [pendingOverrideReason, setPendingOverrideReason] = useState<string | undefined>();
-  
+  const [creditCheckResult, setCreditCheckResult] =
+    useState<CreditCheckResult | null>(null);
+  const [pendingOverrideReason, setPendingOverrideReason] = useState<
+    string | undefined
+  >();
+
   // Referral tracking state (WS-004)
-  const [referredByClientId, setReferredByClientId] = useState<number | null>(null);
+  const [referredByClientId, setReferredByClientId] = useState<number | null>(
+    null
+  );
 
   // Queries - handle paginated response
-  const { data: clientsData, isLoading: clientsLoading } = trpc.clients.list.useQuery({ limit: 1000 });
-  const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
+  const { data: clientsData, isLoading: clientsLoading } =
+    trpc.clients.list.useQuery({ limit: 1000 });
+  const clients = Array.isArray(clientsData)
+    ? clientsData
+    : (clientsData?.items ?? []);
   const { data: clientDetails } = trpc.clients.getById.useQuery(
     { clientId: clientId || 0 },
     { enabled: !!clientId }
   );
-  
+
   // Fetch inventory with pricing when client is selected
-  const { data: inventory, isLoading: inventoryLoading, error: inventoryError } = trpc.salesSheets.getInventory.useQuery(
-    { clientId: clientId! },
-    { 
+  const {
+    data: inventory,
+    isLoading: inventoryLoading,
+    error: inventoryError,
+  } = trpc.salesSheets.getInventory.useQuery(
+    { clientId: clientId ?? 0 },
+    {
       enabled: !!clientId && clientId > 0,
       retry: false,
     }
   );
-  
+
   // Handle inventory error with useEffect
   React.useEffect(() => {
     if (inventoryError) {
       console.error("Failed to load inventory:", inventoryError);
-      toast.error(`Failed to load inventory: ${inventoryError.message || "Unknown error"}`);
+      toast.error(
+        `Failed to load inventory: ${inventoryError.message || "Unknown error"}`
+      );
     }
   }, [inventoryError]);
 
@@ -191,9 +207,9 @@ export default function OrderCreatorPageV2() {
           orderTotal: totals.total,
           overrideReason: pendingOverrideReason,
         });
-        
+
         setCreditCheckResult(result);
-        
+
         // If there's a warning or requires override, show the dialog
         if (result.warning || result.requiresOverride || !result.allowed) {
           setShowCreditWarning(true);
@@ -225,7 +241,7 @@ export default function OrderCreatorPageV2() {
 
   const confirmFinalize = () => {
     setShowFinalizeConfirm(false);
-    
+
     if (!clientId) return;
 
     // First create the draft, then finalize it
@@ -248,15 +264,16 @@ export default function OrderCreatorPageV2() {
   };
 
   // Convert inventory items to LineItem format
-  const convertInventoryToLineItems = (inventoryItems: InventoryItemForOrder[]): LineItem[] => {
+  const convertInventoryToLineItems = (
+    inventoryItems: InventoryItemForOrder[]
+  ): LineItem[] => {
     return inventoryItems.map(item => {
       // Calculate margin percent from basePrice and retailPrice
       const cogsPerUnit = item.basePrice || 0;
       const retailPrice = item.retailPrice || item.basePrice || 0;
-      const marginPercent = cogsPerUnit > 0 
-        ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 
-        : 0;
-      
+      const marginPercent =
+        cogsPerUnit > 0 ? ((retailPrice - cogsPerUnit) / cogsPerUnit) * 100 : 0;
+
       // Use calculateLineItem to ensure proper structure
       const calculated = calculateLineItem(
         item.id, // batchId
@@ -264,7 +281,7 @@ export default function OrderCreatorPageV2() {
         cogsPerUnit,
         marginPercent
       );
-      
+
       return {
         ...calculated,
         marginPercent: marginPercent || 0, // Ensure marginPercent is always a number
@@ -289,16 +306,18 @@ export default function OrderCreatorPageV2() {
 
     // Convert inventory items to LineItem format
     const newLineItems = convertInventoryToLineItems(inventoryItems);
-    
+
     // Filter out items that are already in the order (by batchId)
     const existingBatchIds = new Set(items.map(item => item.batchId));
-    const uniqueItems = newLineItems.filter(item => !existingBatchIds.has(item.batchId));
-    
+    const uniqueItems = newLineItems.filter(
+      item => !existingBatchIds.has(item.batchId)
+    );
+
     if (uniqueItems.length === 0) {
       toast.warning("Selected items are already in the order");
       return;
     }
-    
+
     // Add new items to the order
     setItems([...items, ...uniqueItems]);
     toast.success(`Added ${uniqueItems.length} item(s) to order`);
@@ -342,7 +361,7 @@ export default function OrderCreatorPageV2() {
             <Label htmlFor="client-select">Select Customer *</Label>
             <ClientCombobox
               value={clientId}
-              onValueChange={(id) => {
+              onValueChange={id => {
                 setClientId(id);
                 // Clear items when changing client
                 if (id !== clientId) {
@@ -350,8 +369,8 @@ export default function OrderCreatorPageV2() {
                 }
               }}
               clients={(clients || [])
-                .filter((c) => c.isBuyer)
-                .map((client) => ({
+                .filter(c => c.isBuyer)
+                .map(client => ({
                   id: client.id,
                   name: client.name,
                   email: client.email,
@@ -362,14 +381,14 @@ export default function OrderCreatorPageV2() {
               emptyText="No customers found"
             />
           </div>
-          
+
           {/* Referral Tracking (WS-004) */}
           {clientId && (
             <div className="mt-4">
               <ReferredBySelector
-                currentClientId={clientId}
+                excludeClientId={clientId}
                 selectedReferrerId={referredByClientId}
-                onReferrerChange={setReferredByClientId}
+                onSelect={referrerId => setReferredByClientId(referrerId)}
               />
             </div>
           )}
@@ -386,11 +405,15 @@ export default function OrderCreatorPageV2() {
               <CardContent className="pt-6">
                 {inventoryError ? (
                   <div className="text-center py-8">
-                    <p className="text-destructive mb-2">Failed to load inventory</p>
-                    <p className="text-sm text-muted-foreground">{inventoryError.message}</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <p className="text-destructive mb-2">
+                      Failed to load inventory
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {inventoryError.message}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => window.location.reload()}
                       className="mt-4"
                     >
@@ -417,18 +440,27 @@ export default function OrderCreatorPageV2() {
                   onChange={setItems}
                   onAddItem={() => {
                     // Scroll to InventoryBrowser section
-                    const inventoryBrowser = document.getElementById('inventory-browser-section');
+                    const inventoryBrowser = document.getElementById(
+                      "inventory-browser-section"
+                    );
                     if (inventoryBrowser) {
-                      inventoryBrowser.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      inventoryBrowser.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
                       // Focus on search input for better UX
                       setTimeout(() => {
-                        const searchInput = inventoryBrowser.querySelector('input[type="text"]') as HTMLInputElement;
+                        const searchInput = inventoryBrowser.querySelector(
+                          'input[type="text"]'
+                        ) as HTMLInputElement;
                         if (searchInput) {
                           searchInput.focus();
                         }
                       }, 300);
                     } else {
-                      toast.info('Please use the inventory browser above to add items');
+                      toast.info(
+                        "Please use the inventory browser above to add items"
+                      );
                     }
                   }}
                 />
@@ -548,7 +580,7 @@ export default function OrderCreatorPageV2() {
       <ConfirmDialog
         open={showFinalizeConfirm}
         onOpenChange={setShowFinalizeConfirm}
-        title={`Finalize ${orderType === 'QUOTE' ? 'Quote' : 'Sale'}?`}
+        title={`Finalize ${orderType === "QUOTE" ? "Quote" : "Sale"}?`}
         description={`Are you sure you want to finalize this ${orderType.toLowerCase()}? Total: $${totals.total.toFixed(2)}. This will create the order and cannot be undone.`}
         confirmLabel="Finalize"
         variant="default"
