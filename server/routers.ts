@@ -86,12 +86,12 @@ import { pickPackRouter } from "./routers/pickPack";
 import { referralsRouter } from "./routers/referrals";
 import { auditRouter } from "./routers/audit";
 import { receiptsRouter } from "./routers/receipts";
-import { flowerIntakeRouter } from "./routers/flowerIntake";
+// DELETED: flowerIntakeRouter - unused (Wave 5 cleanup)
 import { alertsRouter } from "./routers/alerts";
-import { inventoryShrinkageRouter } from "./routers/inventoryShrinkage";
+// DELETED: inventoryShrinkageRouter - unused (Wave 5 cleanup)
 import { photographyRouter } from "./routers/photography";
-import { quickCustomerRouter } from "./routers/quickCustomer";
-import { customerPreferencesRouter } from "./routers/customerPreferences";
+// DELETED: quickCustomerRouter - unused (Wave 5 cleanup)
+// DELETED: customerPreferencesRouter - unused (Wave 5 cleanup)
 import { vendorRemindersRouter } from "./routers/vendorReminders";
 import { featureFlagsRouter } from "./routers/featureFlags";
 import { adminSetupRouter } from "./routers/adminSetup";
@@ -105,7 +105,6 @@ let debugRouter: any = null;
 // Original: if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
 if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     debugRouter = require("./routers/debug").debugRouter;
   } catch {
     // Debug router not available - this is fine in test environments
@@ -199,12 +198,12 @@ export const appRouter = router({
   referrals: referralsRouter, // WS-004: Referral Credits System
   audit: auditRouter, // WS-005: No Black Box Audit Trail
   receipts: receiptsRouter, // WS-006: Receipt Generation
-  flowerIntake: flowerIntakeRouter, // WS-007: Complex Flower Intake Flow
+  // DELETED: flowerIntake - unused (Wave 5 cleanup)
   alerts: alertsRouter, // WS-008: Low Stock & Needs-Based Alerts
-  inventoryShrinkage: inventoryShrinkageRouter, // WS-009: Inventory Movement & Shrinkage
+  // DELETED: inventoryShrinkage - unused (Wave 5 cleanup)
   photography: photographyRouter, // WS-010: Photography Module
-  quickCustomer: quickCustomerRouter, // WS-011: Quick Customer Creation
-  customerPreferences: customerPreferencesRouter, // WS-012: Customer Preferences & History
+  // DELETED: quickCustomer - unused (Wave 5 cleanup)
+  // DELETED: customerPreferences - unused (Wave 5 cleanup)
   vendorReminders: vendorRemindersRouter, // WS-014: Vendor Harvest Reminders
   featureFlags: featureFlagsRouter,
   adminSetup: adminSetupRouter, // Feature Flag System
