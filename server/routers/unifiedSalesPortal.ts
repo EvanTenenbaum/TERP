@@ -1,10 +1,9 @@
-// @ts-nocheck - TEMPORARY: Schema mismatch errors, needs Wave 1 fix
 /**
  * Unified Sales Portal (USP) Router
- * 
+ *
  * Provides a unified pipeline view combining sales sheets, quotes, and orders
  * with conversion tracking and drag-and-drop stage management.
- * 
+ *
  * USP-001: Initial Implementation
  * USP-004: Critical Bug Fixes
  * - Use existing ordersDb.convertQuoteToSale for proper inventory handling
@@ -14,11 +13,29 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
-import { orders, salesSheetHistory, clients, users, orderLineItems } from "../../drizzle/schema";
-import { eq, desc, isNull, and, or, sql, inArray, notInArray, ne } from "drizzle-orm";
+import {
+  orders,
+  salesSheetHistory,
+  clients,
+  users,
+} from "../../drizzle/schema";
+import {
+  eq,
+  desc,
+  isNull,
+  and,
+  or,
+  sql,
+  inArray,
+  notInArray,
+} from "drizzle-orm";
 import { convertQuoteToSale as convertQuoteToSaleDb } from "../ordersDb";
 import { TRPCError } from "@trpc/server";
 
@@ -29,27 +46,32 @@ import { TRPCError } from "@trpc/server";
 /**
  * Pipeline stages for the unified view
  */
-const PipelineStage = {
-  SALES_SHEET: 'SALES_SHEET',
-  QUOTE: 'QUOTE',
-  SALE: 'SALE',
-  FULFILLED: 'FULFILLED',
+const _PipelineStage = {
+  SALES_SHEET: "SALES_SHEET",
+  QUOTE: "QUOTE",
+  SALE: "SALE",
+  FULFILLED: "FULFILLED",
 } as const;
 
-type PipelineStageType = typeof PipelineStage[keyof typeof PipelineStage];
+type PipelineStageType = (typeof _PipelineStage)[keyof typeof _PipelineStage];
 
 /**
  * Terminal statuses that should be excluded by default
+ * Type-safe arrays matching the schema enums
  */
-const TERMINAL_QUOTE_STATUSES = ['REJECTED', 'EXPIRED', 'CONVERTED'];
-const TERMINAL_SALE_STATUSES = ['CANCELLED'];
+const TERMINAL_QUOTE_STATUSES: ("REJECTED" | "EXPIRED" | "CONVERTED")[] = [
+  "REJECTED",
+  "EXPIRED",
+  "CONVERTED",
+];
+const TERMINAL_SALE_STATUSES: "CANCELLED"[] = ["CANCELLED"];
 
 /**
  * Unified pipeline item representing any sales document
  */
 interface PipelineItem {
   id: string; // Prefixed ID: SS-{id}, Q-{id}, S-{id}
-  sourceType: 'SALES_SHEET' | 'QUOTE' | 'SALE';
+  sourceType: "SALES_SHEET" | "QUOTE" | "SALE";
   sourceId: number;
   stage: PipelineStageType;
   clientId: number;
@@ -81,7 +103,9 @@ interface PipelineItem {
 // ============================================================================
 
 const pipelineFilterSchema = z.object({
-  stages: z.array(z.enum(['SALES_SHEET', 'QUOTE', 'SALE', 'FULFILLED'])).optional(),
+  stages: z
+    .array(z.enum(["SALES_SHEET", "QUOTE", "SALE", "FULFILLED"]))
+    .optional(),
   clientIds: z.array(z.number()).optional(),
   createdByIds: z.array(z.number()).optional(),
   dateFrom: z.string().optional(),
@@ -103,7 +127,9 @@ const convertSalesSheetToQuoteSchema = z.object({
 
 const convertQuoteToSaleSchema = z.object({
   orderId: z.number().positive(),
-  paymentTerms: z.enum(['NET_7', 'NET_15', 'NET_30', 'COD', 'PARTIAL', 'CONSIGNMENT']).optional(),
+  paymentTerms: z
+    .enum(["NET_7", "NET_15", "NET_30", "COD", "PARTIAL", "CONSIGNMENT"])
+    .optional(),
   cashPayment: z.number().min(0).optional(),
   notes: z.string().optional(),
   confirmExpired: z.boolean().optional(), // Confirm conversion of expired quote
@@ -116,12 +142,19 @@ const convertQuoteToSaleSchema = z.object({
 /**
  * Calculate subtotal from items array
  */
-function calculateSubtotal(items: any[]): number {
+interface OrderItem {
+  price?: string | number;
+  unitPrice?: string | number;
+  quantity?: string | number;
+  qty?: string | number;
+}
+
+function calculateSubtotal(items: OrderItem[]): number {
   if (!Array.isArray(items)) return 0;
   return items.reduce((sum, item) => {
-    const price = parseFloat(item.price || item.unitPrice || 0);
-    const qty = parseFloat(item.quantity || item.qty || 0);
-    return sum + (price * qty);
+    const price = parseFloat(String(item.price || item.unitPrice || 0));
+    const qty = parseFloat(String(item.quantity || item.qty || 0));
+    return sum + price * qty;
   }, 0);
 }
 
@@ -142,7 +175,7 @@ export const unifiedSalesPortalRouter = router({
   /**
    * Get unified pipeline view
    * Combines sales sheets, quotes, and orders into a single timeline
-   * 
+   *
    * By default, excludes:
    * - Deleted items (unless includeDeleted=true)
    * - Terminal status items like REJECTED, EXPIRED, CANCELLED (unless includeClosed=true)
@@ -157,26 +190,36 @@ export const unifiedSalesPortalRouter = router({
       const items: PipelineItem[] = [];
 
       // Determine which stages to fetch
-      const fetchSalesSheets = !input.stages || input.stages.includes('SALES_SHEET');
-      const fetchQuotes = !input.stages || input.stages.includes('QUOTE');
-      const fetchSales = !input.stages || input.stages.includes('SALE') || input.stages.includes('FULFILLED');
+      const fetchSalesSheets =
+        !input.stages || input.stages.includes("SALES_SHEET");
+      const fetchQuotes = !input.stages || input.stages.includes("QUOTE");
+      const fetchSales =
+        !input.stages ||
+        input.stages.includes("SALE") ||
+        input.stages.includes("FULFILLED");
 
       // Fetch Sales Sheets
       if (fetchSalesSheets) {
         const salesSheetConditions = [
           input.includeDeleted ? sql`1=1` : isNull(salesSheetHistory.deletedAt),
         ];
-        
+
         // Exclude already-converted sales sheets unless showing closed
         if (!input.includeClosed) {
-          salesSheetConditions.push(isNull(salesSheetHistory.convertedToOrderId));
+          salesSheetConditions.push(
+            isNull(salesSheetHistory.convertedToOrderId)
+          );
         }
-        
+
         if (input.clientIds?.length) {
-          salesSheetConditions.push(inArray(salesSheetHistory.clientId, input.clientIds));
+          salesSheetConditions.push(
+            inArray(salesSheetHistory.clientId, input.clientIds)
+          );
         }
         if (input.createdByIds?.length) {
-          salesSheetConditions.push(inArray(salesSheetHistory.createdBy, input.createdByIds));
+          salesSheetConditions.push(
+            inArray(salesSheetHistory.createdBy, input.createdByIds)
+          );
         }
         if (input.minValue !== undefined) {
           salesSheetConditions.push(sql`total_value >= ${input.minValue}`);
@@ -207,26 +250,29 @@ export const unifiedSalesPortalRouter = router({
           .limit(input.limit);
 
         for (const sheet of salesSheets) {
-          const itemsArray = typeof sheet.items === 'string' 
-            ? JSON.parse(sheet.items) 
-            : sheet.items;
-          
+          const itemsArray =
+            typeof sheet.items === "string"
+              ? JSON.parse(sheet.items)
+              : sheet.items;
+
           items.push({
             id: `SS-${sheet.id}`,
-            sourceType: 'SALES_SHEET',
+            sourceType: "SALES_SHEET",
             sourceId: sheet.id,
-            stage: 'SALES_SHEET',
+            stage: "SALES_SHEET",
             clientId: sheet.clientId,
-            clientName: sheet.clientName || 'Unknown',
-            clientTeriCode: sheet.clientTeriCode || 'N/A',
+            clientName: sheet.clientName || "Unknown",
+            clientTeriCode: sheet.clientTeriCode || "N/A",
             totalValue: Number(sheet.totalValue) || 0,
             itemCount: Array.isArray(itemsArray) ? itemsArray.length : 0,
             createdAt: sheet.createdAt || new Date(),
             createdBy: sheet.createdBy,
-            createdByName: sheet.createdByName || 'Unknown',
+            createdByName: sheet.createdByName || "Unknown",
             updatedAt: null,
             convertedFromId: null,
-            convertedToId: sheet.convertedToOrderId ? `Q-${sheet.convertedToOrderId}` : null,
+            convertedToId: sheet.convertedToOrderId
+              ? `Q-${sheet.convertedToOrderId}`
+              : null,
             convertedAt: null,
             deletedAt: sheet.deletedAt,
           });
@@ -244,26 +290,27 @@ export const unifiedSalesPortalRouter = router({
           // For quotes: exclude REJECTED, EXPIRED, CONVERTED
           // For sales: exclude CANCELLED
           // This is complex because we need to handle both order types
-          orderConditions.push(
-            or(
-              // Quotes that are NOT in terminal status
-              and(
-                eq(orders.orderType, 'QUOTE'),
-                or(
-                  isNull(orders.quoteStatus),
-                  notInArray(orders.quoteStatus, TERMINAL_QUOTE_STATUSES)
-                )
-              ),
-              // Sales that are NOT in terminal status
-              and(
-                eq(orders.orderType, 'SALE'),
-                or(
-                  isNull(orders.saleStatus),
-                  notInArray(orders.saleStatus, TERMINAL_SALE_STATUSES)
-                )
+          const terminalStatusFilter = or(
+            // Quotes that are NOT in terminal status
+            and(
+              eq(orders.orderType, "QUOTE"),
+              or(
+                isNull(orders.quoteStatus),
+                notInArray(orders.quoteStatus, TERMINAL_QUOTE_STATUSES)
               )
-            )!
+            ),
+            // Sales that are NOT in terminal status
+            and(
+              eq(orders.orderType, "SALE"),
+              or(
+                isNull(orders.saleStatus),
+                notInArray(orders.saleStatus, TERMINAL_SALE_STATUSES)
+              )
+            )
           );
+          if (terminalStatusFilter) {
+            orderConditions.push(terminalStatusFilter);
+          }
         }
 
         if (input.clientIds?.length) {
@@ -273,19 +320,25 @@ export const unifiedSalesPortalRouter = router({
           orderConditions.push(inArray(orders.createdBy, input.createdByIds));
         }
         if (input.minValue !== undefined) {
-          orderConditions.push(sql`CAST(${orders.total} AS DECIMAL(15,2)) >= ${input.minValue}`);
+          orderConditions.push(
+            sql`CAST(${orders.total} AS DECIMAL(15,2)) >= ${input.minValue}`
+          );
         }
         if (input.maxValue !== undefined) {
-          orderConditions.push(sql`CAST(${orders.total} AS DECIMAL(15,2)) <= ${input.maxValue}`);
+          orderConditions.push(
+            sql`CAST(${orders.total} AS DECIMAL(15,2)) <= ${input.maxValue}`
+          );
         }
 
         // Filter by order type based on stages
         const orderTypes: string[] = [];
-        if (fetchQuotes) orderTypes.push('QUOTE');
-        if (fetchSales) orderTypes.push('SALE');
-        
+        if (fetchQuotes) orderTypes.push("QUOTE");
+        if (fetchSales) orderTypes.push("SALE");
+
         if (orderTypes.length === 1) {
-          orderConditions.push(eq(orders.orderType, orderTypes[0] as 'QUOTE' | 'SALE'));
+          orderConditions.push(
+            eq(orders.orderType, orderTypes[0] as "QUOTE" | "SALE")
+          );
         }
 
         const ordersResult = await db
@@ -293,9 +346,9 @@ export const unifiedSalesPortalRouter = router({
             id: orders.id,
             orderNumber: orders.orderNumber,
             orderType: orders.orderType,
-            // orderStatus removed - field doesn't exist in orders table
             quoteStatus: orders.quoteStatus,
             saleStatus: orders.saleStatus,
+            fulfillmentStatus: orders.fulfillmentStatus,
             clientId: orders.clientId,
             totalAmount: orders.total,
             createdAt: orders.createdAt,
@@ -318,14 +371,15 @@ export const unifiedSalesPortalRouter = router({
           .limit(input.limit);
 
         for (const order of ordersResult) {
-          // Determine stage based on order type and status
+          // Determine stage based on order type and fulfillment status
           let stage: PipelineStageType;
-          if (order.orderType === 'QUOTE') {
-            stage = 'QUOTE';
-          } else if (order.saleStatus === 'FULFILLED' || order.saleStatus === 'DELIVERED') {
-            stage = 'FULFILLED';
+          if (order.orderType === "QUOTE") {
+            stage = "QUOTE";
+          } else if (order.fulfillmentStatus === "SHIPPED") {
+            // Use fulfillmentStatus for tracking physical order progress
+            stage = "FULFILLED";
           } else {
-            stage = 'SALE';
+            stage = "SALE";
           }
 
           // Skip if stage doesn't match filter
@@ -342,28 +396,31 @@ export const unifiedSalesPortalRouter = router({
           }
 
           items.push({
-            id: order.orderType === 'QUOTE' ? `Q-${order.id}` : `S-${order.id}`,
-            sourceType: order.orderType as 'QUOTE' | 'SALE',
+            id: order.orderType === "QUOTE" ? `Q-${order.id}` : `S-${order.id}`,
+            sourceType: order.orderType as "QUOTE" | "SALE",
             sourceId: order.id,
             stage,
             clientId: order.clientId,
-            clientName: order.clientName || 'Unknown',
-            clientTeriCode: order.clientTeriCode || 'N/A',
+            clientName: order.clientName || "Unknown",
+            clientTeriCode: order.clientTeriCode || "N/A",
             totalValue: Number(order.totalAmount) || 0,
             itemCount: 0, // Would need to join with line items
             createdAt: order.createdAt || new Date(),
             createdBy: order.createdBy,
-            createdByName: order.createdByName || 'Unknown',
+            createdByName: order.createdByName || "Unknown",
             updatedAt: order.updatedAt,
             convertedFromId,
             convertedToId: null, // Would need reverse lookup
             convertedAt: order.convertedAt,
             orderNumber: order.orderNumber,
             orderStatus: undefined, // Field doesn't exist in orders table
-            quoteStatus: order.quoteStatus,
-            saleStatus: order.saleStatus,
+            quoteStatus: order.quoteStatus ?? undefined,
+            saleStatus: order.saleStatus ?? undefined,
             validUntil: order.validUntil,
-            isExpired: order.orderType === 'QUOTE' ? isQuoteExpired(order.validUntil) : false,
+            isExpired:
+              order.orderType === "QUOTE"
+                ? isQuoteExpired(order.validUntil)
+                : false,
             deletedAt: order.deletedAt,
           });
         }
@@ -373,19 +430,26 @@ export const unifiedSalesPortalRouter = router({
       let filteredItems = items;
       if (input.search) {
         const searchLower = input.search.toLowerCase();
-        filteredItems = items.filter(item => 
-          item.clientName.toLowerCase().includes(searchLower) ||
-          item.clientTeriCode.toLowerCase().includes(searchLower) ||
-          item.orderNumber?.toLowerCase().includes(searchLower) ||
-          item.id.toLowerCase().includes(searchLower)
+        filteredItems = items.filter(
+          item =>
+            item.clientName.toLowerCase().includes(searchLower) ||
+            item.clientTeriCode.toLowerCase().includes(searchLower) ||
+            item.orderNumber?.toLowerCase().includes(searchLower) ||
+            item.id.toLowerCase().includes(searchLower)
         );
       }
 
       // Sort by createdAt descending
-      filteredItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      filteredItems.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
 
       // Apply offset and limit
-      const paginatedItems = filteredItems.slice(input.offset, input.offset + input.limit);
+      const paginatedItems = filteredItems.slice(
+        input.offset,
+        input.offset + input.limit
+      );
 
       // Calculate stage counts and values
       const stageStats = {
@@ -428,19 +492,23 @@ export const unifiedSalesPortalRouter = router({
         return { canConvert: false, reason: "Quote not found" };
       }
 
-      if (quote.orderType !== 'QUOTE') {
+      if (quote.orderType !== "QUOTE") {
         return { canConvert: false, reason: "Order is not a quote" };
       }
 
       const isExpired = isQuoteExpired(quote.validUntil);
       const warnings: string[] = [];
 
-      if (isExpired) {
-        warnings.push(`Quote expired on ${new Date(quote.validUntil!).toLocaleDateString()}. Pricing may be outdated.`);
+      if (isExpired && quote.validUntil) {
+        warnings.push(
+          `Quote expired on ${new Date(quote.validUntil).toLocaleDateString()}. Pricing may be outdated.`
+        );
       }
 
-      if (quote.quoteStatus === 'DRAFT') {
-        warnings.push("Quote is still in DRAFT status and has not been formally accepted by the client.");
+      if (quote.quoteStatus === "DRAFT") {
+        warnings.push(
+          "Quote is still in DRAFT status and has not been formally accepted by the client."
+        );
       }
 
       return {
@@ -450,7 +518,7 @@ export const unifiedSalesPortalRouter = router({
         quote: {
           id: quote.id,
           orderNumber: quote.orderNumber,
-          totalAmount: quote.totalAmount,
+          total: quote.total,
           validUntil: quote.validUntil,
           quoteStatus: quote.quoteStatus,
         },
@@ -460,7 +528,7 @@ export const unifiedSalesPortalRouter = router({
   /**
    * Convert a sales sheet to a quote
    * Creates a new quote order and links it to the original sales sheet
-   * 
+   *
    * USP-004: Now properly copies line items from sales sheet
    */
   convertSalesSheetToQuote: protectedProcedure
@@ -472,7 +540,7 @@ export const unifiedSalesPortalRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
-      return await db.transaction(async (tx) => {
+      return await db.transaction(async tx => {
         // Get the sales sheet
         const [salesSheet] = await tx
           .select()
@@ -495,9 +563,10 @@ export const unifiedSalesPortalRouter = router({
         }
 
         // Parse items from sales sheet
-        const salesSheetItems = typeof salesSheet.items === 'string'
-          ? JSON.parse(salesSheet.items)
-          : (salesSheet.items || []);
+        const salesSheetItems =
+          typeof salesSheet.items === "string"
+            ? JSON.parse(salesSheet.items)
+            : salesSheet.items || [];
 
         // Calculate totals from items
         const subtotal = calculateSubtotal(salesSheetItems);
@@ -511,15 +580,15 @@ export const unifiedSalesPortalRouter = router({
           .insert(orders)
           .values({
             orderNumber,
-            orderType: 'QUOTE',
-            orderStatus: 'DRAFT',
-            quoteStatus: 'DRAFT',
+            orderType: "QUOTE",
+            quoteStatus: "DRAFT",
             clientId: salesSheet.clientId,
             items: JSON.stringify(salesSheetItems), // Copy items from sales sheet
             subtotal: String(subtotal),
-            totalAmount: String(total),
+            total: String(total),
             validUntil: input.validUntil ? new Date(input.validUntil) : null,
-            notes: input.notes || `Converted from Sales Sheet #${salesSheet.id}`,
+            notes:
+              input.notes || `Converted from Sales Sheet #${salesSheet.id}`,
             createdBy: userId,
             convertedFromSalesSheetId: salesSheet.id,
             convertedAt: new Date(),
@@ -546,7 +615,7 @@ export const unifiedSalesPortalRouter = router({
 
   /**
    * Convert a quote to a sale
-   * 
+   *
    * USP-004: Now uses existing ordersDb.convertQuoteToSale function
    * which properly handles:
    * - Quote expiration check
@@ -557,7 +626,7 @@ export const unifiedSalesPortalRouter = router({
   convertQuoteToSale: protectedProcedure
     .use(requirePermission("orders:create"))
     .input(convertQuoteToSaleSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx: _ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -575,7 +644,7 @@ export const unifiedSalesPortalRouter = router({
         });
       }
 
-      if (quote.orderType !== 'QUOTE') {
+      if (quote.orderType !== "QUOTE") {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Order is not a quote",
@@ -583,10 +652,14 @@ export const unifiedSalesPortalRouter = router({
       }
 
       // Check expiration - if expired and not confirmed, throw error
-      if (isQuoteExpired(quote.validUntil) && !input.confirmExpired) {
+      if (
+        isQuoteExpired(quote.validUntil) &&
+        !input.confirmExpired &&
+        quote.validUntil
+      ) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: `Quote has expired on ${new Date(quote.validUntil!).toLocaleDateString()}. Set confirmExpired=true to proceed anyway.`,
+          message: `Quote has expired on ${new Date(quote.validUntil).toLocaleDateString()}. Set confirmExpired=true to proceed anyway.`,
         });
       }
 
@@ -597,7 +670,7 @@ export const unifiedSalesPortalRouter = router({
       try {
         const sale = await convertQuoteToSaleDb({
           quoteId: input.orderId,
-          paymentTerms: input.paymentTerms || 'NET_30',
+          paymentTerms: input.paymentTerms || "NET_30",
           cashPayment: input.cashPayment,
           notes: input.notes,
         });
@@ -608,11 +681,15 @@ export const unifiedSalesPortalRouter = router({
           orderNumber: sale.orderNumber,
           message: `Quote converted to sale ${sale.orderNumber}`,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Re-throw with proper TRPC error
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to convert quote to sale";
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "Failed to convert quote to sale",
+          message,
         });
       }
     }),
@@ -622,14 +699,16 @@ export const unifiedSalesPortalRouter = router({
    */
   softDelete: protectedProcedure
     .use(requirePermission("orders:delete"))
-    .input(z.object({
-      itemId: z.string(), // Prefixed ID: SS-{id}, Q-{id}, S-{id}
-    }))
+    .input(
+      z.object({
+        itemId: z.string(), // Prefixed ID: SS-{id}, Q-{id}, S-{id}
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const [prefix, idStr] = input.itemId.split('-');
+      const [prefix, idStr] = input.itemId.split("-");
       const id = parseInt(idStr, 10);
 
       if (isNaN(id)) {
@@ -641,12 +720,12 @@ export const unifiedSalesPortalRouter = router({
 
       const now = new Date();
 
-      if (prefix === 'SS') {
+      if (prefix === "SS") {
         await db
           .update(salesSheetHistory)
           .set({ deletedAt: now })
           .where(eq(salesSheetHistory.id, id));
-      } else if (prefix === 'Q' || prefix === 'S') {
+      } else if (prefix === "Q" || prefix === "S") {
         await db
           .update(orders)
           .set({ deletedAt: now })
@@ -669,14 +748,16 @@ export const unifiedSalesPortalRouter = router({
    */
   restore: protectedProcedure
     .use(requirePermission("orders:delete"))
-    .input(z.object({
-      itemId: z.string(),
-    }))
+    .input(
+      z.object({
+        itemId: z.string(),
+      })
+    )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const [prefix, idStr] = input.itemId.split('-');
+      const [prefix, idStr] = input.itemId.split("-");
       const id = parseInt(idStr, 10);
 
       if (isNaN(id)) {
@@ -686,12 +767,12 @@ export const unifiedSalesPortalRouter = router({
         });
       }
 
-      if (prefix === 'SS') {
+      if (prefix === "SS") {
         await db
           .update(salesSheetHistory)
           .set({ deletedAt: null })
           .where(eq(salesSheetHistory.id, id));
-      } else if (prefix === 'Q' || prefix === 'S') {
+      } else if (prefix === "Q" || prefix === "S") {
         await db
           .update(orders)
           .set({ deletedAt: null })
@@ -714,11 +795,13 @@ export const unifiedSalesPortalRouter = router({
    */
   getStats: protectedProcedure
     .use(requirePermission("orders:read"))
-    .input(z.object({
-      dateFrom: z.string().optional(),
-      dateTo: z.string().optional(),
-      includeClosed: z.boolean().default(false),
-    }))
+    .input(
+      z.object({
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+        includeClosed: z.boolean().default(false),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -739,16 +822,17 @@ export const unifiedSalesPortalRouter = router({
 
       // Get quote stats (excluding terminal statuses unless includeClosed)
       const quoteConditions = [
-        eq(orders.orderType, 'QUOTE'),
+        eq(orders.orderType, "QUOTE"),
         isNull(orders.deletedAt),
       ];
       if (!input.includeClosed) {
-        quoteConditions.push(
-          or(
-            isNull(orders.quoteStatus),
-            notInArray(orders.quoteStatus, TERMINAL_QUOTE_STATUSES)
-          )!
+        const quoteStatusFilter = or(
+          isNull(orders.quoteStatus),
+          notInArray(orders.quoteStatus, TERMINAL_QUOTE_STATUSES)
         );
+        if (quoteStatusFilter) {
+          quoteConditions.push(quoteStatusFilter);
+        }
       }
 
       const quoteStats = await db
@@ -761,16 +845,17 @@ export const unifiedSalesPortalRouter = router({
 
       // Get sale stats (excluding terminal statuses unless includeClosed)
       const saleConditions = [
-        eq(orders.orderType, 'SALE'),
+        eq(orders.orderType, "SALE"),
         isNull(orders.deletedAt),
       ];
       if (!input.includeClosed) {
-        saleConditions.push(
-          or(
-            isNull(orders.saleStatus),
-            notInArray(orders.saleStatus, TERMINAL_SALE_STATUSES)
-          )!
+        const saleStatusFilter = or(
+          isNull(orders.saleStatus),
+          notInArray(orders.saleStatus, TERMINAL_SALE_STATUSES)
         );
+        if (saleStatusFilter) {
+          saleConditions.push(saleStatusFilter);
+        }
       }
 
       const saleStats = await db
@@ -781,21 +866,20 @@ export const unifiedSalesPortalRouter = router({
         .from(orders)
         .where(and(...saleConditions));
 
-      // Get fulfilled stats
+      // Get fulfilled stats - use fulfillmentStatus for tracking shipped orders
       const fulfilledStats = await db
         .select({
           count: sql<number>`COUNT(*)`,
           totalValue: sql<number>`COALESCE(SUM(CAST(total_amount AS DECIMAL(15,2))), 0)`,
         })
         .from(orders)
-        .where(and(
-          eq(orders.orderType, 'SALE'),
-          or(
-            eq(orders.saleStatus, 'FULFILLED'),
-            eq(orders.saleStatus, 'DELIVERED')
-          ),
-          isNull(orders.deletedAt)
-        ));
+        .where(
+          and(
+            eq(orders.orderType, "SALE"),
+            eq(orders.fulfillmentStatus, "SHIPPED"),
+            isNull(orders.deletedAt)
+          )
+        );
 
       return {
         salesSheets: {
