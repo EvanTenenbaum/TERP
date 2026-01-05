@@ -1,14 +1,15 @@
 import { useEffect } from "react";
+import { Settings } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   DashboardPreferencesProvider,
   useDashboardPreferences,
 } from "@/contexts/DashboardPreferencesContext";
-import { DashboardHeader } from "@/components/dashboard/v3/DashboardHeader";
 import { DashboardLayoutManager } from "@/components/dashboard/v3/DashboardLayoutManager";
 import { CustomizationPanel } from "@/components/dashboard/v3/CustomizationPanel";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { InboxWidget } from "@/components/inbox/InboxWidget";
+import { Button } from "@/components/ui/button";
 
 // Import v2 widgets (v3 widgets are being migrated)
 import {
@@ -25,7 +26,7 @@ import {
 } from "@/components/dashboard/widgets-v2";
 
 function DashboardContent() {
-  const { widgets } = useDashboardPreferences();
+  const { widgets, setIsCustomizing } = useDashboardPreferences();
 
   const visibleWidgets = widgets.filter(w => w.isVisible);
 
@@ -70,9 +71,18 @@ function DashboardContent() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <DashboardHeader />
-
-        <div className="flex justify-end mb-4">
+        {/* Action bar with customize button and comments - no duplicate header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCustomizing(true)}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Customize Dashboard
+            </Button>
+          </div>
           <CommentWidget commentableType="dashboard" commentableId={1} />
         </div>
 

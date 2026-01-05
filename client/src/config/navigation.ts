@@ -11,6 +11,7 @@ import {
   Calendar,
   CreditCard,
   BarChart3,
+  Table,
   type LucideIcon,
 } from "lucide-react";
 
@@ -60,6 +61,14 @@ export const navigationItems: NavigationItem[] = [
     icon: Truck,
     ariaLabel: "Purchase order queue",
     group: "inventory",
+  },
+  {
+    name: "Spreadsheet View",
+    path: "/spreadsheet-view",
+    icon: Table,
+    group: "inventory",
+    ariaLabel: "Spreadsheet view for inventory and clients",
+    featureFlag: "spreadsheet-view",
   },
 
   { name: "AR/AP", path: "/accounting", icon: CreditCard, group: "finance" },
