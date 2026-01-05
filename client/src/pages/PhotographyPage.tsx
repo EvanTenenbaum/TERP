@@ -1,4 +1,3 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 /**
  * Photography Module Page (WS-010)
  * Simple image upload and management for product photography
@@ -8,7 +7,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -27,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Camera, Upload, Search, CheckCircle, Clock, Image, Trash2 } from "lucide-react";
+import { Camera, Search, CheckCircle, Clock, Image } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 
 export default function PhotographyPage() {
@@ -36,8 +35,15 @@ export default function PhotographyPage() {
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
 
   // Queries
-  const { data: queue, isLoading, refetch } = trpc.photography.getQueue.useQuery({
-    status: statusFilter === "all" ? undefined : statusFilter as "PENDING" | "IN_PROGRESS" | "COMPLETED",
+  const {
+    data: queue,
+    isLoading,
+    refetch,
+  } = trpc.photography.getQueue.useQuery({
+    status:
+      statusFilter === "all"
+        ? undefined
+        : (statusFilter as "PENDING" | "IN_PROGRESS" | "COMPLETED"),
     search: searchTerm || undefined,
   });
 
@@ -48,7 +54,7 @@ export default function PhotographyPage() {
       refetch();
       setSelectedItems([]);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message);
     },
   });
@@ -58,15 +64,15 @@ export default function PhotographyPage() {
   };
 
   const handleBulkMarkComplete = () => {
-    selectedItems.forEach((batchId) => {
+    selectedItems.forEach(batchId => {
       markComplete.mutate({ batchId, imageUrls: [] });
     });
   };
 
   const toggleSelection = (batchId: number) => {
-    setSelectedItems((prev) =>
+    setSelectedItems(prev =>
       prev.includes(batchId)
-        ? prev.filter((id) => id !== batchId)
+        ? prev.filter(id => id !== batchId)
         : [...prev, batchId]
     );
   };
@@ -74,8 +80,8 @@ export default function PhotographyPage() {
   const selectAll = () => {
     if (queue?.items) {
       const pendingIds = queue.items
-        .filter((item) => item.status !== "COMPLETED")
-        .map((item) => item.batchId);
+        .filter(item => item.status !== "COMPLETED")
+        .map(item => item.batchId);
       setSelectedItems(pendingIds);
     }
   };
@@ -83,11 +89,26 @@ export default function PhotographyPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "COMPLETED":
-        return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Done</Badge>;
+        return (
+          <Badge variant="default" className="bg-green-500">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Done
+          </Badge>
+        );
       case "IN_PROGRESS":
-        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />In Progress</Badge>;
+        return (
+          <Badge variant="secondary">
+            <Clock className="h-3 w-3 mr-1" />
+            In Progress
+          </Badge>
+        );
       default:
-        return <Badge variant="outline"><Camera className="h-3 w-3 mr-1" />Pending</Badge>;
+        return (
+          <Badge variant="outline">
+            <Camera className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
     }
   };
 
@@ -98,7 +119,9 @@ export default function PhotographyPage() {
           <BackButton />
           <div>
             <h1 className="text-2xl font-bold">Photography Queue</h1>
-            <p className="text-muted-foreground">Manage product photography workflow</p>
+            <p className="text-muted-foreground">
+              Manage product photography workflow
+            </p>
           </div>
         </div>
       </div>
@@ -107,34 +130,50 @@ export default function PhotographyPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Pending
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{queue?.stats?.pending || 0}</div>
+            <div className="text-2xl font-bold">
+              {queue?.stats?.pending || 0}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">In Progress</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              In Progress
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{queue?.stats?.inProgress || 0}</div>
+            <div className="text-2xl font-bold">
+              {queue?.stats?.inProgress || 0}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Completed Today</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Completed Today
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{queue?.stats?.completedToday || 0}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {queue?.stats?.completedToday || 0}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Queue</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Queue
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{queue?.items?.length || 0}</div>
+            <div className="text-2xl font-bold">
+              {queue?.items?.length || 0}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -149,7 +188,7 @@ export default function PhotographyPage() {
                 <Input
                   placeholder="Search products..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10 w-64"
                 />
               </div>
@@ -190,7 +229,9 @@ export default function PhotographyPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="text-center py-8 text-muted-foreground">
+              Loading...
+            </div>
           ) : !queue?.items?.length ? (
             <div className="text-center py-8 text-muted-foreground">
               <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -202,8 +243,11 @@ export default function PhotographyPage() {
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedItems.length === queue.items.filter(i => i.status !== "COMPLETED").length}
-                      onCheckedChange={(checked) => {
+                      checked={
+                        selectedItems.length ===
+                        queue.items.filter(i => i.status !== "COMPLETED").length
+                      }
+                      onCheckedChange={checked => {
                         if (checked) {
                           selectAll();
                         } else {
@@ -221,7 +265,7 @@ export default function PhotographyPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {queue.items.map((item) => (
+                {queue.items.map(item => (
                   <TableRow key={item.batchId}>
                     <TableCell>
                       <Checkbox
@@ -230,12 +274,18 @@ export default function PhotographyPage() {
                         disabled={item.status === "COMPLETED"}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{item.productName}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.productName}
+                    </TableCell>
                     <TableCell>{item.strainName || "-"}</TableCell>
-                    <TableCell className="font-mono text-sm">{item.batchId}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {item.batchId}
+                    </TableCell>
                     <TableCell>{getStatusBadge(item.status)}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {item.addedAt ? new Date(item.addedAt).toLocaleDateString() : "-"}
+                      {item.addedAt
+                        ? new Date(item.addedAt).toLocaleDateString()
+                        : "-"}
                     </TableCell>
                     <TableCell className="text-right">
                       {item.status !== "COMPLETED" && (
