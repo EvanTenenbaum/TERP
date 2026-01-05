@@ -99,6 +99,18 @@ export default function Inventory() {
     new Set()
   );
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  // Valid batch statuses for bulk operations
+  const VALID_BATCH_STATUSES = [
+    "AWAITING_INTAKE",
+    "LIVE",
+    "PHOTOGRAPHY_COMPLETE",
+    "ON_HOLD",
+    "QUARANTINED",
+    "SOLD_OUT",
+    "CLOSED",
+  ] as const;
+  type BatchStatus = (typeof VALID_BATCH_STATUSES)[number];
+
   const [bulkAction, setBulkAction] = useState<{
     type: "status" | "delete";
     value?: string;
@@ -233,16 +245,14 @@ export default function Inventory() {
     const batchIds = Array.from(selectedBatchIds);
 
     if (bulkAction.type === "status" && bulkAction.value) {
+      // Runtime validation before type assertion (security fix)
+      if (!VALID_BATCH_STATUSES.includes(bulkAction.value as BatchStatus)) {
+        toast.error("Invalid status selected");
+        return;
+      }
       bulkUpdateStatusMutation.mutate({
         batchIds,
-        newStatus: bulkAction.value as
-          | "AWAITING_INTAKE"
-          | "LIVE"
-          | "PHOTOGRAPHY_COMPLETE"
-          | "ON_HOLD"
-          | "QUARANTINED"
-          | "SOLD_OUT"
-          | "CLOSED",
+        newStatus: bulkAction.value as BatchStatus,
       });
     } else if (bulkAction.type === "delete") {
       bulkDeleteMutation.mutate(batchIds);

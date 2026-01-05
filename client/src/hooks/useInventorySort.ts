@@ -145,6 +145,9 @@ export function useInventorySort() {
           ? aVal.localeCompare(bVal)
           : bVal.localeCompare(aVal);
       } else {
+        // Numerical comparison for quantity fields (onHand, reserved, available)
+        // Values are already numbers from toNumber() calls above, but we use
+        // Number() to satisfy TypeScript's type narrowing and ensure safety
         const aNum = Number(aVal);
         const bNum = Number(bVal);
         return sortState.direction === "asc" ? aNum - bNum : bNum - aNum;
