@@ -1,5 +1,40 @@
 ## [Unreleased]
 
+### Added - 2026-01-05
+#### TERP Logo and Branding
+- Added professional TERP logo (`terp-logo.png`) with subtle leaf accent
+- Added clean square icon (`terp-icon.png`) for favicon and sidebar
+- Updated AppSidebar to display logo alongside "TERP" title
+- Updated index.html favicon and apple-touch-icon
+
+#### Grouped Sidebar Navigation (UX-015)
+- Reorganized sidebar into collapsible groups: Core, Sales, Fulfillment, Finance, Settings
+- Added spreadsheet view link (feature-flagged)
+- Improved navigation discoverability
+
+#### Production Seed Data (DATA-001)
+- Added 60 realistic clients (buyers/sellers)
+- Added 220 inventory items with real strain names
+- Added 120 coherent orders with line items
+- New command: `pnpm db:seed:production`
+
+### Fixed - 2026-01-05
+#### Security: Block Public Demo User Mutations (SEC-001)
+- Public demo users (id ≤ 0) can no longer perform mutations via tRPC
+- Added `isPublicDemoUser` context flag
+- Added comprehensive auth integration tests
+
+#### TypeScript Error Cleanup (CODE-001)
+- Resolved 390 → 0 TypeScript errors
+- Removed @ts-nocheck from 4 core workflow pages
+- Added runtime validation for bulk status changes in Inventory.tsx
+
+#### Workflow Improvements
+- Streamlined agent workflow (removed Gemini mandate, session ownership)
+- Simplified pre-commit hooks (removed AI review, session validation)
+- Reduced pre-commit checklist from 26 to 5 items
+
+
 ### Fixed - 2025-12-04 (Railway VITE Build Configuration)
 
 #### Railway Docker Build Args for VITE Variables
