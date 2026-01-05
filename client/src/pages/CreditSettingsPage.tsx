@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tabs";
 import { AlertCircle, Check, Info, RotateCcw, Save, Eye, Shield, Sliders } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
+import { FormSkeleton } from "@/components/ui/skeleton-loaders";
 import { toast } from "sonner";
 
 type EnforcementMode = "WARNING" | "SOFT_BLOCK" | "HARD_BLOCK";
@@ -210,10 +211,7 @@ export default function CreditSettingsPage() {
     return (
       <div className="container mx-auto p-4 sm:p-6 space-y-6">
         <BackButton label="Back to Dashboard" to="/" className="mb-4" />
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-muted rounded w-1/3" />
-          <div className="h-64 bg-muted rounded" />
-        </div>
+        <FormSkeleton fields={6} />
       </div>
     );
   }
