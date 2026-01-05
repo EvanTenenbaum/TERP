@@ -1,4 +1,3 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,9 +23,10 @@ const defaultState: PreferencesState = {
 };
 
 export const NotificationPreferencesPage = React.memo(
-  function NotificationPreferencesPage(): JSX.Element {
+  function NotificationPreferencesPage(): React.ReactElement {
     const utils = trpc.useContext();
-    const { data: preferencesData } = trpc.notifications.getPreferences.useQuery();
+    const { data: preferencesData } =
+      trpc.notifications.getPreferences.useQuery();
     const mutation = trpc.notifications.updatePreferences.useMutation({
       onSuccess: async () => {
         await utils.notifications.getPreferences.invalidate();
@@ -84,13 +84,13 @@ export const NotificationPreferencesPage = React.memo(
 
     const handleToggle = useCallback(
       (key: PreferenceKey) => (checked: boolean) => {
-      setState(prev => ({
-        ...prev,
-        [key]: checked,
-      }));
-    },
-    []
-  );
+        setState(prev => ({
+          ...prev,
+          [key]: checked,
+        }));
+      },
+      []
+    );
 
     const handleSave = useCallback(() => {
       mutation.mutate(state);
