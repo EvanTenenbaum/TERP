@@ -401,6 +401,30 @@ await page.waitForLoadState('networkidle');
 
 ---
 
+## Rate Limiting Considerations
+
+When running automated tests:
+
+- Use `pnpm get:auth-token` to get tokens (bypasses rate limiter)
+- Do NOT call `/api/auth/login` directly in tests - it has a 5 requests per 15 minutes limit
+- If you hit rate limits, wait 15 minutes or use different test accounts
+- The tRPC endpoint `/api/trpc/auth.getTestToken` is intentionally not rate-limited for E2E testing
+
+---
+
+## VIP Portal Testing
+
+VIP Portal uses a separate auth system and is NOT covered by the admin/test accounts above.
+
+To test VIP Portal:
+
+1. Create a client with VIP Portal access enabled
+2. Use the VIP Portal login flow at `/vip/login`
+3. VIP Portal sessions are stored in `vipPortalAuth` table
+4. See `docs/guides/vip-portal/` for VIP Portal specific documentation
+
+---
+
 ## Best Practices
 
 1. **Use environment variables** for tokens in CI/CD
@@ -408,3 +432,4 @@ await page.waitForLoadState('networkidle');
 3. **Test multiple roles** to verify RBAC
 4. **Don't hardcode credentials** in test files - use fixtures or env vars
 5. **Clean up test data** after tests if modifying database
+6. **Use tRPC endpoint** for auth tokens to avoid rate limiting

@@ -8,8 +8,12 @@
  *   tsx scripts/get-auth-token.ts test-admin@terp-app.local TestAdmin123! https://terp.example.com
  *   pnpm get:auth-token test-superadmin@terp-app.local TestSuperAdmin123!
  *
- * This script calls the auth.getTestToken endpoint to get a session token
+ * This script calls the auth.getTestToken tRPC endpoint to get a session token
  * that can be used in browser automation for E2E testing.
+ *
+ * IMPORTANT: This uses the tRPC endpoint (/api/trpc/auth.getTestToken), NOT the
+ * REST endpoint (/api/auth/login). The REST endpoint has rate limiting (5 requests
+ * per 15 minutes), but the tRPC endpoint bypasses this - intentional for AI agents.
  *
  * Note: Requires ENABLE_TEST_AUTH=true in production environments
  */

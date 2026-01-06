@@ -135,3 +135,45 @@ describe("Auth Context", () => {
     expect(result).toBeNull();
   });
 });
+
+describe("getTestToken", () => {
+  let caller: Awaited<ReturnType<typeof createCaller>>;
+
+  beforeAll(async () => {
+    caller = await createCaller(false); // getTestToken is a public procedure
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should be defined as a public procedure", async () => {
+    // Assert - the endpoint exists
+    expect(caller.auth.getTestToken).toBeDefined();
+  });
+
+  it("should validate email format", async () => {
+    // Act & Assert - invalid email format should fail zod validation
+    await expect(
+      caller.auth.getTestToken({
+        email: "not-an-email",
+        password: "anypassword",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("should require both email and password", async () => {
+    // Act & Assert - missing password should fail zod validation
+    await expect(
+      // @ts-expect-error - testing invalid input
+      caller.auth.getTestToken({
+        email: "test@example.com",
+      })
+    ).rejects.toThrow();
+  });
+
+  // Note: Full integration tests for getTestToken (valid credentials, invalid
+  // credentials, ENABLE_TEST_AUTH behavior) require getUserByEmail, bcrypt,
+  // and simpleAuth mocks. These are tested in auth-integration.test.ts
+  // with a proper test database setup.
+});

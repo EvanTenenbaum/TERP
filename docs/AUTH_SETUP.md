@@ -221,6 +221,31 @@ This fallback ensures the initial admin user has full access before RBAC is seed
 
 ---
 
+## Important Notes
+
+### Rate Limiting
+
+The `/api/auth/login` REST endpoint is rate-limited to 5 requests per 15 minutes per IP.
+For automated testing, use `pnpm get:auth-token` which uses the tRPC endpoint (`/api/trpc/auth.getTestToken`) and bypasses rate limiting.
+
+### VIP Portal
+
+VIP Portal has a separate authentication system (`vipPortalAuth` table).
+The admin setup and test accounts do NOT affect VIP Portal access.
+VIP Portal testing requires separate setup - see VIP Portal documentation.
+
+### Audit Logging
+
+All login/logout events and mutations are logged to the audit trail.
+Test account activities will appear in audit logs.
+
+### Public Demo User
+
+The email `demo+public@terp-app.local` is reserved for the public demo user.
+Do NOT use this email pattern for test accounts - all test accounts use `test-*@terp-app.local` format.
+
+---
+
 ## Security Notes
 
 ### For Production with Real Customers
