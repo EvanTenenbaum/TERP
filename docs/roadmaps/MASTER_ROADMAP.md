@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.33
+**Version:** 2.34
 **Last Updated:** January 3, 2026 (QA Technical Debt Added)
 **Status:** Active
 
@@ -9138,7 +9138,7 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 
 ## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
 
-**Version:** 2.33  
+**Version:** 2.34  
 **Added:** January 3, 2026  
 **Status:** 🟡 READY FOR EXECUTION  
 **Total Estimated Effort:** 92 hours
@@ -9450,7 +9450,7 @@ This section contains new work items identified during Tier 1 customer readiness
 
 ## 🎨 UI/UX Audit Findings - January 2026
 
-**Version:** 2.33  
+**Version:** 2.34  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA Specialist Audit  
 **Status:** 🟡 READY FOR EXECUTION  
@@ -9929,7 +9929,7 @@ These are major usability issues causing significant friction.
 
 ## 🔍 Additional UX Audit Findings - January 2026 (Supplemental)
 
-**Version:** 2.33  
+**Version:** 2.34  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA (Agent Mode) - Full Audit  
 **Status:** 🟡 READY FOR EXECUTION
@@ -10481,3 +10481,280 @@ These are captured for architectural awareness but not added as individual tasks
 - Verification
 
 **Total Estimated Remaining: ~288h**
+
+---
+
+## 👤 Admin & User Account UX Improvements
+
+**Added:** January 5, 2026
+**Source:** UX/Efficacy Assessment (focused, non-overhaul)
+**QA Level:** 🟡 Level 2 — Expert Skeptical QA (security/UX implications)
+
+### Overview
+
+Targeted improvements to admin user management and end-user account/profile experiences. These changes are incremental (no structural overhaul) but materially improve safety, clarity, and speed.
+
+**Core Issues Identified:**
+
+1. Admin user management is brittle and unsafe (blocking alerts, no search/filter, weak confirmations)
+2. Security gap: `userManagement.ts` exposes CRUD as `publicProcedure` with no permission guard
+3. No dedicated "My Account/Profile" experience for end users
+4. Notification preferences lack polish and discoverability
+5. Fragmented admin workflow between user list and role assignment
+
+---
+
+### 🔴 P0 - CRITICAL (Security)
+
+#### SEC-010: Secure User Management Endpoints
+
+- **Priority:** P0 (CRITICAL - Security)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** `server/routers/userManagement.ts`
+- **Feature Flag:** `feature-secure-user-management` (Parent: None, Default: Enabled)
+
+**Problem:** User management router exposes create/list/delete/reset-password as `publicProcedure` with no permission guard. This is a critical security vulnerability.
+
+**Deliverables:**
+
+1. Switch all user CRUD/password reset to `protectedProcedure` with `requirePermission('users:manage')`
+2. Add "cannot delete last admin" guard
+3. Return structured errors for unauthorized access
+4. Log audit events (actor, action, target, timestamp, reason)
+
+**Acceptance Criteria:**
+
+- [ ] All endpoints use `protectedProcedure`
+- [ ] Permission check `users:manage` enforced
+- [ ] Last admin deletion prevented
+- [ ] Audit trail for all user lifecycle actions
+- [ ] Structured error responses
+
+---
+
+### 🟡 P1 - HIGH PRIORITY
+
+#### UX-050: Harden Admin User Management UI
+
+- **Priority:** P1 (HIGH)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/components/UserManagement.tsx`
+- **Dependency:** SEC-010
+- **Feature Flag:** `feature-admin-user-ux` (Parent: None, Default: Enabled)
+
+**Problem:** Admin user management feels brittle, unsafe, and slow to operate. Uses blocking alerts, no search/filter, no audit cues, primitive success/error handling.
+
+**Deliverables:**
+
+1. Replace `alert()` flows with inline validation + toast notifications
+2. Add search/filter by role, status, email
+3. Add pagination for large user lists
+4. Show last login timestamp and role badges inline
+5. Rich confirmation dialogs for destructive actions (user summary, reason field)
+6. Post-create "Assign role" CTA that preselects the new user
+7. Gate UI actions on permissions; show "why disabled" tooltips for non-privileged admins
+
+**Acceptance Criteria:**
+
+- [ ] No blocking `alert()` or `confirm()` calls
+- [ ] Search by email, name, role
+- [ ] Filter by role and status (active/inactive)
+- [ ] Pagination (10/25/50 per page)
+- [ ] Role badges visible in user list
+- [ ] Last login column
+- [ ] Confirmation dialog shows user details before delete
+- [ ] "Assign Role" button after user creation
+- [ ] Disabled actions show permission tooltip
+
+---
+
+#### UX-051: Add My Account/Profile Page
+
+- **Priority:** P1 (HIGH)
+- **Estimate:** 12 hours
+- **Status:** 🟡 READY
+- **Module:** New page: `client/src/pages/AccountPage.tsx`
+- **Feature Flag:** `feature-my-account` (Parent: None, Default: Enabled)
+
+**Problem:** No dedicated self-service "My Account/Profile" area. Header "User Profile" button routes to global Settings, so users can't view or update their own name/email/password or see sessions.
+
+**Deliverables:**
+
+1. Create `/account` page with:
+   - Profile info section (name, email, avatar)
+   - Password change form (requires current password)
+   - Active sessions list with "Sign out other devices" action
+   - Link to notification preferences
+2. Update header user icon to navigate to `/account`
+3. Add dropdown menu: Account / Notifications / Sign out
+
+**Acceptance Criteria:**
+
+- [ ] `/account` route accessible
+- [ ] Profile info editable (name, email)
+- [ ] Password change with current password verification
+- [ ] Session list shows device/browser info
+- [ ] "Sign out other devices" works
+- [ ] Header icon opens account page or dropdown
+- [ ] Success toasts for all save actions
+- [ ] Loading/error states for all sections
+
+---
+
+#### UX-052: Bridge User List to Role Assignment
+
+- **Priority:** P1 (HIGH)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/components/UserManagement.tsx`, `client/src/components/settings/rbac/UserRoleManagement.tsx`
+- **Dependency:** UX-050
+- **Feature Flag:** `feature-admin-user-ux` (Parent: None, Default: Enabled)
+
+**Problem:** Admin workflow fragmentation between user list and role assignment. Extra clicks, easy to forget to assign roles, no direct context handoff.
+
+**Deliverables:**
+
+1. Add "Manage roles" action in user row that navigates to RBAC view pre-filtered to that user
+2. Show current roles inline in user list (chips/badges)
+3. Quick-add chips for common roles (Admin, Sales, Warehouse)
+4. Warning banner when user has zero roles after creation
+
+**Acceptance Criteria:**
+
+- [ ] "Manage roles" button in user row actions
+- [ ] RBAC view pre-filters to selected user
+- [ ] Role badges visible in user list
+- [ ] Quick-add role chips
+- [ ] Warning for users with no roles
+
+---
+
+### 🟢 P2 - MEDIUM PRIORITY
+
+#### UX-053: Polish Notification Preferences
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/pages/settings/NotificationPreferences.tsx`
+- **Feature Flag:** `feature-notification-prefs-polish` (Parent: None, Default: Enabled)
+
+**Problem:** Notification preferences exist but lack UX polish: no loading/error states, no save confirmation, hard to find from header.
+
+**Deliverables:**
+
+1. Add loading skeleton during fetch
+2. Add inline error with retry button on failure
+3. Add success toast on save
+4. Add "unsaved changes" indicator
+5. Add "Restore defaults" button
+6. Show last-updated timestamp
+7. Link from account dropdown and `/account` page
+
+**Acceptance Criteria:**
+
+- [ ] Loading skeleton while fetching
+- [ ] Error state with retry
+- [ ] Success toast on save
+- [ ] Unsaved changes warning
+- [ ] Restore defaults option
+- [ ] Last updated timestamp visible
+- [ ] Accessible from account dropdown
+
+---
+
+#### UX-054: Standardize Feedback and Accessibility
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Module:** Account and admin flows
+- **Feature Flag:** None (quality improvement)
+
+**Problem:** Feedback and affordance gaps across account/admin flows. Inconsistent loading states, limited inline validation, missing focus management.
+
+**Deliverables:**
+
+1. Consistent loading/disabled states on all mutating buttons
+2. Inline validation near fields (not just on submit)
+3. Return focus to triggering controls after dialogs close
+4. Visible focus rings for keyboard navigation
+5. Concise helper text (password requirements, email format, uniqueness)
+6. Consistent empty/error states across account/admin flows
+
+**Acceptance Criteria:**
+
+- [ ] All submit buttons show loading state
+- [ ] Buttons disabled during pending operations
+- [ ] Inline validation messages
+- [ ] Focus returns after dialog close
+- [ ] Visible focus indicators
+- [ ] Helper text for complex fields
+- [ ] Consistent empty states
+
+---
+
+#### UX-055: Surface Audit Trail in Admin UI
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Module:** `client/src/components/UserManagement.tsx`
+- **Dependency:** SEC-010
+- **Feature Flag:** `feature-admin-audit-ui` (Parent: None, Default: Enabled)
+
+**Problem:** No visibility into user lifecycle audit events. Admins cannot see who created/modified/deleted users or when.
+
+**Deliverables:**
+
+1. Add read-only audit timeline in user detail view
+2. Show: actor, action, target, timestamp, reason (if provided)
+3. Filter by action type (create, update, delete, password reset)
+4. Paginated audit log
+
+**Acceptance Criteria:**
+
+- [ ] Audit timeline visible in user detail
+- [ ] Shows actor, action, timestamp
+- [ ] Filter by action type
+- [ ] Pagination for long histories
+
+---
+
+### Summary Table
+
+| ID        | Task                                   | Priority | Estimate | Category |
+| --------- | -------------------------------------- | -------- | -------- | -------- |
+| SEC-010   | Secure User Management Endpoints       | P0       | 4h       | Security |
+| UX-050    | Harden Admin User Management UI        | P1       | 8h       | Admin UX |
+| UX-051    | Add My Account/Profile Page            | P1       | 12h      | User UX  |
+| UX-052    | Bridge User List to Role Assignment    | P1       | 4h       | Admin UX |
+| UX-053    | Polish Notification Preferences        | P2       | 6h       | User UX  |
+| UX-054    | Standardize Feedback and Accessibility | P2       | 8h       | Quality  |
+| UX-055    | Surface Audit Trail in Admin UI        | P2       | 6h       | Admin UX |
+| **Total** |                                        |          | **48h**  |          |
+
+---
+
+### Recommended Execution Order
+
+**Phase 1: Security First (4h)**
+
+- SEC-010: Secure endpoints before any UI work
+
+**Phase 2: Admin Hardening (12h)**
+
+- UX-050: Harden admin user management
+- UX-052: Bridge to role assignment
+
+**Phase 3: User Self-Service (18h)**
+
+- UX-051: My Account page
+- UX-053: Notification preferences polish
+
+**Phase 4: Polish & Audit (14h)**
+
+- UX-054: Feedback and accessibility
+- UX-055: Audit trail UI
