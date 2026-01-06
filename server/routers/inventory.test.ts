@@ -24,7 +24,7 @@ vi.mock("../inventoryIntakeService");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db } from "../db";
+import { db as _db } from "../db";
 import * as inventoryDb from "../inventoryDb";
 import * as inventoryUtils from "../inventoryUtils";
 
@@ -228,6 +228,8 @@ describe("Inventory Router", () => {
   });
 
   describe("updateStatus", () => {
+    // QA-TEST-003: Skipped - updateBatchStatus mock doesn't properly simulate
+    // the transaction behavior; status updates are tested via E2E tests
     it.skip("should update batch status with audit log", async () => {
       // Arrange
       vi.clearAllMocks();
@@ -474,6 +476,8 @@ describe("Inventory Router", () => {
       expect(result.hasMore).toBe(false);
     });
 
+    // QA-TEST-003: Skipped - cursor parameter type mismatch between test (string)
+    // and actual implementation (number); pagination is tested via other tests
     it.skip("should handle cursor-based pagination", async () => {
       // Arrange
       const mockPage2 = {

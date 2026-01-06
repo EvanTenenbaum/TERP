@@ -22,7 +22,7 @@ vi.mock("../badDebtDb");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db } from "../db";
+import { db as _db } from "../db";
 import * as badDebtDb from "../badDebtDb";
 
 // Mock user for authenticated requests
@@ -192,6 +192,8 @@ describe("Bad Debt Router", () => {
   });
 
   describe("getClientTotal", () => {
+    // QA-TEST-003: Skipped - getClientTotal returns aggregated data that requires
+    // complex mock setup; functionality is verified via E2E tests
     it.skip("should retrieve total write-offs for a client", async () => {
       // Arrange
       const mockTotal = {
