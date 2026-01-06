@@ -34,3 +34,48 @@ export interface ClientGridSummary {
   balance: number;
   yearToDate: number;
 }
+
+// Intake Grid Types (TERP-SS-001)
+export interface IntakeGridRow {
+  id: string; // Temporary ID for new rows
+  vendorId: number | null;
+  vendorName: string;
+  category: string;
+  item: string;
+  qty: number;
+  cogs: number;
+  paymentTerms: string;
+  locationId: number | null;
+  locationName: string;
+  notes: string;
+  status: "pending" | "submitted" | "error";
+  errorMessage?: string;
+}
+
+export interface IntakeGridSummary {
+  totalItems: number;
+  totalQty: number;
+  totalValue: number;
+}
+
+// Pick & Pack Grid Types (TERP-SS-002)
+export interface PickPackGridRow {
+  orderId: number;
+  orderNumber: string;
+  clientId: number;
+  clientName: string;
+  orderDate: string | null;
+  itemCount: number;
+  packedCount: number;
+  bagCount: number;
+  pickPackStatus: "PENDING" | "PICKING" | "PACKED" | "READY";
+  total: number | null;
+}
+
+export interface PickPackStats {
+  pending: number;
+  picking: number;
+  packed: number;
+  ready: number;
+  total: number;
+}

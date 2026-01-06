@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InventoryGrid } from "@/components/spreadsheet/InventoryGrid";
 import { ClientGrid } from "@/components/spreadsheet/ClientGrid";
+import { IntakeGrid } from "@/components/spreadsheet/IntakeGrid";
+import { PickPackGrid } from "@/components/spreadsheet/PickPackGrid";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { Loader2 } from "lucide-react";
 
@@ -14,7 +16,9 @@ export default function SpreadsheetViewPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Loading feature flags…</span>
+        <span className="text-sm text-muted-foreground">
+          Loading feature flags…
+        </span>
       </div>
     );
   }
@@ -42,7 +46,10 @@ export default function SpreadsheetViewPage() {
           <Badge variant="outline">Feature Flag: spreadsheet-view</Badge>
           <p className="text-sm text-muted-foreground">
             The unified spreadsheet experience is currently disabled. Enable the{" "}
-            <span className="font-semibold text-foreground">spreadsheet-view</span> flag to access this feature.
+            <span className="font-semibold text-foreground">
+              spreadsheet-view
+            </span>{" "}
+            flag to access this feature.
           </p>
         </CardContent>
       </Card>
@@ -53,21 +60,32 @@ export default function SpreadsheetViewPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold leading-tight text-foreground">Spreadsheet View</h1>
+          <h1 className="text-2xl font-semibold leading-tight text-foreground">
+            Spreadsheet View
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Familiar grid workflows backed by existing TERP validations, permissions, and audit logs.
+            Familiar grid workflows backed by existing TERP validations,
+            permissions, and audit logs.
           </p>
         </div>
         <Badge variant="outline">Feature Flag: spreadsheet-view</Badge>
       </div>
 
       <Tabs defaultValue="inventory" className="w-full">
-        <TabsList className="grid w-full max-w-xl grid-cols-2">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
+          <TabsTrigger value="intake">Intake</TabsTrigger>
+          <TabsTrigger value="pickpack">Pick & Pack</TabsTrigger>
           <TabsTrigger value="clients">Clients</TabsTrigger>
         </TabsList>
         <TabsContent value="inventory" className="space-y-4">
           <InventoryGrid />
+        </TabsContent>
+        <TabsContent value="intake" className="space-y-4">
+          <IntakeGrid />
+        </TabsContent>
+        <TabsContent value="pickpack" className="space-y-4">
+          <PickPackGrid />
         </TabsContent>
         <TabsContent value="clients" className="space-y-4">
           <ClientGrid />
