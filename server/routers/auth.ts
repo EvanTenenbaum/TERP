@@ -169,6 +169,10 @@ export const authRouter = router({
    * Returns the session token that can be set as a cookie
    *
    * Only available when ENABLE_TEST_AUTH=true or NODE_ENV !== 'production'
+   *
+   * NOTE: This tRPC endpoint bypasses the authLimiter rate limiting that applies
+   * to the /api/auth/login REST endpoint (5 requests per 15 minutes).
+   * This is intentional for AI agent E2E testing which may need many tokens.
    */
   getTestToken: publicProcedure
     .input(
