@@ -1,4 +1,4 @@
-# Agent Prompt: Wave 4A - Critical Routes (Todo & COGS)
+# Agent Prompt: Wave 6A - Critical Routes (Todo & COGS)
 
 ## 1. Onboarding
 
@@ -17,7 +17,7 @@ Fix the 404 errors for Todo Lists and COGS Settings modules. These are P0 critic
 gh repo clone EvanTenenbaum/TERP
 cd TERP
 pnpm install
-git checkout -b wave-4/critical-routes
+git checkout -b wave-6/critical-routes
 ```
 
 ### File Ownership
@@ -118,7 +118,7 @@ Before submitting your PR:
 
 ## 4. Completion Protocol
 
-1. **Implement all tasks** on your `wave-4/critical-routes` branch.
+1. **Implement all tasks** on your `wave-6/critical-routes` branch.
 
 2. **Run verification:**
    ```bash
@@ -127,16 +127,16 @@ Before submitting your PR:
    ```
 
 3. **Create a Pull Request** to `main` with:
-   - Clear title: `fix(routes): implement Todo and COGS Settings pages [Wave 4A]`
+   - Clear title: `fix(routes): implement Todo and COGS Settings pages [Wave 6A]`
    - Description listing all changes
    - Screenshots of working pages
 
 4. **Generate a Reviewer Prompt:**
 
 ```markdown
-# Reviewer Prompt: QA & Merge Wave 4A - Critical Routes
+# Reviewer Prompt: QA & Merge Wave 6A - Critical Routes
 
-**Branch:** `wave-4/critical-routes`
+**Branch:** `wave-6/critical-routes`
 
 **Tasks to Verify:**
 - [ ] **QA-001:** Navigate to `/todo` - no 404, page loads
@@ -156,8 +156,8 @@ Before submitting your PR:
 ## 5. Coordination Notes
 
 **Parallel Agents:**
-- Agent 4B is working on Accounting and Analytics modules
-- Agent 4C is fixing data access issues
+- Agent 6B is working on Accounting and Analytics modules
+- Agent 6C is fixing data access issues
 - No file conflicts expected - you have exclusive ownership of your files
 
 **Communication:**

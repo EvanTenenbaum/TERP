@@ -1,4 +1,4 @@
-# Agent Prompt: Wave 4C - Systemic Data Access Fix
+# Agent Prompt: Wave 6C - Systemic Data Access Fix
 
 ## 1. Onboarding
 
@@ -17,7 +17,7 @@ Fix the widespread "No data found" issues across all modules. This is the ROOT C
 gh repo clone EvanTenenbaum/TERP
 cd TERP
 pnpm install
-git checkout -b wave-4/data-access
+git checkout -b wave-6/data-access
 ```
 
 ### File Ownership
@@ -202,7 +202,7 @@ export const ordersRouter = createTRPCRouter({
       offset: z.number().default(0),   // Start from beginning
     }))
     .query(async ({ ctx, input }) => {
-      // FIX: [Description of fix] - Wave 4C
+      // FIX: [Description of fix] - Wave 6C
       return await db.query.orders.findMany({
         limit: input.limit,
         offset: input.offset,
@@ -241,7 +241,7 @@ Before submitting your PR:
 
 1. **Document your findings** in a `INVESTIGATION_NOTES.md` file
 
-2. **Implement fixes** on your `wave-4/data-access` branch
+2. **Implement fixes** on your `wave-6/data-access` branch
 
 3. **Run verification:**
    ```bash
@@ -250,7 +250,7 @@ Before submitting your PR:
    ```
 
 4. **Create a Pull Request** to `main` with:
-   - Clear title: `fix(data): resolve systemic data access issues [Wave 4C]`
+   - Clear title: `fix(data): resolve systemic data access issues [Wave 6C]`
    - **Detailed root cause analysis** in description
    - Before/after screenshots showing data now displays
    - List of all files changed and why
@@ -258,9 +258,9 @@ Before submitting your PR:
 5. **Generate a Reviewer Prompt:**
 
 ```markdown
-# Reviewer Prompt: QA & Merge Wave 4C - Data Access Fix
+# Reviewer Prompt: QA & Merge Wave 6C - Data Access Fix
 
-**Branch:** `wave-4/data-access`
+**Branch:** `wave-6/data-access`
 
 **Root Cause:** [Your findings here]
 
@@ -286,8 +286,8 @@ Before submitting your PR:
 **Priority:** This is the HIGHEST priority task in Wave 4. Other agents' work may depend on this fix.
 
 **Parallel Agents:**
-- Agent 4A is working on Todo and COGS Settings
-- Agent 4B is working on Accounting and Analytics
+- Agent 6A is working on Todo and COGS Settings
+- Agent 6B is working on Accounting and Analytics
 - Both may need your fix before their data displays correctly
 
 **Communication:**

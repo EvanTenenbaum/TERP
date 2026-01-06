@@ -1,4 +1,4 @@
-# Agent Prompt: Wave 5A - Spreadsheet Inventory & Client Grid
+# Agent Prompt: Wave 7A - Spreadsheet Inventory & Client Grid
 
 ## 1. Onboarding
 
@@ -17,7 +17,7 @@ Implement Phase 1 of the Spreadsheet View feature (Inventory Grid + Client View)
 gh repo clone EvanTenenbaum/TERP
 cd TERP
 pnpm install
-git checkout -b wave-5/spreadsheet-inventory
+git checkout -b wave-7/spreadsheet-inventory
 ```
 
 ### File Ownership
@@ -246,7 +246,7 @@ Before submitting your PR:
 
 ## 5. Completion Protocol
 
-1. **Implement all tasks** on your `wave-5/spreadsheet-inventory` branch.
+1. **Implement all tasks** on your `wave-7/spreadsheet-inventory` branch.
 
 2. **Run verification:**
    ```bash
@@ -255,7 +255,7 @@ Before submitting your PR:
    ```
 
 3. **Create a Pull Request** to `main` with:
-   - Clear title: `feat(spreadsheet): implement inventory and client grids [Wave 5A]`
+   - Clear title: `feat(spreadsheet): implement inventory and client grids [Wave 7A]`
    - Screenshots showing:
      - Inventory grid with color coding
      - Client grid with master-detail
@@ -265,9 +265,9 @@ Before submitting your PR:
 4. **Generate a Reviewer Prompt:**
 
 ```markdown
-# Reviewer Prompt: QA & Merge Wave 5A - Spreadsheet Inventory Grid
+# Reviewer Prompt: QA & Merge Wave 7A - Spreadsheet Inventory Grid
 
-**Branch:** `wave-5/spreadsheet-inventory`
+**Branch:** `wave-7/spreadsheet-inventory`
 
 **Tasks to Verify:**
 - [ ] **FEATURE-021:** Navigate to `/spreadsheet` - page loads
@@ -291,8 +291,8 @@ Before submitting your PR:
 ## 6. Coordination Notes
 
 **Parallel Agents:**
-- Agent 5B is implementing Intake Grid (will use your `SpreadsheetViewPage.tsx`)
-- Agent 5C is implementing Pick & Pack Grid (will use your `SpreadsheetViewPage.tsx`)
+- Agent 7B is implementing Intake Grid (will use your `SpreadsheetViewPage.tsx`)
+- Agent 7C is implementing Pick & Pack Grid (will use your `SpreadsheetViewPage.tsx`)
 - Coordinate tab structure via PR comments
 
 **Integration Points:**

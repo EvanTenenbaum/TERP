@@ -1,4 +1,4 @@
-# Agent Prompt: Wave 4B - Accounting & Analytics Modules
+# Agent Prompt: Wave 6B - Accounting & Analytics Modules
 
 ## 1. Onboarding
 
@@ -17,7 +17,7 @@ Fix the 404 errors for Accounting and Analytics modules. These are P0 critical b
 gh repo clone EvanTenenbaum/TERP
 cd TERP
 pnpm install
-git checkout -b wave-4/accounting-analytics
+git checkout -b wave-6/accounting-analytics
 ```
 
 ### File Ownership
@@ -174,7 +174,7 @@ Before submitting your PR:
 
 ## 5. Completion Protocol
 
-1. **Implement all tasks** on your `wave-4/accounting-analytics` branch.
+1. **Implement all tasks** on your `wave-6/accounting-analytics` branch.
 
 2. **Run verification:**
    ```bash
@@ -183,16 +183,16 @@ Before submitting your PR:
    ```
 
 3. **Create a Pull Request** to `main` with:
-   - Clear title: `feat(modules): implement Accounting and Analytics pages [Wave 4B]`
+   - Clear title: `feat(modules): implement Accounting and Analytics pages [Wave 6B]`
    - Description listing all changes
    - Screenshots of working pages and charts
 
 4. **Generate a Reviewer Prompt:**
 
 ```markdown
-# Reviewer Prompt: QA & Merge Wave 4B - Accounting & Analytics
+# Reviewer Prompt: QA & Merge Wave 6B - Accounting & Analytics
 
-**Branch:** `wave-4/accounting-analytics`
+**Branch:** `wave-6/accounting-analytics`
 
 **Tasks to Verify:**
 - [ ] **QA-002:** Navigate to `/accounting` - no 404, page loads
@@ -215,12 +215,12 @@ Before submitting your PR:
 ## 6. Coordination Notes
 
 **Parallel Agents:**
-- Agent 4A is working on Todo and COGS Settings
-- Agent 4C is fixing data access issues (may affect your data queries)
+- Agent 6A is working on Todo and COGS Settings
+- Agent 6C is fixing data access issues (may affect your data queries)
 - No file conflicts expected - you have exclusive ownership of your files
 
 **Dependency Note:**
-- If Agent 4C's data access fixes are needed for your data to display, coordinate via PR comments
+- If Agent 6C's data access fixes are needed for your data to display, coordinate via PR comments
 - You may need to rebase after 4C's work is merged
 
 ---

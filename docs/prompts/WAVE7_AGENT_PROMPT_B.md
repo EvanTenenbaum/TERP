@@ -1,4 +1,4 @@
-# Agent Prompt: Wave 5B - Spreadsheet Intake Grid & Grouping
+# Agent Prompt: Wave 7B - Spreadsheet Intake Grid & Grouping
 
 ## 1. Onboarding
 
@@ -10,14 +10,14 @@ Implement Phase 2 of the Spreadsheet View (Intake Grid) and add grouping functio
 ### Key Documents to Read First
 1. **Feature Spec:** `docs/specs/FEATURE-SPREADSHEET-VIEW-SPEC.md`
 2. **Master Roadmap:** `docs/roadmaps/MASTER_ROADMAP.md`
-3. **Wave 5A Work:** Check Agent 5A's PR for `SpreadsheetViewPage.tsx` structure
+3. **Wave 7A Work:** Check Agent 7A's PR for `SpreadsheetViewPage.tsx` structure
 
 ### Repository Setup
 ```bash
 gh repo clone EvanTenenbaum/TERP
 cd TERP
 pnpm install
-git checkout -b wave-5/spreadsheet-intake
+git checkout -b wave-7/spreadsheet-intake
 ```
 
 ### File Ownership
@@ -26,7 +26,7 @@ git checkout -b wave-5/spreadsheet-intake
 - `client/src/components/spreadsheet/InventoryGrid.tsx` (grouping additions only)
 - `server/routers/spreadsheet.ts` (intake procedures only)
 
-**Note:** Agent 5A owns `SpreadsheetViewPage.tsx` - coordinate via PR comments for tab integration.
+**Note:** Agent 7A owns `SpreadsheetViewPage.tsx` - coordinate via PR comments for tab integration.
 
 ---
 
@@ -226,7 +226,7 @@ const handleSubmit = async () => {
 
 #### 2.1 Row Grouping Configuration
 ```typescript
-// Add to InventoryGrid.tsx (coordinate with Agent 5A)
+// Add to InventoryGrid.tsx (coordinate with Agent 7A)
 
 const columnDefs = [
   { 
@@ -310,7 +310,7 @@ const GroupCellRenderer = (params) => {
 // Add to server/routers/spreadsheet.ts
 
 export const spreadsheetRouter = createTRPCRouter({
-  // ... existing procedures from Agent 5A
+  // ... existing procedures from Agent 7A
   
   submitIntake: protectedProcedure
     .input(z.object({
@@ -373,7 +373,7 @@ Before submitting your PR:
 
 ## 5. Completion Protocol
 
-1. **Implement all tasks** on your `wave-5/spreadsheet-intake` branch.
+1. **Implement all tasks** on your `wave-7/spreadsheet-intake` branch.
 
 2. **Run verification:**
    ```bash
@@ -382,19 +382,19 @@ Before submitting your PR:
    ```
 
 3. **Create a Pull Request** to `main` with:
-   - Clear title: `feat(spreadsheet): implement intake grid and grouping [Wave 5B]`
+   - Clear title: `feat(spreadsheet): implement intake grid and grouping [Wave 7B]`
    - Screenshots/video showing:
      - Intake grid with bulk entry
      - Validation errors display
      - Grouping functionality
-   - Description of integration with Agent 5A's work
+   - Description of integration with Agent 7A's work
 
 4. **Generate a Reviewer Prompt:**
 
 ```markdown
-# Reviewer Prompt: QA & Merge Wave 5B - Spreadsheet Intake Grid
+# Reviewer Prompt: QA & Merge Wave 7B - Spreadsheet Intake Grid
 
-**Branch:** `wave-5/spreadsheet-intake`
+**Branch:** `wave-7/spreadsheet-intake`
 
 **Tasks to Verify:**
 - [ ] **FEATURE-021:** Intake tab displays editable grid
@@ -419,12 +419,12 @@ Before submitting your PR:
 ## 6. Coordination Notes
 
 **Parallel Agents:**
-- Agent 5A owns `SpreadsheetViewPage.tsx` - coordinate tab integration
-- Agent 5C is implementing Pick & Pack Grid
+- Agent 7A owns `SpreadsheetViewPage.tsx` - coordinate tab integration
+- Agent 7C is implementing Pick & Pack Grid
 - Your grouping changes to `InventoryGrid.tsx` need to merge cleanly with 5A's work
 
 **Integration Strategy:**
-1. Wait for Agent 5A's PR to be merged (or coordinate on branch)
+1. Wait for Agent 7A's PR to be merged (or coordinate on branch)
 2. Rebase your branch on latest main
 3. Add intake tab to `SpreadsheetViewPage.tsx`
 4. Merge grouping changes to `InventoryGrid.tsx`

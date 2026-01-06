@@ -1,4 +1,4 @@
-# Agent Prompt: Wave 5C - Spreadsheet Pick & Pack Grid & Editing
+# Agent Prompt: Wave 7C - Spreadsheet Pick & Pack Grid & Editing
 
 ## 1. Onboarding
 
@@ -10,14 +10,14 @@ Implement Phase 3 of the Spreadsheet View (Pick & Pack Grid) and add editing cap
 ### Key Documents to Read First
 1. **Feature Spec:** `docs/specs/FEATURE-SPREADSHEET-VIEW-SPEC.md`
 2. **Master Roadmap:** `docs/roadmaps/MASTER_ROADMAP.md`
-3. **Wave 5A Work:** Check Agent 5A's PR for `SpreadsheetViewPage.tsx` structure
+3. **Wave 7A Work:** Check Agent 7A's PR for `SpreadsheetViewPage.tsx` structure
 
 ### Repository Setup
 ```bash
 gh repo clone EvanTenenbaum/TERP
 cd TERP
 pnpm install
-git checkout -b wave-5/spreadsheet-pick
+git checkout -b wave-7/spreadsheet-pick
 ```
 
 ### File Ownership
@@ -26,7 +26,7 @@ git checkout -b wave-5/spreadsheet-pick
 - `client/src/components/spreadsheet/InventoryGrid.tsx` (editing additions only)
 - `server/routers/spreadsheet.ts` (pick & pack procedures only)
 
-**Note:** Agent 5A owns `SpreadsheetViewPage.tsx` - coordinate via PR comments for tab integration.
+**Note:** Agent 7A owns `SpreadsheetViewPage.tsx` - coordinate via PR comments for tab integration.
 
 ---
 
@@ -217,7 +217,7 @@ const handleBulkPick = async () => {
 
 #### 2.1 Editable Columns in InventoryGrid
 ```typescript
-// Add to InventoryGrid.tsx (coordinate with Agent 5A)
+// Add to InventoryGrid.tsx (coordinate with Agent 7A)
 
 const columnDefs = [
   // ... existing columns
@@ -418,7 +418,7 @@ Before submitting your PR:
 
 ## 5. Completion Protocol
 
-1. **Implement all tasks** on your `wave-5/spreadsheet-pick` branch.
+1. **Implement all tasks** on your `wave-7/spreadsheet-pick` branch.
 
 2. **Run verification:**
    ```bash
@@ -427,19 +427,19 @@ Before submitting your PR:
    ```
 
 3. **Create a Pull Request** to `main` with:
-   - Clear title: `feat(spreadsheet): implement pick & pack grid and editing [Wave 5C]`
+   - Clear title: `feat(spreadsheet): implement pick & pack grid and editing [Wave 7C]`
    - Screenshots/video showing:
      - Pick & Pack workflow
      - Status transitions
      - Inline editing with save feedback
-   - Description of integration with Agent 5A's work
+   - Description of integration with Agent 7A's work
 
 4. **Generate a Reviewer Prompt:**
 
 ```markdown
-# Reviewer Prompt: QA & Merge Wave 5C - Spreadsheet Pick & Pack Grid
+# Reviewer Prompt: QA & Merge Wave 7C - Spreadsheet Pick & Pack Grid
 
-**Branch:** `wave-5/spreadsheet-pick`
+**Branch:** `wave-7/spreadsheet-pick`
 
 **Tasks to Verify:**
 - [ ] **FEATURE-021:** Pick & Pack tab displays order fulfillment grid
@@ -467,21 +467,21 @@ Before submitting your PR:
 ## 6. Coordination Notes
 
 **Parallel Agents:**
-- Agent 5A owns `SpreadsheetViewPage.tsx` - coordinate tab integration
-- Agent 5B is implementing Intake Grid and grouping
+- Agent 7A owns `SpreadsheetViewPage.tsx` - coordinate tab integration
+- Agent 7B is implementing Intake Grid and grouping
 - Your editing changes to `InventoryGrid.tsx` need to merge cleanly with 5A and 5B's work
 
 **Integration Strategy:**
-1. Wait for Agent 5A's PR to be merged (or coordinate on branch)
+1. Wait for Agent 7A's PR to be merged (or coordinate on branch)
 2. Rebase your branch on latest main
 3. Add pick & pack tab to `SpreadsheetViewPage.tsx`
 4. Merge editing changes to `InventoryGrid.tsx` carefully
 
 **Conflict Resolution:**
 If multiple agents modify `InventoryGrid.tsx`:
-- Agent 5A: Base grid + color coding
-- Agent 5B: Grouping
-- Agent 5C (you): Editing
+- Agent 7A: Base grid + color coding
+- Agent 7B: Grouping
+- Agent 7C (you): Editing
 
 Merge order should be: 5A → 5B → 5C
 

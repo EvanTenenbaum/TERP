@@ -84,16 +84,23 @@ This document provides a fresh triage of the TERP roadmap with an optimized stra
 
 ## Part 2: Parallel Agent Execution Strategy
 
-### Wave 4: Critical Bug Fixes (3 Parallel Agents)
+### Wave Numbering Context
+
+**Waves 1-2:** Completed - Bug fixes and UX polish (merged to main)
+**Wave 3:** Pending - Spreadsheet UX, Editing/Grouping, QA Follow-up (prompts exist: `WAVE3_AGENT_PROMPT_A/B/C.md`)
+**Waves 4-5:** Reserved for Wave 3 follow-up work if needed
+**Waves 6-7:** New work defined in this document
+
+### Wave 6: Critical Bug Fixes (3 Parallel Agents)
 **Duration:** 2-3 days
 **Total Hours:** 40-72h
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    WAVE 4: CRITICAL FIXES                        │
+│                    WAVE 6: CRITICAL FIXES                        │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│  Agent 4A                Agent 4B                Agent 4C        │
+│  Agent 6A                Agent 6B                Agent 6C        │
 │  ─────────              ─────────               ─────────        │
 │  QA-001: Todo Lists     QA-002: Accounting      QA-005: Data     │
 │  (4-8h)                 (8-16h)                 Access Issues    │
@@ -101,26 +108,26 @@ This document provides a fresh triage of the TERP roadmap with an optimized stra
 │  QA-003: COGS Settings  QA-004: Analytics                        │
 │  (4-8h)                 (8-16h)                                  │
 │                                                                   │
-│  Branch: wave-4/        Branch: wave-4/         Branch: wave-4/  │
+│  Branch: wave-6/        Branch: wave-6/         Branch: wave-6/  │
 │  critical-routes        accounting-analytics    data-access      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 **File Ownership:**
-- Agent 4A: `client/src/pages/TodoPage.tsx`, `client/src/pages/CogsSettingsPage.tsx`, routing
-- Agent 4B: `client/src/pages/AccountingPage.tsx`, `client/src/pages/AnalyticsPage.tsx`, routing
-- Agent 4C: `server/routers/*`, database queries, auth middleware
+- Agent 6A: `client/src/pages/TodoPage.tsx`, `client/src/pages/CogsSettingsPage.tsx`, routing
+- Agent 6B: `client/src/pages/AccountingPage.tsx`, `client/src/pages/AnalyticsPage.tsx`, routing
+- Agent 6C: `server/routers/*`, database queries, auth middleware
 
-### Wave 5: Spreadsheet View (3 Parallel Agents)
+### Wave 7: Spreadsheet View (3 Parallel Agents)
 **Duration:** 4-5 days
 **Total Hours:** 96-112h
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    WAVE 5: SPREADSHEET VIEW                      │
+│                    WAVE 7: SPREADSHEET VIEW                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│  Agent 5A                Agent 5B                Agent 5C        │
+│  Agent 7A                Agent 7B                Agent 7C        │
 │  ─────────              ─────────               ─────────        │
 │  Phase 1: Inventory     Phase 2: Intake         Phase 3: Pick    │
 │  Grid + Client View     Grid                    & Pack Grid      │
@@ -129,17 +136,17 @@ This document provides a fresh triage of the TERP roadmap with an optimized stra
 │  TERP-SS-006: Visual    TERP-SS-008: Grouping   TERP-SS-009:     │
 │  Cues (24h)             (16h)                   Editing (16h)    │
 │                                                                   │
-│  Branch: wave-5/        Branch: wave-5/         Branch: wave-5/  │
+│  Branch: wave-7/        Branch: wave-7/         Branch: wave-7/  │
 │  spreadsheet-inventory  spreadsheet-intake      spreadsheet-pick │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 **File Ownership:**
-- Agent 5A: `InventoryGrid.tsx`, `ClientGrid.tsx`, `SpreadsheetViewPage.tsx`
-- Agent 5B: `IntakeGrid.tsx`, intake service integration
-- Agent 5C: `PickPackGrid.tsx`, pick & pack router integration
+- Agent 7A: `InventoryGrid.tsx`, `ClientGrid.tsx`, `SpreadsheetViewPage.tsx`
+- Agent 7B: `IntakeGrid.tsx`, intake service integration
+- Agent 7C: `PickPackGrid.tsx`, pick & pack router integration
 
-### Wave 6: Infrastructure & Data Integrity (2 Parallel Agents)
+### Wave 8: Infrastructure & Data Integrity (2 Parallel Agents)
 **Duration:** 3-4 days
 **Total Hours:** 79-87h
 
@@ -165,7 +172,7 @@ This document provides a fresh triage of the TERP roadmap with an optimized stra
 - Agent 6A: `drizzle/`, `server/routers/*` (locking/transactions)
 - Agent 6B: `scripts/`, deployment configs, monitoring setup
 
-### Wave 7: UX Polish & QA Follow-up (2 Parallel Agents)
+### Wave 9: UX Polish & QA Follow-up (2 Parallel Agents)
 **Duration:** 2 days
 **Total Hours:** 26h + 42-50h = 68-76h
 
@@ -195,10 +202,10 @@ This document provides a fresh triage of the TERP roadmap with an optimized stra
 
 | Wave | Focus | Agents | Duration | Hours | Cumulative |
 |------|-------|--------|----------|-------|------------|
-| Wave 4 | Critical Bug Fixes | 3 | 2-3 days | 40-72h | 40-72h |
-| Wave 5 | Spreadsheet View | 3 | 4-5 days | 96-112h | 136-184h |
-| Wave 6 | Infrastructure | 2 | 3-4 days | 79-87h | 215-271h |
-| Wave 7 | Polish & Cleanup | 2 | 2 days | 68-76h | 283-347h |
+| Wave 6 | Critical Bug Fixes | 3 | 2-3 days | 40-72h | 40-72h |
+| Wave 7 | Spreadsheet View | 3 | 4-5 days | 96-112h | 136-184h |
+| Wave 8 | Infrastructure | 2 | 3-4 days | 79-87h | 215-271h |
+| Wave 9 | Polish & Cleanup | 2 | 2 days | 68-76h | 283-347h |
 | Integration | Merge & QA | 1 | 2 days | 16h | 299-363h |
 
 **Total Estimated Time:** 13-16 days (with parallel execution)
@@ -208,10 +215,10 @@ This document provides a fresh triage of the TERP roadmap with an optimized stra
 
 ## Part 4: Agent Prompts
 
-### Agent 4A Prompt: Critical Routes - Todo & COGS
+### Agent 6A Prompt: Critical Routes - Todo & COGS
 
 ```markdown
-# Agent Prompt: Wave 4A - Critical Routes (Todo & COGS)
+# Agent Prompt: Wave 6A - Critical Routes (Todo & COGS)
 
 ## Mission
 Fix the 404 errors for Todo Lists and COGS Settings modules.
@@ -219,7 +226,7 @@ Fix the 404 errors for Todo Lists and COGS Settings modules.
 ## Repository Setup
 gh repo clone EvanTenenbaum/TERP
 cd TERP && pnpm install
-git checkout -b wave-4/critical-routes
+git checkout -b wave-6/critical-routes
 
 ## Tasks
 1. **QA-001: Fix Todo Lists 404** (4-8h)
@@ -244,10 +251,10 @@ git checkout -b wave-4/critical-routes
 4. Generate reviewer prompt for QA agent
 ```
 
-### Agent 4B Prompt: Accounting & Analytics
+### Agent 6B Prompt: Accounting & Analytics
 
 ```markdown
-# Agent Prompt: Wave 4B - Accounting & Analytics Modules
+# Agent Prompt: Wave 6B - Accounting & Analytics Modules
 
 ## Mission
 Fix the 404 errors for Accounting and Analytics modules.
@@ -255,7 +262,7 @@ Fix the 404 errors for Accounting and Analytics modules.
 ## Repository Setup
 gh repo clone EvanTenenbaum/TERP
 cd TERP && pnpm install
-git checkout -b wave-4/accounting-analytics
+git checkout -b wave-6/accounting-analytics
 
 ## Tasks
 1. **QA-002: Fix Accounting 404** (8-16h)
@@ -279,10 +286,10 @@ git checkout -b wave-4/accounting-analytics
 3. Create PR with clear description
 ```
 
-### Agent 4C Prompt: Data Access Issues
+### Agent 6C Prompt: Data Access Issues
 
 ```markdown
-# Agent Prompt: Wave 4C - Systemic Data Access Fix
+# Agent Prompt: Wave 6C - Systemic Data Access Fix
 
 ## Mission
 Investigate and fix the widespread "No data found" issues across all modules.
@@ -290,7 +297,7 @@ Investigate and fix the widespread "No data found" issues across all modules.
 ## Repository Setup
 gh repo clone EvanTenenbaum/TERP
 cd TERP && pnpm install
-git checkout -b wave-4/data-access
+git checkout -b wave-6/data-access
 
 ## Tasks
 **QA-005: Fix Systemic Data Access Issues** (16-24h)
@@ -319,10 +326,10 @@ Symptoms to Address:
 4. Create PR with detailed fix explanation
 ```
 
-### Agent 5A Prompt: Spreadsheet Inventory Grid
+### Agent 7A Prompt: Spreadsheet Inventory Grid
 
 ```markdown
-# Agent Prompt: Wave 5A - Spreadsheet Inventory & Client Grid
+# Agent Prompt: Wave 7A - Spreadsheet Inventory & Client Grid
 
 ## Mission
 Implement Phase 1 of Spreadsheet View and visual cues.
@@ -334,7 +341,7 @@ Implement Phase 1 of Spreadsheet View and visual cues.
 ## Repository Setup
 gh repo clone EvanTenenbaum/TERP
 cd TERP && pnpm install
-git checkout -b wave-5/spreadsheet-inventory
+git checkout -b wave-7/spreadsheet-inventory
 
 ## Tasks
 1. **FEATURE-021 Phase 1** (16-20h)
@@ -360,10 +367,10 @@ git checkout -b wave-5/spreadsheet-inventory
 3. Create PR with screenshots
 ```
 
-### Agent 5B Prompt: Spreadsheet Intake Grid
+### Agent 7B Prompt: Spreadsheet Intake Grid
 
 ```markdown
-# Agent Prompt: Wave 5B - Spreadsheet Intake Grid
+# Agent Prompt: Wave 7B - Spreadsheet Intake Grid
 
 ## Mission
 Implement Phase 2 of Spreadsheet View - Intake Grid.
@@ -371,7 +378,7 @@ Implement Phase 2 of Spreadsheet View - Intake Grid.
 ## Repository Setup
 gh repo clone EvanTenenbaum/TERP
 cd TERP && pnpm install
-git checkout -b wave-5/spreadsheet-intake
+git checkout -b wave-7/spreadsheet-intake
 
 ## Tasks
 1. **FEATURE-021 Phase 2** (12-16h)
@@ -394,10 +401,10 @@ git checkout -b wave-5/spreadsheet-intake
 3. Create PR with demo video/screenshots
 ```
 
-### Agent 5C Prompt: Spreadsheet Pick & Pack Grid
+### Agent 7C Prompt: Spreadsheet Pick & Pack Grid
 
 ```markdown
-# Agent Prompt: Wave 5C - Spreadsheet Pick & Pack Grid
+# Agent Prompt: Wave 7C - Spreadsheet Pick & Pack Grid
 
 ## Mission
 Implement Phase 3 of Spreadsheet View - Pick & Pack Grid.
@@ -405,7 +412,7 @@ Implement Phase 3 of Spreadsheet View - Pick & Pack Grid.
 ## Repository Setup
 gh repo clone EvanTenenbaum/TERP
 cd TERP && pnpm install
-git checkout -b wave-5/spreadsheet-pick
+git checkout -b wave-7/spreadsheet-pick
 
 ## Tasks
 1. **FEATURE-021 Phase 3** (12-20h)
@@ -463,10 +470,10 @@ git checkout -b wave-5/spreadsheet-pick
 ## Part 6: Merge Strategy
 
 ### Merge Order
-1. **Wave 4** (Critical Fixes) → main
-2. **Wave 5** (Spreadsheet View) → main
-3. **Wave 6** (Infrastructure) → main
-4. **Wave 7** (Polish) → main
+1. **Wave 6** (Critical Fixes) → main
+2. **Wave 7** (Spreadsheet View) → main
+3. **Wave 8** (Infrastructure) → main
+4. **Wave 9** (Polish) → main
 
 ### Integration Protocol
 After each wave:
@@ -476,8 +483,8 @@ After each wave:
 4. Merge to main if passing
 
 ### Conflict Resolution
-- Wave 5 agents have isolated file ownership (no conflicts expected)
-- Wave 6 & 7 may have minor conflicts in shared files
+- Wave 7 agents have isolated file ownership (no conflicts expected)
+- Wave 8 & 9 may have minor conflicts in shared files
 - Designate Agent 6A as "integration lead" for conflict resolution
 
 ---
@@ -487,13 +494,13 @@ After each wave:
 ### Branch Naming Convention
 ```
 wave-{number}/agent-{letter}-{description}
-Example: wave-5/agent-a-spreadsheet-inventory
+Example: wave-7/agent-a-spreadsheet-inventory
 ```
 
 ### PR Title Format
 ```
 feat(module): Brief description [Wave X - Agent Y]
-Example: feat(spreadsheet): implement inventory grid [Wave 5 - Agent A]
+Example: feat(spreadsheet): implement inventory grid [Wave 7 - Agent A]
 ```
 
 ### Agent Communication
