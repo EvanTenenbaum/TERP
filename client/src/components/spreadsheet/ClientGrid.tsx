@@ -17,7 +17,10 @@ interface ClientRow {
 }
 
 const currencyFormatter = (value: number): string =>
-  value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
 export const ClientGrid = React.memo(function ClientGrid() {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
@@ -44,44 +47,65 @@ export const ClientGrid = React.memo(function ClientGrid() {
     { enabled: Boolean(selectedClientId) }
   );
 
-  const columnDefs = useMemo<ColDef<ClientGridRow>[]>(() => [
-    { headerName: "Date", field: "date", width: 130 },
-    { headerName: "Order #", field: "vendorCode", width: 140 },
-    { headerName: "Item", field: "item", flex: 1, minWidth: 200 },
-    { headerName: "Qty", field: "qty", width: 100, valueFormatter: params => params.value?.toString() ?? "0" },
-    {
-      headerName: "Unit Price",
-      field: "unitPrice",
-      width: 130,
-      valueFormatter: params => currencyFormatter(params.value ?? 0),
-    },
-    {
-      headerName: "Total",
-      field: "total",
-      width: 140,
-      valueFormatter: params => currencyFormatter(params.value ?? 0),
-    },
-    { headerName: "Payment", field: "payment", width: 130 },
-    { headerName: "Note", field: "note", flex: 1, minWidth: 200 },
-    {
-      headerName: "Paid",
-      field: "paid",
-      width: 100,
-      valueFormatter: params => (params.value ? "Yes" : "No"),
-    },
-    {
-      headerName: "Invoiced",
-      field: "invoiced",
-      width: 120,
-      valueFormatter: params => (params.value ? "Yes" : "No"),
-    },
-    {
-      headerName: "Confirmed",
-      field: "confirmed",
-      width: 120,
-      valueFormatter: params => (params.value ? "Yes" : "No"),
-    },
-  ], []);
+  const columnDefs = useMemo<ColDef<ClientGridRow>[]>(
+    () => [
+      { headerName: "Date", field: "date", width: 130 },
+      // TERP-SS-003: Renamed from "Order #" to "Vendor Code" - now displays batch.code
+      { headerName: "Vendor Code", field: "vendorCode", width: 140 },
+      { headerName: "Item", field: "item", flex: 1, minWidth: 200 },
+      {
+        headerName: "Qty",
+        field: "qty",
+        width: 100,
+        valueFormatter: params => params.value?.toString() ?? "0",
+      },
+      {
+        headerName: "Unit Price",
+        field: "unitPrice",
+        width: 130,
+        valueFormatter: params => currencyFormatter(params.value ?? 0),
+      },
+      {
+        headerName: "Total",
+        field: "total",
+        width: 140,
+        valueFormatter: params => currencyFormatter(params.value ?? 0),
+      },
+      // TERP-SS-005: Display actual payment amount in the "In" column
+      {
+        headerName: "In",
+        field: "paymentAmount",
+        width: 120,
+        valueFormatter: params =>
+          params.value > 0 ? currencyFormatter(params.value) : "-",
+        cellStyle: params =>
+          params.value > 0
+            ? { backgroundColor: "#d4edda", color: "#155724" }
+            : undefined,
+      },
+      { headerName: "Terms", field: "payment", width: 110 },
+      { headerName: "Note", field: "note", flex: 1, minWidth: 180 },
+      {
+        headerName: "Paid",
+        field: "paid",
+        width: 80,
+        valueFormatter: params => (params.value ? "Yes" : "No"),
+      },
+      {
+        headerName: "Invoiced",
+        field: "invoiced",
+        width: 100,
+        valueFormatter: params => (params.value ? "Yes" : "No"),
+      },
+      {
+        headerName: "Confirmed",
+        field: "confirmed",
+        width: 110,
+        valueFormatter: params => (params.value ? "Yes" : "No"),
+      },
+    ],
+    []
+  );
 
   const defaultColDef = useMemo<ColDef<ClientGridRow>>(
     () => ({
@@ -106,12 +130,32 @@ export const ClientGrid = React.memo(function ClientGrid() {
         <div className="flex items-center gap-4">
           {summary && (
             <div className="text-sm text-muted-foreground flex gap-4">
-              <span>Total: <span className="font-semibold text-foreground">${currencyFormatter(summary.total)}</span></span>
-              <span>Balance: <span className="font-semibold text-foreground">${currencyFormatter(summary.balance)}</span></span>
-              <span>YTD: <span className="font-semibold text-foreground">${currencyFormatter(summary.yearToDate)}</span></span>
+              <span>
+                Total:{" "}
+                <span className="font-semibold text-foreground">
+                  ${currencyFormatter(summary.total)}
+                </span>
+              </span>
+              <span>
+                Balance:{" "}
+                <span className="font-semibold text-foreground">
+                  ${currencyFormatter(summary.balance)}
+                </span>
+              </span>
+              <span>
+                YTD:{" "}
+                <span className="font-semibold text-foreground">
+                  ${currencyFormatter(summary.yearToDate)}
+                </span>
+              </span>
             </div>
           )}
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={!selectedClientId}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={!selectedClientId}
+          >
             Refresh
           </Button>
         </div>
@@ -130,22 +174,30 @@ export const ClientGrid = React.memo(function ClientGrid() {
               )}
               <ScrollArea className="h-[520px]">
                 <div className="flex flex-col divide-y">
-                  {(clientsData?.items as ClientRow[] | undefined)?.map(client => (
-                    <button
-                      key={client.id}
-                      type="button"
-                      onClick={() => setSelectedClientId(client.id)}
-                      className={`flex w-full flex-col items-start px-4 py-3 text-left transition hover:bg-muted ${selectedClientId === client.id ? "bg-muted" : ""}`}
-                      disabled={clientsLoading}
-                    >
-                      <span className="font-medium text-sm text-foreground">{client.name}</span>
-                      {client.teriCode && (
-                        <span className="text-xs text-muted-foreground">TERI: {client.teriCode}</span>
-                      )}
-                    </button>
-                  ))}
+                  {(clientsData?.items as ClientRow[] | undefined)?.map(
+                    client => (
+                      <button
+                        key={client.id}
+                        type="button"
+                        onClick={() => setSelectedClientId(client.id)}
+                        className={`flex w-full flex-col items-start px-4 py-3 text-left transition hover:bg-muted ${selectedClientId === client.id ? "bg-muted" : ""}`}
+                        disabled={clientsLoading}
+                      >
+                        <span className="font-medium text-sm text-foreground">
+                          {client.name}
+                        </span>
+                        {client.teriCode && (
+                          <span className="text-xs text-muted-foreground">
+                            TERI: {client.teriCode}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  )}
                   {!clientsData?.items?.length && !clientsLoading && (
-                    <div className="px-4 py-3 text-sm text-muted-foreground">No clients available.</div>
+                    <div className="px-4 py-3 text-sm text-muted-foreground">
+                      No clients available.
+                    </div>
                   )}
                 </div>
               </ScrollArea>

@@ -23,12 +23,13 @@ export interface ClientGridRow {
   id: string;
   orderId: number;
   date: string | null;
-  vendorCode: string | null;
+  vendorCode: string | null; // TERP-SS-003: Now displays batch.code instead of orderNumber
   item: string;
   qty: number;
   unitPrice: number;
   total: number;
   payment: string | null;
+  paymentAmount: number; // TERP-SS-005: Actual payment amount (cashPayment)
   note: string | null;
   paid: boolean;
   invoiced: boolean;
@@ -65,6 +66,7 @@ export type InventoryBatchRecord = {
   vendor: {
     name?: string | null;
   } | null;
+  intakeQty?: number | null; // TERP-SS-004: Original intake quantity from first inventory movement
 };
 
 export interface ClientOrderItem {
@@ -75,6 +77,7 @@ export interface ClientOrderItem {
   unitPrice: number;
   isSample?: boolean;
   unitCogs?: number;
+  batchCode?: string | null; // Added for TERP-SS-003: Vendor/batch code display
 }
 
 export interface ClientOrderRecord {
@@ -96,14 +99,20 @@ export interface ClientOrderRecord {
   updatedAt?: Date | null;
 }
 
-export function transformInventoryRecord(record: InventoryBatchRecord): InventoryGridRow {
+export function transformInventoryRecord(
+  record: InventoryBatchRecord
+): InventoryGridRow {
   const available =
     parseNumber(record.batch.onHandQty) -
     parseNumber(record.batch.reservedQty) -
     parseNumber(record.batch.quarantineQty) -
     parseNumber(record.batch.holdQty);
 
-  const intake = parseNumber(record.batch.onHandQty);
+  // TERP-SS-004: Use original intake quantity if available, otherwise fall back to extracting from metadata
+  // The intakeQty is set from the first INTAKE inventory movement or metadata.originalQty
+  const metadataIntake = extractIntakeFromMetadata(record.batch.metadata);
+  const intake =
+    record.intakeQty ?? metadataIntake ?? parseNumber(record.batch.onHandQty);
   const ticket = parseNumber(record.batch.unitCogs);
 
   return {
@@ -122,11 +131,15 @@ export function transformInventoryRecord(record: InventoryBatchRecord): Inventor
   };
 }
 
-export function transformClientOrderRows(order: ClientOrderRecord): ClientGridRow[] {
+export function transformClientOrderRows(
+  order: ClientOrderRecord
+): ClientGridRow[] {
   const orderDate = formatDate(order.createdAt);
   const payment = order.paymentTerms ?? null;
+  // TERP-SS-005: Parse actual payment amount from cashPayment
+  const paymentAmount = parseNumber(order.cashPayment);
   const note = order.notes ?? null;
-  const paid = parseNumber(order.cashPayment) > 0;
+  const paid = paymentAmount > 0;
   const invoiced = Boolean(order.invoiceId);
   const confirmed = (order.saleStatus ?? "").toUpperCase() === "CONFIRMED";
 
@@ -139,12 +152,14 @@ export function transformClientOrderRows(order: ClientOrderRecord): ClientGridRo
       id: `${order.id}-${index}`,
       orderId: order.id,
       date: orderDate,
-      vendorCode: order.orderNumber ?? null,
+      // TERP-SS-003: Display batch code instead of order number
+      vendorCode: item.batchCode ?? order.orderNumber ?? null,
       item: item.displayName ?? item.originalName ?? `Item ${index + 1}`,
       qty,
       unitPrice,
       total,
       payment,
+      paymentAmount, // TERP-SS-005: Actual payment amount
       note,
       paid,
       invoiced,
@@ -155,12 +170,20 @@ export function transformClientOrderRows(order: ClientOrderRecord): ClientGridRo
 
 export async function getInventoryGridData(
   input: InventoryGridQuery = {}
-): Promise<{ rows: InventoryGridRow[]; nextCursor: number | null; hasMore: boolean }> {
-  const limit = input.limit && input.limit > 0 ? Math.min(input.limit, DEFAULT_LIMIT) : DEFAULT_LIMIT;
-  const { items, nextCursor, hasMore } = await inventoryDb.getBatchesWithDetails(limit, input.cursor, {
-    status: input.status,
-    category: input.category,
-  });
+): Promise<{
+  rows: InventoryGridRow[];
+  nextCursor: number | null;
+  hasMore: boolean;
+}> {
+  const limit =
+    input.limit && input.limit > 0
+      ? Math.min(input.limit, DEFAULT_LIMIT)
+      : DEFAULT_LIMIT;
+  const { items, nextCursor, hasMore } =
+    await inventoryDb.getBatchesWithDetails(limit, input.cursor, {
+      status: input.status,
+      category: input.category,
+    });
 
   const rows = items.map(transformInventoryRecord);
 
@@ -171,18 +194,49 @@ export async function getClientGridData(
   input: ClientGridQuery
 ): Promise<{ summary: ClientGridSummary; rows: ClientGridRow[] }> {
   const orders = await getOrdersByClient(input.clientId, "SALE");
+
+  // TERP-SS-003: Collect all batchIds to fetch batch codes
+  const allBatchIds = new Set<number>();
+  orders.forEach(order => {
+    const rawItems = (order as { items?: unknown }).items;
+    if (Array.isArray(rawItems)) {
+      rawItems.forEach(item => {
+        const batchId = (item as { batchId?: number | null }).batchId;
+        if (batchId) allBatchIds.add(batchId);
+      });
+    }
+  });
+
+  // TERP-SS-003: Fetch batch codes for all batchIds
+  const batchCodeMap = await getBatchCodesByIds(Array.from(allBatchIds));
+
   const clientOrders: ClientOrderRecord[] = orders.map(order => {
     const rawItems = (order as { items?: unknown }).items;
     const items: ClientOrderItem[] = Array.isArray(rawItems)
-      ? rawItems.map(item => ({
-          batchId: (item as { batchId?: number | null }).batchId ?? null,
-          displayName: (item as { displayName?: string }).displayName ?? (item as { name?: string }).name ?? null,
-          originalName: (item as { originalName?: string }).originalName ?? null,
-          quantity: parseNumber((item as { quantity?: number | string | null }).quantity),
-          unitPrice: parseNumber((item as { unitPrice?: number | string | null }).unitPrice),
-          isSample: (item as { isSample?: boolean }).isSample ?? false,
-          unitCogs: parseNumber((item as { unitCogs?: number | string | null }).unitCogs),
-        }))
+      ? rawItems.map(item => {
+          const batchId = (item as { batchId?: number | null }).batchId ?? null;
+          return {
+            batchId,
+            displayName:
+              (item as { displayName?: string }).displayName ??
+              (item as { name?: string }).name ??
+              null,
+            originalName:
+              (item as { originalName?: string }).originalName ?? null,
+            quantity: parseNumber(
+              (item as { quantity?: number | string | null }).quantity
+            ),
+            unitPrice: parseNumber(
+              (item as { unitPrice?: number | string | null }).unitPrice
+            ),
+            isSample: (item as { isSample?: boolean }).isSample ?? false,
+            unitCogs: parseNumber(
+              (item as { unitCogs?: number | string | null }).unitCogs
+            ),
+            // TERP-SS-003: Add batch code from lookup
+            batchCode: batchId ? (batchCodeMap.get(batchId) ?? null) : null,
+          };
+        })
       : [];
 
     return {
@@ -191,16 +245,25 @@ export async function getClientGridData(
       orderType: order.orderType as ClientOrderRecord["orderType"],
       clientId: order.clientId,
       items,
-      subtotal: parseNumber((order as { subtotal?: string | number | null }).subtotal ?? null),
-      total: parseNumber((order as { total?: string | number | null }).total ?? null),
-      paymentTerms: (order as { paymentTerms?: string | null }).paymentTerms ?? null,
-      cashPayment: (order as { cashPayment?: string | number | null }).cashPayment
-        ? String((order as { cashPayment?: string | number | null }).cashPayment)
+      subtotal: parseNumber(
+        (order as { subtotal?: string | number | null }).subtotal ?? null
+      ),
+      total: parseNumber(
+        (order as { total?: string | number | null }).total ?? null
+      ),
+      paymentTerms:
+        (order as { paymentTerms?: string | null }).paymentTerms ?? null,
+      cashPayment: (order as { cashPayment?: string | number | null })
+        .cashPayment
+        ? String(
+            (order as { cashPayment?: string | number | null }).cashPayment
+          )
         : null,
       dueDate: (order as { dueDate?: Date | null }).dueDate ?? null,
       saleStatus: (order as { saleStatus?: string | null }).saleStatus ?? null,
       invoiceId: (order as { invoiceId?: number | null }).invoiceId ?? null,
-      pickPackStatus: (order as { pickPackStatus?: string | null }).pickPackStatus ?? null,
+      pickPackStatus:
+        (order as { pickPackStatus?: string | null }).pickPackStatus ?? null,
       notes: (order as { notes?: string | null }).notes ?? null,
       createdAt: (order as { createdAt?: Date | null }).createdAt ?? null,
       updatedAt: (order as { updatedAt?: Date | null }).updatedAt ?? null,
@@ -209,8 +272,14 @@ export async function getClientGridData(
 
   const rows = clientOrders.flatMap(transformClientOrderRows);
 
-  const totalValue = clientOrders.reduce((sum, order) => sum + parseNumber(order.total), 0);
-  const paidAmount = clientOrders.reduce((sum, order) => sum + parseNumber(order.cashPayment), 0);
+  const totalValue = clientOrders.reduce(
+    (sum, order) => sum + parseNumber(order.total),
+    0
+  );
+  const paidAmount = clientOrders.reduce(
+    (sum, order) => sum + parseNumber(order.cashPayment),
+    0
+  );
   const currentYear = new Date().getFullYear();
   const yearToDate = clientOrders
     .filter(order => (order.createdAt?.getFullYear() ?? 0) === currentYear)
@@ -224,6 +293,25 @@ export async function getClientGridData(
     },
     rows,
   };
+}
+
+// TERP-SS-003: Helper to fetch batch codes by IDs
+async function getBatchCodesByIds(
+  batchIds: number[]
+): Promise<Map<number, string>> {
+  if (batchIds.length === 0) return new Map();
+
+  const batchMap = new Map<number, string>();
+
+  // Fetch batch codes in batches to avoid too-long queries
+  for (const batchId of batchIds) {
+    const batch = await inventoryDb.getBatchById(batchId);
+    if (batch?.code) {
+      batchMap.set(batchId, batch.code);
+    }
+  }
+
+  return batchMap;
 }
 import * as inventoryDb from "../inventoryDb";
 import { getOrdersByClient } from "../ordersDb";
@@ -247,6 +335,26 @@ const extractNotes = (metadata: string | null): string | null => {
   try {
     const parsed = JSON.parse(metadata) as { notes?: unknown };
     return typeof parsed.notes === "string" ? parsed.notes : null;
+  } catch {
+    return null;
+  }
+};
+
+// TERP-SS-004: Extract original intake quantity from batch metadata
+const extractIntakeFromMetadata = (metadata: string | null): number | null => {
+  if (!metadata) return null;
+  try {
+    const parsed = JSON.parse(metadata) as {
+      originalQty?: unknown;
+      intakeQty?: unknown;
+    };
+    const qty = parsed.originalQty ?? parsed.intakeQty;
+    if (typeof qty === "number") return qty;
+    if (typeof qty === "string") {
+      const parsed = parseFloat(qty);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
   } catch {
     return null;
   }
