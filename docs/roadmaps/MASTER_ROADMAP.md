@@ -11982,21 +11982,21 @@ Based on comprehensive QA testing including unit test analysis and 72-hour code 
 
 ### Test Infrastructure Issues (P1)
 
-| ID | Issue | File | Description | Est. |
-|----|-------|------|-------------|------|
-| QA-TEST-001 | RBAC test mock returns | `rbac-permissions.test.ts`, `rbac-roles.test.ts`, `rbac-users.test.ts` | Test mocks return 0 instead of expected IDs from insert operations | 2h |
-| QA-TEST-002 | VIP appointment date tests | `vipPortal.appointments.test.ts` | Tests use hardcoded dates that fail when dates pass; need relative dates | 1h |
-| QA-TEST-003 | 93 skipped tests | Various | Large number of skipped tests represent untested functionality | 4h |
+| ID          | Issue                      | File                                                                   | Description                                                              | Est. |
+| ----------- | -------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---- |
+| QA-TEST-001 | RBAC test mock returns     | `rbac-permissions.test.ts`, `rbac-roles.test.ts`, `rbac-users.test.ts` | Test mocks return 0 instead of expected IDs from insert operations       | 2h   |
+| QA-TEST-002 | VIP appointment date tests | `vipPortal.appointments.test.ts`                                       | Tests use hardcoded dates that fail when dates pass; need relative dates | 1h   |
+| QA-TEST-003 | 93 skipped tests           | Various                                                                | Large number of skipped tests represent untested functionality           | 4h   |
 
 ### Test Statistics (Jan 5, 2026)
 
-| Metric | Value |
-|--------|-------|
-| Total Tests | 1,670 |
-| Passing | 1,530 (91.6%) |
-| Failing | 40 (2.4%) |
-| Skipped | 93 (5.6%) |
-| Todo | 7 (0.4%) |
+| Metric      | Value         |
+| ----------- | ------------- |
+| Total Tests | 1,670         |
+| Passing     | 1,530 (91.6%) |
+| Failing     | 40 (2.4%)     |
+| Skipped     | 93 (5.6%)     |
+| Todo        | 7 (0.4%)      |
 
 ### Acceptance Criteria
 
@@ -12009,37 +12009,35 @@ Based on comprehensive QA testing including unit test analysis and 72-hour code 
 
 All changes deployed and TypeScript compiling:
 
-| Commit | Feature | Status |
-|--------|---------|--------|
-| `06175e91` | Mobile device projects in Playwright | ✅ Deployed |
-| `cb712d74` | Responsive dialog sizing | ✅ Deployed |
-| `56676725` | Skeleton loaders (UX-011) | ✅ Deployed |
-| `4c4977dd` | Remove @ts-nocheck from 4 core pages | ✅ Deployed |
+| Commit     | Feature                                    | Status      |
+| ---------- | ------------------------------------------ | ----------- |
+| `06175e91` | Mobile device projects in Playwright       | ✅ Deployed |
+| `cb712d74` | Responsive dialog sizing                   | ✅ Deployed |
+| `56676725` | Skeleton loaders (UX-011)                  | ✅ Deployed |
+| `4c4977dd` | Remove @ts-nocheck from 4 core pages       | ✅ Deployed |
 | `3f740c51` | Remove @ts-nocheck from UnifiedSalesPortal | ✅ Deployed |
-| `bd1975f5` | Remove @ts-nocheck from Notifications | ✅ Deployed |
-| `eb4b0a59` | Remove @ts-nocheck from routers | ✅ Deployed |
-| `96893a34` | Dashboard header & spreadsheet view | ✅ Deployed |
-| `dce38b15` | Sidebar navigation improvements | ✅ Deployed |
-| `16292591` | Security fix: block demo user mutations | ✅ Deployed |
-| `36f595d6` | TERP logo and branding | ✅ Deployed |
-| `2141fdaf` | VIP portal appointments | ✅ Deployed |
-| `c9e59797` | VIP portal frontend enhancements | ✅ Deployed |
-| `0187cf0b` | Spreadsheet view inventory/clients | ✅ Deployed |
-| `1373e18c` | Production seed data | ✅ Deployed |
+| `bd1975f5` | Remove @ts-nocheck from Notifications      | ✅ Deployed |
+| `eb4b0a59` | Remove @ts-nocheck from routers            | ✅ Deployed |
+| `96893a34` | Dashboard header & spreadsheet view        | ✅ Deployed |
+| `dce38b15` | Sidebar navigation improvements            | ✅ Deployed |
+| `16292591` | Security fix: block demo user mutations    | ✅ Deployed |
+| `36f595d6` | TERP logo and branding                     | ✅ Deployed |
+| `2141fdaf` | VIP portal appointments                    | ✅ Deployed |
+| `c9e59797` | VIP portal frontend enhancements           | ✅ Deployed |
+| `0187cf0b` | Spreadsheet view inventory/clients         | ✅ Deployed |
+| `1373e18c` | Production seed data                       | ✅ Deployed |
 
 ### Live Site Status
 
-| Endpoint | HTTP Status | Response Time |
-|----------|-------------|---------------|
-| `/` | 200 | 1.60s |
-| `/inventory` | 200 | 1.41s |
-| `/orders` | 200 | 1.65s |
-| `/clients` | 200 | 1.59s |
-| `/dashboard` | 200 | 1.50s |
+| Endpoint     | HTTP Status | Response Time |
+| ------------ | ----------- | ------------- |
+| `/`          | 200         | 1.60s         |
+| `/inventory` | 200         | 1.41s         |
+| `/orders`    | 200         | 1.65s         |
+| `/clients`   | 200         | 1.59s         |
+| `/dashboard` | 200         | 1.50s         |
 
 **Conclusion:** All endpoints operational with acceptable response times.
-
-
 
 ---
 
@@ -12048,63 +12046,113 @@ All changes deployed and TypeScript compiling:
 Based on exhaustive chaos testing report: `docs/testing/CHAOS_TESTING_EXHAUSTIVE_REPORT.md`
 
 **Testing Summary:**
+
 - 127 distinct user flows tested
 - 381 total simulations (desktop, mobile, tablet)
 - 32 issues identified
 
 ### Critical Issues (P0) - IMMEDIATE ACTION REQUIRED
 
-| ID | Issue | File/Area | Est. |
-|----|-------|-----------|------|
-| CHAOS-001 | Inventory Table Data Not Rendering | InventoryPage.tsx | 4h |
-| CHAOS-002 | Order Item Addition Button Non-Functional (race condition) | OrderCreatorPage.tsx | 6h |
-| CHAOS-003 | Purchase Orders Page Crashes (paymentTerms schema) | PurchaseOrdersPage.tsx | 4h |
-| CHAOS-004 | Negative Quantity Accepted in Inventory Intake | Inventory forms | 2h |
+| ID        | Issue                                                      | File/Area              | Est. |
+| --------- | ---------------------------------------------------------- | ---------------------- | ---- |
+| CHAOS-001 | Inventory Table Data Not Rendering                         | InventoryPage.tsx      | 4h   |
+| CHAOS-002 | Order Item Addition Button Non-Functional (race condition) | OrderCreatorPage.tsx   | 6h   |
+| CHAOS-003 | Purchase Orders Page Crashes (paymentTerms schema)         | PurchaseOrdersPage.tsx | 4h   |
+| CHAOS-004 | Negative Quantity Accepted in Inventory Intake             | Inventory forms        | 2h   |
 
 ### High Priority Issues (P1)
 
-| ID | Issue | File/Area | Est. |
-|----|-------|-----------|------|
-| CHAOS-005 | Global Search Returns 404 | SearchResultsPage (missing) | 8h |
-| CHAOS-006 | No Concurrent Edit Protection | All edit forms | 12h |
-| CHAOS-007 | No Unsaved Changes Warning | All forms | 4h |
-| CHAOS-008 | Debug Dashboard Visible in Production | Orders page | 1h |
-| CHAOS-009 | Todo Lists Route Returns 404 | TodoListsPage (missing) | 8h |
-| CHAOS-010 | No Calendar Double-Booking Prevention | Calendar logic | 6h |
+| ID        | Issue                                 | File/Area                   | Est. |
+| --------- | ------------------------------------- | --------------------------- | ---- |
+| CHAOS-005 | Global Search Returns 404             | SearchResultsPage (missing) | 8h   |
+| CHAOS-006 | No Concurrent Edit Protection         | All edit forms              | 12h  |
+| CHAOS-007 | No Unsaved Changes Warning            | All forms                   | 4h   |
+| CHAOS-008 | Debug Dashboard Visible in Production | Orders page                 | 1h   |
+| CHAOS-009 | Todo Lists Route Returns 404          | TodoListsPage (missing)     | 8h   |
+| CHAOS-010 | No Calendar Double-Booking Prevention | Calendar logic              | 6h   |
 
 ### Medium Priority Issues (P2)
 
-| ID | Issue | File/Area | Est. |
-|----|-------|-----------|------|
-| CHAOS-011 | Mobile Touch Targets Too Small | Various components | 4h |
-| CHAOS-012 | Keyboard Covers Form Buttons on Mobile | Form layouts | 3h |
-| CHAOS-013 | Table Horizontal Overflow on Mobile | Table components | 2h |
-| CHAOS-014 | "Lifetime" Filter Terminology Confusing | Filter UI | 1h |
-| CHAOS-015 | Floating Point Display Errors | Number formatting | 2h |
-| CHAOS-016 | Browser Confirm Dialogs Instead of Custom Modals | Various | 4h |
-| CHAOS-017 | Empty States Missing | Various pages | 4h |
-| CHAOS-018 | No Loading Skeleton for Dashboard Widgets | Dashboard | 3h |
-| CHAOS-019 | Credit Override Accepts Any Text | Credit forms | 2h |
-| CHAOS-020 | Cart Lost When Live Shopping Session Ends | Live Shopping | 4h |
-| CHAOS-021 | No Breadcrumb Navigation | Layout | 4h |
-| CHAOS-022 | Sidebar Menu Too Long | Sidebar | 2h |
-| CHAOS-023 | No Filter Persistence Across Sessions | Filter state | 4h |
-| CHAOS-024 | VIP Portal No Self-Service Password Reset | VIP Portal | 6h |
-| CHAOS-025 | Order Draft Not Auto-Saved | OrderCreatorPage | 6h |
-| CHAOS-026 | Duplicate Menu Icons | Sidebar | 1h |
-| CHAOS-027 | Version Number in Header | Header | 1h |
-| CHAOS-028 | "TERI Code" Terminology Unexplained | UI copy | 1h |
-| CHAOS-029 | Tooltips Require Hover (Mobile Issue) | Tooltip components | 2h |
-| CHAOS-030 | No Haptic Feedback on Mobile | Mobile UX | 2h |
-| CHAOS-031 | "Oldest Debt" Shows Abbreviated Format | Debt display | 1h |
-| CHAOS-032 | Comments Button Purpose Unclear | UI copy | 1h |
+| ID        | Issue                                            | File/Area          | Est. |
+| --------- | ------------------------------------------------ | ------------------ | ---- |
+| CHAOS-011 | Mobile Touch Targets Too Small                   | Various components | 4h   |
+| CHAOS-012 | Keyboard Covers Form Buttons on Mobile           | Form layouts       | 3h   |
+| CHAOS-013 | Table Horizontal Overflow on Mobile              | Table components   | 2h   |
+| CHAOS-014 | "Lifetime" Filter Terminology Confusing          | Filter UI          | 1h   |
+| CHAOS-015 | Floating Point Display Errors                    | Number formatting  | 2h   |
+| CHAOS-016 | Browser Confirm Dialogs Instead of Custom Modals | Various            | 4h   |
+| CHAOS-017 | Empty States Missing                             | Various pages      | 4h   |
+| CHAOS-018 | No Loading Skeleton for Dashboard Widgets        | Dashboard          | 3h   |
+| CHAOS-019 | Credit Override Accepts Any Text                 | Credit forms       | 2h   |
+| CHAOS-020 | Cart Lost When Live Shopping Session Ends        | Live Shopping      | 4h   |
+| CHAOS-021 | No Breadcrumb Navigation                         | Layout             | 4h   |
+| CHAOS-022 | Sidebar Menu Too Long                            | Sidebar            | 2h   |
+| CHAOS-023 | No Filter Persistence Across Sessions            | Filter state       | 4h   |
+| CHAOS-024 | VIP Portal No Self-Service Password Reset        | VIP Portal         | 6h   |
+| CHAOS-025 | Order Draft Not Auto-Saved                       | OrderCreatorPage   | 6h   |
+| CHAOS-026 | Duplicate Menu Icons                             | Sidebar            | 1h   |
+| CHAOS-027 | Version Number in Header                         | Header             | 1h   |
+| CHAOS-028 | "TERI Code" Terminology Unexplained              | UI copy            | 1h   |
+| CHAOS-029 | Tooltips Require Hover (Mobile Issue)            | Tooltip components | 2h   |
+| CHAOS-030 | No Haptic Feedback on Mobile                     | Mobile UX          | 2h   |
+| CHAOS-031 | "Oldest Debt" Shows Abbreviated Format           | Debt display       | 1h   |
+| CHAOS-032 | Comments Button Purpose Unclear                  | UI copy            | 1h   |
 
 ### Effort Summary
 
-| Priority | Count | Total Hours |
-|----------|-------|-------------|
-| P0 (Critical) | 4 | 16h |
-| P1 (High) | 6 | 39h |
-| P2 (Medium) | 22 | 60h |
-| **Total** | **32** | **115h** |
+| Priority      | Count  | Total Hours |
+| ------------- | ------ | ----------- |
+| P0 (Critical) | 4      | 16h         |
+| P1 (High)     | 6      | 39h         |
+| P2 (Medium)   | 22     | 60h         |
+| **Total**     | **32** | **115h**    |
 
+---
+
+## 📊 Spreadsheet View Implementation Tasks (Gemini QA Review - Jan 5, 2026)
+
+Based on comprehensive Red Hat QA review: `/home/ubuntu/gemini_spreadsheet_qa_result.md`
+
+**Assessment:** The architecture is sound ("Views, Not Modules") but implementation has significant gaps. NOT READY FOR PRODUCTION.
+
+### P0 - Critical (Must Complete Before Production)
+
+| Task ID     | Title                          | Description                                                                                                                                                                                       | Est. Hours |
+| ----------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| TERP-SS-001 | Implement Intake Grid Tab      | Develop `IntakeGrid.tsx` component with AG-Grid configuration, form elements for new rows, and integration with `flowerIntake.processIntake`. Add corresponding tab to `SpreadsheetViewPage.tsx`. | 32h        |
+| TERP-SS-002 | Implement Pick & Pack Grid Tab | Develop `PickPackGrid.tsx` component for managing orders in pick/pack queue. Includes AG-Grid configuration, status updates, and integration with `pickPack` mutations.                           | 40h        |
+
+### P1 - High Priority (Data Accuracy Issues)
+
+| Task ID     | Title                                       | Description                                                                                                                                                                                               | Est. Hours   |
+| ----------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | --- |
+| TERP-SS-003 | Fix Client Grid Vendor/Batch Code Mapping   | Update `spreadsheetViewService.ts` to display `lot.code` or `batch.code` for each item instead of `order.orderNumber`. Requires backend data enrichment via `item.batchId`.                               | 24h          |
+| TERP-SS-004 | Fix Inventory Grid Original Intake Quantity | Modify backend to provide true original intake quantity (not current `onHandQty`). Should remain static even if quantity changes. Query from audit log or add `originalIntakeQty` field. Read-only in UI. | 20h          |
+| TERP-SS-005 | Display Payment Amounts in Client Grid      | Enhance `ClientGridRow` to include specific payment amount from `cashPayment` for display in "In" column. Add `paymentAmount: number                                                                      | null` field. | 16h |
+
+### P2 - Medium Priority (UX Fidelity)
+
+| Task ID     | Title                                         | Description                                                                                                                               | Est. Hours |
+| ----------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| TERP-SS-006 | Implement Visual Cues (Color Coding)          | Develop custom cell renderers for batch status colors (orange/tan for "C", cyan/teal for "Ofc") and green highlighting for payments.      | 24h        |
+| TERP-SS-007 | Complete Client Grid Summary Calculations     | Implement aggregation logic for `total`, `balance`, `yearToDate` in `getClientGridData`. Display prominently in `ClientGrid.tsx`.         | 12h        |
+| TERP-SS-008 | Configure Inventory Grid Date/Vendor Grouping | Implement AG-Grid row grouping for `lotDate` and `vendorCode` as hierarchical headers matching user's spreadsheet structure.              | 16h        |
+| TERP-SS-009 | Add Editing Capabilities to Inventory Grid    | Implement editable cells for Available, Ticket, Notes columns with `inventory.updateBatch` and `inventory.updateBatchStatus` integration. | 28h        |
+
+### P3 - Low Priority (Polish)
+
+| Task ID     | Title                                       | Description                                                              | Est. Hours |
+| ----------- | ------------------------------------------- | ------------------------------------------------------------------------ | ---------- |
+| TERP-SS-010 | Standardize Source/Brand/Vendor Terminology | Align terminology across UI, documentation, and data models for clarity. | 4h         |
+
+### Spreadsheet View Effort Summary
+
+| Priority      | Count  | Total Hours |
+| ------------- | ------ | ----------- |
+| P0 (Critical) | 2      | 72h         |
+| P1 (High)     | 3      | 60h         |
+| P2 (Medium)   | 4      | 80h         |
+| P3 (Low)      | 1      | 4h          |
+| **Total**     | **10** | **216h**    |
+
+**Status:** NOT READY FOR PRODUCTION - P0 and P1 tasks (132h) must be completed first.
