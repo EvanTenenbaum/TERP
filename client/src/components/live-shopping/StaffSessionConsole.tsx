@@ -13,6 +13,7 @@
 
 import React, { useState, useCallback } from "react";
 import { trpc } from "../../lib/trpc";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
 
@@ -47,6 +48,12 @@ const STATUS_CONFIG = {
 export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
   sessionId,
 }) => {
+  // BUG-007: State for confirmation dialogs (replaces window.confirm)
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState<number | null>(null);
+  const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false);
+  const [convertToOrderOnEnd, setConvertToOrderOnEnd] = useState(false);
+
   // Queries
   const { data: session, isLoading: sessionLoading } = trpc.liveShopping.getSession.useQuery(
     { sessionId },
@@ -102,37 +109,47 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
     [sessionId, highlightMutation]
   );
 
+  // BUG-007: Show confirm dialog instead of window.confirm
   const handleRemove = useCallback(
     (cartItemId: number) => {
-      if (confirm("Remove this item from the session?")) {
-        removeItemMutation.mutate({ sessionId, cartItemId });
-      }
+      setItemToRemove(cartItemId);
+      setRemoveDialogOpen(true);
     },
-    [sessionId, removeItemMutation]
+    []
   );
 
+  // BUG-007: Actual remove action after confirmation
+  const confirmRemoveItem = useCallback(() => {
+    if (itemToRemove !== null) {
+      removeItemMutation.mutate({ sessionId, cartItemId: itemToRemove });
+    }
+    setItemToRemove(null);
+  }, [sessionId, itemToRemove, removeItemMutation]);
+
+  // BUG-007: Show confirm dialog instead of window.confirm
   const handleEndSession = useCallback(
     (convertToOrder: boolean) => {
-      const message = convertToOrder
-        ? "Convert session to order?"
-        : "End session without creating an order?";
-      if (confirm(message)) {
-        endSessionMutation.mutate(
-          { sessionId, convertToOrder },
-          {
-            onSuccess: (data) => {
-              if ('orderId' in data && data.orderId) {
-                alert(`Order #${data.orderId} created successfully!`);
-              } else {
-                alert("Session ended.");
-              }
-            },
-          }
-        );
-      }
+      setConvertToOrderOnEnd(convertToOrder);
+      setEndSessionDialogOpen(true);
     },
-    [sessionId, endSessionMutation]
+    []
   );
+
+  // BUG-007: Actual end session action after confirmation
+  const confirmEndSession = useCallback(() => {
+    endSessionMutation.mutate(
+      { sessionId, convertToOrder: convertToOrderOnEnd },
+      {
+        onSuccess: (data) => {
+          if ('orderId' in data && data.orderId) {
+            globalThis.alert(`Order #${data.orderId} created successfully!`);
+          } else {
+            globalThis.alert("Session ended.");
+          }
+        },
+      }
+    );
+  }, [sessionId, convertToOrderOnEnd, endSessionMutation]);
 
   if (sessionLoading || !session) {
     return (
@@ -249,6 +266,34 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
           />
         </div>
       </div>
+
+      {/* BUG-007: Remove Item Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={removeDialogOpen}
+        onOpenChange={setRemoveDialogOpen}
+        title="Remove Item"
+        description="Are you sure you want to remove this item from the session?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={confirmRemoveItem}
+        isLoading={removeItemMutation.isPending}
+      />
+
+      {/* BUG-007: End Session Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={endSessionDialogOpen}
+        onOpenChange={setEndSessionDialogOpen}
+        title={convertToOrderOnEnd ? "Convert to Order" : "End Session"}
+        description={
+          convertToOrderOnEnd
+            ? "Are you sure you want to convert this session to an order?"
+            : "Are you sure you want to end this session without creating an order?"
+        }
+        confirmLabel={convertToOrderOnEnd ? "Convert to Order" : "End Session"}
+        variant={convertToOrderOnEnd ? "default" : "destructive"}
+        onConfirm={confirmEndSession}
+        isLoading={endSessionMutation.isPending}
+      />
     </div>
   );
 };
@@ -327,7 +372,7 @@ interface StaffItemCardProps {
 
 const StaffItemCard: React.FC<StaffItemCardProps> = ({
   item,
-  currentStatus,
+  currentStatus: _currentStatus,
   otherStatuses,
   onStatusChange,
   onPriceChange,

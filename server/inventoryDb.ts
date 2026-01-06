@@ -1354,42 +1354,47 @@ export async function createStrain(data: {
 /**
  * Get comprehensive dashboard statistics for inventory
  * Includes inventory value, stock levels by category/subcategory, and status counts
+ *
+ * PERF-004: Refactored to use SQL aggregation instead of in-memory calculation
+ * This significantly improves performance as inventory grows, moving computation
+ * from JavaScript to the database engine.
  */
 /**
  * Get dashboard statistics with caching
  * ✅ ENHANCED: TERP-INIT-005 Phase 4 - Caching for dashboard stats
+ * ✅ PERF-004: SQL aggregation for improved performance
  */
 export async function getDashboardStats() {
+  const startTime = Date.now();
+
   return await cache.getOrSet(
     CacheKeys.dashboardStats(),
     async () => {
       const db = await getDb();
       if (!db) return null;
 
-      // Get all batches with product details for calculations
-      const allBatches = await db
+      // PERF-004: Use SQL aggregation instead of fetching all batches
+      // Query 1: Get totals using SQL SUM aggregation
+      const [totalsResult] = await db
         .select({
-          batchId: batches.id,
-          batchStatus: batches.batchStatus,
-          onHandQty: batches.onHandQty,
-          unitCogs: batches.unitCogs,
-          category: products.category,
-          subcategory: products.subcategory,
+          totalUnits: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`,
+          totalValue: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`,
+        })
+        .from(batches);
+
+      const totalUnits = parseFloat(totalsResult?.totalUnits || "0");
+      const totalInventoryValue = parseFloat(totalsResult?.totalValue || "0");
+
+      // Query 2: Get status counts using SQL COUNT with GROUP BY
+      const statusCountsResult = await db
+        .select({
+          status: batches.batchStatus,
+          count: sql<number>`COUNT(*)`,
         })
         .from(batches)
-        .leftJoin(products, eq(batches.productId, products.id));
+        .groupBy(batches.batchStatus);
 
-      // Calculate total inventory value
-      let totalInventoryValue = 0;
-      let totalUnits = 0;
-      const categoryBreakdown: Record<
-        string,
-        { units: number; value: number }
-      > = {};
-      const subcategoryBreakdown: Record<
-        string,
-        { units: number; value: number }
-      > = {};
+      // Build status counts object with defaults
       const statusCounts: Record<string, number> = {
         AWAITING_INTAKE: 0,
         LIVE: 0,
@@ -1399,60 +1404,56 @@ export async function getDashboardStats() {
         CLOSED: 0,
       };
 
-      for (const batch of allBatches) {
-        const qty = parseFloat(batch.onHandQty);
-        const cogs = parseFloat(batch.unitCogs || "0");
-        const value = qty * cogs;
-
-        // Total inventory value
-        totalInventoryValue += value;
-        totalUnits += qty;
-
-        // Status counts
-        if (
-          batch.batchStatus &&
-          Object.prototype.hasOwnProperty.call(statusCounts, batch.batchStatus)
-        ) {
-          statusCounts[batch.batchStatus]++;
+      for (const row of statusCountsResult) {
+        if (row.status && row.status in statusCounts) {
+          statusCounts[row.status] = Number(row.count);
         }
-
-        // Category breakdown
-        const category = batch.category || "Uncategorized";
-        if (!categoryBreakdown[category]) {
-          categoryBreakdown[category] = { units: 0, value: 0 };
-        }
-        categoryBreakdown[category].units += qty;
-        categoryBreakdown[category].value += value;
-
-        // Subcategory breakdown
-        const subcategory = batch.subcategory || "None";
-        if (!subcategoryBreakdown[subcategory]) {
-          subcategoryBreakdown[subcategory] = { units: 0, value: 0 };
-        }
-        subcategoryBreakdown[subcategory].units += qty;
-        subcategoryBreakdown[subcategory].value += value;
       }
+
+      // Query 3: Get category breakdown using SQL SUM with GROUP BY
+      const categoryStatsResult = await db
+        .select({
+          name: sql<string>`COALESCE(${products.category}, 'Uncategorized')`,
+          units: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`,
+          value: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .groupBy(products.category)
+        .orderBy(sql`value DESC`);
+
+      // Query 4: Get subcategory breakdown using SQL SUM with GROUP BY
+      const subcategoryStatsResult = await db
+        .select({
+          name: sql<string>`COALESCE(${products.subcategory}, 'None')`,
+          units: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2))), 0)`,
+          value: sql<string>`COALESCE(SUM(CAST(${batches.onHandQty} AS DECIMAL(20,2)) * CAST(COALESCE(${batches.unitCogs}, '0') AS DECIMAL(20,2))), 0)`,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .groupBy(products.subcategory)
+        .orderBy(sql`value DESC`);
+
+      // Transform results to match expected format
+      const categoryStats = categoryStatsResult.map(row => ({
+        name: row.name,
+        units: parseFloat(row.units),
+        value: parseFloat(row.value),
+      }));
+
+      const subcategoryStats = subcategoryStatsResult.map(row => ({
+        name: row.name,
+        units: parseFloat(row.units),
+        value: parseFloat(row.value),
+      }));
 
       // Calculate average value per unit
       const avgValuePerUnit =
         totalUnits > 0 ? totalInventoryValue / totalUnits : 0;
 
-      // Convert breakdowns to arrays and sort by value (descending)
-      const categoryStats = Object.entries(categoryBreakdown)
-        .map(([name, data]) => ({
-          name,
-          units: data.units,
-          value: data.value,
-        }))
-        .sort((a, b) => b.value - a.value);
-
-      const subcategoryStats = Object.entries(subcategoryBreakdown)
-        .map(([name, data]) => ({
-          name,
-          units: data.units,
-          value: data.value,
-        }))
-        .sort((a, b) => b.value - a.value);
+      // PERF-004: Log performance improvement
+      const duration = Date.now() - startTime;
+      console.info(`[PERF-004] getDashboardStats completed in ${duration}ms (SQL aggregation)`);
 
       return {
         totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,

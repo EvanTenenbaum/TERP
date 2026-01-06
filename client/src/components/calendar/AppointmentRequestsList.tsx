@@ -1,6 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Check, X, Clock, Calendar, User, ChevronRight } from "lucide-react";
 import { trpc } from "../../lib/trpc";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface AppointmentRequest {
   id: number;
@@ -28,6 +29,10 @@ export default function AppointmentRequestsList({
 }: AppointmentRequestsListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("pending");
 
+  // BUG-007: State for approve confirmation dialog (replaces window.confirm)
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [requestToApprove, setRequestToApprove] = useState<number | null>(null);
+
   const { data, isLoading, refetch } = trpc.appointmentRequests.list.useQuery({
     status: statusFilter as "pending" | "approved" | "rejected" | "cancelled",
     limit: 50,
@@ -43,16 +48,24 @@ export default function AppointmentRequestsList({
     onSuccess: () => refetch(),
   });
 
-  const handleQuickApprove = async (e: React.MouseEvent, requestId: number) => {
+  // BUG-007: Show confirm dialog instead of window.confirm
+  const handleQuickApprove = (e: React.MouseEvent, requestId: number) => {
     e.stopPropagation();
-    if (confirm("Approve this appointment request?")) {
-      await approveMutation.mutateAsync({ requestId });
+    setRequestToApprove(requestId);
+    setApproveDialogOpen(true);
+  };
+
+  // BUG-007: Actual approve action after confirmation
+  const confirmApprove = async () => {
+    if (requestToApprove !== null) {
+      await approveMutation.mutateAsync({ requestId: requestToApprove });
     }
+    setRequestToApprove(null);
   };
 
   const handleQuickReject = async (e: React.MouseEvent, requestId: number) => {
     e.stopPropagation();
-    const reason = prompt("Enter a reason for rejection:");
+    const reason = globalThis.prompt("Enter a reason for rejection:");
     if (reason) {
       await rejectMutation.mutateAsync({ requestId, responseNotes: reason });
     }
@@ -211,6 +224,18 @@ export default function AppointmentRequestsList({
           Showing {data.requests.length} of {data.total} requests
         </p>
       )}
+
+      {/* BUG-007: Approve Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={approveDialogOpen}
+        onOpenChange={setApproveDialogOpen}
+        title="Approve Request"
+        description="Are you sure you want to approve this appointment request?"
+        confirmLabel="Approve"
+        variant="default"
+        onConfirm={confirmApprove}
+        isLoading={approveMutation.isPending}
+      />
     </div>
   );
 }

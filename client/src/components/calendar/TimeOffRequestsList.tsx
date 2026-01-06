@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus, Check, X, Calendar, Clock, User, Trash2 } from "lucide-react";
 import { trpc } from "../../lib/trpc";
 import TimeOffRequestForm from "./TimeOffRequestForm";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface TimeOffRequest {
   id: number;
@@ -39,6 +40,11 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
 
+  // BUG-007: State for confirmation dialogs (replaces window.confirm)
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [requestToHandle, setRequestToHandle] = useState<number | null>(null);
+
   const { data, isLoading, refetch } = trpc.timeOffRequests.list.useQuery({
     status: statusFilter as "pending" | "approved" | "rejected",
     limit: 50,
@@ -62,23 +68,39 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
     onSuccess: () => refetch(),
   });
 
-  const handleApprove = async (requestId: number) => {
-    if (confirm("Approve this time-off request?")) {
-      await approveMutation.mutateAsync({ requestId });
+  // BUG-007: Show confirm dialog instead of window.confirm
+  const handleApprove = (requestId: number) => {
+    setRequestToHandle(requestId);
+    setApproveDialogOpen(true);
+  };
+
+  // BUG-007: Actual approve action after confirmation
+  const confirmApprove = async () => {
+    if (requestToHandle !== null) {
+      await approveMutation.mutateAsync({ requestId: requestToHandle });
     }
+    setRequestToHandle(null);
   };
 
   const handleReject = async (requestId: number) => {
-    const reason = prompt("Enter a reason for rejection:");
+    const reason = globalThis.prompt("Enter a reason for rejection:");
     if (reason) {
       await rejectMutation.mutateAsync({ requestId, responseNotes: reason });
     }
   };
 
-  const handleCancel = async (requestId: number) => {
-    if (confirm("Cancel this time-off request?")) {
-      await cancelMutation.mutateAsync({ requestId });
+  // BUG-007: Show confirm dialog instead of window.confirm
+  const handleCancel = (requestId: number) => {
+    setRequestToHandle(requestId);
+    setCancelDialogOpen(true);
+  };
+
+  // BUG-007: Actual cancel action after confirmation
+  const confirmCancel = async () => {
+    if (requestToHandle !== null) {
+      await cancelMutation.mutateAsync({ requestId: requestToHandle });
     }
+    setRequestToHandle(null);
   };
 
   const formatDate = (date: Date | string) => {
@@ -294,6 +316,30 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSubmitted={() => refetch()}
+      />
+
+      {/* BUG-007: Approve Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={approveDialogOpen}
+        onOpenChange={setApproveDialogOpen}
+        title="Approve Request"
+        description="Are you sure you want to approve this time-off request?"
+        confirmLabel="Approve"
+        variant="default"
+        onConfirm={confirmApprove}
+        isLoading={approveMutation.isPending}
+      />
+
+      {/* BUG-007: Cancel Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={cancelDialogOpen}
+        onOpenChange={setCancelDialogOpen}
+        title="Cancel Request"
+        description="Are you sure you want to cancel this time-off request?"
+        confirmLabel="Cancel Request"
+        variant="destructive"
+        onConfirm={confirmCancel}
+        isLoading={cancelMutation.isPending}
       />
     </div>
   );
