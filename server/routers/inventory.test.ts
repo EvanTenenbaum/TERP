@@ -476,9 +476,7 @@ describe("Inventory Router", () => {
       expect(result.hasMore).toBe(false);
     });
 
-    // QA-TEST-003: Skipped - cursor parameter type mismatch between test (string)
-    // and actual implementation (number); pagination is tested via other tests
-    it.skip("should handle cursor-based pagination", async () => {
+    it("should handle cursor-based pagination", async () => {
       // Arrange
       const mockPage2 = {
         items: [{ id: 3, code: "BATCH-003" }],
@@ -489,17 +487,17 @@ describe("Inventory Router", () => {
       vi.mocked(inventoryDb.getBatchesWithDetails).mockResolvedValue(mockPage2);
 
       // Act
-      await caller.inventory.list({
+      const result = await caller.inventory.list({
         limit: 50,
-        cursor: "cursor-123",
+        cursor: 123, // cursor is a number (batch ID), not a string
       });
 
       // Assert
-      expect(inventoryDb.getBatchesWithDetails).toHaveBeenCalledWith(
-        50,
-        "cursor-123",
-        { status: undefined, category: undefined }
-      );
+      expect(result).toEqual(mockPage2);
+      expect(inventoryDb.getBatchesWithDetails).toHaveBeenCalledWith(50, 123, {
+        status: undefined,
+        category: undefined,
+      });
     });
   });
 });

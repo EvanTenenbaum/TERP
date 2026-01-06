@@ -19,13 +19,11 @@ vi.mock("../services/permissionService", () => setupPermissionMock());
 
 // Mock the database modules
 vi.mock("../clientsDb");
-vi.mock("../transactionsDb");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
 import { db as _db } from "../db";
 import * as clientsDb from "../clientsDb";
-import * as transactionsDb from "../transactionsDb";
 
 // Mock user for authenticated requests
 const mockUser = {
@@ -392,54 +390,9 @@ describe("Clients Router", () => {
     });
   });
 
-  describe("transactions.list", () => {
-    // QA-TEST-003: Skipped - transactions sub-router is not exposed on clients router;
-    // transactions are accessed via separate financials/transactions router
-    it.skip("should retrieve client transactions", async () => {
-      // Arrange
-      const mockTransactions = [
-        { id: 1, clientId: 1, amount: "100.00", type: "PAYMENT" },
-        { id: 2, clientId: 1, amount: "50.00", type: "CREDIT" },
-      ];
-
-      vi.mocked(transactionsDb.getClientTransactions).mockResolvedValue(
-        mockTransactions
-      );
-
-      // Act
-      const result = await caller.clients.transactions.list({ clientId: 1 });
-
-      // Assert
-      expect(result).toHaveLength(2);
-      expect(transactionsDb.getClientTransactions).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ limit: 50 })
-      );
-    });
-
-    // QA-TEST-003: Skipped - transactions sub-router is not exposed on clients router
-    it.skip("should support pagination for transactions", async () => {
-      // Arrange
-      const mockTransactions = [{ id: 11, clientId: 1, amount: "100.00" }];
-
-      vi.mocked(transactionsDb.getClientTransactions).mockResolvedValue(
-        mockTransactions
-      );
-
-      // Act
-      await caller.clients.transactions.list({
-        clientId: 1,
-        limit: 10,
-        offset: 10,
-      });
-
-      // Assert
-      expect(transactionsDb.getClientTransactions).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ limit: 10, offset: 10 })
-      );
-    });
-  });
+  // NOTE: Removed tests for "transactions.list" sub-router.
+  // The transactions sub-router is not exposed on the clients router.
+  // Client transactions are accessed via the separate financials/transactions router.;
 
   describe("Edge Cases", () => {
     it("should handle empty client list", async () => {

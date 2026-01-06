@@ -86,13 +86,9 @@ describe("dataProvider", () => {
     });
   });
 
-  describe("query", () => {
-    it.skip("should expose query builder (query not part of DataProvider interface)", () => {
-      // Note: The DataProvider interface doesn't include a query property.
-      // This test was invalid - the interface provides getUser/getUserByEmail methods instead.
-      // If query builder access is needed, it should be added to the DataProvider interface first.
-    });
-  });
+  // NOTE: Removed invalid test "should expose query builder"
+  // The DataProvider interface doesn't include a query property -
+  // it provides getUser/getUserByEmail methods instead.
 
   describe("getProvider", () => {
     it("should return the current provider name", () => {
