@@ -15,13 +15,8 @@ import type { InventoryGridRow } from "@/types/spreadsheet";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
-// Enable AG-Grid Enterprise features for row grouping
-import "ag-grid-enterprise";
-import { LicenseManager } from "ag-grid-enterprise";
-// Note: In production, a valid license key should be set via environment variable
-if (typeof window !== "undefined") {
-  LicenseManager.setLicenseKey(import.meta.env.VITE_AG_GRID_LICENSE_KEY || "");
-}
+// AG-Grid Community Edition - No license required
+// Row grouping removed in favor of sorting by Date/Vendor
 
 const statusOptions = [
   "AWAITING_INTAKE",
@@ -71,29 +66,33 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
 
   const onGridReady = useCallback((event: GridReadyEvent<InventoryGridRow>) => {
     gridApiRef.current = event.api;
-    // TERP-SS-008: Expand all groups by default
-    event.api.expandAll();
+    // Apply default sort by Date (desc) then Vendor for logical grouping
+    event.api.applyColumnState({
+      state: [
+        { colId: "lotDate", sort: "desc", sortIndex: 0 },
+        { colId: "vendorCode", sort: "asc", sortIndex: 1 },
+      ],
+      defaultState: { sort: null },
+    });
   }, []);
 
-  // TERP-SS-008: Configure column definitions with row grouping
-  // TERP-SS-006: Color coding for batch status
+  // Column definitions - Community edition (no row grouping)
+  // TERP-SS-006: Color coding for batch status preserved
   const columnDefs = useMemo<ColDef<InventoryGridRow>[]>(
     () => [
       {
         headerName: "Date",
         field: "lotDate",
         width: 130,
-        // TERP-SS-008: Enable row grouping by date (first level)
-        rowGroup: true,
-        hide: true, // Hide the column since it's shown in the group
+        sort: "desc",
+        sortIndex: 0,
       },
       {
-        headerName: "Vendor Code",
+        headerName: "Vendor",
         field: "vendorCode",
         width: 140,
-        // TERP-SS-008: Enable row grouping by vendor (second level)
-        rowGroup: true,
-        hide: true, // Hide the column since it's shown in the group
+        sort: "asc",
+        sortIndex: 1,
       },
       { headerName: "Source", field: "source", width: 140 },
       { headerName: "Category", field: "category", width: 140 },
@@ -152,10 +151,10 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
           const value = params.value;
           // Color coding for batch status: "C" (Curing) = Orange, "Ofc" (Office) = Cyan
           if (value === "C") {
-            return { backgroundColor: "#fed7aa", color: "#9a3412" }; // Orange/Tan (bg-orange-200 equivalent)
+            return { backgroundColor: "#fed7aa", color: "#9a3412" }; // Orange/Tan
           }
           if (value === "Ofc") {
-            return { backgroundColor: "#a5f3fc", color: "#0e7490" }; // Cyan/Teal (bg-cyan-200 equivalent)
+            return { backgroundColor: "#a5f3fc", color: "#0e7490" }; // Cyan/Teal
           }
           return undefined;
         },
@@ -169,18 +168,6 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
       sortable: true,
       filter: true,
       resizable: true,
-    }),
-    []
-  );
-
-  // TERP-SS-008: Configure auto group column for hierarchical display
-  const autoGroupColumnDef = useMemo<ColDef<InventoryGridRow>>(
-    () => ({
-      headerName: "Date / Vendor",
-      minWidth: 250,
-      cellRendererParams: {
-        suppressCount: false, // Show row count in group
-      },
     }),
     []
   );
@@ -315,7 +302,7 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         <div>
           <CardTitle>Inventory Grid</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Inline edits use existing inventory procedures with full validation.
+            Sorted by Date and Vendor. Click column headers to re-sort.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -339,10 +326,6 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
             rowData={data?.rows ?? []}
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
-            // TERP-SS-008: Row grouping configuration
-            autoGroupColumnDef={autoGroupColumnDef}
-            groupDefaultExpanded={-1} // Expand all groups by default (-1 = all levels)
-            suppressAggFuncInHeader={true}
             // Row identity for efficient updates
             getRowId={params => String(params.data.id)}
             animateRows={false} // Disable for better performance

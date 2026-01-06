@@ -160,9 +160,6 @@ importers:
       ag-grid-community:
         specifier: ^35.0.0
         version: 35.0.0
-      ag-grid-enterprise:
-        specifier: '35'
-        version: 35.0.0
       ag-grid-react:
         specifier: ^35.0.0
         version: 35.0.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -3226,26 +3223,11 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  ag-charts-community@13.0.0:
-    resolution: {integrity: sha512-zIBokGrkvpySdksjCFVC/gOrtQSFeJ8j8n1WT7XV4UW1qvEeBIlme6Ng0srWS0HaACwNg9hn9WDEhnBDldbRTg==}
-
-  ag-charts-core@13.0.0:
-    resolution: {integrity: sha512-OFN6aDhKDKzez8sSN1NEO/j/rNa0C5G/9EH5FkNFdVh4T96Ul19xpyZupZZl4kTvENN+ayGwRU6Ui8zau71Rog==}
-
-  ag-charts-enterprise@13.0.0:
-    resolution: {integrity: sha512-xIpXHD6jQ/7quDdogINV7yhVdcH2Pkwxe/xIzgOlffJcIEnPuKftlSMmZ3ybuDUnbgZqAwdH22IoGqqQTVpM5w==}
-
-  ag-charts-locale@13.0.0:
-    resolution: {integrity: sha512-QUJsinNJIQgtaOiz+DvnCPynux3UwYrk9TIdXl0x3dH9OjSWPrF38cshDD7CZ8qJVR4YJloRyJ1aWGYOUBipUQ==}
-
   ag-charts-types@13.0.0:
     resolution: {integrity: sha512-mqOmKS0q4s2tt/C+CBG2Z+HWrSKYvRUCAlQzcKXKfARE3v/KdnBuxfjafa2c8ivElTTywdVdOe0q52Cow2Oggw==}
 
   ag-grid-community@35.0.0:
     resolution: {integrity: sha512-Cz3MA98zZygPwvCi8OKIhP0nea+YXdx8r5MwIXqVqnQwb/BEL05nGxwovIpelL6spv3jNlHQrTVgt4lw9J+nyg==}
-
-  ag-grid-enterprise@35.0.0:
-    resolution: {integrity: sha512-mCL2PIzTFU60uF+RrQBdLHmgOamwIgmxsJJdDs86xdROBykyyAclUMdMMhIl5ywHRI27VpN9GbaME9mNCU6jEQ==}
 
   ag-grid-react@35.0.0:
     resolution: {integrity: sha512-ZmAjDnLONYja3IazKnMsqWZ8ZsJNTOTVQQX2tXNEkDHTMlVqIkDrcVU2f/o8awJhLCZhOMh7bE1YmYG/yHZLOg==}
@@ -9124,39 +9106,11 @@ snapshots:
 
   acorn@8.15.0: {}
 
-  ag-charts-community@13.0.0:
-    dependencies:
-      ag-charts-core: 13.0.0
-      ag-charts-locale: 13.0.0
-      ag-charts-types: 13.0.0
-    optional: true
-
-  ag-charts-core@13.0.0:
-    dependencies:
-      ag-charts-types: 13.0.0
-    optional: true
-
-  ag-charts-enterprise@13.0.0:
-    dependencies:
-      ag-charts-community: 13.0.0
-      ag-charts-core: 13.0.0
-    optional: true
-
-  ag-charts-locale@13.0.0:
-    optional: true
-
   ag-charts-types@13.0.0: {}
 
   ag-grid-community@35.0.0:
     dependencies:
       ag-charts-types: 13.0.0
-
-  ag-grid-enterprise@35.0.0:
-    dependencies:
-      ag-grid-community: 35.0.0
-    optionalDependencies:
-      ag-charts-community: 13.0.0
-      ag-charts-enterprise: 13.0.0
 
   ag-grid-react@35.0.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
