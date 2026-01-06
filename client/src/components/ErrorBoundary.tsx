@@ -3,6 +3,15 @@ import { AlertTriangle, RotateCcw } from "lucide-react";
 import { Component, ReactNode } from "react";
 import * as Sentry from "@sentry/react";
 
+// Helper to check if Sentry is available and initialized
+function isSentryAvailable(): boolean {
+  try {
+    return typeof Sentry?.captureException === 'function';
+  } catch {
+    return false;
+  }
+}
+
 interface Props {
   children: ReactNode;
   /** Variant: 'full' for page-level, 'compact' for component-level */
@@ -31,21 +40,24 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error to Sentry with component context
-    try {
-      Sentry.withScope((scope) => {
-        scope.setContext("errorInfo", {
-          componentStack: errorInfo.componentStack,
-          componentName: this.props.name,
+    // CRITICAL: Check Sentry availability first to prevent crashes
+    if (isSentryAvailable()) {
+      try {
+        Sentry.withScope((scope) => {
+          scope.setContext("errorInfo", {
+            componentStack: errorInfo.componentStack,
+            componentName: this.props.name,
+          });
+          if (this.props.name) {
+            scope.setTag("component", this.props.name);
+          }
+          const eventId = Sentry.captureException(error);
+          this.setState({ eventId });
         });
-        if (this.props.name) {
-          scope.setTag("component", this.props.name);
-        }
-        const eventId = Sentry.captureException(error);
-        this.setState({ eventId });
-      });
-    } catch (sentryError) {
-      // Sentry failed - log but don't block
-      console.warn("Failed to report error to Sentry:", sentryError);
+      } catch (sentryError) {
+        // Sentry failed - log but don't block
+        console.warn("Failed to report error to Sentry:", sentryError);
+      }
     }
 
     // Also log to console in development
