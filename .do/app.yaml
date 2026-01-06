@@ -48,6 +48,13 @@ services:
       - key: UPLOAD_DIR
         value: /tmp/uploads
       
+      # Memory limit for the application (in bytes)
+      # basic-xs (512MB): 384000000 (384MB)
+      # basic-s (1GB): 768000000 (768MB)
+      # basic-m (2GB): 1536000000 (1.5GB)
+      - key: NODE_MEMORY_LIMIT
+        value: "384000000"
+      
       # Vite frontend environment variables (required for build)
       - key: VITE_APP_TITLE
         value: TERP
