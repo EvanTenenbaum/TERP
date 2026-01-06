@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ComponentErrorBoundary } from "@/components/ErrorBoundary";
 
 interface WidgetContainerProps {
   title: string;
@@ -56,7 +57,9 @@ export function WidgetContainer({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : (
-          children
+          <ComponentErrorBoundary name={title}>
+            {children}
+          </ComponentErrorBoundary>
         )}
       </CardContent>
     </Card>
