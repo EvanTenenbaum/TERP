@@ -23,7 +23,7 @@ vi.mock("../transactionsDb");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db } from "../db";
+import { db as _db } from "../db";
 import * as clientsDb from "../clientsDb";
 import * as transactionsDb from "../transactionsDb";
 
@@ -393,6 +393,8 @@ describe("Clients Router", () => {
   });
 
   describe("transactions.list", () => {
+    // QA-TEST-003: Skipped - transactions sub-router is not exposed on clients router;
+    // transactions are accessed via separate financials/transactions router
     it.skip("should retrieve client transactions", async () => {
       // Arrange
       const mockTransactions = [
@@ -415,6 +417,7 @@ describe("Clients Router", () => {
       );
     });
 
+    // QA-TEST-003: Skipped - transactions sub-router is not exposed on clients router
     it.skip("should support pagination for transactions", async () => {
       // Arrange
       const mockTransactions = [{ id: 11, clientId: 1, amount: "100.00" }];

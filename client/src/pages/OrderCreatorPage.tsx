@@ -5,10 +5,11 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { useDebounceCallback } from "@/hooks/useDebounceCallback";
 import {
   Card,
   CardContent,
@@ -28,7 +29,15 @@ import {
 import { ClientCombobox } from "@/components/ui/client-combobox";
 
 import { toast } from "sonner";
-import { ShoppingCart, Save, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  ShoppingCart,
+  Save,
+  CheckCircle,
+  AlertCircle,
+  Cloud,
+  CloudOff,
+  Loader2,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 
 // Import new v2 components
@@ -82,9 +91,11 @@ export default function OrderCreatorPageV2() {
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
   // CHAOS-007: Unsaved changes warning
-  const { setHasUnsavedChanges, ConfirmNavigationDialog } = useUnsavedChangesWarning({
-    message: "You have unsaved order changes. Are you sure you want to leave?",
-  });
+  const { setHasUnsavedChanges, ConfirmNavigationDialog } =
+    useUnsavedChangesWarning({
+      message:
+        "You have unsaved order changes. Are you sure you want to leave?",
+    });
 
   // Track unsaved changes - any items mean there's work in progress
   useEffect(() => {
@@ -103,6 +114,14 @@ export default function OrderCreatorPageV2() {
   const [referredByClientId, setReferredByClientId] = useState<number | null>(
     null
   );
+
+  // CHAOS-025: Auto-save state
+  type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
+  const [_lastSavedDraftId, setLastSavedDraftId] = useState<number | null>(
+    null
+  );
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Queries - handle paginated response
   const { data: clientsData, isLoading: clientsLoading } =
@@ -168,6 +187,81 @@ export default function OrderCreatorPageV2() {
 
   // Credit check mutation
   const creditCheckMutation = trpc.credit.checkOrderCredit.useMutation();
+
+  // CHAOS-025: Auto-save mutation (silent, no toast notifications)
+  const autoSaveMutation = trpc.orders.createDraftEnhanced.useMutation({
+    onSuccess: data => {
+      setLastSavedDraftId(data.orderId);
+      setAutoSaveStatus("saved");
+      // Clear the "saved" indicator after 3 seconds
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        setAutoSaveStatus("idle");
+      }, 3000);
+    },
+    onError: () => {
+      setAutoSaveStatus("error");
+    },
+  });
+
+  // CHAOS-025: Debounced auto-save callback (2 second delay)
+  const performAutoSave = useCallback(() => {
+    if (!clientId || items.length === 0) {
+      return;
+    }
+
+    setAutoSaveStatus("saving");
+    autoSaveMutation.mutate({
+      orderType,
+      clientId,
+      lineItems: items.map(item => ({
+        batchId: item.batchId,
+        quantity: item.quantity,
+        cogsPerUnit: item.cogsPerUnit,
+        isCogsOverridden: item.isCogsOverridden,
+        cogsOverrideReason: item.cogsOverrideReason,
+        marginPercent: item.marginPercent,
+        isMarginOverridden: item.isMarginOverridden,
+        marginSource: item.marginSource,
+      })),
+      orderLevelAdjustment: adjustment || undefined,
+      showAdjustmentOnDocument,
+    });
+  }, [
+    clientId,
+    items,
+    orderType,
+    adjustment,
+    showAdjustmentOnDocument,
+    autoSaveMutation,
+  ]);
+
+  const debouncedAutoSave = useDebounceCallback(performAutoSave, 2000);
+
+  // CHAOS-025: Trigger auto-save when order state changes
+  useEffect(() => {
+    if (clientId && items.length > 0) {
+      debouncedAutoSave();
+    }
+  }, [
+    clientId,
+    items,
+    orderType,
+    adjustment,
+    showAdjustmentOnDocument,
+    debouncedAutoSave,
+  ]);
+
+  // Cleanup auto-save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handlers
   const handleSaveDraft = () => {
@@ -281,7 +375,7 @@ export default function OrderCreatorPageV2() {
     // Filter out items with invalid or missing IDs to prevent race condition errors
     const validItems = inventoryItems.filter(item => {
       if (!item || item.id === undefined || item.id === null) {
-        console.warn('Skipping item with missing id:', item);
+        console.warn("Skipping item with missing id:", item);
         return false;
       }
       return true;
@@ -308,7 +402,7 @@ export default function OrderCreatorPageV2() {
         marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
         unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number
         lineTotal: calculated.lineTotal || 0, // Ensure lineTotal is always a number
-        productDisplayName: item.name || 'Unknown Product',
+        productDisplayName: item.name || "Unknown Product",
         originalCogsPerUnit: cogsPerUnit,
         isCogsOverridden: false,
         isMarginOverridden: false,
@@ -334,7 +428,9 @@ export default function OrderCreatorPageV2() {
     }
 
     if (newLineItems.length < inventoryItems.length) {
-      toast.warning(`${inventoryItems.length - newLineItems.length} item(s) were skipped due to incomplete data`);
+      toast.warning(
+        `${inventoryItems.length - newLineItems.length} item(s) were skipped due to incomplete data`
+      );
     }
 
     // Filter out items that are already in the order (by batchId)
@@ -369,7 +465,30 @@ export default function OrderCreatorPageV2() {
                 </CardDescription>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-4">
+              {/* CHAOS-025: Auto-save status indicator */}
+              {clientId && items.length > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  {autoSaveStatus === "saving" && (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  )}
+                  {autoSaveStatus === "saved" && (
+                    <>
+                      <Cloud className="h-4 w-4 text-green-600" />
+                      <span className="text-green-600">Draft saved</span>
+                    </>
+                  )}
+                  {autoSaveStatus === "error" && (
+                    <>
+                      <CloudOff className="h-4 w-4 text-destructive" />
+                      <span className="text-destructive">Auto-save failed</span>
+                    </>
+                  )}
+                </div>
+              )}
               <Select
                 value={orderType}
                 onValueChange={value => setOrderType(value as "QUOTE" | "SALE")}

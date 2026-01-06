@@ -26,7 +26,7 @@ vi.mock("../cashExpensesDb");
 
 import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
-import { db } from "../db";
+import { db as _db } from "../db";
 import * as accountingDb from "../accountingDb";
 import * as arApDb from "../arApDb";
 import * as cashExpensesDb from "../cashExpensesDb";
@@ -243,6 +243,8 @@ describe("Accounting Router", () => {
 
   describe("AR/AP", () => {
     describe("arAp.getArSummary", () => {
+      // QA-TEST-003: Skipped - getArSummary is not implemented in arAp sub-router;
+      // AR summary functionality is handled via separate financials endpoints
       it.skip("should retrieve AR summary", async () => {
         // Arrange
         const mockArSummary = {
@@ -265,6 +267,8 @@ describe("Accounting Router", () => {
     });
 
     describe("arAp.getApSummary", () => {
+      // QA-TEST-003: Skipped - getApSummary is not implemented in arAp sub-router;
+      // AP summary functionality is handled via separate financials endpoints
       it.skip("should retrieve AP summary", async () => {
         // Arrange
         const mockApSummary = {
@@ -289,6 +293,8 @@ describe("Accounting Router", () => {
 
   describe("Cash & Expenses", () => {
     describe("cashExpenses.listExpenses", () => {
+      // QA-TEST-003: Skipped - cashExpenses sub-router not yet implemented in accounting router;
+      // expense tracking planned for future accounting module expansion
       it.skip("should list expenses", async () => {
         // Arrange
         const mockExpenses = [
@@ -307,6 +313,8 @@ describe("Accounting Router", () => {
     });
 
     describe("cashExpenses.createExpense", () => {
+      // QA-TEST-003: Skipped - cashExpenses sub-router not yet implemented;
+      // depends on implementation of listExpenses first
       it.skip("should create a new expense", async () => {
         // Arrange
         const input = {
@@ -337,6 +345,8 @@ describe("Accounting Router", () => {
 
   describe("Financial Reports", () => {
     describe("reports.balanceSheet", () => {
+      // QA-TEST-003: Skipped - reports sub-router not yet implemented;
+      // balance sheet generation requires full GL implementation first
       it.skip("should generate balance sheet", async () => {
         // Arrange
         const mockBalanceSheet = {
@@ -360,6 +370,8 @@ describe("Accounting Router", () => {
     });
 
     describe("reports.incomeStatement", () => {
+      // QA-TEST-003: Skipped - reports sub-router not yet implemented;
+      // income statement generation requires full GL implementation first
       it.skip("should generate income statement", async () => {
         // Arrange
         const mockIncomeStatement = {
@@ -419,7 +431,7 @@ describe("Accounting Router", () => {
         fc.property(
           // Generate random status from database enum values
           fc.constantFrom(...DATABASE_INVOICE_STATUSES),
-          (status) => {
+          status => {
             // Property: Zod schema should successfully parse any database enum value
             const result = invoiceStatusSchema.safeParse(status);
             expect(result.success).toBe(true);
@@ -454,10 +466,15 @@ describe("Accounting Router", () => {
       fc.assert(
         fc.property(
           // Generate random strings that are NOT valid statuses
-          fc.string().filter(
-            (s) => !DATABASE_INVOICE_STATUSES.includes(s as typeof DATABASE_INVOICE_STATUSES[number])
-          ),
-          (invalidStatus) => {
+          fc
+            .string()
+            .filter(
+              s =>
+                !DATABASE_INVOICE_STATUSES.includes(
+                  s as (typeof DATABASE_INVOICE_STATUSES)[number]
+                )
+            ),
+          invalidStatus => {
             // Property: Zod schema should reject invalid status values
             const result = invoiceStatusSchema.safeParse(invalidStatus);
             expect(result.success).toBe(false);
@@ -469,21 +486,20 @@ describe("Accounting Router", () => {
 
     it("should handle case sensitivity correctly", () => {
       fc.assert(
-        fc.property(
-          fc.constantFrom(...DATABASE_INVOICE_STATUSES),
-          (status) => {
-            // Property: lowercase versions should be rejected (case-sensitive)
-            const lowercaseResult = invoiceStatusSchema.safeParse(status.toLowerCase());
-            expect(lowercaseResult.success).toBe(false);
+        fc.property(fc.constantFrom(...DATABASE_INVOICE_STATUSES), status => {
+          // Property: lowercase versions should be rejected (case-sensitive)
+          const lowercaseResult = invoiceStatusSchema.safeParse(
+            status.toLowerCase()
+          );
+          expect(lowercaseResult.success).toBe(false);
 
-            // Property: mixed case versions should be rejected
-            const mixedCase = status.charAt(0) + status.slice(1).toLowerCase();
-            if (mixedCase !== status) {
-              const mixedCaseResult = invoiceStatusSchema.safeParse(mixedCase);
-              expect(mixedCaseResult.success).toBe(false);
-            }
+          // Property: mixed case versions should be rejected
+          const mixedCase = status.charAt(0) + status.slice(1).toLowerCase();
+          if (mixedCase !== status) {
+            const mixedCaseResult = invoiceStatusSchema.safeParse(mixedCase);
+            expect(mixedCaseResult.success).toBe(false);
           }
-        ),
+        }),
         { numRuns: 100 }
       );
     });
@@ -507,16 +523,24 @@ describe("Accounting Router", () => {
       "VOID",
     ] as const;
 
-    type BillStatus = typeof BILL_STATUSES[number];
+    type BillStatus = (typeof BILL_STATUSES)[number];
 
     // Generator for mock bills with various statuses
     const billArbitrary = (status: BillStatus) =>
       fc.record({
         id: fc.integer({ min: 1, max: 10000 }),
-        billNumber: fc.string({ minLength: 1, maxLength: 20 }).map(s => `BILL-${s}`),
+        billNumber: fc
+          .string({ minLength: 1, maxLength: 20 })
+          .map(s => `BILL-${s}`),
         vendorId: fc.integer({ min: 1, max: 100 }),
-        billDate: fc.date({ min: new Date("2020-01-01"), max: new Date("2025-12-31") }),
-        dueDate: fc.date({ min: new Date("2020-01-01"), max: new Date("2025-12-31") }),
+        billDate: fc.date({
+          min: new Date("2020-01-01"),
+          max: new Date("2025-12-31"),
+        }),
+        dueDate: fc.date({
+          min: new Date("2020-01-01"),
+          max: new Date("2025-12-31"),
+        }),
         subtotal: fc.float({ min: 0, max: 10000 }).map(n => n.toFixed(2)),
         taxAmount: fc.float({ min: 0, max: 1000 }).map(n => n.toFixed(2)),
         totalAmount: fc.float({ min: 0, max: 11000 }).map(n => n.toFixed(2)),
@@ -528,18 +552,22 @@ describe("Accounting Router", () => {
       });
 
     // Generator for a list of bills with mixed statuses
-    const mixedBillsArbitrary = fc.array(
-      fc.tuple(
-        fc.constantFrom(...BILL_STATUSES),
-        fc.integer({ min: 1, max: 5 })
-      ),
-      { minLength: 1, maxLength: 6 }
-    ).chain(statusCounts => {
-      const billGenerators = statusCounts.flatMap(([status, count]) =>
-        Array(count).fill(null).map(() => billArbitrary(status))
-      );
-      return fc.tuple(...billGenerators);
-    });
+    const mixedBillsArbitrary = fc
+      .array(
+        fc.tuple(
+          fc.constantFrom(...BILL_STATUSES),
+          fc.integer({ min: 1, max: 5 })
+        ),
+        { minLength: 1, maxLength: 6 }
+      )
+      .chain(statusCounts => {
+        const billGenerators = statusCounts.flatMap(([status, count]) =>
+          Array(count)
+            .fill(null)
+            .map(() => billArbitrary(status))
+        );
+        return fc.tuple(...billGenerators);
+      });
 
     it("should return only bills matching the filtered status", () => {
       fc.assert(
@@ -550,7 +578,9 @@ describe("Accounting Router", () => {
           mixedBillsArbitrary,
           (filterStatus, allBills) => {
             // Simulate the filter logic from getBills
-            const filteredBills = allBills.filter(bill => bill.status === filterStatus);
+            const filteredBills = allBills.filter(
+              bill => bill.status === filterStatus
+            );
 
             // Property: All filtered results should have the matching status
             for (const bill of filteredBills) {
@@ -558,7 +588,9 @@ describe("Accounting Router", () => {
             }
 
             // Property: No bill with a different status should be in the results
-            const nonMatchingBills = allBills.filter(bill => bill.status !== filterStatus);
+            const nonMatchingBills = allBills.filter(
+              bill => bill.status !== filterStatus
+            );
             for (const bill of nonMatchingBills) {
               expect(filteredBills).not.toContainEqual(bill);
             }
@@ -572,7 +604,10 @@ describe("Accounting Router", () => {
       await fc.assert(
         fc.asyncProperty(
           fc.constantFrom(...BILL_STATUSES),
-          fc.array(fc.constantFrom(...BILL_STATUSES), { minLength: 1, maxLength: 10 }),
+          fc.array(fc.constantFrom(...BILL_STATUSES), {
+            minLength: 1,
+            maxLength: 10,
+          }),
           async (filterStatus, billStatuses) => {
             // Arrange: Create mock bills with the generated statuses (all required fields)
             const mockBills = billStatuses.map((status, index) => ({
@@ -599,7 +634,9 @@ describe("Accounting Router", () => {
             }));
 
             // Simulate the database filter behavior
-            const expectedFilteredBills = mockBills.filter(b => b.status === filterStatus);
+            const expectedFilteredBills = mockBills.filter(
+              b => b.status === filterStatus
+            );
 
             // Mock the arApDb.getBills to return filtered results
             vi.mocked(arApDb.getBills).mockResolvedValue({
@@ -608,7 +645,9 @@ describe("Accounting Router", () => {
             });
 
             // Act: Call the API with status filter
-            const result = await caller.accounting.bills.list({ status: filterStatus });
+            const result = await caller.accounting.bills.list({
+              status: filterStatus,
+            });
 
             // Assert: Property - All returned bills should have the filtered status
             expect(result.bills).toHaveLength(expectedFilteredBills.length);
@@ -628,14 +667,16 @@ describe("Accounting Router", () => {
       await fc.assert(
         fc.asyncProperty(
           fc.constantFrom(...BILL_STATUSES),
-          fc.array(
-            fc.constantFrom(...BILL_STATUSES),
-            { minLength: 1, maxLength: 5 }
-          ).filter(statuses => {
-            // Ensure we have at least one status that's different from all generated
-            const uniqueStatuses = new Set(statuses);
-            return uniqueStatuses.size < BILL_STATUSES.length;
-          }),
+          fc
+            .array(fc.constantFrom(...BILL_STATUSES), {
+              minLength: 1,
+              maxLength: 5,
+            })
+            .filter(statuses => {
+              // Ensure we have at least one status that's different from all generated
+              const uniqueStatuses = new Set(statuses);
+              return uniqueStatuses.size < BILL_STATUSES.length;
+            }),
           async (filterStatus, existingStatuses) => {
             // Only test when the filter status is NOT in the existing statuses
             if (existingStatuses.includes(filterStatus)) {
@@ -649,7 +690,9 @@ describe("Accounting Router", () => {
             });
 
             // Act
-            const result = await caller.accounting.bills.list({ status: filterStatus });
+            const result = await caller.accounting.bills.list({
+              status: filterStatus,
+            });
 
             // Assert: Property - Should return empty when no matches
             expect(result.bills).toHaveLength(0);
@@ -672,7 +715,10 @@ describe("Accounting Router", () => {
 
             // Simulate a dataset
             const totalBillsWithStatus = 25;
-            const expectedReturnCount = Math.min(limit, Math.max(0, totalBillsWithStatus - offset));
+            const expectedReturnCount = Math.min(
+              limit,
+              Math.max(0, totalBillsWithStatus - offset)
+            );
 
             // Property: Regardless of pagination, all returned items should match status
             // This is a logical property - pagination doesn't change the status of items
