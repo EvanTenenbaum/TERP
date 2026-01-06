@@ -7,7 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ListSkeleton } from "@/components/ui/skeleton-loaders";
 
 export const NotificationsPage = React.memo(
-  function NotificationsPage(): JSX.Element {
+  function NotificationsPage(): React.ReactElement {
     const utils = trpc.useContext();
     const { data: listData, isLoading } = trpc.notifications.list.useQuery({
       limit: 50,
