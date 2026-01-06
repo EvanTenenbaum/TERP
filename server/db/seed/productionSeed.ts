@@ -1,4 +1,3 @@
-// @ts-nocheck - TEMPORARY: Schema mismatch errors, needs Wave 1 fix
 import fs from "fs/promises";
 import path from "path";
 import { eq, inArray } from "drizzle-orm";
@@ -573,7 +572,7 @@ function buildOrderItems(
       const marginPercent =
         item.unitPrice > 0 ? (unitMargin / item.unitPrice) * 100 : 0;
 
-      return {
+      const result: BuiltOrderItem = {
         batchId,
         displayName: `${inventoryItem.brand} ${inventoryItem.strain}`,
         originalName: inventoryItem.strain,
@@ -581,15 +580,15 @@ function buildOrderItems(
         unitPrice: item.unitPrice,
         isSample: item.isSample ?? false,
         unitCogs: item.unitCogs,
-        cogsMode: "FIXED" as const,
-        cogsSource: "FIXED" as const,
-        appliedRule: undefined,
+        cogsMode: "FIXED",
+        cogsSource: "FIXED",
         unitMargin,
         marginPercent,
         lineTotal,
         lineCogs,
         lineMargin: lineTotal - lineCogs,
       };
+      return result;
     })
     .filter((item): item is BuiltOrderItem => Boolean(item));
 
