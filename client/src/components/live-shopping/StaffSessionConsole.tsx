@@ -14,6 +14,7 @@
 import React, { useState, useCallback } from "react";
 import { trpc } from "../../lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
 
@@ -82,10 +83,20 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
   });
 
   const removeItemMutation = trpc.liveShopping.removeFromCart.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Item removed from session");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to remove item: ${error.message}`);
+    },
   });
 
-  const endSessionMutation = trpc.liveShopping.endSession.useMutation();
+  const endSessionMutation = trpc.liveShopping.endSession.useMutation({
+    onError: (error) => {
+      toast.error(`Failed to end session: ${error.message}`);
+    },
+  });
 
   // Handlers
   const handleStatusChange = useCallback(
@@ -126,6 +137,14 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
     setItemToRemove(null);
   }, [sessionId, itemToRemove, removeItemMutation]);
 
+  // BUG-007: Handle remove dialog close - reset state
+  const handleRemoveDialogChange = useCallback((open: boolean) => {
+    setRemoveDialogOpen(open);
+    if (!open) {
+      setItemToRemove(null);
+    }
+  }, []);
+
   // BUG-007: Show confirm dialog instead of window.confirm
   const handleEndSession = useCallback(
     (convertToOrder: boolean) => {
@@ -142,14 +161,22 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
       {
         onSuccess: (data) => {
           if ('orderId' in data && data.orderId) {
-            globalThis.alert(`Order #${data.orderId} created successfully!`);
+            toast.success(`Order #${data.orderId} created successfully!`);
           } else {
-            globalThis.alert("Session ended.");
+            toast.success("Session ended.");
           }
         },
       }
     );
   }, [sessionId, convertToOrderOnEnd, endSessionMutation]);
+
+  // BUG-007: Handle end session dialog close - reset state
+  const handleEndSessionDialogChange = useCallback((open: boolean) => {
+    setEndSessionDialogOpen(open);
+    if (!open) {
+      setConvertToOrderOnEnd(false);
+    }
+  }, []);
 
   if (sessionLoading || !session) {
     return (
@@ -270,7 +297,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
       {/* BUG-007: Remove Item Confirmation Dialog (replaces window.confirm) */}
       <ConfirmDialog
         open={removeDialogOpen}
-        onOpenChange={setRemoveDialogOpen}
+        onOpenChange={handleRemoveDialogChange}
         title="Remove Item"
         description="Are you sure you want to remove this item from the session?"
         confirmLabel="Remove"
@@ -282,7 +309,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
       {/* BUG-007: End Session Confirmation Dialog (replaces window.confirm) */}
       <ConfirmDialog
         open={endSessionDialogOpen}
-        onOpenChange={setEndSessionDialogOpen}
+        onOpenChange={handleEndSessionDialogChange}
         title={convertToOrderOnEnd ? "Convert to Order" : "End Session"}
         description={
           convertToOrderOnEnd

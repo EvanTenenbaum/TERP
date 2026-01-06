@@ -16,6 +16,7 @@
 import React, { useState, useCallback } from "react";
 import { trpc } from "../../lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 // Types
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
@@ -73,10 +74,20 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
   });
 
   const removeItemMutation = trpc.vipPortalLiveShopping.removeItem.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Item removed");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to remove item: ${error.message}`);
+    },
   });
 
-  const requestCheckoutMutation = trpc.vipPortalLiveShopping.requestCheckout.useMutation();
+  const requestCheckoutMutation = trpc.vipPortalLiveShopping.requestCheckout.useMutation({
+    onError: (error) => {
+      toast.error(`Failed to request checkout: ${error.message}`);
+    },
+  });
 
   // State for price change animations
   const [priceChanges, _setPriceChanges] = useState<Record<number, { oldPrice: string; newPrice: string }>>({});
@@ -114,13 +125,21 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
     setItemToRemove(null);
   }, [sessionId, itemToRemove, removeItemMutation]);
 
+  // BUG-007: Handle remove dialog close - reset state
+  const handleRemoveDialogChange = useCallback((open: boolean) => {
+    setRemoveDialogOpen(open);
+    if (!open) {
+      setItemToRemove(null);
+    }
+  }, []);
+
   // Handle checkout request
   const handleRequestCheckout = useCallback(() => {
     requestCheckoutMutation.mutate(
       { sessionId },
       {
         onSuccess: () => {
-          globalThis.alert("Staff has been notified that you're ready to checkout!");
+          toast.success("Staff has been notified that you're ready to checkout!");
         },
       }
     );
@@ -232,7 +251,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
       {/* BUG-007: Remove Item Confirmation Dialog (replaces window.confirm) */}
       <ConfirmDialog
         open={removeDialogOpen}
-        onOpenChange={setRemoveDialogOpen}
+        onOpenChange={handleRemoveDialogChange}
         title="Remove Item"
         description="Are you sure you want to remove this item from your list?"
         confirmLabel="Remove"
