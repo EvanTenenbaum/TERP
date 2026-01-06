@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import bcrypt from "bcrypt";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "../_core/cookies";
 import {
@@ -11,6 +12,7 @@ import { simpleAuth } from "../_core/simpleAuth";
 import * as db from "../db";
 import { logAuditEvent, AuditEventType } from "../auditLogger";
 import { logger } from "../_core/logger";
+import { env } from "../_core/env";
 
 export const authRouter = router({
   me: publicProcedure.query(opts => opts.ctx.user),
@@ -159,5 +161,65 @@ export const authRouter = router({
       });
 
       return { success: true };
+    }),
+
+  /**
+   * Get auth token for automated testing
+   * Requires a valid email/password combination
+   * Returns the session token that can be set as a cookie
+   *
+   * Only available when ENABLE_TEST_AUTH=true or NODE_ENV !== 'production'
+   */
+  getTestToken: publicProcedure
+    .input(
+      z.object({
+        email: z.string().email(),
+        password: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      // Only allow in non-production or when explicitly enabled
+      const isTestMode =
+        env.enableTestAuth || process.env.NODE_ENV !== "production";
+
+      if (!isTestMode) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Test auth is not enabled in production",
+        });
+      }
+
+      // Find user
+      const user = await db.getUserByEmail(input.email);
+      if (!user || !user.loginMethod) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid credentials",
+        });
+      }
+
+      // Verify password
+      const isValid = await bcrypt.compare(input.password, user.loginMethod);
+      if (!isValid) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Invalid credentials",
+        });
+      }
+
+      // Create token
+      const token = simpleAuth.createSessionToken(user);
+
+      logger.info({ msg: "Test token generated", email: input.email });
+
+      return {
+        token,
+        cookieName: COOKIE_NAME,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        },
+      };
     }),
 });

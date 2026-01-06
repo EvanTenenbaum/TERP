@@ -81,6 +81,35 @@ See `MEGA_QA.md` for full testing documentation.
 
 ---
 
+## 🔐 Authentication
+
+### Admin Setup
+
+```bash
+# Create or update admin account
+pnpm setup:admin your-email@example.com YourPassword123!
+
+# Login at /login
+```
+
+### Test Accounts
+
+```bash
+# Seed test accounts for E2E testing
+pnpm seed:test-accounts
+```
+
+### Get Auth Token (for AI Agents/E2E)
+
+```bash
+# Get token for browser automation
+pnpm get:auth-token test-admin@terp-app.local TestAdmin123! https://terp-app.example.com
+```
+
+See [docs/AUTH_SETUP.md](./docs/AUTH_SETUP.md) for full documentation.
+
+---
+
 ## 📋 Current Status
 
 **Version:** 0f52d82b (October 27, 2025)  
