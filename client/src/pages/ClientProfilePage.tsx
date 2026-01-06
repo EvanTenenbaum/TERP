@@ -53,6 +53,7 @@ import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
 import { CustomerWishlistCard } from "@/components/clients/CustomerWishlistCard";
 import { BackButton } from "@/components/common/BackButton";
 import { AuditIcon } from "@/components/audit";
+import { PageSkeleton } from "@/components/ui/skeleton-loaders";
 import { useCreditVisibility } from "@/hooks/useCreditVisibility";
 import {
   Edit,
@@ -127,13 +128,7 @@ export default function ClientProfilePage() {
     trpc.clients.transactions.recordPayment.useMutation();
 
   if (clientLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="text-lg font-medium">Loading client...</div>
-        </div>
-      </div>
-    );
+    return <PageSkeleton variant="dashboard" />;
   }
 
   if (!client) {
@@ -349,7 +344,11 @@ export default function ClientProfilePage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Amount Owed</CardTitle>
             <div className="flex items-center gap-1">
-              <AuditIcon type="client" entityId={clientId} fieldName="totalOwed" />
+              <AuditIcon
+                type="client"
+                entityId={clientId}
+                fieldName="totalOwed"
+              />
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardHeader>
@@ -372,16 +371,68 @@ export default function ClientProfilePage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
           <TabsList className="inline-flex w-full min-w-max md:w-auto h-auto gap-1">
-            <TabsTrigger value="overview" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Overview</TabsTrigger>
-            {client.isSeller && <TabsTrigger value="supplier" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Supplier</TabsTrigger>}
-            <TabsTrigger value="transactions" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Transactions</TabsTrigger>
-            <TabsTrigger value="payments" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Payments</TabsTrigger>
-            <TabsTrigger value="pricing" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Pricing</TabsTrigger>
-            <TabsTrigger value="needs" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Needs</TabsTrigger>
-            <TabsTrigger value="communications" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Comms</TabsTrigger>
-            <TabsTrigger value="calendar" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Calendar</TabsTrigger>
-            <TabsTrigger value="notes" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Notes</TabsTrigger>
-            <TabsTrigger value="live-catalog" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Catalog</TabsTrigger>
+            <TabsTrigger
+              value="overview"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Overview
+            </TabsTrigger>
+            {client.isSeller && (
+              <TabsTrigger
+                value="supplier"
+                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+              >
+                Supplier
+              </TabsTrigger>
+            )}
+            <TabsTrigger
+              value="transactions"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Transactions
+            </TabsTrigger>
+            <TabsTrigger
+              value="payments"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Payments
+            </TabsTrigger>
+            <TabsTrigger
+              value="pricing"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Pricing
+            </TabsTrigger>
+            <TabsTrigger
+              value="needs"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Needs
+            </TabsTrigger>
+            <TabsTrigger
+              value="communications"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Comms
+            </TabsTrigger>
+            <TabsTrigger
+              value="calendar"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Calendar
+            </TabsTrigger>
+            <TabsTrigger
+              value="notes"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Notes
+            </TabsTrigger>
+            <TabsTrigger
+              value="live-catalog"
+              className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+            >
+              Catalog
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -389,8 +440,8 @@ export default function ClientProfilePage() {
         <TabsContent value="overview" className="space-y-4">
           {/* Credit Status Card (only for buyers with visibility enabled) */}
           {client.isBuyer && shouldShowCreditWidgetInProfile && (
-            <CreditStatusCard 
-              clientId={clientId} 
+            <CreditStatusCard
+              clientId={clientId}
               clientName={client.name}
               showOverrideButton={true}
               showRecalculateButton={true}
@@ -531,7 +582,10 @@ export default function ClientProfilePage() {
         {/* Supplier Tab (only for sellers) */}
         {client.isSeller && (
           <TabsContent value="supplier" className="space-y-4">
-            <SupplierProfileSection clientId={clientId} clientName={client.name} />
+            <SupplierProfileSection
+              clientId={clientId}
+              clientName={client.name}
+            />
           </TabsContent>
         )}
 

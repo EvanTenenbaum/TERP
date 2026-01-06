@@ -15,8 +15,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
-import { Warehouse, MapPin, Plus, MoreHorizontal, Pencil, Trash2, Package } from "lucide-react";
+import {
+  Warehouse,
+  MapPin,
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Package,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
+import { TableSkeleton } from "@/components/ui/skeleton-loaders";
 import {
   Card,
   CardContent,
@@ -52,12 +61,17 @@ export default function LocationsPage(): React.ReactElement {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
+    null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const utils = trpc.useUtils();
 
-  const { data: locations, isLoading } = trpc.locations.getAll.useQuery({ limit, offset });
+  const { data: locations, isLoading } = trpc.locations.getAll.useQuery({
+    limit,
+    offset,
+  });
 
   const createMutation = trpc.locations.create.useMutation({
     onSuccess: () => {
@@ -68,7 +82,7 @@ export default function LocationsPage(): React.ReactElement {
       });
       setFormDialogOpen(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Error",
         description: error.message || "Failed to create location",
@@ -87,7 +101,7 @@ export default function LocationsPage(): React.ReactElement {
       setFormDialogOpen(false);
       setSelectedLocation(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Error",
         description: error.message || "Failed to update location",
@@ -106,7 +120,7 @@ export default function LocationsPage(): React.ReactElement {
       setDeleteDialogOpen(false);
       setSelectedLocation(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Error",
         description: error.message || "Failed to delete location",
@@ -124,7 +138,7 @@ export default function LocationsPage(): React.ReactElement {
       });
       setAssignDialogOpen(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Error",
         description: error.message || "Failed to assign batch",
@@ -209,7 +223,9 @@ export default function LocationsPage(): React.ReactElement {
     [assignBatchMutation]
   );
 
-  const getLocationFormData = (location: Location | null): LocationFormData | null => {
+  const getLocationFormData = (
+    location: Location | null
+  ): LocationFormData | null => {
     if (!location) return null;
     return {
       id: location.id,
@@ -268,9 +284,7 @@ export default function LocationsPage(): React.ReactElement {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
+            <TableSkeleton rows={6} columns={7} />
           ) : locations && locations.length > 0 ? (
             <Table>
               <TableHeader>
@@ -317,7 +331,9 @@ export default function LocationsPage(): React.ReactElement {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditClick(location)}>
+                          <DropdownMenuItem
+                            onClick={() => handleEditClick(location)}
+                          >
                             <Pencil className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
@@ -362,7 +378,9 @@ export default function LocationsPage(): React.ReactElement {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDeleteConfirm}
-        locationName={selectedLocation ? getLocationDisplayName(selectedLocation) : ""}
+        locationName={
+          selectedLocation ? getLocationDisplayName(selectedLocation) : ""
+        }
         isLoading={isSubmitting}
       />
 

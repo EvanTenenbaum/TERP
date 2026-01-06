@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { ListSkeleton } from "@/components/ui/skeleton-loaders";
 
 export const NotificationsPage = React.memo(
-  function NotificationsPage(): React.ReactElement {
+  function NotificationsPage(): JSX.Element {
     const utils = trpc.useContext();
     const { data: listData, isLoading } = trpc.notifications.list.useQuery({
       limit: 50,
@@ -75,11 +76,7 @@ export const NotificationsPage = React.memo(
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {isLoading && (
-              <p className="text-sm text-muted-foreground">
-                Loading notifications...
-              </p>
-            )}
+            {isLoading && <ListSkeleton items={5} showAvatar showSecondary />}
             {!isLoading && items.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No notifications yet.

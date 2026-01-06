@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Search, Plus, Loader2, Package, Users, Target } from "lucide-react";
+import { Search, Plus, Package, Users, Target } from "lucide-react";
+import { ListSkeleton } from "@/components/ui/skeleton-loaders";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 import { getProductDisplayName } from "@/lib/displayHelpers";
@@ -276,9 +277,7 @@ export default function MatchmakingServicePage() {
           <CardContent>
             <div className="space-y-3 max-h-[600px] overflow-y-auto">
               {needsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
+                <ListSkeleton items={4} showAvatar={false} showSecondary />
               ) : filteredNeeds.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No client needs found
@@ -303,7 +302,9 @@ export default function MatchmakingServicePage() {
                         </Badge>
                       </div>
                       {need.matchCount > 0 && (
-                        <Badge variant="secondary">{need.matchCount} matches</Badge>
+                        <Badge variant="secondary">
+                          {need.matchCount} matches
+                        </Badge>
                       )}
                     </div>
                     <h4 className="font-medium">
@@ -342,9 +343,7 @@ export default function MatchmakingServicePage() {
           <CardContent>
             <div className="space-y-3 max-h-[600px] overflow-y-auto">
               {supplyLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
+                <ListSkeleton items={4} showAvatar={false} showSecondary />
               ) : filteredSupply.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No vendor supply found
@@ -410,9 +409,7 @@ export default function MatchmakingServicePage() {
           <CardContent>
             <div className="space-y-3 max-h-[600px] overflow-y-auto">
               {matchesLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
+                <ListSkeleton items={4} showAvatar={false} showSecondary />
               ) : topMatches.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No matches found
