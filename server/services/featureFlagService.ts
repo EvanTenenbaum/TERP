@@ -1,10 +1,9 @@
-// @ts-nocheck - TEMPORARY: Schema mismatch errors, needs Wave 1 fix
 /**
  * Feature Flag Service
- * 
+ *
  * Provides feature flag evaluation with caching and override support.
  * All user identification uses openId (string) to match RBAC pattern.
- * 
+ *
  * Evaluation Priority:
  * 1. System disabled → always false
  * 2. Dependency check → if depends on disabled flag, false
@@ -54,7 +53,7 @@ export interface EvaluationResult {
 export const featureFlagService = {
   /**
    * Check if a feature flag is enabled for a user
-   * 
+   *
    * @param key - The flag key to check
    * @param context - Optional evaluation context with user info
    * @returns Whether the flag is enabled
@@ -66,12 +65,15 @@ export const featureFlagService = {
 
   /**
    * Evaluate a flag with full context and reason
-   * 
+   *
    * @param key - The flag key to evaluate
    * @param context - Optional evaluation context with user info
    * @returns Full evaluation result with reason
    */
-  async evaluate(key: string, context?: EvaluationContext): Promise<EvaluationResult> {
+  async evaluate(
+    key: string,
+    context?: EvaluationContext
+  ): Promise<EvaluationResult> {
     // Get flag (with caching)
     const cacheKey = CacheKeys.featureFlags.byKey(key);
     let flag = cache.get<FeatureFlag>(cacheKey);
@@ -116,19 +118,26 @@ export const featureFlagService = {
     }
 
     // 4. User override check (USES openId)
-    const userOverride = await featureFlagsDb.getUserOverride(flag.id, context.userOpenId);
+    const userOverride = await featureFlagsDb.getUserOverride(
+      flag.id,
+      context.userOpenId
+    );
     if (userOverride !== null) {
       return { enabled: userOverride, reason: "user_override", flag };
     }
 
     // 5. Role override check (most permissive wins)
-    const roleIds = context.roleIds ?? await featureFlagsDb.getUserRoleIds(context.userOpenId);
+    const roleIds =
+      context.roleIds ??
+      (await featureFlagsDb.getUserRoleIds(context.userOpenId));
     if (roleIds.length > 0) {
       const roleOverrides = await featureFlagsDb.getRoleOverrides(flag.id);
-      const userRoleOverrides = roleOverrides.filter((ro) => roleIds.includes(ro.roleId));
+      const userRoleOverrides = roleOverrides.filter(ro =>
+        roleIds.includes(ro.roleId)
+      );
 
       // Most permissive: if ANY role has enabled=true, return true
-      if (userRoleOverrides.some((ro) => ro.enabled)) {
+      if (userRoleOverrides.some(ro => ro.enabled)) {
         return { enabled: true, reason: "role_override", flag };
       }
       // If ANY role has explicit override (even false), use that
@@ -143,11 +152,13 @@ export const featureFlagService = {
 
   /**
    * Get all effective flags for a user (for frontend context)
-   * 
+   *
    * @param context - Evaluation context with user info
    * @returns Map of flag keys to enabled status
    */
-  async getEffectiveFlags(context: EvaluationContext): Promise<Record<string, boolean>> {
+  async getEffectiveFlags(
+    context: EvaluationContext
+  ): Promise<Record<string, boolean>> {
     const cacheKey = CacheKeys.featureFlags.userEffective(context.userOpenId);
     const cached = cache.get<Record<string, boolean>>(cacheKey);
     if (cached) return cached;
@@ -156,7 +167,9 @@ export const featureFlagService = {
     const result: Record<string, boolean> = {};
 
     // Pre-fetch role IDs once for efficiency
-    const roleIds = context.roleIds ?? await featureFlagsDb.getUserRoleIds(context.userOpenId);
+    const roleIds =
+      context.roleIds ??
+      (await featureFlagsDb.getUserRoleIds(context.userOpenId));
     const contextWithRoles = { ...context, roleIds };
 
     for (const flag of flags) {
@@ -170,18 +183,21 @@ export const featureFlagService = {
 
   /**
    * Check if a module is enabled
-   * 
+   *
    * @param module - The module flag key (e.g., "module-accounting")
    * @param context - Optional evaluation context
    * @returns Whether the module is enabled
    */
-  async isModuleEnabled(module: string, context?: EvaluationContext): Promise<boolean> {
+  async isModuleEnabled(
+    module: string,
+    context?: EvaluationContext
+  ): Promise<boolean> {
     return this.isEnabled(module, context);
   },
 
   /**
    * Get all flags with their metadata (for admin UI)
-   * 
+   *
    * @returns All active flags
    */
   async getAllFlags(): Promise<FeatureFlag[]> {
@@ -196,7 +212,7 @@ export const featureFlagService = {
 
   /**
    * Get flags by module
-   * 
+   *
    * @param module - The module key
    * @returns Flags belonging to the module
    */
@@ -216,7 +232,7 @@ export const featureFlagService = {
 
   /**
    * Invalidate cache for a specific flag
-   * 
+   *
    * @param key - The flag key to invalidate
    */
   invalidateFlagCache(key: string): void {
@@ -227,7 +243,7 @@ export const featureFlagService = {
 
   /**
    * Invalidate user's effective flags cache
-   * 
+   *
    * @param userOpenId - The user's openId
    */
   invalidateUserCache(userOpenId: string): void {
@@ -313,7 +329,12 @@ export const featureFlagService = {
     enabled: boolean,
     actorOpenId: string
   ): Promise<void> {
-    await featureFlagsDb.setUserOverride(flagId, userOpenId, enabled, actorOpenId);
+    await featureFlagsDb.setUserOverride(
+      flagId,
+      userOpenId,
+      enabled,
+      actorOpenId
+    );
     this.invalidateUserCache(userOpenId);
   },
 
@@ -333,6 +354,6 @@ export const featureFlagService = {
    * Get audit history
    */
   async getAuditHistory(flagKey?: string, limit?: number) {
-    return featureFlagsDb.getAuditHistory(flagKey, limit);
+    return featureFlagsDb.getAuditLogs(flagKey, limit);
   },
 };

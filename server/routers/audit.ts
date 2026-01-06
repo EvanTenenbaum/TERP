@@ -1,4 +1,3 @@
-// @ts-nocheck - TEMPORARY: Schema mismatch errors, needs Wave 1 fix
 /**
  * WS-005: Audit Router
  * Provides "No Black Box" audit trail for all calculated fields
@@ -86,14 +85,14 @@ export const auditRouter = router({
           id: payments.id,
           amount: payments.amount,
           paymentMethod: payments.paymentMethod,
-          createdAt: payments.createdAt,
+          paymentDate: payments.paymentDate,
           createdByName: users.name,
-          reference: payments.reference,
+          reference: payments.referenceNumber,
         })
         .from(payments)
         .leftJoin(users, eq(payments.createdBy, users.id))
-        .where(eq(payments.clientId, clientId))
-        .orderBy(desc(payments.createdAt));
+        .where(eq(payments.customerId, clientId))
+        .orderBy(desc(payments.paymentDate));
 
       // Combine and sort all transactions
       type Transaction = {
@@ -128,7 +127,9 @@ export const auditRouter = router({
           type: "PAYMENT",
           description: `Payment via ${payment.paymentMethod || "Unknown"}`,
           amount: -parseFloat(payment.amount || "0"),
-          date: payment.createdAt || new Date(),
+          date: payment.paymentDate
+            ? new Date(payment.paymentDate)
+            : new Date(),
           createdBy: payment.createdByName || "System",
           reference: payment.reference || `PAY-${payment.id}`,
         });
@@ -140,7 +141,7 @@ export const auditRouter = router({
       // Calculate running balance (from oldest to newest)
       const sortedAsc = [...transactions].reverse();
       let runningBalance = 0;
-      const withRunningBalance = sortedAsc.map((t) => {
+      const withRunningBalance = sortedAsc.map(t => {
         runningBalance += t.amount;
         return { ...t, runningBalance };
       });
@@ -219,8 +220,8 @@ export const auditRouter = router({
       const movements = await db
         .select({
           id: inventoryMovements.id,
-          movementType: inventoryMovements.movementType,
-          quantity: inventoryMovements.quantity,
+          movementType: inventoryMovements.inventoryMovementType,
+          quantity: inventoryMovements.quantityChange,
           reason: inventoryMovements.reason,
           createdAt: inventoryMovements.createdAt,
           createdByName: users.name,
@@ -228,14 +229,14 @@ export const auditRouter = router({
           referenceType: inventoryMovements.referenceType,
         })
         .from(inventoryMovements)
-        .leftJoin(users, eq(inventoryMovements.createdBy, users.id))
+        .leftJoin(users, eq(inventoryMovements.performedBy, users.id))
         .where(and(eq(inventoryMovements.batchId, batchId), ...dateFilter))
         .orderBy(desc(inventoryMovements.createdAt));
 
       // Calculate running total
       const sortedAsc = [...movements].reverse();
       let runningTotal = 0;
-      const withRunningTotal = sortedAsc.map((m) => {
+      const withRunningTotal = sortedAsc.map(m => {
         const qty = parseFloat(m.quantity || "0");
         runningTotal += qty;
         return {
@@ -319,18 +320,15 @@ export const auditRouter = router({
         .from(orderLineItems)
         .where(eq(orderLineItems.orderId, orderId));
 
-      // Get payments for this order
-      const orderPayments = await db
-        .select({
-          id: payments.id,
-          amount: payments.amount,
-          paymentMethod: payments.paymentMethod,
-          createdAt: payments.createdAt,
-          createdByName: users.name,
-        })
-        .from(payments)
-        .leftJoin(users, eq(payments.createdBy, users.id))
-        .where(eq(payments.orderId, orderId));
+      // Note: Payments are linked via invoices, not directly to orders
+      // For now, we return an empty payments array until invoice linking is implemented
+      const orderPayments: {
+        id: number;
+        amount: string;
+        paymentMethod: string | null;
+        paymentDate: Date;
+        createdByName: string | null;
+      }[] = [];
 
       const subtotal = parseFloat(order.subtotal || "0");
       const discount = parseFloat(order.discount || "0");
@@ -352,8 +350,9 @@ export const auditRouter = router({
           amountPaid,
           balanceDue: total - amountPaid,
         },
-        formula: "Sum(Line Items) - Sum(Discounts) = Total; Total - Payments = Balance Due",
-        lineItems: lineItems.map((li) => ({
+        formula:
+          "Sum(Line Items) - Sum(Discounts) = Total; Total - Payments = Balance Due",
+        lineItems: lineItems.map(li => ({
           id: li.id,
           productName: li.productName,
           quantity: parseFloat(li.quantity || "0"),
@@ -361,11 +360,11 @@ export const auditRouter = router({
           lineTotal: parseFloat(li.lineTotal || "0"),
           discount: 0, // Discount is at order level, not line item level
         })),
-        payments: orderPayments.map((p) => ({
+        payments: orderPayments.map(p => ({
           id: p.id,
           amount: parseFloat(p.amount || "0"),
           method: p.paymentMethod,
-          date: p.createdAt,
+          date: p.paymentDate,
           createdBy: p.createdByName || "System",
         })),
       };
@@ -424,8 +423,8 @@ export const auditRouter = router({
 
       // Build date filter for payments
       const paymentDateFilter = [];
-      if (dateFrom) paymentDateFilter.push(gte(payments.createdAt, dateFrom));
-      if (dateTo) paymentDateFilter.push(lte(payments.createdAt, dateTo));
+      if (dateFrom) paymentDateFilter.push(gte(payments.paymentDate, dateFrom));
+      if (dateTo) paymentDateFilter.push(lte(payments.paymentDate, dateTo));
 
       // Get all payments to this vendor
       const vendorPayments = await db
@@ -433,14 +432,14 @@ export const auditRouter = router({
           id: payments.id,
           amount: payments.amount,
           paymentMethod: payments.paymentMethod,
-          createdAt: payments.createdAt,
+          paymentDate: payments.paymentDate,
           createdByName: users.name,
-          reference: payments.reference,
+          reference: payments.referenceNumber,
         })
         .from(payments)
         .leftJoin(users, eq(payments.createdBy, users.id))
         .where(and(eq(payments.vendorId, vendorId), ...paymentDateFilter))
-        .orderBy(desc(payments.createdAt));
+        .orderBy(desc(payments.paymentDate));
 
       // Combine transactions
       type Transaction = {
@@ -475,7 +474,9 @@ export const auditRouter = router({
           type: "PAYMENT",
           description: `Payment via ${payment.paymentMethod || "Unknown"}`,
           amount: -parseFloat(payment.amount || "0"),
-          date: payment.createdAt || new Date(),
+          date: payment.paymentDate
+            ? new Date(payment.paymentDate)
+            : new Date(),
           createdBy: payment.createdByName || "System",
           reference: payment.reference || `PAY-${payment.id}`,
         });
@@ -487,7 +488,7 @@ export const auditRouter = router({
       // Calculate running balance
       const sortedAsc = [...transactions].reverse();
       let runningBalance = 0;
-      const withRunningBalance = sortedAsc.map((t) => {
+      const withRunningBalance = sortedAsc.map(t => {
         runningBalance += t.amount;
         return { ...t, runningBalance };
       });
@@ -574,12 +575,18 @@ export const auditRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const { entityType, entityId, fieldName, page, pageSize } = input;
+      const {
+        entityType,
+        entityId,
+        fieldName: _fieldName,
+        page,
+        pageSize,
+      } = input;
       const offset = (page - 1) * pageSize;
 
       // For now, return activity-based history from different sources based on entity type
       // This can be expanded to use a dedicated audit_logs table in the future
-      
+
       try {
         const database = await db;
         if (!database) {
@@ -587,7 +594,7 @@ export const auditRouter = router({
         }
 
         // Query based on entity type
-        if (entityType === 'client') {
+        if (entityType === "client") {
           // Get client-related activities from orders and payments
           const clientOrders = await database
             .select({
@@ -605,44 +612,26 @@ export const auditRouter = router({
           return clientOrders.map(o => ({
             id: o.id,
             action: o.action,
-            activityType: 'ORDER',
+            activityType: "ORDER",
             createdAt: o.createdAt,
             details: `Order ${o.details}`,
           }));
         }
 
-        if (entityType === 'transaction' || entityType === 'order') {
-          // Get order-related activities
-          const orderPayments = await database
-            .select({
-              id: payments.id,
-              action: sql<string>`'PAYMENT_RECORDED'`,
-              createdAt: payments.paymentDate,
-              amount: payments.amount,
-            })
-            .from(payments)
-            .where(eq(payments.orderId, entityId))
-            .orderBy(desc(payments.paymentDate))
-            .limit(pageSize)
-            .offset(offset);
-
-          return orderPayments.map(p => ({
-            id: p.id,
-            action: p.action,
-            activityType: 'PAYMENT',
-            createdAt: p.createdAt,
-            details: `Payment of $${p.amount}`,
-          }));
+        if (entityType === "transaction" || entityType === "order") {
+          // Note: Payments are linked via invoices, not directly to orders
+          // Return empty array until invoice linking is implemented
+          return [];
         }
 
-        if (entityType === 'batch' || entityType === 'inventory') {
+        if (entityType === "batch" || entityType === "inventory") {
           // Get inventory movement history
           const movements = await database
             .select({
               id: inventoryMovements.id,
-              action: inventoryMovements.movementType,
+              action: inventoryMovements.inventoryMovementType,
               createdAt: inventoryMovements.createdAt,
-              quantity: inventoryMovements.quantity,
+              quantity: inventoryMovements.quantityChange,
               reason: inventoryMovements.reason,
             })
             .from(inventoryMovements)
@@ -654,16 +643,16 @@ export const auditRouter = router({
           return movements.map(m => ({
             id: m.id,
             action: m.action,
-            activityType: 'INVENTORY_MOVEMENT',
+            activityType: "INVENTORY_MOVEMENT",
             createdAt: m.createdAt,
-            details: `${m.action}: ${m.quantity} units${m.reason ? ` - ${m.reason}` : ''}`,
+            details: `${m.action}: ${m.quantity} units${m.reason ? ` - ${m.reason}` : ""}`,
           }));
         }
 
         // Default: return empty array for unsupported entity types
         return [];
       } catch (error) {
-        console.error('[Audit] getEntityHistory error:', error);
+        console.error("[Audit] getEntityHistory error:", error);
         return [];
       }
     }),

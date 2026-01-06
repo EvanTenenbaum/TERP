@@ -1,13 +1,12 @@
-// @ts-nocheck - TEMPORARY: Schema mismatch errors, needs Wave 1 fix
 /**
  * Feature Flags tRPC Router
- * 
+ *
  * Provides API endpoints for feature flag management and evaluation.
  * All user identification uses openId (string) to match RBAC pattern.
  */
 
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure, adminProcedure } from "../_core/trpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { featureFlagService } from "../services/featureFlagService";
 import { featureFlagsDb } from "../featureFlagsDb";
 import { seedFeatureFlags } from "../services/seedFeatureFlags";
@@ -146,34 +145,41 @@ export const featureFlagsRouter = router({
   /**
    * Create a new flag
    */
-  create: adminProcedure.input(createFlagSchema).mutation(async ({ ctx, input }) => {
-    // Check if key already exists
-    const existing = await featureFlagsDb.getByKey(input.key);
-    if (existing) {
-      throw new TRPCError({
-        code: "CONFLICT",
-        message: `Flag with key "${input.key}" already exists`,
-      });
-    }
+  create: adminProcedure
+    .input(createFlagSchema)
+    .mutation(async ({ ctx, input }) => {
+      // Check if key already exists
+      const existing = await featureFlagsDb.getByKey(input.key);
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Flag with key "${input.key}" already exists`,
+        });
+      }
 
-    const flagId = await featureFlagService.createFlag(input, ctx.user.openId);
-    return { id: flagId, success: true };
-  }),
+      const flagId = await featureFlagService.createFlag(
+        input,
+        ctx.user.openId
+      );
+      return { id: flagId, success: true };
+    }),
 
   /**
    * Update an existing flag
    */
-  update: adminProcedure.input(updateFlagSchema).mutation(async ({ ctx, input }) => {
-    const { id, ...updates } = input;
+  update: adminProcedure
+    .input(updateFlagSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...updates } = input;
 
-    // Filter out undefined values
-    const cleanUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([_, v]) => v !== undefined)
-    );
+      // Filter out undefined values
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, v]) => v !== undefined)
+      );
 
-    await featureFlagService.updateFlag(id, cleanUpdates, ctx.user.openId);
-    return { success: true };
-  }),
+      await featureFlagService.updateFlag(id, cleanUpdates, ctx.user.openId);
+      return { success: true };
+    }),
 
   /**
    * Delete a flag (soft delete)
@@ -262,12 +268,7 @@ export const featureFlagsRouter = router({
   getUserOverrides: adminProcedure
     .input(z.object({ flagId: z.number() }))
     .query(async ({ input }) => {
-      // Note: This returns all user overrides for a flag
-      // In a real implementation, you might want to paginate this
-      const allOverrides = await featureFlagsDb.getAllUserOverridesForUser("");
-      // Filter by flagId - this is a simplified implementation
-      // A proper implementation would have a dedicated DB method
-      return allOverrides.filter((o) => o.flagId === input.flagId);
+      return featureFlagsDb.getFlagUserOverrides(input.flagId);
     }),
 
   /**

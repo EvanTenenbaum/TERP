@@ -1,7 +1,6 @@
-// @ts-nocheck - TEMPORARY: Type mismatch errors, needs Wave 1 fix
 /**
  * VIP Portal Impersonation Manager (FEATURE-012)
- * 
+ *
  * Admin tool for managing VIP portal impersonation sessions.
  * Provides:
  * - List of all VIP-enabled clients with search
@@ -11,7 +10,13 @@
  */
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -42,12 +47,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  Search, 
-  ExternalLink, 
-  Eye, 
-  Clock, 
-  Shield, 
+import {
+  Search,
+  ExternalLink,
+  Eye,
+  Clock,
+  Shield,
   AlertTriangle,
   XCircle,
   History,
@@ -62,9 +67,9 @@ import { formatDistanceToNow, format } from "date-fns";
 interface Client {
   id: number;
   name: string;
-  email?: string;
-  vipPortalEnabled: boolean;
-  vipPortalLastLogin?: Date | null;
+  email: string | null;
+  vipPortalEnabled: boolean | null;
+  vipPortalLastLogin: Date | null;
 }
 
 interface ImpersonationSession {
@@ -87,62 +92,76 @@ export function VIPImpersonationManager() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-  const [selectedSessionForHistory, setSelectedSessionForHistory] = useState<ImpersonationSession | null>(null);
+  const [selectedSessionForHistory, setSelectedSessionForHistory] =
+    useState<ImpersonationSession | null>(null);
   const [showRevokeDialog, setShowRevokeDialog] = useState(false);
-  const [sessionToRevoke, setSessionToRevoke] = useState<ImpersonationSession | null>(null);
+  const [sessionToRevoke, setSessionToRevoke] =
+    useState<ImpersonationSession | null>(null);
   const [revokeReason, setRevokeReason] = useState("");
 
   // Fetch VIP-enabled clients
-  const { data: clientsData, isLoading: clientsLoading, refetch: refetchClients } = 
-    trpc.vipPortalAdmin.clients.listVipClients.useQuery({ limit: 100 });
+  const {
+    data: clientsData,
+    isLoading: clientsLoading,
+    refetch: refetchClients,
+  } = trpc.vipPortalAdmin.clients.listVipClients.useQuery({ limit: 100 });
 
   // Fetch active impersonation sessions
-  const { data: activeSessionsData, isLoading: sessionsLoading, refetch: refetchSessions } = 
-    trpc.vipPortalAdmin.audit.getActiveSessions.useQuery({ limit: 50 });
+  const {
+    data: activeSessionsData,
+    isLoading: sessionsLoading,
+    refetch: refetchSessions,
+  } = trpc.vipPortalAdmin.audit.getActiveSessions.useQuery({ limit: 50 });
 
   // Fetch session history
-  const { data: historyData, isLoading: historyLoading, refetch: refetchHistory } = 
-    trpc.vipPortalAdmin.audit.getSessionHistory.useQuery({ limit: 100 });
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+    refetch: refetchHistory,
+  } = trpc.vipPortalAdmin.audit.getSessionHistory.useQuery({ limit: 100 });
 
   // Create impersonation session mutation
-  const createSessionMutation = trpc.vipPortalAdmin.audit.createImpersonationSession.useMutation({
-    onSuccess: (data) => {
-      // Open the VIP portal in a new tab with the one-time token
-      const portalUrl = `/vip-portal/auth/impersonate?token=${encodeURIComponent(data.oneTimeToken)}`;
-      window.open(portalUrl, "_blank");
-      toast.success(`Impersonation session started for ${data.clientName}`);
-      refetchSessions();
-      setShowConfirmDialog(false);
-      setSelectedClient(null);
-    },
-    onError: (error) => {
-      toast.error(`Failed to start impersonation: ${error.message}`);
-    },
-  });
+  const createSessionMutation =
+    trpc.vipPortalAdmin.audit.createImpersonationSession.useMutation({
+      onSuccess: data => {
+        // Open the VIP portal in a new tab with the one-time token
+        const portalUrl = `/vip-portal/auth/impersonate?token=${encodeURIComponent(data.oneTimeToken)}`;
+        window.open(portalUrl, "_blank");
+        toast.success(`Impersonation session started for ${data.clientName}`);
+        refetchSessions();
+        setShowConfirmDialog(false);
+        setSelectedClient(null);
+      },
+      onError: error => {
+        toast.error(`Failed to start impersonation: ${error.message}`);
+      },
+    });
 
   // Revoke session mutation
-  const revokeSessionMutation = trpc.vipPortalAdmin.audit.revokeSession.useMutation({
-    onSuccess: () => {
-      toast.success("Session revoked successfully");
-      refetchSessions();
-      refetchHistory();
-      setShowRevokeDialog(false);
-      setSessionToRevoke(null);
-      setRevokeReason("");
-    },
-    onError: (error) => {
-      toast.error(`Failed to revoke session: ${error.message}`);
-    },
-  });
+  const revokeSessionMutation =
+    trpc.vipPortalAdmin.audit.revokeSession.useMutation({
+      onSuccess: () => {
+        toast.success("Session revoked successfully");
+        refetchSessions();
+        refetchHistory();
+        setShowRevokeDialog(false);
+        setSessionToRevoke(null);
+        setRevokeReason("");
+      },
+      onError: error => {
+        toast.error(`Failed to revoke session: ${error.message}`);
+      },
+    });
 
   // Filter clients by search query
-  const filteredClients = clientsData?.clients?.filter((client: Client) =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredClients = (clientsData?.clients ?? []).filter(
+    client =>
+      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const handleImpersonateClick = (client: Client) => {
-    setSelectedClient(client);
+  const handleImpersonateClick = (client: { id: number; name: string }) => {
+    setSelectedClient(client as Client);
     setShowConfirmDialog(true);
   };
 
@@ -196,7 +215,8 @@ export function VIPImpersonationManager() {
             <CardTitle>VIP Portal Impersonation Manager</CardTitle>
           </div>
           <CardDescription>
-            Access client VIP portals for support and troubleshooting. All sessions are fully audited.
+            Access client VIP portals for support and troubleshooting. All
+            sessions are fully audited.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -234,11 +254,15 @@ export function VIPImpersonationManager() {
                     <Input
                       placeholder="Search clients..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={e => setSearchQuery(e.target.value)}
                       className="pl-8"
                     />
                   </div>
-                  <Button variant="outline" size="icon" onClick={() => refetchClients()}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => refetchClients()}
+                  >
                     <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
@@ -251,7 +275,9 @@ export function VIPImpersonationManager() {
                 </div>
               ) : filteredClients.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {searchQuery ? "No clients match your search" : "No VIP-enabled clients found"}
+                  {searchQuery
+                    ? "No clients match your search"
+                    : "No VIP-enabled clients found"}
                 </div>
               ) : (
                 <Table>
@@ -264,17 +290,24 @@ export function VIPImpersonationManager() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredClients.map((client: Client) => (
+                    {filteredClients.map(client => (
                       <TableRow key={client.id}>
-                        <TableCell className="font-medium">{client.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {client.name}
+                        </TableCell>
                         <TableCell>{client.email || "-"}</TableCell>
                         <TableCell>
                           {client.vipPortalLastLogin ? (
                             <span className="text-sm text-muted-foreground">
-                              {formatDistanceToNow(new Date(client.vipPortalLastLogin), { addSuffix: true })}
+                              {formatDistanceToNow(
+                                new Date(client.vipPortalLastLogin),
+                                { addSuffix: true }
+                              )}
                             </span>
                           ) : (
-                            <span className="text-sm text-muted-foreground">Never</span>
+                            <span className="text-sm text-muted-foreground">
+                              Never
+                            </span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
@@ -301,8 +334,14 @@ export function VIPImpersonationManager() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Active Impersonation Sessions</CardTitle>
-                <Button variant="outline" size="icon" onClick={() => refetchSessions()}>
+                <CardTitle className="text-lg">
+                  Active Impersonation Sessions
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => refetchSessions()}
+                >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
@@ -328,43 +367,49 @@ export function VIPImpersonationManager() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {activeSessionsData.sessions.map((session: ImpersonationSession) => (
-                      <TableRow key={session.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            User #{session.adminUserId}
-                          </div>
-                        </TableCell>
-                        <TableCell>Client #{session.clientId}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Clock className="h-3 w-3" />
-                            {formatDistanceToNow(new Date(session.startAt), { addSuffix: true })}
-                          </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(session.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewHistory(session)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleRevokeClick(session)}
-                              disabled={revokeSessionMutation.isPending}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {activeSessionsData.sessions.map(
+                      (session: ImpersonationSession) => (
+                        <TableRow key={session.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              User #{session.adminUserId}
+                            </div>
+                          </TableCell>
+                          <TableCell>Client #{session.clientId}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1 text-sm">
+                              <Clock className="h-3 w-3" />
+                              {formatDistanceToNow(new Date(session.startAt), {
+                                addSuffix: true,
+                              })}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(session.status)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewHistory(session)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleRevokeClick(session)}
+                                disabled={revokeSessionMutation.isPending}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
                   </TableBody>
                 </Table>
               )}
@@ -378,7 +423,11 @@ export function VIPImpersonationManager() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Session History</CardTitle>
-                <Button variant="outline" size="icon" onClick={() => refetchHistory()}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => refetchHistory()}
+                >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
@@ -406,34 +455,37 @@ export function VIPImpersonationManager() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {historyData.sessions.map((session: ImpersonationSession) => (
-                      <TableRow key={session.id}>
-                        <TableCell className="font-mono text-xs">
-                          {session.sessionGuid.substring(0, 8)}...
-                        </TableCell>
-                        <TableCell>User #{session.adminUserId}</TableCell>
-                        <TableCell>Client #{session.clientId}</TableCell>
-                        <TableCell className="text-sm">
-                          {format(new Date(session.startAt), "MMM d, HH:mm")}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {session.endAt 
-                            ? format(new Date(session.endAt), "MMM d, HH:mm")
-                            : "-"
-                          }
-                        </TableCell>
-                        <TableCell>{getStatusBadge(session.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewHistory(session)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {historyData.sessions.map(
+                      (session: ImpersonationSession) => (
+                        <TableRow key={session.id}>
+                          <TableCell className="font-mono text-xs">
+                            {session.sessionGuid.substring(0, 8)}...
+                          </TableCell>
+                          <TableCell>User #{session.adminUserId}</TableCell>
+                          <TableCell>Client #{session.clientId}</TableCell>
+                          <TableCell className="text-sm">
+                            {format(new Date(session.startAt), "MMM d, HH:mm")}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {session.endAt
+                              ? format(new Date(session.endAt), "MMM d, HH:mm")
+                              : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(session.status)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewHistory(session)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
                   </TableBody>
                 </Table>
               )}
@@ -452,10 +504,12 @@ export function VIPImpersonationManager() {
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
-                You are about to access the VIP portal as <strong>{selectedClient?.name}</strong>.
+                You are about to access the VIP portal as{" "}
+                <strong>{selectedClient?.name}</strong>.
               </p>
               <p className="text-amber-600">
-                All actions during this session will be logged for audit purposes.
+                All actions during this session will be logged for audit
+                purposes.
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -465,7 +519,9 @@ export function VIPImpersonationManager() {
               onClick={handleConfirmImpersonate}
               disabled={createSessionMutation.isPending}
             >
-              {createSessionMutation.isPending ? "Starting..." : "Start Impersonation"}
+              {createSessionMutation.isPending
+                ? "Starting..."
+                : "Start Impersonation"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -481,14 +537,15 @@ export function VIPImpersonationManager() {
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
               <p>
-                This will immediately terminate the impersonation session. The user will be logged out.
+                This will immediately terminate the impersonation session. The
+                user will be logged out.
               </p>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Reason (optional)</label>
                 <Input
                   placeholder="Enter reason for revocation..."
                   value={revokeReason}
-                  onChange={(e) => setRevokeReason(e.target.value)}
+                  onChange={e => setRevokeReason(e.target.value)}
                 />
               </div>
             </AlertDialogDescription>
@@ -500,7 +557,9 @@ export function VIPImpersonationManager() {
               disabled={revokeSessionMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {revokeSessionMutation.isPending ? "Revoking..." : "Revoke Session"}
+              {revokeSessionMutation.isPending
+                ? "Revoking..."
+                : "Revoke Session"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -520,7 +579,9 @@ export function VIPImpersonationManager() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Session ID:</span>
-                  <p className="font-mono">{selectedSessionForHistory.sessionGuid}</p>
+                  <p className="font-mono">
+                    {selectedSessionForHistory.sessionGuid}
+                  </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Status:</span>
@@ -536,34 +597,50 @@ export function VIPImpersonationManager() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Started:</span>
-                  <p>{format(new Date(selectedSessionForHistory.startAt), "PPpp")}</p>
+                  <p>
+                    {format(
+                      new Date(selectedSessionForHistory.startAt),
+                      "PPpp"
+                    )}
+                  </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Ended:</span>
                   <p>
-                    {selectedSessionForHistory.endAt 
-                      ? format(new Date(selectedSessionForHistory.endAt), "PPpp")
-                      : "Still active"
-                    }
+                    {selectedSessionForHistory.endAt
+                      ? format(
+                          new Date(selectedSessionForHistory.endAt),
+                          "PPpp"
+                        )
+                      : "Still active"}
                   </p>
                 </div>
                 {selectedSessionForHistory.ipAddress && (
                   <div>
                     <span className="text-muted-foreground">IP Address:</span>
-                    <p className="font-mono">{selectedSessionForHistory.ipAddress}</p>
+                    <p className="font-mono">
+                      {selectedSessionForHistory.ipAddress}
+                    </p>
                   </div>
                 )}
                 {selectedSessionForHistory.revokeReason && (
                   <div className="col-span-2">
-                    <span className="text-muted-foreground">Revoke Reason:</span>
-                    <p className="text-destructive">{selectedSessionForHistory.revokeReason}</p>
+                    <span className="text-muted-foreground">
+                      Revoke Reason:
+                    </span>
+                    <p className="text-destructive">
+                      {selectedSessionForHistory.revokeReason}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowHistoryDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowHistoryDialog(false)}
+            >
               Close
             </Button>
           </DialogFooter>
