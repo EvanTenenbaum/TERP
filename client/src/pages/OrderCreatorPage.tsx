@@ -5,9 +5,10 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import {
   Card,
   CardContent,
@@ -79,6 +80,16 @@ export default function OrderCreatorPageV2() {
     useState(true);
   const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+
+  // CHAOS-007: Unsaved changes warning
+  const { setHasUnsavedChanges, ConfirmNavigationDialog } = useUnsavedChangesWarning({
+    message: "You have unsaved order changes. Are you sure you want to leave?",
+  });
+
+  // Track unsaved changes - any items mean there's work in progress
+  useEffect(() => {
+    setHasUnsavedChanges(items.length > 0);
+  }, [items.length, setHasUnsavedChanges]);
 
   // Credit check state
   const [showCreditWarning, setShowCreditWarning] = useState(false);
@@ -605,6 +616,9 @@ export default function OrderCreatorPageV2() {
         variant="default"
         onConfirm={confirmFinalize}
       />
+
+      {/* CHAOS-007: Unsaved Changes Navigation Dialog */}
+      <ConfirmNavigationDialog />
     </div>
   );
 }

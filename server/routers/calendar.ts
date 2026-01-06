@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import * as calendarDb from "../calendarDb";
 import TimezoneService from "../_core/timezoneService";
@@ -7,7 +8,6 @@ import InstanceGenerationService from "../_core/instanceGenerationService";
 import { getDb } from "../db";
 import { calendarEvents, calendarRecurrenceInstances } from "../../drizzle/schema";
 import { and, eq, gte, lte, inArray, isNull, or, sql } from "drizzle-orm";
-import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
  * Calendar Router
@@ -332,8 +332,75 @@ export const calendarRouter = router({
 
       // Create event in transaction
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
+
+      // CHAOS-010: Double-booking prevention
+      // Check for overlapping events for the assignee and participants
+      const usersToCheck: number[] = [];
+      if (input.assignedTo) {
+        usersToCheck.push(input.assignedTo);
+      }
+      if (input.participants && input.participants.length > 0) {
+        usersToCheck.push(...input.participants.filter(p => !usersToCheck.includes(p)));
+      }
+
+      if (usersToCheck.length > 0 && input.startTime && input.endTime) {
+        // Query for overlapping events
+        const startDateTime = new Date(input.startDate);
+        const endDateTime = new Date(input.endDate);
+
+        const overlappingEvents = await db
+          .select({
+            id: calendarEvents.id,
+            title: calendarEvents.title,
+            startDate: calendarEvents.startDate,
+            startTime: calendarEvents.startTime,
+            endTime: calendarEvents.endTime,
+            assignedTo: calendarEvents.assignedTo,
+          })
+          .from(calendarEvents)
+          .where(
+            and(
+              isNull(calendarEvents.deletedAt),
+              // Date overlap check
+              or(
+                // Event spans the same date
+                and(
+                  lte(calendarEvents.startDate, endDateTime),
+                  gte(calendarEvents.endDate, startDateTime)
+                )
+              ),
+              // Assigned to one of the users we're checking
+              inArray(calendarEvents.assignedTo, usersToCheck)
+            )
+          );
+
+        // Check for time overlap
+        const conflictingEvents = overlappingEvents.filter(event => {
+          if (!event.startTime || !event.endTime) return false;
+
+          // Convert times to comparable format
+          const newStart = input.startTime!;
+          const newEnd = input.endTime!;
+          const existingStart = event.startTime;
+          const existingEnd = event.endTime;
+
+          // Check for time overlap:
+          // Events overlap if one starts before the other ends AND ends after the other starts
+          return newStart < existingEnd && newEnd > existingStart;
+        });
+
+        if (conflictingEvents.length > 0) {
+          const conflictInfo = conflictingEvents.map(e =>
+            `"${e.title}" (${e.startTime}-${e.endTime})`
+          ).join(', ');
+
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `Double-booking detected: The assignee or participants already have events during this time: ${conflictInfo}. Please choose a different time slot.`,
+          });
+        }
+      }
 
       const newEvent = await calendarDb.createEvent({
         title: input.title,
@@ -431,11 +498,12 @@ export const calendarRouter = router({
       return newEvent;
     }),
 
-  // Update event with conflict detection
+  // Update event with conflict detection and optimistic locking (CHAOS-006)
   updateEvent: publicProcedure
     .input(
       z.object({
         id: z.number(),
+        version: z.number().optional(), // Optimistic locking - if provided, will check version before update
         updates: z.object({
           title: z.string().min(1).max(255).optional(),
           description: z.string().optional(),
@@ -457,6 +525,9 @@ export const calendarRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
       const userId = getAuthenticatedUserId(ctx);
 
       // Check permission
@@ -466,9 +537,20 @@ export const calendarRouter = router({
         throw new Error("Permission denied");
       }
 
-      // Get current event for history
+      // Get current event for history and version check
       const currentEvent = await calendarDb.getEventById(input.id);
       if (!currentEvent) throw new Error("Event not found");
+
+      // CHAOS-006: Optimistic locking - check version if provided
+      if (input.version !== undefined) {
+        const currentVersion = (currentEvent as any).version ?? 1;
+        if (currentVersion !== input.version) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `This event has been modified by another user. Your version: ${input.version}, Current version: ${currentVersion}. Please refresh and try again.`,
+          });
+        }
+      }
 
       // Convert string dates to Date objects for database
       const dbUpdates: Record<string, unknown> = { ...input.updates };
@@ -479,8 +561,34 @@ export const calendarRouter = router({
         dbUpdates.endDate = new Date(input.updates.endDate);
       }
 
-      // Update event
-      await calendarDb.updateEvent(input.id, dbUpdates as Parameters<typeof calendarDb.updateEvent>[1]);
+      // CHAOS-006: Increment version on update
+      if (input.version !== undefined) {
+        // Use version-aware update with WHERE clause
+        const result = await db
+          .update(calendarEvents)
+          .set({
+            ...dbUpdates,
+            version: sql`${calendarEvents.version} + 1`,
+          } as any)
+          .where(
+            and(
+              eq(calendarEvents.id, input.id),
+              eq(calendarEvents.version, input.version)
+            )
+          );
+
+        const affectedRows = (result as any)[0]?.affectedRows ?? 0;
+        if (affectedRows === 0) {
+          // Version mismatch - another user updated the event
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `This event has been modified by another user. Please refresh and try again.`,
+          });
+        }
+      } else {
+        // No version provided - just update without version check (backward compatible)
+        await calendarDb.updateEvent(input.id, dbUpdates as Parameters<typeof calendarDb.updateEvent>[1]);
+      }
 
       // Log changes to history
       for (const [field, value] of Object.entries(input.updates)) {
@@ -506,7 +614,9 @@ export const calendarRouter = router({
         await InstanceGenerationService.generateInstances(input.id, 90);
       }
 
-      return { success: true };
+      // Return new version for client to update its state
+      const newVersion = input.version !== undefined ? input.version + 1 : ((currentEvent as any).version ?? 1);
+      return { success: true, version: newVersion };
     }),
 
   // Delete event with cascade handling

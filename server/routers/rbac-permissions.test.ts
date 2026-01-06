@@ -308,7 +308,8 @@ describe("RBAC Permissions Router", () => {
       } as any);
 
       const mockInsert = vi.fn().mockReturnThis();
-      const mockValues = vi.fn().mockResolvedValue({ insertId: 100 });
+      // QA-TEST-001: Fix mock to return array format expected by router
+      const mockValues = vi.fn().mockResolvedValue([{ insertId: 100 }]);
 
       vi.mocked(db.insert).mockReturnValue({
         values: mockValues,
