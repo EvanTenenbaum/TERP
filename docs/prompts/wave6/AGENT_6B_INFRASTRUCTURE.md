@@ -1,0 +1,357 @@
+# Agent 6B: Infrastructure & Monitoring
+
+**Estimated Time**: 16-24 hours  
+**Priority**: HIGH - Production reliability  
+**Dependencies**: None (can start immediately)
+
+---
+
+## Mission
+
+Implement critical infrastructure for production monitoring, backups, and health checks.
+
+---
+
+## Context
+
+TERP needs production-grade infrastructure:
+- Datadog RUM for frontend monitoring (ST-009)
+- Automated database backups (REL-002)
+- Health check endpoint (INFRA-004)
+
+Sentry is already implemented (ST-008 complete).
+
+---
+
+## Prompt
+
+```
+You are working on the TERP cannabis ERP project.
+
+## Setup
+gh repo clone EvanTenenbaum/TERP
+cd TERP
+pnpm install
+
+## Your Mission: Infrastructure & Monitoring
+
+### Task 1: Datadog RUM Integration (ST-009) - 8-12h
+
+#### 1.1 Install Dependencies
+pnpm add @datadog/browser-rum
+
+#### 1.2 Create Datadog Client Config
+Create client/src/lib/datadog.ts:
+
+```typescript
+import { datadogRum } from '@datadog/browser-rum';
+
+export function initDatadog() {
+  const applicationId = import.meta.env.VITE_DATADOG_APPLICATION_ID;
+  const clientToken = import.meta.env.VITE_DATADOG_CLIENT_TOKEN;
+  const site = import.meta.env.VITE_DATADOG_SITE || 'datadoghq.com';
+  const env = import.meta.env.MODE || 'development';
+
+  // Don't initialize if credentials missing
+  if (!applicationId || !clientToken) {
+    console.log('[Datadog] Skipping initialization - credentials not configured');
+    return;
+  }
+
+  try {
+    datadogRum.init({
+      applicationId,
+      clientToken,
+      site,
+      service: 'terp-client',
+      env,
+      version: '1.0.0',
+      sessionSampleRate: 100,
+      sessionReplaySampleRate: 20,
+      trackUserInteractions: true,
+      trackResources: true,
+      trackLongTasks: true,
+      defaultPrivacyLevel: 'mask-user-input',
+    });
+
+    datadogRum.startSessionReplayRecording();
+    console.log('[Datadog] RUM initialized successfully');
+  } catch (error) {
+    console.error('[Datadog] Failed to initialize:', error);
+  }
+}
+
+export function setDatadogUser(userId: string, email?: string, name?: string) {
+  try {
+    datadogRum.setUser({
+      id: userId,
+      email,
+      name,
+    });
+  } catch (error) {
+    // Silently fail if Datadog not initialized
+  }
+}
+```
+
+#### 1.3 Initialize in main.tsx
+Edit client/src/main.tsx, add after Sentry init:
+
+```typescript
+import { initDatadog } from './lib/datadog';
+// ... after Sentry init
+initDatadog();
+```
+
+#### 1.4 Update .env.example
+Add these lines:
+
+```bash
+# Datadog RUM (Real User Monitoring)
+# Get credentials from: https://app.datadoghq.com/rum/application/create
+VITE_DATADOG_APPLICATION_ID=
+VITE_DATADOG_CLIENT_TOKEN=
+VITE_DATADOG_SITE=datadoghq.com
+```
+
+### Task 2: Database Backup Script (REL-002) - 4-8h
+
+#### 2.1 Create Backup Script
+Create scripts/backup-database.ts:
+
+```typescript
+import { execSync } from 'child_process';
+import { createReadStream, unlinkSync, existsSync } from 'fs';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { format } from 'date-fns';
+
+const DATABASE_URL = process.env.DATABASE_URL;
+const S3_BUCKET = process.env.BACKUP_S3_BUCKET;
+const S3_REGION = process.env.BACKUP_S3_REGION || 'us-east-1';
+const DRY_RUN = process.argv.includes('--dry-run');
+
+async function main() {
+  console.log('🗄️  TERP Database Backup Script');
+  console.log('================================');
+
+  if (!DATABASE_URL) {
+    console.error('❌ DATABASE_URL not set');
+    process.exit(1);
+  }
+
+  const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm-ss');
+  const filename = `terp-backup-${timestamp}.sql.gz`;
+  const localPath = `/tmp/${filename}`;
+
+  // Parse DATABASE_URL
+  const url = new URL(DATABASE_URL);
+  const isMySQL = url.protocol === 'mysql:';
+  const host = url.hostname;
+  const port = url.port || (isMySQL ? '3306' : '5432');
+  const user = url.username;
+  const password = url.password;
+  const database = url.pathname.slice(1);
+
+  console.log(`📊 Database: ${database} @ ${host}`);
+  console.log(`📁 Output: ${filename}`);
+
+  if (DRY_RUN) {
+    console.log('🔍 DRY RUN - No actual backup will be created');
+    return;
+  }
+
+  // Create dump
+  try {
+    if (isMySQL) {
+      execSync(
+        `mysqldump -h ${host} -P ${port} -u ${user} -p${password} ${database} | gzip > ${localPath}`,
+        { stdio: 'inherit' }
+      );
+    } else {
+      execSync(
+        `PGPASSWORD=${password} pg_dump -h ${host} -p ${port} -U ${user} ${database} | gzip > ${localPath}`,
+        { stdio: 'inherit' }
+      );
+    }
+    console.log('✅ Database dump created');
+  } catch (error) {
+    console.error('❌ Failed to create dump:', error);
+    process.exit(1);
+  }
+
+  // Upload to S3 if configured
+  if (S3_BUCKET) {
+    console.log(`☁️  Uploading to S3: ${S3_BUCKET}`);
+    
+    const s3 = new S3Client({ region: S3_REGION });
+    const fileStream = createReadStream(localPath);
+    
+    try {
+      await s3.send(new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: `backups/${filename}`,
+        Body: fileStream,
+        ContentType: 'application/gzip',
+      }));
+      console.log('✅ Uploaded to S3');
+      
+      // Clean up local file
+      unlinkSync(localPath);
+      console.log('🧹 Local file cleaned up');
+    } catch (error) {
+      console.error('❌ S3 upload failed:', error);
+      console.log(`📁 Local backup saved at: ${localPath}`);
+    }
+  } else {
+    console.log(`📁 No S3 configured. Backup saved at: ${localPath}`);
+  }
+
+  console.log('✅ Backup complete!');
+}
+
+main().catch(console.error);
+```
+
+#### 2.2 Install AWS SDK
+pnpm add @aws-sdk/client-s3
+
+#### 2.3 Add to package.json scripts
+```json
+"backup:db": "tsx scripts/backup-database.ts",
+"backup:db:dry": "tsx scripts/backup-database.ts --dry-run"
+```
+
+#### 2.4 Update .env.example
+```bash
+# Database Backup Configuration
+# S3 bucket for storing backups (optional - if not set, backups stay local)
+BACKUP_S3_BUCKET=
+BACKUP_S3_REGION=us-east-1
+```
+
+### Task 3: Health Check Endpoint (INFRA-004) - 4-6h
+
+#### 3.1 Create Health Router
+Create server/routers/health.ts:
+
+```typescript
+import { router, publicProcedure } from '../trpc';
+import { db } from '../db';
+import { sql } from 'drizzle-orm';
+
+const startTime = Date.now();
+
+export const healthRouter = router({
+  check: publicProcedure.query(async () => {
+    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    
+    // Check database connectivity
+    let dbStatus = 'unknown';
+    let dbLatency = 0;
+    try {
+      const dbStart = Date.now();
+      await db.execute(sql`SELECT 1`);
+      dbLatency = Date.now() - dbStart;
+      dbStatus = 'connected';
+    } catch (error) {
+      dbStatus = 'disconnected';
+    }
+
+    // Memory usage
+    const memUsage = process.memoryUsage();
+    const memoryMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+
+    return {
+      status: dbStatus === 'connected' ? 'healthy' : 'degraded',
+      version: process.env.npm_package_version || '1.0.0',
+      uptime,
+      timestamp: new Date().toISOString(),
+      database: {
+        status: dbStatus,
+        latencyMs: dbLatency,
+      },
+      memory: {
+        usedMB: memoryMB,
+        limitMB: 512, // DigitalOcean basic-xs limit
+      },
+    };
+  }),
+});
+```
+
+#### 3.2 Register Router
+In server/routers/index.ts, add:
+```typescript
+import { healthRouter } from './health';
+// In the appRouter:
+health: healthRouter,
+```
+
+#### 3.3 Verify Endpoint Works
+After starting dev server, test:
+curl http://localhost:5000/api/trpc/health.check
+
+### Task 4: Verify Everything Works
+
+1. pnpm check (must pass)
+2. pnpm build (must complete)
+3. Start dev server and test:
+   - Datadog init logs appear (or skip message if no credentials)
+   - Health endpoint returns valid JSON
+   - Backup script runs with --dry-run
+
+### Task 5: Create PR
+
+git checkout -b feat/infrastructure-monitoring
+git add -A
+git commit -m "feat(infra): add Datadog RUM, database backups, and health endpoint
+
+ST-009: Datadog RUM integration
+- Add @datadog/browser-rum for frontend monitoring
+- Track page views, user interactions, and errors
+- Defensive initialization (works without credentials)
+
+REL-002: Automated database backup script
+- Support MySQL and PostgreSQL
+- Optional S3 upload for cloud storage
+- Dry-run mode for testing
+
+INFRA-004: Health check endpoint
+- Database connectivity check
+- Memory usage monitoring
+- Uptime tracking"
+
+git push origin feat/infrastructure-monitoring
+gh pr create --title "feat(infra): add Datadog RUM, backup script, and health endpoint" --body "..."
+```
+
+---
+
+## Success Criteria
+
+- [ ] Datadog RUM initializes without crashing (even without credentials)
+- [ ] Backup script runs with --dry-run
+- [ ] Health endpoint returns valid JSON
+- [ ] All new env vars documented in .env.example
+- [ ] pnpm check passes
+- [ ] pnpm build passes
+
+---
+
+## Files Created/Modified
+
+| File | Change |
+|------|--------|
+| client/src/lib/datadog.ts | NEW - Datadog RUM init |
+| client/src/main.tsx | Add Datadog init call |
+| scripts/backup-database.ts | NEW - Backup script |
+| server/routers/health.ts | NEW - Health endpoint |
+| server/routers/index.ts | Register health router |
+| package.json | Add backup scripts, AWS SDK |
+| .env.example | Add Datadog and backup vars |
+
+---
+
+## Merge Priority
+
+**Merge FOURTH** - After cleanup PRs, as this adds new functionality.
