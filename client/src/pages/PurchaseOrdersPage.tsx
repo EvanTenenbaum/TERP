@@ -513,8 +513,8 @@ export default function PurchaseOrdersPage() {
                       value={item.quantityOrdered}
                       onChange={e => {
                         const value = e.target.value;
-                        // Prevent negative values
-                        if (value === '' || parseFloat(value) >= 0) {
+                        // Allow empty for typing, or positive values only (quantity must be > 0)
+                        if (value === '' || parseFloat(value) > 0) {
                           handleItemChange(
                             index,
                             "quantityOrdered",

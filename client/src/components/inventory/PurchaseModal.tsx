@@ -417,8 +417,8 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               value={formData.quantity}
               onChange={(e) => {
                 const value = e.target.value;
-                // Prevent negative values in the UI
-                if (value === '' || parseFloat(value) >= 0) {
+                // Allow empty string for typing, or positive values only
+                if (value === '' || parseFloat(value) > 0) {
                   setFormData({ ...formData, quantity: value });
                 }
               }}
