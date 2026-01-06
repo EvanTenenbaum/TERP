@@ -25,6 +25,7 @@ import { useState } from "react";
 import { AppBreadcrumb } from "./AppBreadcrumb";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { trpc } from "@/lib/trpc";
+import versionInfo from "../../../version.json";
 
 interface AppHeaderProps {
   onMenuClick?: () => void;
@@ -171,9 +172,15 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         </div>
       </div>
 
-      {/* Breadcrumb row */}
-      <div className="px-4 md:px-6 py-2">
+      {/* Breadcrumb row with version - CHAOS-027 */}
+      <div className="flex items-center justify-between px-4 md:px-6 py-2">
         <AppBreadcrumb />
+        <span
+          className="text-xs text-muted-foreground hidden sm:inline-block"
+          title={`Build: ${versionInfo.commit} (${versionInfo.date})`}
+        >
+          v{versionInfo.version}
+        </span>
       </div>
     </header>
   );
