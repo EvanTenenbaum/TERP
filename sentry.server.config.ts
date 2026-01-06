@@ -1,83 +1,23 @@
-import * as Sentry from "@sentry/node";
-
 /**
  * Sentry Server Configuration
- * 
- * Initializes Sentry error tracking for the Node.js server application.
- * Captures server-side errors, API errors, and performance metrics.
+ *
+ * DEPRECATED: This file is kept for backwards compatibility.
+ * The actual Sentry initialization is now handled in server/_core/monitoring.ts
+ * which provides defensive, non-blocking error handling.
+ *
+ * To use Sentry:
+ * - Call initMonitoring() from server/_core/monitoring.ts during server startup
+ * - Use captureException() for error reporting
+ * - Use setupErrorHandler(app) after routes are defined
  */
 
-Sentry.init({
-  // DSN from environment variable - set in production
-  dsn: process.env.SENTRY_DSN || "",
-  
-  // Environment name (development, staging, production)
-  environment: process.env.NODE_ENV || "development",
-  
-  // Enable Sentry only in production or when DSN is explicitly set
-  enabled: !!process.env.SENTRY_DSN,
-  
-  // Performance Monitoring
-  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0, // 10% in prod, 100% in dev
-  
-  integrations: [
-    // Automatically instrument Node.js modules
-    Sentry.httpIntegration(),
-    Sentry.expressIntegration(),
-    
-    // Capture console logs as breadcrumbs
-    Sentry.captureConsoleIntegration({
-      levels: ["error", "warn"],
-    }),
-  ],
-  
-  // Filter out sensitive data
-  beforeSend(event, hint) {
-    // Don't send events in development unless explicitly enabled
-    if (process.env.NODE_ENV === "development" && !process.env.SENTRY_DSN) {
-      return null;
-    }
-    
-    // Remove sensitive data from request
-    if (event.request) {
-      // Remove authorization headers
-      if (event.request.headers) {
-        delete event.request.headers["authorization"];
-        delete event.request.headers["cookie"];
-      }
-      
-      // Remove sensitive query parameters
-      if (event.request.query_string) {
-        const sanitized = event.request.query_string
-          .split("&")
-          .filter((param) => !param.startsWith("token=") && !param.startsWith("key="))
-          .join("&");
-        event.request.query_string = sanitized;
-      }
-    }
-    
-    return event;
-  },
-  
-  // Ignore certain errors
-  ignoreErrors: [
-    "ECONNRESET",
-    "ENOTFOUND",
-    "ETIMEDOUT",
-    "socket hang up",
-  ],
-});
+// Re-export from the central monitoring module for backwards compatibility
+export {
+  initMonitoring,
+  captureException,
+  captureMessage,
+  setupErrorHandler,
+} from "./server/_core/monitoring";
 
-/**
- * Setup Express error handler
- * Call this function with your Express app after all routes are defined
- * 
- * Example:
- * setupSentryErrorHandler(app);
- */
-export function setupSentryErrorHandler(app: any) {
-  Sentry.setupExpressErrorHandler(app);
-}
-
-// Export Sentry for manual error capturing
-export { Sentry };
+// Note: The Sentry object is no longer directly exported.
+// Use captureException() and captureMessage() instead for safer error handling.

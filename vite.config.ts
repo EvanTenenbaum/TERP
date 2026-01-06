@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig, type PluginOption } from "vite";
 
+// IMPORTANT: @sentry/vite-plugin is imported DYNAMICALLY below to prevent build crashes
+// if the package is missing or corrupted. This is critical for build reliability.
+
 // Dev-only plugins are imported dynamically to avoid bundling them in production
 // This enables `pnpm install --prod` in Docker runner stage
 
@@ -34,6 +37,46 @@ export default defineConfig(async ({ mode }) => {
     }
   }
 
+  // Sentry source maps plugin - only in production builds with auth token
+  // This uploads source maps to Sentry for readable stack traces
+  // CRITICAL: Dynamic import to prevent build crashes if package is missing
+  const sentryOrg = process.env.SENTRY_ORG;
+  const sentryProject = process.env.SENTRY_PROJECT;
+  const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+
+  if (isProd && sentryOrg && sentryProject && sentryAuthToken) {
+    try {
+      // Dynamic import - if @sentry/vite-plugin is missing, catch handles it
+      const { sentryVitePlugin } = await import("@sentry/vite-plugin");
+      plugins.push(
+        sentryVitePlugin({
+          org: sentryOrg,
+          project: sentryProject,
+          authToken: sentryAuthToken,
+          // Disable telemetry to avoid any potential issues
+          telemetry: false,
+          // Only upload source maps, don't inject debug IDs in dev
+          sourcemaps: {
+            filesToDeleteAfterUpload: ["**/*.map"], // Delete source maps after upload for security
+          },
+          // Release name for tracking versions
+          release: {
+            name: process.env.VITE_BUILD_VERSION || `build-${Date.now()}`,
+          },
+        })
+      );
+      console.log("✅ Sentry source maps plugin configured");
+    } catch (error) {
+      console.warn("⚠️ Failed to load/configure Sentry source maps plugin:", error);
+      console.log("   Build will continue without source map upload to Sentry");
+      // Non-fatal - build continues without source map upload
+    }
+  } else if (isProd) {
+    console.log(
+      "ℹ️ Sentry source maps plugin disabled (missing SENTRY_ORG, SENTRY_PROJECT, or SENTRY_AUTH_TOKEN)"
+    );
+  }
+
   return {
     plugins,
     resolve: {
@@ -49,6 +92,9 @@ export default defineConfig(async ({ mode }) => {
     build: {
       outDir: path.resolve(import.meta.dirname, "dist/public"),
       emptyOutDir: true,
+      // Enable source maps for Sentry stack traces
+      // Source maps are deleted after upload when SENTRY_AUTH_TOKEN is set
+      sourcemap: true,
       rollupOptions: {
         output: {
           manualChunks(id: string) {
