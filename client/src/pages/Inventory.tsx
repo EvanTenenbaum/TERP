@@ -780,13 +780,13 @@ export default function Inventory() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8">
+                  <TableCell colSpan={11} className="text-center py-8">
                     Loading inventory...
                   </TableCell>
                 </TableRow>
               ) : !inventoryData || inventoryData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8">
+                  <TableCell colSpan={11} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2">
                       <Package className="h-12 w-12 text-muted-foreground" />
                       <p className="text-muted-foreground">
@@ -799,6 +799,29 @@ export default function Inventory() {
                       >
                         Create First Batch
                       </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredInventory.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={11} className="text-center py-8">
+                    <div className="flex flex-col items-center gap-2">
+                      <Package className="h-12 w-12 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        No matching inventory found
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Try adjusting your filters or search query
+                      </p>
+                      {hasActiveFilters && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={clearAllFilters}
+                        >
+                          Clear All Filters
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -950,6 +973,25 @@ export default function Inventory() {
                 >
                   Create First Batch
                 </Button>
+              </div>
+            </Card>
+          ) : filteredInventory.length === 0 ? (
+            <Card className="p-8">
+              <div className="flex flex-col items-center gap-4">
+                <Package className="h-12 w-12 text-muted-foreground" />
+                <p className="text-muted-foreground">No matching inventory found</p>
+                <p className="text-sm text-muted-foreground text-center">
+                  Try adjusting your filters or search query
+                </p>
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearAllFilters}
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
               </div>
             </Card>
           ) : (

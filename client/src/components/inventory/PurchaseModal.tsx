@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   Dialog,
@@ -413,11 +413,21 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
               id="quantity"
               type="number"
               step="0.01"
+              min="0.01"
               value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              placeholder="Enter quantity"
+              onChange={(e) => {
+                const value = e.target.value;
+                // Prevent negative values in the UI
+                if (value === '' || parseFloat(value) >= 0) {
+                  setFormData({ ...formData, quantity: value });
+                }
+              }}
+              placeholder="Enter quantity (must be positive)"
               required
             />
+            {formData.quantity && parseFloat(formData.quantity) <= 0 && (
+              <p className="text-sm text-red-500">Quantity must be greater than 0</p>
+            )}
           </div>
 
           {/* COGS Mode */}

@@ -25,9 +25,9 @@ export const purchaseOrdersRouter = router({
         createdBy: z.number(),
         items: z.array(
           z.object({
-            productId: z.number(),
-            quantityOrdered: z.number(),
-            unitCost: z.number(),
+            productId: z.number().int().positive("Product ID must be a positive integer"),
+            quantityOrdered: z.number().positive("Quantity must be greater than 0"),
+            unitCost: z.number().min(0, "Unit cost cannot be negative"),
           })
         ),
       }).refine(
@@ -261,10 +261,10 @@ export const purchaseOrdersRouter = router({
   addItem: publicProcedure
     .input(
       z.object({
-        purchaseOrderId: z.number(),
-        productId: z.number(),
-        quantityOrdered: z.number(),
-        unitCost: z.number(),
+        purchaseOrderId: z.number().int().positive("Purchase order ID must be a positive integer"),
+        productId: z.number().int().positive("Product ID must be a positive integer"),
+        quantityOrdered: z.number().positive("Quantity must be greater than 0"),
+        unitCost: z.number().min(0, "Unit cost cannot be negative"),
         notes: z.string().optional(),
       })
     )
@@ -293,9 +293,9 @@ export const purchaseOrdersRouter = router({
   updateItem: publicProcedure
     .input(
       z.object({
-        id: z.number(),
-        quantityOrdered: z.number().optional(),
-        unitCost: z.number().optional(),
+        id: z.number().int().positive("Item ID must be a positive integer"),
+        quantityOrdered: z.number().positive("Quantity must be greater than 0").optional(),
+        unitCost: z.number().min(0, "Unit cost cannot be negative").optional(),
         notes: z.string().optional(),
       })
     )
