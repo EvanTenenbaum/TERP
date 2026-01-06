@@ -26,13 +26,9 @@ import { ProcessReturnModal } from '@/components/orders/ProcessReturnModal';
 import { ReturnHistorySection } from '@/components/orders/ReturnHistorySection';
 import { ConfirmDraftModal } from '@/components/orders/ConfirmDraftModal';
 import { DeleteDraftModal } from '@/components/orders/DeleteDraftModal';
-import { 
-  Search, 
-  Package, 
-  Truck, 
-  CheckCircle2, 
-  Clock,
-  Eye,
+import {
+  Search,
+  CheckCircle2,
   PlusCircle,
   PackageX,
   Download,
@@ -47,22 +43,65 @@ import { DataCardSection } from '@/components/data-cards';
 import { TableSkeleton } from '@/components/ui/skeleton-loaders';
 import { EmptyState } from '@/components/ui/empty-state';
 
+const ORDERS_FILTER_KEY = "terp-orders-filters";
+
+/**
+ * Load orders filters from localStorage
+ * CHAOS-023: Filter persistence
+ */
+function loadOrdersFiltersFromStorage(): { activeTab: 'draft' | 'confirmed'; statusFilter: string } | null {
+  try {
+    const stored = localStorage.getItem(ORDERS_FILTER_KEY);
+    if (!stored) return null;
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save orders filters to localStorage
+ */
+function saveOrdersFiltersToStorage(filters: { activeTab: 'draft' | 'confirmed'; statusFilter: string }): void {
+  try {
+    localStorage.setItem(ORDERS_FILTER_KEY, JSON.stringify(filters));
+  } catch {
+    // Silently fail
+  }
+}
+
 export default function Orders() {
   const [, setLocation] = useLocation();
-  
-  // Initialize filters from URL parameters
-  const getInitialStatusFilter = () => {
+
+  // Initialize filters from URL parameters first, then localStorage (CHAOS-023)
+  const getInitialFilters = () => {
     const params = new URLSearchParams(window.location.search);
-    const status = params.get('status');
-    if (status && ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].includes(status)) {
-      return status;
+    const urlStatus = params.get('status');
+
+    // If URL has status param, use it (for deep linking)
+    if (urlStatus && ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'PACKED'].includes(urlStatus)) {
+      return { activeTab: 'confirmed' as const, statusFilter: urlStatus };
     }
-    return 'ALL';
+
+    // Otherwise try localStorage
+    const stored = loadOrdersFiltersFromStorage();
+    if (stored) {
+      return stored;
+    }
+
+    return { activeTab: 'confirmed' as const, statusFilter: 'ALL' };
   };
-  
-  const [activeTab, setActiveTab] = useState<'draft' | 'confirmed'>('confirmed');
+
+  const initialFilters = getInitialFilters();
+  const [activeTab, setActiveTab] = useState<'draft' | 'confirmed'>(initialFilters.activeTab);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>(getInitialStatusFilter);
+  const [statusFilter, setStatusFilter] = useState<string>(initialFilters.statusFilter);
+
+  // Persist filter changes to localStorage (CHAOS-023)
+  useEffect(() => {
+    saveOrdersFiltersToStorage({ activeTab, statusFilter });
+  }, [activeTab, statusFilter]);
+
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showShipModal, setShowShipModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);

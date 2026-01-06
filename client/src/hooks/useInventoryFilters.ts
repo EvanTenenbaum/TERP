@@ -1,10 +1,12 @@
 /**
  * useInventoryFilters Hook
  * Manages inventory filter state and logic
+ * CHAOS-023: Persists filter state to localStorage
  */
 
 import { useState, useMemo, useEffect } from "react";
-import { useLocation } from "wouter";
+
+const STORAGE_KEY = "terp-inventory-filters";
 
 export interface InventoryFilters {
   status: string[];
@@ -46,36 +48,95 @@ export const defaultFilters: InventoryFilters = {
   paymentStatus: [],
 };
 
+/**
+ * Load filters from localStorage
+ */
+function loadFiltersFromStorage(): Partial<InventoryFilters> | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+
+    const parsed = JSON.parse(stored);
+
+    // Convert date strings back to Date objects
+    if (parsed.dateRange) {
+      parsed.dateRange = {
+        from: parsed.dateRange.from ? new Date(parsed.dateRange.from) : null,
+        to: parsed.dateRange.to ? new Date(parsed.dateRange.to) : null,
+      };
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save filters to localStorage
+ */
+function saveFiltersToStorage(filters: InventoryFilters): void {
+  try {
+    // Convert Date objects to ISO strings for storage
+    const toStore = {
+      ...filters,
+      dateRange: {
+        from: filters.dateRange.from?.toISOString() ?? null,
+        to: filters.dateRange.to?.toISOString() ?? null,
+      },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+  } catch {
+    // Silently fail if localStorage is full or unavailable
+  }
+}
+
 export function useInventoryFilters() {
-  const [location] = useLocation();
-  
-  // Initialize filters from URL parameters
+  // Initialize filters from URL parameters first, then localStorage
   const getInitialFilters = (): InventoryFilters => {
     const params = new URLSearchParams(window.location.search);
-    const initialFilters = { ...defaultFilters };
-    
-    // Check for stockLevel parameter (from data cards)
-    const stockLevel = params.get('stockLevel');
-    if (stockLevel && ['in_stock', 'low_stock', 'out_of_stock'].includes(stockLevel)) {
-      initialFilters.stockLevel = stockLevel as any;
+    const hasUrlParams = params.has('stockLevel') || params.has('status') || params.has('category');
+
+    // If URL params exist, use those (for deep linking)
+    if (hasUrlParams) {
+      const initialFilters = { ...defaultFilters };
+
+      // Check for stockLevel parameter (from data cards)
+      const stockLevel = params.get('stockLevel');
+      if (stockLevel && ['in_stock', 'low_stock', 'out_of_stock'].includes(stockLevel)) {
+        initialFilters.stockLevel = stockLevel as InventoryFilters['stockLevel'];
+      }
+
+      // Check for status parameter
+      const status = params.get('status');
+      if (status) {
+        initialFilters.status = status.split(',');
+      }
+
+      // Check for category parameter
+      const category = params.get('category');
+      if (category) {
+        initialFilters.category = category;
+      }
+
+      return initialFilters;
     }
-    
-    // Check for status parameter
-    const status = params.get('status');
-    if (status) {
-      initialFilters.status = status.split(',');
+
+    // Otherwise, try to load from localStorage
+    const storedFilters = loadFiltersFromStorage();
+    if (storedFilters) {
+      return { ...defaultFilters, ...storedFilters };
     }
-    
-    // Check for category parameter
-    const category = params.get('category');
-    if (category) {
-      initialFilters.category = category;
-    }
-    
-    return initialFilters;
+
+    return defaultFilters;
   };
-  
+
   const [filters, setFilters] = useState<InventoryFilters>(getInitialFilters);
+
+  // Persist filters to localStorage whenever they change
+  useEffect(() => {
+    saveFiltersToStorage(filters);
+  }, [filters]);
 
   const updateFilter = <K extends keyof InventoryFilters>(
     key: K,

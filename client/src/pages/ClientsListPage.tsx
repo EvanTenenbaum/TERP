@@ -31,6 +31,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CreditIndicator } from "@/components/credit/CreditIndicator";
 import { useCreditVisibility } from "@/hooks/useCreditVisibility";
+import { TeriCodeLabel } from "@/components/ui/teri-code-label";
 
 export default function ClientsListPage() {
   const [, setLocation] = useLocation();
@@ -651,9 +652,8 @@ export default function ClientsListPage() {
                       <button
                         onClick={() => handleSort('teriCode')}
                         className="flex items-center gap-1 hover:text-foreground transition-colors"
-                        title="TERI Code: Unique identifier for each client (format: CLI-XXXXXXXX)"
                       >
-                        TERI Code
+                        <TeriCodeLabel showIcon={true} size="sm" />
                         {sortColumn === 'teriCode' ? (
                           sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
                         ) : (
