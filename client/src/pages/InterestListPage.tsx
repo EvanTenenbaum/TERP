@@ -47,6 +47,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/skeleton-loaders";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { exportToCSVWithLabels } from "@/utils/exportToCSV";
 import {
   InterestDetailSheet,
@@ -59,6 +60,9 @@ export default function InterestListPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ACTIVE");
   const [selectedItem, setSelectedItem] = useState<InterestItem | null>(null);
+  // CHAOS-016: State for delete confirmation dialog (replaces window.confirm)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<InterestItem | null>(null);
 
   // Fetch client needs which represents interest items
   const {
@@ -162,10 +166,19 @@ export default function InterestListPage() {
     setLocation(`/orders/create?clientId=${item.clientId}&needId=${item.id}`);
   };
 
+  // CHAOS-016: Show confirm dialog instead of window.confirm
   const handleDeleteItem = (item: InterestItem) => {
-    if (window.confirm(`Remove interest item for ${item.clientName}?`)) {
-      deleteMutation.mutate({ id: item.id });
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  // CHAOS-016: Handle confirmed delete
+  const handleConfirmDelete = () => {
+    if (itemToDelete) {
+      deleteMutation.mutate({ id: itemToDelete.id });
     }
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
   };
 
   const handleExport = () => {
@@ -472,6 +485,18 @@ export default function InterestListPage() {
         onClose={() => setSelectedItem(null)}
         onConvertToOrder={handleConvertToOrder}
         onDelete={handleDeleteItem}
+      />
+
+      {/* CHAOS-016: Delete Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Remove Interest Item"
+        description={`Are you sure you want to remove the interest item for ${itemToDelete?.clientName}? This action cannot be undone.`}
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteMutation.isPending}
       />
     </div>
   );

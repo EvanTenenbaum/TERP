@@ -1,7 +1,7 @@
 import { memo } from "react";
 /**
  * Workflow Queue Summary Widget
- * 
+ *
  * Displays batch counts by workflow status with quick navigation to the full board.
  * Shows color-coded status indicators and total batch count.
  */
@@ -10,15 +10,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowRight, Layers } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 
 export const WorkflowQueueWidget = memo(function WorkflowQueueWidget() {
   const [, setLocation] = useLocation();
-  
-  const { data: statuses, isLoading: statusesLoading } = trpc.workflowQueue.listStatuses.useQuery();
-  const { data: queues, isLoading: queuesLoading } = trpc.workflowQueue.getQueues.useQuery();
+
+  const { data: statuses, isLoading: statusesLoading } =
+    trpc.workflowQueue.listStatuses.useQuery();
+  const { data: queues, isLoading: queuesLoading } =
+    trpc.workflowQueue.getQueues.useQuery();
 
   const isLoading = statusesLoading || queuesLoading;
 
@@ -28,7 +31,9 @@ export const WorkflowQueueWidget = memo(function WorkflowQueueWidget() {
     : 0;
 
   // Sort statuses by order
-  const sortedStatuses = statuses ? [...statuses].sort((a, b) => a.order - b.order) : [];
+  const sortedStatuses = statuses
+    ? [...statuses].sort((a, b) => a.order - b.order)
+    : [];
 
   return (
     <Card>
@@ -56,31 +61,36 @@ export const WorkflowQueueWidget = memo(function WorkflowQueueWidget() {
             <Skeleton className="h-8 w-full" />
           </div>
         ) : sortedStatuses.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p className="mb-2">No workflow statuses configured</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLocation("/workflow-queue?view=settings")}
-            >
-              Configure Workflow
-            </Button>
-          </div>
+          <EmptyState
+            variant="generic"
+            size="sm"
+            title="No workflow statuses"
+            description="Configure workflow statuses to track batch progress"
+            action={{
+              label: "Configure Workflow",
+              onClick: () => setLocation("/workflow-queue?view=settings"),
+            }}
+          />
         ) : (
           <div className="space-y-3">
             {/* Total Summary */}
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <span className="font-semibold text-blue-900">Total Batches in Queue</span>
-              <Badge variant="secondary" className="text-lg font-bold bg-blue-600 text-white">
+              <span className="font-semibold text-blue-900">
+                Total Batches in Queue
+              </span>
+              <Badge
+                variant="secondary"
+                className="text-lg font-bold bg-blue-600 text-white"
+              >
                 {totalBatches}
               </Badge>
             </div>
 
             {/* Status Breakdown */}
             <div className="space-y-2">
-              {sortedStatuses.map((status) => {
+              {sortedStatuses.map(status => {
                 const batchCount = queues?.[status.id]?.length || 0;
-                
+
                 return (
                   <div
                     key={status.id}
@@ -92,7 +102,9 @@ export const WorkflowQueueWidget = memo(function WorkflowQueueWidget() {
                         className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: status.color }}
                       />
-                      <span className="text-sm font-medium truncate">{status.name}</span>
+                      <span className="text-sm font-medium truncate">
+                        {status.name}
+                      </span>
                     </div>
                     <Badge
                       variant="outline"

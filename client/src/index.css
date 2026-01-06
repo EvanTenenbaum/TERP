@@ -181,4 +181,91 @@
       max-width: 1280px; /* Standard content width */
     }
   }
+
+  /**
+   * CHAOS-012: Mobile keyboard-aware form handling
+   * Ensures form buttons remain visible when on-screen keyboard is open
+   */
+  .form-keyboard-aware {
+    /* Enable smooth scrolling when keyboard opens */
+    scroll-behavior: smooth;
+  }
+
+  /**
+   * CHAOS-012: Sticky form actions for mobile
+   * Keeps submit buttons visible above the keyboard
+   */
+  .form-actions-sticky {
+    position: sticky;
+    bottom: 0;
+    background: var(--background);
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    z-index: 10;
+  }
+
+  @media (max-width: 767px) {
+    .form-actions-sticky {
+      /* Add extra padding for mobile safe area */
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  /**
+   * CHAOS-011: Minimum touch target utility class
+   * Use this for any interactive element that needs minimum 44x44px touch target
+   */
+  .touch-target-min {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /**
+   * CHAOS-013: Table horizontal scroll indicator
+   * Shows a subtle gradient to indicate more content is available
+   */
+  .table-scroll-container {
+    position: relative;
+  }
+
+  .table-scroll-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    background: linear-gradient(to right, transparent, var(--background));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .table-scroll-container.has-overflow::after {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  /**
+   * CHAOS-012: Mobile keyboard utilities
+   * Helps with form layouts when keyboard is open
+   */
+  @media (max-width: 767px) {
+    /* Scroll focused input into view on mobile */
+    input:focus,
+    textarea:focus,
+    select:focus {
+      scroll-margin-bottom: 120px;
+    }
+
+    /* Ensure form content is scrollable when keyboard is open */
+    .keyboard-aware-scroll {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: env(safe-area-inset-bottom, 1rem);
+    }
+  }
 }

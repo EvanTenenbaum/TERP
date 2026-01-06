@@ -32,6 +32,7 @@ import {
   Star,
   X,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface BatchMediaUploadProps {
   batchId: number;
@@ -61,6 +62,9 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
   const [caption, setCaption] = useState("");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  // CHAOS-016: State for delete confirmation dialog (replaces window.confirm)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -83,7 +87,7 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
       });
       resetUploadForm();
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Upload failed",
         description: error.message || "Failed to save image",
@@ -101,7 +105,7 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
         description: "The image has been updated.",
       });
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Update failed",
         description: error.message || "Failed to update image",
@@ -119,7 +123,7 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
         description: "The image has been removed.",
       });
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: "Delete failed",
         description: error.message || "Failed to delete image",
@@ -235,14 +239,20 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
     [updateImageMutation]
   );
 
-  const handleDelete = useCallback(
-    (imageId: number) => {
-      if (window.confirm("Are you sure you want to delete this image?")) {
-        deleteImageMutation.mutate({ imageId });
-      }
-    },
-    [deleteImageMutation]
-  );
+  // CHAOS-016: Show confirm dialog instead of window.confirm
+  const handleDelete = useCallback((imageId: number) => {
+    setImageToDelete(imageId);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  // CHAOS-016: Handle confirmed delete
+  const handleConfirmDelete = useCallback(() => {
+    if (imageToDelete !== null) {
+      deleteImageMutation.mutate({ imageId: imageToDelete });
+    }
+    setDeleteDialogOpen(false);
+    setImageToDelete(null);
+  }, [imageToDelete, deleteImageMutation]);
 
   return (
     <Card>
@@ -321,10 +331,7 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
           <div className="text-center py-12">
             <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">No images uploaded yet</p>
-            <Button
-              variant="outline"
-              onClick={() => setUploadDialogOpen(true)}
-            >
+            <Button variant="outline" onClick={() => setUploadDialogOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               Upload First Image
             </Button>
@@ -380,7 +387,7 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
                 id="caption"
                 placeholder="Enter a caption for this image"
                 value={caption}
-                onChange={(e) => setCaption(e.target.value)}
+                onChange={e => setCaption(e.target.value)}
               />
             </div>
           </div>
@@ -393,9 +400,7 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
               onClick={handleUpload}
               disabled={!selectedFile || isUploading}
             >
-              {isUploading && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Upload
             </Button>
           </DialogFooter>
@@ -414,6 +419,18 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* CHAOS-016: Delete Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Image"
+        description="Are you sure you want to delete this image? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteImageMutation.isPending}
+      />
     </Card>
   );
 });
