@@ -16,14 +16,16 @@ import { Plus, Send, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
+// Payment terms must match server validation schema
 const paymentTermsOptions = [
-  "NET15",
-  "NET30",
-  "NET45",
-  "NET60",
   "COD",
-  "PREPAID",
+  "NET_7",
+  "NET_15",
+  "NET_30",
+  "CONSIGNMENT",
+  "PARTIAL",
 ] as const;
+
 const categoryOptions = [
   "Flower",
   "Deps",
@@ -38,13 +40,16 @@ const createEmptyRow = (): IntakeGridRow => ({
   id: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
   vendorId: null,
   vendorName: "",
+  brandName: "",
   category: "Flower",
   item: "",
+  strainId: null,
   qty: 0,
   cogs: 0,
-  paymentTerms: "NET30",
+  paymentTerms: "NET_30",
   locationId: null,
   locationName: "",
+  site: "",
   notes: "",
   status: "pending",
 });
@@ -127,17 +132,16 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
     [strainsData?.items]
   );
 
-  // Create intake session mutation
-  const createSession = trpc.productIntake.createSession.useMutation();
-  const addBatch = trpc.productIntake.addBatch.useMutation();
-  const completeSession = trpc.productIntake.completeSession.useMutation();
+  // Use inventory.intake mutation which calls inventoryIntakeService.processIntake
+  // This creates new batches with proper validation and audit logging
+  const intakeMutation = trpc.inventory.intake.useMutation();
 
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
       {
         headerName: "Vendor",
         field: "vendorName",
-        width: 180,
+        width: 160,
         editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: {
@@ -145,9 +149,16 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
         },
       },
       {
+        headerName: "Brand",
+        field: "brandName",
+        width: 140,
+        editable: params => params.data?.status === "pending",
+        // Brand can be free-text or copied from vendor
+      },
+      {
         headerName: "Category",
         field: "category",
-        width: 130,
+        width: 120,
         editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: {
@@ -155,10 +166,10 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
         },
       },
       {
-        headerName: "Item",
+        headerName: "Product",
         field: "item",
         flex: 1,
-        minWidth: 200,
+        minWidth: 180,
         editable: params => params.data?.status === "pending",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: {
@@ -242,14 +253,30 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
         const vendor = vendors.find(v => v.name === event.newValue);
         if (vendor) {
           event.node.setDataValue("vendorId", vendor.id);
+          // Auto-populate brand with vendor name if empty
+          if (!event.data.brandName) {
+            event.node.setDataValue("brandName", vendor.name);
+          }
         }
       }
 
-      // Update location ID when location name changes
+      // Update location ID and site when location name changes
       if (event.colDef.field === "locationName") {
         const location = locations.find(l => l.site === event.newValue);
         if (location) {
           event.node.setDataValue("locationId", location.id);
+          event.node.setDataValue("site", location.site);
+        }
+      }
+
+      // Update strainId when item/product changes
+      if (event.colDef.field === "item") {
+        const strain = strains.find(
+          s =>
+            s.standardizedName === event.newValue || s.name === event.newValue
+        );
+        if (strain) {
+          event.node.setDataValue("strainId", strain.id);
         }
       }
 
@@ -260,7 +287,7 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
         )
       );
     },
-    [vendors, locations]
+    [vendors, locations, strains]
   );
 
   const handleAddRow = useCallback(() => {
@@ -284,132 +311,94 @@ export const IntakeGrid = React.memo(function IntakeGrid() {
   }, []);
 
   const handleSubmitIntake = useCallback(async () => {
+    // Validate rows: must have vendor, brand, item, qty > 0, cogs > 0, and location
     const pendingRows = rows.filter(
-      r => r.status === "pending" && r.vendorId && r.item && r.qty > 0
+      r =>
+        r.status === "pending" &&
+        r.vendorName.trim() !== "" &&
+        r.brandName.trim() !== "" &&
+        r.item.trim() !== "" &&
+        r.qty > 0 &&
+        r.cogs > 0 &&
+        r.site.trim() !== ""
     );
 
     if (pendingRows.length === 0) {
       toast.error(
-        "No valid rows to submit. Ensure vendor, item, and quantity are filled."
+        "No valid rows to submit. Ensure vendor, brand, product, quantity, COGS, and location are filled."
       );
       return;
     }
 
     setIsSubmitting(true);
 
-    try {
-      // Group rows by vendor to create separate intake sessions
-      const rowsByVendor = new Map<number, IntakeGridRow[]>();
-      for (const row of pendingRows) {
-        if (row.vendorId) {
-          const existing = rowsByVendor.get(row.vendorId) || [];
-          rowsByVendor.set(row.vendorId, [...existing, row]);
-        }
-      }
+    let successCount = 0;
+    let errorCount = 0;
 
-      let successCount = 0;
-      let errorCount = 0;
+    // Process each row individually using inventory.intake mutation
+    // This uses inventoryIntakeService.processIntake which creates new batches
+    for (const row of pendingRows) {
+      try {
+        await intakeMutation.mutateAsync({
+          vendorName: row.vendorName,
+          brandName: row.brandName,
+          productName: row.item,
+          category: row.category,
+          strainId: row.strainId,
+          quantity: row.qty,
+          cogsMode: "FIXED" as const,
+          unitCogs: row.cogs.toFixed(2),
+          paymentTerms: row.paymentTerms as
+            | "COD"
+            | "NET_7"
+            | "NET_15"
+            | "NET_30"
+            | "CONSIGNMENT"
+            | "PARTIAL",
+          location: {
+            site: row.site,
+          },
+          metadata: row.notes ? { notes: row.notes } : undefined,
+        });
 
-      for (const [vendorId, vendorRows] of rowsByVendor) {
-        try {
-          // Create intake session
-          const session = await createSession.mutateAsync({
-            vendorId,
-            receiveDate: new Date().toISOString().slice(0, 10),
-            receivedBy: 1, // TODO: Get from auth context
-            paymentTerms: vendorRows[0]?.paymentTerms || "NET30",
-          });
-
-          // Check if session was created successfully
-          if (!session.sessionId) {
-            throw new Error("Failed to create intake session");
-          }
-
-          const sessionId = session.sessionId;
-
-          // Add each batch to the session
-          for (const row of vendorRows) {
-            try {
-              // For simplicity, we'll use the first batch ID from a search
-              // In a real implementation, this would create a new batch
-              await addBatch.mutateAsync({
-                intakeSessionId: sessionId,
-                batchId: 1, // Placeholder - real implementation would create/find batch
-                receivedQty: row.qty,
-                unitCost: row.cogs,
-                internalNotes: row.notes,
-              });
-
-              // Mark row as submitted
-              setRows(prev =>
-                prev.map(r =>
-                  r.id === row.id ? { ...r, status: "submitted" as const } : r
-                )
-              );
-              successCount++;
-            } catch (batchError) {
-              // Mark row as error
-              setRows(prev =>
-                prev.map(r =>
-                  r.id === row.id
-                    ? {
-                        ...r,
-                        status: "error" as const,
-                        errorMessage:
-                          batchError instanceof Error
-                            ? batchError.message
-                            : "Failed to add batch",
-                      }
-                    : r
-                )
-              );
-              errorCount++;
-            }
-          }
-
-          // Complete the session
-          await completeSession.mutateAsync({ intakeSessionId: sessionId });
-        } catch (sessionError) {
-          // Mark all rows for this vendor as error
-          for (const row of vendorRows) {
-            setRows(prev =>
-              prev.map(r =>
-                r.id === row.id
-                  ? {
-                      ...r,
-                      status: "error" as const,
-                      errorMessage:
-                        sessionError instanceof Error
-                          ? sessionError.message
-                          : "Failed to create session",
-                    }
-                  : r
-              )
-            );
-            errorCount++;
-          }
-        }
-      }
-
-      if (successCount > 0) {
-        toast.success(
-          `Successfully submitted ${successCount} intake record(s)`
+        // Mark row as submitted
+        setRows(prev =>
+          prev.map(r =>
+            r.id === row.id ? { ...r, status: "submitted" as const } : r
+          )
         );
-      }
-      if (errorCount > 0) {
-        toast.error(
-          `Failed to submit ${errorCount} record(s). Check status column for details.`
+        successCount++;
+      } catch (error) {
+        // Mark row as error
+        setRows(prev =>
+          prev.map(r =>
+            r.id === row.id
+              ? {
+                  ...r,
+                  status: "error" as const,
+                  errorMessage:
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to create batch",
+                }
+              : r
+          )
         );
+        errorCount++;
       }
-    } catch (error) {
-      toast.error(
-        "Intake submission failed: " +
-          (error instanceof Error ? error.message : "Unknown error")
-      );
-    } finally {
-      setIsSubmitting(false);
     }
-  }, [rows, createSession, addBatch, completeSession]);
+
+    if (successCount > 0) {
+      toast.success(`Successfully submitted ${successCount} intake record(s)`);
+    }
+    if (errorCount > 0) {
+      toast.error(
+        `Failed to submit ${errorCount} record(s). Check status column for details.`
+      );
+    }
+
+    setIsSubmitting(false);
+  }, [rows, intakeMutation]);
 
   // Calculate summary
   const summary = useMemo<IntakeGridSummary>(() => {
