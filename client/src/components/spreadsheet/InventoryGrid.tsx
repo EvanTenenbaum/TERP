@@ -1,5 +1,10 @@
-import React, { useCallback, useMemo } from "react";
-import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
+import React, { useCallback, useMemo, useRef } from "react";
+import type {
+  CellValueChangedEvent,
+  ColDef,
+  GridReadyEvent,
+  GridApi,
+} from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +14,14 @@ import type { InventoryGridRow } from "@/types/spreadsheet";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+
+// Enable AG-Grid Enterprise features for row grouping
+import "ag-grid-enterprise";
+import { LicenseManager } from "ag-grid-enterprise";
+// Note: In production, a valid license key should be set via environment variable
+if (typeof window !== "undefined") {
+  LicenseManager.setLicenseKey(import.meta.env.VITE_AG_GRID_LICENSE_KEY || "");
+}
 
 const statusOptions = [
   "AWAITING_INTAKE",
@@ -28,6 +41,8 @@ const numberParser = (value: unknown): number | null => {
 const formatNumber = (value: number): string => value.toLocaleString();
 
 export const InventoryGrid = React.memo(function InventoryGrid() {
+  const gridApiRef = useRef<GridApi<InventoryGridRow> | null>(null);
+
   const { data, isLoading, error, refetch } =
     trpc.spreadsheet.getInventoryGridData.useQuery({ limit: 200 });
 
@@ -45,10 +60,41 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
     },
   });
 
+  // TERP-SS-009: Mutation for updating ticket (unitCogs)
+  const updateBatch = trpc.inventory.updateBatch.useMutation({
+    onSuccess: (_, variables) => {
+      const field = variables.ticket !== undefined ? "Ticket" : "Notes";
+      toast.success(`${field} updated`);
+      void refetch();
+    },
+  });
+
+  const onGridReady = useCallback((event: GridReadyEvent<InventoryGridRow>) => {
+    gridApiRef.current = event.api;
+    // TERP-SS-008: Expand all groups by default
+    event.api.expandAll();
+  }, []);
+
+  // TERP-SS-008: Configure column definitions with row grouping
+  // TERP-SS-006: Color coding for batch status
   const columnDefs = useMemo<ColDef<InventoryGridRow>[]>(
     () => [
-      { headerName: "Vendor Code", field: "vendorCode", width: 140 },
-      { headerName: "Date", field: "lotDate", width: 130 },
+      {
+        headerName: "Date",
+        field: "lotDate",
+        width: 130,
+        // TERP-SS-008: Enable row grouping by date (first level)
+        rowGroup: true,
+        hide: true, // Hide the column since it's shown in the group
+      },
+      {
+        headerName: "Vendor Code",
+        field: "vendorCode",
+        width: 140,
+        // TERP-SS-008: Enable row grouping by vendor (second level)
+        rowGroup: true,
+        hide: true, // Hide the column since it's shown in the group
+      },
       { headerName: "Source", field: "source", width: 140 },
       { headerName: "Category", field: "category", width: 140 },
       { headerName: "Item", field: "item", flex: 1, minWidth: 160 },
@@ -56,6 +102,7 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         headerName: "Available",
         field: "available",
         width: 130,
+        // TERP-SS-009: Editable field
         editable: true,
         valueFormatter: params => formatNumber(params.value ?? 0),
         valueParser: params => numberParser(params.newValue),
@@ -71,8 +118,10 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         headerName: "Ticket",
         field: "ticket",
         width: 120,
-        editable: false,
+        // TERP-SS-009: Editable field
+        editable: true,
         valueFormatter: params => formatNumber(params.value ?? 0),
+        valueParser: params => numberParser(params.newValue),
       },
       {
         headerName: "Sub",
@@ -81,7 +130,14 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         valueFormatter: params => formatNumber(params.value ?? 0),
         editable: false,
       },
-      { headerName: "Notes", field: "notes", flex: 1, minWidth: 200 },
+      {
+        headerName: "Notes",
+        field: "notes",
+        flex: 1,
+        minWidth: 200,
+        // TERP-SS-009: Editable field
+        editable: true,
+      },
       {
         headerName: "Confirm",
         field: "confirm",
@@ -91,6 +147,7 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         cellEditorParams: {
           values: statusOptions,
         },
+        // TERP-SS-006: Color coding for batch status
         cellStyle: params => {
           const value = params.value;
           // Color coding for batch status: "C" (Curing) = Orange, "Ofc" (Office) = Cyan
@@ -116,10 +173,23 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
     []
   );
 
+  // TERP-SS-008: Configure auto group column for hierarchical display
+  const autoGroupColumnDef = useMemo<ColDef<InventoryGridRow>>(
+    () => ({
+      headerName: "Date / Vendor",
+      minWidth: 250,
+      cellRendererParams: {
+        suppressCount: false, // Show row count in group
+      },
+    }),
+    []
+  );
+
   const handleCellValueChanged = useCallback(
     (event: CellValueChangedEvent<InventoryGridRow>) => {
       if (!event.data) return;
 
+      // TERP-SS-009: Handle Available column edits
       if (event.colDef.field === "available") {
         const parsedNew = numberParser(event.newValue);
         if (parsedNew === null) {
@@ -148,6 +218,68 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         return;
       }
 
+      // TERP-SS-009: Handle Ticket column edits
+      if (event.colDef.field === "ticket") {
+        const parsedNew = numberParser(event.newValue);
+        if (parsedNew === null) {
+          toast.error("Please enter a valid number for ticket price");
+          event.node.setDataValue("ticket", event.oldValue);
+          return;
+        }
+
+        if (parsedNew < 0) {
+          toast.error("Ticket price cannot be negative");
+          event.node.setDataValue("ticket", event.oldValue);
+          return;
+        }
+
+        const currentTicket = Number(event.oldValue);
+        if (parsedNew === currentTicket) return;
+
+        updateBatch.mutate(
+          {
+            id: event.data.id,
+            ticket: parsedNew,
+            reason: "Spreadsheet view ticket edit",
+          },
+          {
+            onError: () => {
+              event.node.setDataValue("ticket", currentTicket);
+            },
+          }
+        );
+        return;
+      }
+
+      // TERP-SS-009: Handle Notes column edits
+      if (event.colDef.field === "notes") {
+        const newNotes =
+          event.newValue !== null && event.newValue !== undefined
+            ? String(event.newValue)
+            : null;
+        const oldNotes =
+          event.oldValue !== null && event.oldValue !== undefined
+            ? String(event.oldValue)
+            : null;
+
+        if (newNotes === oldNotes) return;
+
+        updateBatch.mutate(
+          {
+            id: event.data.id,
+            notes: newNotes,
+            reason: "Spreadsheet view notes edit",
+          },
+          {
+            onError: () => {
+              event.node.setDataValue("notes", oldNotes);
+            },
+          }
+        );
+        return;
+      }
+
+      // Handle Confirm (status) column edits
       if (event.colDef.field === "confirm") {
         const status = String(
           event.newValue || ""
@@ -170,7 +302,7 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         );
       }
     },
-    [adjustQty, updateStatus]
+    [adjustQty, updateStatus, updateBatch]
   );
 
   const totalAvailable = useMemo(() => {
@@ -207,10 +339,17 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
             rowData={data?.rows ?? []}
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
-            animateRows
+            // TERP-SS-008: Row grouping configuration
+            autoGroupColumnDef={autoGroupColumnDef}
+            groupDefaultExpanded={-1} // Expand all groups by default (-1 = all levels)
+            suppressAggFuncInHeader={true}
+            // Row identity for efficient updates
+            getRowId={params => String(params.data.id)}
+            animateRows={false} // Disable for better performance
             pagination
             paginationPageSize={50}
             onCellValueChanged={handleCellValueChanged}
+            onGridReady={onGridReady}
             suppressLoadingOverlay={!isLoading}
           />
         </div>
