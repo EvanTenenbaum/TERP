@@ -15,21 +15,21 @@ const getJwtSecret = (): string => {
 
   const defaultSecrets = [
     "terp-secret-key-change-in-production",
-    "your-secret-key-change-in-production"
+    "your-secret-key-change-in-production",
   ];
 
   if (!secret) {
     throw new Error(
       "JWT_SECRET (or NEXTAUTH_SECRET) environment variable is required. " +
-      "Set JWT_SECRET to a secure value (minimum 32 characters). " +
-      "NEXTAUTH_SECRET is accepted as a fallback for backward compatibility."
+        "Set JWT_SECRET to a secure value (minimum 32 characters). " +
+        "NEXTAUTH_SECRET is accepted as a fallback for backward compatibility."
     );
   }
 
   if (defaultSecrets.includes(secret)) {
     throw new Error(
       "JWT_SECRET must be set to a secure value, not a default placeholder. " +
-      "Current value appears to be a default that should be changed."
+        "Current value appears to be a default that should be changed."
     );
   }
 
@@ -41,9 +41,11 @@ const getJwtSecret = (): string => {
 
   // Log which variable is being used (helpful for debugging)
   if (process.env.JWT_SECRET) {
-    console.log("✅ Using JWT_SECRET for authentication");
+    console.info("✅ Using JWT_SECRET for authentication");
   } else if (process.env.NEXTAUTH_SECRET) {
-    console.log("✅ Using NEXTAUTH_SECRET as fallback for authentication (consider setting JWT_SECRET)");
+    console.info(
+      "✅ Using NEXTAUTH_SECRET as fallback for authentication (consider setting JWT_SECRET)"
+    );
   }
 
   // Cache the validated secret
@@ -88,6 +90,10 @@ export const env = {
   },
   get PUBLIC_DEMO_USER_ID() {
     return process.env.PUBLIC_DEMO_USER_ID ?? "public-demo-user";
+  },
+  // Test auth endpoint (for AI agent E2E testing)
+  get enableTestAuth() {
+    return process.env.ENABLE_TEST_AUTH === "true";
   },
 };
 
