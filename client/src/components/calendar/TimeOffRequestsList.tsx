@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Plus, Check, X, Calendar, Clock, User, Trash2 } from "lucide-react";
 import { trpc } from "../../lib/trpc";
 import TimeOffRequestForm from "./TimeOffRequestForm";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PromptDialog } from "@/components/ui/prompt-dialog";
+import { toast } from "sonner";
 
 interface TimeOffRequest {
   id: number;
@@ -39,6 +42,12 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
 
+  // BUG-007: State for confirmation dialogs (replaces window.confirm)
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [requestToHandle, setRequestToHandle] = useState<number | null>(null);
+
   const { data, isLoading, refetch } = trpc.timeOffRequests.list.useQuery({
     status: statusFilter as "pending" | "approved" | "rejected",
     limit: 50,
@@ -51,33 +60,110 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
   );
 
   const approveMutation = trpc.timeOffRequests.approve.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Time-off request approved");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to approve: ${error.message}`);
+    },
   });
 
   const rejectMutation = trpc.timeOffRequests.reject.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Time-off request rejected");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to reject: ${error.message}`);
+    },
   });
 
   const cancelMutation = trpc.timeOffRequests.cancel.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Time-off request cancelled");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to cancel: ${error.message}`);
+    },
   });
 
-  const handleApprove = async (requestId: number) => {
-    if (confirm("Approve this time-off request?")) {
-      await approveMutation.mutateAsync({ requestId });
+  // BUG-007: Show confirm dialog instead of window.confirm
+  const handleApprove = (requestId: number) => {
+    setRequestToHandle(requestId);
+    setApproveDialogOpen(true);
+  };
+
+  // BUG-007: Actual approve action after confirmation
+  const confirmApprove = async () => {
+    if (requestToHandle !== null) {
+      try {
+        await approveMutation.mutateAsync({ requestId: requestToHandle });
+      } catch {
+        // Error handled by mutation onError
+      }
+    }
+    setRequestToHandle(null);
+  };
+
+  // BUG-007: Handle approve dialog close - reset state
+  const handleApproveDialogChange = (open: boolean) => {
+    setApproveDialogOpen(open);
+    if (!open) {
+      setRequestToHandle(null);
     }
   };
 
-  const handleReject = async (requestId: number) => {
-    const reason = prompt("Enter a reason for rejection:");
-    if (reason) {
-      await rejectMutation.mutateAsync({ requestId, responseNotes: reason });
+  // BUG-007: Show prompt dialog instead of globalThis.prompt
+  const handleReject = (requestId: number) => {
+    setRequestToHandle(requestId);
+    setRejectDialogOpen(true);
+  };
+
+  // BUG-007: Actual reject action after prompt
+  const confirmReject = async (reason: string) => {
+    if (requestToHandle !== null && reason.trim()) {
+      try {
+        await rejectMutation.mutateAsync({ requestId: requestToHandle, responseNotes: reason });
+      } catch {
+        // Error handled by mutation onError
+      }
+    }
+    setRequestToHandle(null);
+  };
+
+  // BUG-007: Handle reject dialog close - reset state
+  const handleRejectDialogChange = (open: boolean) => {
+    setRejectDialogOpen(open);
+    if (!open) {
+      setRequestToHandle(null);
     }
   };
 
-  const handleCancel = async (requestId: number) => {
-    if (confirm("Cancel this time-off request?")) {
-      await cancelMutation.mutateAsync({ requestId });
+  // BUG-007: Show confirm dialog instead of window.confirm
+  const handleCancel = (requestId: number) => {
+    setRequestToHandle(requestId);
+    setCancelDialogOpen(true);
+  };
+
+  // BUG-007: Actual cancel action after confirmation
+  const confirmCancel = async () => {
+    if (requestToHandle !== null) {
+      try {
+        await cancelMutation.mutateAsync({ requestId: requestToHandle });
+      } catch {
+        // Error handled by mutation onError
+      }
+    }
+    setRequestToHandle(null);
+  };
+
+  // BUG-007: Handle cancel dialog close - reset state
+  const handleCancelDialogChange = (open: boolean) => {
+    setCancelDialogOpen(open);
+    if (!open) {
+      setRequestToHandle(null);
     }
   };
 
@@ -242,7 +328,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
                         <button
                           onClick={() => handleApprove(request.id)}
                           disabled={approveMutation.isPending}
-                          className="rounded-md bg-green-50 p-2 text-green-600 hover:bg-green-100"
+                          className="rounded-md bg-green-50 p-2 text-green-600 hover:bg-green-100 disabled:opacity-50"
                           title="Approve"
                         >
                           <Check className="h-5 w-5" />
@@ -250,7 +336,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
                         <button
                           onClick={() => handleReject(request.id)}
                           disabled={rejectMutation.isPending}
-                          className="rounded-md bg-red-50 p-2 text-red-600 hover:bg-red-100"
+                          className="rounded-md bg-red-50 p-2 text-red-600 hover:bg-red-100 disabled:opacity-50"
                           title="Reject"
                         >
                           <X className="h-5 w-5" />
@@ -261,7 +347,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
                       <button
                         onClick={() => handleCancel(request.id)}
                         disabled={cancelMutation.isPending}
-                        className="rounded-md bg-gray-50 p-2 text-gray-600 hover:bg-gray-100"
+                        className="rounded-md bg-gray-50 p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
                         title="Cancel Request"
                       >
                         <Trash2 className="h-5 w-5" />
@@ -294,6 +380,43 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSubmitted={() => refetch()}
+      />
+
+      {/* BUG-007: Approve Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={approveDialogOpen}
+        onOpenChange={handleApproveDialogChange}
+        title="Approve Request"
+        description="Are you sure you want to approve this time-off request?"
+        confirmLabel="Approve"
+        variant="default"
+        onConfirm={confirmApprove}
+        isLoading={approveMutation.isPending}
+      />
+
+      {/* BUG-007: Reject Prompt Dialog (replaces globalThis.prompt) */}
+      <PromptDialog
+        open={rejectDialogOpen}
+        onOpenChange={handleRejectDialogChange}
+        title="Reject Request"
+        description="Please enter a reason for rejecting this time-off request:"
+        placeholder="Enter rejection reason..."
+        confirmLabel="Reject"
+        variant="destructive"
+        onConfirm={confirmReject}
+        isLoading={rejectMutation.isPending}
+      />
+
+      {/* BUG-007: Cancel Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={cancelDialogOpen}
+        onOpenChange={handleCancelDialogChange}
+        title="Cancel Request"
+        description="Are you sure you want to cancel this time-off request?"
+        confirmLabel="Cancel Request"
+        variant="destructive"
+        onConfirm={confirmCancel}
+        isLoading={cancelMutation.isPending}
       />
     </div>
   );

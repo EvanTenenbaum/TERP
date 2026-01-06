@@ -15,6 +15,8 @@
 
 import React, { useState, useCallback } from "react";
 import { trpc } from "../../lib/trpc";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 // Types
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
@@ -72,13 +74,27 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
   });
 
   const removeItemMutation = trpc.vipPortalLiveShopping.removeItem.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Item removed");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to remove item: ${error.message}`);
+    },
   });
 
-  const requestCheckoutMutation = trpc.vipPortalLiveShopping.requestCheckout.useMutation();
+  const requestCheckoutMutation = trpc.vipPortalLiveShopping.requestCheckout.useMutation({
+    onError: (error) => {
+      toast.error(`Failed to request checkout: ${error.message}`);
+    },
+  });
 
   // State for price change animations
-  const [priceChanges, setPriceChanges] = useState<Record<number, { oldPrice: string; newPrice: string }>>({});
+  const [priceChanges, _setPriceChanges] = useState<Record<number, { oldPrice: string; newPrice: string }>>({});
+
+  // BUG-007: State for remove confirmation dialog (replaces window.confirm)
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState<number | null>(null);
 
   // Handle status change
   const handleStatusChange = useCallback(
@@ -92,15 +108,30 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
     [sessionId, updateStatusMutation]
   );
 
-  // Handle remove item
+  // BUG-007: Show confirm dialog instead of window.confirm
   const handleRemoveItem = useCallback(
     (cartItemId: number) => {
-      if (confirm("Remove this item from your list?")) {
-        removeItemMutation.mutate({ sessionId, cartItemId });
-      }
+      setItemToRemove(cartItemId);
+      setRemoveDialogOpen(true);
     },
-    [sessionId, removeItemMutation]
+    []
   );
+
+  // BUG-007: Actual remove action after confirmation
+  const confirmRemoveItem = useCallback(() => {
+    if (itemToRemove !== null) {
+      removeItemMutation.mutate({ sessionId, cartItemId: itemToRemove });
+    }
+    setItemToRemove(null);
+  }, [sessionId, itemToRemove, removeItemMutation]);
+
+  // BUG-007: Handle remove dialog close - reset state
+  const handleRemoveDialogChange = useCallback((open: boolean) => {
+    setRemoveDialogOpen(open);
+    if (!open) {
+      setItemToRemove(null);
+    }
+  }, []);
 
   // Handle checkout request
   const handleRequestCheckout = useCallback(() => {
@@ -108,7 +139,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
       { sessionId },
       {
         onSuccess: () => {
-          alert("Staff has been notified that you're ready to checkout!");
+          toast.success("Staff has been notified that you're ready to checkout!");
         },
       }
     );
@@ -216,6 +247,18 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
           </div>
         </div>
       )}
+
+      {/* BUG-007: Remove Item Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={removeDialogOpen}
+        onOpenChange={handleRemoveDialogChange}
+        title="Remove Item"
+        description="Are you sure you want to remove this item from your list?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={confirmRemoveItem}
+        isLoading={removeItemMutation.isPending}
+      />
     </div>
   );
 };
@@ -292,13 +335,14 @@ interface ItemCardProps {
 
 const ItemCard: React.FC<ItemCardProps> = ({
   item,
-  currentStatus,
+  currentStatus: _currentStatus,
   otherStatuses,
   onStatusChange,
   onRemove,
   priceChange,
 }) => {
-  const [showActions, setShowActions] = useState(false);
+  // Note: showActions state reserved for future mobile interaction enhancements
+  const [_showActions, _setShowActions] = useState(false);
 
   return (
     <div

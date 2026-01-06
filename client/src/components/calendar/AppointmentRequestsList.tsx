@@ -1,6 +1,9 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Check, X, Clock, Calendar, User, ChevronRight } from "lucide-react";
 import { trpc } from "../../lib/trpc";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PromptDialog } from "@/components/ui/prompt-dialog";
+import { toast } from "sonner";
 
 interface AppointmentRequest {
   id: number;
@@ -28,6 +31,14 @@ export default function AppointmentRequestsList({
 }: AppointmentRequestsListProps) {
   const [statusFilter, setStatusFilter] = useState<string>("pending");
 
+  // BUG-007: State for approve confirmation dialog (replaces window.confirm)
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [requestToApprove, setRequestToApprove] = useState<number | null>(null);
+
+  // BUG-007: State for reject prompt dialog (replaces globalThis.prompt)
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [requestToReject, setRequestToReject] = useState<number | null>(null);
+
   const { data, isLoading, refetch } = trpc.appointmentRequests.list.useQuery({
     status: statusFilter as "pending" | "approved" | "rejected" | "cancelled",
     limit: 50,
@@ -36,25 +47,76 @@ export default function AppointmentRequestsList({
   const { data: pendingCount } = trpc.appointmentRequests.getPendingCount.useQuery({});
 
   const approveMutation = trpc.appointmentRequests.approve.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Request approved successfully");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to approve: ${error.message}`);
+    },
   });
 
   const rejectMutation = trpc.appointmentRequests.reject.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Request rejected");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`Failed to reject: ${error.message}`);
+    },
   });
 
-  const handleQuickApprove = async (e: React.MouseEvent, requestId: number) => {
+  // BUG-007: Show confirm dialog instead of window.confirm
+  const handleQuickApprove = (e: React.MouseEvent, requestId: number) => {
     e.stopPropagation();
-    if (confirm("Approve this appointment request?")) {
-      await approveMutation.mutateAsync({ requestId });
+    setRequestToApprove(requestId);
+    setApproveDialogOpen(true);
+  };
+
+  // BUG-007: Actual approve action after confirmation
+  const confirmApprove = async () => {
+    if (requestToApprove !== null) {
+      try {
+        await approveMutation.mutateAsync({ requestId: requestToApprove });
+      } catch {
+        // Error handled by mutation onError
+      }
+    }
+    setRequestToApprove(null);
+  };
+
+  // BUG-007: Handle dialog close - reset state to prevent stale data
+  const handleApproveDialogChange = (open: boolean) => {
+    setApproveDialogOpen(open);
+    if (!open) {
+      setRequestToApprove(null);
     }
   };
 
-  const handleQuickReject = async (e: React.MouseEvent, requestId: number) => {
+  // BUG-007: Show prompt dialog instead of globalThis.prompt
+  const handleQuickReject = (e: React.MouseEvent, requestId: number) => {
     e.stopPropagation();
-    const reason = prompt("Enter a reason for rejection:");
-    if (reason) {
-      await rejectMutation.mutateAsync({ requestId, responseNotes: reason });
+    setRequestToReject(requestId);
+    setRejectDialogOpen(true);
+  };
+
+  // BUG-007: Actual reject action after prompt
+  const confirmReject = async (reason: string) => {
+    if (requestToReject !== null && reason.trim()) {
+      try {
+        await rejectMutation.mutateAsync({ requestId: requestToReject, responseNotes: reason });
+      } catch {
+        // Error handled by mutation onError
+      }
+    }
+    setRequestToReject(null);
+  };
+
+  // BUG-007: Handle reject dialog close - reset state
+  const handleRejectDialogChange = (open: boolean) => {
+    setRejectDialogOpen(open);
+    if (!open) {
+      setRequestToReject(null);
     }
   };
 
@@ -176,7 +238,7 @@ export default function AppointmentRequestsList({
                     <button
                       onClick={(e) => handleQuickApprove(e, request.id)}
                       disabled={approveMutation.isPending}
-                      className="rounded-md bg-green-50 p-2 text-green-600 hover:bg-green-100"
+                      className="rounded-md bg-green-50 p-2 text-green-600 hover:bg-green-100 disabled:opacity-50"
                       title="Approve"
                     >
                       <Check className="h-5 w-5" />
@@ -184,7 +246,7 @@ export default function AppointmentRequestsList({
                     <button
                       onClick={(e) => handleQuickReject(e, request.id)}
                       disabled={rejectMutation.isPending}
-                      className="rounded-md bg-red-50 p-2 text-red-600 hover:bg-red-100"
+                      className="rounded-md bg-red-50 p-2 text-red-600 hover:bg-red-100 disabled:opacity-50"
                       title="Reject"
                     >
                       <X className="h-5 w-5" />
@@ -211,6 +273,31 @@ export default function AppointmentRequestsList({
           Showing {data.requests.length} of {data.total} requests
         </p>
       )}
+
+      {/* BUG-007: Approve Confirmation Dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={approveDialogOpen}
+        onOpenChange={handleApproveDialogChange}
+        title="Approve Request"
+        description="Are you sure you want to approve this appointment request?"
+        confirmLabel="Approve"
+        variant="default"
+        onConfirm={confirmApprove}
+        isLoading={approveMutation.isPending}
+      />
+
+      {/* BUG-007: Reject Prompt Dialog (replaces globalThis.prompt) */}
+      <PromptDialog
+        open={rejectDialogOpen}
+        onOpenChange={handleRejectDialogChange}
+        title="Reject Request"
+        description="Please enter a reason for rejecting this appointment request:"
+        placeholder="Enter rejection reason..."
+        confirmLabel="Reject"
+        variant="destructive"
+        onConfirm={confirmReject}
+        isLoading={rejectMutation.isPending}
+      />
     </div>
   );
 }
