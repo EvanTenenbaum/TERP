@@ -328,7 +328,7 @@ export function RoleManagement() {
                                     <Eye className="h-4 w-4" />
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                                   <DialogHeader>
                                     <DialogTitle>{role.name}</DialogTitle>
                                     <DialogDescription>

@@ -567,7 +567,7 @@ export function VIPImpersonationManager() {
 
       {/* Session Details Dialog */}
       <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-full sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Session Details</DialogTitle>
             <DialogDescription>

@@ -405,7 +405,7 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
       {/* Lightbox */}
       {lightboxImage && (
         <Dialog open={true} onOpenChange={() => setLightboxImage(null)}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="w-full sm:max-w-4xl">
             <img
               src={lightboxImage}
               alt="Full size"

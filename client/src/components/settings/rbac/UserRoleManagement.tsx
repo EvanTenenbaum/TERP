@@ -264,7 +264,7 @@ export function UserRoleManagement() {
                                 View Details
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                            <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>User Details</DialogTitle>
                                 <DialogDescription>

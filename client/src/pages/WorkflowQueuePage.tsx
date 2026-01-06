@@ -190,7 +190,7 @@ export default function WorkflowQueuePage() {
 
       {/* Add to Queue Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-full sm:max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Batches to Workflow Queue</DialogTitle>
             <DialogDescription>

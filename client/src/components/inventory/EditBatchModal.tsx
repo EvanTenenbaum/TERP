@@ -107,7 +107,7 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Product - {batch?.batch.sku}</DialogTitle>
           <DialogDescription>

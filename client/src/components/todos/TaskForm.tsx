@@ -131,7 +131,7 @@ export function TaskForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-full sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{task ? "Edit Task" : "Create New Task"}</DialogTitle>
           <DialogDescription>

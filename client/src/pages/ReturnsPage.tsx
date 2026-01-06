@@ -223,7 +223,7 @@ export default function ReturnsPage() {
 
       {/* Create Return Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Process Return</DialogTitle>
             <DialogDescription>Process a customer return and optionally restock inventory</DialogDescription>

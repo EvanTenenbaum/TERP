@@ -356,7 +356,7 @@ export default function PurchaseOrdersPage() {
 
       {/* Create PO Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-full sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Purchase Order</DialogTitle>
           </DialogHeader>

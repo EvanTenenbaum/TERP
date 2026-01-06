@@ -237,7 +237,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Product Purchase</DialogTitle>
           <DialogDescription>

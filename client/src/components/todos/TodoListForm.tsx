@@ -183,7 +183,7 @@ export function TodoListForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-full sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{list ? "Edit List" : "Create New List"}</DialogTitle>
           <DialogDescription>

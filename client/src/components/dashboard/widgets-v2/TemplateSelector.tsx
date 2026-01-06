@@ -409,7 +409,7 @@ export function TemplateSelector({ onSelectTemplate }: TemplateSelectorProps) {
           Use Template
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Choose a Template</DialogTitle>
           <DialogDescription>

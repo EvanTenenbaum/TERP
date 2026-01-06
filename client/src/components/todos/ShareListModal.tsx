@@ -98,7 +98,7 @@ export function ShareListModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-full sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Share List</DialogTitle>
           <DialogDescription>
