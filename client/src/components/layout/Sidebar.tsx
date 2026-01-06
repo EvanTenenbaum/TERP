@@ -133,10 +133,11 @@ export const Sidebar = React.memo(function Sidebar({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </button>
+                {/* QA-W2-007: Use auto max-height for proper scrolling with long menus */}
                 <div
                   className={cn(
                     "overflow-hidden transition-all duration-200",
-                    isOpen ? "max-h-[480px] opacity-100" : "max-h-0 opacity-0"
+                    isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
                   )}
                 >
                   <ul className="space-y-1 pb-2">

@@ -7,9 +7,11 @@ import {
   Beaker,
   Truck,
   Users,
+  UserCog,
   Settings,
   Calendar,
   CreditCard,
+  Coins,
   BarChart3,
   Table,
   type LucideIcon,
@@ -73,14 +75,16 @@ export const navigationItems: NavigationItem[] = [
 
   { name: "AR/AP", path: "/accounting", icon: CreditCard, group: "finance" },
   {
+    // QA-W2-008: Use Coins icon to avoid duplicate with AR/AP
     name: "Credits",
     path: "/credit-settings",
-    icon: CreditCard,
+    icon: Coins,
     group: "finance",
   },
   { name: "Reports", path: "/analytics", icon: BarChart3, group: "finance" },
 
-  { name: "Users", path: "/users", icon: Users, group: "admin" },
+  // QA-W2-008: Use UserCog icon to avoid duplicate with Clients
+  { name: "Users", path: "/users", icon: UserCog, group: "admin" },
   { name: "Settings", path: "/settings", icon: Settings, group: "admin" },
   { name: "Calendar", path: "/calendar", icon: Calendar, group: "admin" },
 ];

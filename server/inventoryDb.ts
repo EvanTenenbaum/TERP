@@ -762,6 +762,37 @@ export async function getAllBatches(limit: number = 100) {
 }
 
 /**
+ * QA-W2-001: Bulk fetch batches by IDs to avoid N+1 queries
+ * @param batchIds - Array of batch IDs to fetch
+ * @returns Map of batchId to batch object
+ */
+export async function getBatchesByIds(
+  batchIds: number[]
+): Promise<Map<number, typeof batches.$inferSelect>> {
+  const db = await getDb();
+  if (!db || batchIds.length === 0) return new Map();
+
+  // Use IN clause for bulk fetch
+  const result = await db
+    .select()
+    .from(batches)
+    .where(
+      sql`${batches.id} IN (${sql.join(
+        batchIds.map(id => sql`${id}`),
+        sql`, `
+      )})`
+    );
+
+  // Convert to Map for O(1) lookup
+  const batchMap = new Map<number, typeof batches.$inferSelect>();
+  for (const batch of result) {
+    batchMap.set(batch.id, batch);
+  }
+
+  return batchMap;
+}
+
+/**
  * Get batches with details using cursor-based pagination
  * ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cursor-based pagination
  * @param limit - Maximum number of results to return

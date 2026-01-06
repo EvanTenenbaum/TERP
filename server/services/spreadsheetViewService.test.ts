@@ -84,6 +84,92 @@ describe("spreadsheetViewService", () => {
       expect(row.notes).toBeNull();
       expect(row.confirm).toBeNull();
     });
+
+    // QA-W2-003: Test original intake quantity (TERP-SS-004)
+    it("uses intakeQty when available", () => {
+      const record: InventoryBatchRecord = {
+        batch: {
+          id: 3,
+          code: "B-3",
+          sku: "SKU-3",
+          batchStatus: "LIVE",
+          onHandQty: "50",
+          reservedQty: "0",
+          quarantineQty: "0",
+          holdQty: "0",
+          unitCogs: "10.00",
+          metadata: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          version: 1,
+        },
+        product: { nameCanonical: "Test Product", category: "Flower" },
+        brand: null,
+        lot: null,
+        vendor: null,
+        intakeQty: 100, // Original intake quantity
+      };
+
+      const row = transformInventoryRecord(record);
+      expect(row.intake).toBe(100); // Should use intakeQty, not onHandQty
+      expect(row.sub).toBe(1000); // 100 * 10
+    });
+
+    // QA-W2-003: Test metadata originalQty fallback
+    it("extracts intake from metadata originalQty", () => {
+      const record: InventoryBatchRecord = {
+        batch: {
+          id: 4,
+          code: "B-4",
+          sku: "SKU-4",
+          batchStatus: "LIVE",
+          onHandQty: "30",
+          reservedQty: "0",
+          quarantineQty: "0",
+          holdQty: "0",
+          unitCogs: "5.00",
+          metadata: JSON.stringify({ originalQty: 75 }),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          version: 1,
+        },
+        product: null,
+        brand: null,
+        lot: null,
+        vendor: null,
+      };
+
+      const row = transformInventoryRecord(record);
+      expect(row.intake).toBe(75); // Should extract from metadata
+    });
+
+    // QA-W2-003: Test vendorCode fallback to vendor name
+    it("falls back to vendor name when lot code is missing", () => {
+      const record: InventoryBatchRecord = {
+        batch: {
+          id: 5,
+          code: "B-5",
+          sku: "SKU-5",
+          batchStatus: "LIVE",
+          onHandQty: "10",
+          reservedQty: "0",
+          quarantineQty: "0",
+          holdQty: "0",
+          unitCogs: null,
+          metadata: null,
+          createdAt: null,
+          updatedAt: null,
+          version: 1,
+        },
+        product: null,
+        brand: null,
+        lot: { code: undefined, date: undefined },
+        vendor: { name: "Fallback Vendor" },
+      };
+
+      const row = transformInventoryRecord(record);
+      expect(row.vendorCode).toBe("Fallback Vendor");
+    });
   });
 
   describe("transformClientOrderRows", () => {
@@ -125,6 +211,92 @@ describe("spreadsheetViewService", () => {
       expect(rows[0].paid).toBe(true);
       expect(rows[0].invoiced).toBe(true);
       expect(rows[0].confirmed).toBe(true);
+    });
+
+    // QA-W2-003: Test batchCode display (TERP-SS-003)
+    it("uses batchCode when available for vendorCode display", () => {
+      const order: ClientOrderRecord = {
+        id: 20,
+        orderNumber: "SO-200",
+        orderType: "SALE",
+        clientId: 10,
+        items: [
+          {
+            displayName: "Item with Batch",
+            quantity: 1,
+            unitPrice: 50,
+            batchId: 123,
+            batchCode: "BATCH-ABC",
+          },
+        ],
+        subtotal: 50,
+        total: 50,
+        paymentTerms: null,
+        cashPayment: null,
+        saleStatus: null,
+        invoiceId: null,
+        pickPackStatus: null,
+        notes: null,
+        createdAt: null,
+        updatedAt: null,
+        dueDate: null,
+      };
+
+      const rows = transformClientOrderRows(order);
+      expect(rows[0].vendorCode).toBe("BATCH-ABC");
+    });
+
+    // QA-W2-003: Test payment amount display (TERP-SS-005)
+    it("parses payment amount correctly", () => {
+      const order: ClientOrderRecord = {
+        id: 30,
+        orderNumber: "SO-300",
+        orderType: "SALE",
+        clientId: 15,
+        items: [{ displayName: "Test Item", quantity: 1, unitPrice: 100 }],
+        subtotal: 100,
+        total: 100,
+        paymentTerms: "NET_15",
+        cashPayment: "75.50",
+        saleStatus: null,
+        invoiceId: null,
+        pickPackStatus: null,
+        notes: null,
+        createdAt: new Date("2024-03-01"),
+        updatedAt: null,
+        dueDate: null,
+      };
+
+      const rows = transformClientOrderRows(order);
+      expect(rows[0].paymentAmount).toBeCloseTo(75.5);
+      expect(rows[0].paid).toBe(true);
+    });
+
+    // QA-W2-003: Test unpaid order
+    it("marks order as unpaid when no payment", () => {
+      const order: ClientOrderRecord = {
+        id: 40,
+        orderNumber: "SO-400",
+        orderType: "SALE",
+        clientId: 20,
+        items: [{ displayName: "Unpaid Item", quantity: 1, unitPrice: 200 }],
+        subtotal: 200,
+        total: 200,
+        paymentTerms: null,
+        cashPayment: null,
+        saleStatus: null,
+        invoiceId: null,
+        pickPackStatus: null,
+        notes: null,
+        createdAt: null,
+        updatedAt: null,
+        dueDate: null,
+      };
+
+      const rows = transformClientOrderRows(order);
+      expect(rows[0].paymentAmount).toBe(0);
+      expect(rows[0].paid).toBe(false);
+      expect(rows[0].invoiced).toBe(false);
     });
   });
 });
