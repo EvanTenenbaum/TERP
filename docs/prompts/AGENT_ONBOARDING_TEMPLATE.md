@@ -7,6 +7,7 @@
 ## 🏢 Project Overview
 
 **TERP** is a comprehensive ERP (Enterprise Resource Planning) system for cannabis businesses. It manages:
+
 - **Inventory**: Products, batches, vendors, purchase orders
 - **Sales**: Clients, orders, quotes, invoices, payments
 - **VIP Portal**: Client-facing mobile/desktop portal for self-service
@@ -19,14 +20,14 @@
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|-------|------------|
+| Layer        | Technology                                         |
+| ------------ | -------------------------------------------------- |
 | **Frontend** | React 18, TypeScript, Vite, TailwindCSS, shadcn/ui |
-| **Backend** | Node.js, Express, tRPC |
-| **Database** | MySQL (TiDB), Drizzle ORM |
-| **Auth** | Custom JWT-based auth |
-| **Hosting** | DigitalOcean App Platform |
-| **Testing** | Vitest (unit), Playwright (e2e) |
+| **Backend**  | Node.js, Express, tRPC                             |
+| **Database** | MySQL (TiDB), Drizzle ORM                          |
+| **Auth**     | Custom JWT-based auth                              |
+| **Hosting**  | DigitalOcean App Platform                          |
+| **Testing**  | Vitest (unit), Playwright (e2e)                    |
 
 ---
 
@@ -61,6 +62,7 @@ TERP/
 ## 🚨 CRITICAL CONSTRAINTS
 
 ### NEVER DO (Will Break Production):
+
 ```
 ❌ Modify drizzle/schema.ts without explicit approval
 ❌ Run migrations without explicit approval
@@ -74,6 +76,7 @@ TERP/
 ```
 
 ### ALWAYS DO:
+
 ```
 ✅ Run pnpm check after EVERY code change
 ✅ Run pnpm test after EVERY code change
@@ -110,12 +113,68 @@ pnpm build
 
 ---
 
+## 🔐 Authentication & Testing
+
+### Login to Production Site
+
+```bash
+# Go to /login and use your credentials
+# Or use the admin setup script:
+pnpm setup:admin your-email@example.com YourPassword123!
+```
+
+### Test Accounts (for E2E Testing)
+
+| Email                            | Role               | Password             |
+| -------------------------------- | ------------------ | -------------------- |
+| test-superadmin@terp-app.local   | Super Admin        | TestSuperAdmin123!   |
+| test-owner@terp-app.local        | Owner/Executive    | TestOwner123!        |
+| test-opsmanager@terp-app.local   | Operations Manager | TestOpsManager123!   |
+| test-salesmanager@terp-app.local | Sales Manager      | TestSalesManager123! |
+| test-accountant@terp-app.local   | Accountant         | TestAccountant123!   |
+| test-invmanager@terp-app.local   | Inventory Manager  | TestInvManager123!   |
+| test-buyer@terp-app.local        | Buyer/Procurement  | TestBuyer123!        |
+| test-custservice@terp-app.local  | Customer Service   | TestCustService123!  |
+| test-warehouse@terp-app.local    | Warehouse Staff    | TestWarehouse123!    |
+| test-auditor@terp-app.local      | Read-Only Auditor  | TestAuditor123!      |
+
+To seed test accounts: `pnpm seed:test-accounts`
+
+### Get Auth Token for Browser Automation
+
+```bash
+# Enable test auth (if not already)
+# Set ENABLE_TEST_AUTH=true in .env
+
+# Get token for any test account
+pnpm get:auth-token test-superadmin@terp-app.local TestSuperAdmin123! https://terp-app-b9s35.ondigitalocean.app
+
+# Use in Playwright/Puppeteer:
+await context.addCookies([{
+  name: 'app_session_id',
+  value: '<token>',
+  domain: 'terp-app-b9s35.ondigitalocean.app',
+  path: '/'
+}]);
+```
+
+### Auth System Details
+
+- **Cookie Name**: `app_session_id`
+- **Token Type**: JWT (30-day expiry)
+- **Super Admin**: Users with "Super Admin" RBAC role OR `role='admin'` bypass all permission checks
+- **Documentation**: See [docs/AUTH_SETUP.md](../AUTH_SETUP.md) for full details
+
+---
+
 ## 📊 Current Technical State
 
 ### @ts-nocheck Files (Need Fixing)
+
 These files have TypeScript errors suppressed and need proper fixes:
 
 **Server Routers (11 files):**
+
 - server/routers/alerts.ts
 - server/routers/audit.ts
 - server/routers/referrals.ts
@@ -129,6 +188,7 @@ These files have TypeScript errors suppressed and need proper fixes:
 - server/routers/analytics.ts
 
 **Client Pages (10 files):**
+
 - client/src/pages/Inventory.tsx
 - client/src/pages/OrderCreatorPage.tsx
 - client/src/pages/vip-portal/VIPDashboard.tsx
@@ -145,48 +205,51 @@ These files have TypeScript errors suppressed and need proper fixes:
 ## 📋 Schema Reference (Actual Column Names)
 
 ### Products Table
+
 ```typescript
 // ✅ EXIST:
-products.id, products.brandId, products.strainId
-products.nameCanonical  // NOT "name"
-products.category, products.subcategory
-products.uomSellable, products.description
-products.createdAt, products.updatedAt, products.deletedAt
+(products.id, products.brandId, products.strainId);
+products.nameCanonical; // NOT "name"
+(products.category, products.subcategory);
+(products.uomSellable, products.description);
+(products.createdAt, products.updatedAt, products.deletedAt);
 
 // ❌ DO NOT EXIST:
-products.name           // Use nameCanonical
-products.sku            // SKU is on batches
-products.minStockLevel  // Does not exist
-products.targetStockLevel // Does not exist
+products.name; // Use nameCanonical
+products.sku; // SKU is on batches
+products.minStockLevel; // Does not exist
+products.targetStockLevel; // Does not exist
 ```
 
 ### Batches Table
+
 ```typescript
 // ✅ EXIST:
-batches.id, batches.code, batches.sku
-batches.productId, batches.lotId
-batches.batchStatus, batches.grade
-batches.onHandQty       // NOT "quantity"
-batches.sampleQty, batches.reservedQty
-batches.metadata        // JSON field
+(batches.id, batches.code, batches.sku);
+(batches.productId, batches.lotId);
+(batches.batchStatus, batches.grade);
+batches.onHandQty; // NOT "quantity"
+(batches.sampleQty, batches.reservedQty);
+batches.metadata; // JSON field
 
 // ❌ DO NOT EXIST:
-batches.quantity        // Use onHandQty
-batches.batchNumber     // Use code
+batches.quantity; // Use onHandQty
+batches.batchNumber; // Use code
 ```
 
 ### Clients Table
+
 ```typescript
 // ✅ EXIST:
-clients.id, clients.teriCode, clients.name
-clients.email, clients.phone, clients.address
-clients.isBuyer, clients.isSeller
-clients.vipPortalEnabled, clients.creditLimit
-clients.totalOwed
+(clients.id, clients.teriCode, clients.name);
+(clients.email, clients.phone, clients.address);
+(clients.isBuyer, clients.isSeller);
+(clients.vipPortalEnabled, clients.creditLimit);
+clients.totalOwed;
 
 // ❌ DO NOT EXIST:
-clients.tier            // Does not exist
-clients.clientType      // Use isBuyer/isSeller flags
+clients.tier; // Does not exist
+clients.clientType; // Use isBuyer/isSeller flags
 ```
 
 ---
@@ -217,6 +280,7 @@ git show origin/build-status:.github/BUILD_STATUS.md
 ```
 
 ### Commit Message Format
+
 ```
 type(scope): description
 
@@ -243,6 +307,7 @@ git show origin/build-status:.github/BUILD_STATUS.md
 ```
 
 If deployment fails:
+
 1. Check the error message
 2. Fix the issue locally
 3. Push the fix
@@ -254,13 +319,13 @@ If deployment fails:
 
 ## 📚 Key Documentation
 
-| Document | Purpose |
-|----------|---------|
+| Document                                     | Purpose                   |
+| -------------------------------------------- | ------------------------- |
 | `docs/roadmaps/LIFECYCLE_ROADMAP_Q1_2026.md` | Current strategic roadmap |
-| `docs/roadmaps/MASTER_ROADMAP.md` | All tasks and status |
-| `.kiro/steering/01-development-standards.md` | Coding standards |
-| `.kiro/steering/06-architecture-guide.md` | System architecture |
-| `docs/DEVELOPMENT_PROTOCOLS.md` | Development protocols |
+| `docs/roadmaps/MASTER_ROADMAP.md`            | All tasks and status      |
+| `.kiro/steering/01-development-standards.md` | Coding standards          |
+| `.kiro/steering/06-architecture-guide.md`    | System architecture       |
+| `docs/DEVELOPMENT_PROTOCOLS.md`              | Development protocols     |
 
 ---
 
@@ -306,4 +371,4 @@ Before starting any task, verify:
 
 ---
 
-*This onboarding template should be included at the start of every agent task prompt.*
+_This onboarding template should be included at the start of every agent task prompt._
