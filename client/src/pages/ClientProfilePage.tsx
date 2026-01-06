@@ -911,7 +911,7 @@ export default function ClientProfilePage() {
 
       {/* Edit Client Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-full sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Client</DialogTitle>
             <DialogDescription>
@@ -1064,7 +1064,7 @@ export default function ClientProfilePage() {
         open={transactionDialogOpen}
         onOpenChange={setTransactionDialogOpen}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-full sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add Transaction</DialogTitle>
             <DialogDescription>

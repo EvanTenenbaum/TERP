@@ -54,6 +54,18 @@ export default defineConfig({
       testDir: "./tests-e2e/ai-generated",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "Mobile Chrome",
+      use: { ...devices["Pixel 5"] },
+    },
+    {
+      name: "Mobile Safari",
+      use: { ...devices["iPhone 13"] },
+    },
+    {
+      name: "Tablet",
+      use: { ...devices["iPad (gen 7)"] },
+    },
   ],
   // In CI, we start the server manually before running tests
   // In local dev, Playwright starts the dev server automatically
