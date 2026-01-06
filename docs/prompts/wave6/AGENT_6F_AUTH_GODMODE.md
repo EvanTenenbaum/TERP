@@ -701,3 +701,210 @@ gh pr create --title "feat(auth): add admin setup, test accounts, and AI agent a
 ## Merge Priority
 
 **Merge FIRST** - This is critical for all testing and development work.
+
+
+---
+
+## Task 8: Update All Agent Documentation (1-2h)
+
+Update all documentation that agents reference so they know about the auth system.
+
+### 8.1 Update AGENT_ONBOARDING_TEMPLATE.md
+
+Add a new section after "Development Commands" in `docs/prompts/AGENT_ONBOARDING_TEMPLATE.md`:
+
+```markdown
+---
+
+## 🔐 Authentication & Testing
+
+### Login to Production Site
+```bash
+# Go to /login and use your credentials
+# Or use the admin setup script:
+pnpm setup:admin your-email@example.com YourPassword123!
+```
+
+### Test Accounts (for E2E Testing)
+| Email | Role | Password |
+|-------|------|----------|
+| test-superadmin@terp-app.local | Super Admin | TestSuperAdmin123! |
+| test-admin@terp-app.local | Admin | TestAdmin123! |
+| test-manager@terp-app.local | Manager | TestManager123! |
+| test-staff@terp-app.local | Staff | TestStaff123! |
+| test-viewer@terp-app.local | Viewer | TestViewer123! |
+
+### Get Auth Token for Browser Automation
+```bash
+# Enable test auth (if not already)
+# Set ENABLE_TEST_AUTH=true in .env
+
+# Get token for any test account
+pnpm get:auth-token test-admin@terp-app.local TestAdmin123! https://terp-app-b9s35.ondigitalocean.app
+
+# Use in Playwright/Puppeteer:
+await context.addCookies([{
+  name: 'app_session_id',
+  value: '<token>',
+  domain: 'terp-app-b9s35.ondigitalocean.app',
+  path: '/'
+}]);
+```
+
+### Auth System Details
+- **Cookie Name**: `app_session_id`
+- **Token Type**: JWT (30-day expiry)
+- **Super Admin**: Users with "Super Admin" RBAC role OR `role='admin'` bypass all permission checks
+```
+
+### 8.2 Update README.md
+
+Add to the "Development" section in `README.md`:
+
+```markdown
+## Authentication
+
+### Admin Setup
+```bash
+# Create or update admin account
+pnpm setup:admin your-email@example.com YourPassword123!
+
+# Login at /login
+```
+
+### Test Accounts
+```bash
+# Seed test accounts for E2E testing
+pnpm seed:test-accounts
+```
+
+See [docs/AUTH_SETUP.md](docs/AUTH_SETUP.md) for full documentation.
+```
+
+### 8.3 Create/Update docs/guides/E2E_TESTING.md
+
+Create `docs/guides/E2E_TESTING.md`:
+
+```markdown
+# E2E Testing Guide
+
+## Authentication for Automated Tests
+
+### Getting Auth Tokens
+
+```bash
+# Get token for any role
+pnpm get:auth-token <email> <password> <base-url>
+
+# Examples:
+pnpm get:auth-token test-superadmin@terp-app.local TestSuperAdmin123! http://localhost:5000
+pnpm get:auth-token test-admin@terp-app.local TestAdmin123! https://terp-app-b9s35.ondigitalocean.app
+```
+
+### Using Tokens in Playwright
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.beforeEach(async ({ context }) => {
+  // Get token (in real test, call the API or use env var)
+  const token = process.env.TEST_AUTH_TOKEN;
+  
+  await context.addCookies([{
+    name: 'app_session_id',
+    value: token,
+    domain: 'localhost',
+    path: '/'
+  }]);
+});
+
+test('admin can access dashboard', async ({ page }) => {
+  await page.goto('/dashboard');
+  await expect(page.locator('h1')).toContainText('Dashboard');
+});
+```
+
+### Test Account Roles
+
+| Role | Can Do | Cannot Do |
+|------|--------|-----------|
+| Super Admin | Everything | Nothing restricted |
+| Admin | Manage users, settings | N/A |
+| Manager | Manage inventory, orders | User management |
+| Staff | View/edit assigned items | Settings, user management |
+| Viewer | View only | Any modifications |
+
+### Testing Role Permissions
+
+```typescript
+test.describe('Role-based access', () => {
+  test('viewer cannot access settings', async ({ page, context }) => {
+    // Set viewer token
+    await context.addCookies([{
+      name: 'app_session_id',
+      value: process.env.VIEWER_TOKEN,
+      domain: 'localhost',
+      path: '/'
+    }]);
+    
+    await page.goto('/settings');
+    await expect(page.locator('text=Access Denied')).toBeVisible();
+  });
+});
+```
+```
+
+### 8.4 Update .kiro/steering files (if they exist)
+
+Check for and update any `.kiro/steering/*.md` files that agents reference:
+
+```bash
+# Check for steering files
+ls -la .kiro/steering/ 2>/dev/null
+
+# If they exist, add auth section to each relevant file
+```
+
+### 8.5 Files to Update Summary
+
+| File | Action |
+|------|--------|
+| docs/prompts/AGENT_ONBOARDING_TEMPLATE.md | ADD Authentication section |
+| README.md | ADD Authentication section |
+| docs/guides/E2E_TESTING.md | NEW - E2E testing guide with auth |
+| docs/AUTH_SETUP.md | Already created in Task 5 |
+| .kiro/steering/*.md | UPDATE if exists |
+
+---
+
+## Updated Success Criteria
+
+- [ ] `pnpm setup:admin email password` creates working admin account
+- [ ] Admin can login at `/login` and access all features
+- [ ] `pnpm seed:test-accounts` creates all test accounts
+- [ ] Test accounts can login with documented passwords
+- [ ] `pnpm get:auth-token` returns valid session token
+- [ ] AI agent can use token to access protected routes
+- [ ] `pnpm check` passes
+- [ ] `pnpm build` passes
+- [ ] **docs/AUTH_SETUP.md is complete**
+- [ ] **AGENT_ONBOARDING_TEMPLATE.md has auth section**
+- [ ] **README.md has auth section**
+- [ ] **docs/guides/E2E_TESTING.md exists with auth guide**
+
+---
+
+## Updated Files Created/Modified
+
+| File | Change |
+|------|--------|
+| scripts/setup-admin.ts | NEW - Admin setup script |
+| scripts/get-auth-token.ts | NEW - AI agent auth helper |
+| server/db/seed/testAccounts.ts | NEW - Test account seeder |
+| server/routers/auth.ts | ADD getTestToken procedure |
+| docs/AUTH_SETUP.md | NEW - Auth documentation |
+| docs/guides/E2E_TESTING.md | NEW - E2E testing guide |
+| docs/prompts/AGENT_ONBOARDING_TEMPLATE.md | ADD auth section |
+| README.md | ADD auth section |
+| .env.example | ADD ENABLE_TEST_AUTH |
+| package.json | ADD new scripts |
