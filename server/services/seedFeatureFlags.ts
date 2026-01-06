@@ -1,6 +1,6 @@
 /**
  * Feature Flag Seed Data
- * 
+ *
  * Seeds the database with default feature flags.
  * Run this during initial setup or when adding new flags.
  */
@@ -10,7 +10,7 @@ import { logger } from "../_core/logger";
 
 /**
  * Default feature flags to seed
- * 
+ *
  * These represent the initial set of flags that should exist in the system.
  * Flags are organized by category:
  * - Module flags (module-*): Enable/disable entire modules
@@ -24,7 +24,8 @@ const DEFAULT_FLAGS = [
   {
     key: "module-accounting",
     name: "Accounting Module",
-    description: "Enable the accounting module including GL, invoices, and financial reports",
+    description:
+      "Enable the accounting module including GL, invoices, and financial reports",
     module: null,
     systemEnabled: true,
     defaultEnabled: true,
@@ -40,7 +41,8 @@ const DEFAULT_FLAGS = [
   {
     key: "module-sales",
     name: "Sales Module",
-    description: "Enable sales features including orders, quotes, and sales sheets",
+    description:
+      "Enable sales features including orders, quotes, and sales sheets",
     module: null,
     systemEnabled: true,
     defaultEnabled: true,
@@ -104,7 +106,8 @@ const DEFAULT_FLAGS = [
   {
     key: "live-catalog",
     name: "Live Catalog",
-    description: "Enable the VIP Portal Live Catalog feature for browsing inventory",
+    description:
+      "Enable the VIP Portal Live Catalog feature for browsing inventory",
     module: "module-vip-portal",
     systemEnabled: true,
     defaultEnabled: true, // Enabled by default for all users
@@ -112,7 +115,8 @@ const DEFAULT_FLAGS = [
   {
     key: "vip-admin-impersonation",
     name: "VIP Admin Impersonation",
-    description: "Enable admin impersonation for VIP portal access with full audit logging (FEATURE-012)",
+    description:
+      "Enable admin impersonation for VIP portal access with full audit logging (FEATURE-012)",
     module: "module-vip-portal",
     systemEnabled: true,
     defaultEnabled: true, // Enabled for production use
@@ -164,10 +168,60 @@ const DEFAULT_FLAGS = [
   {
     key: "spreadsheet-view",
     name: "Spreadsheet View",
-    description: "Enable unified spreadsheet interface for inventory, intake, and pick & pack workflows",
+    description:
+      "Enable unified spreadsheet interface for inventory, intake, and pick & pack workflows",
     module: "module-inventory",
     systemEnabled: true,
     defaultEnabled: false,
+  },
+
+  // ========================================================================
+  // ADMIN & USER UX FLAGS (SEC-010, UX-050-055)
+  // ========================================================================
+  {
+    key: "feature-secure-user-management",
+    name: "Secure User Management",
+    description:
+      "Enables protected user management endpoints with permission checks",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "feature-admin-user-ux",
+    name: "Admin User UX Improvements",
+    description:
+      "Enables improved admin user management UI with search, filter, and pagination",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "feature-my-account",
+    name: "My Account Page",
+    description:
+      "Enables dedicated account page for users to manage their profile and password",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "feature-notification-prefs-polish",
+    name: "Notification Preferences Polish",
+    description:
+      "Enables polished notification preferences UI with loading states and error handling",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
+  },
+  {
+    key: "feature-admin-audit-ui",
+    name: "Admin Audit UI",
+    description:
+      "Enables audit trail visibility in admin UI for user activity history",
+    module: null,
+    systemEnabled: true,
+    defaultEnabled: true,
   },
 
   // ========================================================================
@@ -192,7 +246,8 @@ const DEFAULT_FLAGS = [
   {
     key: "calendar-time-off",
     name: "Time Off Management",
-    description: "Enable time-off request and approval workflow with availability integration",
+    description:
+      "Enable time-off request and approval workflow with availability integration",
     module: "module-calendar",
     systemEnabled: true,
     defaultEnabled: true,
@@ -200,7 +255,8 @@ const DEFAULT_FLAGS = [
   {
     key: "calendar-recurrence",
     name: "Recurring Events",
-    description: "Enable recurring event patterns (daily, weekly, monthly, yearly)",
+    description:
+      "Enable recurring event patterns (daily, weekly, monthly, yearly)",
     module: "module-calendar",
     systemEnabled: true,
     defaultEnabled: true,
@@ -217,14 +273,16 @@ const DEFAULT_FLAGS = [
 
 /**
  * Seed feature flags into the database
- * 
+ *
  * This function is idempotent - it will only create flags that don't exist.
  * Existing flags will not be modified.
- * 
+ *
  * @param actorOpenId - The openId of the user performing the seed (for audit)
  * @returns Object with counts of created and skipped flags
  */
-export async function seedFeatureFlags(actorOpenId: string = "system"): Promise<{
+export async function seedFeatureFlags(
+  actorOpenId: string = "system"
+): Promise<{
   created: number;
   skipped: number;
   errors: string[];
@@ -241,29 +299,41 @@ export async function seedFeatureFlags(actorOpenId: string = "system"): Promise<
     try {
       // Check if flag already exists
       const existing = await featureFlagsDb.getByKey(flag.key);
-      
+
       if (existing) {
-        logger.debug({ key: flag.key }, "[FeatureFlags] Flag already exists, skipping");
+        logger.debug(
+          { key: flag.key },
+          "[FeatureFlags] Flag already exists, skipping"
+        );
         result.skipped++;
         continue;
       }
 
       // Create the flag
       await featureFlagsDb.create(flag, actorOpenId);
-      logger.info({ key: flag.key, name: flag.name }, "[FeatureFlags] Created flag");
+      logger.info(
+        { key: flag.key, name: flag.name },
+        "[FeatureFlags] Created flag"
+      );
       result.created++;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      logger.error({ key: flag.key, error: message }, "[FeatureFlags] Failed to create flag");
+      logger.error(
+        { key: flag.key, error: message },
+        "[FeatureFlags] Failed to create flag"
+      );
       result.errors.push(`${flag.key}: ${message}`);
     }
   }
 
-  logger.info({
-    created: result.created,
-    skipped: result.skipped,
-    errors: result.errors.length,
-  }, "[FeatureFlags] Seed complete");
+  logger.info(
+    {
+      created: result.created,
+      skipped: result.skipped,
+      errors: result.errors.length,
+    },
+    "[FeatureFlags] Seed complete"
+  );
 
   return result;
 }
