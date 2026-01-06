@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.34
+**Version:** 2.35
 **Last Updated:** January 3, 2026 (QA Technical Debt Added)
 **Status:** Active
 
@@ -9138,7 +9138,7 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 
 ## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
 
-**Version:** 2.34  
+**Version:** 2.35  
 **Added:** January 3, 2026  
 **Status:** 🟡 READY FOR EXECUTION  
 **Total Estimated Effort:** 92 hours
@@ -9450,7 +9450,7 @@ This section contains new work items identified during Tier 1 customer readiness
 
 ## 🎨 UI/UX Audit Findings - January 2026
 
-**Version:** 2.34  
+**Version:** 2.35  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA Specialist Audit  
 **Status:** 🟡 READY FOR EXECUTION  
@@ -9929,7 +9929,7 @@ These are major usability issues causing significant friction.
 
 ## 🔍 Additional UX Audit Findings - January 2026 (Supplemental)
 
-**Version:** 2.34  
+**Version:** 2.35  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA (Agent Mode) - Full Audit  
 **Status:** 🟡 READY FOR EXECUTION
@@ -10758,3 +10758,451 @@ Targeted improvements to admin user management and end-user account/profile expe
 
 - UX-054: Feedback and accessibility
 - UX-055: Audit trail UI
+
+---
+
+## 🔒 Master UX/Product/Engineering Audit Findings
+
+**Added:** January 5, 2026
+**Source:** Principal Product Manager / Staff UX Designer / Lead Architect Audit
+**UX Maturity Rating:** C+ (Functional but Fragile)
+**QA Level:** 🔴 Level 3 — Adversarial QA (security-critical items)
+
+### Executive Summary
+
+The audit identified that TERP has excellent UI polish (shadcn) and expert-level database schema, but the **data fetching layer** has critical issues that create a "glass ceiling" on scalability. The "Limit 1000" pattern is pervasive and creates false negatives for users.
+
+### ⚠️ AREAS REQUIRING CAREFUL HANDLING
+
+The following items are flagged for **extra scrutiny** during implementation:
+
+| Flag                    | Area                               | Risk                                  | Mitigation                             |
+| ----------------------- | ---------------------------------- | ------------------------------------- | -------------------------------------- |
+| 🔴 **SECURITY**         | VIP Portal `window.fetch` override | Token leakage to third-party scripts  | Isolate auth, use dedicated API client |
+| 🔴 **DATA INTEGRITY**   | Limit 1000 pattern                 | Users see incomplete data, lose sales | Server-side pagination with cursor     |
+| 🟠 **BREAKING CHANGE**  | Pagination refactor                | All list endpoints change signature   | Feature flag, gradual rollout          |
+| 🟠 **STATE MANAGEMENT** | Client-side filtering removal      | UI behavior changes significantly     | A/B test, user feedback                |
+| 🟡 **REGRESSION RISK**  | Order creation layout refactor     | Core workflow changes                 | Extensive E2E testing                  |
+
+---
+
+### 🔴 CRITICAL SEVERITY (Must Fix Immediately)
+
+#### SEC-011: Remove VIP Portal `window.fetch` Override
+
+- **Priority:** P0 (CRITICAL - SECURITY)
+- **Estimate:** 4 hours
+- **Status:** 🔴 URGENT
+- **File:** `client/src/pages/vip-portal/VIPDashboard.tsx` (Lines 110-117)
+- **Feature Flag:** None (security fix, deploy immediately)
+
+**⚠️ CAREFUL HANDLING REQUIRED:**
+
+- This is a **security vulnerability** - the global `window.fetch` override exposes session tokens to ANY script running on the page
+- Marketing scripts, analytics tools, or malicious browser extensions can intercept the token
+- Must be fixed before any new VIP Portal features
+
+**Problem:**
+
+```typescript
+// CURRENT (INSECURE) - Lines 110-117
+const originalFetch = window.fetch.bind(window);
+window.fetch = (input, init) => {
+  // Token sent to ALL fetch requests, including third-party scripts!
+  return originalFetch(input, {
+    ...init,
+    headers: { ...init?.headers, "x-vip-session-token": token },
+  });
+};
+```
+
+**Solution:**
+
+```typescript
+// Create dedicated API client
+const vipApiClient = {
+  fetch: (url: string, init?: RequestInit) => {
+    // Only attach token to OUR API endpoints
+    if (url.startsWith("/api/") || url.startsWith(API_BASE_URL)) {
+      return fetch(url, {
+        ...init,
+        headers: { ...init?.headers, "x-vip-session-token": token },
+      });
+    }
+    return fetch(url, init);
+  },
+};
+```
+
+**Acceptance Criteria:**
+
+- [ ] Global `window.fetch` override removed
+- [ ] Dedicated VIP API client created
+- [ ] Token only sent to TERP API endpoints
+- [ ] All VIP Portal API calls updated to use new client
+- [ ] Security review completed
+
+---
+
+#### PERF-002: Implement Server-Side Pagination for Inventory
+
+- **Priority:** P0 (CRITICAL - DATA INTEGRITY)
+- **Estimate:** 16 hours
+- **Status:** 🔴 URGENT
+- **Files:** `client/src/pages/Inventory.tsx`, `server/routers/inventory.ts`
+- **Feature Flag:** `feature-server-pagination` (Parent: None, Default: Disabled initially)
+
+**⚠️ CAREFUL HANDLING REQUIRED:**
+
+- This is a **breaking change** to the API contract
+- Users currently see max 1000 items; after fix they see ALL items
+- Client-side filtering logic must be replaced with server-side
+- Must maintain backward compatibility during rollout
+
+**Problem:**
+
+```typescript
+// CURRENT - Inventory.tsx:314
+limit: 1000, // Users cannot see item #1001+
+```
+
+**Impact:** Users searching for a specific SKU that is record #1001+ will not find it and assume it's out of stock, **losing the sale**.
+
+**Solution:**
+
+1. Add cursor-based pagination to `inventory.list` endpoint
+2. Implement infinite scroll or "Load More" in UI
+3. Move all filtering to server-side
+4. Add total count indicator ("Showing 50 of 2,847 items")
+
+**Acceptance Criteria:**
+
+- [ ] Server-side pagination with cursor
+- [ ] Server-side filtering (search, status, category)
+- [ ] UI shows total count
+- [ ] "Load More" or infinite scroll
+- [ ] No hardcoded limits in client
+- [ ] Performance tested with 10,000+ items
+
+---
+
+#### PERF-003: Implement Server-Side Search for ClientCombobox
+
+- **Priority:** P0 (CRITICAL - DATA INTEGRITY)
+- **Estimate:** 8 hours
+- **Status:** 🔴 URGENT
+- **Files:** `client/src/hooks/useClientsData.ts`, `client/src/components/ClientCombobox.tsx`
+- **Feature Flag:** `feature-server-client-search` (Parent: None, Default: Disabled initially)
+
+**⚠️ CAREFUL HANDLING REQUIRED:**
+
+- Affects **every page that uses ClientCombobox** (Orders, Quotes, Sales Sheets, etc.)
+- Must debounce search to avoid API spam
+- Must handle "no results" vs "loading" states clearly
+
+**Problem:**
+
+```typescript
+// CURRENT - useClientsData.ts:61
+const { enabled = true, clientTypes, limit = 1000 } = options;
+// If business has 2,000 clients, 50% are unselectable!
+```
+
+**Solution:**
+
+1. Add `search` parameter to `clients.list` endpoint
+2. Implement debounced server-side search in ClientCombobox
+3. Show "Type to search..." placeholder
+4. Handle empty states properly
+
+**Acceptance Criteria:**
+
+- [ ] Server-side search endpoint
+- [ ] Debounced search (300ms)
+- [ ] Minimum 2 characters to search
+- [ ] Clear loading/empty states
+- [ ] Works with 10,000+ clients
+
+---
+
+### 🟠 HIGH SEVERITY (Major Friction)
+
+#### UX-056: Refactor Order Creation Layout
+
+- **Priority:** P1 (HIGH)
+- **Estimate:** 12 hours
+- **Status:** 🟡 READY
+- **File:** `client/src/pages/OrderCreatorPage.tsx`
+- **Feature Flag:** `feature-order-sheet-layout` (Parent: None, Default: Disabled)
+
+**⚠️ CAREFUL HANDLING REQUIRED:**
+
+- This is a **core workflow** used by sales staff constantly
+- Current `scrollIntoView` behavior is disorienting but familiar
+- Must A/B test or get user feedback before full rollout
+
+**Problem:**
+The page uses `scrollIntoView` to jump between "Cart" and "Catalog" sections, breaking visual context while building an invoice.
+
+**Solution:**
+Move the Catalog into a Slide-over Sheet that overlays the Cart, allowing users to see both simultaneously.
+
+**Acceptance Criteria:**
+
+- [ ] Catalog opens in Sheet/Drawer
+- [ ] Cart remains visible while browsing
+- [ ] Quick add to cart from Sheet
+- [ ] Sheet closes after adding item (optional)
+- [ ] Keyboard navigation works
+- [ ] Mobile responsive
+
+---
+
+#### UX-057: Implement Dirty State Warnings
+
+- **Priority:** P1 (HIGH)
+- **Estimate:** 6 hours
+- **Status:** 🟡 READY
+- **Files:** `OrderCreatorPage.tsx`, `QuoteCreatorPage.tsx`, `SalesSheetCreatorPage.tsx`
+- **Feature Flag:** `feature-dirty-state-warnings` (Parent: None, Default: Enabled)
+
+**Problem:**
+No confirmation dialog when navigating away from unsaved order/quote forms. Users lose work.
+
+**Solution:**
+
+```typescript
+// Add to form pages
+useEffect(() => {
+  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    if (isDirty) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  };
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+}, [isDirty]);
+
+// Also intercept React Router navigation
+const blocker = useBlocker(isDirty);
+```
+
+**Acceptance Criteria:**
+
+- [ ] Browser beforeunload warning on dirty forms
+- [ ] React Router navigation blocked with confirmation
+- [ ] "Discard changes?" dialog with Save/Discard/Cancel
+- [ ] Works on Order, Quote, Sales Sheet creators
+
+---
+
+#### UX-058: Proactive Credit Limit Checks
+
+- **Priority:** P1 (HIGH)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **File:** `client/src/pages/OrderCreatorPage.tsx`
+- **Feature Flag:** `feature-proactive-credit-check` (Parent: None, Default: Enabled)
+
+**Problem:**
+Credit limit errors appear as late-stage modal interruptions at the END of the order flow, after the user has done all the work.
+
+**Solution:**
+
+1. Show client's available credit immediately after selection
+2. Display running total vs available credit as items are added
+3. Warn (yellow) when approaching limit (80%)
+4. Block (red) when exceeding limit
+5. Disable "Finalize" button with tooltip explaining why
+
+**Acceptance Criteria:**
+
+- [ ] Credit info shown after client selection
+- [ ] Running total vs available credit
+- [ ] Yellow warning at 80% utilization
+- [ ] Red block at 100%+ utilization
+- [ ] Finalize button disabled with tooltip
+- [ ] Override option for admins with permission
+
+---
+
+### 🟡 MEDIUM SEVERITY (Polish & Standards)
+
+#### UX-059: Centralize Status Badge Logic
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **Files:** Multiple (`Inventory.tsx`, `OrderStatusBadge.tsx`, etc.)
+- **Feature Flag:** None (refactor)
+
+**Problem:**
+Badge colors for statuses are hardcoded in multiple files, leading to inconsistency.
+
+**Solution:**
+Create `lib/statusConfig.ts` with centralized status definitions:
+
+```typescript
+export const STATUS_CONFIG = {
+  AWAITING_INTAKE: { label: 'Awaiting Intake', color: 'yellow', icon: Clock },
+  LIVE: { label: 'Live', color: 'green', icon: CheckCircle },
+  // ...
+};
+
+export function StatusBadge({ status }: { status: string }) {
+  const config = STATUS_CONFIG[status] || { label: status, color: 'gray' };
+  return <Badge variant={config.color}>{config.label}</Badge>;
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Central status config file created
+- [ ] All status badges use central config
+- [ ] Consistent colors across app
+- [ ] Easy to add new statuses
+
+---
+
+#### UX-060: Improve Search Debounce Timing
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 2 hours
+- **Status:** 🟡 READY
+- **File:** `client/src/pages/Inventory.tsx`
+- **Feature Flag:** None (performance fix)
+
+**Problem:**
+Search debounces at 150ms, which is too frequent for client-side filtering of 1000 items, causing UI stutter.
+
+**Solution:**
+Increase debounce to 300-500ms for client-side filtering. After PERF-002 (server-side pagination), can reduce to 300ms.
+
+**Acceptance Criteria:**
+
+- [ ] Debounce increased to 400ms
+- [ ] No UI stutter during typing
+- [ ] Feels responsive but not laggy
+
+---
+
+#### UX-061: Differentiate Empty States
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 3 hours
+- **Status:** 🟡 READY
+- **File:** `client/src/pages/Inventory.tsx`
+- **Feature Flag:** None (UX improvement)
+
+**Problem:**
+Empty states don't differentiate between "No data exists" and "Filters match nothing."
+
+**Solution:**
+
+```typescript
+// No data at all
+{!isLoading && items.length === 0 && !hasFilters && (
+  <EmptyState
+    icon={Package}
+    title="No inventory yet"
+    description="Add your first batch to get started"
+    action={<Button>Add Batch</Button>}
+  />
+)}
+
+// Filters match nothing
+{!isLoading && items.length === 0 && hasFilters && (
+  <EmptyState
+    icon={Search}
+    title="No matches found"
+    description="Try adjusting your filters"
+    action={<Button variant="outline" onClick={clearFilters}>Clear Filters</Button>}
+  />
+)}
+```
+
+**Acceptance Criteria:**
+
+- [ ] "No data" empty state with add action
+- [ ] "No matches" empty state with clear filters
+- [ ] Consistent across Inventory, Orders, Clients pages
+
+---
+
+#### PERF-004: Add Loading State to OrderTotalsPanel
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 2 hours
+- **Status:** 🟡 READY
+- **File:** `client/src/components/orders/OrderTotalsPanel.tsx`
+- **Feature Flag:** None (UX improvement)
+
+**Problem:**
+No loading state while recalculating complex taxes/discounts. Users don't know if the system is working.
+
+**Solution:**
+Add skeleton or spinner while totals are being calculated.
+
+**Acceptance Criteria:**
+
+- [ ] Loading skeleton during calculation
+- [ ] Smooth transition when values update
+- [ ] No layout shift
+
+---
+
+### Summary Table
+
+| ID        | Task                               | Priority | Estimate | Category    | ⚠️ Flag            |
+| --------- | ---------------------------------- | -------- | -------- | ----------- | ------------------ |
+| SEC-011   | Remove VIP `window.fetch` Override | P0       | 4h       | Security    | 🔴 SECURITY        |
+| PERF-002  | Server-Side Pagination (Inventory) | P0       | 16h      | Performance | 🔴 DATA INTEGRITY  |
+| PERF-003  | Server-Side Search (Clients)       | P0       | 8h       | Performance | 🔴 DATA INTEGRITY  |
+| UX-056    | Refactor Order Creation Layout     | P1       | 12h      | UX          | 🟠 BREAKING CHANGE |
+| UX-057    | Dirty State Warnings               | P1       | 6h       | UX          |                    |
+| UX-058    | Proactive Credit Limit Checks      | P1       | 8h       | UX          |                    |
+| UX-059    | Centralize Status Badge Logic      | P2       | 4h       | Refactor    |                    |
+| UX-060    | Improve Search Debounce            | P2       | 2h       | Performance |                    |
+| UX-061    | Differentiate Empty States         | P2       | 3h       | UX          |                    |
+| PERF-004  | OrderTotalsPanel Loading State     | P2       | 2h       | UX          |                    |
+| **Total** |                                    |          | **65h**  |             |                    |
+
+---
+
+### Recommended Execution Order
+
+**Phase 1: Security First (4h)**
+
+- SEC-011: Remove VIP `window.fetch` override (DEPLOY IMMEDIATELY)
+
+**Phase 2: Data Integrity (24h)**
+
+- PERF-002: Server-side pagination for Inventory
+- PERF-003: Server-side search for Clients
+
+**Phase 3: Core UX (26h)**
+
+- UX-056: Order creation layout refactor
+- UX-057: Dirty state warnings
+- UX-058: Proactive credit checks
+
+**Phase 4: Polish (11h)**
+
+- UX-059: Centralize status badges
+- UX-060: Search debounce
+- UX-061: Empty states
+- PERF-004: Loading states
+
+---
+
+### Strategic Notes from Audit
+
+> **"Shift Philosophy: Trust > Speed"**
+> Currently, the app prioritizes the perception of speed (loading data into memory for instant filtering) over data integrity. Pivot to **Precision**. Users will accept a 200ms loading spinner if they trust the search results are exhaustive and accurate.
+
+> **"No queries without pagination"**
+> Establish a strict rule: Every list endpoint must support pagination. The "Limit 1000" pattern is an anti-pattern that creates a hard ceiling on product usability.
+
+> **"The hard part is done"**
+> The complex domain modeling (Batches → Strains → Products) is expert-level. If you execute the Priority Fix List—specifically fixing pagination and security—this product transforms from a prototype into a scalable, top-tier ERP competitor.
