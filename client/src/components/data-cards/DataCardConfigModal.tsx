@@ -149,7 +149,7 @@ export function DataCardConfigModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {open && (
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Customize {moduleConfig.moduleName} Metrics</DialogTitle>
           <DialogDescription>

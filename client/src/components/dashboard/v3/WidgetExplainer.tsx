@@ -23,7 +23,7 @@ export function WidgetExplainer({ explainer }: WidgetExplainerProps) {
           <Info className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-full sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{explainer.title}</DialogTitle>
           <DialogDescription>{explainer.description}</DialogDescription>

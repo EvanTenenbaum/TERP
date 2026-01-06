@@ -115,7 +115,7 @@ export function CalendarAppointmentTypes() {
                 New Type
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="w-full sm:max-w-md">
               <AppointmentTypeForm
                 calendarId={selectedCalendarId!}
                 onSubmit={(data) => createMutation.mutate(data)}
@@ -165,7 +165,7 @@ export function CalendarAppointmentTypes() {
             <div className="flex items-center gap-2">
               {editingType?.id === type.id && (
                 <Dialog open={true} onOpenChange={() => setEditingType(null)}>
-                  <DialogContent className="max-w-md">
+                  <DialogContent className="w-full sm:max-w-md">
                     <AppointmentTypeForm
                       calendarId={selectedCalendarId!}
                       initialData={type}

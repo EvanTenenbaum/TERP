@@ -296,7 +296,7 @@ export const SupplierProfileSection = React.memo(function SupplierProfileSection
 
       {/* Edit Supplier Profile Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-full sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Supplier Profile</DialogTitle>
             <DialogDescription>

@@ -103,7 +103,7 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-full sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add New Client</DialogTitle>
           <DialogDescription>

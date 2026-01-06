@@ -300,7 +300,7 @@ export function CreditLimitWidget({
                         Adjust
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogContent className="w-full sm:max-w-2xl max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Adjust Credit Signal Weights</DialogTitle>
                         <DialogDescription>
