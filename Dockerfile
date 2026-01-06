@@ -1,6 +1,6 @@
 # ============================================
 # TERP Optimized Multi-Stage Dockerfile
-# Version: 2.0 - Enables --prod builds
+# Version: 2.1 - Fixed memory settings for DigitalOcean App Platform
 # ============================================
 
 # ============================================
@@ -8,7 +8,7 @@
 # ============================================
 FROM node:20.19-slim AS base
 
-LABEL build.version="2025-12-17-OPTIMIZED-V2"
+LABEL build.version="2026-01-05-MEMORY-FIX"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 build-essential ca-certificates git openssl pkg-config \
@@ -85,4 +85,14 @@ COPY --from=builder /app/scripts ./scripts
 
 EXPOSE 3000
 
-CMD ["node", "--max-old-space-size=896", "dist/index.js"]
+# Memory settings optimized for DigitalOcean App Platform
+# - basic-xs (512MB): Use 384MB max heap (leaves room for OS + buffers)
+# - basic-s (1GB): Use 768MB max heap
+# - basic-m (2GB): Use 1536MB max heap
+#
+# The --expose-gc flag enables manual garbage collection via global.gc()
+# which is used by the memory optimizer for emergency cleanup.
+#
+# NOTE: If upgrading to basic-s or larger, update NODE_MEMORY_LIMIT env var
+# in .do/app.yaml and increase --max-old-space-size accordingly.
+CMD ["node", "--expose-gc", "--max-old-space-size=384", "dist/index.js"]
