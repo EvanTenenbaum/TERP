@@ -97,10 +97,13 @@
     "qa:pipeline:local": "pnpm test:e2e && tsx scripts/qa/index.ts test-results.json",
     "dashboard": "tsx scripts/dashboard.ts",
     "dashboard:html": "tsx scripts/generate-html-dashboard.ts && open dashboard.html",
-    "slack-bot:ai": "tsx scripts/slack-bot-ai.ts"
+    "slack-bot:ai": "tsx scripts/slack-bot-ai.ts",
+    "backup:db": "tsx scripts/backup-database.ts",
+    "backup:db:dry": "tsx scripts/backup-database.ts --dry-run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
+    "@aws-sdk/client-s3": "^3.964.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
