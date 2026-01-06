@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { handleError, AppError, ErrorCatalog } from "../_core/errors";
+import { handleError, ErrorCatalog } from "../_core/errors";
 import { inventoryLogger } from "../_core/logger";
 import {
   intakeSchema,
@@ -28,7 +28,7 @@ export const inventoryRouter = router({
         batchId: z.number().optional(), // Optional: link to existing batch
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx: _ctx }) => {
       try {
         // Check if storage is configured
         const { isStorageConfigured } = await import("../storage");
@@ -38,15 +38,22 @@ export const inventoryRouter = router({
 
         // Decode base64 file
         const fileBuffer = Buffer.from(input.fileData, "base64");
-        
+
         // Generate storage key
         const timestamp = Date.now();
-        const sanitizedFileName = input.fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const sanitizedFileName = input.fileName.replace(
+          /[^a-zA-Z0-9.-]/g,
+          "_"
+        );
         const storageKey = `batch-media/${input.batchId || "temp"}/${timestamp}-${sanitizedFileName}`;
-        
+
         // Upload to storage
-        const { url } = await storagePut(storageKey, fileBuffer, input.fileType);
-        
+        const { url } = await storagePut(
+          storageKey,
+          fileBuffer,
+          input.fileType
+        );
+
         return {
           success: true,
           url,
@@ -55,7 +62,9 @@ export const inventoryRouter = router({
           fileSize: fileBuffer.length,
         };
       } catch (error) {
-        inventoryLogger.operationFailure("uploadMedia", error as Error, { fileName: input.fileName });
+        inventoryLogger.operationFailure("uploadMedia", error as Error, {
+          fileName: input.fileName,
+        });
         handleError(error, "inventory.uploadMedia");
         throw error;
       }
@@ -64,77 +73,83 @@ export const inventoryRouter = router({
   // Get all batches with details
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
   // ✅ ENHANCED: TERP-INIT-005 Phase 4 - Cursor-based pagination
-  list: protectedProcedure.use(requirePermission("inventory:read")).input(listQuerySchema).query(async ({ input }) => {
-    try {
-      inventoryLogger.operationStart("list", {
-        cursor: input.cursor,
-        limit: input.limit,
-      });
+  list: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .input(listQuerySchema)
+    .query(async ({ input }) => {
+      try {
+        inventoryLogger.operationStart("list", {
+          cursor: input.cursor,
+          limit: input.limit,
+        });
 
-      let result;
-      if (input.query) {
-        result = await inventoryDb.searchBatches(
-          input.query,
-          input.limit,
-          input.cursor
-        );
-      } else {
-        result = await inventoryDb.getBatchesWithDetails(
-          input.limit,
-          input.cursor,
-          { status: input.status, category: input.category }
-        );
+        let result;
+        if (input.query) {
+          result = await inventoryDb.searchBatches(
+            input.query,
+            input.limit,
+            input.cursor
+          );
+        } else {
+          result = await inventoryDb.getBatchesWithDetails(
+            input.limit,
+            input.cursor,
+            { status: input.status, category: input.category }
+          );
+        }
+
+        inventoryLogger.operationSuccess("list", {
+          itemCount: result.items.length,
+          hasMore: result.hasMore,
+          nextCursor: result.nextCursor,
+        });
+
+        return result;
+      } catch (error) {
+        inventoryLogger.operationFailure("list", error as Error, {
+          cursor: input.cursor,
+        });
+        handleError(error, "inventory.list");
+        throw error;
       }
-
-      inventoryLogger.operationSuccess("list", {
-        itemCount: result.items.length,
-        hasMore: result.hasMore,
-        nextCursor: result.nextCursor,
-      });
-
-      return result;
-    } catch (error) {
-      inventoryLogger.operationFailure("list", error as Error, {
-        cursor: input.cursor,
-      });
-      handleError(error, "inventory.list");
-      throw error;
-    }
-  }),
+    }),
 
   // Get dashboard statistics
-  dashboardStats: protectedProcedure.use(requirePermission("inventory:read")).query(async () => {
-    try {
-      const stats = await inventoryDb.getDashboardStats();
-      // If stats is null (e.g., DB connection issue), return a default empty object
-      // instead of throwing a hard error, which prevents the dashboard from crashing.
-      if (!stats) {
-        return {
-          totalInventoryValue: 0,
-          avgValuePerUnit: 0,
-          totalUnits: 0,
-          statusCounts: {
-            AWAITING_INTAKE: 0,
-            LIVE: 0,
-            ON_HOLD: 0,
-            QUARANTINED: 0,
-            SOLD_OUT: 0,
-            CLOSED: 0,
-          },
-          categoryStats: [],
-          subcategoryStats: [],
-        };
+  dashboardStats: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .query(async () => {
+      try {
+        const stats = await inventoryDb.getDashboardStats();
+        // If stats is null (e.g., DB connection issue), return a default empty object
+        // instead of throwing a hard error, which prevents the dashboard from crashing.
+        if (!stats) {
+          return {
+            totalInventoryValue: 0,
+            avgValuePerUnit: 0,
+            totalUnits: 0,
+            statusCounts: {
+              AWAITING_INTAKE: 0,
+              LIVE: 0,
+              ON_HOLD: 0,
+              QUARANTINED: 0,
+              SOLD_OUT: 0,
+              CLOSED: 0,
+            },
+            categoryStats: [],
+            subcategoryStats: [],
+          };
+        }
+        return stats;
+      } catch (error) {
+        handleError(error, "inventory.dashboardStats");
+        throw error;
       }
-      return stats;
-    } catch (error) {
-      handleError(error, "inventory.dashboardStats");
-      throw error;
-    }
-  }),
+    }),
 
   // Get single batch by ID
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
-  getById: protectedProcedure.use(requirePermission("inventory:read"))
+  getById: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(validators.positiveInt)
     .query(async ({ input }) => {
       try {
@@ -162,7 +177,8 @@ export const inventoryRouter = router({
   // Create new batch (intake)
   // ✅ FIXED: Uses transactional service (TERP-INIT-005 Phase 1)
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
-  intake: protectedProcedure.use(requirePermission("inventory:read"))
+  intake: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(intakeSchema)
     .mutation(async ({ input, ctx }) => {
       try {
@@ -195,7 +211,8 @@ export const inventoryRouter = router({
 
   // Update batch status
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
-  updateStatus: protectedProcedure.use(requirePermission("inventory:update"))
+  updateStatus: protectedProcedure
+    .use(requirePermission("inventory:update"))
     .input(batchUpdateSchema)
     .mutation(async ({ input, ctx }) => {
       const batch = await inventoryDb.getBatchById(input.id);
@@ -237,7 +254,8 @@ export const inventoryRouter = router({
     }),
 
   // Adjust batch quantity
-  adjustQty: protectedProcedure.use(requirePermission("inventory:read"))
+  adjustQty: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(
       z.object({
         id: z.number(),
@@ -287,8 +305,64 @@ export const inventoryRouter = router({
       return { success: true };
     }),
 
+  // TERP-SS-009: Update batch fields (ticket/unitCogs, notes) for spreadsheet editing
+  updateBatch: protectedProcedure
+    .use(requirePermission("inventory:update"))
+    .input(
+      z.object({
+        id: z.number(),
+        ticket: z.number().min(0).optional(), // unitCogs value
+        notes: z.string().nullable().optional(),
+        reason: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const batch = await inventoryDb.getBatchById(input.id);
+      if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.id);
+
+      const before = inventoryUtils.createAuditSnapshot(batch);
+      const updates: Record<string, unknown> = {};
+
+      // Update ticket (unitCogs) if provided
+      if (input.ticket !== undefined) {
+        updates.unitCogs = input.ticket.toFixed(2);
+      }
+
+      // Update notes in metadata if provided
+      if (input.notes !== undefined) {
+        const currentMetadata = batch.metadata
+          ? JSON.parse(batch.metadata)
+          : {};
+        currentMetadata.notes = input.notes;
+        updates.metadata = JSON.stringify(currentMetadata);
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return { success: true };
+      }
+
+      await inventoryDb.updateBatchFields(input.id, updates);
+      const after = await inventoryDb.getBatchById(input.id);
+
+      // Create audit log
+      await inventoryDb.createAuditLog({
+        actorId: ctx.user?.id || 0,
+        entity: "Batch",
+        entityId: input.id,
+        action: "BATCH_UPDATE",
+        before,
+        after: inventoryUtils.createAuditSnapshot(
+          after as unknown as Record<string, unknown>
+        ),
+        reason: input.reason,
+      });
+
+      return { success: true };
+    }),
+
   // Get vendors (for autocomplete)
-  vendors: protectedProcedure.use(requirePermission("inventory:read"))
+  vendors: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(z.object({ query: z.string().optional() }))
     .query(async ({ input }) => {
       if (input.query) {
@@ -302,7 +376,8 @@ export const inventoryRouter = router({
     }),
 
   // Get brands (for autocomplete)
-  brands: protectedProcedure.use(requirePermission("inventory:read"))
+  brands: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(z.object({ query: z.string().optional() }))
     .query(async ({ input }) => {
       if (input.query) {
@@ -317,7 +392,8 @@ export const inventoryRouter = router({
 
   // Get batches by vendor
   // _Requirements: 7.1_
-  getBatchesByVendor: protectedProcedure.use(requirePermission("inventory:read"))
+  getBatchesByVendor: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(z.object({ vendorId: z.number() }))
     .query(async ({ input }) => {
       try {
@@ -326,7 +402,7 @@ export const inventoryRouter = router({
         });
 
         const result = await inventoryDb.getBatchesByVendor(input.vendorId);
-        
+
         inventoryLogger.operationSuccess("getBatchesByVendor", {
           vendorId: input.vendorId,
           batchCount: result.length,
@@ -344,29 +420,34 @@ export const inventoryRouter = router({
     }),
 
   // Seed inventory data
-  seed: protectedProcedure.use(requirePermission("inventory:read")).mutation(async () => {
-    await inventoryDb.seedInventoryData();
-    return { success: true };
-  }),
+  seed: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .mutation(async () => {
+      await inventoryDb.seedInventoryData();
+      return { success: true };
+    }),
 
   // Saved Views Management
   views: router({
     // Get all views for current user
-    list: protectedProcedure.use(requirePermission("inventory:read")).query(async ({ ctx }) => {
-      try {
-        const userId = ctx.user?.id;
-        if (!userId) throw new Error("User not authenticated");
-        const result = await inventoryDb.getUserInventoryViews(userId);
-        // BUG-034: Standardized pagination response
-        return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
-      } catch (error) {
-        handleError(error, "inventory.views.list");
-        throw error;
-      }
-    }),
+    list: protectedProcedure
+      .use(requirePermission("inventory:read"))
+      .query(async ({ ctx }) => {
+        try {
+          const userId = ctx.user?.id;
+          if (!userId) throw new Error("User not authenticated");
+          const result = await inventoryDb.getUserInventoryViews(userId);
+          // BUG-034: Standardized pagination response
+          return createSafeUnifiedResponse(result, result?.length || 0, 50, 0);
+        } catch (error) {
+          handleError(error, "inventory.views.list");
+          throw error;
+        }
+      }),
 
     // Save a new view
-    save: protectedProcedure.use(requirePermission("inventory:read"))
+    save: protectedProcedure
+      .use(requirePermission("inventory:read"))
       .input(
         z.object({
           name: z.string().min(1).max(100),
@@ -389,7 +470,8 @@ export const inventoryRouter = router({
       }),
 
     // Delete a view
-    delete: protectedProcedure.use(requirePermission("inventory:delete"))
+    delete: protectedProcedure
+      .use(requirePermission("inventory:delete"))
       .input(z.number())
       .mutation(async ({ input, ctx }) => {
         try {
@@ -406,7 +488,8 @@ export const inventoryRouter = router({
   // Bulk operations
   bulk: router({
     // Bulk update status
-    updateStatus: protectedProcedure.use(requirePermission("inventory:update"))
+    updateStatus: protectedProcedure
+      .use(requirePermission("inventory:update"))
       .input(
         z.object({
           batchIds: z.array(z.number()),
@@ -437,7 +520,8 @@ export const inventoryRouter = router({
       }),
 
     // Bulk delete
-    delete: protectedProcedure.use(requirePermission("inventory:delete"))
+    delete: protectedProcedure
+      .use(requirePermission("inventory:delete"))
       .input(z.array(z.number()))
       .mutation(async ({ input, ctx }) => {
         try {
@@ -454,23 +538,32 @@ export const inventoryRouter = router({
   // Profitability analysis
   profitability: router({
     // Get batch profitability
-    batch: protectedProcedure.use(requirePermission("inventory:read")).input(z.number()).query(async ({ input }) => {
-      try {
-        return await inventoryDb.calculateBatchProfitability(input);
-      } catch (error) {
-        handleError(error, "inventory.profitability.batch");
-        throw error;
-      }
-    }),
+    batch: protectedProcedure
+      .use(requirePermission("inventory:read"))
+      .input(z.number())
+      .query(async ({ input }) => {
+        try {
+          return await inventoryDb.calculateBatchProfitability(input);
+        } catch (error) {
+          handleError(error, "inventory.profitability.batch");
+          throw error;
+        }
+      }),
 
     // Get top profitable batches
-    top: protectedProcedure.use(requirePermission("inventory:read"))
+    top: protectedProcedure
+      .use(requirePermission("inventory:read"))
       .input(z.number().optional().default(10))
       .query(async ({ input }) => {
         try {
           const result = await inventoryDb.getTopProfitableBatches(input);
           // BUG-034: Standardized pagination response
-          return createSafeUnifiedResponse(result, result?.length || 0, input, 0);
+          return createSafeUnifiedResponse(
+            result,
+            result?.length || 0,
+            input,
+            0
+          );
         } catch (error) {
           handleError(error, "inventory.profitability.top");
           throw error;
@@ -478,13 +571,15 @@ export const inventoryRouter = router({
       }),
 
     // Get overall summary
-    summary: protectedProcedure.use(requirePermission("inventory:read")).query(async () => {
-      try {
-        return await inventoryDb.getProfitabilitySummary();
-      } catch (error) {
-        handleError(error, "inventory.profitability.summary");
-        throw error;
-      }
-    }),
+    summary: protectedProcedure
+      .use(requirePermission("inventory:read"))
+      .query(async () => {
+        try {
+          return await inventoryDb.getProfitabilitySummary();
+        } catch (error) {
+          handleError(error, "inventory.profitability.summary");
+          throw error;
+        }
+      }),
   }),
 });
