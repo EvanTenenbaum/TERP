@@ -8,13 +8,21 @@
 
 ## Mission
 
-Verify and close out incorrectly documented QA tasks, fix dashboard navigation issues.
+Verify and close out incorrectly documented QA tasks, fix any navigation issues.
 
 ---
 
 ## Context
 
 Recent audit discovered that QA-001 through QA-004 (marked as "404 errors") are **actually implemented**. The routes and pages exist in the codebase. This agent will verify this, update documentation, and fix any real navigation issues.
+
+**IMPORTANT**: Routes already verified to exist:
+- `/vendors` → VendorsPage.tsx ✅
+- `/purchase-orders` → PurchaseOrdersPage.tsx ✅
+- `/todo` and `/todos` → TodoListsPage.tsx ✅
+- `/accounting` → AccountingDashboard.tsx ✅
+- `/analytics` → AnalyticsPage.tsx ✅
+- `/settings/cogs` → CogsSettingsPage.tsx ✅
 
 ---
 
@@ -64,21 +72,19 @@ For QA-001, QA-002, QA-003, QA-004:
 
 Keep QA-005 as "Not Started" - it's a real investigation task.
 
-### Task 3: Fix Dashboard Navigation (2-4h)
+### Task 3: Verify Navigation Links (1-2h)
 
-1. Open client/src/pages/DashboardPage.tsx
-2. Find all navigation buttons/links
-3. For each button, check if the route exists in client/src/App.tsx
-4. For buttons with missing routes:
-   - Option A: Add the route if the page exists
-   - Option B: Remove/disable the button if page doesn't exist
-   - Document your choice in the PR
+Check the sidebar navigation in:
+- client/src/components/DashboardLayout.tsx (main sidebar)
 
-Specific buttons to check:
-- Vendors → /vendors
-- Purchase Orders → /purchase-orders  
-- Batches → /batches
-- Strains → /strains
+Verify these routes work in client/src/App.tsx:
+- /vendors → VendorsPage (line ~156)
+- /purchase-orders → PurchaseOrdersPage (line ~158)
+- /todo and /todos → TodoListsPage (lines ~175-177)
+
+If any navigation links are broken or missing, fix them.
+
+NOTE: The main dashboard is DashboardV3.tsx, NOT DashboardPage.tsx
 
 ### Task 4: Verify and Test (30 min)
 
@@ -90,22 +96,26 @@ Specific buttons to check:
 
 git checkout -b fix/qa-backlog-cleanup
 git add -A
-git commit -m "fix(qa): update QA backlog status and fix dashboard navigation
+git commit -m "fix(qa): update QA backlog status - modules verified to exist
 
 - Mark QA-001 through QA-004 as complete (routes verified to exist)
-- Fix/remove broken dashboard navigation buttons
-- Keep QA-005 open for data access investigation"
+- Keep QA-005 open for data access investigation
+- All routes verified: /vendors, /purchase-orders, /todo, /accounting, /analytics"
 
 git push origin fix/qa-backlog-cleanup
-gh pr create --title "fix(qa): update QA backlog and fix dashboard navigation" --body "## Summary
+gh pr create --title "fix(qa): update QA backlog - modules verified to exist" --body "## Summary
 - Verified QA-001-004 modules exist in codebase
 - Updated QA_TASKS_BACKLOG.md to reflect reality
-- Fixed dashboard navigation issues
+
+## Verification Results
+- TodoListsPage.tsx: EXISTS
+- AccountingDashboard.tsx: EXISTS  
+- CogsSettingsPage.tsx: EXISTS
+- AnalyticsPage.tsx: EXISTS
+- All routes configured in App.tsx
 
 ## Changes
 - docs/roadmaps/QA_TASKS_BACKLOG.md: Status updates
-- client/src/pages/DashboardPage.tsx: Navigation fixes (if any)
-- client/src/App.tsx: Route additions (if any)
 
 ## Testing
 - pnpm check: ✅ Pass
@@ -124,7 +134,7 @@ gh pr create --title "fix(qa): update QA backlog and fix dashboard navigation" -
 ## Success Criteria
 
 - [ ] QA-001 through QA-004 marked as Complete in QA_TASKS_BACKLOG.md
-- [ ] All dashboard buttons either work or are removed
+- [ ] All navigation links verified to work
 - [ ] pnpm check passes
 - [ ] pnpm build passes
 - [ ] PR created with clear description
@@ -136,8 +146,8 @@ gh pr create --title "fix(qa): update QA backlog and fix dashboard navigation" -
 | File | Change |
 |------|--------|
 | docs/roadmaps/QA_TASKS_BACKLOG.md | Update status of QA-001 through QA-004 |
-| client/src/pages/DashboardPage.tsx | Fix broken navigation (if any) |
-| client/src/App.tsx | Add missing routes (if any) |
+| client/src/components/DashboardLayout.tsx | Fix navigation (only if needed) |
+| client/src/App.tsx | Add missing routes (only if needed) |
 
 ---
 

@@ -15,10 +15,16 @@ Fix skipped tests, add performance benchmarks, and update documentation.
 ## Context
 
 Current state:
-- Multiple skipped tests (it.skip, describe.skip)
+- 28 skipped tests (verified count)
+- Key locations:
+  - server/routers/accounting.test.ts (6 skipped)
+  - server/routers/calendarInvitations.test.ts (entire describe.skip)
+  - server/routers/clients.test.ts (1 skipped)
+  - server/routers/badDebt.test.ts (1 skipped)
+  - server/_core/dataProvider.test.ts (1 skipped)
 - No performance test suite
-- Documentation may be outdated
-- README needs verification
+- README.md exists (14,970 bytes)
+- docs/ directory has 40+ documentation files
 
 ---
 

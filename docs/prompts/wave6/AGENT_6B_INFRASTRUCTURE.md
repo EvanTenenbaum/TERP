@@ -280,12 +280,20 @@ export const healthRouter = router({
 ```
 
 #### 3.2 Register Router
-In server/routers/index.ts, add:
+
+**IMPORTANT**: Router registration is in `server/routers.ts` (NOT server/routers/index.ts)
+
+In server/routers.ts, add import at top:
 ```typescript
-import { healthRouter } from './health';
-// In the appRouter:
+import { healthRouter } from './routers/health';
+```
+
+Then add to the appRouter object (around line 115):
+```typescript
 health: healthRouter,
 ```
+
+**NOTE**: There's already a `monitoringRouter` at server/routers/monitoring.ts that tracks performance metrics. The health router is different - it's for basic health checks.
 
 #### 3.3 Verify Endpoint Works
 After starting dev server, test:
@@ -346,7 +354,7 @@ gh pr create --title "feat(infra): add Datadog RUM, backup script, and health en
 | client/src/main.tsx | Add Datadog init call |
 | scripts/backup-database.ts | NEW - Backup script |
 | server/routers/health.ts | NEW - Health endpoint |
-| server/routers/index.ts | Register health router |
+| server/routers.ts | Register health router |
 | package.json | Add backup scripts, AWS SDK |
 | .env.example | Add Datadog and backup vars |
 

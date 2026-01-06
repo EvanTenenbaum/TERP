@@ -15,9 +15,9 @@ Remove deprecated code, fix TypeScript issues, and reduce technical debt.
 ## Context
 
 The codebase has accumulated:
-- Potentially unused AI/LLM integration code
-- 25+ TODO/FIXME comments
-- Files with @ts-nocheck directives
+- 37 TODO/FIXME comments (verified count)
+- 1 file with @ts-nocheck: server/db/seed/productionSeed.ts
+- No AI/LLM code found (search returned empty - skip this task)
 - Possibly deprecated features
 
 ---
@@ -34,32 +34,27 @@ pnpm install
 
 ## Your Mission: Code Cleanup & Quality
 
-### Task 1: Audit and Remove LLM/AI Code (CLEANUP-001) - 4-6h
+### Task 1: Verify No AI/LLM Code Exists (CLEANUP-001) - 30 min
 
-#### 1.1 Search for AI-related code
-grep -rn "openai\|anthropic\|gpt-\|claude\|llm\|langchain" --include="*.ts" --include="*.tsx" client/ server/ shared/
+#### 1.1 Confirm no AI-related code
+grep -rn "openai\|anthropic\|gpt-\|claude\|llm\|langchain" --include="*.ts" --include="*.tsx" client/ server/
 
-#### 1.2 For each match, determine:
-- Is this actively used in the application?
-- Is there a UI that triggers this code?
-- Are there API keys configured for it?
+**Expected result**: Empty (no matches found in prior audit)
 
-#### 1.3 If code is unused:
-- Remove the files/functions
-- Remove related dependencies from package.json
-- Document what you removed
-
-#### 1.4 If code IS used:
-- Leave it alone
-- Document why it's needed
+If any matches are found:
+- Document what you find
+- Determine if actively used
+- Remove only if clearly unused
 
 IMPORTANT: Be conservative. If unsure, leave the code and document it.
 
 ### Task 2: TODO/FIXME Audit (QUAL-007) - 4-6h
 
 #### 2.1 Find all TODOs
-grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.ts" --include="*.tsx" client/ server/ shared/ > /tmp/todos.txt
+grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.ts" --include="*.tsx" client/ server/ > /tmp/todos.txt
 wc -l /tmp/todos.txt
+
+**Expected count**: ~37 TODOs (verified in prior audit)
 
 #### 2.2 Categorize each TODO:
 
@@ -85,8 +80,11 @@ Good: // TODO(TERP-123): Refactor to use batch API for better performance
 
 ### Task 3: Fix @ts-nocheck Files - 2-4h
 
-#### 3.1 Find files with @ts-nocheck
-grep -rln "@ts-nocheck\|@ts-ignore" --include="*.ts" --include="*.tsx" client/ server/
+#### 3.1 Known file with @ts-nocheck
+**Only one file has @ts-nocheck**: server/db/seed/productionSeed.ts
+
+Verify with:
+grep -rln "@ts-nocheck" --include="*.ts" --include="*.tsx" client/ server/
 
 #### 3.2 For each file:
 1. Remove the @ts-nocheck directive

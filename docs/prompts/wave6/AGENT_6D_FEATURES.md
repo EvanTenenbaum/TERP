@@ -18,6 +18,12 @@ Key features needed:
 - FEATURE-011: Unified Product Catalogue - Foundation for sales workflow
 - QA-041: Inbox/Todo Unification - Streamline task management
 
+**IMPORTANT**: 
+- Schema is in `drizzle/schema.ts` (NOT shared/schema/)
+- Database is MySQL (NOT PostgreSQL)
+- Router registration is in `server/routers.ts` (NOT server/routers/index.ts)
+- There's already a ProductsPage.tsx at /products - check if it can be enhanced
+
 ---
 
 ## Prompt
@@ -34,69 +40,75 @@ pnpm install
 
 ### Task 1: Unified Product Catalogue (FEATURE-011) - 12-16h
 
-#### 1.1 Check Existing Schema
-Look for existing product-related schemas:
-ls -la shared/schema/
-grep -rn "product\|Product\|catalogue\|catalog" shared/schema/
+#### 1.1 Check Existing Implementation
+FIRST, check what already exists:
+ls -la client/src/pages/ProductsPage.tsx
+cat client/src/pages/ProductsPage.tsx | head -50
+grep -rn "products\|Products" server/routers/ | head -10
 
-#### 1.2 Create/Update Schema
-If not exists, create shared/schema/productCatalogue.ts:
+There's already a ProductsPage.tsx - review it to understand current state.
+
+#### 1.2 Check Existing Schema
+Schema is in drizzle/schema.ts (single file, NOT a directory):
+grep -n "products\|Products\|catalogue\|catalog" drizzle/schema.ts | head -20
+
+#### 1.3 Add Schema if Needed
+If product catalogue schema doesn't exist, add to drizzle/schema.ts:
+
+**NOTE**: TERP uses MySQL, not PostgreSQL. Use mysql-core imports:
 
 ```typescript
-import { pgTable, serial, varchar, text, decimal, integer, boolean, timestamp, jsonb } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
-import { strains } from './strains';
-import { categories } from './categories';
+// Add to drizzle/schema.ts (MySQL syntax)
+import {
+  int,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+  decimal,
+  boolean,
+  json,
+} from "drizzle-orm/mysql-core";
 
-export const productCatalogue = pgTable('product_catalogue', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 255 }).notNull(),
-  description: text('description'),
-  sku: varchar('sku', { length: 100 }).unique(),
+export const productCatalogue = mysqlTable("product_catalogue", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  sku: varchar("sku", { length: 100 }).unique(),
   
   // Categorization
-  categoryId: integer('category_id').references(() => categories.id),
-  strainId: integer('strain_id').references(() => strains.id),
+  categoryId: int("categoryId").references(() => categories.id),
+  strainId: int("strainId").references(() => strains.id),
   
   // Pricing
-  basePrice: decimal('base_price', { precision: 10, scale: 2 }),
-  unit: varchar('unit', { length: 50 }).default('unit'), // unit, gram, oz, etc.
+  basePrice: decimal("basePrice", { precision: 10, scale: 2 }),
+  unit: varchar("unit", { length: 50 }).default("unit"),
   
   // Status
-  isActive: boolean('is_active').default(true),
+  isActive: boolean("isActive").default(true),
+  deletedAt: timestamp("deleted_at"), // Soft delete support
   
   // Metadata
-  metadata: jsonb('metadata'),
+  metadata: json("metadata"),
   
   // Timestamps
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
-
-export const productCatalogueRelations = relations(productCatalogue, ({ one }) => ({
-  category: one(categories, {
-    fields: [productCatalogue.categoryId],
-    references: [categories.id],
-  }),
-  strain: one(strains, {
-    fields: [productCatalogue.strainId],
-    references: [strains.id],
-  }),
-}));
 
 export type ProductCatalogue = typeof productCatalogue.$inferSelect;
 export type NewProductCatalogue = typeof productCatalogue.$inferInsert;
 ```
 
-#### 1.3 Create Server Router
+#### 1.4 Create Server Router
 Create server/routers/productCatalogue.ts:
 
 ```typescript
 import { z } from 'zod';
-import { router, protectedProcedure } from '../trpc';
-import { productCatalogue } from '../../shared/schema/productCatalogue';
+import { router, protectedProcedure } from '../_core/trpc';
+import { productCatalogue } from '../../drizzle/schema';
 import { db } from '../db';
-import { eq, ilike, and, desc } from 'drizzle-orm';
+import { eq, like, and, desc, isNull } from 'drizzle-orm';
 
 const productSchema = z.object({
   name: z.string().min(1).max(255),
@@ -104,7 +116,7 @@ const productSchema = z.object({
   sku: z.string().max(100).optional(),
   categoryId: z.number().optional(),
   strainId: z.number().optional(),
-  basePrice: z.string().optional(), // Decimal as string
+  basePrice: z.string().optional(),
   unit: z.string().default('unit'),
   isActive: z.boolean().default(true),
   metadata: z.record(z.unknown()).optional(),
@@ -120,10 +132,10 @@ export const productCatalogueRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ input }) => {
-      const conditions = [];
+      const conditions = [isNull(productCatalogue.deletedAt)];
       
       if (input.search) {
-        conditions.push(ilike(productCatalogue.name, `%${input.search}%`));
+        conditions.push(like(productCatalogue.name, `%${input.search}%`));
       }
       if (input.categoryId) {
         conditions.push(eq(productCatalogue.categoryId, input.categoryId));
@@ -135,7 +147,7 @@ export const productCatalogueRouter = router({
       const products = await db
         .select()
         .from(productCatalogue)
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .where(and(...conditions))
         .orderBy(desc(productCatalogue.createdAt))
         .limit(input.limit)
         .offset(input.offset);
@@ -149,18 +161,20 @@ export const productCatalogueRouter = router({
       const [product] = await db
         .select()
         .from(productCatalogue)
-        .where(eq(productCatalogue.id, input.id));
+        .where(and(
+          eq(productCatalogue.id, input.id),
+          isNull(productCatalogue.deletedAt)
+        ));
       return product;
     }),
 
   create: protectedProcedure
     .input(productSchema)
     .mutation(async ({ input }) => {
-      const [product] = await db
+      const result = await db
         .insert(productCatalogue)
-        .values(input)
-        .returning();
-      return product;
+        .values(input);
+      return { id: result.insertId };
     }),
 
   update: protectedProcedure
@@ -169,52 +183,51 @@ export const productCatalogueRouter = router({
       data: productSchema.partial(),
     }))
     .mutation(async ({ input }) => {
-      const [product] = await db
+      await db
         .update(productCatalogue)
-        .set({ ...input.data, updatedAt: new Date() })
-        .where(eq(productCatalogue.id, input.id))
-        .returning();
-      return product;
+        .set(input.data)
+        .where(eq(productCatalogue.id, input.id));
+      return { success: true };
     }),
 
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
+      // Soft delete
       await db
-        .delete(productCatalogue)
+        .update(productCatalogue)
+        .set({ deletedAt: new Date() })
         .where(eq(productCatalogue.id, input.id));
       return { success: true };
     }),
 });
 ```
 
-#### 1.4 Register Router
-In server/routers/index.ts:
+#### 1.5 Register Router
+In server/routers.ts (NOT server/routers/index.ts):
+
+Add import at top:
 ```typescript
-import { productCatalogueRouter } from './productCatalogue';
-// Add to appRouter:
+import { productCatalogueRouter } from './routers/productCatalogue';
+```
+
+Add to appRouter object (around line 115):
+```typescript
 productCatalogue: productCatalogueRouter,
 ```
 
-#### 1.5 Create Page Component
-Create client/src/pages/ProductCataloguePage.tsx:
+#### 1.6 Update or Create Page Component
+Check if ProductsPage.tsx needs enhancement or create ProductCataloguePage.tsx.
 
-Use existing patterns from similar pages (e.g., ClientsPage, InventoryPage):
+Use existing patterns from similar pages (e.g., ClientsListPage.tsx, VendorsPage.tsx):
 - DataTable with search/filter
-- Create/Edit dialog
+- Create/Edit dialog using shadcn/ui
 - Delete confirmation
-- Use shadcn/ui components
+- Follow existing code style
 
-#### 1.6 Add Route
-In client/src/App.tsx:
-```typescript
-import { ProductCataloguePage } from './pages/ProductCataloguePage';
-// Add route:
-<Route path="/products" element={<ProductCataloguePage />} />
-```
-
-#### 1.7 Add Navigation
-In the sidebar component, add link to /products
+#### 1.7 Add Route (if needed)
+Check client/src/App.tsx - /products route may already exist.
+If not, add it.
 
 ### Task 2: Inbox/Todo Unification Analysis (QA-041) - 4-8h
 
@@ -222,9 +235,10 @@ In the sidebar component, add link to /products
 Review these files:
 - client/src/pages/TodoListsPage.tsx
 - client/src/pages/TodoListDetailPage.tsx
-- client/src/pages/InboxPage.tsx (if exists)
+- client/src/pages/InboxPage.tsx (429 bytes - very small)
 - server/routers/todoLists.ts
 - server/routers/todoTasks.ts
+- server/routers/inbox.ts
 
 #### 2.2 Document Findings
 Create a brief analysis:
@@ -246,9 +260,9 @@ Create a brief analysis:
 ### Task 3: Verify Everything Works
 
 1. pnpm check (must pass)
-2. Create migration if needed: pnpm drizzle-kit generate
+2. Generate migration if schema changed: pnpm drizzle-kit generate
 3. pnpm build (must complete)
-4. Test the new product catalogue page manually
+4. Test the product catalogue page manually
 
 ### Task 4: Create PR
 
@@ -257,8 +271,8 @@ git add -A
 git commit -m "feat: add unified product catalogue (FEATURE-011)
 
 - Add productCatalogue schema with category/strain relations
-- Add CRUD API endpoints
-- Add ProductCataloguePage with search/filter
+- Add CRUD API endpoints with soft delete
+- Enhance ProductCataloguePage with search/filter
 - Add navigation link
 
 QA-041 Analysis:
@@ -272,7 +286,7 @@ gh pr create --title "feat: add product catalogue and inbox/todo analysis" --bod
 
 ## Success Criteria
 
-- [ ] Product catalogue schema created
+- [ ] Product catalogue schema created (in drizzle/schema.ts)
 - [ ] CRUD API endpoints work
 - [ ] ProductCataloguePage renders and functions
 - [ ] Route and navigation added
@@ -286,13 +300,13 @@ gh pr create --title "feat: add product catalogue and inbox/todo analysis" --bod
 
 | File | Change |
 |------|--------|
-| shared/schema/productCatalogue.ts | NEW - Schema definition |
+| drizzle/schema.ts | Add productCatalogue table |
 | server/routers/productCatalogue.ts | NEW - API endpoints |
-| server/routers/index.ts | Register new router |
-| client/src/pages/ProductCataloguePage.tsx | NEW - UI component |
-| client/src/App.tsx | Add route |
-| Sidebar component | Add navigation link |
-| drizzle/migrations/XXXX_product_catalogue.sql | NEW - Migration |
+| server/routers.ts | Register new router |
+| client/src/pages/ProductCataloguePage.tsx | NEW or enhance existing |
+| client/src/App.tsx | Add route (if needed) |
+| client/src/components/DashboardLayout.tsx | Add navigation link |
+| drizzle/migrations/XXXX_*.sql | NEW - Migration (auto-generated) |
 
 ---
 
