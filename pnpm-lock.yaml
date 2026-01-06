@@ -22,9 +22,6 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.964.0
         version: 3.964.0
-      '@datadog/browser-rum':
-        specifier: ^6.25.2
-        version: 6.25.2
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -862,20 +859,6 @@ packages:
   '@csstools/css-tokenizer@3.0.4':
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
-
-  '@datadog/browser-core@6.25.2':
-    resolution: {integrity: sha512-onYhcpZN1buplG3H4ZGr2FhMo71OVSHQRkKfTK7tu63TNO1AXR+rJt/nx/0oWvpSiohWyMSmvxHfYWf19GQgnQ==}
-
-  '@datadog/browser-rum-core@6.25.2':
-    resolution: {integrity: sha512-v0fHbsrnXhQpyKWN+png0Y7aHroMwRVGTjZoszNw9XSnJe8vprUyYG45PJFjEoR7u1BciQC9mxWa29ucfS64nw==}
-
-  '@datadog/browser-rum@6.25.2':
-    resolution: {integrity: sha512-HnKrX5+RbuQ39WzO5DfBZG/bxU72R9jvxCL/Uw95W/4j07FrVGBX9wftTLd+WFPaGfEFQiirQwEUgXExi4Hosw==}
-    peerDependencies:
-      '@datadog/browser-logs': 6.25.2
-    peerDependenciesMeta:
-      '@datadog/browser-logs':
-        optional: true
 
   '@date-fns/tz@1.4.1':
     resolution: {integrity: sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA==}
@@ -7525,17 +7508,6 @@ snapshots:
       postcss: 8.5.6
 
   '@csstools/css-tokenizer@3.0.4': {}
-
-  '@datadog/browser-core@6.25.2': {}
-
-  '@datadog/browser-rum-core@6.25.2':
-    dependencies:
-      '@datadog/browser-core': 6.25.2
-
-  '@datadog/browser-rum@6.25.2':
-    dependencies:
-      '@datadog/browser-core': 6.25.2
-      '@datadog/browser-rum-core': 6.25.2
 
   '@date-fns/tz@1.4.1': {}
 

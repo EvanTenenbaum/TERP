@@ -5,7 +5,6 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { FeatureFlagProvider } from "./contexts/FeatureFlagContext";
-import { initDatadog } from "./lib/datadog";
 import "./index.css";
 
 // Initialize Sentry AFTER all other imports to prevent blocking
@@ -16,10 +15,6 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     console.warn("Failed to load Sentry, continuing without error tracking:", error);
   });
 }
-
-// Initialize Datadog RUM for real user monitoring
-// Non-blocking - will skip if credentials not configured
-initDatadog();
 
 const queryClient = new QueryClient({
   defaultOptions: {
