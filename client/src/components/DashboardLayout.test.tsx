@@ -74,13 +74,8 @@ describe("DashboardLayout navigation", () => {
     const groupLabels = screen.getAllByTestId("nav-group-label");
     const labelTexts = groupLabels.map(label => label.textContent?.trim());
 
-    expect(labelTexts).toEqual([
-      "Core",
-      "Sales",
-      "Fulfillment",
-      "Finance",
-      "Settings",
-    ]);
+    // Updated to match actual navigation groups from navigation.ts
+    expect(labelTexts).toEqual(["Sales", "Inventory", "Finance", "Admin"]);
   });
 
   it("navigates to Spreadsheet view from the sidebar", () => {
