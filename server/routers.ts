@@ -96,7 +96,11 @@ import { vendorRemindersRouter } from "./routers/vendorReminders";
 import { featureFlagsRouter } from "./routers/featureFlags";
 import { adminSetupRouter } from "./routers/adminSetup";
 import { spreadsheetRouter } from "./routers/spreadsheet";
+
 import { healthRouter } from "./routers/health";
+
+import { productCatalogueRouter } from "./routers/productCatalogue";
+
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
@@ -209,7 +213,11 @@ export const appRouter = router({
   featureFlags: featureFlagsRouter,
   adminSetup: adminSetupRouter, // Feature Flag System
   spreadsheet: spreadsheetRouter,
+
   health: healthRouter, // INFRA-004: Health Check Endpoint
+
+  productCatalogue: productCatalogueRouter, // FEATURE-011: Unified Product Catalogue
+
   // Debug router - only registered in development
   ...(debugRouter ? { debug: debugRouter } : {}),
 });
