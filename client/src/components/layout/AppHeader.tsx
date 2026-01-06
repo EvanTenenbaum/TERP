@@ -6,14 +6,25 @@ import {
   Menu,
   Sun,
   Moon,
+  Bell,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { AppBreadcrumb } from "./AppBreadcrumb";
 import { NotificationBell } from "../notifications/NotificationBell";
+import { trpc } from "@/lib/trpc";
 
 interface AppHeaderProps {
   onMenuClick?: () => void;
@@ -23,6 +34,18 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const { theme, toggleTheme, switchable } = useTheme();
+
+  // Get current user
+  const { data: user } = trpc.auth.me.useQuery();
+  const logout = trpc.auth.logout.useMutation({
+    onSuccess: () => {
+      setLocation("/login");
+    },
+  });
+
+  const handleLogout = () => {
+    logout.mutate();
+  };
 
   // Handle search submission
   const handleSearch = (e: React.FormEvent) => {
@@ -105,14 +128,46 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           >
             <Settings className="h-5 w-5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setLocation("/settings")}
-            title="User Profile"
-          >
-            <User className="h-5 w-5" />
-          </Button>
+
+          {/* User Menu Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 px-2">
+                <User className="h-5 w-5" />
+                <span className="hidden md:inline max-w-[120px] truncate">
+                  {user?.name || user?.email || "Account"}
+                </span>
+                <ChevronDown className="h-4 w-4 hidden md:inline" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setLocation("/account")}>
+                <User className="h-4 w-4 mr-2" />
+                My Account
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setLocation("/settings/notifications")}
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Notifications
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setLocation("/settings")}
+                className="sm:hidden"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-destructive"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

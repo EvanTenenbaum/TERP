@@ -1,10 +1,10 @@
 /**
  * ConfirmDialog Component
  * A reusable confirmation dialog to replace browser confirm() calls
- * 
+ *
  * Usage:
  * const [showConfirm, setShowConfirm] = useState(false);
- * 
+ *
  * <ConfirmDialog
  *   open={showConfirm}
  *   onOpenChange={setShowConfirm}
@@ -37,8 +37,8 @@ export interface ConfirmDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Dialog title */
   title: string;
-  /** Dialog description/message */
-  description: string;
+  /** Dialog description/message - supports string or ReactNode for rich content */
+  description: string | React.ReactNode;
   /** Label for confirm button */
   confirmLabel?: string;
   /** Label for cancel button */
@@ -98,19 +98,21 @@ export const ConfirmDialog = React.memo(function ConfirmDialog({
 
 /**
  * Hook for managing confirm dialog state
- * 
+ *
  * Usage:
  * const { showConfirm, confirm, ConfirmDialogComponent } = useConfirmDialog({
  *   title: "Delete Item",
  *   description: "Are you sure?",
  *   onConfirm: () => deleteItem(),
  * });
- * 
+ *
  * // In JSX:
  * <Button onClick={confirm}>Delete</Button>
  * <ConfirmDialogComponent />
  */
-export function useConfirmDialog(props: Omit<ConfirmDialogProps, "open" | "onOpenChange">) {
+export function useConfirmDialog(
+  props: Omit<ConfirmDialogProps, "open" | "onOpenChange">
+) {
   const [open, setOpen] = React.useState(false);
 
   const confirm = React.useCallback(() => {

@@ -51,6 +51,7 @@ import VIPLogin from "@/pages/vip-portal/VIPLogin";
 import VIPDashboard from "@/pages/vip-portal/VIPDashboard";
 import ImpersonatePage from "@/pages/vip-portal/auth/ImpersonatePage";
 import SessionEndedPage from "@/pages/vip-portal/SessionEndedPage";
+import AccountPage from "@/pages/AccountPage";
 import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
 import { InboxPage } from "@/pages/InboxPage";
@@ -147,6 +148,7 @@ function Router() {
                 component={FeatureFlagsPage}
               />
               <Route path="/settings" component={Settings} />
+              <Route path="/account" component={AccountPage} />
               <Route path="/credit-settings" component={CreditSettingsPage} />
               <Route path="/needs" component={NeedsManagementPage} />
               <Route path="/interest-list" component={InterestListPage} />

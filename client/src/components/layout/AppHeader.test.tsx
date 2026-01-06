@@ -25,9 +25,24 @@ vi.mock("../../../version.json", () => ({
   },
 }));
 
-// Mock tRPC with notification data
+// Mock tRPC with notification data and auth
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    auth: {
+      me: {
+        useQuery: vi.fn(() => ({
+          data: { id: 1, name: "Test User", email: "test@example.com" },
+          isLoading: false,
+          isError: false,
+        })),
+      },
+      logout: {
+        useMutation: vi.fn(() => ({
+          mutate: vi.fn(),
+          isLoading: false,
+        })),
+      },
+    },
     notifications: {
       getUnreadCount: {
         useQuery: vi.fn(() => ({
