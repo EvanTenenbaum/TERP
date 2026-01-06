@@ -780,13 +780,13 @@ export default function Inventory() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8">
+                  <TableCell colSpan={12} className="text-center py-8">
                     Loading inventory...
                   </TableCell>
                 </TableRow>
               ) : !inventoryData || inventoryData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8">
+                  <TableCell colSpan={12} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2">
                       <Package className="h-12 w-12 text-muted-foreground" />
                       <p className="text-muted-foreground">
@@ -804,7 +804,7 @@ export default function Inventory() {
                 </TableRow>
               ) : filteredInventory.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8">
+                  <TableCell colSpan={12} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2">
                       <Package className="h-12 w-12 text-muted-foreground" />
                       <p className="text-muted-foreground">
