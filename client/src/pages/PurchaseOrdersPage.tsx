@@ -42,8 +42,8 @@ export default function PurchaseOrdersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPO, setSelectedPO] = useState<any>(null);
 
-  // Fetch data - handle paginated responses
-  const { data: posData, refetch } = trpc.purchaseOrders.getAll.useQuery();
+  // Fetch data - handle paginated responses with error handling
+  const { data: posData, refetch, isLoading: posLoading, error: posError } = trpc.purchaseOrders.getAll.useQuery();
   const pos = Array.isArray(posData) ? posData : (posData?.items ?? []);
   
   // Use clients with isSeller=true (suppliers) instead of deprecated vendors
@@ -143,7 +143,7 @@ export default function PurchaseOrdersPage() {
       const d = new Date(dateString);
       if (isNaN(d.getTime())) return "Invalid Date";
       return d.toLocaleDateString();
-    } catch (e) {
+    } catch (_e) {
       return "Error";
     }
   };
@@ -180,6 +180,17 @@ export default function PurchaseOrdersPage() {
     if (!formData.supplierClientId || items.length === 0) {
       toast({
         title: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate quantities are positive
+    const invalidItems = items.filter(item => item.quantityOrdered <= 0 || item.unitCost < 0);
+    if (invalidItems.length > 0) {
+      toast({
+        title: "Invalid item values",
+        description: "Quantity must be greater than 0 and unit cost cannot be negative",
         variant: "destructive",
       });
       return;
@@ -302,7 +313,35 @@ export default function PurchaseOrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPOs.length === 0 ? (
+            {posLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="text-center text-gray-500 py-8"
+                >
+                  Loading purchase orders...
+                </TableCell>
+              </TableRow>
+            ) : posError ? (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="text-center text-red-500 py-8"
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <p>Failed to load purchase orders</p>
+                    <p className="text-sm text-gray-500">{posError.message}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => refetch()}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredPOs.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={7}
@@ -312,43 +351,48 @@ export default function PurchaseOrdersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPOs.map(po => (
-                <TableRow key={po.id}>
-                  <TableCell className="font-medium">{po.poNumber}</TableCell>
-                  <TableCell>{getSupplierName(po.supplierClientId ?? po.vendorId)}</TableCell>
-                  <TableCell>
-                    {formatDate(po.orderDate)}
-                  </TableCell>
-                  <TableCell>
-                    {formatDate(po.expectedDeliveryDate)}
-                  </TableCell>
-                  <TableCell>{getStatusBadge(po.purchaseOrderStatus)}</TableCell>
-                  <TableCell>${parseFloat(po.total || '0').toFixed(2)}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          _setLocation(`/purchase-orders/${po.id}`)
-                        }
-                      >
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedPO(po);
-                          setIsDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredPOs.map(po => {
+                // Defensive null checks to prevent crashes
+                if (!po || !po.id) return null;
+
+                return (
+                  <TableRow key={po.id}>
+                    <TableCell className="font-medium">{po.poNumber || '-'}</TableCell>
+                    <TableCell>{getSupplierName(po.supplierClientId ?? po.vendorId)}</TableCell>
+                    <TableCell>
+                      {formatDate(po.orderDate)}
+                    </TableCell>
+                    <TableCell>
+                      {formatDate(po.expectedDeliveryDate)}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(po.purchaseOrderStatus || 'DRAFT')}</TableCell>
+                    <TableCell>${parseFloat(po.total || '0').toFixed(2)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            _setLocation(`/purchase-orders/${po.id}`)
+                          }
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedPO(po);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -464,24 +508,36 @@ export default function PurchaseOrdersPage() {
                     <Input
                       type="number"
                       placeholder="Quantity"
+                      min="0.01"
+                      step="0.01"
                       value={item.quantityOrdered}
-                      onChange={e =>
-                        handleItemChange(
-                          index,
-                          "quantityOrdered",
-                          e.target.value
-                        )
-                      }
+                      onChange={e => {
+                        const value = e.target.value;
+                        // Prevent negative values
+                        if (value === '' || parseFloat(value) >= 0) {
+                          handleItemChange(
+                            index,
+                            "quantityOrdered",
+                            value
+                          );
+                        }
+                      }}
                     />
                   </div>
                   <div className="col-span-3">
                     <Input
                       type="number"
                       placeholder="Unit Cost"
+                      min="0"
+                      step="0.01"
                       value={item.unitCost}
-                      onChange={e =>
-                        handleItemChange(index, "unitCost", e.target.value)
-                      }
+                      onChange={e => {
+                        const value = e.target.value;
+                        // Prevent negative values
+                        if (value === '' || parseFloat(value) >= 0) {
+                          handleItemChange(index, "unitCost", value);
+                        }
+                      }}
                     />
                   </div>
                   <div className="col-span-1">

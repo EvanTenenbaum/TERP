@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, CheckSquare, Square } from "lucide-react";
-import { StrainFamilyIndicator, OutOfStockAlert } from "@/components/strain/StrainComponents";
+import { StrainFamilyIndicator } from "@/components/strain/StrainComponents";
 
 interface InventoryBrowserProps {
   inventory: any[];
@@ -31,12 +31,18 @@ export function InventoryBrowser({
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
-  // Filter inventory by search
-  const filteredInventory = inventory.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.category?.toLowerCase().includes(search.toLowerCase()) ||
-    item.strain?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter inventory by search, ensuring items have valid data
+  const filteredInventory = inventory.filter((item) => {
+    // Skip items without valid id or name
+    if (!item || item.id === undefined || item.id === null || !item.name) {
+      return false;
+    }
+    return (
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
+      item.category?.toLowerCase().includes(search.toLowerCase()) ||
+      item.strain?.toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   // Check if item is already in sheet
   const isInSheet = (itemId: number) => {

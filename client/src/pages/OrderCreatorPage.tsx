@@ -267,7 +267,16 @@ export default function OrderCreatorPageV2() {
   const convertInventoryToLineItems = (
     inventoryItems: InventoryItemForOrder[]
   ): LineItem[] => {
-    return inventoryItems.map(item => {
+    // Filter out items with invalid or missing IDs to prevent race condition errors
+    const validItems = inventoryItems.filter(item => {
+      if (!item || item.id === undefined || item.id === null) {
+        console.warn('Skipping item with missing id:', item);
+        return false;
+      }
+      return true;
+    });
+
+    return validItems.map(item => {
       // Calculate margin percent from basePrice and retailPrice
       const cogsPerUnit = item.basePrice || 0;
       const retailPrice = item.retailPrice || item.basePrice || 0;
@@ -276,7 +285,7 @@ export default function OrderCreatorPageV2() {
 
       // Use calculateLineItem to ensure proper structure
       const calculated = calculateLineItem(
-        item.id, // batchId
+        item.id, // batchId - guaranteed to be defined after filter
         1, // default quantity
         cogsPerUnit,
         marginPercent
@@ -288,7 +297,7 @@ export default function OrderCreatorPageV2() {
         marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
         unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number
         lineTotal: calculated.lineTotal || 0, // Ensure lineTotal is always a number
-        productDisplayName: item.name,
+        productDisplayName: item.name || 'Unknown Product',
         originalCogsPerUnit: cogsPerUnit,
         isCogsOverridden: false,
         isMarginOverridden: false,
@@ -304,8 +313,18 @@ export default function OrderCreatorPageV2() {
       return;
     }
 
-    // Convert inventory items to LineItem format
+    // Convert inventory items to LineItem format (filters out invalid items)
     const newLineItems = convertInventoryToLineItems(inventoryItems);
+
+    // Check if any items were skipped due to missing data
+    if (newLineItems.length === 0) {
+      toast.error("Selected items are not available. Please try again.");
+      return;
+    }
+
+    if (newLineItems.length < inventoryItems.length) {
+      toast.warning(`${inventoryItems.length - newLineItems.length} item(s) were skipped due to incomplete data`);
+    }
 
     // Filter out items that are already in the order (by batchId)
     const existingBatchIds = new Set(items.map(item => item.batchId));
