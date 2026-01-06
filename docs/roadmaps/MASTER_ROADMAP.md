@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 2.35
-**Last Updated:** January 3, 2026 (QA Technical Debt Added)
+**Version:** 3.0
+**Last Updated:** January 6, 2026
 **Status:** Active
 
 > ✅ **UX ENHANCEMENT WAVE 2 COMPLETE (Jan 3, 2026)**
@@ -9138,7 +9138,7 @@ Based on comprehensive RedHat QA review of PRs #106-#115.
 
 ## 🚀 Sprint F & G: Verification, Validation & Credit System (January 2026)
 
-**Version:** 2.35  
+**Version:** 3.0  
 **Added:** January 3, 2026  
 **Status:** 🟡 READY FOR EXECUTION  
 **Total Estimated Effort:** 92 hours
@@ -9450,7 +9450,7 @@ This section contains new work items identified during Tier 1 customer readiness
 
 ## 🎨 UI/UX Audit Findings - January 2026
 
-**Version:** 2.35  
+**Version:** 3.0  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA Specialist Audit  
 **Status:** 🟡 READY FOR EXECUTION  
@@ -9929,7 +9929,7 @@ These are major usability issues causing significant friction.
 
 ## 🔍 Additional UX Audit Findings - January 2026 (Supplemental)
 
-**Version:** 2.35  
+**Version:** 3.0  
 **Added:** January 3, 2026  
 **Source:** Senior UI/UX Designer & Product QA (Agent Mode) - Full Audit  
 **Status:** 🟡 READY FOR EXECUTION
@@ -10417,7 +10417,7 @@ These are captured for architectural awareness but not added as individual tasks
 | **Net Change**                   | -6 pending | -42h  |
 
 **Roadmap Version:** 2.32  
-**Last Updated:** January 3, 2026  
+**Last Updated:** January 6, 2026
 **Update Type:** Live site verification + user-requested features
 
 ---
@@ -11206,3 +11206,768 @@ Add skeleton or spinner while totals are being calculated.
 
 > **"The hard part is done"**
 > The complex domain modeling (Batches → Strains → Products) is expert-level. If you execute the Priority Fix List—specifically fixing pagination and security—this product transforms from a prototype into a scalable, top-tier ERP competitor.
+
+---
+
+## 🔒 Production Reliability & Data Integrity Audit Findings
+
+**Added:** January 6, 2026
+**Source:** Principal Reliability Engineer + Staff Backend/Frontend Engineer + QA Lead
+**Scope:** Full codebase reliability assessment for small-business production deployment
+**Production Readiness:** CONDITIONAL - Critical Issues Must Be Addressed First
+
+### ⚠️ AREAS REQUIRING CAREFUL HANDLING
+
+| Flag                     | Area                            | Risk                                 | Why Careful                                            |
+| ------------------------ | ------------------------------- | ------------------------------------ | ------------------------------------------------------ |
+| 🔴 **CRITICAL SECURITY** | Public Demo User                | Complete data exposure               | Anyone can access ALL business data without auth       |
+| 🔴 **CRITICAL SECURITY** | Unauthenticated Admin Endpoints | System compromise                    | push-schema, create-first-user, seed endpoints exposed |
+| 🔴 **DATA INTEGRITY**    | Payment Recording               | Accounting discrepancies             | Non-atomic multi-table writes                          |
+| 🔴 **DATA INTEGRITY**    | Order Double-Submit             | Duplicate orders, oversold inventory | No idempotency keys                                    |
+| 🟠 **SECURITY**          | SSL Certificate Validation      | MITM attacks possible                | rejectUnauthorized: false                              |
+| 🟠 **DATA INTEGRITY**    | Floating-Point Money            | Rounding errors accumulate           | 50+ toFixed(2) occurrences                             |
+| 🟠 **CONCURRENCY**       | Optimistic Locking Bypass       | Lost updates                         | Version not mandatory                                  |
+
+---
+
+### 🔴 CRITICAL SEVERITY (Must Fix Before Production)
+
+#### REL-001: Remove Public Demo User Data Exposure
+
+- **Priority:** P0 (CRITICAL - SECURITY)
+- **Estimate:** 4 hours
+- **Status:** 🔴 URGENT - SHIP BLOCKER
+- **Files:** `server/_core/context.ts:36-76`, `server/_core/permissionMiddleware.ts:63-83`
+- **Feature Flag:** None (security fix, deploy immediately)
+
+**⚠️ CAREFUL HANDLING REQUIRED:**
+
+- This is the **#1 catastrophic risk** - anyone can access ALL business data
+- All `:read` permissions granted automatically to unauthenticated requests
+- Affects clients, orders, inventory, pricing, accounting - EVERYTHING
+
+**Problem:**
+
+```typescript
+// context.ts:36 - Creates public user for unauthenticated requests
+async function getOrCreatePublicUser(): Promise<User> { ... }
+
+// permissionMiddleware.ts:75-83 - Grants all read permissions
+if (user.username === 'public_demo_user') {
+  // ALL :read permissions granted!
+}
+```
+
+**Solution:**
+
+1. Remove `getOrCreatePublicUser` function
+2. Return 401 for unauthenticated requests
+3. Remove public demo user permission grants
+
+**Acceptance Criteria:**
+
+- [ ] API returns 401 without valid session cookie
+- [ ] No public demo user created
+- [ ] All endpoints require authentication
+
+---
+
+#### REL-002: Secure Unauthenticated Admin Endpoints
+
+- **Priority:** P0 (CRITICAL - SECURITY)
+- **Estimate:** 4 hours
+- **Status:** 🔴 URGENT - SHIP BLOCKER
+- **File:** `server/_core/simpleAuth.ts:229-300`
+- **Feature Flag:** None (security fix)
+
+**⚠️ CAREFUL HANDLING REQUIRED:**
+
+- Three endpoints allow unauthenticated access to critical operations
+- `/api/auth/push-schema` - Can modify database schema
+- `/api/auth/create-first-user` - Can create admin accounts
+- `/api/auth/seed` - Can seed test data into production
+
+**Solution:**
+
+1. Add authentication middleware to all three endpoints
+2. Require `system:manage` permission for push-schema
+3. Make create-first-user single-use (check if users exist)
+4. Always require `SKIP_SEEDING=true` in production
+
+**Acceptance Criteria:**
+
+- [ ] All admin endpoints return 401 without auth
+- [ ] push-schema requires system:manage permission
+- [ ] create-first-user blocked when users exist
+- [ ] seed endpoint blocked when SKIP_SEEDING=true
+
+---
+
+#### REL-003: Wrap Payment Recording in Transaction
+
+- **Priority:** P0 (CRITICAL - DATA INTEGRITY)
+- **Estimate:** 6 hours
+- **Status:** 🔴 URGENT
+- **File:** `server/routers/accounting.ts:844-912` (`receiveClientPayment`)
+- **Feature Flag:** None (bug fix)
+
+**⚠️ CAREFUL HANDLING REQUIRED:**
+
+- Payment recording involves multiple database writes
+- If any write fails, partial data remains (payment recorded but balance not updated)
+- Can cause accounting discrepancies and client trust issues
+
+**Problem:**
+
+```typescript
+// Lines 869-899 - Multiple writes without transaction wrapper
+await db.insert(clientPayments).values({ ... });
+await db.update(clients).set({ balance: newBalance });
+await db.insert(clientTransactions).values({ ... });
+// If any fails, previous writes are NOT rolled back!
+```
+
+**Solution:**
+
+```typescript
+await db.transaction(async (tx) => {
+  await tx.insert(clientPayments).values({ ... });
+  await tx.update(clients).set({ balance: newBalance });
+  await tx.insert(clientTransactions).values({ ... });
+});
+```
+
+**Acceptance Criteria:**
+
+- [ ] All payment operations wrapped in transaction
+- [ ] Failure at any step rolls back all changes
+- [ ] Unit test verifies rollback behavior
+
+---
+
+#### REL-004: Add Idempotency to Order Creation
+
+- **Priority:** P0 (CRITICAL - DATA INTEGRITY)
+- **Estimate:** 8 hours
+- **Status:** 🔴 URGENT
+- **File:** `server/routers/orders.ts` (all create mutations)
+- **Feature Flag:** `feature-order-idempotency` (Default: Enabled)
+
+**⚠️ CAREFUL HANDLING REQUIRED:**
+
+- Double-click or network retry creates duplicate orders
+- Inventory oversold, customer confusion, refund work
+- HIGH likelihood in production
+
+**Solution:**
+
+1. Add `idempotencyKey` field to order creation
+2. Check for existing order with same key before insert
+3. Return existing order if found
+4. Frontend: Generate UUID, disable button after click
+
+**Acceptance Criteria:**
+
+- [ ] Idempotency key accepted in order creation
+- [ ] Duplicate requests return existing order
+- [ ] Frontend disables submit after click
+- [ ] Test: Rapid double-submit creates only one order
+
+---
+
+### 🟠 HIGH SEVERITY
+
+#### REL-005: Enable SSL Certificate Validation
+
+- **Priority:** P1 (HIGH - SECURITY)
+- **Estimate:** 2 hours
+- **Status:** 🟡 READY
+- **File:** `server/_core/connectionPool.ts:73-77`
+- **Feature Flag:** None (security fix)
+
+**Problem:**
+
+```typescript
+ssl: {
+  rejectUnauthorized: false; // MITM attacks possible!
+}
+```
+
+**Solution:**
+
+```typescript
+ssl: {
+  rejectUnauthorized: true,
+  ca: fs.readFileSync('/path/to/ca-certificate.crt')
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] SSL validation enabled
+- [ ] DigitalOcean CA certificate configured
+- [ ] Connection fails with invalid certificate
+
+---
+
+#### REL-006: Make Optimistic Locking Mandatory
+
+- **Priority:** P1 (HIGH - DATA INTEGRITY)
+- **Estimate:** 8 hours
+- **Status:** 🟡 READY
+- **Files:** `server/clientsDb.ts:383-394`, all update endpoints
+- **Feature Flag:** `feature-mandatory-version` (Default: Disabled initially)
+
+**Problem:**
+Updates without `expectedVersion` bypass optimistic locking, allowing concurrent updates to overwrite each other.
+
+**Solution:**
+
+1. Make `expectedVersion` required in all update schemas
+2. Return current version in all GET responses
+3. Frontend: Always send version with updates
+4. Return 409 Conflict if version mismatch
+
+**Acceptance Criteria:**
+
+- [ ] Version required in all update APIs
+- [ ] 409 returned on version mismatch
+- [ ] Frontend sends version with all updates
+
+---
+
+#### REL-007: Audit and Fix Floating-Point Money Calculations
+
+- **Priority:** P1 (HIGH - DATA INTEGRITY)
+- **Estimate:** 12 hours
+- **Status:** 🟡 READY
+- **Files:** 50+ files with `.toFixed(2)` usage
+- **Feature Flag:** None (bug fix)
+
+**Problem:**
+JavaScript floating-point math causes rounding errors: `0.1 + 0.2 = 0.30000000000000004`
+
+**Solution:**
+
+1. Audit all financial calculations
+2. Replace `.toFixed(2)` with Decimal.js (already in dependencies)
+3. Create `Money` utility class for all currency operations
+
+**Acceptance Criteria:**
+
+- [ ] All order totals use Decimal.js
+- [ ] All payment calculations use Decimal.js
+- [ ] All COGS calculations use Decimal.js
+- [ ] Property-based tests for edge cases
+
+---
+
+#### REL-008: Add Rate Limiting to Login
+
+- **Priority:** P1 (HIGH - SECURITY)
+- **Estimate:** 3 hours
+- **Status:** 🟡 READY
+- **File:** `server/_core/simpleAuth.ts:176`
+- **Feature Flag:** None (security fix)
+
+**Solution:**
+Add rate limiting: 5 attempts per IP per 15 minutes, then 429 response.
+
+**Acceptance Criteria:**
+
+- [ ] 429 returned after 5 failed attempts
+- [ ] Rate limit resets after 15 minutes
+- [ ] Successful login doesn't count against limit
+
+---
+
+#### REL-009: Calendar to Protected Procedure
+
+- **Priority:** P1 (HIGH - SECURITY)
+- **Estimate:** 2 hours
+- **Status:** 🟡 READY
+- **File:** `server/routers/calendar.ts:21`
+- **Feature Flag:** None (security fix)
+
+**Problem:**
+Calendar `getEvents` uses `publicProcedure`, allowing unauthenticated access.
+
+**Solution:**
+Change to `protectedProcedure` with `requirePermission('calendar:read')`.
+
+**Acceptance Criteria:**
+
+- [ ] Calendar endpoints require authentication
+- [ ] 401 returned without valid session
+
+---
+
+#### REL-010: Implement Client Soft Delete
+
+- **Priority:** P1 (HIGH - DATA INTEGRITY)
+- **Estimate:** 4 hours
+- **Status:** 🟡 READY
+- **File:** `server/routers/clients.ts:140-144`
+- **Feature Flag:** `feature-soft-delete-clients` (Default: Enabled)
+
+**Problem:**
+Client delete is hard delete - data permanently lost, orphaned references possible.
+
+**Solution:**
+Set `deletedAt` timestamp instead of deleting row. Add cascade check for clients with orders.
+
+**Acceptance Criteria:**
+
+- [ ] Delete sets deletedAt instead of removing row
+- [ ] Deletion fails if client has orders
+- [ ] Soft-deleted clients excluded from queries
+
+---
+
+### 🟡 MEDIUM SEVERITY
+
+#### REL-011: Validate Environment Variables at Startup
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 2 hours
+- **File:** `server/_core/env.ts`
+
+**Solution:**
+Validate all required env vars at startup, crash with clear error if missing.
+
+---
+
+#### REL-012: Fix Database Health Check
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 2 hours
+- **File:** `server/_core/connectionPool.ts:144-147`
+
+**Solution:**
+Add `process.exit(1)` if database unreachable at startup.
+
+---
+
+#### REL-013: Appointment Booking Race Condition
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 6 hours
+- **File:** `server/routers/vipPortal.ts:170-200`
+
+**Solution:**
+Add database constraint + retry logic for double-booking prevention.
+
+---
+
+#### REL-014: Order Number Generation Collision
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 3 hours
+- **File:** `server/ordersDb.ts:221-223`
+
+**Solution:**
+Replace timestamp-based generation with database sequence or ULID.
+
+---
+
+### Summary Table
+
+| ID        | Task                          | Priority | Estimate | Category       | ⚠️ Flag         |
+| --------- | ----------------------------- | -------- | -------- | -------------- | --------------- |
+| REL-001   | Remove Public Demo User       | P0       | 4h       | Security       | 🔴 SHIP BLOCKER |
+| REL-002   | Secure Admin Endpoints        | P0       | 4h       | Security       | 🔴 SHIP BLOCKER |
+| REL-003   | Payment Transaction Wrapper   | P0       | 6h       | Data Integrity | 🔴 CRITICAL     |
+| REL-004   | Order Idempotency             | P0       | 8h       | Data Integrity | 🔴 CRITICAL     |
+| REL-005   | SSL Certificate Validation    | P1       | 2h       | Security       | 🟠 HIGH         |
+| REL-006   | Mandatory Optimistic Locking  | P1       | 8h       | Data Integrity | 🟠 HIGH         |
+| REL-007   | Decimal.js Money Calculations | P1       | 12h      | Data Integrity | 🟠 HIGH         |
+| REL-008   | Login Rate Limiting           | P1       | 3h       | Security       | 🟠 HIGH         |
+| REL-009   | Calendar Protected Procedure  | P1       | 2h       | Security       | 🟠 HIGH         |
+| REL-010   | Client Soft Delete            | P1       | 4h       | Data Integrity | 🟠 HIGH         |
+| REL-011   | Env Validation at Startup     | P2       | 2h       | Reliability    |                 |
+| REL-012   | DB Health Check Fix           | P2       | 2h       | Reliability    |                 |
+| REL-013   | Booking Race Condition        | P2       | 6h       | Data Integrity |                 |
+| REL-014   | Order Number Collision        | P2       | 3h       | Data Integrity |                 |
+| **Total** |                               |          | **66h**  |                |                 |
+
+---
+
+### 48-Hour Stabilization Plan (From Audit)
+
+| Priority | Task                            | Target  | Verification                        |
+| -------- | ------------------------------- | ------- | ----------------------------------- |
+| 1        | Remove public demo user         | REL-001 | API returns 401 without cookie      |
+| 2        | Auth-protect admin endpoints    | REL-002 | All admin endpoints require login   |
+| 3        | Wrap payment in transaction     | REL-003 | Failure rolls back all changes      |
+| 4        | Enable SSL validation           | REL-005 | Connection fails with bad cert      |
+| 5        | Add idempotency to order create | REL-004 | Duplicate request returns existing  |
+| 6        | Make version mandatory          | REL-006 | Update fails without version        |
+| 7        | Add rate limiting to login      | REL-008 | 429 after 5 attempts                |
+| 8        | Calendar to protectedProcedure  | REL-009 | 401 without auth                    |
+| 9        | Validate env at startup         | REL-011 | Missing vars crash with clear error |
+| 10       | Client soft delete              | REL-010 | Deletion sets deletedAt             |
+
+### Go-Live Checklist (From Audit)
+
+**Pre-Deploy:**
+
+- [ ] `SKIP_SEEDING=true` in production env
+- [ ] `NODE_ENV=production` set
+- [ ] `JWT_SECRET` is unique, 32+ characters
+- [ ] Public demo user code removed
+- [ ] All unprotected admin endpoints secured
+
+**Post-Deploy Smoke Tests:**
+
+- [ ] Login works with valid credentials
+- [ ] API returns 401 without session cookie
+- [ ] Order creation works end-to-end
+- [ ] Inventory decrements after order
+- [ ] Client balance updates after payment
+
+---
+
+## 🛒 Live Shopping Module: Comprehensive Remediation Plan
+
+**Added:** January 6, 2026
+**Source:** Technical Specification & Execution Roadmap v2.0
+**Target Outcome:** Transition from "Polling-Based MVP" to "Shopify-Grade Real-Time Commerce"
+**Strategic Risk:** HIGH - Feature works technically but fails experientially
+
+### Executive Summary
+
+**The Verdict:** The current Live Shopping implementation is a **"Facade of Real-Time."**
+
+While the database schema and backend logic are sound and transactional, the **frontend implementation fundamentally betrays the architecture**. The documentation claims "Real-time Communication via SSE," but the frontend relies entirely on **3-second polling loops**.
+
+### ⚠️ AREAS REQUIRING CAREFUL HANDLING
+
+| Flag                  | Area                  | Risk                  | Why Careful                               |
+| --------------------- | --------------------- | --------------------- | ----------------------------------------- |
+| 🔴 **PERFORMANCE**    | 3-Second Polling      | Server thrashing      | Every client hammers DB every 3000ms      |
+| 🔴 **DATA INTEGRITY** | Soft Hold Performance | O(N) degradation      | Unindexed SUM on every add-to-cart        |
+| 🟠 **CONCURRENCY**    | Inventory Oversell    | Race conditions       | Two sessions can sell last unit           |
+| 🟠 **UX**             | Missing Catalog       | Staff cannot sell     | No UI to search/add products              |
+| 🟡 **UX**             | 3-Second Latency      | Sales momentum killer | Delay between action and client seeing it |
+
+---
+
+### PHASE 1: Real-Time Core - 20h
+
+#### LS-001: Implement useLiveSession Hook
+
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 6 hours
+- **File:** client/src/hooks/useLiveSession.ts (new)
+- **Feature Flag:** feature-live-shopping-sse
+
+#### LS-002: Refactor Customer UI to Use SSE
+
+- **Priority:** P0 (CRITICAL)
+- **Estimate:** 8 hours
+- **File:** client/src/components/vip-portal/LiveShoppingSession.tsx
+
+#### LS-003: Implement Optimistic Mutations
+
+- **Priority:** P1 (HIGH)
+- **Estimate:** 6 hours
+
+### PHASE 2: Staff Enablement - 16h
+
+#### LS-004: Staff Console Quick Add Bar
+
+- **Priority:** P0 (CRITICAL - SHIP BLOCKER)
+- **Estimate:** 10 hours
+- **File:** client/src/components/live-shopping/StaffSessionConsole.tsx
+
+#### LS-005: Client Presence Indicator
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 6 hours
+
+### PHASE 3: Backend Performance - 12h
+
+#### LS-006: Fix Soft Hold Performance (Indexing)
+
+- **Priority:** P0 (CRITICAL - PERFORMANCE)
+- **Estimate:** 4 hours
+- **File:** Database migration, sessionCartService.ts
+
+#### LS-007: Transaction Isolation and Row Locking
+
+- **Priority:** P0 (CRITICAL - DATA INTEGRITY)
+- **Estimate:** 8 hours
+- **File:** server/services/live-shopping/sessionCartService.ts
+
+### PHASE 4: UX Polish - 10h
+
+#### LS-008: Banish window.alert
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 4 hours
+
+#### LS-009: Visual Price Flash
+
+- **Priority:** P2 (MEDIUM)
+- **Estimate:** 3 hours
+
+#### LS-010: Checkout Celebration
+
+- **Priority:** P3 (LOW)
+- **Estimate:** 3 hours
+
+### Summary Table
+
+| ID        | Task                      | Priority | Estimate | Flag              |
+| --------- | ------------------------- | -------- | -------- | ----------------- |
+| LS-001    | useLiveSession Hook       | P0       | 6h       | 🔴 CRITICAL       |
+| LS-002    | Customer UI SSE Refactor  | P0       | 8h       | 🔴 CRITICAL       |
+| LS-003    | Optimistic Mutations      | P1       | 6h       |                   |
+| LS-004    | Staff Quick Add Bar       | P0       | 10h      | 🔴 SHIP BLOCKER   |
+| LS-005    | Client Presence Indicator | P2       | 6h       |                   |
+| LS-006    | Soft Hold Indexing        | P0       | 4h       | 🔴 PERFORMANCE    |
+| LS-007    | Row Locking for Inventory | P0       | 8h       | 🔴 DATA INTEGRITY |
+| LS-008    | Banish window.alert       | P2       | 4h       |                   |
+| LS-009    | Price Flash Animation     | P2       | 3h       |                   |
+| LS-010    | Checkout Celebration      | P3       | 3h       |                   |
+| **Total** |                           |          | **58h**  |                   |
+
+---
+
+## 🚀 CONSOLIDATED EXECUTION PLAN
+
+**Created:** January 6, 2026
+**Version:** 1.0
+**Total Estimated Hours:** 350h
+**Recommended Parallel Agents:** 4-5
+
+---
+
+### 📊 Overlap & Deduplication Analysis
+
+| Duplicate/Overlap      | Resolution                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| UX-050 (2 occurrences) | Rename second to UX-062: Harden Admin User Management UI                           |
+| DATA-005 vs REL-006    | DATA-005 implemented (optional version), REL-006 makes it mandatory - KEEP REL-006 |
+| DATA-003 vs LS-007     | DATA-003 for orders, LS-007 for live shopping - KEEP BOTH (different contexts)     |
+| SEC-010 vs SEC-011     | Different issues - SEC-010 is user management, SEC-011 is VIP fetch - KEEP BOTH    |
+| QA-CRIT-002 vs REL-013 | Same issue (calendar time validation) - MERGE into REL-013                         |
+| QA-CRIT-003 vs REL-003 | Same issue (payment transaction) - MERGE into REL-003                              |
+
+### Already Implemented (Remove from Active)
+
+| Task                          | Status  | Evidence                      |
+| ----------------------------- | ------- | ----------------------------- |
+| Row-level locking utilities   | ✅ Done | `server/_core/dbLocking.ts`   |
+| Optimistic locking (optional) | ✅ Done | `server/clientsDb.ts:384-387` |
+| Pagination utilities          | ✅ Done | `server/_core/pagination.ts`  |
+
+---
+
+### 🔴 WAVE 1: SECURITY SHIP BLOCKERS (Week 1)
+
+**Parallel Agents:** 2
+**Total Hours:** 22h
+**MUST COMPLETE BEFORE ANY OTHER WORK**
+
+#### Agent A: Authentication Security (12h)
+
+| Task    | Hours | Description                            |
+| ------- | ----- | -------------------------------------- |
+| REL-001 | 4h    | Remove Public Demo User Data Exposure  |
+| REL-002 | 4h    | Secure Unauthenticated Admin Endpoints |
+| SEC-010 | 4h    | Secure User Management Endpoints       |
+
+#### Agent B: VIP Portal Security (10h)
+
+| Task    | Hours | Description                             |
+| ------- | ----- | --------------------------------------- |
+| SEC-011 | 4h    | Remove VIP Portal window.fetch Override |
+| REL-005 | 2h    | Enable SSL Certificate Validation       |
+| REL-008 | 3h    | Add Rate Limiting to Login              |
+| REL-009 | 1h    | Calendar to Protected Procedure         |
+
+---
+
+### 🟠 WAVE 2: DATA INTEGRITY CRITICAL (Week 2)
+
+**Parallel Agents:** 3
+**Total Hours:** 54h
+
+#### Agent C: Transaction & Locking (22h)
+
+| Task    | Hours | Description                           |
+| ------- | ----- | ------------------------------------- |
+| REL-003 | 6h    | Wrap Payment Recording in Transaction |
+| REL-004 | 8h    | Add Idempotency to Order Creation     |
+| LS-007  | 8h    | Live Shopping Row Locking             |
+
+#### Agent D: Performance & Pagination (24h)
+
+| Task     | Hours | Description                           |
+| -------- | ----- | ------------------------------------- |
+| PERF-002 | 16h   | Server-Side Pagination for Inventory  |
+| PERF-003 | 8h    | Server-Side Search for ClientCombobox |
+
+#### Agent E: Data Quality (8h)
+
+| Task    | Hours | Description                       |
+| ------- | ----- | --------------------------------- |
+| REL-006 | 8h    | Make Optimistic Locking Mandatory |
+
+---
+
+### 🟡 WAVE 3: LIVE SHOPPING REMEDIATION (Week 3)
+
+**Parallel Agents:** 2
+**Total Hours:** 44h
+
+#### Agent F: Live Shopping Frontend (24h)
+
+| Task   | Hours | Description                     |
+| ------ | ----- | ------------------------------- |
+| LS-001 | 6h    | Implement useLiveSession Hook   |
+| LS-002 | 8h    | Refactor Customer UI to Use SSE |
+| LS-004 | 10h   | Staff Console Quick Add Bar     |
+
+#### Agent G: Live Shopping Backend (20h)
+
+| Task     | Hours | Description                          |
+| -------- | ----- | ------------------------------------ |
+| LS-006   | 4h    | Fix Soft Hold Performance (Indexing) |
+| LS-003   | 6h    | Implement Optimistic Mutations       |
+| LS-005   | 6h    | Client Presence Indicator            |
+| PERF-004 | 2h    | OrderTotalsPanel Loading State       |
+| REL-014  | 2h    | Order Number Generation Collision    |
+
+---
+
+### 🟢 WAVE 4: UX & ADMIN IMPROVEMENTS (Week 4)
+
+**Parallel Agents:** 3
+**Total Hours:** 72h
+
+#### Agent H: Admin UX (24h)
+
+| Task   | Hours | Description                         |
+| ------ | ----- | ----------------------------------- |
+| UX-062 | 8h    | Harden Admin User Management UI     |
+| UX-051 | 12h   | Add My Account/Profile Page         |
+| UX-052 | 4h    | Bridge User List to Role Assignment |
+
+#### Agent I: Order & Sales UX (26h)
+
+| Task   | Hours | Description                    |
+| ------ | ----- | ------------------------------ |
+| UX-056 | 12h   | Refactor Order Creation Layout |
+| UX-057 | 6h    | Implement Dirty State Warnings |
+| UX-058 | 8h    | Proactive Credit Limit Checks  |
+
+#### Agent J: Polish & Accessibility (22h)
+
+| Task   | Hours | Description                            |
+| ------ | ----- | -------------------------------------- |
+| UX-053 | 6h    | Polish Notification Preferences        |
+| UX-054 | 8h    | Standardize Feedback and Accessibility |
+| UX-055 | 6h    | Surface Audit Trail in Admin UI        |
+| UX-059 | 2h    | Centralize Status Badge Logic          |
+
+---
+
+### 🔵 WAVE 5: RELIABILITY & POLISH (Week 5)
+
+**Parallel Agents:** 2
+**Total Hours:** 38h
+
+#### Agent K: Reliability (20h)
+
+| Task    | Hours | Description                                     |
+| ------- | ----- | ----------------------------------------------- |
+| REL-007 | 12h   | Audit and Fix Floating-Point Money Calculations |
+| REL-010 | 4h    | Implement Client Soft Delete                    |
+| REL-011 | 2h    | Validate Environment Variables at Startup       |
+| REL-012 | 2h    | Fix Database Health Check                       |
+
+#### Agent L: Live Shopping Polish (18h)
+
+| Task    | Hours | Description                        |
+| ------- | ----- | ---------------------------------- |
+| LS-008  | 4h    | Banish window.alert                |
+| LS-009  | 3h    | Visual Price Flash                 |
+| LS-010  | 3h    | Checkout Celebration               |
+| UX-060  | 2h    | Improve Search Debounce Timing     |
+| UX-061  | 3h    | Differentiate Empty States         |
+| REL-013 | 3h    | Appointment Booking Race Condition |
+
+---
+
+### 📈 Summary by Wave
+
+| Wave      | Focus                     | Hours    | Agents    | Duration     |
+| --------- | ------------------------- | -------- | --------- | ------------ |
+| 1         | Security Ship Blockers    | 22h      | 2         | 2-3 days     |
+| 2         | Data Integrity Critical   | 54h      | 3         | 4-5 days     |
+| 3         | Live Shopping Remediation | 44h      | 2         | 4-5 days     |
+| 4         | UX & Admin Improvements   | 72h      | 3         | 5-6 days     |
+| 5         | Reliability & Polish      | 38h      | 2         | 4-5 days     |
+| **TOTAL** |                           | **230h** | **5 max** | **~5 weeks** |
+
+---
+
+### 🎯 Agent Prompt Templates
+
+Each agent should receive:
+
+1. TERP Agent Onboarding (from `docs/prompts/AGENT_ONBOARDING.md`)
+2. Wave-specific tasks from this plan
+3. Feature flag requirements (from `docs/specs/FEATURE_FLAG_INTEGRATION_REQUIREMENTS.md`)
+4. RedHat QA checklist
+
+---
+
+### ⚠️ Critical Dependencies
+
+| Task        | Depends On      | Reason                                       |
+| ----------- | --------------- | -------------------------------------------- |
+| All Wave 2+ | Wave 1 Complete | Security must be fixed first                 |
+| LS-002      | LS-001          | SSE hook needed for UI refactor              |
+| LS-004      | LS-001          | Quick Add uses same SSE infrastructure       |
+| UX-052      | UX-062          | Role assignment needs user list improvements |
+| REL-006     | REL-004         | Mandatory version needs idempotency first    |
+
+---
+
+### 🏁 Go-Live Checklist
+
+**After Wave 1:**
+
+- [ ] API returns 401 without valid session
+- [ ] No public demo user
+- [ ] All admin endpoints secured
+- [ ] VIP Portal fetch isolated
+- [ ] SSL validation enabled
+
+**After Wave 2:**
+
+- [ ] Payment operations atomic
+- [ ] Order creation idempotent
+- [ ] Inventory pagination works at scale
+- [ ] Client search works at scale
+
+**After Wave 3:**
+
+- [ ] Live Shopping real-time (<100ms latency)
+- [ ] Staff can search/add products
+- [ ] No inventory oversell under load
+
+**After Wave 4:**
+
+- [ ] Admin UX polished
+- [ ] Order creation streamlined
+- [ ] Dirty state warnings active
+
+**After Wave 5:**
+
+- [ ] All money calculations use Decimal.js
+- [ ] Client soft delete working
+- [ ] All reliability issues resolved
