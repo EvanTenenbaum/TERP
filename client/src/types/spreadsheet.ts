@@ -17,12 +17,13 @@ export interface ClientGridRow {
   id: string;
   orderId: number;
   date: string | null;
-  vendorCode: string | null;
+  vendorCode: string | null; // TERP-SS-003: Now displays batch.code instead of orderNumber
   item: string;
   qty: number;
   unitPrice: number;
   total: number;
   payment: string | null;
+  paymentAmount: number; // TERP-SS-005: Actual payment amount (cashPayment)
   note: string | null;
   paid: boolean;
   invoiced: boolean;
