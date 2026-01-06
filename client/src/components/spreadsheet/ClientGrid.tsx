@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import type { ColDef } from "ag-grid-community";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import type { ColDef, RowClassParams } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -116,6 +116,15 @@ export const ClientGrid = React.memo(function ClientGrid() {
     []
   );
 
+  // Row styling for payment highlighting (TERP-SS-006)
+  const getRowStyle = useCallback((params: RowClassParams<ClientGridRow>) => {
+    // Highlight entire row with green background if payment has been made
+    if (params.data?.paid || (params.data?.paymentAmount ?? 0) > 0) {
+      return { backgroundColor: "#dcfce7" }; // Green (bg-green-100 equivalent)
+    }
+    return undefined;
+  }, []);
+
   const summary: ClientGridSummary | undefined = gridData?.summary;
 
   return (
@@ -214,6 +223,7 @@ export const ClientGrid = React.memo(function ClientGrid() {
               rowData={gridData?.rows ?? []}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
+              getRowStyle={getRowStyle}
               animateRows
               pagination
               paginationPageSize={50}
