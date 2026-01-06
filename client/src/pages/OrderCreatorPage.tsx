@@ -97,11 +97,6 @@ export default function OrderCreatorPageV2() {
         "You have unsaved order changes. Are you sure you want to leave?",
     });
 
-  // Track unsaved changes - any items mean there's work in progress
-  useEffect(() => {
-    setHasUnsavedChanges(items.length > 0);
-  }, [items.length, setHasUnsavedChanges]);
-
   // Credit check state
   const [showCreditWarning, setShowCreditWarning] = useState(false);
   const [creditCheckResult, setCreditCheckResult] =
@@ -118,10 +113,20 @@ export default function OrderCreatorPageV2() {
   // CHAOS-025: Auto-save state
   type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
   const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>("idle");
-  const [_lastSavedDraftId, setLastSavedDraftId] = useState<number | null>(
-    null
-  );
+  // QA-W2-006: lastSavedDraftId stores the ID of the auto-saved draft for potential
+  // future use (e.g., updating existing draft instead of creating new ones,
+  // showing link to saved draft). Currently stored but not actively used.
+  const [lastSavedDraftId, setLastSavedDraftId] = useState<number | null>(null);
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // QA-W2-005: Track unsaved changes - consider both items and auto-save status
+  // Warning should show when there are items OR when auto-save is pending/failed
+  useEffect(() => {
+    const hasItems = items.length > 0;
+    const autoSavePending =
+      autoSaveStatus === "saving" || autoSaveStatus === "error";
+    setHasUnsavedChanges(hasItems || autoSavePending);
+  }, [items.length, autoSaveStatus, setHasUnsavedChanges]);
 
   // Queries - handle paginated response
   const { data: clientsData, isLoading: clientsLoading } =
@@ -478,7 +483,11 @@ export default function OrderCreatorPageV2() {
                   {autoSaveStatus === "saved" && (
                     <>
                       <Cloud className="h-4 w-4 text-green-600" />
-                      <span className="text-green-600">Draft saved</span>
+                      {/* QA-W2-006: Display saved draft ID for user reference */}
+                      <span className="text-green-600">
+                        Draft saved
+                        {lastSavedDraftId ? ` (#${lastSavedDraftId})` : ""}
+                      </span>
                     </>
                   )}
                   {autoSaveStatus === "error" && (

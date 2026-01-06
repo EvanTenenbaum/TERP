@@ -28,12 +28,8 @@ const numberParser = (value: unknown): number | null => {
 const formatNumber = (value: number): string => value.toLocaleString();
 
 export const InventoryGrid = React.memo(function InventoryGrid() {
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-  } = trpc.spreadsheet.getInventoryGridData.useQuery({ limit: 200 });
+  const { data, isLoading, error, refetch } =
+    trpc.spreadsheet.getInventoryGridData.useQuery({ limit: 200 });
 
   const adjustQty = trpc.inventory.adjustQty.useMutation({
     onSuccess: () => {
@@ -49,53 +45,58 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
     },
   });
 
-  const columnDefs = useMemo<ColDef<InventoryGridRow>[]>(() => [
-    { headerName: "Vendor Code", field: "vendorCode", width: 140 },
-    { headerName: "Date", field: "lotDate", width: 130 },
-    { headerName: "Source", field: "source", width: 140 },
-    { headerName: "Category", field: "category", width: 140 },
-    { headerName: "Item", field: "item", flex: 1, minWidth: 160 },
-    {
-      headerName: "Available",
-      field: "available",
-      width: 130,
-      editable: true,
-      valueFormatter: params => formatNumber(params.value ?? 0),
-      valueParser: params => numberParser(params.newValue),
-    },
-    {
-      headerName: "Intake",
-      field: "intake",
-      width: 120,
-      valueFormatter: params => formatNumber(params.value ?? 0),
-      editable: false,
-    },
-    {
-      headerName: "Ticket",
-      field: "ticket",
-      width: 120,
-      editable: false,
-      valueFormatter: params => formatNumber(params.value ?? 0),
-    },
-    {
-      headerName: "Sub",
-      field: "sub",
-      width: 120,
-      valueFormatter: params => formatNumber(params.value ?? 0),
-      editable: false,
-    },
-    { headerName: "Notes", field: "notes", flex: 1, minWidth: 200 },
-    {
-      headerName: "Confirm",
-      field: "confirm",
-      width: 150,
-      editable: true,
-      cellEditor: "agSelectCellEditor",
-      cellEditorParams: {
-        values: statusOptions,
+  const columnDefs = useMemo<ColDef<InventoryGridRow>[]>(
+    () => [
+      { headerName: "Vendor Code", field: "vendorCode", width: 140 },
+      { headerName: "Date", field: "lotDate", width: 130 },
+      { headerName: "Source", field: "source", width: 140 },
+      { headerName: "Category", field: "category", width: 140 },
+      { headerName: "Item", field: "item", flex: 1, minWidth: 160 },
+      {
+        headerName: "Available",
+        field: "available",
+        width: 130,
+        editable: true,
+        valueFormatter: params => formatNumber(params.value ?? 0),
+        valueParser: params => numberParser(params.newValue),
       },
-    },
-  ], []);
+      {
+        // QA-W2-002: Display original intake quantity column
+        headerName: "Original Intake Qty",
+        field: "intake",
+        width: 150,
+        valueFormatter: params => formatNumber(params.value ?? 0),
+        editable: false,
+        headerTooltip: "Original quantity received at intake",
+      },
+      {
+        headerName: "Ticket",
+        field: "ticket",
+        width: 120,
+        editable: false,
+        valueFormatter: params => formatNumber(params.value ?? 0),
+      },
+      {
+        headerName: "Sub",
+        field: "sub",
+        width: 120,
+        valueFormatter: params => formatNumber(params.value ?? 0),
+        editable: false,
+      },
+      { headerName: "Notes", field: "notes", flex: 1, minWidth: 200 },
+      {
+        headerName: "Confirm",
+        field: "confirm",
+        width: 150,
+        editable: true,
+        cellEditor: "agSelectCellEditor",
+        cellEditorParams: {
+          values: statusOptions,
+        },
+      },
+    ],
+    []
+  );
 
   const defaultColDef = useMemo<ColDef<InventoryGridRow>>(
     () => ({
@@ -122,34 +123,42 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         const delta = parsedNew - currentAvailable;
         if (delta === 0) return;
 
-        adjustQty.mutate({
-          id: event.data.id,
-          field: "onHandQty",
-          adjustment: delta,
-          reason: "Spreadsheet view edit",
-        }, {
-          onError: () => {
-            event.node.setDataValue("available", currentAvailable);
+        adjustQty.mutate(
+          {
+            id: event.data.id,
+            field: "onHandQty",
+            adjustment: delta,
+            reason: "Spreadsheet view edit",
           },
-        });
+          {
+            onError: () => {
+              event.node.setDataValue("available", currentAvailable);
+            },
+          }
+        );
         return;
       }
 
       if (event.colDef.field === "confirm") {
-        const status = String(event.newValue || "") as typeof statusOptions[number];
+        const status = String(
+          event.newValue || ""
+        ) as (typeof statusOptions)[number];
         if (!status || !statusOptions.includes(status)) {
           event.node.setDataValue("confirm", event.oldValue);
           return;
         }
-        updateStatus.mutate({
-          id: event.data.id,
-          status,
-          reason: "Spreadsheet view status update",
-        }, {
-          onError: () => {
-            event.node.setDataValue("confirm", event.oldValue);
+        updateStatus.mutate(
+          {
+            id: event.data.id,
+            status,
+            reason: "Spreadsheet view status update",
           },
-        });
+          {
+            onError: () => {
+              event.node.setDataValue("confirm", event.oldValue);
+            },
+          }
+        );
       }
     },
     [adjustQty, updateStatus]
@@ -170,7 +179,10 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         </div>
         <div className="flex items-center gap-3">
           <div className="text-sm text-muted-foreground">
-            Total Available: <span className="font-semibold text-foreground">{formatNumber(totalAvailable)}</span>
+            Total Available:{" "}
+            <span className="font-semibold text-foreground">
+              {formatNumber(totalAvailable)}
+            </span>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             Refresh
@@ -179,9 +191,7 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
       </CardHeader>
       <CardContent>
         {error && (
-          <div className="mb-3 text-sm text-destructive">
-            {error.message}
-          </div>
+          <div className="mb-3 text-sm text-destructive">{error.message}</div>
         )}
         <div className="ag-theme-alpine h-[600px] w-full">
           <AgGridReact<InventoryGridRow>

@@ -42,7 +42,9 @@ import {
  * @deprecated Use createSupplier() instead - vendors table is deprecated
  */
 export async function createVendor(vendor: InsertVendor) {
-  console.warn('[DEPRECATED] createVendor() - use createSupplier() instead. Vendors table is deprecated.');
+  console.warn(
+    "[DEPRECATED] createVendor() - use createSupplier() instead. Vendors table is deprecated."
+  );
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -58,7 +60,9 @@ export async function createVendor(vendor: InsertVendor) {
  * @deprecated Use getSupplierByClientId() or getSupplierByLegacyVendorId() instead
  */
 export async function getVendorById(id: number) {
-  console.warn('[DEPRECATED] getVendorById() - use getSupplierByLegacyVendorId() instead. Vendors table is deprecated.');
+  console.warn(
+    "[DEPRECATED] getVendorById() - use getSupplierByLegacyVendorId() instead. Vendors table is deprecated."
+  );
   const db = await getDb();
   if (!db) return null;
 
@@ -76,7 +80,9 @@ export async function getVendorById(id: number) {
  * @deprecated Use getAllSuppliers() instead - vendors table is deprecated
  */
 export async function getAllVendors() {
-  console.warn('[DEPRECATED] getAllVendors() - use getAllSuppliers() instead. Vendors table is deprecated.');
+  console.warn(
+    "[DEPRECATED] getAllVendors() - use getAllSuppliers() instead. Vendors table is deprecated."
+  );
   return await cache.getOrSet(
     CacheKeys.vendors(),
     async () => {
@@ -92,7 +98,9 @@ export async function getAllVendors() {
  * @deprecated Use searchSuppliers() instead - vendors table is deprecated
  */
 export async function searchVendors(query: string) {
-  console.warn('[DEPRECATED] searchVendors() - use searchSuppliers() instead. Vendors table is deprecated.');
+  console.warn(
+    "[DEPRECATED] searchVendors() - use searchSuppliers() instead. Vendors table is deprecated."
+  );
   const db = await getDb();
   if (!db) return [];
 
@@ -108,7 +116,12 @@ export async function searchVendors(query: string) {
 // Part of Canonical Model Unification - replaces deprecated vendor queries
 // ============================================================================
 
-import { clients, supplierProfiles, type Client, type SupplierProfile } from "../drizzle/schema";
+import {
+  clients,
+  supplierProfiles,
+  type Client,
+  type SupplierProfile,
+} from "../drizzle/schema";
 import { asc } from "drizzle-orm";
 
 /**
@@ -128,25 +141,23 @@ export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
     async () => {
       const db = await getDb();
       if (!db) return [];
-      
+
       // Get all clients with isSeller=true
       const supplierClients = await db
         .select()
         .from(clients)
         .where(eq(clients.isSeller, true))
         .orderBy(asc(clients.name));
-      
+
       // Get all supplier profiles
-      const profiles = await db
-        .select()
-        .from(supplierProfiles);
-      
+      const profiles = await db.select().from(supplierProfiles);
+
       // Map profiles to clients
       const profileMap = new Map<number, SupplierProfile>();
       for (const profile of profiles) {
         profileMap.set(profile.clientId, profile);
       }
-      
+
       // Combine clients with their profiles
       return supplierClients.map(client => ({
         ...client,
@@ -160,24 +171,26 @@ export async function getAllSuppliers(): Promise<SupplierWithProfile[]> {
 /**
  * Get supplier by client ID
  */
-export async function getSupplierByClientId(clientId: number): Promise<SupplierWithProfile | null> {
+export async function getSupplierByClientId(
+  clientId: number
+): Promise<SupplierWithProfile | null> {
   const db = await getDb();
   if (!db) return null;
-  
+
   const [client] = await db
     .select()
     .from(clients)
     .where(and(eq(clients.id, clientId), eq(clients.isSeller, true)))
     .limit(1);
-  
+
   if (!client) return null;
-  
+
   const [profile] = await db
     .select()
     .from(supplierProfiles)
     .where(eq(supplierProfiles.clientId, clientId))
     .limit(1);
-  
+
   return {
     ...client,
     supplierProfile: profile || null,
@@ -187,28 +200,30 @@ export async function getSupplierByClientId(clientId: number): Promise<SupplierW
 /**
  * Get supplier by legacy vendor ID (for backward compatibility during migration)
  */
-export async function getSupplierByLegacyVendorId(vendorId: number): Promise<SupplierWithProfile | null> {
+export async function getSupplierByLegacyVendorId(
+  vendorId: number
+): Promise<SupplierWithProfile | null> {
   const db = await getDb();
   if (!db) return null;
-  
+
   // Find supplier profile with this legacy vendor ID
   const [profile] = await db
     .select()
     .from(supplierProfiles)
     .where(eq(supplierProfiles.legacyVendorId, vendorId))
     .limit(1);
-  
+
   if (!profile) return null;
-  
+
   // Get the associated client
   const [client] = await db
     .select()
     .from(clients)
     .where(eq(clients.id, profile.clientId))
     .limit(1);
-  
+
   if (!client) return null;
-  
+
   return {
     ...client,
     supplierProfile: profile,
@@ -218,35 +233,39 @@ export async function getSupplierByLegacyVendorId(vendorId: number): Promise<Sup
 /**
  * Search suppliers by name
  */
-export async function searchSuppliers(query: string): Promise<SupplierWithProfile[]> {
+export async function searchSuppliers(
+  query: string
+): Promise<SupplierWithProfile[]> {
   const db = await getDb();
   if (!db) return [];
-  
+
   // Search clients with isSeller=true
   const supplierClients = await db
     .select()
     .from(clients)
-    .where(and(
-      eq(clients.isSeller, true),
-      like(clients.name, `%${query}%`)
-    ))
+    .where(and(eq(clients.isSeller, true), like(clients.name, `%${query}%`)))
     .limit(20);
-  
+
   if (supplierClients.length === 0) return [];
-  
+
   // Get profiles for these clients
   const clientIds = supplierClients.map(c => c.id);
   const profiles = await db
     .select()
     .from(supplierProfiles)
-    .where(sql`${supplierProfiles.clientId} IN (${sql.join(clientIds.map(id => sql`${id}`), sql`, `)})`);
-  
+    .where(
+      sql`${supplierProfiles.clientId} IN (${sql.join(
+        clientIds.map(id => sql`${id}`),
+        sql`, `
+      )})`
+    );
+
   // Map profiles to clients
   const profileMap = new Map<number, SupplierProfile>();
   for (const profile of profiles) {
     profileMap.set(profile.clientId, profile);
   }
-  
+
   return supplierClients.map(client => ({
     ...client,
     supplierProfile: profileMap.get(client.id) || null,
@@ -269,48 +288,60 @@ export async function createSupplier(data: {
   notes?: string;
   licenseNumber?: string;
   taxId?: string;
-  preferredPaymentMethod?: 'CASH' | 'CHECK' | 'WIRE' | 'ACH' | 'CREDIT_CARD' | 'OTHER';
+  preferredPaymentMethod?:
+    | "CASH"
+    | "CHECK"
+    | "WIRE"
+    | "ACH"
+    | "CREDIT_CARD"
+    | "OTHER";
 }): Promise<{ clientId: number; profileId: number }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // Generate TERI code for new supplier
   const teriCode = `SUP-${Date.now().toString(36).toUpperCase()}`;
-  
+
   // Use transaction to ensure both client and profile are created atomically
-  const result = await db.transaction(async (tx) => {
+  const result = await db.transaction(async tx => {
     // Create client with isSeller=true
-    const [clientResult] = await tx.insert(clients).values({
-      teriCode,
-      name: data.name,
-      email: data.email || null,
-      phone: data.phone || null,
-      address: data.address || null,
-      isSeller: true,
-      isBuyer: false,
-    }).$returningId();
-    
+    const [clientResult] = await tx
+      .insert(clients)
+      .values({
+        teriCode,
+        name: data.name,
+        email: data.email || null,
+        phone: data.phone || null,
+        address: data.address || null,
+        isSeller: true,
+        isBuyer: false,
+      })
+      .$returningId();
+
     const clientId = clientResult.id;
-    
+
     // Create supplier profile
-    const [profileResult] = await tx.insert(supplierProfiles).values({
-      clientId,
-      contactName: data.contactName || null,
-      contactEmail: data.contactEmail || null,
-      contactPhone: data.contactPhone || null,
-      paymentTerms: data.paymentTerms || null,
-      supplierNotes: data.notes || null,
-      licenseNumber: data.licenseNumber || null,
-      taxId: data.taxId || null,
-      preferredPaymentMethod: data.preferredPaymentMethod || null,
-    }).$returningId();
-    
+    const [profileResult] = await tx
+      .insert(supplierProfiles)
+      .values({
+        clientId,
+        contactName: data.contactName || null,
+        contactEmail: data.contactEmail || null,
+        contactPhone: data.contactPhone || null,
+        paymentTerms: data.paymentTerms || null,
+        supplierNotes: data.notes || null,
+        licenseNumber: data.licenseNumber || null,
+        taxId: data.taxId || null,
+        preferredPaymentMethod: data.preferredPaymentMethod || null,
+      })
+      .$returningId();
+
     return { clientId, profileId: profileResult.id };
   });
-  
+
   // Invalidate cache after successful transaction
   cache.delete(CacheKeys.suppliers());
-  
+
   return result;
 }
 
@@ -332,36 +363,51 @@ export async function updateSupplier(
     notes?: string;
     licenseNumber?: string;
     taxId?: string;
-    preferredPaymentMethod?: 'CASH' | 'CHECK' | 'WIRE' | 'ACH' | 'CREDIT_CARD' | 'OTHER';
+    preferredPaymentMethod?:
+      | "CASH"
+      | "CHECK"
+      | "WIRE"
+      | "ACH"
+      | "CREDIT_CARD"
+      | "OTHER";
   }
 ): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // Build update objects outside transaction for clarity
   const clientUpdates: Partial<Client> = {};
   if (data.name !== undefined) clientUpdates.name = data.name;
   if (data.email !== undefined) clientUpdates.email = data.email;
   if (data.phone !== undefined) clientUpdates.phone = data.phone;
   if (data.address !== undefined) clientUpdates.address = data.address;
-  
+
   const profileUpdates: Partial<SupplierProfile> = {};
-  if (data.contactName !== undefined) profileUpdates.contactName = data.contactName;
-  if (data.contactEmail !== undefined) profileUpdates.contactEmail = data.contactEmail;
-  if (data.contactPhone !== undefined) profileUpdates.contactPhone = data.contactPhone;
-  if (data.paymentTerms !== undefined) profileUpdates.paymentTerms = data.paymentTerms;
+  if (data.contactName !== undefined)
+    profileUpdates.contactName = data.contactName;
+  if (data.contactEmail !== undefined)
+    profileUpdates.contactEmail = data.contactEmail;
+  if (data.contactPhone !== undefined)
+    profileUpdates.contactPhone = data.contactPhone;
+  if (data.paymentTerms !== undefined)
+    profileUpdates.paymentTerms = data.paymentTerms;
   if (data.notes !== undefined) profileUpdates.supplierNotes = data.notes;
-  if (data.licenseNumber !== undefined) profileUpdates.licenseNumber = data.licenseNumber;
+  if (data.licenseNumber !== undefined)
+    profileUpdates.licenseNumber = data.licenseNumber;
   if (data.taxId !== undefined) profileUpdates.taxId = data.taxId;
-  if (data.preferredPaymentMethod !== undefined) profileUpdates.preferredPaymentMethod = data.preferredPaymentMethod;
-  
+  if (data.preferredPaymentMethod !== undefined)
+    profileUpdates.preferredPaymentMethod = data.preferredPaymentMethod;
+
   // Use transaction to ensure both updates succeed or both fail
-  await db.transaction(async (tx) => {
+  await db.transaction(async tx => {
     // Update client fields if provided
     if (Object.keys(clientUpdates).length > 0) {
-      await tx.update(clients).set(clientUpdates).where(eq(clients.id, clientId));
+      await tx
+        .update(clients)
+        .set(clientUpdates)
+        .where(eq(clients.id, clientId));
     }
-    
+
     // Update supplier profile fields if provided
     if (Object.keys(profileUpdates).length > 0) {
       // Check if profile exists
@@ -370,9 +416,12 @@ export async function updateSupplier(
         .from(supplierProfiles)
         .where(eq(supplierProfiles.clientId, clientId))
         .limit(1);
-      
+
       if (existingProfile) {
-        await tx.update(supplierProfiles).set(profileUpdates).where(eq(supplierProfiles.clientId, clientId));
+        await tx
+          .update(supplierProfiles)
+          .set(profileUpdates)
+          .where(eq(supplierProfiles.clientId, clientId));
       } else {
         // Create profile if it doesn't exist (upsert pattern)
         await tx.insert(supplierProfiles).values({
@@ -382,10 +431,10 @@ export async function updateSupplier(
       }
     }
   });
-  
+
   // Invalidate cache after successful transaction
   cache.delete(CacheKeys.suppliers());
-  
+
   return true;
 }
 
@@ -396,14 +445,17 @@ export async function updateSupplier(
 export async function deleteSupplier(clientId: number): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // For now, just mark as not a seller (soft disable)
   // TODO: Add deletedAt column to clients table for proper soft delete
-  await db.update(clients).set({ isSeller: false }).where(eq(clients.id, clientId));
-  
+  await db
+    .update(clients)
+    .set({ isSeller: false })
+    .where(eq(clients.id, clientId));
+
   // Invalidate cache
   cache.delete(CacheKeys.suppliers());
-  
+
   return true;
 }
 
@@ -590,8 +642,15 @@ export async function getBatchByCode(code: string) {
 }
 
 export async function updateBatchStatus(
-  id: number, 
-  status: "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED",
+  id: number,
+  status:
+    | "AWAITING_INTAKE"
+    | "LIVE"
+    | "PHOTOGRAPHY_COMPLETE"
+    | "ON_HOLD"
+    | "QUARANTINED"
+    | "SOLD_OUT"
+    | "CLOSED",
   expectedVersion?: number // DATA-005: Optimistic locking support
 ): Promise<{ version?: number }> {
   const db = await getDb();
@@ -599,11 +658,19 @@ export async function updateBatchStatus(
 
   // DATA-005: Optimistic locking check if version provided
   if (expectedVersion !== undefined) {
-    const [current] = await db.select({ version: batches.version }).from(batches).where(eq(batches.id, id));
+    const [current] = await db
+      .select({ version: batches.version })
+      .from(batches)
+      .where(eq(batches.id, id));
     if (!current) throw new Error(`Batch ${id} not found`);
     if (current.version !== expectedVersion) {
-      const { OptimisticLockError } = await import('./_core/optimisticLocking');
-      throw new OptimisticLockError('Batch', id, expectedVersion, current.version);
+      const { OptimisticLockError } = await import("./_core/optimisticLocking");
+      throw new OptimisticLockError(
+        "Batch",
+        id,
+        expectedVersion,
+        current.version
+      );
     }
   }
 
@@ -611,8 +678,11 @@ export async function updateBatchStatus(
     .update(batches)
     .set({ batchStatus: status, version: sql`version + 1` })
     .where(eq(batches.id, id));
-  
-  const [updated] = await db.select({ version: batches.version }).from(batches).where(eq(batches.id, id));
+
+  const [updated] = await db
+    .select({ version: batches.version })
+    .from(batches)
+    .where(eq(batches.id, id));
   return { version: updated?.version };
 }
 
@@ -632,11 +702,19 @@ export async function updateBatchQty(
 
   // DATA-005: Optimistic locking check if version provided
   if (expectedVersion !== undefined) {
-    const [current] = await db.select({ version: batches.version }).from(batches).where(eq(batches.id, id));
+    const [current] = await db
+      .select({ version: batches.version })
+      .from(batches)
+      .where(eq(batches.id, id));
     if (!current) throw new Error(`Batch ${id} not found`);
     if (current.version !== expectedVersion) {
-      const { OptimisticLockError } = await import('./_core/optimisticLocking');
-      throw new OptimisticLockError('Batch', id, expectedVersion, current.version);
+      const { OptimisticLockError } = await import("./_core/optimisticLocking");
+      throw new OptimisticLockError(
+        "Batch",
+        id,
+        expectedVersion,
+        current.version
+      );
     }
   }
 
@@ -644,8 +722,11 @@ export async function updateBatchQty(
     .update(batches)
     .set({ [field]: value, version: sql`version + 1` })
     .where(eq(batches.id, id));
-  
-  const [updated] = await db.select({ version: batches.version }).from(batches).where(eq(batches.id, id));
+
+  const [updated] = await db
+    .select({ version: batches.version })
+    .from(batches)
+    .where(eq(batches.id, id));
   return { version: updated?.version };
 }
 
@@ -658,6 +739,37 @@ export async function getAllBatches(limit: number = 100) {
     .from(batches)
     .orderBy(desc(batches.createdAt))
     .limit(limit);
+}
+
+/**
+ * QA-W2-001: Bulk fetch batches by IDs to avoid N+1 queries
+ * @param batchIds - Array of batch IDs to fetch
+ * @returns Map of batchId to batch object
+ */
+export async function getBatchesByIds(
+  batchIds: number[]
+): Promise<Map<number, typeof batches.$inferSelect>> {
+  const db = await getDb();
+  if (!db || batchIds.length === 0) return new Map();
+
+  // Use IN clause for bulk fetch
+  const result = await db
+    .select()
+    .from(batches)
+    .where(
+      sql`${batches.id} IN (${sql.join(
+        batchIds.map(id => sql`${id}`),
+        sql`, `
+      )})`
+    );
+
+  // Convert to Map for O(1) lookup
+  const batchMap = new Map<number, typeof batches.$inferSelect>();
+  for (const batch of result) {
+    batchMap.set(batch.id, batch);
+  }
+
+  return batchMap;
 }
 
 /**
@@ -830,7 +942,7 @@ export async function seedInventoryData() {
   // Check if data already exists
   const existingVendors = await getAllVendors();
   if (existingVendors.length > 0) {
-    console.log("Inventory data already seeded");
+    console.info("Inventory data already seeded");
     return;
   }
 
@@ -930,7 +1042,7 @@ export async function seedInventoryData() {
     });
   }
 
-  console.log("Inventory seed data created successfully");
+  console.info("Inventory seed data created successfully");
 }
 
 // ============================================================================
@@ -1424,7 +1536,14 @@ export async function deleteInventoryView(viewId: number, _userId: number) {
  */
 export async function bulkUpdateBatchStatus(
   batchIds: number[],
-  newStatus: "AWAITING_INTAKE" | "LIVE" | "PHOTOGRAPHY_COMPLETE" | "ON_HOLD" | "QUARANTINED" | "SOLD_OUT" | "CLOSED",
+  newStatus:
+    | "AWAITING_INTAKE"
+    | "LIVE"
+    | "PHOTOGRAPHY_COMPLETE"
+    | "ON_HOLD"
+    | "QUARANTINED"
+    | "SOLD_OUT"
+    | "CLOSED",
   _userId: number
 ): Promise<{ success: boolean; updated: number }> {
   const db = await getDb();
@@ -1640,7 +1759,10 @@ export async function getProfitabilitySummary() {
   const batchIds = new Set<number>();
 
   // Cache batches to avoid repeated queries - use Pick to only cache needed fields
-  type BatchCacheEntry = Pick<typeof batches.$inferSelect, 'unitCogs' | 'onHandQty'>;
+  type BatchCacheEntry = Pick<
+    typeof batches.$inferSelect,
+    "unitCogs" | "onHandQty"
+  >;
   const batchCache = new Map<number, BatchCacheEntry>();
 
   for (const order of allOrders) {
@@ -1666,7 +1788,10 @@ export async function getProfitabilitySummary() {
         // Get batch cost (with caching)
         if (!batchCache.has(item.batchId)) {
           const [batch] = await db
-            .select({ unitCogs: batches.unitCogs, onHandQty: batches.onHandQty })
+            .select({
+              unitCogs: batches.unitCogs,
+              onHandQty: batches.onHandQty,
+            })
             .from(batches)
             .where(eq(batches.id, item.batchId));
           if (batch) {
@@ -1697,7 +1822,6 @@ export async function getProfitabilitySummary() {
     batchesWithSales: batchIds.size,
   };
 }
-
 
 // ============================================================================
 // VENDOR BATCH QUERIES

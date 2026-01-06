@@ -295,23 +295,25 @@ export async function getClientGridData(
   };
 }
 
-// TERP-SS-003: Helper to fetch batch codes by IDs
+// TERP-SS-003 + QA-W2-001: Helper to fetch batch codes by IDs
+// Fixed N+1 query by using bulk fetch instead of individual queries
 async function getBatchCodesByIds(
   batchIds: number[]
 ): Promise<Map<number, string>> {
   if (batchIds.length === 0) return new Map();
 
-  const batchMap = new Map<number, string>();
+  // QA-W2-001: Use bulk fetch to avoid N+1 queries
+  const batches = await inventoryDb.getBatchesByIds(batchIds);
 
-  // Fetch batch codes in batches to avoid too-long queries
-  for (const batchId of batchIds) {
-    const batch = await inventoryDb.getBatchById(batchId);
-    if (batch?.code) {
-      batchMap.set(batchId, batch.code);
+  // Extract codes from the batch objects
+  const batchCodeMap = new Map<number, string>();
+  for (const [id, batch] of batches) {
+    if (batch.code) {
+      batchCodeMap.set(id, batch.code);
     }
   }
 
-  return batchMap;
+  return batchCodeMap;
 }
 import * as inventoryDb from "../inventoryDb";
 import { getOrdersByClient } from "../ordersDb";
