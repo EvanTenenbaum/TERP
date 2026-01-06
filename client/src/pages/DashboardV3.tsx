@@ -1,6 +1,4 @@
-import { useEffect } from "react";
 import { Settings } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
 import {
   DashboardPreferencesProvider,
   useDashboardPreferences,
@@ -29,15 +27,6 @@ function DashboardContent() {
   const { widgets, setIsCustomizing } = useDashboardPreferences();
 
   const visibleWidgets = widgets.filter(w => w.isVisible);
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Dashboard widgets updated:', {
-      total: widgets.length,
-      visible: visibleWidgets.length,
-      widgets: widgets.map(w => ({ id: w.id, isVisible: w.isVisible }))
-    });
-  }, [widgets, visibleWidgets]);
 
   const renderWidget = (widgetId: string) => {
     switch (widgetId) {
@@ -69,43 +58,49 @@ function DashboardContent() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="p-6 space-y-6">
-        {/* Action bar with customize button and comments - no duplicate header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsCustomizing(true)}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Customize Dashboard
-            </Button>
-          </div>
+    <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold leading-tight text-foreground">
+            Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Overview of your business metrics and activity
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCustomizing(true)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Customize
+          </Button>
           <CommentWidget commentableType="dashboard" commentableId={1} />
         </div>
-
-        <DashboardLayoutManager>
-          {visibleWidgets.map(widget => (
-            <div
-              key={widget.id}
-              className={`
-                ${widget.size === "sm" ? "col-span-1 md:col-span-4 lg:col-span-4" : ""}
-                ${widget.size === "md" ? "col-span-1 md:col-span-4 lg:col-span-6" : ""}
-                ${widget.size === "lg" ? "col-span-1 md:col-span-8 lg:col-span-8" : ""}
-                ${widget.size === "xl" ? "col-span-1 md:col-span-8 lg:col-span-12" : ""}
-                ${!widget.size ? "col-span-1 md:col-span-4 lg:col-span-6" : ""}
-              `}
-            >
-              {renderWidget(widget.id)}
-            </div>
-          ))}
-        </DashboardLayoutManager>
-
-        <CustomizationPanel />
       </div>
-    </DashboardLayout>
+
+      <DashboardLayoutManager>
+        {visibleWidgets.map(widget => (
+          <div
+            key={widget.id}
+            className={`
+              ${widget.size === "sm" ? "col-span-1 md:col-span-4 lg:col-span-4" : ""}
+              ${widget.size === "md" ? "col-span-1 md:col-span-4 lg:col-span-6" : ""}
+              ${widget.size === "lg" ? "col-span-1 md:col-span-8 lg:col-span-8" : ""}
+              ${widget.size === "xl" ? "col-span-1 md:col-span-8 lg:col-span-12" : ""}
+              ${!widget.size ? "col-span-1 md:col-span-4 lg:col-span-6" : ""}
+            `}
+          >
+            {renderWidget(widget.id)}
+          </div>
+        ))}
+      </DashboardLayoutManager>
+
+      <CustomizationPanel />
+    </div>
   );
 }
 

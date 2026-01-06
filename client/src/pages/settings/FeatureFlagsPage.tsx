@@ -147,8 +147,30 @@ export default function FeatureFlagsPage() {
     },
   });
 
+  const toggleDefaultMutation = trpc.featureFlags.update.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Flag updated",
+        description: "Default enabled status changed.",
+      });
+      refetch();
+      refetchAudit();
+    },
+    onError: error => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleToggle = (id: number, currentEnabled: boolean) => {
     toggleMutation.mutate({ id, enabled: !currentEnabled });
+  };
+
+  const handleToggleDefault = (id: number, currentEnabled: boolean) => {
+    toggleDefaultMutation.mutate({ id, defaultEnabled: !currentEnabled });
   };
 
   const handleOpenOverrides = (flagId: number) => {
@@ -270,17 +292,13 @@ export default function FeatureFlagsPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        {flag.defaultEnabled ? (
-                          <Badge variant="default" className="bg-green-500">
-                            <Check className="h-3 w-3 mr-1" />
-                            On
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            <X className="h-3 w-3 mr-1" />
-                            Off
-                          </Badge>
-                        )}
+                        <Switch
+                          checked={flag.defaultEnabled}
+                          onCheckedChange={() =>
+                            handleToggleDefault(flag.id, flag.defaultEnabled)
+                          }
+                          disabled={toggleDefaultMutation.isPending}
+                        />
                       </TableCell>
                       <TableCell>
                         {flag.dependsOn ? (
