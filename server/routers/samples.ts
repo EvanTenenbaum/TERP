@@ -8,6 +8,8 @@ import * as samplesDb from "../samplesDb";
 import * as samplesAnalytics from "../samplesAnalytics";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { createSafeUnifiedResponse } from "../_core/pagination";
+import { logger } from "../_core/logger";
+import { TRPCError } from "@trpc/server";
 
 // Location enum for type safety
 const sampleLocationSchema = z.enum([
@@ -392,32 +394,56 @@ export const samplesRouter = router({
   // ============================================================================
 
   // Get all sample requests (not just pending)
+  // Wave 4C: Enhanced logging for database error investigation
   getAll: protectedProcedure
     .use(requirePermission("samples:read"))
     .input(z.object({
       limit: z.number().optional()
     }))
     .query(async ({ input, ctx }) => {
-      // Debug logging for QA-050
-      console.log('[samples.getAll] Input:', {
-        limit: input.limit,
-        userId: ctx.user?.id,
-      });
+      const userId = ctx.user?.id;
+      const limit = input.limit || 100;
 
-      const requests = await samplesDb.getAllSampleRequests(input.limit);
+      logger.info({ operation: 'samples.getAll', userId, limit }, '[Samples] Fetching all sample requests');
 
-      // Debug logging for QA-050
-      console.log('[samples.getAll] Result:', {
-        requestsCount: requests.length,
-        hasRequests: requests.length > 0,
-      });
+      try {
+        const requests = await samplesDb.getAllSampleRequests(limit);
 
-      // Warn if unexpected empty result
-      if (requests.length === 0) {
-        console.warn('[samples.getAll] Zero samples returned - possible data issue');
+        logger.info(
+          { operation: 'samples.getAll', userId, count: requests.length },
+          `[Samples] Successfully fetched ${requests.length} sample requests`
+        );
+
+        // Warn if unexpected empty result but don't throw - empty can be valid
+        if (requests.length === 0) {
+          logger.warn(
+            { operation: 'samples.getAll', userId },
+            '[Samples] Zero samples returned - this may be expected for new installations'
+          );
+        }
+
+        return createSafeUnifiedResponse(requests, requests.length, limit, 0);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+
+        logger.error(
+          {
+            operation: 'samples.getAll',
+            userId,
+            error: errorMessage,
+            stack: errorStack,
+            limit
+          },
+          '[Samples] Database error fetching sample requests'
+        );
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch sample requests. Database error.',
+          cause: error,
+        });
       }
-
-      return createSafeUnifiedResponse(requests, requests.length, input.limit || 100, 0);
     }),
 
   // Get a single sample request by ID

@@ -30,6 +30,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  EmptyState,
+  DatabaseErrorState,
+  ErrorState,
+  isDatabaseError,
+  emptyStateConfigs,
+} from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -545,8 +553,8 @@ export default function SampleManagement() {
   const combinedProductOptions =
     productOptions.length > 0 ? productOptions : fallbackProductOptions;
 
-  // Error state with retry option
-  if (isSamplesError) {
+  // Loading state
+  if (samplesLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -561,30 +569,53 @@ export default function SampleManagement() {
             </h1>
           </div>
         </div>
-        <Card className="p-4" data-testid="samples-error">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Loading Samples</AlertTitle>
-            <AlertDescription className="mt-2">
-              <p className="mb-2">{samplesError?.message || 'Failed to load samples from the server.'}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetchSamples()}
-                className="mt-2"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Retry
-              </Button>
-            </AlertDescription>
-          </Alert>
+        <LoadingState message="Loading samples..." />
+      </div>
+    );
+  }
+
+  // Error state with retry option - CRITICAL: Handle known database errors (Wave 3 finding)
+  if (isSamplesError) {
+    console.error("[SampleManagement] API Error:", samplesError);
+
+    const isDbError = isDatabaseError(samplesError);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Filter className="h-4 w-4" />
+              Samples
+            </div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Beaker className="h-7 w-7 text-primary" />
+              Sample Management
+            </h1>
+          </div>
+        </div>
+        <Card className="p-6" data-testid="samples-error">
+          {isDbError ? (
+            <DatabaseErrorState
+              entity="samples"
+              onRetry={() => refetchSamples()}
+              errorMessage={samplesError?.message}
+            />
+          ) : (
+            <ErrorState
+              title="Failed to load samples"
+              description={samplesError?.message || "An error occurred while loading samples."}
+              onRetry={() => refetchSamples()}
+              showSupport
+            />
+          )}
         </Card>
       </div>
     );
   }
 
   // Empty state when no samples (but not if there was an error - that shows error state)
-  if (samples.length === 0 && !samplesLoading && !isSamplesError) {
+  if (samples.length === 0 && !isSamplesError) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -603,37 +634,19 @@ export default function SampleManagement() {
           </div>
           <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
         </div>
-        <Card className="p-4" data-testid="samples-empty">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>No Samples Found</AlertTitle>
-            <AlertDescription className="mt-2">
-              <p className="mb-2">
-                No sample requests were found. This could be because:
-              </p>
-              <ul className="list-disc list-inside mb-4 text-sm">
-                <li>No sample requests have been created yet</li>
-                <li>There may be a data loading issue</li>
-              </ul>
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => setIsFormOpen(true)}
-                >
-                  Create New Sample Request
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refetchSamples()}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
+        <Card className="p-6" data-testid="samples-empty">
+          <EmptyState
+            {...emptyStateConfigs.samples}
+            action={{
+              label: "Create Sample Request",
+              onClick: () => setIsFormOpen(true),
+            }}
+            secondaryAction={{
+              label: "Refresh",
+              onClick: () => refetchSamples(),
+              variant: "outline",
+            }}
+          />
         </Card>
 
         <SampleForm

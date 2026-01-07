@@ -22,17 +22,23 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { 
-  PackageIcon, 
-  UsersIcon, 
-  ShoppingCartIcon, 
+import {
+  PackageIcon,
+  UsersIcon,
+  ShoppingCartIcon,
   CalendarIcon,
   FileTextIcon,
   BarChart3Icon,
   InboxIcon,
   SearchIcon,
   FolderIcon,
-  AlertCircleIcon
+  AlertCircleIcon,
+  BellIcon,
+  CameraIcon,
+  CheckSquareIcon,
+  FileSpreadsheetIcon,
+  FlaskConicalIcon,
+  RefreshCwIcon
 } from "lucide-react";
 
 export interface EmptyStateAction {
@@ -60,7 +66,7 @@ export interface EmptyStateProps {
   /** Additional CSS classes */
   className?: string;
   /** Preset variant for common empty states */
-  variant?: "orders" | "clients" | "inventory" | "calendar" | "invoices" | "analytics" | "inbox" | "search" | "generic";
+  variant?: "orders" | "clients" | "inventory" | "calendar" | "invoices" | "analytics" | "inbox" | "search" | "generic" | "notifications" | "photography" | "todos" | "spreadsheet" | "samples" | "reports";
 }
 
 // Default icons for each variant
@@ -74,6 +80,12 @@ const variantIcons: Record<string, React.ReactNode> = {
   inbox: <InboxIcon className="h-12 w-12 text-muted-foreground/50" />,
   search: <SearchIcon className="h-12 w-12 text-muted-foreground/50" />,
   generic: <FolderIcon className="h-12 w-12 text-muted-foreground/50" />,
+  notifications: <BellIcon className="h-12 w-12 text-muted-foreground/50" />,
+  photography: <CameraIcon className="h-12 w-12 text-muted-foreground/50" />,
+  todos: <CheckSquareIcon className="h-12 w-12 text-muted-foreground/50" />,
+  spreadsheet: <FileSpreadsheetIcon className="h-12 w-12 text-muted-foreground/50" />,
+  samples: <FlaskConicalIcon className="h-12 w-12 text-muted-foreground/50" />,
+  reports: <FileTextIcon className="h-12 w-12 text-muted-foreground/50" />,
 };
 
 // Size classes
@@ -274,6 +286,237 @@ export const EmptyStatePresets = {
       } : undefined}
     />
   ),
+
+  NoNotifications: () => (
+    <EmptyState
+      variant="notifications"
+      title="No notifications"
+      description="You're all caught up! New notifications will appear here."
+    />
+  ),
+
+  NoPhotos: () => (
+    <EmptyState
+      variant="photography"
+      title="No photos to review"
+      description="There are no batches awaiting photography. Photos will appear here when batches need imaging."
+    />
+  ),
+
+  NoTodos: (props: { onCreateTodo?: () => void }) => (
+    <EmptyState
+      variant="todos"
+      title="No tasks"
+      description="You have no tasks assigned. Tasks will appear here when created or assigned to you."
+      action={props.onCreateTodo ? {
+        label: "Create Task",
+        onClick: props.onCreateTodo,
+      } : undefined}
+    />
+  ),
+
+  NoSpreadsheetData: () => (
+    <EmptyState
+      variant="spreadsheet"
+      title="No inventory data"
+      description="The spreadsheet view will populate once you have inventory batches in the system."
+    />
+  ),
+
+  NoSamples: (props: { onCreateSample?: () => void }) => (
+    <EmptyState
+      variant="samples"
+      title="No samples yet"
+      description="Sample requests will appear here when clients request product samples."
+      action={props.onCreateSample ? {
+        label: "Create Sample Request",
+        onClick: props.onCreateSample,
+      } : undefined}
+    />
+  ),
+
+  NoReports: () => (
+    <EmptyState
+      variant="reports"
+      title="No reports available"
+      description="Reports will be generated as you accumulate data in the system."
+    />
+  ),
+};
+
+/**
+ * NoSearchResults - for empty search results
+ */
+export function NoSearchResults({
+  searchTerm,
+  onClear,
+}: {
+  searchTerm?: string;
+  onClear?: () => void;
+}) {
+  return (
+    <EmptyState
+      icon={<SearchIcon className="h-12 w-12 text-muted-foreground/50" />}
+      title="No results found"
+      description={
+        searchTerm
+          ? `No items match "${searchTerm}". Try adjusting your search or filters.`
+          : "Try adjusting your search or filters to find what you're looking for."
+      }
+      action={onClear ? { label: "Clear filters", onClick: onClear } : undefined}
+    />
+  );
+}
+
+/**
+ * ErrorState - general error state with retry
+ */
+export function ErrorState({
+  title = "Something went wrong",
+  description,
+  onRetry,
+  showSupport = false,
+}: {
+  title?: string;
+  description?: string;
+  onRetry?: () => void;
+  showSupport?: boolean;
+}) {
+  return (
+    <EmptyState
+      icon={<AlertCircleIcon className="h-12 w-12 text-destructive/50" />}
+      title={title}
+      description={description ?? "An error occurred while loading this content. Please try again."}
+      action={onRetry ? { label: "Try again", onClick: onRetry } : undefined}
+      secondaryAction={
+        showSupport
+          ? {
+              label: "Contact Support",
+              onClick: () => window.open("mailto:support@terp.com", "_blank"),
+              variant: "outline",
+            }
+          : undefined
+      }
+    />
+  );
+}
+
+/**
+ * DatabaseErrorState - for known API/database failures (Wave 3 finding)
+ * Use this when the error is likely a database connectivity or query issue
+ */
+export function DatabaseErrorState({
+  entity,
+  onRetry,
+  errorMessage,
+}: {
+  entity: string;
+  onRetry?: () => void;
+  errorMessage?: string;
+}) {
+  return (
+    <EmptyState
+      icon={<AlertCircleIcon className="h-12 w-12 text-amber-500" />}
+      title={`Unable to load ${entity}`}
+      description={
+        errorMessage ||
+        "There was a problem connecting to the database. This may be a temporary issue. Please try again or contact support if the problem persists."
+      }
+      action={
+        onRetry
+          ? {
+              label: "Try again",
+              onClick: onRetry,
+            }
+          : undefined
+      }
+      secondaryAction={{
+        label: "Contact Support",
+        onClick: () => window.open("mailto:support@terp.com", "_blank"),
+        variant: "outline",
+      }}
+    />
+  );
+}
+
+/**
+ * Helper to detect if an error is database-related
+ */
+export function isDatabaseError(error: { message?: string; data?: { code?: string } } | null | undefined): boolean {
+  if (!error) return false;
+
+  const message = error.message?.toLowerCase() || "";
+  const isDbError =
+    message.includes("database") ||
+    message.includes("query") ||
+    message.includes("relation") ||
+    message.includes("connection") ||
+    message.includes("timeout") ||
+    error.data?.code === "INTERNAL_SERVER_ERROR";
+
+  return isDbError;
+}
+
+/**
+ * Page-specific empty state configurations
+ * Can be spread into EmptyState component: <EmptyState {...emptyStateConfigs.samples} />
+ */
+export const emptyStateConfigs = {
+  analytics: {
+    variant: "analytics" as const,
+    title: "No analytics data yet",
+    description: "Analytics will appear once you have orders and transactions in the system.",
+  },
+  calendar: {
+    variant: "calendar" as const,
+    title: "No events scheduled",
+    description: "Your calendar is empty. Create an appointment or task to get started.",
+  },
+  notifications: {
+    variant: "notifications" as const,
+    title: "No notifications",
+    description: "You're all caught up! New notifications will appear here.",
+  },
+  photography: {
+    variant: "photography" as const,
+    title: "No photos to review",
+    description: "There are no batches awaiting photography. Photos will appear here when batches need imaging.",
+  },
+  reports: {
+    variant: "reports" as const,
+    title: "No reports available",
+    description: "Reports will be generated as you accumulate data in the system.",
+  },
+  todos: {
+    variant: "todos" as const,
+    title: "No tasks",
+    description: "You have no tasks assigned. Tasks will appear here when created or assigned to you.",
+  },
+  spreadsheet: {
+    variant: "spreadsheet" as const,
+    title: "No inventory data",
+    description: "The spreadsheet view will populate once you have inventory batches in the system.",
+  },
+  orders: {
+    variant: "orders" as const,
+    title: "No orders yet",
+    description: "Orders will appear here once customers start placing them.",
+  },
+  clients: {
+    variant: "clients" as const,
+    title: "No clients yet",
+    description: "Add your first client to start managing your customer relationships.",
+  },
+  inventory: {
+    variant: "inventory" as const,
+    title: "No inventory",
+    description: "Your inventory is empty. Create a purchase order to receive new stock.",
+  },
+  samples: {
+    variant: "samples" as const,
+    title: "No samples yet",
+    description: "Sample requests will appear here when clients request product samples.",
+  },
 };
 
 export default EmptyState;

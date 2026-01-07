@@ -19,6 +19,7 @@ import {
 } from "../../drizzle/schema";
 import { adminProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
+import { logger } from "../_core/logger";
 
 export const auditRouter = router({
   /**
@@ -587,10 +588,23 @@ export const auditRouter = router({
       // For now, return activity-based history from different sources based on entity type
       // This can be expanded to use a dedicated audit_logs table in the future
 
+      // BUG-060: Added proper logging and error handling instead of silent return
+      logger.info(
+        { operation: 'getEntityHistory', entityType, entityId, page, pageSize },
+        '[Audit] Fetching entity history'
+      );
+
       try {
         const database = await db;
         if (!database) {
-          return [];
+          logger.error(
+            { operation: 'getEntityHistory', entityType, entityId },
+            '[Audit] Database not available'
+          );
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Database not available',
+          });
         }
 
         // Query based on entity type
@@ -609,6 +623,11 @@ export const auditRouter = router({
             .limit(pageSize)
             .offset(offset);
 
+          logger.debug(
+            { operation: 'getEntityHistory', entityType, entityId, count: clientOrders.length },
+            '[Audit] Retrieved client order history'
+          );
+
           return clientOrders.map(o => ({
             id: o.id,
             action: o.action,
@@ -621,6 +640,10 @@ export const auditRouter = router({
         if (entityType === "transaction" || entityType === "order") {
           // Note: Payments are linked via invoices, not directly to orders
           // Return empty array until invoice linking is implemented
+          logger.debug(
+            { operation: 'getEntityHistory', entityType, entityId },
+            '[Audit] Transaction/order history not yet implemented'
+          );
           return [];
         }
 
@@ -640,6 +663,11 @@ export const auditRouter = router({
             .limit(pageSize)
             .offset(offset);
 
+          logger.debug(
+            { operation: 'getEntityHistory', entityType, entityId, count: movements.length },
+            '[Audit] Retrieved inventory movement history'
+          );
+
           return movements.map(m => ({
             id: m.id,
             action: m.action,
@@ -650,10 +678,30 @@ export const auditRouter = router({
         }
 
         // Default: return empty array for unsupported entity types
+        logger.debug(
+          { operation: 'getEntityHistory', entityType, entityId },
+          '[Audit] Unsupported entity type - returning empty array'
+        );
         return [];
       } catch (error) {
-        console.error("[Audit] getEntityHistory error:", error);
-        return [];
+        // BUG-060: Changed from silent catch to proper error handling
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error(
+          { operation: 'getEntityHistory', entityType, entityId, error: errorMessage },
+          '[Audit] Error fetching entity history'
+        );
+
+        // Re-throw TRPCErrors as-is
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
+        // Wrap other errors in TRPCError
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch audit history',
+          cause: error,
+        });
       }
     }),
 });
