@@ -4,11 +4,11 @@
  */
 
 import { z } from 'zod';
-import { sql } from 'drizzle-orm';
-import { publicProcedure, router } from '../_core/trpc.js';
+import { sql, isNull, eq } from 'drizzle-orm';
+import { publicProcedure, protectedProcedure, router } from '../_core/trpc.js';
 import { getDb } from '../db.js';
 import { getConnectionPool } from '../_core/connectionPool.js';
-import { vendors, clients, products, batches, orders, invoices, payments } from '../../drizzle/schema.js';
+import { vendors, clients, products, batches, orders, invoices, payments, sampleRequests } from '../../drizzle/schema.js';
 
 export const debugRouter = router({
   /**
@@ -380,6 +380,94 @@ export const debugRouter = router({
     }
 
     return results;
+  }),
+
+  /**
+   * QA-049/QA-050: Data Display Diagnostic Endpoint
+   * Comprehensive check of products and samples data at database level
+   * Protected: Requires authentication to prevent information disclosure
+   */
+  dataDisplayDiagnostics: protectedProcedure.query(async () => {
+    try {
+      const db = await getDb();
+      if (!db) throw new Error('Database not available');
+
+      const timestamp = new Date().toISOString();
+
+      // Products breakdown
+      const [
+        productsTotal,
+        productsActive,
+        productsDeleted,
+      ] = await Promise.all([
+        db.select({ count: sql<number>`count(*)` }).from(products),
+        db.select({ count: sql<number>`count(*)` }).from(products).where(isNull(products.deletedAt)),
+        db.select({ count: sql<number>`count(*)` }).from(products).where(sql`${products.deletedAt} IS NOT NULL`),
+      ]);
+
+      // Samples breakdown by status
+      const [
+        samplesTotal,
+        samplesPending,
+        samplesFulfilled,
+        samplesReturned,
+        samplesCancelled,
+      ] = await Promise.all([
+        db.select({ count: sql<number>`count(*)` }).from(sampleRequests),
+        db.select({ count: sql<number>`count(*)` }).from(sampleRequests).where(eq(sampleRequests.sampleRequestStatus, 'PENDING')),
+        db.select({ count: sql<number>`count(*)` }).from(sampleRequests).where(eq(sampleRequests.sampleRequestStatus, 'FULFILLED')),
+        db.select({ count: sql<number>`count(*)` }).from(sampleRequests).where(eq(sampleRequests.sampleRequestStatus, 'RETURNED')),
+        db.select({ count: sql<number>`count(*)` }).from(sampleRequests).where(eq(sampleRequests.sampleRequestStatus, 'CANCELLED')),
+      ]);
+
+      // Brands and Strains for product creation
+      const [
+        brandsCount,
+        strainsCount,
+      ] = await Promise.all([
+        db.select({ count: sql<number>`count(*)` }).from(vendors).where(isNull(vendors.deletedAt)),
+        db.select({ count: sql<number>`count(*)` }).from(sql`strains`).where(sql`deleted_at IS NULL`),
+      ]);
+
+      return {
+        success: true,
+        timestamp,
+        diagnostics: {
+          products: {
+            total: Number(productsTotal[0]?.count || 0),
+            active: Number(productsActive[0]?.count || 0),
+            deleted: Number(productsDeleted[0]?.count || 0),
+            issue: Number(productsActive[0]?.count || 0) === 0 ? 'POSSIBLE_ISSUE: No active products found' : null,
+          },
+          samples: {
+            total: Number(samplesTotal[0]?.count || 0),
+            pending: Number(samplesPending[0]?.count || 0),
+            fulfilled: Number(samplesFulfilled[0]?.count || 0),
+            returned: Number(samplesReturned[0]?.count || 0),
+            cancelled: Number(samplesCancelled[0]?.count || 0),
+            issue: Number(samplesTotal[0]?.count || 0) === 0 ? 'POSSIBLE_ISSUE: No samples found' : null,
+          },
+          related: {
+            brands: Number(brandsCount[0]?.count || 0),
+            strains: Number(strainsCount[0]?.count || 0),
+          },
+        },
+        recommendations: [
+          Number(productsActive[0]?.count || 0) === 0 && Number(productsDeleted[0]?.count || 0) > 0
+            ? 'All products are archived. Toggle "Show Archived" to view them.'
+            : null,
+          Number(samplesTotal[0]?.count || 0) === 0
+            ? 'No sample requests exist. Create a new sample request to test.'
+            : null,
+        ].filter(Boolean),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
   }),
 
   /**

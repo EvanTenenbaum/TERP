@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, RotateCcw, Package } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Plus, Edit, Trash2, RotateCcw, Package, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductRow {
@@ -80,13 +81,44 @@ export default function ProductsPage() {
 
   const utils = trpc.useContext();
 
-  // Fetch products from product catalogue
-  const { data: productsData, isLoading } = trpc.productCatalogue.list.useQuery(
+  // Fetch products from product catalogue with debug logging
+  const { data: productsData, isLoading, error, refetch, isError } = trpc.productCatalogue.list.useQuery(
     {
       limit: 500,
       includeDeleted: showDeleted,
+    },
+    {
+      // Retry logic for stability
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     }
   );
+
+  // Debug logging for data display issues (QA-049)
+  useEffect(() => {
+    const itemCount = productsData?.items?.length ?? 0;
+    const total = productsData?.pagination?.total ?? 'unknown';
+
+    console.log('[ProductsPage] Query state:', {
+      isLoading,
+      isError,
+      error: error?.message,
+      itemCount,
+      total,
+      showDeleted,
+      hasItems: productsData?.items !== undefined,
+      rawDataType: productsData ? typeof productsData : 'undefined',
+    });
+
+    // Warn if we have a response but no items
+    if (!isLoading && !isError && productsData && itemCount === 0) {
+      console.warn('[ProductsPage] Zero products returned - possible data display issue', {
+        showDeleted,
+        pagination: productsData.pagination,
+        response: productsData,
+      });
+    }
+  }, [productsData, isLoading, isError, error, showDeleted]);
 
   // Fetch brands and strains for dropdowns
   const { data: brands } = trpc.productCatalogue.getBrands.useQuery();
@@ -348,6 +380,98 @@ export default function ProductsPage() {
       <Card className="p-4" data-testid="products-skeleton">
         <TableSkeleton rows={6} columns={7} />
       </Card>
+    );
+  }
+
+  // Error state with retry option
+  if (isError) {
+    return (
+      <Card className="p-4" data-testid="products-error">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error Loading Products</AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="mb-2">{error?.message || 'Failed to load products from the server.'}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="mt-2"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </Card>
+    );
+  }
+
+  // Empty state when no products and not showing deleted
+  if (productRows.length === 0 && !showDeleted) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Product Catalogue
+                </CardTitle>
+                <CardDescription>
+                  Manage your unified product catalogue for sales workflow
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDeleted(true)}
+                >
+                  Show Archived
+                </Button>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Product
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>No Products Found</AlertTitle>
+              <AlertDescription className="mt-2">
+                <p className="mb-2">
+                  No active products were found in the catalogue. This could be because:
+                </p>
+                <ul className="list-disc list-inside mb-4 text-sm">
+                  <li>No products have been created yet</li>
+                  <li>All products have been archived</li>
+                </ul>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDeleted(true)}
+                  >
+                    Show Archived Products
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetch()}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 

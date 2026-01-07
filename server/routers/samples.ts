@@ -397,8 +397,26 @@ export const samplesRouter = router({
     .input(z.object({
       limit: z.number().optional()
     }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      // Debug logging for QA-050
+      console.log('[samples.getAll] Input:', {
+        limit: input.limit,
+        userId: ctx.user?.id,
+      });
+
       const requests = await samplesDb.getAllSampleRequests(input.limit);
+
+      // Debug logging for QA-050
+      console.log('[samples.getAll] Result:', {
+        requestsCount: requests.length,
+        hasRequests: requests.length > 0,
+      });
+
+      // Warn if unexpected empty result
+      if (requests.length === 0) {
+        console.warn('[samples.getAll] Zero samples returned - possible data issue');
+      }
+
       return createSafeUnifiedResponse(requests, requests.length, input.limit || 100, 0);
     }),
 
