@@ -172,7 +172,7 @@ const DEFAULT_FLAGS = [
       "Enable unified spreadsheet interface for inventory, intake, and pick & pack workflows",
     module: "module-inventory",
     systemEnabled: true,
-    defaultEnabled: false,
+    defaultEnabled: true, // BUG-070: Enable by default - feature is fully implemented
   },
 
   // ========================================================================
