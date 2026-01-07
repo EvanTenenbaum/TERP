@@ -4,11 +4,13 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { purchaseOrders, purchaseOrderItems, batches, inventoryMovements, intakeSessions } from "../../drizzle/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { purchaseOrders, purchaseOrderItems, batches, inventoryMovements, intakeSessions, products, clients, lots, batchLocations, locations } from "../../drizzle/schema";
+import { eq, and, desc, sql, or, inArray } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { logger } from "../_core/logger";
+import { TRPCError } from "@trpc/server";
 
 export const poReceivingRouter = router({
   // Receive a purchase order (create intake session and update inventory)
@@ -228,9 +230,9 @@ export const poReceivingRouter = router({
       .select({
         totalReceipts: sql<number>`COUNT(DISTINCT ${inventoryMovements.referenceId})`,
         recentReceipts: sql<number>`
-          COUNT(DISTINCT CASE 
-            WHEN ${inventoryMovements.createdAt} >= DATE_SUB(NOW(), INTERVAL 7 DAY) 
-            THEN ${inventoryMovements.referenceId} 
+          COUNT(DISTINCT CASE
+            WHEN ${inventoryMovements.createdAt} >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            THEN ${inventoryMovements.referenceId}
           END)
         `,
       })
@@ -242,4 +244,363 @@ export const poReceivingRouter = router({
       recentReceipts: 0,
     };
   }),
+
+  // Get purchase orders pending receiving (CONFIRMED, RECEIVING status)
+  getPendingReceiving: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    const pendingPOs = await db
+      .select({
+        id: purchaseOrders.id,
+        poNumber: purchaseOrders.poNumber,
+        supplierClientId: purchaseOrders.supplierClientId,
+        vendorId: purchaseOrders.vendorId,
+        purchaseOrderStatus: purchaseOrders.purchaseOrderStatus,
+        orderDate: purchaseOrders.orderDate,
+        expectedDeliveryDate: purchaseOrders.expectedDeliveryDate,
+        total: purchaseOrders.total,
+        notes: purchaseOrders.notes,
+        confirmedAt: purchaseOrders.confirmedAt,
+      })
+      .from(purchaseOrders)
+      .where(
+        or(
+          eq(purchaseOrders.purchaseOrderStatus, "CONFIRMED"),
+          eq(purchaseOrders.purchaseOrderStatus, "RECEIVING")
+        )
+      )
+      .orderBy(purchaseOrders.expectedDeliveryDate);
+
+    // Get items for each PO
+    const results = await Promise.all(
+      pendingPOs.map(async po => {
+        const items = await db
+          .select({
+            id: purchaseOrderItems.id,
+            productId: purchaseOrderItems.productId,
+            quantityOrdered: purchaseOrderItems.quantityOrdered,
+            quantityReceived: purchaseOrderItems.quantityReceived,
+            unitCost: purchaseOrderItems.unitCost,
+            totalCost: purchaseOrderItems.totalCost,
+            productName: products.nameCanonical,
+            category: products.category,
+          })
+          .from(purchaseOrderItems)
+          .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+          .where(eq(purchaseOrderItems.purchaseOrderId, po.id));
+
+        // Get supplier info
+        let supplierName = "Unknown";
+        if (po.supplierClientId) {
+          const [supplier] = await db
+            .select({ name: clients.name })
+            .from(clients)
+            .where(eq(clients.id, po.supplierClientId));
+          supplierName = supplier?.name || "Unknown";
+        }
+
+        return {
+          ...po,
+          supplierName,
+          items,
+          itemCount: items.length,
+          receivedItemCount: items.filter(
+            i => parseFloat(i.quantityReceived || "0") >= parseFloat(i.quantityOrdered)
+          ).length,
+        };
+      })
+    );
+
+    return results;
+  }),
+
+  // Enhanced goods receiving with batch creation and location assignment
+  receiveGoodsWithBatch: protectedProcedure
+    .input(
+      z.object({
+        purchaseOrderId: z.number(),
+        items: z
+          .array(
+            z.object({
+              poItemId: z.number(),
+              quantity: z.number().positive("Quantity must be greater than 0"),
+              locationId: z.number().optional(),
+              locationData: z
+                .object({
+                  site: z.string(),
+                  zone: z.string().optional(),
+                  rack: z.string().optional(),
+                  shelf: z.string().optional(),
+                  bin: z.string().optional(),
+                })
+                .optional(),
+              lotNumber: z.string().optional(),
+              expirationDate: z.string().optional(),
+              notes: z.string().optional(),
+            })
+          )
+          .min(1, "At least one item is required"),
+        receivingNotes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      logger.info({ poId: input.purchaseOrderId, itemCount: input.items.length }, "[Receiving] Starting goods receiving");
+
+      // Verify PO exists and is in receivable status
+      const [po] = await db
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.id, input.purchaseOrderId));
+
+      if (!po) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Purchase order not found" });
+      }
+
+      if (!["CONFIRMED", "RECEIVING"].includes(po.purchaseOrderStatus)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Purchase order cannot be received from ${po.purchaseOrderStatus} status`,
+        });
+      }
+
+      // Get PO items with product info
+      const poItems = await db
+        .select({
+          item: purchaseOrderItems,
+          product: products,
+        })
+        .from(purchaseOrderItems)
+        .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+        .where(eq(purchaseOrderItems.purchaseOrderId, input.purchaseOrderId));
+
+      const poItemMap = new Map(poItems.map(i => [i.item.id, i]));
+
+      const createdBatches: Array<{ id: number; code: string; quantity: number }> = [];
+
+      // Process each received item in a transaction
+      await db.transaction(async tx => {
+        // Create or get lot for this receiving
+        const lotCode = await generateLotCode(db);
+        const [newLot] = await tx.insert(lots).values({
+          code: lotCode,
+          vendorId: po.vendorId,
+          supplierClientId: po.supplierClientId,
+          date: new Date(),
+          notes: input.receivingNotes || `Receiving from PO #${po.poNumber}`,
+        });
+        const lotId = newLot.insertId;
+
+        for (const item of input.items) {
+          const poItemData = poItemMap.get(item.poItemId);
+          if (!poItemData) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `PO item ${item.poItemId} not found`,
+            });
+          }
+
+          const { item: poItem, product } = poItemData;
+
+          // Check if receiving more than ordered
+          const remainingToReceive =
+            parseFloat(poItem.quantityOrdered) - parseFloat(poItem.quantityReceived || "0");
+          if (item.quantity > remainingToReceive) {
+            logger.warn(
+              {
+                poItemId: item.poItemId,
+                ordered: poItem.quantityOrdered,
+                alreadyReceived: poItem.quantityReceived,
+                receiving: item.quantity,
+              },
+              "[Receiving] Receiving more than ordered"
+            );
+          }
+
+          // Generate batch code
+          const batchCode = await generateBatchCode(db, product?.nameCanonical || "BATCH");
+          const batchSku = `${product?.nameCanonical?.substring(0, 10) || "SKU"}-${Date.now()}`.replace(
+            /[^a-zA-Z0-9-]/g,
+            ""
+          );
+
+          // Create batch
+          const [newBatch] = await tx.insert(batches).values({
+            code: batchCode,
+            sku: batchSku,
+            productId: poItem.productId,
+            lotId,
+            onHandQty: item.quantity.toString(),
+            sampleQty: "0",
+            reservedQty: "0",
+            quarantineQty: "0",
+            holdQty: "0",
+            defectiveQty: "0",
+            unitCogs: poItem.unitCost,
+            cogsMode: "FIXED",
+            paymentTerms: po.paymentTerms || "NET_30",
+            batchStatus: "AWAITING_INTAKE",
+            metadata: JSON.stringify({
+              lotNumber: item.lotNumber,
+              expirationDate: item.expirationDate,
+              receivingNotes: item.notes,
+              poNumber: po.poNumber,
+              poItemId: item.poItemId,
+            }),
+          });
+
+          const batchId = newBatch.insertId;
+
+          // Create batch location if provided
+          if (item.locationId || item.locationData) {
+            let locationData = item.locationData;
+
+            // If locationId provided, get the location data
+            if (item.locationId) {
+              const [loc] = await db
+                .select()
+                .from(locations)
+                .where(eq(locations.id, item.locationId));
+              if (loc) {
+                locationData = {
+                  site: loc.site,
+                  zone: loc.zone || undefined,
+                  rack: loc.rack || undefined,
+                  shelf: loc.shelf || undefined,
+                  bin: loc.bin || undefined,
+                };
+              }
+            }
+
+            if (locationData) {
+              await tx.insert(batchLocations).values({
+                batchId,
+                site: locationData.site,
+                zone: locationData.zone || null,
+                rack: locationData.rack || null,
+                shelf: locationData.shelf || null,
+                bin: locationData.bin || null,
+                qty: item.quantity.toString(),
+              });
+            }
+          }
+
+          // Update PO item received quantity
+          const newReceived = parseFloat(poItem.quantityReceived || "0") + item.quantity;
+          await tx
+            .update(purchaseOrderItems)
+            .set({ quantityReceived: newReceived.toString() })
+            .where(eq(purchaseOrderItems.id, item.poItemId));
+
+          // Record inventory movement
+          await tx.insert(inventoryMovements).values({
+            batchId,
+            inventoryMovementType: "INTAKE",
+            quantityChange: `+${item.quantity}`,
+            quantityBefore: "0",
+            quantityAfter: item.quantity.toString(),
+            referenceType: "PO_RECEIPT",
+            referenceId: input.purchaseOrderId,
+            reason: `Received from PO #${po.poNumber}`,
+            performedBy: ctx.user?.id || 0,
+          });
+
+          createdBatches.push({ id: batchId, code: batchCode, quantity: item.quantity });
+
+          logger.info({ batchId, batchCode, quantity: item.quantity }, "[Receiving] Batch created");
+        }
+
+        // Update PO status based on received quantities
+        const updatedItems = await tx
+          .select({
+            quantityOrdered: purchaseOrderItems.quantityOrdered,
+            quantityReceived: purchaseOrderItems.quantityReceived,
+          })
+          .from(purchaseOrderItems)
+          .where(eq(purchaseOrderItems.purchaseOrderId, input.purchaseOrderId));
+
+        const allReceived = updatedItems.every(
+          i => parseFloat(i.quantityReceived || "0") >= parseFloat(i.quantityOrdered)
+        );
+        const anyReceived = updatedItems.some(i => parseFloat(i.quantityReceived || "0") > 0);
+
+        const newStatus = allReceived ? "RECEIVED" : anyReceived ? "RECEIVING" : po.purchaseOrderStatus;
+
+        await tx
+          .update(purchaseOrders)
+          .set({
+            purchaseOrderStatus: newStatus,
+            actualDeliveryDate: allReceived ? new Date() : null,
+          })
+          .where(eq(purchaseOrders.id, input.purchaseOrderId));
+
+        logger.info(
+          { poId: input.purchaseOrderId, newStatus, batchCount: createdBatches.length },
+          "[Receiving] Goods received"
+        );
+      });
+
+      return {
+        success: true,
+        batches: createdBatches,
+        batchCount: createdBatches.length,
+      };
+    }),
+
+  // Get available locations for receiving
+  getAvailableLocations: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    const availableLocations = await db
+      .select()
+      .from(locations)
+      .where(eq(locations.isActive, 1))
+      .orderBy(locations.site, locations.zone, locations.rack, locations.shelf, locations.bin);
+
+    return availableLocations.map(loc => ({
+      id: loc.id,
+      label: [loc.site, loc.zone, loc.rack, loc.shelf, loc.bin].filter(Boolean).join(" > "),
+      site: loc.site,
+      zone: loc.zone,
+      rack: loc.rack,
+      shelf: loc.shelf,
+      bin: loc.bin,
+    }));
+  }),
 });
+
+// Helper function to generate lot code
+async function generateLotCode(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<string> {
+  const date = new Date();
+  const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(
+    date.getDate()
+  ).padStart(2, "0")}`;
+  const count = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(lots)
+    .where(sql`DATE(${lots.date}) = CURRENT_DATE`);
+  const seq = String((count[0]?.count || 0) + 1).padStart(3, "0");
+  return `LOT-${dateStr}-${seq}`;
+}
+
+// Helper function to generate batch code
+async function generateBatchCode(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  productName: string
+): Promise<string> {
+  const date = new Date();
+  const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(
+    date.getDate()
+  ).padStart(2, "0")}`;
+  const prefix = productName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "X");
+  const count = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(batches)
+    .where(sql`DATE(${batches.createdAt}) = CURRENT_DATE`);
+  const seq = String((count[0]?.count || 0) + 1).padStart(3, "0");
+  return `${prefix}-${dateStr}-${seq}`;
+}
