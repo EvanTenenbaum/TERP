@@ -1,28 +1,31 @@
 import { getDb } from "../db";
-import { 
-  roles, 
-  permissions, 
-  rolePermissions, 
-  userRoles, 
+import {
+  roles,
+  permissions,
+  rolePermissions,
+  userRoles,
   userPermissionOverrides,
-  users
+  users,
 } from "../../drizzle/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { logger } from "../_core/logger";
 
 /**
  * Permission Service
- * 
+ *
  * This service provides functions for checking user permissions against the RBAC system.
  * It implements caching for performance and supports per-user permission overrides.
- * 
+ *
  * FIX-001: Added fallback for admin users with no roles assigned.
  * This ensures the initial admin user can access the system before RBAC roles are seeded.
  */
 
 // In-memory cache for user permissions with automatic cleanup
 // Key: userId, Value: { permissions: Set<string>, timestamp: number }
-const permissionCache = new Map<string, { permissions: Set<string>; timestamp: number }>();
+const permissionCache = new Map<
+  string,
+  { permissions: Set<string>; timestamp: number }
+>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_PERMISSION_CACHE_SIZE = 50; // Prevent unbounded growth
 
@@ -30,20 +33,23 @@ const MAX_PERMISSION_CACHE_SIZE = 50; // Prevent unbounded growth
 function cleanupExpiredPermissionCache() {
   const now = Date.now();
   const expiredKeys: string[] = [];
-  
+
   for (const [key, entry] of permissionCache.entries()) {
     if (now - entry.timestamp > CACHE_TTL_MS) {
       expiredKeys.push(key);
     }
   }
-  
+
   expiredKeys.forEach(key => permissionCache.delete(key));
-  
+
   // If still too large, remove oldest entries
   if (permissionCache.size > MAX_PERMISSION_CACHE_SIZE) {
     const entries = Array.from(permissionCache.entries());
     entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-    const toRemove = entries.slice(0, permissionCache.size - MAX_PERMISSION_CACHE_SIZE);
+    const toRemove = entries.slice(
+      0,
+      permissionCache.size - MAX_PERMISSION_CACHE_SIZE
+    );
     toRemove.forEach(([key]) => permissionCache.delete(key));
   }
 }
@@ -72,19 +78,22 @@ async function isUserAdmin(userId: string): Promise<boolean> {
   try {
     const db = await getDb();
     if (!db) return false;
-    
+
     // Check if the user has admin role in the users table
     const userRecord = await db
       .select({ role: users.role })
       .from(users)
       .where(eq(users.openId, userId))
       .limit(1);
-    
-    if (userRecord.length > 0 && userRecord[0].role === 'admin') {
-      logger.info({ msg: "User is admin in users table (fallback check)", userId });
+
+    if (userRecord.length > 0 && userRecord[0].role === "admin") {
+      logger.info({
+        msg: "User is admin in users table (fallback check)",
+        userId,
+      });
       return true;
     }
-    
+
     return false;
   } catch (error) {
     logger.error({ msg: "Error checking user admin status", userId, error });
@@ -100,11 +109,11 @@ async function getAllPermissions(): Promise<Set<string>> {
   try {
     const db = await getDb();
     if (!db) return new Set<string>();
-    
+
     const allPermissions = await db
       .select({ name: permissions.name })
       .from(permissions);
-    
+
     return new Set(allPermissions.map(p => p.name));
   } catch (error) {
     logger.error({ msg: "Error fetching all permissions", error });
@@ -118,7 +127,7 @@ async function getAllPermissions(): Promise<Set<string>> {
  * 1. User's assigned roles and their permissions
  * 2. User-specific permission overrides (grants and revocations)
  * 3. FIX-001: Fallback for admin users with no RBAC roles
- * 
+ *
  * Results are cached for performance.
  */
 export async function getUserPermissions(userId: string): Promise<Set<string>> {
@@ -129,12 +138,15 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
     return cached.permissions;
   }
 
-  logger.debug({ msg: "Permission cache miss, fetching from database", userId });
+  logger.debug({
+    msg: "Permission cache miss, fetching from database",
+    userId,
+  });
 
   try {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
-    
+
     // 1. Get user's roles
     const userRoleRecords = await db
       .select({
@@ -145,38 +157,59 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
 
     if (userRoleRecords.length === 0) {
       logger.warn({ msg: "User has no roles assigned", userId });
-      
+
       // FIX-001: Check if user is an admin in the users table
       // This is a fallback for the initial admin user before RBAC roles are seeded
       const isAdmin = await isUserAdmin(userId);
       if (isAdmin) {
-        logger.info({ 
-          msg: "FIX-001: Granting all permissions to admin user with no RBAC roles", 
-          userId 
+        logger.info({
+          msg: "FIX-001: Granting all permissions to admin user with no RBAC roles",
+          userId,
         });
-        
+
         // Grant all permissions to admin users
         const allPermissions = await getAllPermissions();
-        
+
         // Cache the result
-        permissionCache.set(userId, { permissions: allPermissions, timestamp: Date.now() });
-        
-        logger.info({ 
-          msg: "Admin user granted all permissions (fallback)", 
-          userId, 
-          permissionCount: allPermissions.size 
+        permissionCache.set(userId, {
+          permissions: allPermissions,
+          timestamp: Date.now(),
         });
-        
+
+        logger.info({
+          msg: "Admin user granted all permissions (fallback)",
+          userId,
+          permissionCount: allPermissions.size,
+        });
+
         return allPermissions;
       }
-      
+
       // User has no roles and is not an admin, return empty set
       const emptySet = new Set<string>();
-      permissionCache.set(userId, { permissions: emptySet, timestamp: Date.now() });
+      permissionCache.set(userId, {
+        permissions: emptySet,
+        timestamp: Date.now(),
+      });
       return emptySet;
     }
 
-    const roleIds = userRoleRecords.map((r) => r.roleId);
+    const roleIds = userRoleRecords.map(r => r.roleId);
+
+    // BUG-043 FIX: Handle empty roleIds array - prevents invalid SQL "WHERE id IN ()"
+    // SECURITY: Empty roles = no permissions (deny-by-default)
+    if (roleIds.length === 0) {
+      logger.warn({
+        msg: "User has roles but roleIds array is empty (data issue)",
+        userId,
+      });
+      const emptySet = new Set<string>();
+      permissionCache.set(userId, {
+        permissions: emptySet,
+        timestamp: Date.now(),
+      });
+      return emptySet;
+    }
 
     // 2. Get permissions for those roles
     const rolePermissionRecords = await db
@@ -186,7 +219,23 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
       .from(rolePermissions)
       .where(inArray(rolePermissions.roleId, roleIds));
 
-    const permissionIds = rolePermissionRecords.map((rp) => rp.permissionId);
+    const permissionIds = rolePermissionRecords.map(rp => rp.permissionId);
+
+    // BUG-043 FIX: Handle empty permissionIds array - prevents invalid SQL "WHERE id IN ()"
+    // SECURITY: Roles with no permissions = no permissions (deny-by-default)
+    if (permissionIds.length === 0) {
+      logger.info({
+        msg: "User roles have no permissions assigned",
+        userId,
+        roleIds,
+      });
+      const emptySet = new Set<string>();
+      permissionCache.set(userId, {
+        permissions: emptySet,
+        timestamp: Date.now(),
+      });
+      return emptySet;
+    }
 
     // 3. Get permission names
     const permissionRecords = await db
@@ -196,7 +245,7 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
       .from(permissions)
       .where(inArray(permissions.id, permissionIds));
 
-    const userPermissions = new Set(permissionRecords.map((p) => p.name));
+    const userPermissions = new Set(permissionRecords.map(p => p.name));
 
     // 4. Apply user-specific permission overrides
     const overrideRecords = await db
@@ -208,7 +257,7 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
       .where(eq(userPermissionOverrides.userId, userId));
 
     if (overrideRecords.length > 0) {
-      const overridePermissionIds = overrideRecords.map((o) => o.permissionId);
+      const overridePermissionIds = overrideRecords.map(o => o.permissionId);
       const overridePermissionRecords = await db
         .select({
           id: permissions.id,
@@ -218,23 +267,25 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
         .where(inArray(permissions.id, overridePermissionIds));
 
       for (const override of overrideRecords) {
-        const permission = overridePermissionRecords.find((p) => p.id === override.permissionId);
+        const permission = overridePermissionRecords.find(
+          p => p.id === override.permissionId
+        );
         if (permission) {
           if (override.granted === 1) {
             // Grant permission
             userPermissions.add(permission.name);
-            logger.debug({ 
-              msg: "Permission override: granted", 
-              userId, 
-              permission: permission.name 
+            logger.debug({
+              msg: "Permission override: granted",
+              userId,
+              permission: permission.name,
             });
           } else {
             // Revoke permission
             userPermissions.delete(permission.name);
-            logger.debug({ 
-              msg: "Permission override: revoked", 
-              userId, 
-              permission: permission.name 
+            logger.debug({
+              msg: "Permission override: revoked",
+              userId,
+              permission: permission.name,
             });
           }
         }
@@ -245,14 +296,17 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
     if (permissionCache.size >= MAX_PERMISSION_CACHE_SIZE) {
       cleanupExpiredPermissionCache();
     }
-    
-    // Cache the result
-    permissionCache.set(userId, { permissions: userPermissions, timestamp: Date.now() });
 
-    logger.info({ 
-      msg: "User permissions loaded", 
-      userId, 
-      permissionCount: userPermissions.size 
+    // Cache the result
+    permissionCache.set(userId, {
+      permissions: userPermissions,
+      timestamp: Date.now(),
+    });
+
+    logger.info({
+      msg: "User permissions loaded",
+      userId,
+      permissionCount: userPermissions.size,
     });
 
     return userPermissions;
@@ -265,17 +319,20 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
 /**
  * Check if a user has a specific permission
  */
-export async function hasPermission(userId: string, permissionName: string): Promise<boolean> {
+export async function hasPermission(
+  userId: string,
+  permissionName: string
+): Promise<boolean> {
   const userPermissions = await getUserPermissions(userId);
   const hasIt = userPermissions.has(permissionName);
-  
-  logger.debug({ 
-    msg: "Permission check", 
-    userId, 
-    permission: permissionName, 
-    result: hasIt 
+
+  logger.debug({
+    msg: "Permission check",
+    userId,
+    permission: permissionName,
+    result: hasIt,
   });
-  
+
   return hasIt;
 }
 
@@ -283,19 +340,19 @@ export async function hasPermission(userId: string, permissionName: string): Pro
  * Check if a user has ALL of the specified permissions
  */
 export async function hasAllPermissions(
-  userId: string, 
+  userId: string,
   permissionNames: string[]
 ): Promise<boolean> {
   const userPermissions = await getUserPermissions(userId);
-  const hasAll = permissionNames.every((p) => userPermissions.has(p));
-  
-  logger.debug({ 
-    msg: "Multiple permission check (AND)", 
-    userId, 
-    permissions: permissionNames, 
-    result: hasAll 
+  const hasAll = permissionNames.every(p => userPermissions.has(p));
+
+  logger.debug({
+    msg: "Multiple permission check (AND)",
+    userId,
+    permissions: permissionNames,
+    result: hasAll,
   });
-  
+
   return hasAll;
 }
 
@@ -303,30 +360,34 @@ export async function hasAllPermissions(
  * Check if a user has ANY of the specified permissions
  */
 export async function hasAnyPermission(
-  userId: string, 
+  userId: string,
   permissionNames: string[]
 ): Promise<boolean> {
   const userPermissions = await getUserPermissions(userId);
-  const hasAny = permissionNames.some((p) => userPermissions.has(p));
-  
-  logger.debug({ 
-    msg: "Multiple permission check (OR)", 
-    userId, 
-    permissions: permissionNames, 
-    result: hasAny 
+  const hasAny = permissionNames.some(p => userPermissions.has(p));
+
+  logger.debug({
+    msg: "Multiple permission check (OR)",
+    userId,
+    permissions: permissionNames,
+    result: hasAny,
   });
-  
+
   return hasAny;
 }
 
 /**
  * Get all roles for a user
+ *
+ * BUG-043 FIX: Handles empty arrays safely to prevent invalid SQL
  */
-export async function getUserRoles(userId: string): Promise<Array<{ id: number; name: string; description: string | null }>> {
+export async function getUserRoles(
+  userId: string
+): Promise<Array<{ id: number; name: string; description: string | null }>> {
   try {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
-    
+
     const userRoleRecords = await db
       .select({
         roleId: userRoles.roleId,
@@ -335,10 +396,20 @@ export async function getUserRoles(userId: string): Promise<Array<{ id: number; 
       .where(eq(userRoles.userId, userId));
 
     if (userRoleRecords.length === 0) {
+      logger.debug({ msg: "User has no role assignments", userId });
       return [];
     }
 
-    const roleIds = userRoleRecords.map((r) => r.roleId);
+    const roleIds = userRoleRecords.map(r => r.roleId);
+
+    // BUG-043 FIX: Handle empty roleIds array
+    if (roleIds.length === 0) {
+      logger.warn({
+        msg: "User has role records but no valid roleIds",
+        userId,
+      });
+      return [];
+    }
 
     const roleRecords = await db
       .select({
@@ -359,39 +430,39 @@ export async function getUserRoles(userId: string): Promise<Array<{ id: number; 
 /**
  * Check if a user is a Super Admin
  * Super Admins have unrestricted access to the entire system
- * 
+ *
  * FIX-001: Also checks if user is an admin in the users table as fallback
  */
 export async function isSuperAdmin(userId: string): Promise<boolean> {
   // First check RBAC roles
   const userRolesList = await getUserRoles(userId);
-  const isSA = userRolesList.some((role) => role.name === "Super Admin");
-  
+  const isSA = userRolesList.some(role => role.name === "Super Admin");
+
   if (isSA) {
-    logger.debug({ 
-      msg: "Super Admin check (via RBAC role)", 
-      userId, 
-      result: true 
+    logger.debug({
+      msg: "Super Admin check (via RBAC role)",
+      userId,
+      result: true,
     });
     return true;
   }
-  
+
   // FIX-001: Fallback - check if user is admin in users table
   const isAdmin = await isUserAdmin(userId);
   if (isAdmin) {
-    logger.debug({ 
-      msg: "Super Admin check (via users.role fallback)", 
-      userId, 
-      result: true 
+    logger.debug({
+      msg: "Super Admin check (via users.role fallback)",
+      userId,
+      result: true,
     });
     return true;
   }
-  
-  logger.debug({ 
-    msg: "Super Admin check", 
-    userId, 
-    result: false 
+
+  logger.debug({
+    msg: "Super Admin check",
+    userId,
+    result: false,
   });
-  
+
   return false;
 }

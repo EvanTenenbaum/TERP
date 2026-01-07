@@ -36,7 +36,19 @@ export const productCatalogueRouter = router({
   list: protectedProcedure
     .use(requirePermission("inventory:read"))
     .input(listInputSchema)
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      // Debug logging for QA-049
+      console.log('[productCatalogue.list] Input:', {
+        limit: input.limit,
+        offset: input.offset,
+        search: input.search,
+        category: input.category,
+        brandId: input.brandId,
+        strainId: input.strainId,
+        includeDeleted: input.includeDeleted,
+        userId: ctx.user?.id,
+      });
+
       const products = await productsDb.getProducts(input);
       const total = await productsDb.getProductCount({
         search: input.search,
@@ -45,6 +57,19 @@ export const productCatalogueRouter = router({
         strainId: input.strainId,
         includeDeleted: input.includeDeleted,
       });
+
+      // Debug logging for QA-049
+      console.log('[productCatalogue.list] Result:', {
+        productsCount: products.length,
+        total,
+        hasProducts: products.length > 0,
+      });
+
+      // Warn if unexpected empty result
+      if (products.length === 0 && !input.search && !input.category && !input.brandId) {
+        console.warn('[productCatalogue.list] Zero products returned with no filters - possible data issue');
+      }
+
       return createSafeUnifiedResponse(
         products,
         total,
