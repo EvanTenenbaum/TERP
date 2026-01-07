@@ -58,10 +58,12 @@ export const creditsRouter = router({
         conditions.push(eq(credits.creditReason, input.reason));
       }
       if (input.searchTerm) {
+        // Escape SQL LIKE special characters to prevent injection
+        const escapedTerm = input.searchTerm.replace(/[%_\\]/g, '\\$&');
         conditions.push(
           or(
-            like(credits.creditNumber, `%${input.searchTerm}%`),
-            like(credits.notes, `%${input.searchTerm}%`)
+            like(credits.creditNumber, `%${escapedTerm}%`),
+            like(credits.notes, `%${escapedTerm}%`)
           )!
         );
       }
@@ -361,7 +363,7 @@ export const creditsRouter = router({
     }),
 
   // Void a credit
-  void: protectedProcedure.use(requirePermission("credits:read"))
+  void: protectedProcedure.use(requirePermission("credits:delete"))
     .input(z.object({ creditId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
@@ -369,7 +371,7 @@ export const creditsRouter = router({
     }),
 
   // Mark expired credits (admin function, could be run as cron job)
-  markExpired: protectedProcedure.use(requirePermission("credits:read"))
+  markExpired: protectedProcedure.use(requirePermission("credits:update"))
     .mutation(async ({ ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
       const count = await creditsDb.markExpiredCredits();

@@ -526,7 +526,7 @@ export const accountingRouter = router({
           });
         }),
 
-      postJournalEntry: protectedProcedure.use(requirePermission("accounting:read"))
+      postJournalEntry: protectedProcedure.use(requirePermission("accounting:create"))
         .input(z.object({
           entryDate: z.date(),
           debitAccountId: z.number(),
@@ -588,20 +588,20 @@ export const accountingRouter = router({
           return await accountingDb.createFiscalPeriod(input);
         }),
 
-      close: protectedProcedure.use(requirePermission("accounting:read"))
+      close: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Unauthorized");
           return await accountingDb.closeFiscalPeriod(input.id, ctx.user.id);
         }),
 
-      lock: protectedProcedure.use(requirePermission("accounting:read"))
+      lock: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await accountingDb.lockFiscalPeriod(input.id);
         }),
 
-      reopen: protectedProcedure.use(requirePermission("accounting:read"))
+      reopen: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await accountingDb.reopenFiscalPeriod(input.id);
@@ -700,7 +700,7 @@ export const accountingRouter = router({
           return await arApDb.updateInvoiceStatus(input.id, input.status);
         }),
 
-      recordPayment: protectedProcedure.use(requirePermission("accounting:read"))
+      recordPayment: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           invoiceId: z.number(),
           amount: z.number(),
@@ -817,7 +817,7 @@ export const accountingRouter = router({
           return await arApDb.updateBillStatus(input.id, input.status);
         }),
 
-      recordPayment: protectedProcedure.use(requirePermission("accounting:read"))
+      recordPayment: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({
           billId: z.number(),
           amount: z.number(),
@@ -1015,7 +1015,7 @@ export const accountingRouter = router({
           return await cashExpensesDb.createBankTransaction(input);
         }),
 
-      reconcile: protectedProcedure.use(requirePermission("accounting:read"))
+      reconcile: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await cashExpensesDb.reconcileBankTransaction(input.id);
@@ -1146,7 +1146,7 @@ export const accountingRouter = router({
           return await cashExpensesDb.updateExpense(id, data);
         }),
 
-      markReimbursed: protectedProcedure.use(requirePermission("accounting:read"))
+      markReimbursed: protectedProcedure.use(requirePermission("accounting:update"))
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           return await cashExpensesDb.markExpenseReimbursed(input.id);
