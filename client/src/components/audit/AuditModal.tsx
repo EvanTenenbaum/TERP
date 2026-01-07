@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Download, ChevronLeft, ChevronRight, Calculator } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { TableSkeleton, StatsSkeleton } from "@/components/ui/skeleton";
 
 type AuditType = "CLIENT_TAB" | "INVENTORY" | "ORDER" | "VENDOR" | "ACCOUNT";
 
@@ -464,8 +465,9 @@ export function AuditModal({
         )}
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="space-y-4">
+            <StatsSkeleton count={3} />
+            <TableSkeleton rows={5} columns={5} />
           </div>
         ) : (
           <>

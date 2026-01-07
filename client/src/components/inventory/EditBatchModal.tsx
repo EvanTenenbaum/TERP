@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Upload, X } from "lucide-react";
+import { FormSkeleton } from "@/components/ui/skeleton";
 
 interface EditBatchModalProps {
   open: boolean;
@@ -96,10 +97,12 @@ export function EditBatchModal({ open, onClose, onSuccess, batchId }: EditBatchM
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
+        <DialogContent className="w-full sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>Loading product details...</DialogDescription>
+          </DialogHeader>
+          <FormSkeleton fields={5} />
         </DialogContent>
       </Dialog>
     );
