@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -10,20 +10,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
   Wallet,
   FileText,
   Receipt,
   Plus,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle,
+  Users,
+  CreditCard,
+  Package
 } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { format } from "date-fns";
 import { StatusBadge, AgingBadge, ReceivePaymentModal, PayVendorModal } from "@/components/accounting";
 import { DataCardSection } from "@/components/data-cards";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 export default function AccountingDashboard() {
@@ -41,6 +47,12 @@ export default function AccountingDashboard() {
   const { data: expenseBreakdown } = trpc.accounting.expenses.getBreakdownByCategory.useQuery({});
   const { data: outstandingReceivables } = trpc.accounting.invoices.getOutstandingReceivables.useQuery();
   const { data: outstandingPayables } = trpc.accounting.bills.getOutstandingPayables.useQuery();
+
+  // Wave 5C: New AR/AP Dashboard endpoints
+  const { data: arSummary } = trpc.accounting.arApDashboard.getARSummary.useQuery();
+  const { data: apSummary } = trpc.accounting.arApDashboard.getAPSummary.useQuery();
+  const { data: overdueInvoices } = trpc.accounting.arApDashboard.getOverdueInvoices.useQuery({ limit: 5 });
+  const { data: overdueBills } = trpc.accounting.arApDashboard.getOverdueBills.useQuery({ limit: 5 });
 
   const formatCurrency = (amount: string | number | undefined) => {
     if (amount === undefined) return "$0.00";
@@ -128,6 +140,192 @@ export default function AccountingDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Wave 5C: Top Debtors & Overdue Items */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Top Debtors */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Top Debtors
+            </CardTitle>
+            <CardDescription>
+              Clients with highest outstanding balances
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {arSummary?.topDebtors && arSummary.topDebtors.length > 0 ? (
+              <div className="space-y-3">
+                {arSummary.topDebtors.slice(0, 5).map((debtor, index) => (
+                  <div key={debtor.clientId} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-muted-foreground w-6">
+                        #{index + 1}
+                      </span>
+                      <span className="text-sm font-medium truncate max-w-[150px]">
+                        {debtor.clientName}
+                      </span>
+                    </div>
+                    <span className="text-sm font-mono font-bold text-red-600">
+                      {formatCurrency(debtor.totalOwed)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No outstanding balances</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top Vendors Owed */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Top Vendors Owed
+            </CardTitle>
+            <CardDescription>
+              Vendors with highest outstanding payables
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {apSummary?.byVendor && apSummary.byVendor.length > 0 ? (
+              <div className="space-y-3">
+                {apSummary.byVendor.slice(0, 5).map((vendor, index) => (
+                  <div key={vendor.vendorId} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-muted-foreground w-6">
+                        #{index + 1}
+                      </span>
+                      <span className="text-sm font-medium truncate max-w-[150px]">
+                        {vendor.vendorName}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-mono font-bold text-orange-600">
+                        {formatCurrency(vendor.totalOwed)}
+                      </span>
+                      <p className="text-xs text-muted-foreground">
+                        {vendor.billCount} bill{vendor.billCount !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No outstanding payables</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Overdue Items */}
+      <Tabs defaultValue="overdue-invoices" className="w-full">
+        <TabsList>
+          <TabsTrigger value="overdue-invoices" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            Overdue Invoices ({overdueInvoices?.pagination?.total || 0})
+          </TabsTrigger>
+          <TabsTrigger value="overdue-bills" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-orange-500" />
+            Overdue Bills ({overdueBills?.pagination?.total || 0})
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="overdue-invoices">
+          <Card>
+            <CardContent className="pt-6">
+              {overdueInvoices?.items && overdueInvoices.items.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Days Overdue</TableHead>
+                      <TableHead className="text-right">Amount Due</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {overdueInvoices.items.map((invoice: any) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-mono">{invoice.invoiceNumber}</TableCell>
+                        <TableCell>{invoice.customerName || `Client #${invoice.customerId}`}</TableCell>
+                        <TableCell>{formatDate(invoice.dueDate)}</TableCell>
+                        <TableCell>
+                          <Badge variant={invoice.daysOverdue > 60 ? "destructive" : invoice.daysOverdue > 30 ? "default" : "secondary"}>
+                            {invoice.daysOverdue} days
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold text-red-600">
+                          {formatCurrency(invoice.amountDue)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No overdue invoices</p>
+              )}
+              {overdueInvoices?.pagination?.total && overdueInvoices.pagination.total > 5 && (
+                <div className="mt-4 text-center">
+                  <Button variant="outline" size="sm" onClick={() => window.location.href = "/accounting/invoices?status=OVERDUE"}>
+                    View All {overdueInvoices.pagination.total} Overdue Invoices
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="overdue-bills">
+          <Card>
+            <CardContent className="pt-6">
+              {overdueBills?.items && overdueBills.items.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Bill #</TableHead>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Days Overdue</TableHead>
+                      <TableHead className="text-right">Amount Due</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {overdueBills.items.map((bill: any) => (
+                      <TableRow key={bill.id}>
+                        <TableCell className="font-mono">{bill.billNumber}</TableCell>
+                        <TableCell>{bill.vendorName || `Vendor #${bill.vendorId}`}</TableCell>
+                        <TableCell>{formatDate(bill.dueDate)}</TableCell>
+                        <TableCell>
+                          <Badge variant={bill.daysOverdue > 60 ? "destructive" : bill.daysOverdue > 30 ? "default" : "secondary"}>
+                            {bill.daysOverdue} days
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold text-orange-600">
+                          {formatCurrency(bill.amountDue)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No overdue bills</p>
+              )}
+              {overdueBills?.pagination?.total && overdueBills.pagination.total > 5 && (
+                <div className="mt-4 text-center">
+                  <Button variant="outline" size="sm" onClick={() => window.location.href = "/accounting/bills?status=OVERDUE"}>
+                    View All {overdueBills.pagination.total} Overdue Bills
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Expense Breakdown */}
       {expenseBreakdown && Array.isArray(expenseBreakdown) && expenseBreakdown.length > 0 && (

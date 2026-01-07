@@ -19,6 +19,9 @@ import { inventoryMovementsRouter } from "./routers/inventoryMovements";
 import { pricingRouter } from "./routers/pricing";
 import { salesSheetsRouter } from "./routers/salesSheets";
 import { ordersRouter } from "./routers/orders";
+import { quotesRouter } from "./routers/quotes";
+import { invoicesRouter } from "./routers/invoices";
+import { paymentsRouter } from "./routers/payments";
 import { auditLogsRouter } from "./routers/auditLogs";
 import { configurationRouter } from "./routers/configuration";
 import { accountingHooksRouter } from "./routers/accountingHooks";
@@ -96,11 +99,11 @@ import { vendorRemindersRouter } from "./routers/vendorReminders";
 import { featureFlagsRouter } from "./routers/featureFlags";
 import { adminSetupRouter } from "./routers/adminSetup";
 import { spreadsheetRouter } from "./routers/spreadsheet";
+import { catalogRouter } from "./routers/catalog";
 
 import { healthRouter } from "./routers/health";
 
 import { productCatalogueRouter } from "./routers/productCatalogue";
-
 
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
@@ -136,6 +139,9 @@ export const appRouter = router({
   pricing: pricingRouter,
   salesSheets: salesSheetsRouter,
   orders: ordersRouter,
+  quotes: quotesRouter, // Wave 5A: Sales Workflow - Quote Management
+  invoices: invoicesRouter, // Wave 5A: Sales Workflow - Invoice Management
+  payments: paymentsRouter, // Wave 5A: Sales Workflow - Payment Recording
   auditLogs: auditLogsRouter,
   configuration: configurationRouter,
   accountingHooks: accountingHooksRouter,
@@ -213,6 +219,7 @@ export const appRouter = router({
   featureFlags: featureFlagsRouter,
   adminSetup: adminSetupRouter, // Feature Flag System
   spreadsheet: spreadsheetRouter,
+  catalog: catalogRouter, // INV-4: Catalog Publishing
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 
