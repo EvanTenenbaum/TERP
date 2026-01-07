@@ -17,8 +17,10 @@ import {
   clientNeeds,
   clientTransactions,
   clients,
+  credits,
   invoiceLineItems,
   invoices,
+  orders,
   batches,
   products,
   vendorSupply,
@@ -35,6 +37,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
 import type { MetricType } from "../services/leaderboard";
 import { jsPDF } from "jspdf";
 import { getNotificationRepository, resolveRecipient } from "../services/notificationRepository";
+import { onInterestListSubmitted } from "../services/notificationTriggers";
 
 /**
  * Map legacy leaderboard type to new metric type
@@ -584,6 +587,83 @@ export const vipPortalRouter = router({
 
         return { success: true };
       }),
+
+    // Change password (authenticated)
+    changePassword: vipPortalProcedure
+      .input(z.object({
+        currentPassword: z.string(),
+        newPassword: z.string().min(8),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+        const clientId = ctx.clientId;
+
+        // Get auth record for this client
+        const authRecord = await db.query.vipPortalAuth.findFirst({
+          where: eq(vipPortalAuth.clientId, clientId),
+        });
+
+        if (!authRecord || !authRecord.passwordHash) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Authentication record not found",
+          });
+        }
+
+        // Verify current password
+        const isValid = await bcrypt.compare(input.currentPassword, authRecord.passwordHash);
+        if (!isValid) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Current password is incorrect",
+          });
+        }
+
+        // Hash and update new password
+        const newPasswordHash = await bcrypt.hash(input.newPassword, 10);
+
+        await db.update(vipPortalAuth)
+          .set({
+            passwordHash: newPasswordHash,
+            updatedAt: new Date(),
+          })
+          .where(eq(vipPortalAuth.id, authRecord.id));
+
+        return { success: true };
+      }),
+
+    // Get current user info
+    me: vipPortalProcedure
+      .query(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+        const clientId = ctx.clientId;
+
+        const authRecord = await db.query.vipPortalAuth.findFirst({
+          where: eq(vipPortalAuth.clientId, clientId),
+          with: {
+            client: true,
+          },
+        });
+
+        if (!authRecord) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "User not found",
+          });
+        }
+
+        return {
+          id: authRecord.id,
+          email: authRecord.email,
+          clientId: authRecord.clientId,
+          clientName: authRecord.client?.name,
+          lastLoginAt: authRecord.lastLoginAt,
+        };
+      }),
   }),
 
   // ============================================================================
@@ -698,6 +778,220 @@ export const vipPortalRouter = router({
           creditUtilization: Math.round(creditUtilization * 100) / 100,
           activeNeedsCount: Number(activeNeeds[0]?.count || 0),
           activeSupplyCount: Number(activeSupply[0]?.count || 0),
+        };
+      }),
+
+    // Get order history for VIP client
+    getOrderHistory: vipPortalProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+        status: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+        const clientId = ctx.clientId;
+        const conditions = [eq(orders.clientId, clientId)];
+
+        if (input.status) {
+          conditions.push(eq(orders.saleStatus, input.status as any));
+        }
+
+        const clientOrders = await db
+          .select()
+          .from(orders)
+          .where(and(...conditions))
+          .orderBy(desc(orders.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
+
+        // Get total count for pagination
+        const countResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(orders)
+          .where(and(...conditions));
+
+        return {
+          orders: clientOrders.map(order => ({
+            id: order.id,
+            orderNumber: order.orderNumber,
+            orderType: order.orderType,
+            status: order.saleStatus || order.quoteStatus,
+            subtotal: order.subtotal,
+            total: order.total,
+            createdAt: order.createdAt,
+            isDraft: order.isDraft,
+          })),
+          total: Number(countResult[0]?.count || 0),
+          limit: input.limit,
+          offset: input.offset,
+        };
+      }),
+
+    // Get available credits for VIP client
+    getCredits: vipPortalProcedure
+      .query(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+        const clientId = ctx.clientId;
+
+        // Get all credits for the client
+        const clientCredits = await db
+          .select()
+          .from(credits)
+          .where(eq(credits.clientId, clientId))
+          .orderBy(desc(credits.createdAt));
+
+        // Separate active and expired/used credits
+        const activeCredits = clientCredits.filter(
+          c => c.creditStatus === "ACTIVE" &&
+               (!c.expirationDate || c.expirationDate > new Date())
+        );
+
+        const expiredCredits = clientCredits.filter(
+          c => c.creditStatus === "EXPIRED" ||
+               (c.expirationDate && c.expirationDate <= new Date())
+        );
+
+        const usedCredits = clientCredits.filter(
+          c => c.creditStatus === "FULLY_USED" || c.creditStatus === "PARTIALLY_USED"
+        );
+
+        // Calculate total available credit
+        const totalAvailableCredit = activeCredits.reduce(
+          (sum, c) => sum + parseFloat(c.amountRemaining || "0"),
+          0
+        );
+
+        return {
+          activeCredits: activeCredits.map(c => ({
+            id: c.id,
+            creditNumber: c.creditNumber,
+            creditAmount: c.creditAmount,
+            amountUsed: c.amountUsed,
+            amountRemaining: c.amountRemaining,
+            creditReason: c.creditReason,
+            expirationDate: c.expirationDate,
+            createdAt: c.createdAt,
+          })),
+          expiredCredits: expiredCredits.map(c => ({
+            id: c.id,
+            creditNumber: c.creditNumber,
+            creditAmount: c.creditAmount,
+            amountUsed: c.amountUsed,
+            amountRemaining: c.amountRemaining,
+            creditReason: c.creditReason,
+            expirationDate: c.expirationDate,
+            createdAt: c.createdAt,
+          })),
+          usedCredits: usedCredits.map(c => ({
+            id: c.id,
+            creditNumber: c.creditNumber,
+            creditAmount: c.creditAmount,
+            amountUsed: c.amountUsed,
+            amountRemaining: c.amountRemaining,
+            creditReason: c.creditReason,
+            createdAt: c.createdAt,
+          })),
+          totalAvailableCredit: totalAvailableCredit.toFixed(2),
+          totalCreditsCount: activeCredits.length,
+        };
+      }),
+
+    // Get recent activity for the dashboard
+    getRecentActivity: vipPortalProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(50).default(10),
+      }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+        const clientId = ctx.clientId;
+
+        // Get recent orders
+        const recentOrders = await db
+          .select({
+            id: orders.id,
+            orderNumber: orders.orderNumber,
+            total: orders.total,
+            createdAt: orders.createdAt,
+          })
+          .from(orders)
+          .where(eq(orders.clientId, clientId))
+          .orderBy(desc(orders.createdAt))
+          .limit(5);
+
+        // Get recent invoices
+        const recentInvoices = await db
+          .select({
+            id: invoices.id,
+            invoiceNumber: invoices.invoiceNumber,
+            totalAmount: invoices.totalAmount,
+            status: invoices.status,
+            invoiceDate: invoices.invoiceDate,
+          })
+          .from(invoices)
+          .where(eq(invoices.customerId, clientId))
+          .orderBy(desc(invoices.invoiceDate))
+          .limit(5);
+
+        // Get recent transactions
+        const recentTransactions = await db
+          .select()
+          .from(clientTransactions)
+          .where(eq(clientTransactions.clientId, clientId))
+          .orderBy(desc(clientTransactions.transactionDate))
+          .limit(5);
+
+        // Combine into a single activity feed
+        const activities: Array<{
+          type: 'order' | 'invoice' | 'transaction';
+          id: number;
+          reference: string;
+          amount: string;
+          date: Date | null;
+          status?: string;
+        }> = [];
+
+        recentOrders.forEach(o => activities.push({
+          type: 'order',
+          id: o.id,
+          reference: o.orderNumber,
+          amount: o.total || '0',
+          date: o.createdAt,
+        }));
+
+        recentInvoices.forEach(inv => activities.push({
+          type: 'invoice',
+          id: inv.id,
+          reference: inv.invoiceNumber || `INV-${inv.id}`,
+          amount: inv.totalAmount || '0',
+          date: inv.invoiceDate,
+          status: inv.status || undefined,
+        }));
+
+        recentTransactions.forEach(tx => activities.push({
+          type: 'transaction',
+          id: tx.id,
+          reference: tx.transactionNumber || `TX-${tx.id}`,
+          amount: tx.amount || '0',
+          date: tx.transactionDate,
+          status: tx.paymentStatus || undefined,
+        }));
+
+        // Sort by date and limit
+        activities.sort((a, b) => {
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          return dateB - dateA;
+        });
+
+        return {
+          activities: activities.slice(0, input.limit),
         };
       }),
   }),
@@ -2127,12 +2421,30 @@ export const vipPortalRouter = router({
           };
         });
         
+        // Trigger notification for sales team and client
+        // Get client name for better notification
+        const client = await db.query.clients.findFirst({
+          where: eq(clients.id, clientId),
+          columns: { name: true },
+        });
+
+        onInterestListSubmitted({
+          id: result.interestListId,
+          clientId,
+          clientName: client?.name,
+          itemCount: result.totalItems,
+          totalValue: result.totalValue,
+        }).catch(error => {
+          // Don't fail the mutation if notification fails
+          console.error("Failed to send interest list notification:", error);
+        });
+
         return {
           success: true,
           ...result,
         };
       }),
-    
+
     // Saved views
     views: router({
       // List saved views
