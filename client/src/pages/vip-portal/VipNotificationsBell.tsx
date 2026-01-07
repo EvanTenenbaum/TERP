@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { Bell, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Bell, CheckCircle2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,7 +15,7 @@ import { useLocation } from "wouter";
 
 const VipNotificationsBell = React.memo(function VipNotificationsBell() {
   const [, setLocation] = useLocation();
-  const { data, isLoading, refetch } = trpc.vipPortal.notifications.list.useQuery({
+  const { data, isLoading, isError, refetch } = trpc.vipPortal.notifications.list.useQuery({
     limit: 5,
   });
   const markRead = trpc.vipPortal.notifications.markRead.useMutation({
@@ -70,10 +70,28 @@ const VipNotificationsBell = React.memo(function VipNotificationsBell() {
         {isLoading && (
           <DropdownMenuItem disabled>Loading notifications...</DropdownMenuItem>
         )}
-        {!isLoading && data?.items.length === 0 && (
+        {isError && (
+          <DropdownMenuItem className="flex flex-col items-center gap-2 py-4" disabled>
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <span className="text-sm text-destructive">Failed to load</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                void refetch();
+              }}
+            >
+              <RefreshCw className="mr-1 h-4 w-4" />
+              Retry
+            </Button>
+          </DropdownMenuItem>
+        )}
+        {!isLoading && !isError && data?.items.length === 0 && (
           <DropdownMenuItem disabled>No notifications yet.</DropdownMenuItem>
         )}
-        {data?.items.map((notification) => (
+        {!isError && data?.items.map((notification) => (
           <DropdownMenuItem
             key={notification.id}
             className="flex flex-col items-start gap-1"

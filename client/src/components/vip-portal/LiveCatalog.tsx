@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,6 +92,8 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
   const {
     data: catalogData,
     isLoading: catalogLoading,
+    isError: catalogError,
+    error: catalogErrorDetails,
     refetch: refetchCatalog,
   } = trpc.vipPortal.liveCatalog.get.useQuery({
     search: search || undefined,
@@ -860,6 +862,23 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
               </div>
             )}
           </>
+        ) : catalogError ? (
+          <div className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <p className="text-destructive font-medium">
+              Failed to load catalog
+            </p>
+            <p className="text-muted-foreground text-sm mt-2">
+              {catalogErrorDetails?.message || "An unexpected error occurred"}
+            </p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => refetchCatalog()}
+            >
+              Try Again
+            </Button>
+          </div>
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">

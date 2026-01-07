@@ -354,6 +354,44 @@ export default function VIPDashboard() {
                       </CardContent>
                     </Card>
                   )}
+
+                  {config.moduleMarketplaceNeedsEnabled && (
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          Active Needs
+                        </CardTitle>
+                        <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-xl md:text-2xl font-bold">
+                          {kpis.activeNeedsCount ?? 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Posted needs
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {config.moduleMarketplaceSupplyEnabled && (
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          Active Supply
+                        </CardTitle>
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-xl md:text-2xl font-bold">
+                          {kpis.activeSupplyCount ?? 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Listed supply
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
 
                 {/* Quick Actions - Mobile Optimized */}
