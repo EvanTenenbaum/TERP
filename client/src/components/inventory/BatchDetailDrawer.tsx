@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { DrawerSkeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -278,9 +279,7 @@ export function BatchDetailDrawer({
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">Loading batch details...</p>
-          </div>
+          <DrawerSkeleton sections={5} />
         ) : !batch ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground">Batch not found</p>

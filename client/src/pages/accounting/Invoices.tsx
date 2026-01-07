@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TableSkeleton, StatsSkeleton, Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -323,9 +324,7 @@ export default function Invoices() {
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading invoices...
-            </div>
+            <TableSkeleton rows={10} columns={6} />
           ) : (
             <>
               {/* Mobile-optimized scrollable table container */}
