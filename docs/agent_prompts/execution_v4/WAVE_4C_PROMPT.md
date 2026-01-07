@@ -1,45 +1,277 @@
-# Wave 4C: Silent Error Fixes
+# Wave 4C: Silent Error Fixes + Database Error Investigation
 
 **Agent Role**: Full Stack Developer  
-**Duration**: 5-6 hours  
-**Priority**: P2  
+**Duration**: 6-8 hours  
+**Priority**: P1 (upgraded from P2 due to Wave 3 findings)  
 **Dependencies**: Wave 3 complete  
 **Can Run Parallel With**: Wave 4A, 4B, 4D (different file domains)
 
 ---
 
+## ⚠️ WAVE 3 FINDINGS - PRIORITY UPDATES
+
+**Wave 3 testing discovered critical database errors on the live site:**
+
+1. **P0: Samples API Database Error** - `samples.getAll` returns query failure
+2. **P0: Calendar API Database Error** - `calendar.getEvents` returns query failure  
+3. **P1: SSL Connection Instability** - Intermittent TLS handshake failures
+
+**These are NOT silent errors - they are actual failures that need ROOT CAUSE investigation and fixing.**
+
+---
+
 ## Overview
 
-Fix all locations where errors are silently caught and return null/empty, making debugging difficult and hiding real issues from users.
+1. **PRIORITY**: Investigate and fix the Samples and Calendar database errors
+2. Fix all locations where errors are silently caught and return null/empty
+3. Add proper logging to make debugging easier
 
 ---
 
 ## File Domain
 
 **Your files**: 
+- `server/routers/samples.ts` (PRIORITY)
+- `server/routers/calendar.ts` (PRIORITY)
+- `server/db/schema.ts` (if schema changes needed)
 - `client/src/components/` (specific components listed below)
 - `server/` utility files (authHelpers, inventoryUtils)
 - `server/routers/audit.ts`
 
 **Do NOT modify**: 
 - `client/src/pages/*.tsx` (Wave 4B domain)
-- `server/routers/*.ts` except audit.ts (Wave 4A domain)
+- SQL safety utilities (Wave 4A domain)
 
 ---
 
-## Task 1: Fix Frontend Null Checks (2 hours)
+## Task 1: INVESTIGATE SAMPLES DATABASE ERROR (1.5 hours) - PRIORITY
+
+### Step 1: Check the Schema
+
+```bash
+# Check if sampleRequests table exists and has correct schema
+grep -n "sampleRequests\|sample_requests" server/db/schema.ts
+```
+
+```typescript
+// server/db/schema.ts - Verify this table exists
+export const sampleRequests = pgTable('sample_requests', {
+  id: serial('id').primaryKey(),
+  clientId: integer('client_id').references(() => clients.id),
+  status: varchar('status', { length: 50 }).default('pending'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+```
+
+### Step 2: Check the Router
+
+```typescript
+// server/routers/samples.ts
+
+import { logger } from '../lib/logger';
+
+export const samplesRouter = router({
+  getAll: protectedProcedure.query(async ({ ctx }) => {
+    const db = getDb();
+    
+    // Add detailed logging
+    logger.info('[Samples] Fetching all samples', { userId: ctx.user?.id });
+    
+    try {
+      // Check if table exists first
+      const tableCheck = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'sample_requests'
+        );
+      `);
+      
+      logger.debug('[Samples] Table check result', { exists: tableCheck });
+      
+      const samples = await db.query.sampleRequests.findMany({
+        with: {
+          client: true,
+        },
+        orderBy: desc(sampleRequests.createdAt),
+      });
+      
+      logger.info('[Samples] Successfully fetched samples', { count: samples.length });
+      return samples;
+    } catch (error) {
+      logger.error('[Samples] Database error', { 
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      
+      // Re-throw with more context
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to fetch samples. Database error.',
+        cause: error,
+      });
+    }
+  }),
+});
+```
+
+### Step 3: Check for Missing Migration
+
+```bash
+# Check if migration exists for sample_requests table
+ls -la server/db/migrations/ | grep -i sample
+
+# If missing, create migration
+npx drizzle-kit generate:pg --schema=server/db/schema.ts
+```
+
+### Step 4: Potential Fixes
+
+**If table doesn't exist:**
+```typescript
+// Create migration
+// server/db/migrations/XXXX_add_sample_requests.sql
+
+CREATE TABLE IF NOT EXISTS sample_requests (
+  id SERIAL PRIMARY KEY,
+  client_id INTEGER REFERENCES clients(id),
+  status VARCHAR(50) DEFAULT 'pending',
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_sample_requests_client ON sample_requests(client_id);
+CREATE INDEX idx_sample_requests_status ON sample_requests(status);
+```
+
+**If schema mismatch:**
+```typescript
+// Check for column name mismatches (snake_case vs camelCase)
+// Ensure Drizzle schema matches actual database columns
+```
+
+---
+
+## Task 2: INVESTIGATE CALENDAR DATABASE ERROR (1.5 hours) - PRIORITY
+
+### Step 1: Check the Schema
+
+```bash
+# Check if calendar_events table exists
+grep -n "calendarEvents\|calendar_events" server/db/schema.ts
+```
+
+```typescript
+// server/db/schema.ts - Verify this table exists
+export const calendarEvents = pgTable('calendar_events', {
+  id: serial('id').primaryKey(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time').notNull(),
+  userId: integer('user_id').references(() => users.id),
+  clientId: integer('client_id').references(() => clients.id),
+  type: varchar('type', { length: 50 }).default('appointment'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+```
+
+### Step 2: Check the Router
+
+```typescript
+// server/routers/calendar.ts
+
+import { logger } from '../lib/logger';
+
+export const calendarRouter = router({
+  getEvents: protectedProcedure
+    .input(z.object({
+      start: z.date(),
+      end: z.date(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      
+      logger.info('[Calendar] Fetching events', { 
+        userId: ctx.user?.id,
+        start: input.start,
+        end: input.end,
+      });
+      
+      try {
+        // Check if table exists
+        const tableCheck = await db.execute(sql`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'calendar_events'
+          );
+        `);
+        
+        if (!tableCheck.rows[0]?.exists) {
+          logger.error('[Calendar] calendar_events table does not exist');
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Calendar system not configured. Please contact support.',
+          });
+        }
+        
+        const events = await db.query.calendarEvents.findMany({
+          where: and(
+            gte(calendarEvents.startTime, input.start),
+            lte(calendarEvents.endTime, input.end),
+            or(
+              eq(calendarEvents.userId, ctx.user!.id),
+              isNull(calendarEvents.userId) // Public events
+            )
+          ),
+          with: {
+            client: true,
+          },
+          orderBy: asc(calendarEvents.startTime),
+        });
+        
+        logger.info('[Calendar] Successfully fetched events', { count: events.length });
+        return events;
+      } catch (error) {
+        logger.error('[Calendar] Database error', {
+          error: error instanceof Error ? error.message : error,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch calendar events. Database error.',
+          cause: error,
+        });
+      }
+    }),
+});
+```
+
+### Step 3: Check for Missing Migration
+
+```bash
+# Check if migration exists
+ls -la server/db/migrations/ | grep -i calendar
+
+# Generate if missing
+npx drizzle-kit generate:pg --schema=server/db/schema.ts
+```
+
+---
+
+## Task 3: Fix Frontend Silent Null Checks (1.5 hours)
 
 ### BUG-054: AppointmentRequestsList
 
 ```typescript
 // client/src/components/calendar/AppointmentRequestsList.tsx
 
-// BEFORE - crashes if data is undefined
-{data.requests.map(request => (
-  <AppointmentRequestCard key={request.id} request={request} />
-))}
+import { LoadingState } from '@/components/ui/loading-state';
+import { ErrorState, EmptyState } from '@/components/ui/empty-state';
 
-// AFTER - safe with proper loading/error states
 export function AppointmentRequestsList() {
   const { data, isLoading, error, refetch } = trpc.calendar.getAppointmentRequests.useQuery();
 
@@ -48,6 +280,7 @@ export function AppointmentRequestsList() {
   }
 
   if (error) {
+    console.error('[AppointmentRequestsList] Error:', error);
     return (
       <ErrorState
         title="Failed to load appointment requests"
@@ -92,6 +325,7 @@ export function TimeOffRequestsList() {
   }
 
   if (error) {
+    console.error('[TimeOffRequestsList] Error:', error);
     return (
       <ErrorState
         title="Failed to load time off requests"
@@ -149,6 +383,7 @@ export function ActivityLogPanel() {
   }
 
   if (error) {
+    console.error('[ActivityLogPanel] Error:', error);
     return (
       <Card>
         <CardHeader>
@@ -194,27 +429,13 @@ export function ActivityLogPanel() {
 
 ---
 
-## Task 2: Fix Backend Silent Returns (2 hours)
+## Task 4: Fix Backend Silent Returns (1.5 hours)
 
 ### BUG-058: Auth Helpers
 
 ```typescript
 // server/_core/authHelpers.ts
 
-// BEFORE - silent null return hides errors
-export async function getUserFromToken(token: string) {
-  try {
-    const decoded = jwt.verify(token, SECRET);
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, decoded.userId),
-    });
-    return user;
-  } catch {
-    return null;  // Silent failure!
-  }
-}
-
-// AFTER - proper error handling with logging
 import { logger } from '../lib/logger';
 
 export async function getUserFromToken(token: string): Promise<User | null> {
@@ -280,26 +501,12 @@ export async function validateSession(sessionId: string): Promise<Session | null
 ```typescript
 // server/utils/inventoryUtils.ts
 
-// BEFORE - silent empty return
-export async function getAvailableQuantity(batchId: number) {
-  try {
-    const batch = await db.query.batches.findFirst({
-      where: eq(batches.id, batchId),
-    });
-    return batch ? batch.quantity - batch.reservedQuantity : 0;
-  } catch {
-    return 0;  // Silent failure - could mask real issues!
-  }
-}
-
-// AFTER - proper error handling
 import { logger } from '../lib/logger';
-import { NotFoundError } from '../errors';
 
 export async function getAvailableQuantity(batchId: number): Promise<number> {
   if (!batchId || batchId <= 0) {
     logger.warn('[Inventory] Invalid batch ID', { batchId });
-    throw new ValidationError('Invalid batch ID');
+    throw new Error('Invalid batch ID');
   }
 
   try {
@@ -309,7 +516,7 @@ export async function getAvailableQuantity(batchId: number): Promise<number> {
 
     if (!batch) {
       logger.warn('[Inventory] Batch not found', { batchId });
-      throw new NotFoundError('Batch', batchId);
+      throw new Error(`Batch ${batchId} not found`);
     }
 
     const available = batch.quantity - batch.reservedQuantity;
@@ -324,11 +531,8 @@ export async function getAvailableQuantity(batchId: number): Promise<number> {
 
     return Math.max(0, available);
   } catch (error) {
-    if (error instanceof AppError) {
-      throw error;
-    }
     logger.error('[Inventory] Error getting available quantity', { batchId, error });
-    throw new Error('Failed to get available quantity');
+    throw error;
   }
 }
 
@@ -365,30 +569,6 @@ export async function reserveInventory(batchId: number, quantity: number): Promi
 ```typescript
 // server/routers/audit.ts
 
-// BEFORE - silent empty array
-export const auditRouter = router({
-  getHistory: protectedProcedure
-    .input(z.object({
-      entityType: z.string(),
-      entityId: z.number(),
-    }))
-    .query(async ({ input }) => {
-      try {
-        const logs = await db.query.auditLogs.findMany({
-          where: and(
-            eq(auditLogs.entityType, input.entityType),
-            eq(auditLogs.entityId, input.entityId)
-          ),
-          orderBy: desc(auditLogs.createdAt),
-        });
-        return logs;
-      } catch {
-        return [];  // Silent failure!
-      }
-    }),
-});
-
-// AFTER - proper error handling
 import { logger } from '../lib/logger';
 
 export const auditRouter = router({
@@ -397,9 +577,13 @@ export const auditRouter = router({
       entityType: z.string(),
       entityId: z.number(),
     }))
-    .query(async ({ input }) => {
-      logger.debug('[Audit] Fetching history', input);
-
+    .query(async ({ input, ctx }) => {
+      logger.info('[Audit] Fetching history', { 
+        entityType: input.entityType, 
+        entityId: input.entityId,
+        userId: ctx.user?.id,
+      });
+      
       try {
         const logs = await db.query.auditLogs.findMany({
           where: and(
@@ -410,37 +594,20 @@ export const auditRouter = router({
           limit: 100,
         });
 
-        logger.debug('[Audit] Found logs', { count: logs.length, ...input });
+        logger.debug('[Audit] Found logs', { count: logs.length });
         return logs;
       } catch (error) {
-        logger.error('[Audit] Failed to fetch history', { ...input, error });
+        logger.error('[Audit] Error fetching history', { 
+          entityType: input.entityType, 
+          entityId: input.entityId,
+          error,
+        });
+        
+        // Don't silently return empty - throw error
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to load audit history',
-        });
-      }
-    }),
-
-  getRecentActivity: protectedProcedure
-    .input(z.object({
-      limit: z.number().min(1).max(100).default(20),
-    }))
-    .query(async ({ ctx, input }) => {
-      logger.debug('[Audit] Fetching recent activity', { userId: ctx.user.id, limit: input.limit });
-
-      try {
-        const logs = await db.query.auditLogs.findMany({
-          where: eq(auditLogs.userId, ctx.user.id),
-          orderBy: desc(auditLogs.createdAt),
-          limit: input.limit,
-        });
-
-        return logs;
-      } catch (error) {
-        logger.error('[Audit] Failed to fetch recent activity', { userId: ctx.user.id, error });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to load recent activity',
+          message: 'Failed to fetch audit history',
+          cause: error,
         });
       }
     }),
@@ -449,148 +616,84 @@ export const auditRouter = router({
 
 ---
 
-## Task 3: Create Logger Utility (1 hour)
+## Task 5: Create/Verify Logger Utility (30 min)
 
 ```typescript
 // server/lib/logger.ts
 
-import pino from 'pino';
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-const isDev = process.env.NODE_ENV === 'development';
-
-export const logger = pino({
-  level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
-  transport: isDev ? {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname',
-    },
-  } : undefined,
-  base: {
-    env: process.env.NODE_ENV,
-  },
-});
-
-// Convenience methods with context
-export function createLogger(context: string) {
-  return logger.child({ context });
+interface LogEntry {
+  level: LogLevel;
+  message: string;
+  timestamp: string;
+  context?: Record<string, unknown>;
 }
 
-// Example usage:
-// const log = createLogger('OrderService');
-// log.info('Order created', { orderId: 123 });
-```
+const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
 
-### Install pino
-
-```bash
-pnpm add pino pino-pretty
-```
-
----
-
-## Task 4: Add Error Boundaries (1 hour)
-
-```typescript
-// client/src/components/ErrorBoundary.tsx
-
-import { Component, ReactNode } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-
-interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+function shouldLog(level: LogLevel): boolean {
+  return LOG_LEVELS[level] >= LOG_LEVELS[LOG_LEVEL as LogLevel];
 }
 
-interface State {
-  hasError: boolean;
-  error: Error | null;
+function formatLog(entry: LogEntry): string {
+  const contextStr = entry.context 
+    ? ` ${JSON.stringify(entry.context)}` 
+    : '';
+  return `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${entry.message}${contextStr}`;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ErrorBoundary] Caught error:', error, errorInfo);
-    this.props.onError?.(error, errorInfo);
-    
-    // Log to server
-    fetch('/api/log-error', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        error: error.message,
-        stack: error.stack,
-        componentStack: errorInfo.componentStack,
-      }),
-    }).catch(() => {});
-  }
-
-  handleRetry = () => {
-    this.setState({ hasError: false, error: null });
-  };
-
-  render() {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
-      return (
-        <Card className="m-4">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              Something went wrong
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              An error occurred while rendering this component.
-            </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <pre className="text-xs bg-muted p-2 rounded mb-4 overflow-auto">
-                {this.state.error.message}
-              </pre>
-            )}
-            <Button onClick={this.handleRetry}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Try again
-            </Button>
-          </CardContent>
-        </Card>
-      );
+export const logger = {
+  debug(message: string, context?: Record<string, unknown>) {
+    if (shouldLog('debug')) {
+      console.debug(formatLog({ 
+        level: 'debug', 
+        message, 
+        timestamp: new Date().toISOString(), 
+        context 
+      }));
     }
-
-    return this.props.children;
-  }
-}
-
-// HOC for wrapping components
-export function withErrorBoundary<P extends object>(
-  Component: React.ComponentType<P>,
-  fallback?: ReactNode
-) {
-  return function WrappedComponent(props: P) {
-    return (
-      <ErrorBoundary fallback={fallback}>
-        <Component {...props} />
-      </ErrorBoundary>
-    );
-  };
-}
+  },
+  
+  info(message: string, context?: Record<string, unknown>) {
+    if (shouldLog('info')) {
+      console.info(formatLog({ 
+        level: 'info', 
+        message, 
+        timestamp: new Date().toISOString(), 
+        context 
+      }));
+    }
+  },
+  
+  warn(message: string, context?: Record<string, unknown>) {
+    if (shouldLog('warn')) {
+      console.warn(formatLog({ 
+        level: 'warn', 
+        message, 
+        timestamp: new Date().toISOString(), 
+        context 
+      }));
+    }
+  },
+  
+  error(message: string, context?: Record<string, unknown>) {
+    if (shouldLog('error')) {
+      console.error(formatLog({ 
+        level: 'error', 
+        message, 
+        timestamp: new Date().toISOString(), 
+        context 
+      }));
+    }
+  },
+};
 ```
 
 ---
@@ -598,56 +701,70 @@ export function withErrorBoundary<P extends object>(
 ## Git Workflow
 
 ```bash
-git checkout -b fix/wave-4c-silent-errors
+git checkout -b fix/wave-4c-db-errors-and-silent-fixes
 
-# Add logger
-pnpm add pino pino-pretty
-git add package.json pnpm-lock.yaml server/lib/logger.ts
-git commit -m "feat(LOG-1): Add structured logging with pino"
+# PRIORITY: Investigate and fix Samples DB error
+git add server/routers/samples.ts server/db/schema.ts
+git commit -m "fix(P0): Investigate and fix Samples database error
 
-# Fix frontend components
+Wave 3 found samples.getAll returns DB query failure.
+- Add detailed logging to samples router
+- Add table existence check
+- Improve error messages for debugging"
+
+# PRIORITY: Investigate and fix Calendar DB error
+git add server/routers/calendar.ts
+git commit -m "fix(P0): Investigate and fix Calendar database error
+
+Wave 3 found calendar.getEvents returns DB query failure.
+- Add detailed logging to calendar router
+- Add table existence check
+- Improve error messages for debugging"
+
+# Add logger utility
+git add server/lib/logger.ts
+git commit -m "feat: Add structured logging utility"
+
+# Fix frontend silent errors
 git add client/src/components/calendar/AppointmentRequestsList.tsx
-git commit -m "fix(BUG-054): Add proper error handling to AppointmentRequestsList"
-
 git add client/src/components/hr/TimeOffRequestsList.tsx
-git commit -m "fix(BUG-055): Add proper error handling to TimeOffRequestsList"
-
 git add client/src/components/dashboard/ActivityLogPanel.tsx
-git commit -m "fix(BUG-056): Add proper error handling to ActivityLogPanel"
+git commit -m "fix(BUG-054,055,056): Add proper error handling to list components"
 
-# Fix backend utilities
+# Fix backend silent returns
 git add server/_core/authHelpers.ts
-git commit -m "fix(BUG-058): Add logging to auth helpers instead of silent null"
-
 git add server/utils/inventoryUtils.ts
-git commit -m "fix(BUG-059): Add logging to inventory utils instead of silent returns"
-
 git add server/routers/audit.ts
-git commit -m "fix(BUG-060): Add error handling to audit router"
+git commit -m "fix(BUG-058,059,060): Replace silent returns with proper logging"
 
-# Add error boundary
-git add client/src/components/ErrorBoundary.tsx
-git commit -m "feat(ERR-1): Add ErrorBoundary component for graceful error handling"
-
-# Push and create PR
-git push origin fix/wave-4c-silent-errors
-gh pr create --title "Wave 4C: Silent Error Fixes" --body "
+git push origin fix/wave-4c-db-errors-and-silent-fixes
+gh pr create --title "Wave 4C: Database Error Investigation + Silent Error Fixes" --body "
 ## Summary
-Fix all locations where errors are silently swallowed.
+Investigate and fix Wave 3 database errors, plus fix all silent error returns.
 
-## Changes
-- Added structured logging with pino
-- Fixed BUG-054, BUG-055, BUG-056 (frontend null checks)
-- Fixed BUG-058, BUG-059, BUG-060 (backend silent returns)
-- Added ErrorBoundary component
+## P0 Wave 3 Findings Addressed
+- **Samples API**: Investigated root cause, added logging, improved error handling
+- **Calendar API**: Investigated root cause, added logging, improved error handling
+
+## Bug Fixes
+- BUG-054: AppointmentRequestsList proper error handling
+- BUG-055: TimeOffRequestsList proper error handling
+- BUG-056: ActivityLogPanel proper error handling
+- BUG-058: Auth helpers with logging
+- BUG-059: Inventory utils with proper errors
+- BUG-060: Audit router with proper errors
+
+## New Features
+- Structured logging utility for debugging
+
+## Root Cause Analysis
+[Document findings here after investigation]
 
 ## Testing
-- [ ] Errors are now logged to console
-- [ ] Components show error states instead of crashing
-- [ ] Backend functions throw instead of returning null silently
-
-## Parallel Safety
-Only touches specific component files and utility files
+- [ ] Samples API returns meaningful error or data
+- [ ] Calendar API returns meaningful error or data
+- [ ] All list components show error states properly
+- [ ] Logs appear in server console for debugging
 "
 ```
 
@@ -655,15 +772,16 @@ Only touches specific component files and utility files
 
 ## Success Criteria
 
-- [ ] Logger utility created and working
-- [ ] BUG-054 fixed (AppointmentRequestsList)
-- [ ] BUG-055 fixed (TimeOffRequestsList)
-- [ ] BUG-056 fixed (ActivityLogPanel)
-- [ ] BUG-058 fixed (authHelpers)
-- [ ] BUG-059 fixed (inventoryUtils)
-- [ ] BUG-060 fixed (audit router)
-- [ ] ErrorBoundary component created
-- [ ] No more silent failures
+- [ ] **Samples DB error root cause identified** (Wave 3 priority)
+- [ ] **Calendar DB error root cause identified** (Wave 3 priority)
+- [ ] Logger utility created
+- [ ] AppointmentRequestsList has error handling
+- [ ] TimeOffRequestsList has error handling
+- [ ] ActivityLogPanel has error handling
+- [ ] Auth helpers have logging
+- [ ] Inventory utils throw proper errors
+- [ ] Audit router throws proper errors
+- [ ] No more silent null/empty returns
 
 ---
 
@@ -671,8 +789,8 @@ Only touches specific component files and utility files
 
 After Wave 4C completion:
 
-1. PR ready for review
-2. Document logging levels used
-3. Coordinate merge timing with Wave 4A/4B/4D
-
-**Merge Order**: 4C can merge after 4A and 4B (no conflicts)
+1. **Document root cause findings** for Samples and Calendar DB errors
+2. If schema changes needed, coordinate with team for migration
+3. PR ready for review
+4. Note any findings that affect Wave 4B (they should handle errors gracefully)
+5. Merge after Wave 4A, 4B, 4D to avoid conflicts

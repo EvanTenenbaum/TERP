@@ -8,16 +8,27 @@
 
 ---
 
+## ⚠️ WAVE 3 FINDINGS - PRIORITY UPDATES
+
+**Wave 3 testing discovered critical database errors on the live site:**
+
+1. **Samples API Database Error** - `samples.getAll` returns query failure
+2. **Calendar API Database Error** - `calendar.getEvents` returns query failure
+
+**These pages MUST have robust error states that handle API failures gracefully.**
+
+---
+
 ## Overview
 
-Add proper empty state handling to all pages that currently show blank content when no data exists. This improves UX by providing helpful messaging and actions.
+Add proper empty state AND error state handling to all pages that currently show blank content when no data exists or when API calls fail. This improves UX by providing helpful messaging and actions.
 
 ---
 
 ## File Domain
 
 **Your files**: `client/src/pages/*.tsx`, `client/src/components/ui/empty-state.tsx`
-**Do NOT modify**: `server/**/*` (Wave 4A domain), utility files (Wave 4C domain)
+**Do NOT modify**: `server/**/*` (Wave 4A/4C domain), utility files (Wave 4C domain)
 
 ---
 
@@ -33,7 +44,7 @@ import { Button } from './button';
 import { 
   Search, Inbox, AlertCircle, Calendar, BarChart3, 
   Bell, Camera, FileText, CheckSquare, Package,
-  Users, ShoppingCart, FileSpreadsheet
+  Users, ShoppingCart, FileSpreadsheet, FlaskConical
 } from 'lucide-react';
 
 interface EmptyStateProps {
@@ -134,11 +145,13 @@ export function NoDataYet({
 export function ErrorState({ 
   title = "Something went wrong",
   description,
-  onRetry 
+  onRetry,
+  showSupport = false,
 }: { 
   title?: string;
   description?: string;
   onRetry?: () => void;
+  showSupport?: boolean;
 }) {
   return (
     <EmptyState
@@ -146,6 +159,32 @@ export function ErrorState({
       title={title}
       description={description ?? "An error occurred while loading this content. Please try again."}
       action={onRetry ? { label: "Try again", onClick: onRetry } : undefined}
+      secondaryAction={showSupport ? { 
+        label: "Contact Support", 
+        onClick: () => window.open('mailto:support@terp.com', '_blank') 
+      } : undefined}
+    />
+  );
+}
+
+// Database error state - for known API failures
+export function DatabaseErrorState({
+  entity,
+  onRetry,
+}: {
+  entity: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <EmptyState
+      icon={<AlertCircle className="h-12 w-12 text-amber-500" />}
+      title={`Unable to load ${entity}`}
+      description="There was a problem connecting to the database. This may be a temporary issue. Please try again or contact support if the problem persists."
+      action={onRetry ? { label: "Try again", onClick: onRetry } : undefined}
+      secondaryAction={{ 
+        label: "Contact Support", 
+        onClick: () => window.open('mailto:support@terp.com', '_blank') 
+      }}
     />
   );
 }
@@ -202,12 +241,194 @@ export const emptyStates = {
     title: "No inventory",
     description: "Your inventory is empty. Create a purchase order to receive new stock.",
   },
+  samples: {
+    icon: <FlaskConical className="h-12 w-12" />,
+    title: "No samples yet",
+    description: "Sample requests will appear here when clients request product samples.",
+  },
 };
 ```
 
 ---
 
-## Task 2: Update AnalyticsPage (30 min)
+## Task 2: UPDATE SAMPLES PAGE (PRIORITY - Wave 3 Finding) (45 min)
+
+**Wave 3 found: `samples.getAll` returns database query failure on live site**
+
+```typescript
+// client/src/pages/SamplesPage.tsx (or wherever samples are rendered)
+
+import { EmptyState, ErrorState, DatabaseErrorState, emptyStates } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
+
+export function SamplesPage() {
+  const { data, isLoading, error, refetch } = trpc.samples.getAll.useQuery();
+
+  if (isLoading) {
+    return <LoadingState message="Loading samples..." />;
+  }
+
+  // CRITICAL: Handle the known database error gracefully
+  if (error) {
+    console.error('[SamplesPage] API Error:', error);
+    
+    // Check if it's a database-related error
+    const isDbError = error.message?.toLowerCase().includes('database') ||
+                      error.message?.toLowerCase().includes('query') ||
+                      error.message?.toLowerCase().includes('relation') ||
+                      error.data?.code === 'INTERNAL_SERVER_ERROR';
+    
+    if (isDbError) {
+      return (
+        <div className="p-6">
+          <h1 className="text-2xl font-bold mb-6">Samples</h1>
+          <DatabaseErrorState
+            entity="samples"
+            onRetry={() => refetch()}
+          />
+        </div>
+      );
+    }
+    
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-6">Samples</h1>
+        <ErrorState
+          title="Failed to load samples"
+          description={error.message}
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
+
+  // Handle empty data
+  if (!data || data.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Samples</h1>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Sample Request
+          </Button>
+        </div>
+        <EmptyState
+          {...emptyStates.samples}
+          action={{
+            label: "Create Sample Request",
+            onClick: () => setShowCreateModal(true),
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    // ... existing samples rendering
+  );
+}
+```
+
+---
+
+## Task 3: UPDATE CALENDAR PAGE (PRIORITY - Wave 3 Finding) (45 min)
+
+**Wave 3 found: `calendar.getEvents` returns database query failure on live site**
+
+```typescript
+// client/src/pages/CalendarPage.tsx
+
+import { EmptyState, ErrorState, DatabaseErrorState, emptyStates } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+
+export function CalendarPage() {
+  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>();
+  const { data: events, isLoading, error, refetch } = trpc.calendar.getEvents.useQuery(
+    { start: dateRange?.start!, end: dateRange?.end! },
+    { enabled: !!dateRange }
+  );
+
+  // CRITICAL: Handle the known database error gracefully
+  if (error) {
+    console.error('[CalendarPage] API Error:', error);
+    
+    const isDbError = error.message?.toLowerCase().includes('database') ||
+                      error.message?.toLowerCase().includes('query') ||
+                      error.message?.toLowerCase().includes('relation') ||
+                      error.message?.toLowerCase().includes('calendar_events') ||
+                      error.data?.code === 'INTERNAL_SERVER_ERROR';
+    
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Calendar</h1>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Appointment
+          </Button>
+        </div>
+        
+        {isDbError ? (
+          <DatabaseErrorState
+            entity="calendar events"
+            onRetry={() => refetch()}
+          />
+        ) : (
+          <ErrorState
+            title="Failed to load calendar"
+            description={error.message}
+            onRetry={() => refetch()}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return <LoadingState message="Loading calendar..." />;
+  }
+
+  // Calendar always renders, but show message if no events
+  const hasEvents = events && events.length > 0;
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Calendar</h1>
+        <Button onClick={() => setShowCreateModal(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Appointment
+        </Button>
+      </div>
+
+      {!hasEvents && !isLoading && (
+        <Alert className="mb-4">
+          <Calendar className="h-4 w-4" />
+          <AlertTitle>No events this month</AlertTitle>
+          <AlertDescription>
+            Create an appointment or task to see it on your calendar.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card>
+        <CardContent className="p-4">
+          <FullCalendar
+            // ... calendar config
+            events={events || []}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+---
+
+## Task 4: Update AnalyticsPage (30 min)
 
 ```typescript
 // client/src/pages/AnalyticsPage.tsx
@@ -262,71 +483,7 @@ export function AnalyticsPage() {
 
 ---
 
-## Task 3: Update CalendarPage (30 min)
-
-```typescript
-// client/src/pages/CalendarPage.tsx
-
-export function CalendarPage() {
-  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>();
-  const { data: events, isLoading, error, refetch } = trpc.calendar.getEvents.useQuery(
-    { start: dateRange?.start!, end: dateRange?.end! },
-    { enabled: !!dateRange }
-  );
-
-  if (isLoading) {
-    return <LoadingState message="Loading calendar..." />;
-  }
-
-  if (error) {
-    return (
-      <ErrorState
-        title="Failed to load calendar"
-        description={error.message}
-        onRetry={() => refetch()}
-      />
-    );
-  }
-
-  // Calendar always renders, but show message if no events
-  const hasEvents = events && events.length > 0;
-
-  return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Calendar</h1>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Appointment
-        </Button>
-      </div>
-
-      {!hasEvents && !isLoading && (
-        <Alert className="mb-4">
-          <Calendar className="h-4 w-4" />
-          <AlertTitle>No events this month</AlertTitle>
-          <AlertDescription>
-            Create an appointment or task to see it on your calendar.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <Card>
-        <CardContent className="p-4">
-          <FullCalendar
-            // ... calendar config
-            events={events || []}
-          />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-```
-
----
-
-## Task 4: Update NotificationsPage (30 min)
+## Task 5: Update NotificationsPage (30 min)
 
 ```typescript
 // client/src/pages/NotificationsPage.tsx
@@ -380,12 +537,15 @@ export function NotificationsPage() {
 
 ---
 
-## Task 5: Update Remaining Pages (2 hours)
+## Task 6: Update Remaining Pages (1.5 hours)
 
 Apply the same pattern to:
 
 ### PhotographyPage
 ```typescript
+if (error) {
+  return <ErrorState title="Failed to load photos" onRetry={() => refetch()} />;
+}
 if (!batches || batches.length === 0) {
   return <EmptyState {...emptyStates.photography} />;
 }
@@ -393,6 +553,9 @@ if (!batches || batches.length === 0) {
 
 ### ReportsPage
 ```typescript
+if (error) {
+  return <ErrorState title="Failed to load reports" onRetry={() => refetch()} />;
+}
 if (!reports || reports.length === 0) {
   return (
     <EmptyState 
@@ -408,6 +571,9 @@ if (!reports || reports.length === 0) {
 
 ### TodoPage
 ```typescript
+if (error) {
+  return <ErrorState title="Failed to load tasks" onRetry={() => refetch()} />;
+}
 if (!tasks || tasks.length === 0) {
   return (
     <EmptyState 
@@ -423,6 +589,9 @@ if (!tasks || tasks.length === 0) {
 
 ### SpreadsheetViewPage
 ```typescript
+if (error) {
+  return <ErrorState title="Failed to load spreadsheet data" onRetry={() => refetch()} />;
+}
 if (!data || data.rows.length === 0) {
   return (
     <EmptyState 
@@ -438,7 +607,7 @@ if (!data || data.rows.length === 0) {
 
 ---
 
-## Task 6: Add Empty States to List Components (1 hour)
+## Task 7: Add Empty States to List Components (30 min)
 
 Update data tables and lists to show empty states:
 
@@ -508,53 +677,61 @@ git checkout -b feat/wave-4b-empty-states
 
 # Create empty state components
 git add client/src/components/ui/empty-state.tsx
-git commit -m "feat(UX-1): Add reusable empty state components"
+git commit -m "feat(UX-1): Add comprehensive empty state components
 
-# Update pages one by one
-git add client/src/pages/AnalyticsPage.tsx
-git commit -m "fix(BUG-061): Add empty state to AnalyticsPage"
+- Add base EmptyState component
+- Add NoSearchResults, NoDataYet, ErrorState presets
+- Add DatabaseErrorState for known API failures (Wave 3 finding)
+- Add page-specific empty state configs"
 
+# PRIORITY: Fix Samples page (Wave 3 finding)
+git add client/src/pages/SamplesPage.tsx
+git commit -m "fix(QA-050): Add error handling to Samples page
+
+Wave 3 found samples.getAll returns DB error on live site.
+- Add DatabaseErrorState for graceful error handling
+- Add empty state for when no samples exist
+- Add loading state"
+
+# PRIORITY: Fix Calendar page (Wave 3 finding)
 git add client/src/pages/CalendarPage.tsx
-git commit -m "fix(BUG-062): Add empty state to CalendarPage"
+git commit -m "fix: Add error handling to Calendar page
+
+Wave 3 found calendar.getEvents returns DB error on live site.
+- Add DatabaseErrorState for graceful error handling
+- Add empty state alert for no events
+- Add loading state"
+
+# Update remaining pages
+git add client/src/pages/AnalyticsPage.tsx
+git commit -m "feat(BUG-061): Add empty state to AnalyticsPage"
 
 git add client/src/pages/NotificationsPage.tsx
-git commit -m "fix(BUG-063): Add empty state to NotificationsPage"
+git commit -m "feat(BUG-063): Add empty state to NotificationsPage"
 
-git add client/src/pages/PhotographyPage.tsx
-git commit -m "fix(BUG-064): Add empty state to PhotographyPage"
+# ... continue for other pages
 
-git add client/src/pages/ReportsPage.tsx
-git commit -m "fix(BUG-065): Add empty state to ReportsPage"
-
-git add client/src/pages/SpreadsheetViewPage.tsx
-git commit -m "fix(BUG-066): Add empty state to SpreadsheetViewPage"
-
-git add client/src/pages/TodoPage.tsx
-git commit -m "fix(BUG-067): Add empty state to TodoPage"
-
-# Update DataTable
-git add client/src/components/DataTable.tsx
-git commit -m "feat(UX-2): Add empty state support to DataTable"
-
-# Push and create PR
 git push origin feat/wave-4b-empty-states
-gh pr create --title "Wave 4B: Empty States" --body "
+gh pr create --title "Wave 4B: Empty States (includes Wave 3 fixes)" --body "
 ## Summary
-Add proper empty state handling to all pages.
+Add proper empty state and error handling to all pages.
+
+## Wave 3 Findings Addressed
+- **QA-050**: Samples page now handles database errors gracefully
+- **Calendar**: Calendar page now handles database errors gracefully
 
 ## Changes
-- Created reusable EmptyState component
-- Fixed BUG-061 through BUG-067
-- Added empty state support to DataTable
+- Created comprehensive empty state component library
+- Added DatabaseErrorState for known API failures
+- Added empty states to all data-heavy pages
+- Added error states with retry functionality
 
 ## Testing
-- [ ] Each page shows appropriate empty state when no data
-- [ ] Empty states have helpful messaging
-- [ ] Action buttons work correctly
-- [ ] Loading states still work
-
-## Parallel Safety
-Only touches client/src/pages/*.tsx and UI components
+- [ ] Samples page shows friendly error when API fails
+- [ ] Calendar page shows friendly error when API fails
+- [ ] All pages show appropriate empty states
+- [ ] Retry buttons work correctly
+- [ ] No blank pages when data is empty
 "
 ```
 
@@ -562,12 +739,18 @@ Only touches client/src/pages/*.tsx and UI components
 
 ## Success Criteria
 
-- [ ] EmptyState component created
-- [ ] All 7 pages have empty states (BUG-061 to BUG-067)
-- [ ] Empty states have appropriate icons
-- [ ] Empty states have helpful descriptions
-- [ ] Action buttons navigate correctly
-- [ ] No blank pages when data is empty
+- [ ] **Samples page handles DB error gracefully** (Wave 3 priority)
+- [ ] **Calendar page handles DB error gracefully** (Wave 3 priority)
+- [ ] EmptyState components created
+- [ ] DatabaseErrorState component created
+- [ ] AnalyticsPage has empty state
+- [ ] NotificationsPage has empty state
+- [ ] PhotographyPage has empty state
+- [ ] ReportsPage has empty state
+- [ ] TodoPage has empty state
+- [ ] SpreadsheetViewPage has empty state
+- [ ] All error states have retry functionality
+- [ ] No blank pages when data is empty or API fails
 
 ---
 
@@ -576,7 +759,6 @@ Only touches client/src/pages/*.tsx and UI components
 After Wave 4B completion:
 
 1. PR ready for review
-2. Screenshots of each empty state
-3. Coordinate merge timing with Wave 4A/4C/4D
-
-**Merge Order**: 4B can merge after 4A (no conflicts)
+2. Document which pages were updated
+3. Note: Wave 4C should investigate the ROOT CAUSE of Samples/Calendar DB errors
+4. Merge after Wave 4A, 4C, 4D to avoid conflicts
