@@ -128,16 +128,32 @@ export const quotesRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
+      // Get total count for proper pagination
+      const countResult = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(orders)
+        .where(and(...conditions));
+
+      const total = Number(countResult[0]?.count || 0);
+
       return {
-        items: results.map(row => ({
-          ...row.orders,
-          client: row.clients,
-          items:
-            typeof row.orders.items === "string"
-              ? JSON.parse(row.orders.items)
-              : row.orders.items,
-        })),
-        total: results.length,
+        items: results.map(row => {
+          let parsedItems;
+          try {
+            parsedItems =
+              typeof row.orders.items === "string"
+                ? JSON.parse(row.orders.items)
+                : row.orders.items;
+          } catch {
+            parsedItems = [];
+          }
+          return {
+            ...row.orders,
+            client: row.clients,
+            items: parsedItems,
+          };
+        }),
+        total,
         limit: input.limit,
         offset: input.offset,
       };
@@ -170,13 +186,20 @@ export const quotesRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Quote not found" });
       }
 
+      let parsedItems;
+      try {
+        parsedItems =
+          typeof result.orders.items === "string"
+            ? JSON.parse(result.orders.items)
+            : result.orders.items;
+      } catch {
+        parsedItems = [];
+      }
+
       return {
         ...result.orders,
         client: result.clients,
-        items:
-          typeof result.orders.items === "string"
-            ? JSON.parse(result.orders.items)
-            : result.orders.items,
+        items: parsedItems,
       };
     }),
 

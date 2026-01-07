@@ -284,8 +284,23 @@ export const invoicesRouter = router({
       }
 
       // Parse order items
-      const orderItems =
-        typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+      let orderItems;
+      try {
+        orderItems =
+          typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to parse order items - data may be corrupted",
+        });
+      }
+
+      if (!Array.isArray(orderItems) || orderItems.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot generate invoice: Order has no items",
+        });
+      }
 
       // Calculate due date based on payment terms
       const paymentTermsDays: Record<string, number> = {

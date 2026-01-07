@@ -299,7 +299,6 @@ export const ordersRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -469,7 +468,6 @@ export const ordersRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -626,7 +624,6 @@ export const ordersRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
 
@@ -695,7 +692,6 @@ export const ordersRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      if (!db) throw new Error("Database not available");
 
       const order = await db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
@@ -733,7 +729,6 @@ export const ordersRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       return await pricingService.getMarginWithFallback(
@@ -787,7 +782,6 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -1008,7 +1002,6 @@ export const ordersRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      if (!db) throw new Error("Database not available");
 
       return await orderAuditService.getAuditLog(input.orderId);
     }),
@@ -1058,8 +1051,13 @@ export const ordersRouter = router({
       }
 
       // Parse and verify inventory
-      const orderItems =
-        typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+      let orderItems;
+      try {
+        orderItems =
+          typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+      } catch {
+        throw new Error("Failed to parse order items - data may be corrupted");
+      }
 
       for (const item of orderItems) {
         const [batch] = await db
@@ -1139,8 +1137,13 @@ export const ordersRouter = router({
       }
 
       // Parse order items
-      const orderItems =
-        typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+      let orderItems;
+      try {
+        orderItems =
+          typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+      } catch {
+        throw new Error("Failed to parse order items - data may be corrupted");
+      }
 
       // Type for picked items
       interface PickedItem {
