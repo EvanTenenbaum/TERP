@@ -8,6 +8,7 @@ import InstanceGenerationService from "../_core/instanceGenerationService";
 import { getDb } from "../db";
 import { calendarEvents, calendarRecurrenceInstances } from "../../drizzle/schema";
 import { and, eq, gte, lte, inArray, isNull, or, sql } from "drizzle-orm";
+import { calendarLogger } from "../_core/logger";
 
 /**
  * Calendar Router
@@ -37,13 +38,46 @@ export const calendarRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const db = await getDb();
-        if (!db) throw new Error("Database not available");
-      if (!db) throw new Error("Database not available");
-
-      // For read operations, allow public user but track it
+      // Wave 4C: Enhanced logging for database error investigation
       const userId = ctx.user?.id ?? 1;
 
+      calendarLogger.operationStart('getEvents', {
+        userId,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        modules: input.modules,
+        limit: input.limit,
+        offset: input.offset,
+      });
+
+      let db;
+      try {
+        db = await getDb();
+      } catch (dbError) {
+        const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+        calendarLogger.operationFailure('getEvents', dbError instanceof Error ? dbError : new Error(errorMessage), {
+          phase: 'database_connection',
+          userId,
+        });
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to connect to database',
+          cause: dbError,
+        });
+      }
+
+      if (!db) {
+        calendarLogger.operationFailure('getEvents', new Error('Database not available'), {
+          phase: 'database_check',
+          userId,
+        });
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Database not available',
+        });
+      }
+
+      try {
       // Build base query for calendar events
       let eventConditions: any[] = [
         gte(calendarEvents.startDate, new Date(input.startDate)),
@@ -153,6 +187,14 @@ export const calendarRouter = router({
         };
       });
 
+      // Log success
+      calendarLogger.operationSuccess('getEvents', {
+        userId,
+        eventsCount: eventsWithDisplay.length,
+        filteredCount: filteredEvents.length,
+        instancesCount: instances.length,
+      });
+
       // Return with pagination metadata if requested
       if (input.includeTotalCount) {
         return {
@@ -167,6 +209,21 @@ export const calendarRouter = router({
       }
 
       return eventsWithDisplay;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        calendarLogger.operationFailure('getEvents', error instanceof Error ? error : new Error(errorMessage), {
+          userId,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          phase: 'query_execution',
+        });
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch calendar events. Database error.',
+          cause: error,
+        });
+      }
     }),
 
   // Get single event with full details
