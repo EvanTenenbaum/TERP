@@ -96,6 +96,7 @@ import { vendorRemindersRouter } from "./routers/vendorReminders";
 import { featureFlagsRouter } from "./routers/featureFlags";
 import { adminSetupRouter } from "./routers/adminSetup";
 import { spreadsheetRouter } from "./routers/spreadsheet";
+import { catalogRouter } from "./routers/catalog";
 
 import { healthRouter } from "./routers/health";
 
@@ -213,6 +214,7 @@ export const appRouter = router({
   featureFlags: featureFlagsRouter,
   adminSetup: adminSetupRouter, // Feature Flag System
   spreadsheet: spreadsheetRouter,
+  catalog: catalogRouter, // INV-4: Catalog Publishing
 
   health: healthRouter, // INFRA-004: Health Check Endpoint
 
