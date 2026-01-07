@@ -28,6 +28,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Camera, Search, CheckCircle, Clock, Image } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
+import { EmptyState, ErrorState, emptyStateConfigs } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 
 export default function PhotographyPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,6 +41,8 @@ export default function PhotographyPage() {
     data: queue,
     isLoading,
     refetch,
+    error,
+    isError,
   } = trpc.photography.getQueue.useQuery({
     status:
       statusFilter === "all"
@@ -229,14 +233,18 @@ export default function PhotographyPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading...
-            </div>
+            <LoadingState message="Loading photography queue..." />
+          ) : isError ? (
+            <ErrorState
+              title="Failed to load photography queue"
+              description={error?.message || "An error occurred while loading the photography queue."}
+              onRetry={() => refetch()}
+            />
           ) : !queue?.items?.length ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No items in photography queue</p>
-            </div>
+            <EmptyState
+              {...emptyStateConfigs.photography}
+              size="sm"
+            />
           ) : (
             <Table>
               <TableHeader>

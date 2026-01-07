@@ -6,6 +6,8 @@ import { TodoListCard } from "@/components/todos/TodoListCard";
 import { TodoListForm } from "@/components/todos/TodoListForm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useLocation } from "wouter";
+import { EmptyState, ErrorState, emptyStateConfigs } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 
 export function TodoListsPage() {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
@@ -13,7 +15,7 @@ export function TodoListsPage() {
   const [, setLocation] = useLocation();
 
   // Handle paginated response - extract items array or use empty array as fallback
-  const { data: listsData, isLoading } = trpc.todoLists.getMyLists.useQuery();
+  const { data: listsData, isLoading, error, isError, refetch } = trpc.todoLists.getMyLists.useQuery();
   const lists = Array.isArray(listsData) ? listsData : (listsData?.items ?? []);
 
   const utils = trpc.useContext();
@@ -56,21 +58,21 @@ export function TodoListsPage() {
 
       {/* Lists Grid */}
       {isLoading ? (
-        <div className="text-center text-muted-foreground py-12">
-          Loading your lists...
-        </div>
+        <LoadingState message="Loading your lists..." />
+      ) : isError ? (
+        <ErrorState
+          title="Failed to load todo lists"
+          description={error?.message || "An error occurred while loading your todo lists."}
+          onRetry={() => refetch()}
+        />
       ) : lists.length === 0 ? (
-        <div className="text-center py-12">
-          <ListTodo className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No lists yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Create your first todo list to get started
-          </p>
-          <Button onClick={() => setIsCreateFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Your First List
-          </Button>
-        </div>
+        <EmptyState
+          {...emptyStateConfigs.todos}
+          action={{
+            label: "Create Your First List",
+            onClick: () => setIsCreateFormOpen(true),
+          }}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {lists.map(list => (
