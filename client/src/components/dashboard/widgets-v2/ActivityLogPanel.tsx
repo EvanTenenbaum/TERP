@@ -1,18 +1,20 @@
 import { memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
-import { 
-  FileText, 
-  Edit, 
-  MessageSquare, 
-  Share2, 
-  Archive, 
-  ArchiveRestore, 
-  Pin, 
+import {
+  FileText,
+  Edit,
+  MessageSquare,
+  Share2,
+  Archive,
+  ArchiveRestore,
+  Pin,
   PinOff,
   FileCheck,
   Loader2,
-  Clock
+  Clock,
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -57,7 +59,7 @@ const activityLabels = {
 };
 
 export const ActivityLogPanel = memo(function ActivityLogPanel({ noteId }: ActivityLogPanelProps) {
-  const { data: activities, isLoading } = trpc.freeformNotes.activity.list.useQuery(
+  const { data: activities, isLoading, error, refetch } = trpc.freeformNotes.activity.list.useQuery(
     { noteId, limit: 50 },
     { refetchInterval: false } // Manual refresh only (performance optimization)
   );
@@ -66,6 +68,25 @@ export const ActivityLogPanel = memo(function ActivityLogPanel({ noteId }: Activ
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // BUG-056: Added proper error handling with retry capability
+  if (error) {
+    console.error('[ActivityLogPanel] Error:', error);
+    return (
+      <div className="text-center py-8">
+        <AlertCircle className="h-12 w-12 mx-auto mb-2 text-destructive" />
+        <p className="text-sm font-medium text-destructive">Failed to load activity</p>
+        <p className="text-xs text-muted-foreground mt-1">{error.message || 'An unexpected error occurred'}</p>
+        <button
+          onClick={() => refetch()}
+          className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
+        >
+          <RefreshCw className="h-3 w-3" />
+          Retry
+        </button>
       </div>
     );
   }

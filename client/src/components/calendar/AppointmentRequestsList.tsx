@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Check, X, Clock, Calendar, User, ChevronRight } from "lucide-react";
+import { Check, X, Clock, Calendar, User, ChevronRight, AlertCircle, RefreshCw } from "lucide-react";
 import { trpc } from "../../lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PromptDialog } from "@/components/ui/prompt-dialog";
@@ -39,7 +39,7 @@ export default function AppointmentRequestsList({
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [requestToReject, setRequestToReject] = useState<number | null>(null);
 
-  const { data, isLoading, refetch } = trpc.appointmentRequests.list.useQuery({
+  const { data, isLoading, error, refetch } = trpc.appointmentRequests.list.useQuery({
     status: statusFilter as "pending" | "approved" | "rejected" | "cancelled",
     limit: 50,
   });
@@ -157,6 +157,25 @@ export default function AppointmentRequestsList({
     return (
       <div className="flex items-center justify-center p-8">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // BUG-054: Added proper error handling with retry capability
+  if (error) {
+    console.error('[AppointmentRequestsList] Error:', error);
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+        <h3 className="mt-2 text-sm font-medium text-red-800">Failed to load appointment requests</h3>
+        <p className="mt-1 text-sm text-red-600">{error.message || 'An unexpected error occurred'}</p>
+        <button
+          onClick={() => refetch()}
+          className="mt-4 inline-flex items-center gap-2 rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </button>
       </div>
     );
   }
