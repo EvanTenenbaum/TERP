@@ -1,11 +1,10 @@
 import { getDb } from "./db";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import {
   pricingRules,
   pricingProfiles,
   clients,
   type PricingRule,
-  type PricingProfile,
 } from "../drizzle/schema";
 
 // ============================================================================
@@ -21,6 +20,7 @@ export interface PricingConditions {
   priceMax?: number;
   grade?: string;
   vendor?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any; // Allow custom metadata fields
 }
 
@@ -35,6 +35,7 @@ export interface InventoryItem {
   grade?: string;
   vendor?: string;
   quantity?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any; // Allow custom metadata
 }
 
@@ -55,22 +56,34 @@ export interface PricedInventoryItem extends InventoryItem {
 export async function getPricingRules() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  return await db.select().from(pricingRules).where(eq(pricingRules.isActive, true)).orderBy(desc(pricingRules.priority));
+
+  return await db
+    .select()
+    .from(pricingRules)
+    .where(eq(pricingRules.isActive, true))
+    .orderBy(desc(pricingRules.priority));
 }
 
 export async function getPricingRuleById(ruleId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  const result = await db.select().from(pricingRules).where(eq(pricingRules.id, ruleId)).limit(1);
+
+  const result = await db
+    .select()
+    .from(pricingRules)
+    .where(eq(pricingRules.id, ruleId))
+    .limit(1);
   return result[0] || null;
 }
 
 export async function createPricingRule(data: {
   name: string;
   description?: string;
-  adjustmentType: "PERCENT_MARKUP" | "PERCENT_MARKDOWN" | "DOLLAR_MARKUP" | "DOLLAR_MARKDOWN";
+  adjustmentType:
+    | "PERCENT_MARKUP"
+    | "PERCENT_MARKDOWN"
+    | "DOLLAR_MARKUP"
+    | "DOLLAR_MARKDOWN";
   adjustmentValue: number;
   conditions: PricingConditions;
   logicType?: "AND" | "OR";
@@ -78,7 +91,7 @@ export async function createPricingRule(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const result = await db.insert(pricingRules).values({
     name: data.name,
     description: data.description,
@@ -88,40 +101,53 @@ export async function createPricingRule(data: {
     logicType: data.logicType || "AND",
     priority: data.priority || 0,
   });
-  
+
   return Number(result[0].insertId);
 }
 
-export async function updatePricingRule(ruleId: number, data: Partial<{
-  name: string;
-  description: string;
-  adjustmentType: "PERCENT_MARKUP" | "PERCENT_MARKDOWN" | "DOLLAR_MARKUP" | "DOLLAR_MARKDOWN";
-  adjustmentValue: number;
-  conditions: PricingConditions;
-  logicType: "AND" | "OR";
-  priority: number;
-  isActive: boolean;
-}>) {
+export async function updatePricingRule(
+  ruleId: number,
+  data: Partial<{
+    name: string;
+    description: string;
+    adjustmentType:
+      | "PERCENT_MARKUP"
+      | "PERCENT_MARKDOWN"
+      | "DOLLAR_MARKUP"
+      | "DOLLAR_MARKDOWN";
+    adjustmentValue: number;
+    conditions: PricingConditions;
+    logicType: "AND" | "OR";
+    priority: number;
+    isActive: boolean;
+  }>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
-  if (data.adjustmentType !== undefined) updateData.adjustmentType = data.adjustmentType;
-  if (data.adjustmentValue !== undefined) updateData.adjustmentValue = data.adjustmentValue.toString();
+  if (data.adjustmentType !== undefined)
+    updateData.adjustmentType = data.adjustmentType;
+  if (data.adjustmentValue !== undefined)
+    updateData.adjustmentValue = data.adjustmentValue.toString();
   if (data.conditions !== undefined) updateData.conditions = data.conditions;
   if (data.logicType !== undefined) updateData.logicType = data.logicType;
   if (data.priority !== undefined) updateData.priority = data.priority;
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
-  
-  await db.update(pricingRules).set(updateData).where(eq(pricingRules.id, ruleId));
+
+  await db
+    .update(pricingRules)
+    .set(updateData)
+    .where(eq(pricingRules.id, ruleId));
 }
 
 export async function deletePricingRule(ruleId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   await db.delete(pricingRules).where(eq(pricingRules.id, ruleId));
 }
 
@@ -132,15 +158,22 @@ export async function deletePricingRule(ruleId: number) {
 export async function getPricingProfiles() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  return await db.select().from(pricingProfiles).orderBy(desc(pricingProfiles.createdAt));
+
+  return await db
+    .select()
+    .from(pricingProfiles)
+    .orderBy(desc(pricingProfiles.createdAt));
 }
 
 export async function getPricingProfileById(profileId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  const result = await db.select().from(pricingProfiles).where(eq(pricingProfiles.id, profileId)).limit(1);
+
+  const result = await db
+    .select()
+    .from(pricingProfiles)
+    .where(eq(pricingProfiles.id, profileId))
+    .limit(1);
   return result[0] || null;
 }
 
@@ -152,45 +185,58 @@ export async function createPricingProfile(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const result = await db.insert(pricingProfiles).values({
     name: data.name,
     description: data.description,
     rules: data.rules,
     createdBy: data.createdBy,
   });
-  
+
   return Number(result[0].insertId);
 }
 
-export async function updatePricingProfile(profileId: number, data: Partial<{
-  name: string;
-  description: string;
-  rules: Array<{ ruleId: number; priority: number }>;
-}>) {
+export async function updatePricingProfile(
+  profileId: number,
+  data: Partial<{
+    name: string;
+    description: string;
+    rules: Array<{ ruleId: number; priority: number }>;
+  }>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.rules !== undefined) updateData.rules = data.rules;
-  
-  await db.update(pricingProfiles).set(updateData).where(eq(pricingProfiles.id, profileId));
+
+  await db
+    .update(pricingProfiles)
+    .set(updateData)
+    .where(eq(pricingProfiles.id, profileId));
 }
 
 export async function deletePricingProfile(profileId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   await db.delete(pricingProfiles).where(eq(pricingProfiles.id, profileId));
 }
 
-export async function applyProfileToClient(clientId: number, profileId: number) {
+export async function applyProfileToClient(
+  clientId: number,
+  profileId: number
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  await db.update(clients).set({ pricingProfileId: profileId }).where(eq(clients.id, clientId));
+
+  await db
+    .update(clients)
+    .set({ pricingProfileId: profileId })
+    .where(eq(clients.id, clientId));
 }
 
 // ============================================================================
@@ -200,58 +246,75 @@ export async function applyProfileToClient(clientId: number, profileId: number) 
 /**
  * Check if an inventory item matches a pricing rule's conditions
  */
-function matchesConditions(item: InventoryItem, conditions: PricingConditions, logicType: "AND" | "OR"): boolean {
+function matchesConditions(
+  item: InventoryItem,
+  conditions: PricingConditions,
+  logicType: "AND" | "OR"
+): boolean {
   const checks: boolean[] = [];
-  
+
   // Category check
   if (conditions.category !== undefined) {
     checks.push(item.category === conditions.category);
   }
-  
+
   // Subcategory check
   if (conditions.subcategory !== undefined) {
     checks.push(item.subcategory === conditions.subcategory);
   }
-  
+
   // Strain check
   if (conditions.strain !== undefined) {
     checks.push(item.strain === conditions.strain);
   }
-  
+
   // Tag check (item can have multiple tags)
   if (conditions.tag !== undefined) {
     const itemTags = item.tags || [];
     checks.push(itemTags.includes(conditions.tag));
   }
-  
+
   // Price range check
   if (conditions.priceMin !== undefined || conditions.priceMax !== undefined) {
     const price = item.basePrice;
-    const minCheck = conditions.priceMin !== undefined ? price >= conditions.priceMin : true;
-    const maxCheck = conditions.priceMax !== undefined ? price <= conditions.priceMax : true;
+    const minCheck =
+      conditions.priceMin !== undefined ? price >= conditions.priceMin : true;
+    const maxCheck =
+      conditions.priceMax !== undefined ? price <= conditions.priceMax : true;
     checks.push(minCheck && maxCheck);
   }
-  
+
   // Grade check
   if (conditions.grade !== undefined) {
     checks.push(item.grade === conditions.grade);
   }
-  
+
   // Vendor check
   if (conditions.vendor !== undefined) {
     checks.push(item.vendor === conditions.vendor);
   }
-  
+
   // Custom metadata checks
   for (const key in conditions) {
-    if (!["category", "subcategory", "strain", "tag", "priceMin", "priceMax", "grade", "vendor"].includes(key)) {
+    if (
+      ![
+        "category",
+        "subcategory",
+        "strain",
+        "tag",
+        "priceMin",
+        "priceMax",
+        "grade",
+        "vendor",
+      ].includes(key)
+    ) {
       checks.push(item[key] === conditions[key]);
     }
   }
-  
+
   // Apply logic type
   if (checks.length === 0) return false;
-  
+
   return logicType === "AND" ? checks.every(c => c) : checks.some(c => c);
 }
 
@@ -263,19 +326,25 @@ export async function calculateRetailPrice(
   rules: PricingRule[]
 ): Promise<PricedInventoryItem> {
   let currentPrice = item.basePrice;
-  const appliedRules: Array<{ ruleId: number; ruleName: string; adjustment: string }> = [];
-  
+  const appliedRules: Array<{
+    ruleId: number;
+    ruleName: string;
+    adjustment: string;
+  }> = [];
+
   // Sort rules by priority (highest first)
-  const sortedRules = [...rules].sort((a, b) => (b.priority || 0) - (a.priority || 0));
-  
+  const sortedRules = [...rules].sort(
+    (a, b) => (b.priority || 0) - (a.priority || 0)
+  );
+
   for (const rule of sortedRules) {
     const conditions = rule.conditions as PricingConditions;
     const logicType = rule.logicType || "AND";
-    
+
     if (matchesConditions(item, conditions, logicType)) {
       const adjustmentValue = parseFloat(rule.adjustmentValue.toString());
       let adjustmentText = "";
-      
+
       switch (rule.adjustmentType) {
         case "PERCENT_MARKUP":
           currentPrice = currentPrice * (1 + adjustmentValue / 100);
@@ -294,7 +363,7 @@ export async function calculateRetailPrice(
           adjustmentText = `-$${adjustmentValue}`;
           break;
       }
-      
+
       appliedRules.push({
         ruleId: rule.id,
         ruleName: rule.name,
@@ -302,12 +371,12 @@ export async function calculateRetailPrice(
       });
     }
   }
-  
+
   // Ensure price doesn't go negative
   currentPrice = Math.max(0, currentPrice);
-  
+
   const priceMarkup = ((currentPrice - item.basePrice) / item.basePrice) * 100;
-  
+
   return {
     ...item,
     retailPrice: Math.round(currentPrice * 100) / 100, // Round to 2 decimals
@@ -328,36 +397,86 @@ export async function calculateRetailPrices(
 
 /**
  * Get pricing rules for a client (from profile or custom rules)
+ *
+ * BUG-040 FIX: Handles empty rules arrays safely to prevent invalid SQL.
+ * When a client has no custom pricing rules, we return an empty array
+ * which allows the caller to fall back to default/base pricing.
+ *
+ * @param clientId - The client ID to get pricing rules for
+ * @returns Array of pricing rules, empty if none configured
  */
-export async function getClientPricingRules(clientId: number): Promise<PricingRule[]> {
+export async function getClientPricingRules(
+  clientId: number
+): Promise<PricingRule[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // Get client
-  const clientResult = await db.select().from(clients).where(eq(clients.id, clientId)).limit(1);
-  if (!clientResult[0]) throw new Error("Client not found");
-  
+  const clientResult = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.id, clientId))
+    .limit(1);
+  if (!clientResult[0]) {
+    console.warn(`[PricingEngine] Client ${clientId} not found`);
+    throw new Error("Client not found");
+  }
+
   const client = clientResult[0];
-  
+
   // If client has a pricing profile, use that
   if (client.pricingProfileId) {
     const profile = await getPricingProfileById(client.pricingProfileId);
     if (profile && profile.rules) {
-      const ruleIds = (profile.rules as Array<{ ruleId: number; priority: number }>).map(r => r.ruleId);
-      const rules = await db.select().from(pricingRules).where(sql`${pricingRules.id} IN (${sql.raw(ruleIds.join(","))})`);
+      const rulesArray = profile.rules as Array<{
+        ruleId: number;
+        priority: number;
+      }>;
+      const ruleIds = rulesArray.map(r => r.ruleId);
+
+      // BUG-040 FIX: Handle empty rules array - prevents invalid SQL "WHERE id IN ()"
+      if (ruleIds.length === 0) {
+        console.info(
+          `[PricingEngine] Client ${clientId} has profile ${client.pricingProfileId} with no rules, using defaults`
+        );
+        return [];
+      }
+
+      const rules = await db
+        .select()
+        .from(pricingRules)
+        .where(sql`${pricingRules.id} IN (${sql.raw(ruleIds.join(","))})`);
       return rules;
     }
   }
-  
+
   // If client has custom pricing rules, use those
   if (client.customPricingRules) {
-    const customRules = client.customPricingRules as Array<{ ruleId: number; priority: number }>;
+    const customRules = client.customPricingRules as Array<{
+      ruleId: number;
+      priority: number;
+    }>;
     const ruleIds = customRules.map(r => r.ruleId);
-    const rules = await db.select().from(pricingRules).where(sql`${pricingRules.id} IN (${sql.raw(ruleIds.join(","))})`);
+
+    // BUG-040 FIX: Handle empty custom rules array - prevents invalid SQL "WHERE id IN ()"
+    if (ruleIds.length === 0) {
+      console.info(
+        `[PricingEngine] Client ${clientId} has empty customPricingRules, using defaults`
+      );
+      return [];
+    }
+
+    const rules = await db
+      .select()
+      .from(pricingRules)
+      .where(sql`${pricingRules.id} IN (${sql.raw(ruleIds.join(","))})`);
     return rules;
   }
-  
-  // No pricing rules configured for this client
+
+  // No pricing rules configured for this client - log for debugging
+  console.info(
+    `[PricingEngine] Client ${clientId} has no custom pricing rules configured, using defaults`
+  );
   return [];
 }
 
@@ -371,4 +490,3 @@ export async function calculateClientPrices(
   const rules = await getClientPricingRules(clientId);
   return calculateRetailPrices(items, rules);
 }
-

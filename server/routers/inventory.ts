@@ -148,6 +148,7 @@ export const inventoryRouter = router({
 
   // Get single batch by ID
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
+  // ✅ BUG-041 FIX: Always return arrays for locations and auditLogs (never undefined)
   getById: protectedProcedure
     .use(requirePermission("inventory:read"))
     .input(validators.positiveInt)
@@ -156,11 +157,32 @@ export const inventoryRouter = router({
         const batch = await inventoryDb.getBatchById(input);
         if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input);
 
-        const locations = await inventoryDb.getBatchLocations(input);
-        const auditLogs = await inventoryDb.getAuditLogsForEntity(
+        // BUG-041 FIX: Ensure locations is always an array
+        const locationsResult = await inventoryDb.getBatchLocations(input);
+        const locations = Array.isArray(locationsResult) ? locationsResult : [];
+
+        // BUG-041 FIX: Ensure auditLogs is always an array
+        const auditLogsResult = await inventoryDb.getAuditLogsForEntity(
           "Batch",
           input
         );
+        const auditLogs = Array.isArray(auditLogsResult) ? auditLogsResult : [];
+
+        // Log for debugging if we had to default to empty arrays
+        if (!Array.isArray(locationsResult)) {
+          inventoryLogger.warn({
+            msg: "[BUG-041] getBatchLocations returned non-array, defaulting to empty",
+            batchId: input,
+            returnedType: typeof locationsResult,
+          });
+        }
+        if (!Array.isArray(auditLogsResult)) {
+          inventoryLogger.warn({
+            msg: "[BUG-041] getAuditLogsForEntity returned non-array, defaulting to empty",
+            batchId: input,
+            returnedType: typeof auditLogsResult,
+          });
+        }
 
         return {
           batch,

@@ -191,7 +191,7 @@ export function BatchDetailDrawer({
   const [showCogsEdit, setShowCogsEdit] = useState(false);
   const [showPriceSimulation, setShowPriceSimulation] = useState(false);
 
-  const { data, isLoading, refetch } = trpc.inventory.getById.useQuery(
+  const { data, isLoading, error, refetch } = trpc.inventory.getById.useQuery(
     batchId as number,
     {
       enabled: !!batchId && open,
@@ -200,10 +200,44 @@ export function BatchDetailDrawer({
 
   if (!batchId || !open) return null;
 
+  // BUG-041 FIX: Handle error state
+  if (error) {
+    console.error(`[BatchDetailDrawer] Error loading batch ${batchId}:`, error);
+    return (
+      <Sheet open={open} onOpenChange={onClose}>
+        <SheetContent className="w-full sm:max-w-2xl">
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <AlertCircle className="h-12 w-12 text-destructive" />
+            <p className="text-muted-foreground">
+              Failed to load batch details
+            </p>
+            <Button onClick={() => refetch()} variant="outline">
+              Try Again
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   const batch = data?.batch;
-  const locations = data?.locations || [];
-  const auditLogs = data?.auditLogs || [];
+
+  // BUG-041 FIX: Defensive array access with logging for unexpected states
+  const locations = Array.isArray(data?.locations) ? data.locations : [];
+  const auditLogs = Array.isArray(data?.auditLogs) ? data.auditLogs : [];
   const availableQty = data?.availableQty || 0;
+
+  // BUG-041: Log warnings for undefined arrays (helps track data issues)
+  if (data && !Array.isArray(data.locations)) {
+    console.warn(
+      `[BatchDetailDrawer] Batch ${batchId} has undefined/invalid locations`
+    );
+  }
+  if (data && !Array.isArray(data.auditLogs)) {
+    console.warn(
+      `[BatchDetailDrawer] Batch ${batchId} has undefined/invalid auditLogs`
+    );
+  }
 
   // Get status badge
   const getStatusBadge = (status: string) => {

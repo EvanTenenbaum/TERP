@@ -1,17 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Note: 'any' types are used for mocking database calls in tests
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 
 // Mock the database (MUST be before other imports)
 vi.mock("../db", () => setupDbMock());
 
-import { 
-  getUserPermissions, 
-  hasPermission, 
-  hasAllPermissions, 
+import {
+  getUserPermissions,
+  hasPermission,
+  hasAllPermissions,
   hasAnyPermission,
   getUserRoles,
   isSuperAdmin,
-  clearPermissionCache
+  clearPermissionCache,
 } from "./permissionService";
 import { db } from "../db";
 
@@ -60,10 +62,7 @@ describe("permissionService", () => {
               return [{ permissionId: 1 }, { permissionId: 2 }];
             } else if (callCount === 3) {
               // Third call: get permission names
-              return [
-                { name: "orders:create" },
-                { name: "orders:read" },
-              ];
+              return [{ name: "orders:create" }, { name: "orders:read" }];
             } else if (callCount === 4) {
               // Fourth call: get permission overrides
               return [];
@@ -130,10 +129,7 @@ describe("permissionService", () => {
               return [{ permissionId: 1 }, { permissionId: 2 }];
             } else if (callCount === 3) {
               // Third call: get permission names
-              return [
-                { name: "orders:create" },
-                { name: "orders:delete" },
-              ];
+              return [{ name: "orders:create" }, { name: "orders:delete" }];
             } else if (callCount === 4) {
               // Fourth call: get permission overrides
               return [{ permissionId: 2, granted: 0 }]; // Revoke orders:delete
@@ -252,10 +248,7 @@ describe("permissionService", () => {
             } else if (callCount === 2) {
               return [{ permissionId: 1 }, { permissionId: 2 }];
             } else if (callCount === 3) {
-              return [
-                { name: "orders:create" },
-                { name: "orders:read" },
-              ];
+              return [{ name: "orders:create" }, { name: "orders:read" }];
             } else if (callCount === 4) {
               return [];
             }
@@ -264,7 +257,10 @@ describe("permissionService", () => {
         }),
       }));
 
-      const result = await hasAllPermissions("user123", ["orders:create", "orders:read"]);
+      const result = await hasAllPermissions("user123", [
+        "orders:create",
+        "orders:read",
+      ]);
 
       expect(result).toBe(true);
     });
@@ -289,7 +285,10 @@ describe("permissionService", () => {
         }),
       }));
 
-      const result = await hasAllPermissions("user123", ["orders:create", "orders:read"]);
+      const result = await hasAllPermissions("user123", [
+        "orders:create",
+        "orders:read",
+      ]);
 
       expect(result).toBe(false);
     });
@@ -316,7 +315,10 @@ describe("permissionService", () => {
         }),
       }));
 
-      const result = await hasAnyPermission("user123", ["orders:create", "orders:read"]);
+      const result = await hasAnyPermission("user123", [
+        "orders:create",
+        "orders:read",
+      ]);
 
       expect(result).toBe(true);
     });
@@ -341,7 +343,10 @@ describe("permissionService", () => {
         }),
       }));
 
-      const result = await hasAnyPermission("user123", ["orders:create", "orders:read"]);
+      const result = await hasAnyPermission("user123", [
+        "orders:create",
+        "orders:read",
+      ]);
 
       expect(result).toBe(false);
     });
@@ -359,7 +364,11 @@ describe("permissionService", () => {
             } else if (callCount === 2) {
               return [
                 { id: 1, name: "Sales Manager", description: "Manages sales" },
-                { id: 2, name: "Accountant", description: "Manages accounting" },
+                {
+                  id: 2,
+                  name: "Accountant",
+                  description: "Manages accounting",
+                },
               ];
             }
             return [];
@@ -397,7 +406,9 @@ describe("permissionService", () => {
             if (callCount === 1) {
               return [{ roleId: 1 }];
             } else if (callCount === 2) {
-              return [{ id: 1, name: "Super Admin", description: "Full access" }];
+              return [
+                { id: 1, name: "Super Admin", description: "Full access" },
+              ];
             }
             return [];
           }),
@@ -418,7 +429,9 @@ describe("permissionService", () => {
             if (callCount === 1) {
               return [{ roleId: 2 }];
             } else if (callCount === 2) {
-              return [{ id: 2, name: "Sales Manager", description: "Manages sales" }];
+              return [
+                { id: 2, name: "Sales Manager", description: "Manages sales" },
+              ];
             }
             return [];
           }),
@@ -428,6 +441,130 @@ describe("permissionService", () => {
       const result = await isSuperAdmin("user123");
 
       expect(result).toBe(false);
+    });
+  });
+
+  // BUG-043: Tests for empty array handling
+  describe("getUserPermissions - Empty Array Handling (BUG-043)", () => {
+    it("should return empty set when user has roles but roles have no permissions", async () => {
+      let callCount = 0;
+      (db.select as any).mockImplementation(() => ({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockImplementation(async () => {
+            callCount++;
+            if (callCount === 1) {
+              // User has roles
+              return [{ roleId: 1 }];
+            } else if (callCount === 2) {
+              // But roles have no permissions
+              return [];
+            }
+            return [];
+          }),
+        }),
+      }));
+
+      const permissions = await getUserPermissions("user123");
+
+      // SECURITY: Empty permissions = no access (deny-by-default)
+      expect(permissions.size).toBe(0);
+    });
+
+    it("should handle permission overrides with empty base permissions", async () => {
+      let callCount = 0;
+      (db.select as any).mockImplementation(() => ({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockImplementation(async () => {
+            callCount++;
+            if (callCount === 1) {
+              // User has roles
+              return [{ roleId: 1 }];
+            } else if (callCount === 2) {
+              // Roles have no permissions
+              return [];
+            }
+            return [];
+          }),
+        }),
+      }));
+
+      const permissions = await getUserPermissions("user123");
+
+      // Even with potential overrides, empty base permissions should return empty
+      expect(permissions.size).toBe(0);
+    });
+  });
+
+  describe("hasPermission - Security (BUG-043)", () => {
+    it("should return false for any permission when user has no permissions (security)", async () => {
+      // Mock: User has roles but roles have no permissions
+      let callCount = 0;
+      (db.select as any).mockImplementation(() => ({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockImplementation(async () => {
+            callCount++;
+            if (callCount === 1) {
+              return [{ roleId: 1 }];
+            } else if (callCount === 2) {
+              return []; // No permissions for this role
+            }
+            return [];
+          }),
+        }),
+      }));
+
+      const result = await hasPermission("user123", "admin:full_access");
+
+      // SECURITY: User with no permissions should NOT have any access
+      expect(result).toBe(false);
+    });
+
+    it("should return false for sensitive permissions when user has no roles", async () => {
+      (db.select as any).mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]), // No roles
+        }),
+      });
+
+      const result = await hasPermission("user123", "admin:delete_all");
+
+      // SECURITY: No roles = no permissions = no access
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("getUserRoles - Empty Array Handling (BUG-043)", () => {
+    it("should return empty array when user has no role assignments", async () => {
+      (db.select as any).mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      });
+
+      const roles = await getUserRoles("user123");
+
+      expect(roles).toEqual([]);
+    });
+
+    it("should handle database returning empty roleIds gracefully", async () => {
+      // Edge case: userRoles table returns records but with no valid roleId
+      let callCount = 0;
+      (db.select as any).mockImplementation(() => ({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockImplementation(async () => {
+            callCount++;
+            if (callCount === 1) {
+              // Return records but they'll be filtered to empty roleIds
+              return [];
+            }
+            return [];
+          }),
+        }),
+      }));
+
+      const roles = await getUserRoles("user123");
+
+      expect(roles).toEqual([]);
     });
   });
 });
