@@ -19,6 +19,9 @@ import { inventoryMovementsRouter } from "./routers/inventoryMovements";
 import { pricingRouter } from "./routers/pricing";
 import { salesSheetsRouter } from "./routers/salesSheets";
 import { ordersRouter } from "./routers/orders";
+import { quotesRouter } from "./routers/quotes";
+import { invoicesRouter } from "./routers/invoices";
+import { paymentsRouter } from "./routers/payments";
 import { auditLogsRouter } from "./routers/auditLogs";
 import { configurationRouter } from "./routers/configuration";
 import { accountingHooksRouter } from "./routers/accountingHooks";
@@ -101,7 +104,6 @@ import { healthRouter } from "./routers/health";
 
 import { productCatalogueRouter } from "./routers/productCatalogue";
 
-
 // Debug router - only imported in development
 // Wrapped in try-catch to handle module resolution issues in test environments
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -136,6 +138,9 @@ export const appRouter = router({
   pricing: pricingRouter,
   salesSheets: salesSheetsRouter,
   orders: ordersRouter,
+  quotes: quotesRouter, // Wave 5A: Sales Workflow - Quote Management
+  invoices: invoicesRouter, // Wave 5A: Sales Workflow - Invoice Management
+  payments: paymentsRouter, // Wave 5A: Sales Workflow - Payment Recording
   auditLogs: auditLogsRouter,
   configuration: configurationRouter,
   accountingHooks: accountingHooksRouter,
