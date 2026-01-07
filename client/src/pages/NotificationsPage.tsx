@@ -5,11 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { ListSkeleton } from "@/components/ui/skeleton-loaders";
+import { EmptyState, ErrorState, emptyStateConfigs } from "@/components/ui/empty-state";
 
 export const NotificationsPage = React.memo(
   function NotificationsPage(): React.ReactElement {
     const utils = trpc.useContext();
-    const { data: listData, isLoading } = trpc.notifications.list.useQuery({
+    const { data: listData, isLoading, error, refetch } = trpc.notifications.list.useQuery({
       limit: 50,
       offset: 0,
     });
@@ -77,10 +78,18 @@ export const NotificationsPage = React.memo(
           </CardHeader>
           <CardContent className="space-y-3">
             {isLoading && <ListSkeleton items={5} showAvatar showSecondary />}
-            {!isLoading && items.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No notifications yet.
-              </p>
+            {!isLoading && error && (
+              <ErrorState
+                title="Failed to load notifications"
+                description={error.message || "An error occurred while loading notifications."}
+                onRetry={() => refetch()}
+              />
+            )}
+            {!isLoading && !error && items.length === 0 && (
+              <EmptyState
+                {...emptyStateConfigs.notifications}
+                size="sm"
+              />
             )}
             {items.map(item => (
               <div

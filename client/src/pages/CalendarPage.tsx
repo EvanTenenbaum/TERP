@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, List, Grid3x3, Clock, Inbox, Palmtree } from "lucide-react";
+import { Calendar, List, Grid3x3, Clock, Inbox, Palmtree, AlertCircle } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import MonthView from "../components/calendar/MonthView";
 import WeekView from "../components/calendar/WeekView";
@@ -11,6 +11,14 @@ import AppointmentRequestsList from "../components/calendar/AppointmentRequestsL
 import AppointmentRequestModal from "../components/calendar/AppointmentRequestModal";
 import TimeOffRequestsList from "../components/calendar/TimeOffRequestsList";
 import { trpc } from "../lib/trpc";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  DatabaseErrorState,
+  ErrorState,
+  isDatabaseError,
+} from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
+import { Card } from "@/components/ui/card";
 
 /**
  * Calendar Page
@@ -41,12 +49,17 @@ export default function CalendarPage() {
 
   // Load events for current date range
   const dateRange = getDateRange(currentDate, currentView);
-  const { data: eventsData, refetch: refetchEvents } =
-    trpc.calendar.getEvents.useQuery({
-      startDate: dateRange.start,
-      endDate: dateRange.end,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    });
+  const {
+    data: eventsData,
+    refetch: refetchEvents,
+    isLoading: eventsLoading,
+    error: eventsError,
+    isError: isEventsError,
+  } = trpc.calendar.getEvents.useQuery({
+    startDate: dateRange.start,
+    endDate: dateRange.end,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
 
   // Handle the response which could be an array or an object with data property
   const events = Array.isArray(eventsData)
@@ -130,6 +143,65 @@ export default function CalendarPage() {
     setSelectedEventId(null);
     refetchEvents();
   };
+
+  // CRITICAL: Handle database errors gracefully (Wave 3 finding)
+  if (isEventsError && activeTab === "calendar") {
+    console.error("[CalendarPage] API Error:", eventsError);
+
+    const isDbError = isDatabaseError(eventsError);
+
+    return (
+      <div className="flex h-screen flex-col bg-background">
+        {/* Header */}
+        <div className="border-b bg-card px-3 py-3 sm:px-6 sm:py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <BackButton label="Back to Dashboard" to="/" />
+              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Calendar</h1>
+            </div>
+            <button
+              onClick={handleCreateEvent}
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 sm:px-4 sm:py-2 sm:text-sm"
+            >
+              Create Event
+            </button>
+          </div>
+        </div>
+
+        {/* Error State */}
+        <div className="flex-1 overflow-auto p-3 sm:p-6">
+          <Card className="p-6">
+            {isDbError ? (
+              <DatabaseErrorState
+                entity="calendar events"
+                onRetry={() => refetchEvents()}
+                errorMessage={eventsError?.message}
+              />
+            ) : (
+              <ErrorState
+                title="Failed to load calendar"
+                description={eventsError?.message || "An error occurred while loading calendar events."}
+                onRetry={() => refetchEvents()}
+                showSupport
+              />
+            )}
+          </Card>
+        </div>
+
+        {/* Event Form Dialog - keep available for retry */}
+        <EventFormDialog
+          isOpen={isEventDialogOpen}
+          onClose={() => setIsEventDialogOpen(false)}
+          eventId={selectedEventId}
+          initialDate={selectedDate}
+          onSaved={handleEventSaved}
+        />
+      </div>
+    );
+  }
+
+  // Check if calendar has events
+  const hasEvents = events && events.length > 0;
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -295,7 +367,23 @@ export default function CalendarPage() {
         {/* Calendar Tab */}
         {activeTab === "calendar" && (
           <>
-            {currentView === "MONTH" && (
+            {/* Loading state */}
+            {eventsLoading && (
+              <LoadingState message="Loading calendar events..." />
+            )}
+
+            {/* Empty state alert - show when no events but not loading or error */}
+            {!hasEvents && !eventsLoading && !isEventsError && (
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>No events this period</AlertTitle>
+                <AlertDescription>
+                  Create an appointment or task to see it on your calendar.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!eventsLoading && currentView === "MONTH" && (
               <MonthView
                 currentDate={currentDate}
                 events={formattedEvents}
@@ -303,21 +391,21 @@ export default function CalendarPage() {
                 onDateClick={handleDateClick}
               />
             )}
-            {currentView === "WEEK" && (
+            {!eventsLoading && currentView === "WEEK" && (
               <WeekView
                 currentDate={currentDate}
                 events={formattedEvents}
                 onEventClick={handleEventClick}
               />
             )}
-            {currentView === "DAY" && (
+            {!eventsLoading && currentView === "DAY" && (
               <DayView
                 currentDate={currentDate}
                 events={formattedEvents}
                 onEventClick={handleEventClick}
               />
             )}
-            {currentView === "AGENDA" && (
+            {!eventsLoading && currentView === "AGENDA" && (
               <AgendaView
                 currentDate={currentDate}
                 events={formattedEvents}

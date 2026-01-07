@@ -9,6 +9,9 @@ import { trpc } from "@/lib/trpc";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatCurrency } from "@/lib/utils";
 import { MetricCard, TopClientsTable, RevenueTrendsTable } from "@/components/analytics";
+import { ErrorState, EmptyState, emptyStateConfigs } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
+import { useLocation } from "wouter";
 
 type Period = "day" | "week" | "month" | "quarter" | "year" | "all";
 
@@ -23,8 +26,9 @@ const periodLabels: Record<Period, string> = {
 
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>("month");
+  const [, setLocation] = useLocation();
 
-  const { data, isLoading, error } = trpc.analytics.getExtendedSummary.useQuery({ period });
+  const { data, isLoading, error, refetch } = trpc.analytics.getExtendedSummary.useQuery({ period });
   const { data: revenueTrends, isLoading: trendsLoading } = trpc.analytics.getRevenueTrends.useQuery({
     granularity: period === "day" || period === "week" ? "day" : "month",
     limit: 12,
@@ -94,11 +98,13 @@ export default function AnalyticsPage() {
 
         <TabsContent value="overview" className="space-y-4">
           {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>Failed to load analytics data. Please try again later.</AlertDescription>
-            </Alert>
+            <Card className="p-6">
+              <ErrorState
+                title="Failed to load analytics"
+                description={error.message || "An error occurred while loading analytics data."}
+                onRetry={() => refetch()}
+              />
+            </Card>
           )}
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -123,7 +129,7 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               {trendsLoading ? (
-                <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                <LoadingState message="Loading revenue trends..." size="sm" />
               ) : chartData.length > 0 ? (
                 <div className="space-y-4">
                   <RevenueTrendsTable data={chartData} maxRows={6} />
@@ -134,10 +140,14 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No revenue data available for the selected period.</p>
-                </div>
+                <EmptyState
+                  {...emptyStateConfigs.analytics}
+                  size="sm"
+                  action={{
+                    label: "Create your first order",
+                    onClick: () => setLocation("/orders/new"),
+                  }}
+                />
               )}
             </CardContent>
           </Card>
@@ -156,15 +166,16 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               {trendsLoading ? (
-                <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                <LoadingState message="Loading sales data..." size="sm" />
               ) : chartData.length > 0 ? (
                 <RevenueTrendsTable data={chartData} />
               ) : (
-                <Alert className="bg-muted/50">
-                  <TrendingUp className="h-4 w-4" />
-                  <AlertTitle>No Data Available</AlertTitle>
-                  <AlertDescription>No sales data available for the selected period.</AlertDescription>
-                </Alert>
+                <EmptyState
+                  variant="analytics"
+                  title="No sales data"
+                  description="No sales data available for the selected period."
+                  size="sm"
+                />
               )}
             </CardContent>
           </Card>
@@ -209,15 +220,20 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               {clientsLoading ? (
-                <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                <LoadingState message="Loading top clients..." size="sm" />
               ) : topClients && topClients.length > 0 ? (
                 <TopClientsTable clients={topClients} />
               ) : (
-                <Alert className="bg-muted/50">
-                  <Users className="h-4 w-4" />
-                  <AlertTitle>No Data Available</AlertTitle>
-                  <AlertDescription>No client data available. Start adding clients and orders to see analytics.</AlertDescription>
-                </Alert>
+                <EmptyState
+                  variant="clients"
+                  title="No client data"
+                  description="No client data available. Start adding clients and orders to see analytics."
+                  size="sm"
+                  action={{
+                    label: "Add your first client",
+                    onClick: () => setLocation("/clients/new"),
+                  }}
+                />
               )}
             </CardContent>
           </Card>
