@@ -1,42 +1,52 @@
 import { router, publicProcedure } from '../_core/trpc';
-import { db } from '../db';
-import { sql } from 'drizzle-orm';
+import {
+  performHealthCheck,
+  livenessCheck,
+  readinessCheck,
+  getHealthMetrics
+} from '../_core/healthCheck';
 
-const startTime = Date.now();
-
+/**
+ * Health Router
+ * Exposes health check endpoints for monitoring and orchestration
+ *
+ * Endpoints:
+ * - check: Full health check with database, memory, and external services
+ * - liveness: Simple check if service is running (for k8s/docker liveness probes)
+ * - readiness: Check if service can handle requests (for k8s readiness probes)
+ * - metrics: Get detailed runtime metrics for monitoring
+ */
 export const healthRouter = router({
+  /**
+   * Comprehensive health check
+   * Checks database, memory, connection pool, and external services
+   */
   check: publicProcedure.query(async () => {
-    const uptime = Math.floor((Date.now() - startTime) / 1000);
+    return performHealthCheck();
+  }),
 
-    // Check database connectivity
-    let dbStatus = 'unknown';
-    let dbLatency = 0;
-    try {
-      const dbStart = Date.now();
-      await db.execute(sql`SELECT 1`);
-      dbLatency = Date.now() - dbStart;
-      dbStatus = 'connected';
-    } catch (error) {
-      dbStatus = 'disconnected';
-    }
+  /**
+   * Simple liveness check
+   * Returns OK if the server is running - used for container health probes
+   */
+  liveness: publicProcedure.query(() => {
+    return livenessCheck();
+  }),
 
-    // Memory usage
-    const memUsage = process.memoryUsage();
-    const memoryMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+  /**
+   * Readiness check
+   * Returns OK if the server can handle requests (database connected, memory ok)
+   * Used for load balancer health checks
+   */
+  readiness: publicProcedure.query(async () => {
+    return readinessCheck();
+  }),
 
-    return {
-      status: dbStatus === 'connected' ? 'healthy' : 'degraded',
-      version: process.env.npm_package_version || '1.0.0',
-      uptime,
-      timestamp: new Date().toISOString(),
-      database: {
-        status: dbStatus,
-        latencyMs: dbLatency,
-      },
-      memory: {
-        usedMB: memoryMB,
-        limitMB: 512, // DigitalOcean basic-xs limit
-      },
-    };
+  /**
+   * Runtime metrics
+   * Returns detailed metrics for monitoring dashboards
+   */
+  metrics: publicProcedure.query(() => {
+    return getHealthMetrics();
   }),
 });

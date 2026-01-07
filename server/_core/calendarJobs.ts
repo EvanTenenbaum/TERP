@@ -8,6 +8,7 @@ import InstanceGenerationService from "./instanceGenerationService";
 import DataIntegrityService from "./dataIntegrityService";
 import * as calendarDb from "../calendarDb";
 import { sendNotification, sendReminder } from "../services/notificationService";
+import { logger } from "./logger";
 
 /**
  * Instance Generation Job
@@ -326,10 +327,14 @@ export async function dataIntegrityVerificationJob(): Promise<void> {
       report.invalidEntityLinks > 0;
 
     if (hasIssues) {
-      console.warn("[CalendarJobs] Data integrity issues found:", report);
-      // TODO: Send alert to admin
+      // Log at error level to trigger monitoring alerts
+      logger.error({
+        msg: "Calendar data integrity issues detected",
+        alertType: "DATA_INTEGRITY",
+        report,
+      });
     } else {
-      console.log("[CalendarJobs] No data integrity issues found");
+      logger.info({ msg: "Calendar data integrity verification passed" });
     }
   } catch (error) {
     console.error("[CalendarJobs] Data integrity verification job failed:", error);
