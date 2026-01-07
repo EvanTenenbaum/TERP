@@ -32,6 +32,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CreditIndicator } from "@/components/credit/CreditIndicator";
 import { useCreditVisibility } from "@/hooks/useCreditVisibility";
 import { TeriCodeLabel } from "@/components/ui/teri-code-label";
+import { useRetryableQuery } from "@/hooks/useRetryableQuery";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function ClientsListPage() {
   const [, setLocation] = useLocation();
@@ -138,13 +141,23 @@ export default function ClientsListPage() {
   const limit = 50;
 
   // Fetch clients - handle paginated response
-  const { data: clientsData, isLoading, error } = trpc.clients.list.useQuery({
+  // BUG-048: Use useRetryableQuery to preserve state on retry
+  const clientsQueryRaw = trpc.clients.list.useQuery({
     limit,
     offset: page * limit,
     search: search || undefined,
     clientTypes: clientTypes.length > 0 ? clientTypes : undefined,
     hasDebt,
   });
+
+  const clientsQuery = useRetryableQuery(clientsQueryRaw, {
+    maxRetries: 3,
+    onMaxRetriesReached: () => {
+      toast.error("Unable to load clients. Please try refreshing the page or contact support.");
+    },
+  });
+
+  const { data: clientsData, isLoading, error } = clientsQuery;
   const clients = Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []);
   
   // Debug logging for client data issues
@@ -602,9 +615,27 @@ export default function ClientsListPage() {
               icon={<AlertTriangle className="h-12 w-12 text-destructive/50" />}
               title="Failed to load clients"
               description={error.message || "An error occurred while fetching clients. Please try again."}
-              action={{
-                label: "Retry",
-                onClick: () => window.location.reload(),
+              action={clientsQuery.canRetry ? {
+                label: clientsQuery.isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Retrying...
+                  </span>
+                ) : (
+                  `Retry (${clientsQuery.remainingRetries} attempts remaining)`
+                ),
+                onClick: clientsQuery.handleRetry,
+                disabled: clientsQuery.isLoading,
+              } : {
+                label: "Clear filters and refresh",
+                onClick: () => {
+                  setClientTypes([]);
+                  setHasDebt(undefined);
+                  setSearch("");
+                  setPage(0);
+                  clientsQuery.resetRetryCount();
+                },
+                variant: "outline",
               }}
             />
           ) : !clients || clients.length === 0 ? (
