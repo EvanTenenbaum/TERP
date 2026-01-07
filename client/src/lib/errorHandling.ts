@@ -28,10 +28,11 @@ export interface AppErrorInfo {
 
 /**
  * Error codes mapped to user-friendly messages
+ * BUG-046: Differentiated auth error messages
  */
 const ERROR_MESSAGES: Record<string, string> = {
-  // tRPC standard codes
-  UNAUTHORIZED: "Please log in to perform this action.",
+  // tRPC standard codes - BUG-046: Clearer auth messages
+  UNAUTHORIZED: "Please log in to continue.",
   FORBIDDEN: "You do not have permission to perform this action.",
   NOT_FOUND: "The requested resource was not found.",
   BAD_REQUEST: "Invalid request. Please check your input.",
@@ -47,9 +48,14 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 /**
+ * BUG-046: Auth error type detection
+ */
+export type AuthErrorType = "NOT_LOGGED_IN" | "SESSION_EXPIRED" | "DEMO_USER_RESTRICTED" | "PERMISSION_DENIED" | "UNKNOWN";
+
+/**
  * Type guard for tRPC client errors
  */
-function isTRPCClientError(error: unknown): error is TRPCClientError<AppRouter> {
+export function isTRPCClientError(error: unknown): error is TRPCClientError<AppRouter> {
   return error instanceof TRPCClientError;
 }
 
@@ -207,4 +213,130 @@ export function logError(error: unknown, context?: Record<string, unknown>): voi
     // Only include cause in development
     ...(import.meta.env.DEV && { cause: normalized.cause }),
   });
+}
+
+/**
+ * BUG-046: Determine the specific type of auth error
+ */
+export function getAuthErrorType(error: unknown): AuthErrorType {
+  if (!isTRPCClientError(error)) {
+    return "UNKNOWN";
+  }
+
+  const data = error.data as Record<string, unknown> | undefined;
+  const code = data?.code as string | undefined;
+  const message = error.message.toLowerCase();
+
+  // Check for session expiry
+  if (message.includes("session") && message.includes("expired")) {
+    return "SESSION_EXPIRED";
+  }
+
+  // Check for demo user restriction
+  if (message.includes("demo") || message.includes("not available in demo")) {
+    return "DEMO_USER_RESTRICTED";
+  }
+
+  // Differentiate by error code
+  if (code === "UNAUTHORIZED") {
+    return "NOT_LOGGED_IN";
+  }
+
+  if (code === "FORBIDDEN") {
+    return "PERMISSION_DENIED";
+  }
+
+  return "UNKNOWN";
+}
+
+/**
+ * BUG-046: Auth-specific error info with action
+ */
+export interface AuthErrorInfo {
+  type: AuthErrorType;
+  title: string;
+  message: string;
+  action?: {
+    label: string;
+    href?: string;
+    onClick?: () => void;
+  };
+}
+
+/**
+ * BUG-046: Get auth-specific error message and action
+ */
+export function getAuthErrorInfo(error: unknown): AuthErrorInfo {
+  const type = getAuthErrorType(error);
+  const originalMessage = getErrorMessage(error);
+
+  switch (type) {
+    case "NOT_LOGGED_IN":
+      return {
+        type,
+        title: "Login Required",
+        message: "Please log in to access this feature.",
+        action: {
+          label: "Log In",
+          href: `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+        },
+      };
+
+    case "SESSION_EXPIRED":
+      return {
+        type,
+        title: "Session Expired",
+        message: "Your session has expired. Please log in again.",
+        action: {
+          label: "Log In Again",
+          href: `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+        },
+      };
+
+    case "DEMO_USER_RESTRICTED":
+      return {
+        type,
+        title: "Feature Not Available",
+        message: "This feature is not available in demo mode. Upgrade your account to access full functionality.",
+        action: {
+          label: "Upgrade Account",
+          href: "/upgrade",
+        },
+      };
+
+    case "PERMISSION_DENIED":
+      return {
+        type,
+        title: "Access Denied",
+        message: originalMessage || "You do not have permission to perform this action.",
+      };
+
+    default:
+      return {
+        type,
+        title: "Authentication Error",
+        message: originalMessage || "An authentication error occurred.",
+      };
+  }
+}
+
+/**
+ * BUG-046: Check if error is unauthorized (not logged in)
+ */
+export function isUnauthorizedError(error: unknown): boolean {
+  return getErrorCode(error) === "UNAUTHORIZED";
+}
+
+/**
+ * BUG-046: Check if error is forbidden (no permission)
+ */
+export function isForbiddenError(error: unknown): boolean {
+  return getErrorCode(error) === "FORBIDDEN";
+}
+
+/**
+ * BUG-046: Check if error is demo user restriction
+ */
+export function isDemoUserError(error: unknown): boolean {
+  return getAuthErrorType(error) === "DEMO_USER_RESTRICTED";
 }

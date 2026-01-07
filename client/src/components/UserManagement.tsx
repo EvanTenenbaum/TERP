@@ -31,8 +31,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  AlertTriangle,
+  LogIn,
+  Lock,
 } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  getAuthErrorInfo,
+  isAuthError,
+  getErrorCode,
+} from "@/lib/errorHandling";
 
 // Type for user from the API
 interface User {
@@ -239,17 +248,83 @@ export function UserManagement() {
     );
   }
 
-  // Error state
+  // BUG-046: Differentiated error state for auth vs other errors
   if (error) {
+    const errorCode = getErrorCode(error);
+
+    // Handle auth errors with specific UI
+    if (isAuthError(error)) {
+      const authError = getAuthErrorInfo(error);
+
+      return (
+        <Card className="max-w-lg mx-auto mt-8">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              {authError.type === "NOT_LOGGED_IN" || authError.type === "SESSION_EXPIRED" ? (
+                <LogIn className="h-5 w-5 text-yellow-600" />
+              ) : (
+                <Lock className="h-5 w-5 text-destructive" />
+              )}
+              <CardTitle>{authError.title}</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert variant={authError.type === "PERMISSION_DENIED" ? "destructive" : "default"}>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>
+                {authError.type === "NOT_LOGGED_IN" && "Login Required"}
+                {authError.type === "SESSION_EXPIRED" && "Session Expired"}
+                {authError.type === "DEMO_USER_RESTRICTED" && "Demo Mode Restriction"}
+                {authError.type === "PERMISSION_DENIED" && "Access Denied"}
+              </AlertTitle>
+              <AlertDescription>{authError.message}</AlertDescription>
+            </Alert>
+
+            {authError.action && (
+              <div className="flex justify-center">
+                {authError.action.href ? (
+                  <Link href={authError.action.href}>
+                    <Button>
+                      {authError.type === "NOT_LOGGED_IN" || authError.type === "SESSION_EXPIRED" ? (
+                        <LogIn className="h-4 w-4 mr-2" />
+                      ) : null}
+                      {authError.action.label}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button onClick={authError.action.onClick}>
+                    {authError.action.label}
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // Handle other errors with retry option
     return (
-      <div className="p-8 text-center">
-        <p className="text-destructive mb-4">
-          Failed to load users: {error.message}
-        </p>
-        <Button onClick={() => utils.userManagement.listUsers.invalidate()}>
-          Try Again
-        </Button>
-      </div>
+      <Card className="max-w-lg mx-auto mt-8">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <CardTitle>Failed to Load Users</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error.message}</AlertDescription>
+          </Alert>
+          <div className="flex justify-center">
+            <Button onClick={() => utils.userManagement.listUsers.invalidate()}>
+              Try Again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
