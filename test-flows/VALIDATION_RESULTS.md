@@ -46,3 +46,39 @@ BUG-046: Settings Users Tab Auth Error - STILL OPEN (Shows 'Authentication requi
 - 0 files with @ts-nocheck found
 - 0 files with @ts-ignore found
 - All TypeScript files are properly typed
+QA-049: Products Page Empty - Products page shows 'No results found' and 'Showing 0 - 0 of 0' despite 121 products existing in database (confirmed in Wave 7 report)
+QA-050: Samples Page Empty - Samples page shows 'All 0', 'Pending 0', 'Approved 0' despite 6 samples existing in database (confirmed in Wave 7 report)
+
+## Gaps and Missing Tasks Identified
+
+### New Issues Found (Not in Roadmap)
+
+| ID | Description | Severity | Source |
+|----|-------------|----------|--------|
+| QA-049 | Products Page shows "No results found" despite 121 products in DB | P1 | Live site + Wave 7 report |
+| QA-050 | Samples Page shows "All 0" despite 6 samples in DB | P1 | Live site + Wave 7 report |
+| CLEANUP-001 | Remove seed-fill-gaps PRE_DEPLOY job from DigitalOcean app spec | P2 | Wave 7 action item |
+| BUG-070 | Spreadsheet View route returns 404 (was empty grid before) | P2 | Live site validation |
+
+### Pending Action Items from Wave 7
+
+1. **Remove DigitalOcean Job** - The `seed-fill-gaps` PRE_DEPLOY job should be removed from app spec
+2. **Investigate Products Display** - QA-049 needs root cause analysis
+3. **Investigate Samples Display** - QA-050 needs root cause analysis
+
+### TODO/FIXME Items in Codebase (35 total)
+
+Key items requiring attention:
+- `server/_core/index.ts:161` - "TODO: Fix schema drift and re-enable seeding"
+- `server/ordersDb.ts:321-323` - Invoice/payment/credit integration TODOs
+- `server/routers/receipts.ts:470,497` - Email/SMS service integration TODOs
+- `client/src/components/inventory/BatchDetailDrawer.tsx:325,335,617` - Product relation and pricing TODOs
+
+### Lifecycle Tasks Status
+
+| Wave | Description | Status |
+|------|-------------|--------|
+| Wave 0 | @ts-nocheck removal | ✅ COMPLETE (0 files found) |
+| Wave 1-3 | Auth, Accounting, TypeScript | ✅ COMPLETE (per MASTER_ROADMAP) |
+| Wave 7 | Data Seeding & QA Infrastructure | ✅ COMPLETE |
+| Waves 4-6 | Various features | Need verification |
