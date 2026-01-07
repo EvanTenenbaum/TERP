@@ -92,7 +92,7 @@ CREATE INDEX IF NOT EXISTS idx_calendar_events_status ON calendar_events(status)
 -- ============================================================================
 
 -- Index on entity type and ID for entity history lookups
-CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON auditLogs(entityType, entityId);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON auditLogs(entity, entityId);
 
 -- Index on created at for date range queries
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON auditLogs(createdAt);
@@ -102,7 +102,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON auditLogs(createdAt);
 -- ============================================================================
 
 -- Index on status for filtering
-CREATE INDEX IF NOT EXISTS idx_sample_requests_status ON sample_requests(status);
+CREATE INDEX IF NOT EXISTS idx_sample_requests_status ON sampleRequests(sampleRequestStatus);
 
 -- Index on client ID
-CREATE INDEX IF NOT EXISTS idx_sample_requests_client ON sample_requests(clientId);
+CREATE INDEX IF NOT EXISTS idx_sample_requests_client ON sampleRequests(clientId);
