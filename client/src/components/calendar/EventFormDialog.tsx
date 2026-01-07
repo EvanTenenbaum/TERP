@@ -1,6 +1,24 @@
-import { useState, useEffect } from "react";
-import { X, Calendar, Clock, MapPin, Users, Bell, Repeat, Tag } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Calendar, MapPin, Users, Repeat } from "lucide-react";
 import { trpc } from "../../lib/trpc";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EventFormDialogProps {
   isOpen: boolean;
@@ -59,6 +77,34 @@ export default function EventFormDialog({
     { enabled: !!eventId }
   );
 
+  // Reset form function
+  const resetForm = useCallback(() => {
+    const dateToUse = initialDate || new Date();
+    const dateStr = dateToUse.toISOString().split("T")[0];
+    setTitle("");
+    setDescription("");
+    setLocation("");
+    setStartDate(dateStr);
+    setEndDate(dateStr);
+    setStartTime("09:00");
+    setEndTime("10:00");
+    setIsAllDay(false);
+    setModule("GENERAL");
+    setEventType("MEETING");
+    setStatus("SCHEDULED");
+    setPriority("MEDIUM");
+    setVisibility("COMPANY");
+    setIsRecurring(false);
+    setRecurrenceFrequency("WEEKLY");
+    setRecurrenceInterval(1);
+    setAttendees([]);
+    setRecurrenceEndDate("");
+    setClientId(initialClientId || null);
+    // Set default calendar
+    const defaultCalendar = calendarsData?.find((c: any) => c.isDefault);
+    setCalendarId(defaultCalendar?.id || calendarsData?.[0]?.id || null);
+  }, [initialDate, initialClientId, calendarsData]);
+
   // Populate form when editing
   useEffect(() => {
     if (eventData) {
@@ -95,39 +141,16 @@ export default function EventFormDialog({
       if ((eventData as any).calendarId) {
         setCalendarId((eventData as any).calendarId);
       }
-    } else {
-      // Reset form for new event
-      const dateToUse = initialDate || new Date();
-      const dateStr = dateToUse.toISOString().split("T")[0];
-      setTitle("");
-      setDescription("");
-      setLocation("");
-      setStartDate(dateStr);
-      setEndDate(dateStr);
-      setStartTime("09:00");
-      setEndTime("10:00");
-      setIsAllDay(false);
-      setModule("GENERAL");
-      setEventType("MEETING");
-      setStatus("SCHEDULED");
-      setPriority("MEDIUM");
-      setVisibility("COMPANY");
-      setIsRecurring(false);
-      setRecurrenceFrequency("WEEKLY");
-      setRecurrenceInterval(1);
-      setAttendees([]);
-      setRecurrenceEndDate("");
-      setClientId(initialClientId || null);
-      // Set default calendar
-      const defaultCalendar = calendarsData?.find((c: any) => c.isDefault);
-      setCalendarId(defaultCalendar?.id || calendarsData?.[0]?.id || null);
+    } else if (isOpen && !eventId) {
+      // Reset form for new event when dialog opens
+      resetForm();
     }
-  }, [eventData, initialDate, initialClientId, calendarsData]);
+  }, [eventData, initialDate, initialClientId, calendarsData, isOpen, eventId, resetForm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const eventData: any = {
+    const eventPayload: any = {
       title,
       description,
       location,
@@ -148,7 +171,7 @@ export default function EventFormDialog({
     };
 
     if (isRecurring) {
-      eventData.recurrenceRule = {
+      eventPayload.recurrenceRule = {
         frequency: recurrenceFrequency,
         interval: recurrenceInterval,
         startDate,
@@ -160,10 +183,10 @@ export default function EventFormDialog({
       if (eventId) {
         await updateEvent.mutateAsync({
           id: eventId,
-          updates: eventData,
+          updates: eventPayload,
         });
       } else {
-        await createEvent.mutateAsync(eventData);
+        await createEvent.mutateAsync(eventPayload);
       }
       onSaved();
     } catch (error) {
@@ -172,359 +195,321 @@ export default function EventFormDialog({
     }
   };
 
-  if (!isOpen) return null;
+  // Handle dialog close with form reset
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-semibold text-gray-900">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
             {eventId ? "Edit Event" : "Create Event"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-6">
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Title *
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Event title"
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Event description"
-              />
-            </div>
-
-            {/* Location */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                <MapPin className="inline h-4 w-4 mr-1" />
-                Location
-              </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Event location"
-              />
-            </div>
-
-            {/* Date and Time */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Start Date *
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  End Date *
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* All Day Toggle */}
-            <div>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isAllDay}
-                  onChange={(e) => setIsAllDay(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  All day event
-                </span>
-              </label>
-            </div>
-
-            {/* Time (if not all day) */}
-            {!isAllDay && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Start Time
-                  </label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    End Time
-                  </label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Calendar and Client */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  <Calendar className="inline h-4 w-4 mr-1" />
-                  Calendar *
-                </label>
-                <select
-                  value={calendarId || ""}
-                  onChange={(e) => setCalendarId(e.target.value ? parseInt(e.target.value, 10) : null)}
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  {calendarsData?.map((calendar: any) => (
-                    <option key={calendar.id} value={calendar.id}>
-                      {calendar.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Client
-                </label>
-                <select
-                  value={clientId || ""}
-                  onChange={(e) => setClientId(e.target.value ? parseInt(e.target.value, 10) : null)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">None</option>
-                  {clients.map((client: any) => (
-                    <option key={client.id} value={client.id}>
-                      {client.name || `Client #${client.id}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Meeting Type and Event Type */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Meeting Type *
-                </label>
-                <select
-                  value={module}
-                  onChange={(e) => setModule(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="GENERAL">General</option>
-                  <option value="INVENTORY">Inventory</option>
-                  <option value="ACCOUNTING">Accounting</option>
-                  <option value="CLIENTS">Clients</option>
-                  <option value="VENDORS">Vendors</option>
-                  <option value="ORDERS">Orders</option>
-                  <option value="SAMPLES">Samples</option>
-                  <option value="COMPLIANCE">Compliance</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Event Type *
-                </label>
-                <select
-                  value={eventType}
-                  onChange={(e) => setEventType(e.target.value)}
-                  required
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="MEETING">Meeting</option>
-                  <option value="TASK">Task</option>
-                  <option value="DELIVERY">Delivery</option>
-                  <option value="PAYMENT_DUE">Payment Due</option>
-                  <option value="FOLLOW_UP">Follow Up</option>
-                  <option value="AUDIT">Audit</option>
-                  <option value="INTAKE">Intake</option>
-                  <option value="PHOTOGRAPHY">Photography</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Visibility */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Visibility *
-              </label>
-              <select
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value)}
-                required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="PRIVATE">Private</option>
-                <option value="COMPANY">Company</option>
-              </select>
-            </div>
-
-            {/* Attendees */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                <Users className="inline h-4 w-4 mr-1" />
-                Attendees
-              </label>
-              <select
-                multiple
-                value={attendees.map(String)}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value));
-                  setAttendees(selected);
-                }}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                size={5}
-              >
-                {users?.map((user: any) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name || user.email}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Hold Ctrl/Cmd to select multiple attendees
-              </p>
-            </div>
-
-            {/* Recurring */}
-            <div>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isRecurring}
-                  onChange={(e) => setIsRecurring(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <Repeat className="h-4 w-4" />
-                <span className="text-sm font-medium text-gray-700">
-                  Recurring event
-                </span>
-              </label>
-            </div>
-
-            {/* Recurrence Options */}
-            {isRecurring && (
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Frequency
-                      </label>
-                      <select
-                        value={recurrenceFrequency}
-                        onChange={(e) => setRecurrenceFrequency(e.target.value)}
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        <option value="DAILY">Daily</option>
-                        <option value="WEEKLY">Weekly</option>
-                        <option value="MONTHLY">Monthly</option>
-                        <option value="YEARLY">Yearly</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Interval
-                      </label>
-                      <input
-                        type="number"
-                        value={recurrenceInterval}
-                        onChange={(e) =>
-                          setRecurrenceInterval(parseInt(e.target.value))
-                        }
-                        min="1"
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      End Date (optional)
-                    </label>
-                    <input
-                      type="date"
-                      value={recurrenceEndDate}
-                      onChange={(e) => setRecurrenceEndDate(e.target.value)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              placeholder="Event title"
+            />
           </div>
 
-          {/* Footer */}
-          <div className="mt-6 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="Event description"
+            />
+          </div>
+
+          {/* Location */}
+          <div className="space-y-2">
+            <Label htmlFor="location" className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              Location
+            </Label>
+            <Input
+              id="location"
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Event location"
+            />
+          </div>
+
+          {/* Date and Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date *</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date *</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {/* All Day Toggle */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isAllDay"
+              checked={isAllDay}
+              onCheckedChange={(checked) => setIsAllDay(checked === true)}
+            />
+            <Label htmlFor="isAllDay" className="text-sm font-medium">
+              All day event
+            </Label>
+          </div>
+
+          {/* Time (if not all day) */}
+          {!isAllDay && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startTime">Start Time</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endTime">End Time</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Calendar and Client */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <Calendar className="h-4 w-4" />
+                Calendar *
+              </Label>
+              <Select
+                value={calendarId?.toString() || ""}
+                onValueChange={(value) => setCalendarId(value ? parseInt(value, 10) : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select calendar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {calendarsData?.map((calendar: any) => (
+                    <SelectItem key={calendar.id} value={calendar.id.toString()}>
+                      {calendar.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Client</Label>
+              <Select
+                value={clientId?.toString() || "none"}
+                onValueChange={(value) => setClientId(value === "none" ? null : parseInt(value, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {clients.map((client: any) => (
+                    <SelectItem key={client.id} value={client.id.toString()}>
+                      {client.name || `Client #${client.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Meeting Type and Event Type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Meeting Type *</Label>
+              <Select value={module} onValueChange={setModule}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="GENERAL">General</SelectItem>
+                  <SelectItem value="INVENTORY">Inventory</SelectItem>
+                  <SelectItem value="ACCOUNTING">Accounting</SelectItem>
+                  <SelectItem value="CLIENTS">Clients</SelectItem>
+                  <SelectItem value="VENDORS">Vendors</SelectItem>
+                  <SelectItem value="ORDERS">Orders</SelectItem>
+                  <SelectItem value="SAMPLES">Samples</SelectItem>
+                  <SelectItem value="COMPLIANCE">Compliance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Event Type *</Label>
+              <Select value={eventType} onValueChange={setEventType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MEETING">Meeting</SelectItem>
+                  <SelectItem value="TASK">Task</SelectItem>
+                  <SelectItem value="DELIVERY">Delivery</SelectItem>
+                  <SelectItem value="PAYMENT_DUE">Payment Due</SelectItem>
+                  <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
+                  <SelectItem value="AUDIT">Audit</SelectItem>
+                  <SelectItem value="INTAKE">Intake</SelectItem>
+                  <SelectItem value="PHOTOGRAPHY">Photography</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Visibility */}
+          <div className="space-y-2">
+            <Label>Visibility *</Label>
+            <Select value={visibility} onValueChange={setVisibility}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select visibility" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PRIVATE">Private</SelectItem>
+                <SelectItem value="COMPANY">Company</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Attendees */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              Attendees
+            </Label>
+            <select
+              multiple
+              value={attendees.map(String)}
+              onChange={(e) => {
+                const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value));
+                setAttendees(selected);
+              }}
+              className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
+              {users?.map((user: any) => (
+                <option key={user.id} value={user.id}>
+                  {user.name || user.email}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Hold Ctrl/Cmd to select multiple attendees
+            </p>
+          </div>
+
+          {/* Recurring */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isRecurring"
+              checked={isRecurring}
+              onCheckedChange={(checked) => setIsRecurring(checked === true)}
+            />
+            <Repeat className="h-4 w-4" />
+            <Label htmlFor="isRecurring" className="text-sm font-medium">
+              Recurring event
+            </Label>
+          </div>
+
+          {/* Recurrence Options */}
+          {isRecurring && (
+            <div className="rounded-lg border bg-muted/50 p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Frequency</Label>
+                  <Select value={recurrenceFrequency} onValueChange={setRecurrenceFrequency}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DAILY">Daily</SelectItem>
+                      <SelectItem value="WEEKLY">Weekly</SelectItem>
+                      <SelectItem value="MONTHLY">Monthly</SelectItem>
+                      <SelectItem value="YEARLY">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="interval">Interval</Label>
+                  <Input
+                    id="interval"
+                    type="number"
+                    value={recurrenceInterval}
+                    onChange={(e) => setRecurrenceInterval(parseInt(e.target.value))}
+                    min="1"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="recurrenceEndDate">End Date (optional)</Label>
+                <Input
+                  id="recurrenceEndDate"
+                  type="date"
+                  value={recurrenceEndDate}
+                  onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={createEvent.isPending || updateEvent.isPending}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {createEvent.isPending || updateEvent.isPending
                 ? "Saving..."
                 : eventId
                 ? "Update Event"
                 : "Create Event"}
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

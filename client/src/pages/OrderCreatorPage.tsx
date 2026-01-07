@@ -60,6 +60,7 @@ import {
   useOrderCalculations,
   calculateLineItem,
 } from "@/hooks/orders/useOrderCalculations";
+import { useRetryableQuery } from "@/hooks/useRetryableQuery";
 
 interface CreditCheckResult {
   allowed: boolean;
@@ -140,17 +141,23 @@ export default function OrderCreatorPageV2() {
   );
 
   // Fetch inventory with pricing when client is selected
-  const {
-    data: inventory,
-    isLoading: inventoryLoading,
-    error: inventoryError,
-  } = trpc.salesSheets.getInventory.useQuery(
+  // BUG-045: Use useRetryableQuery to preserve form state on retry
+  const inventoryQueryRaw = trpc.salesSheets.getInventory.useQuery(
     { clientId: clientId ?? 0 },
     {
       enabled: !!clientId && clientId > 0,
       retry: false,
     }
   );
+
+  const inventoryQuery = useRetryableQuery(inventoryQueryRaw, {
+    maxRetries: 3,
+    onMaxRetriesReached: () => {
+      toast.error("Unable to load inventory. Please try selecting a different customer or contact support.");
+    },
+  });
+
+  const { data: inventory, isLoading: inventoryLoading, error: inventoryError } = inventoryQuery;
 
   // Handle inventory error with useEffect
   React.useEffect(() => {
@@ -563,20 +570,41 @@ export default function OrderCreatorPageV2() {
               <CardContent className="pt-6">
                 {inventoryError ? (
                   <div className="text-center py-8">
-                    <p className="text-destructive mb-2">
+                    <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                    <p className="text-destructive mb-2 font-medium">
                       Failed to load inventory
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mb-4">
                       {inventoryError.message}
                     </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.location.reload()}
-                      className="mt-4"
-                    >
-                      Retry
-                    </Button>
+                    {inventoryQuery.canRetry ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={inventoryQuery.handleRetry}
+                        disabled={inventoryQuery.isLoading}
+                      >
+                        {inventoryQuery.isLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Retrying...
+                          </>
+                        ) : (
+                          <>
+                            Retry ({inventoryQuery.remainingRetries} attempts remaining)
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        <p className="mb-2">Maximum retries reached. Please try:</p>
+                        <ul className="list-disc text-left inline-block">
+                          <li>Selecting a different customer</li>
+                          <li>Refreshing the page</li>
+                          <li>Contacting support if the issue persists</li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <InventoryBrowser
