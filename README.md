@@ -431,6 +431,46 @@ curl -X PUT \
 
 ---
 
+## 🐛 Error Handling
+
+**Request ID Tracking:**
+
+All API errors include a unique request ID for support and debugging:
+
+```json
+{
+  "error": {
+    "message": "Client with ID 123 not found (Request ID: REQ-abc123-def456)",
+    "code": "NOT_FOUND"
+  }
+}
+```
+
+**Error Categories:**
+
+- `ValidationError` - Invalid user input
+- `NotFoundError` - Entity not found
+- `PermissionError` - Unauthorized action
+- `ConflictError` - Duplicate or conflicting data
+- `BusinessRuleError` - Domain-specific validation failures
+
+**Usage in Code:**
+
+```typescript
+import { NotFoundError, ValidationError } from "../_core/errors";
+
+// Throw specific errors
+if (!client) {
+  throw new NotFoundError("Client", clientId);
+}
+
+if (quantity < 0) {
+  throw new ValidationError("Quantity must be positive", "quantity");
+}
+```
+
+---
+
 ## 🔧 Troubleshooting
 
 ### Authentication Issues
@@ -572,14 +612,57 @@ pnpm test
 
 ---
 
+## 🛡️ Health Monitoring
+
+**Health Check Endpoints:**
+
+```typescript
+// Full health check - checks database, memory, connection pool
+trpc.health.check.useQuery();
+
+// Simple liveness probe - always returns if server is running
+trpc.health.liveness.useQuery();
+
+// Readiness probe - returns OK if server can handle requests
+trpc.health.readiness.useQuery();
+
+// Runtime metrics for monitoring
+trpc.health.metrics.useQuery();
+```
+
+**Response Format:**
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-01-07T12:00:00Z",
+  "uptime": 3600,
+  "version": "1.0.0",
+  "checks": {
+    "database": { "status": "ok", "latency": 5 },
+    "memory": { "status": "ok", "percentage": 45 },
+    "connectionPool": { "status": "ok", "free": 8, "total": 10 }
+  }
+}
+```
+
+---
+
 ## 🚦 API Endpoints
 
-**80+ tRPC Endpoints:**
+**100+ tRPC Endpoints:**
 
 **Authentication:**
 
 - `auth.me` - Get current user
 - `auth.logout` - Sign out
+
+**Health Monitoring:**
+
+- `health.check` - Comprehensive health check
+- `health.liveness` - Simple liveness probe
+- `health.readiness` - Readiness probe
+- `health.metrics` - Runtime metrics
 
 **Inventory:**
 
