@@ -1,11 +1,12 @@
 /**
  * WS-010: Photography Router
- * Handles product photography management
+ * Handles product photography management with session workflow
  */
 
 import { z } from "zod";
-import { router, adminProcedure, publicProcedure } from "../_core/trpc";
+import { router, adminProcedure, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { db } from "../db";
+import { getDb } from "../db";
 import {
   productImages,
   batches,
@@ -14,6 +15,9 @@ import {
   strains,
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, isNull, or } from "drizzle-orm";
+import { storagePut, isStorageConfigured } from "../storage";
+import { logger } from "../_core/logger";
+import { TRPCError } from "@trpc/server";
 
 // Image status enum
 const imageStatusEnum = z.enum(["PENDING", "APPROVED", "REJECTED", "ARCHIVED"]);
@@ -471,5 +475,289 @@ export const photographyRouter = router({
         .where(eq(batches.id, input.batchId));
 
       return { success: true };
+    }),
+
+  /**
+   * Start a photography session for a batch
+   * Changes batch from LIVE/AWAITING_INTAKE to in-progress photography
+   */
+  startSession: protectedProcedure
+    .input(z.object({ batchId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new Error("Database not available");
+
+      // Get batch
+      const [batch] = await database
+        .select()
+        .from(batches)
+        .where(eq(batches.id, input.batchId));
+
+      if (!batch) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      }
+
+      // Allow starting session for LIVE or AWAITING_INTAKE batches
+      if (!["LIVE", "AWAITING_INTAKE"].includes(batch.batchStatus)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Batch cannot start photography from ${batch.batchStatus} status`,
+        });
+      }
+
+      // Update batch metadata to track photography session
+      const metadata = batch.metadata ? JSON.parse(batch.metadata) : {};
+      metadata.photographyStartedAt = new Date().toISOString();
+      metadata.photographyById = ctx.user?.id;
+
+      await database
+        .update(batches)
+        .set({
+          metadata: JSON.stringify(metadata),
+          updatedAt: new Date(),
+        })
+        .where(eq(batches.id, input.batchId));
+
+      logger.info({ batchId: input.batchId, userId: ctx.user?.id }, "[Photography] Session started");
+
+      return { success: true, batchId: input.batchId };
+    }),
+
+  /**
+   * Upload a photo for a batch with storage integration
+   */
+  uploadPhoto: protectedProcedure
+    .input(
+      z.object({
+        batchId: z.number(),
+        photoData: z.string(), // base64 encoded image
+        photoType: z.enum(["primary", "secondary", "detail", "packaging"]),
+        sortOrder: z.number().optional(),
+        caption: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new Error("Database not available");
+
+      // Check if storage is configured
+      if (!isStorageConfigured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Storage is not configured. Please contact administrator.",
+        });
+      }
+
+      // Verify batch exists
+      const [batch] = await database
+        .select()
+        .from(batches)
+        .where(eq(batches.id, input.batchId));
+
+      if (!batch) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      }
+
+      // Decode base64 and upload to storage
+      const photoBuffer = Buffer.from(input.photoData, "base64");
+      const timestamp = Date.now();
+      const storageKey = `batch-photos/${batch.code}/${input.photoType}-${timestamp}.jpg`;
+
+      const { url } = await storagePut(storageKey, photoBuffer, "image/jpeg");
+
+      // Determine if this should be primary
+      const isPrimary = input.photoType === "primary";
+
+      // If setting as primary, unset other primary images for this batch
+      if (isPrimary) {
+        await database
+          .update(productImages)
+          .set({ isPrimary: false })
+          .where(eq(productImages.batchId, input.batchId));
+      }
+
+      // Get next sort order if not provided
+      let sortOrder = input.sortOrder;
+      if (sortOrder === undefined) {
+        const existingPhotos = await database
+          .select({ sortOrder: productImages.sortOrder })
+          .from(productImages)
+          .where(eq(productImages.batchId, input.batchId))
+          .orderBy(desc(productImages.sortOrder))
+          .limit(1);
+        sortOrder = (existingPhotos[0]?.sortOrder || 0) + 1;
+      }
+
+      // Create photo record
+      const [photo] = await database.insert(productImages).values({
+        batchId: input.batchId,
+        productId: batch.productId,
+        imageUrl: url,
+        caption: input.caption || `${input.photoType} photo`,
+        isPrimary,
+        sortOrder,
+        status: "APPROVED",
+        uploadedBy: ctx.user?.id,
+        uploadedAt: new Date(),
+      });
+
+      logger.info(
+        { batchId: input.batchId, photoId: photo.insertId, photoType: input.photoType },
+        "[Photography] Photo uploaded"
+      );
+
+      return {
+        success: true,
+        photoId: photo.insertId,
+        url,
+        photoType: input.photoType,
+      };
+    }),
+
+  /**
+   * Complete a photography session with validation
+   * Requires at least one primary photo
+   */
+  completeSession: protectedProcedure
+    .input(z.object({ batchId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new Error("Database not available");
+
+      // Get batch
+      const [batch] = await database
+        .select()
+        .from(batches)
+        .where(eq(batches.id, input.batchId));
+
+      if (!batch) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      }
+
+      // Get photos for batch
+      const photos = await database
+        .select()
+        .from(productImages)
+        .where(eq(productImages.batchId, input.batchId));
+
+      // Require at least one primary photo
+      const hasPrimary = photos.some(p => p.isPrimary);
+      if (!hasPrimary) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "At least one primary photo is required to complete photography",
+        });
+      }
+
+      // Update batch metadata
+      const metadata = batch.metadata ? JSON.parse(batch.metadata) : {};
+      metadata.photographyCompletedAt = new Date().toISOString();
+      metadata.photographyCompletedBy = ctx.user?.id;
+      metadata.photoCount = photos.length;
+
+      // Update batch status to PHOTOGRAPHY_COMPLETE (sub-status of LIVE)
+      await database
+        .update(batches)
+        .set({
+          batchStatus: "PHOTOGRAPHY_COMPLETE",
+          metadata: JSON.stringify(metadata),
+          updatedAt: new Date(),
+        })
+        .where(eq(batches.id, input.batchId));
+
+      logger.info(
+        { batchId: input.batchId, photoCount: photos.length },
+        "[Photography] Session completed"
+      );
+
+      return {
+        success: true,
+        batchId: input.batchId,
+        photoCount: photos.length,
+      };
+    }),
+
+  /**
+   * Delete a photo with cleanup
+   */
+  deletePhoto: protectedProcedure
+    .input(z.object({ photoId: z.number() }))
+    .mutation(async ({ input }) => {
+      const database = await getDb();
+      if (!database) throw new Error("Database not available");
+
+      const [photo] = await database
+        .select()
+        .from(productImages)
+        .where(eq(productImages.id, input.photoId));
+
+      if (!photo) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Photo not found" });
+      }
+
+      // Delete the record (storage cleanup can be done in background/cron)
+      await database.delete(productImages).where(eq(productImages.id, input.photoId));
+
+      logger.info({ photoId: input.photoId, batchId: photo.batchId }, "[Photography] Photo deleted");
+
+      return { success: true };
+    }),
+
+  /**
+   * Get batches awaiting photography
+   * Returns batches in AWAITING_INTAKE or LIVE status without photos
+   */
+  getAwaitingPhotography: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
+    .query(async ({ input }) => {
+      const database = await getDb();
+      if (!database) throw new Error("Database not available");
+
+      // Get batches without photos in appropriate status
+      const batchesAwaitingPhotos = await database
+        .select({
+          id: batches.id,
+          code: batches.code,
+          sku: batches.sku,
+          batchStatus: batches.batchStatus,
+          onHandQty: batches.onHandQty,
+          createdAt: batches.createdAt,
+          productName: products.nameCanonical,
+          category: products.category,
+          strainName: strains.name,
+        })
+        .from(batches)
+        .leftJoin(products, eq(batches.productId, products.id))
+        .leftJoin(strains, eq(products.strainId, strains.id))
+        .leftJoin(productImages, eq(batches.id, productImages.batchId))
+        .where(
+          and(
+            or(eq(batches.batchStatus, "LIVE"), eq(batches.batchStatus, "AWAITING_INTAKE")),
+            isNull(productImages.id),
+            isNull(batches.deletedAt)
+          )
+        )
+        .groupBy(batches.id)
+        .orderBy(desc(batches.createdAt))
+        .limit(input.limit);
+
+      return batchesAwaitingPhotos.map(b => ({
+        id: b.id,
+        batchCode: b.code,
+        sku: b.sku,
+        status: b.batchStatus,
+        productName: b.productName || "Unknown Product",
+        category: b.category || "Unknown",
+        strain: b.strainName || null,
+        quantity: parseFloat(b.onHandQty || "0"),
+        createdAt: b.createdAt,
+        daysSinceCreation: b.createdAt
+          ? Math.floor((Date.now() - b.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+          : 0,
+      }));
     }),
 });
