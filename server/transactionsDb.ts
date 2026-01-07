@@ -16,7 +16,7 @@ import {
   type TransactionLink,
   type InsertTransactionLink
 } from "../drizzle/schema";
-import { eq, and, or, desc, sql } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
 
 /**
  * Create a new transaction
@@ -314,21 +314,23 @@ export async function getTransactionWithRelationships(transactionId: number): Pr
     const links = await getTransactionLinks(transactionId);
     
     // Fetch parent transactions
+    // SQL Safety: Use parameterized inArray instead of raw SQL join
     const parentIds = links.asChild.map(link => link.parentTransactionId);
     const parentTransactions = parentIds.length > 0
       ? await db
           .select()
           .from(transactions)
-          .where(sql`${transactions.id} IN (${parentIds.join(',')})`)
+          .where(inArray(transactions.id, parentIds))
       : [];
-    
+
     // Fetch child transactions
+    // SQL Safety: Use parameterized inArray instead of raw SQL join
     const childIds = links.asParent.map(link => link.childTransactionId);
     const childTransactions = childIds.length > 0
       ? await db
           .select()
           .from(transactions)
-          .where(sql`${transactions.id} IN (${childIds.join(',')})`)
+          .where(inArray(transactions.id, childIds))
       : [];
     
     return {

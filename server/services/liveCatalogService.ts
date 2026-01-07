@@ -10,7 +10,7 @@
 import { getDb } from "../db";
 import { batches, products, productMedia } from "../../drizzle/schema";
 import { vipPortalConfigurations, clientDraftInterests } from "../../drizzle/schema-vip-portal";
-import { eq, and, or, inArray, gte, lte, like, sql, desc, asc, isNull } from "drizzle-orm";
+import { eq, and, or, inArray, notInArray, gte, lte, like, sql, desc, asc, isNull } from "drizzle-orm";
 import * as pricingEngine from "../pricingEngine";
 import { vipPortalLogger } from "../_core/logger";
 
@@ -118,7 +118,8 @@ export async function getCatalog(
 
   if (liveCatalogConfig?.hiddenItems && liveCatalogConfig.hiddenItems.length > 0) {
     // Exclude hidden items
-    conditions.push(sql`${batches.id} NOT IN (${liveCatalogConfig.hiddenItems.join(',')})`);
+    // SQL Safety: Use parameterized notInArray instead of raw SQL join
+    conditions.push(notInArray(batches.id, liveCatalogConfig.hiddenItems));
   }
 
   if (liveCatalogConfig?.visibleItems && liveCatalogConfig.visibleItems.length > 0) {

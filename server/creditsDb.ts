@@ -18,7 +18,7 @@ import {
   type CreditApplication,
   type InsertCreditApplication
 } from "../drizzle/schema";
-import { eq, and, desc, sql, or, lt } from "drizzle-orm";
+import { eq, and, desc, sql, or, lt, inArray } from "drizzle-orm";
 import { logger } from "./_core/logger";
 
 /**
@@ -389,6 +389,7 @@ export async function getClientCreditHistory(clientId: number): Promise<{
     let applications: Array<CreditApplication & { creditNumber: string }> = [];
     
     if (creditIds.length > 0) {
+      // SQL Safety: Use parameterized inArray instead of raw SQL join
       const apps = await db
         .select({
           id: creditApplications.id,
@@ -403,9 +404,9 @@ export async function getClientCreditHistory(clientId: number): Promise<{
         })
         .from(creditApplications)
         .innerJoin(credits, eq(creditApplications.creditId, credits.id))
-        .where(sql`${creditApplications.creditId} IN (${creditIds.join(',')})`)
+        .where(inArray(creditApplications.creditId, creditIds))
         .orderBy(desc(creditApplications.appliedDate));
-      
+
       applications = apps;
     }
     
