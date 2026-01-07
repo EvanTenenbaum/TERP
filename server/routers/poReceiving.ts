@@ -14,7 +14,7 @@ import { TRPCError } from "@trpc/server";
 
 export const poReceivingRouter = router({
   // Receive a purchase order (create intake session and update inventory)
-  receive: publicProcedure
+  receive: protectedProcedure
     .input(
       z.object({
         poId: z.number(),
@@ -39,8 +39,7 @@ export const poReceivingRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
-      if (!db) throw new Error('Database not available');
+      if (!db) throw new Error("Database not available");
       
       // Wrap in transaction for atomicity
       const result = await db.transaction(async (tx) => {
@@ -179,7 +178,7 @@ export const poReceivingRouter = router({
     }),
 
   // Get receiving history for a PO
-  getReceivingHistory: publicProcedure
+  getReceivingHistory: protectedProcedure
     .input(z.object({ poId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -199,7 +198,7 @@ export const poReceivingRouter = router({
     }),
 
   // Get PO items with received quantities
-  getPOItemsWithReceipts: publicProcedure
+  getPOItemsWithReceipts: protectedProcedure
     .input(z.object({ poId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -223,7 +222,7 @@ export const poReceivingRouter = router({
     }),
 
   // Get receiving statistics
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
     const stats = await db
@@ -460,7 +459,7 @@ export const poReceivingRouter = router({
 
             // If locationId provided, get the location data
             if (item.locationId) {
-              const [loc] = await db
+              const [loc] = await tx
                 .select()
                 .from(locations)
                 .where(eq(locations.id, item.locationId));

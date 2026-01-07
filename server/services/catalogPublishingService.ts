@@ -7,7 +7,7 @@
 
 import { getDb } from "../db";
 import { batches, products, productImages, productMedia, brands, strains } from "../../drizzle/schema";
-import { eq, and, gt, inArray, isNull, desc } from "drizzle-orm";
+import { eq, and, gt, inArray, isNull, desc, sql } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { safeInArray } from "../lib/sqlSafety";
 
@@ -503,7 +503,7 @@ export async function getCatalogStats(): Promise<{
 
   // Count published B2B
   const [b2bCount] = await db
-    .select({ count: batches.id })
+    .select({ count: sql<number>`COUNT(*)` })
     .from(batches)
     .where(
       and(
@@ -515,7 +515,7 @@ export async function getCatalogStats(): Promise<{
 
   // Count published Ecom
   const [ecomCount] = await db
-    .select({ count: batches.id })
+    .select({ count: sql<number>`COUNT(*)` })
     .from(batches)
     .where(
       and(
@@ -527,7 +527,7 @@ export async function getCatalogStats(): Promise<{
 
   // Count ready to publish
   const [readyCount] = await db
-    .select({ count: batches.id })
+    .select({ count: sql<number>`COUNT(*)` })
     .from(batches)
     .where(
       and(eq(batches.batchStatus, "PHOTOGRAPHY_COMPLETE"), isNull(batches.deletedAt))
@@ -535,13 +535,13 @@ export async function getCatalogStats(): Promise<{
 
   // Count sold out
   const [soldOutCount] = await db
-    .select({ count: batches.id })
+    .select({ count: sql<number>`COUNT(*)` })
     .from(batches)
     .where(and(eq(batches.batchStatus, "SOLD_OUT"), isNull(batches.deletedAt)));
 
   // Count total published (either channel)
   const [totalCount] = await db
-    .select({ count: batches.id })
+    .select({ count: sql<number>`COUNT(*)` })
     .from(batches)
     .where(
       and(

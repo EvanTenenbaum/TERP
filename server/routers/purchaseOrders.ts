@@ -11,7 +11,7 @@ import { TRPCError } from "@trpc/server";
 export const purchaseOrdersRouter = router({
   // Create new purchase order
   // Supports both supplierClientId (canonical) and vendorId (deprecated, for backward compat)
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         // Canonical: supplier client ID (preferred)
@@ -114,7 +114,7 @@ export const purchaseOrdersRouter = router({
 
   // Get all purchase orders
   // Supports filtering by supplierClientId (canonical) or vendorId (deprecated)
-  getAll: publicProcedure
+  getAll: protectedProcedure
     .input(
       z
         .object({
@@ -169,7 +169,7 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Get purchase order by ID with items
-  getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+  getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
@@ -191,7 +191,7 @@ export const purchaseOrdersRouter = router({
   }),
 
   // Update purchase order
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -224,7 +224,7 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Delete purchase order
-  delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+  delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
@@ -233,7 +233,7 @@ export const purchaseOrdersRouter = router({
   }),
 
   // Update PO status
-  updateStatus: publicProcedure
+  updateStatus: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -260,7 +260,7 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Add item to PO
-  addItem: publicProcedure
+  addItem: protectedProcedure
     .input(
       z.object({
         purchaseOrderId: z.number().int().positive("Purchase order ID must be a positive integer"),
@@ -292,7 +292,7 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Update PO item
-  updateItem: publicProcedure
+  updateItem: protectedProcedure
     .input(
       z.object({
         id: z.number().int().positive("Item ID must be a positive integer"),
@@ -338,7 +338,7 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Delete PO item
-  deleteItem: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+  deleteItem: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
@@ -360,7 +360,7 @@ export const purchaseOrdersRouter = router({
   }),
 
   // Get PO history for a supplier (canonical)
-  getBySupplier: publicProcedure
+  getBySupplier: protectedProcedure
     .input(z.object({ supplierClientId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -374,7 +374,7 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Get PO history for a vendor (DEPRECATED - use getBySupplier instead)
-  getByVendor: publicProcedure
+  getByVendor: protectedProcedure
     .input(z.object({ vendorId: z.number() }))
     .query(async ({ input }) => {
       console.warn('[DEPRECATED] purchaseOrders.getByVendor - use getBySupplier with supplierClientId instead');
@@ -389,7 +389,7 @@ export const purchaseOrdersRouter = router({
     }),
 
   // Get PO history for a product
-  getByProduct: publicProcedure.input(z.object({ productId: z.number() })).query(async ({ input }) => {
+  getByProduct: protectedProcedure.input(z.object({ productId: z.number() })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
