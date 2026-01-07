@@ -21,7 +21,7 @@ const isCloud =
 
 export default defineConfig({
   testDir: ".",
-  testMatch: ["tests-e2e/**/*.spec.ts", "tests/e2e/**/*.spec.ts"],
+  testMatch: ["tests-e2e/**/*.spec.ts", "tests/e2e/**/*.spec.ts", "tests/smoke/**/*.spec.ts"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -47,6 +47,11 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "smoke",
+      testDir: "./tests/smoke",
       use: { ...devices["Desktop Chrome"] },
     },
     {
