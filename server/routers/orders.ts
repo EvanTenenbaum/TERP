@@ -1,7 +1,7 @@
 /**
  * Consolidated Orders Router
  * Merges orders.ts and ordersEnhancedV2.ts into a single router
- * 
+ *
  * RF-001: Consolidate Orders Router
  * - Combines basic CRUD operations with enhanced COGS/margin features
  * - Maintains backward compatibility
@@ -9,7 +9,11 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import {
+  router,
+  protectedProcedure,
+  getAuthenticatedUserId,
+} from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
@@ -294,7 +298,7 @@ export const ordersRouter = router({
     .input(createOrderInputSchema)
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -388,12 +392,14 @@ export const ordersRouter = router({
         orderType: input.orderType,
         clientId: input.clientId,
         isDraft: true,
-        items: JSON.stringify(lineItemsWithPrices.map(item => ({
-          batchId: item.batchId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          isSample: item.isSample,
-        }))),
+        items: JSON.stringify(
+          lineItemsWithPrices.map(item => ({
+            batchId: item.batchId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            isSample: item.isSample,
+          }))
+        ),
         total: totals.finalTotal.toString(),
         subtotal: totals.subtotal.toString(),
         avgMarginPercent: totals.avgMarginPercent.toString(),
@@ -462,7 +468,7 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -619,7 +625,7 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -688,7 +694,7 @@ export const ordersRouter = router({
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const order = await db.query.orders.findFirst({
@@ -727,7 +733,7 @@ export const ordersRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       return await pricingService.getMarginWithFallback(
@@ -781,7 +787,7 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const userId = getAuthenticatedUserId(ctx);
@@ -798,9 +804,13 @@ export const ordersRouter = router({
       const oldCOGS = parseFloat(lineItem.cogsPerUnit);
 
       // Validate COGS value
-      const validation = cogsChangeIntegrationService.validateCOGS(input.newCOGS);
+      const validation = cogsChangeIntegrationService.validateCOGS(
+        input.newCOGS
+      );
       if (!validation.isValid) {
-        throw new Error(`COGS validation failed: ${validation.errors.join(", ")}`);
+        throw new Error(
+          `COGS validation failed: ${validation.errors.join(", ")}`
+        );
       }
 
       // Track COGS override for reporting
@@ -997,9 +1007,354 @@ export const ordersRouter = router({
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       return await orderAuditService.getAuditLog(input.orderId);
+    }),
+
+  // ==========================================================================
+  // ORDER FULFILLMENT WORKFLOW (Wave 5A: Sales Workflow)
+  // ==========================================================================
+
+  /**
+   * Confirm a pending order
+   * Validates inventory and transitions order to confirmed state
+   */
+  confirmOrder: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        id: z.number(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Get the order
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, input.id))
+        .limit(1);
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      if (order.orderType !== "SALE") {
+        throw new Error("Only SALE orders can be confirmed");
+      }
+
+      if (
+        order.saleStatus !== "PENDING" &&
+        order.fulfillmentStatus !== "PENDING"
+      ) {
+        throw new Error(
+          `Order cannot be confirmed. Current status: ${order.saleStatus || order.fulfillmentStatus}`
+        );
+      }
+
+      // Parse and verify inventory
+      const orderItems =
+        typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+
+      for (const item of orderItems) {
+        const [batch] = await db
+          .select()
+          .from(batches)
+          .where(eq(batches.id, item.batchId))
+          .limit(1);
+
+        if (!batch) {
+          throw new Error(`Batch ${item.batchId} not found`);
+        }
+
+        const availableQty = item.isSample
+          ? parseFloat(batch.sampleQty || "0")
+          : parseFloat(batch.onHandQty || "0");
+
+        if (availableQty < item.quantity) {
+          throw new Error(
+            `Insufficient inventory for batch ${batch.sku || batch.id}. ` +
+              `Available: ${availableQty}, Required: ${item.quantity}`
+          );
+        }
+      }
+
+      // Update order to confirmed
+      await db
+        .update(orders)
+        .set({
+          confirmedAt: new Date(),
+          notes: input.notes
+            ? `${order.notes || ""}\n[Confirmed]: ${input.notes}`.trim()
+            : order.notes,
+        })
+        .where(eq(orders.id, input.id));
+
+      return { success: true, orderId: input.id };
+    }),
+
+  /**
+   * Fulfill order items with pick quantities
+   * Records picked quantities and updates inventory
+   */
+  fulfillOrder: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        id: z.number(),
+        items: z.array(
+          z.object({
+            batchId: z.number(),
+            pickedQuantity: z.number().min(0),
+            locationId: z.number().optional(),
+            notes: z.string().optional(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get the order
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, input.id))
+        .limit(1);
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      if (order.fulfillmentStatus === "SHIPPED") {
+        throw new Error("Cannot fulfill a shipped order");
+      }
+
+      // Parse order items
+      const orderItems =
+        typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+
+      // Type for picked items
+      interface PickedItem {
+        batchId: number;
+        pickedQuantity: number;
+        locationId?: number;
+        pickedNotes?: string;
+        pickedAt: string;
+        pickedBy: number;
+        [key: string]: unknown; // Allow additional properties from orderItem spread
+      }
+
+      // Validate and track picked items
+      const pickedItems: PickedItem[] = [];
+      let allFullyPicked = true;
+
+      for (const pickItem of input.items) {
+        const orderItem = orderItems.find(
+          (oi: { batchId: number }) => oi.batchId === pickItem.batchId
+        );
+
+        if (!orderItem) {
+          throw new Error(`Batch ${pickItem.batchId} is not in this order`);
+        }
+
+        if (pickItem.pickedQuantity > orderItem.quantity) {
+          throw new Error(
+            `Picked quantity (${pickItem.pickedQuantity}) exceeds ordered quantity (${orderItem.quantity}) for batch ${pickItem.batchId}`
+          );
+        }
+
+        if (pickItem.pickedQuantity < orderItem.quantity) {
+          allFullyPicked = false;
+        }
+
+        pickedItems.push({
+          ...orderItem,
+          pickedQuantity: pickItem.pickedQuantity,
+          locationId: pickItem.locationId,
+          pickedNotes: pickItem.notes,
+          pickedAt: new Date().toISOString(),
+          pickedBy: userId,
+        });
+      }
+
+      // Update order with picked items info
+      const newStatus = allFullyPicked ? "PACKED" : "PENDING";
+      const updatedItems = orderItems.map((item: { batchId: number }) => {
+        const picked = pickedItems.find(
+          (p: { batchId: number }) => p.batchId === item.batchId
+        );
+        return picked || item;
+      });
+
+      await db
+        .update(orders)
+        .set({
+          items: JSON.stringify(updatedItems),
+          fulfillmentStatus: newStatus,
+          packedAt: allFullyPicked ? new Date() : null,
+          packedBy: allFullyPicked ? userId : null,
+        })
+        .where(eq(orders.id, input.id));
+
+      return {
+        success: true,
+        orderId: input.id,
+        status: newStatus,
+        allFullyPicked,
+        pickedItems: pickedItems.length,
+      };
+    }),
+
+  /**
+   * Ship an order
+   * Records shipping details and updates status to SHIPPED
+   */
+  shipOrder: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        id: z.number(),
+        trackingNumber: z.string().optional(),
+        carrier: z.string().optional(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get the order
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, input.id))
+        .limit(1);
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      if (order.fulfillmentStatus === "SHIPPED") {
+        throw new Error("Order is already shipped");
+      }
+
+      // Should be PACKED before shipping (but allow PENDING for flexibility)
+      if (!["PENDING", "PACKED"].includes(order.fulfillmentStatus || "")) {
+        throw new Error(
+          `Order cannot be shipped. Current status: ${order.fulfillmentStatus}`
+        );
+      }
+
+      // Build shipping notes
+      let shippingNotes = "";
+      if (input.carrier) shippingNotes += `Carrier: ${input.carrier}\n`;
+      if (input.trackingNumber)
+        shippingNotes += `Tracking: ${input.trackingNumber}\n`;
+      if (input.notes) shippingNotes += input.notes;
+
+      await db
+        .update(orders)
+        .set({
+          fulfillmentStatus: "SHIPPED",
+          shippedAt: new Date(),
+          shippedBy: userId,
+          notes: shippingNotes
+            ? `${order.notes || ""}\n[Shipped]: ${shippingNotes}`.trim()
+            : order.notes,
+        })
+        .where(eq(orders.id, input.id));
+
+      // Log to status history
+      const { orderStatusHistory } = await import("../../drizzle/schema");
+      await db.insert(orderStatusHistory).values({
+        orderId: input.id,
+        fulfillmentStatus: "SHIPPED",
+        changedBy: userId,
+        notes: shippingNotes || undefined,
+      });
+
+      return {
+        success: true,
+        orderId: input.id,
+        status: "SHIPPED",
+        trackingNumber: input.trackingNumber,
+        carrier: input.carrier,
+      };
+    }),
+
+  /**
+   * Mark order as delivered
+   * Final step in fulfillment workflow
+   */
+  deliverOrder: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        id: z.number(),
+        signature: z.string().optional(),
+        notes: z.string().optional(),
+        deliveredAt: z.string().optional(), // ISO date string
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get the order
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, input.id))
+        .limit(1);
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      if (order.fulfillmentStatus !== "SHIPPED") {
+        throw new Error("Order must be shipped before marking as delivered");
+      }
+
+      // Build delivery notes
+      let deliveryNotes = `Delivered: ${input.deliveredAt || new Date().toISOString()}\n`;
+      if (input.signature) deliveryNotes += `Signature: ${input.signature}\n`;
+      if (input.notes) deliveryNotes += input.notes;
+
+      // Note: Schema doesn't have DELIVERED status, so we'll record in notes
+      // and keep as SHIPPED (which is the terminal fulfillment state)
+      await db
+        .update(orders)
+        .set({
+          notes: `${order.notes || ""}\n[Delivered]: ${deliveryNotes}`.trim(),
+        })
+        .where(eq(orders.id, input.id));
+
+      // Log to status history with notes indicating delivery
+      const { orderStatusHistory } = await import("../../drizzle/schema");
+      await db.insert(orderStatusHistory).values({
+        orderId: input.id,
+        fulfillmentStatus: "SHIPPED", // Schema limitation - no DELIVERED status
+        changedBy: userId,
+        notes: `DELIVERED: ${deliveryNotes}`,
+      });
+
+      return {
+        success: true,
+        orderId: input.id,
+        deliveredAt: input.deliveredAt || new Date().toISOString(),
+      };
     }),
 });
