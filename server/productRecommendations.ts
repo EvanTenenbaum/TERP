@@ -1,7 +1,8 @@
-import { eq, inArray, and, desc, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getDb } from "./db";
 import { orders, products, productTags, tags } from "../drizzle/schema";
 import { logger } from "./_core/logger";
+import { isSafeForInArray } from "./lib/sqlSafety";
 
 /**
  * Get product recommendations for a client based on order history
@@ -142,7 +143,12 @@ export async function getSimilarProducts(productId: number, limit: number = 10) 
       return { success: true, similarProducts: [] };
     }
 
-    const tagIds = productTagsList.map((pt) => pt.tagId);
+    const tagIds = productTagsList.map((pt) => pt.tagId).filter((id): id is number => id !== null);
+
+    // SQL Safety: Return early if no valid tag IDs
+    if (!isSafeForInArray(tagIds)) {
+      return { success: true, similarProducts: [] };
+    }
 
     // Find other products with similar tags
     const similarProducts = await db
@@ -243,6 +249,12 @@ export async function getFrequentlyBoughtTogether(
 
     // Get product details
     const productIds = Array.from(otherProductsMap.keys());
+
+    // SQL Safety: Return early if no valid product IDs
+    if (!isSafeForInArray(productIds)) {
+      return { success: true, frequentlyBoughtTogether: [] };
+    }
+
     const productDetails = await db
       .select()
       .from(products)
