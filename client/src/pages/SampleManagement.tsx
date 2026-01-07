@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Beaker, Filter } from "lucide-react";
+import { Beaker, Filter, AlertCircle, RefreshCw } from "lucide-react";
 import {
   SampleForm,
   type SampleFormOption,
@@ -29,6 +29,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -111,9 +112,43 @@ export default function SampleManagement() {
   const utils = trpc.useUtils();
   const { user } = useAuth();
 
-  // Fetch all samples instead of just pending
-  const { data: samplesData, isLoading: samplesLoading } =
-    trpc.samples.getAll.useQuery({ limit: 200 });
+  // Fetch all samples instead of just pending with debug logging
+  const { data: samplesData, isLoading: samplesLoading, error: samplesError, refetch: refetchSamples, isError: isSamplesError } =
+    trpc.samples.getAll.useQuery(
+      { limit: 200 },
+      {
+        // Retry logic for stability
+        retry: 2,
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+      }
+    );
+
+  // Debug logging for data display issues (QA-050)
+  useEffect(() => {
+    const items =
+      (samplesData && "items" in samplesData && samplesData.items) ||
+      (Array.isArray(samplesData) ? samplesData : []) ||
+      [];
+    const itemCount = items.length;
+
+    console.log('[SampleManagement] Query state:', {
+      isLoading: samplesLoading,
+      isError: isSamplesError,
+      error: samplesError?.message,
+      itemCount,
+      hasItems: items.length > 0,
+      rawDataType: samplesData ? typeof samplesData : 'undefined',
+      hasItemsProperty: samplesData && 'items' in samplesData,
+      isArray: Array.isArray(samplesData),
+    });
+
+    // Warn if we have a response but no items
+    if (!samplesLoading && !isSamplesError && samplesData && itemCount === 0) {
+      console.warn('[SampleManagement] Zero samples returned - possible data display issue', {
+        response: samplesData,
+      });
+    }
+  }, [samplesData, samplesLoading, isSamplesError, samplesError]);
 
   const { data: clientsData } = trpc.clients.list.useQuery(
     { limit: 200 },
@@ -509,6 +544,111 @@ export default function SampleManagement() {
 
   const combinedProductOptions =
     productOptions.length > 0 ? productOptions : fallbackProductOptions;
+
+  // Error state with retry option
+  if (isSamplesError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Filter className="h-4 w-4" />
+              Samples
+            </div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Beaker className="h-7 w-7 text-primary" />
+              Sample Management
+            </h1>
+          </div>
+        </div>
+        <Card className="p-4" data-testid="samples-error">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Samples</AlertTitle>
+            <AlertDescription className="mt-2">
+              <p className="mb-2">{samplesError?.message || 'Failed to load samples from the server.'}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchSamples()}
+                className="mt-2"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </Card>
+      </div>
+    );
+  }
+
+  // Empty state when no samples
+  if (samples.length === 0 && !samplesLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Filter className="h-4 w-4" />
+              Samples
+            </div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Beaker className="h-7 w-7 text-primary" />
+              Sample Management
+            </h1>
+            <p className="text-muted-foreground">
+              Track sample requests, approvals, and returns.
+            </p>
+          </div>
+          <Button onClick={() => setIsFormOpen(true)}>New Sample</Button>
+        </div>
+        <Card className="p-4" data-testid="samples-empty">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>No Samples Found</AlertTitle>
+            <AlertDescription className="mt-2">
+              <p className="mb-2">
+                No sample requests were found. This could be because:
+              </p>
+              <ul className="list-disc list-inside mb-4 text-sm">
+                <li>No sample requests have been created yet</li>
+                <li>There may be a data loading issue</li>
+              </ul>
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setIsFormOpen(true)}
+                >
+                  Create New Sample Request
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchSamples()}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </Card>
+
+        <SampleForm
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          onSubmit={handleSubmit}
+          clients={clientOptions}
+          productOptions={combinedProductOptions}
+          onProductSearch={setProductSearch}
+          isSubmitting={createSampleMutation.isPending}
+          isProductSearchLoading={productSearchLoading}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
