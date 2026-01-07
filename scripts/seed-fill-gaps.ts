@@ -14,7 +14,7 @@
  */
 
 import { db, testConnection } from "./db-sync";
-import { sql, eq, inArray } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   products,
   batches,
@@ -151,7 +151,7 @@ async function getExistingData() {
   const buyerClients = await db
     .select({ id: clients.id, name: clients.name })
     .from(clients)
-    .where(eq(clients.isBuyer, 1))
+    .where(sql`${clients.isBuyer} = 1`)
     .limit(20);
 
   // Get users
@@ -164,19 +164,28 @@ async function getExistingData() {
   const allVendors = await db.select({ id: vendors.id, name: vendors.name }).from(vendors).limit(20);
 
   // Get existing sample count
-  const sampleCount = await db.select({ count: sql<number>`COUNT(*)` }).from(sampleRequests);
+  const sampleCount = await db.execute(sql`SELECT COUNT(*) as count FROM sampleRequests`);
 
   // Get existing calendar event count
-  const eventCount = await db.select({ count: sql<number>`COUNT(*)` }).from(calendarEvents);
+  const eventCount = await db.execute(sql`SELECT COUNT(*) as count FROM calendar_events`);
 
   // Get existing todo list count
-  const todoListCount = await db.select({ count: sql<number>`COUNT(*)` }).from(todoLists);
+  const todoListCount = await db.execute(sql`SELECT COUNT(*) as count FROM todo_lists`);
 
   // Get existing comment count
-  const commentCount = await db.select({ count: sql<number>`COUNT(*)` }).from(comments);
+  const commentCount = await db.execute(sql`SELECT COUNT(*) as count FROM comments`);
 
   // Get existing bill count
-  const billCount = await db.select({ count: sql<number>`COUNT(*)` }).from(bills);
+  const billCount = await db.execute(sql`SELECT COUNT(*) as count FROM bills`);
+
+  // Extract counts from results
+  const extractCount = (result: any): number => {
+    if (Array.isArray(result) && result.length > 0) {
+      const row = Array.isArray(result[0]) ? result[0][0] : result[0];
+      return Number(row?.count || 0);
+    }
+    return 0;
+  };
 
   console.log("  Existing data summary:");
   console.log(`    - Products: ${existingProductIds.size} (${missingProductIds.length} missing from batches)`);
@@ -186,11 +195,11 @@ async function getExistingData() {
   console.log(`    - Users: ${allUsers.length}`);
   console.log(`    - Orders: ${allOrders.length}`);
   console.log(`    - Vendors: ${allVendors.length}`);
-  console.log(`    - Samples: ${sampleCount[0]?.count || 0}`);
-  console.log(`    - Calendar Events: ${eventCount[0]?.count || 0}`);
-  console.log(`    - Todo Lists: ${todoListCount[0]?.count || 0}`);
-  console.log(`    - Comments: ${commentCount[0]?.count || 0}`);
-  console.log(`    - Vendor Bills: ${billCount[0]?.count || 0}`);
+  console.log(`    - Samples: ${extractCount(sampleCount)}`);
+  console.log(`    - Calendar Events: ${extractCount(eventCount)}`);
+  console.log(`    - Todo Lists: ${extractCount(todoListCount)}`);
+  console.log(`    - Comments: ${extractCount(commentCount)}`);
+  console.log(`    - Vendor Bills: ${extractCount(billCount)}`);
   console.log();
 
   return {
@@ -203,11 +212,11 @@ async function getExistingData() {
     orders: allOrders,
     vendors: allVendors,
     counts: {
-      samples: sampleCount[0]?.count || 0,
-      events: eventCount[0]?.count || 0,
-      todoLists: todoListCount[0]?.count || 0,
-      comments: commentCount[0]?.count || 0,
-      bills: billCount[0]?.count || 0,
+      samples: extractCount(sampleCount),
+      events: extractCount(eventCount),
+      todoLists: extractCount(todoListCount),
+      comments: extractCount(commentCount),
+      bills: extractCount(billCount),
     },
   };
 }
@@ -248,8 +257,6 @@ async function fillProducts(data: Awaited<ReturnType<typeof getExistingData>>, d
       subcategory,
       uomSellable: category === "Flower" ? "LB" : "EA",
       description: `${subcategory} ${category.toLowerCase()} product`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
   });
 
@@ -266,7 +273,7 @@ async function fillProducts(data: Awaited<ReturnType<typeof getExistingData>>, d
     return { inserted: 0, skipped: productsToInsert.length };
   }
 
-  // Insert with explicit ID (requires INSERT with ID)
+  // Insert with explicit ID
   let inserted = 0;
   for (const product of productsToInsert) {
     try {
@@ -290,7 +297,8 @@ async function fillSamples(data: Awaited<ReturnType<typeof getExistingData>>, dr
   console.log("─".repeat(50));
 
   if (data.counts.samples > 0) {
-    console.log(`  ℹ️  ${data.counts.samples} samples already exist`);
+    console.log(`  ℹ️  ${data.counts.samples} samples already exist - skipping`);
+    return { inserted: 0, skipped: 0 };
   }
 
   if (data.clients.length === 0 || data.users.length === 0) {
@@ -298,22 +306,12 @@ async function fillSamples(data: Awaited<ReturnType<typeof getExistingData>>, dr
     return { inserted: 0, skipped: CONFIG.samples.count };
   }
 
-  // Get products that have batches with sampleAvailable=1
-  const sampleableProducts = await db
-    .selectDistinct({ productId: batches.productId })
-    .from(batches)
-    .where(sql`${batches.sampleAvailable} = 1 AND ${batches.deletedAt} IS NULL`)
-    .limit(20);
+  // Get products that exist
+  const availableProducts = await db.select({ id: products.id }).from(products).limit(20);
 
-  if (sampleableProducts.length === 0) {
-    console.log("  ⚠️  No sampleable batches found - using any available products");
-    // Fall back to any products
-    const anyProducts = await db.select({ id: products.id }).from(products).limit(20);
-    if (anyProducts.length === 0) {
-      console.log("  ⚠️  No products found - cannot create samples");
-      return { inserted: 0, skipped: CONFIG.samples.count };
-    }
-    sampleableProducts.push(...anyProducts.map((p) => ({ productId: p.id })));
+  if (availableProducts.length === 0) {
+    console.log("  ⚠️  No products found - run products filler first");
+    return { inserted: 0, skipped: CONFIG.samples.count };
   }
 
   const statuses = ["PENDING", "APPROVED", "FULFILLED", "RETURN_REQUESTED", "RETURNED"] as const;
@@ -322,13 +320,13 @@ async function fillSamples(data: Awaited<ReturnType<typeof getExistingData>>, dr
   for (let i = 0; i < CONFIG.samples.count; i++) {
     const client = data.clients[i % data.clients.length];
     const user = data.users[i % data.users.length];
-    const product = sampleableProducts[i % sampleableProducts.length];
+    const product = availableProducts[i % availableProducts.length];
     const status = statuses[i % statuses.length];
 
     samplesToInsert.push({
       clientId: client.id,
       requestedBy: user.id,
-      products: JSON.stringify([{ productId: product.productId, quantity: String(faker.number.int({ min: 1, max: 5 })) }]),
+      products: JSON.stringify([{ productId: product.id, quantity: String(faker.number.int({ min: 1, max: 5 })) }]),
       sampleRequestStatus: status,
       notes: faker.lorem.sentence(),
       requestDate: faker.date.recent({ days: 30 }),
@@ -348,6 +346,7 @@ async function fillSamples(data: Awaited<ReturnType<typeof getExistingData>>, dr
   let inserted = 0;
   for (const sample of samplesToInsert) {
     try {
+      // sampleRequests uses camelCase column names
       await db.execute(sql`
         INSERT INTO sampleRequests (clientId, requestedBy, products, sampleRequestStatus, notes, requestDate, createdAt, updatedAt)
         VALUES (${sample.clientId}, ${sample.requestedBy}, ${sample.products}, ${sample.sampleRequestStatus}, ${sample.notes}, ${sample.requestDate}, NOW(), NOW())
@@ -367,7 +366,8 @@ async function fillCalendarEvents(data: Awaited<ReturnType<typeof getExistingDat
   console.log("─".repeat(50));
 
   if (data.counts.events > 0) {
-    console.log(`  ℹ️  ${data.counts.events} calendar events already exist`);
+    console.log(`  ℹ️  ${data.counts.events} calendar events already exist - skipping`);
+    return { inserted: 0, skipped: 0 };
   }
 
   if (data.users.length === 0) {
@@ -422,8 +422,8 @@ async function fillCalendarEvents(data: Awaited<ReturnType<typeof getExistingDat
       location: faker.helpers.arrayElement(["Office", "Warehouse", "Client Site", "Virtual", "Conference Room A"]),
       startDate: startDate.toISOString().split("T")[0],
       endDate: endDate.toISOString().split("T")[0],
-      startTime: startDate.toTimeString().slice(0, 5),
-      endTime: endDate.toTimeString().slice(0, 5),
+      startTime: startDate.toTimeString().slice(0, 8), // HH:MM:SS format
+      endTime: endDate.toTimeString().slice(0, 8),
       timezone: "America/Los_Angeles",
       module,
       eventType,
@@ -449,8 +449,9 @@ async function fillCalendarEvents(data: Awaited<ReturnType<typeof getExistingDat
   let inserted = 0;
   for (const event of eventsToInsert) {
     try {
+      // calendar_events uses snake_case column names
       await db.execute(sql`
-        INSERT INTO calendarEvents (title, description, location, startDate, endDate, startTime, endTime, timezone, module, eventType, status, priority, visibility, createdBy, assignedTo, clientId, createdAt, updatedAt)
+        INSERT INTO calendar_events (title, description, location, start_date, end_date, start_time, end_time, timezone, module, event_type, status, priority, visibility, created_by, assigned_to, client_id, created_at, updated_at)
         VALUES (${event.title}, ${event.description}, ${event.location}, ${event.startDate}, ${event.endDate}, ${event.startTime}, ${event.endTime}, ${event.timezone}, ${event.module}, ${event.eventType}, ${event.status}, ${event.priority}, ${event.visibility}, ${event.createdBy}, ${event.assignedTo}, ${event.clientId}, NOW(), NOW())
       `);
       inserted++;
@@ -468,7 +469,8 @@ async function fillTodos(data: Awaited<ReturnType<typeof getExistingData>>, dryR
   console.log("─".repeat(50));
 
   if (data.counts.todoLists > 0) {
-    console.log(`  ℹ️  ${data.counts.todoLists} todo lists already exist`);
+    console.log(`  ℹ️  ${data.counts.todoLists} todo lists already exist - skipping`);
+    return { inserted: 0, skipped: 0 };
   }
 
   if (data.users.length === 0) {
@@ -478,23 +480,19 @@ async function fillTodos(data: Awaited<ReturnType<typeof getExistingData>>, dryR
 
   const user = data.users[0]; // Use first user as owner
 
-  // First create a todo list if none exist
+  // First create a todo list
   let listId: number;
-  if (data.counts.todoLists === 0) {
-    if (dryRun) {
-      console.log("  [DRY RUN] Would create todo list: 'General Tasks'");
-      listId = 1;
-    } else {
-      const result = await db.execute(sql`
-        INSERT INTO todoLists (name, description, ownerId, isShared, createdAt, updatedAt)
-        VALUES ('General Tasks', 'Default task list for the team', ${user.id}, 1, NOW(), NOW())
-      `);
-      listId = Number((result as any)[0].insertId);
-      console.log(`  ✅ Created todo list 'General Tasks' (ID: ${listId})`);
-    }
+  if (dryRun) {
+    console.log("  [DRY RUN] Would create todo list: 'General Tasks'");
+    listId = 1;
   } else {
-    const existingList = await db.select({ id: todoLists.id }).from(todoLists).limit(1);
-    listId = existingList[0].id;
+    // todo_lists uses snake_case column names
+    const result = await db.execute(sql`
+      INSERT INTO todo_lists (name, description, owner_id, is_shared, created_at, updated_at)
+      VALUES ('General Tasks', 'Default task list for the team', ${user.id}, 1, NOW(), NOW())
+    `);
+    listId = Number((result as any)[0].insertId);
+    console.log(`  ✅ Created todo list 'General Tasks' (ID: ${listId})`);
   }
 
   const taskTitles = [
@@ -555,8 +553,9 @@ async function fillTodos(data: Awaited<ReturnType<typeof getExistingData>>, dryR
   let inserted = 0;
   for (const task of tasksToInsert) {
     try {
+      // todo_tasks uses snake_case column names
       await db.execute(sql`
-        INSERT INTO todoTasks (listId, title, description, status, priority, dueDate, assignedTo, createdBy, position, createdAt, updatedAt)
+        INSERT INTO todo_tasks (list_id, title, description, status, priority, due_date, assigned_to, created_by, position, created_at, updated_at)
         VALUES (${task.listId}, ${task.title}, ${task.description}, ${task.status}, ${task.priority}, ${task.dueDate}, ${task.assignedTo}, ${task.createdBy}, ${task.position}, NOW(), NOW())
       `);
       inserted++;
@@ -574,7 +573,8 @@ async function fillComments(data: Awaited<ReturnType<typeof getExistingData>>, d
   console.log("─".repeat(50));
 
   if (data.counts.comments > 0) {
-    console.log(`  ℹ️  ${data.counts.comments} comments already exist`);
+    console.log(`  ℹ️  ${data.counts.comments} comments already exist - skipping`);
+    return { inserted: 0, skipped: 0 };
   }
 
   if (data.users.length === 0 || data.orders.length === 0) {
@@ -627,8 +627,9 @@ async function fillComments(data: Awaited<ReturnType<typeof getExistingData>>, d
   let inserted = 0;
   for (const comment of commentsToInsert) {
     try {
+      // comments uses snake_case column names
       await db.execute(sql`
-        INSERT INTO comments (commentableType, commentableId, userId, content, createdAt, updatedAt)
+        INSERT INTO comments (commentable_type, commentable_id, user_id, content, created_at, updated_at)
         VALUES (${comment.commentableType}, ${comment.commentableId}, ${comment.userId}, ${comment.content}, NOW(), NOW())
       `);
       inserted++;
@@ -646,7 +647,8 @@ async function fillVendorBills(data: Awaited<ReturnType<typeof getExistingData>>
   console.log("─".repeat(50));
 
   if (data.counts.bills > 0) {
-    console.log(`  ℹ️  ${data.counts.bills} vendor bills already exist`);
+    console.log(`  ℹ️  ${data.counts.bills} vendor bills already exist - skipping`);
+    return { inserted: 0, skipped: 0 };
   }
 
   if (data.vendors.length === 0) {
@@ -654,8 +656,14 @@ async function fillVendorBills(data: Awaited<ReturnType<typeof getExistingData>>
     return { inserted: 0, skipped: CONFIG.vendorBills.count };
   }
 
+  if (data.users.length === 0) {
+    console.log("  ⚠️  No users found - cannot create bills (need createdBy)");
+    return { inserted: 0, skipped: CONFIG.vendorBills.count };
+  }
+
   const billsToInsert = [];
   const statuses = ["DRAFT", "PENDING", "APPROVED", "PAID"] as const;
+  const user = data.users[0];
 
   for (let i = 0; i < CONFIG.vendorBills.count; i++) {
     const vendor = data.vendors[i % data.vendors.length];
@@ -665,18 +673,24 @@ async function fillVendorBills(data: Awaited<ReturnType<typeof getExistingData>>
     dueDate.setDate(dueDate.getDate() + 30);
 
     const amount = faker.number.float({ min: 1000, max: 50000, fractionDigits: 2 });
+    const taxAmount = amount * 0.0875;
+    const totalAmount = amount + taxAmount;
+    const paidAmount = status === "PAID" ? totalAmount : 0;
+    const amountDue = totalAmount - paidAmount;
 
     billsToInsert.push({
       vendorId: vendor.id,
       billNumber: `BILL-${faker.string.alphanumeric(8).toUpperCase()}`,
-      billDate,
-      dueDate,
+      billDate: billDate.toISOString().split("T")[0],
+      dueDate: dueDate.toISOString().split("T")[0],
       status,
       subtotal: amount.toFixed(2),
-      taxAmount: (amount * 0.0875).toFixed(2),
-      totalAmount: (amount * 1.0875).toFixed(2),
-      paidAmount: status === "PAID" ? (amount * 1.0875).toFixed(2) : "0.00",
+      taxAmount: taxAmount.toFixed(2),
+      totalAmount: totalAmount.toFixed(2),
+      amountPaid: paidAmount.toFixed(2),
+      amountDue: amountDue.toFixed(2),
       notes: `Invoice for ${faker.commerce.productName()}`,
+      createdBy: user.id,
     });
   }
 
@@ -693,9 +707,10 @@ async function fillVendorBills(data: Awaited<ReturnType<typeof getExistingData>>
   let inserted = 0;
   for (const bill of billsToInsert) {
     try {
+      // bills uses camelCase column names
       await db.execute(sql`
-        INSERT INTO bills (vendorId, billNumber, billDate, dueDate, status, subtotal, taxAmount, totalAmount, paidAmount, notes, createdAt, updatedAt)
-        VALUES (${bill.vendorId}, ${bill.billNumber}, ${bill.billDate}, ${bill.dueDate}, ${bill.status}, ${bill.subtotal}, ${bill.taxAmount}, ${bill.totalAmount}, ${bill.paidAmount}, ${bill.notes}, NOW(), NOW())
+        INSERT INTO bills (vendorId, billNumber, billDate, dueDate, status, subtotal, taxAmount, totalAmount, amountPaid, amountDue, notes, createdBy, createdAt, updatedAt)
+        VALUES (${bill.vendorId}, ${bill.billNumber}, ${bill.billDate}, ${bill.dueDate}, ${bill.status}, ${bill.subtotal}, ${bill.taxAmount}, ${bill.totalAmount}, ${bill.amountPaid}, ${bill.amountDue}, ${bill.notes}, ${bill.createdBy}, NOW(), NOW())
       `);
       inserted++;
     } catch (err) {
