@@ -4,16 +4,401 @@ import * as accountingDb from "../accountingDb";
 import * as arApDb from "../arApDb";
 import * as cashExpensesDb from "../cashExpensesDb";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { 
-  paginationInputSchema, 
-  createPaginatedResponse, 
+import {
+  paginationInputSchema,
+  createPaginatedResponse,
   getPaginationParams,
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
-  createSafeUnifiedResponse 
+  createSafeUnifiedResponse
 } from "../_core/pagination";
+import { getDb } from "../db";
+import { invoices, bills, payments, clients } from "../../drizzle/schema";
+import { eq, and, gt, lt, gte, lte, sql, desc, asc, inArray, or } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 export const accountingRouter = router({
+    // ============================================================================
+    // AR/AP DASHBOARD (Wave 5C - ACC-1)
+    // ============================================================================
+    arApDashboard: router({
+      // Get comprehensive AR summary with aging and top debtors
+      getARSummary: protectedProcedure.use(requirePermission("accounting:read"))
+        .query(async () => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          logger.info({ msg: "[Accounting] Getting AR summary" });
+
+          // Get AR aging buckets
+          const aging = await arApDb.calculateARAging();
+
+          // Calculate total AR
+          const totalAR = aging.current + aging.days30 + aging.days60 + aging.days90 + aging.days90Plus;
+
+          // Get outstanding receivables
+          const outstanding = await arApDb.getOutstandingReceivables();
+
+          // Get top debtors - clients with highest outstanding balance
+          const topDebtorsResult = await db
+            .select({
+              clientId: clients.id,
+              clientName: clients.name,
+              totalOwed: clients.totalOwed,
+            })
+            .from(clients)
+            .where(gt(sql`CAST(${clients.totalOwed} AS DECIMAL(15,2))`, 0))
+            .orderBy(desc(sql`CAST(${clients.totalOwed} AS DECIMAL(15,2))`))
+            .limit(10);
+
+          // Count invoices by status
+          const statusCounts = await db
+            .select({
+              status: invoices.status,
+              count: sql<number>`COUNT(*)`,
+            })
+            .from(invoices)
+            .where(sql`${invoices.deletedAt} IS NULL`)
+            .groupBy(invoices.status);
+
+          return {
+            totalAR,
+            aging: {
+              current: aging.current,
+              days1to30: aging.days30,
+              days31to60: aging.days60,
+              days61to90: aging.days90,
+              days90Plus: aging.days90Plus,
+            },
+            topDebtors: topDebtorsResult.map(d => ({
+              clientId: d.clientId,
+              clientName: d.clientName,
+              totalOwed: Number(d.totalOwed || 0),
+            })),
+            invoiceCount: outstanding.invoices.length,
+            statusCounts: statusCounts.reduce((acc, s) => {
+              acc[s.status] = Number(s.count);
+              return acc;
+            }, {} as Record<string, number>),
+          };
+        }),
+
+      // Get comprehensive AP summary by vendor
+      getAPSummary: protectedProcedure.use(requirePermission("accounting:read"))
+        .query(async () => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          logger.info({ msg: "[Accounting] Getting AP summary" });
+
+          // Get AP aging buckets
+          const aging = await arApDb.calculateAPAging();
+
+          // Calculate total AP
+          const totalAP = aging.current + aging.days30 + aging.days60 + aging.days90 + aging.days90Plus;
+
+          // Get outstanding payables
+          const outstanding = await arApDb.getOutstandingPayables();
+
+          // Group bills by vendor
+          const byVendorResult = await db
+            .select({
+              vendorId: bills.vendorId,
+              vendorName: clients.name,
+              totalOwed: sql<number>`SUM(CAST(${bills.amountDue} AS DECIMAL(15,2)))`,
+              billCount: sql<number>`COUNT(*)`,
+            })
+            .from(bills)
+            .leftJoin(clients, eq(bills.vendorId, clients.id))
+            .where(
+              and(
+                inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+                sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
+                sql`${bills.deletedAt} IS NULL`
+              )
+            )
+            .groupBy(bills.vendorId, clients.name)
+            .orderBy(desc(sql`SUM(CAST(${bills.amountDue} AS DECIMAL(15,2)))`));
+
+          // Count bills by status
+          const statusCounts = await db
+            .select({
+              status: bills.status,
+              count: sql<number>`COUNT(*)`,
+            })
+            .from(bills)
+            .where(sql`${bills.deletedAt} IS NULL`)
+            .groupBy(bills.status);
+
+          return {
+            totalAP,
+            aging: {
+              current: aging.current,
+              days1to30: aging.days30,
+              days31to60: aging.days60,
+              days61to90: aging.days90,
+              days90Plus: aging.days90Plus,
+            },
+            byVendor: byVendorResult.map(v => ({
+              vendorId: v.vendorId,
+              vendorName: v.vendorName || "Unknown Vendor",
+              totalOwed: Number(v.totalOwed || 0),
+              billCount: Number(v.billCount || 0),
+            })),
+            billCount: outstanding.bills.length,
+            statusCounts: statusCounts.reduce((acc, s) => {
+              acc[s.status] = Number(s.count);
+              return acc;
+            }, {} as Record<string, number>),
+          };
+        }),
+
+      // Get overdue invoices list
+      getOverdueInvoices: protectedProcedure.use(requirePermission("accounting:read"))
+        .input(z.object({
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        }))
+        .query(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          const today = new Date();
+          const todayStr = today.toISOString().split("T")[0];
+
+          // Get overdue invoices with client info
+          const overdueInvoices = await db
+            .select({
+              id: invoices.id,
+              invoiceNumber: invoices.invoiceNumber,
+              customerId: invoices.customerId,
+              customerName: clients.name,
+              invoiceDate: invoices.invoiceDate,
+              dueDate: invoices.dueDate,
+              totalAmount: invoices.totalAmount,
+              amountDue: invoices.amountDue,
+              status: invoices.status,
+            })
+            .from(invoices)
+            .leftJoin(clients, eq(invoices.customerId, clients.id))
+            .where(
+              and(
+                sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+                sql`${invoices.dueDate} < ${todayStr}`,
+                sql`${invoices.deletedAt} IS NULL`
+              )
+            )
+            .orderBy(asc(invoices.dueDate))
+            .limit(input.limit)
+            .offset(input.offset);
+
+          // Get total count
+          const countResult = await db
+            .select({ count: sql<number>`COUNT(*)` })
+            .from(invoices)
+            .where(
+              and(
+                sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+                sql`${invoices.dueDate} < ${todayStr}`,
+                sql`${invoices.deletedAt} IS NULL`
+              )
+            );
+
+          // Calculate days overdue for each invoice
+          const invoicesWithDaysOverdue = overdueInvoices.map(inv => {
+            const dueDate = new Date(inv.dueDate);
+            const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+            return {
+              ...inv,
+              totalAmount: Number(inv.totalAmount),
+              amountDue: Number(inv.amountDue),
+              daysOverdue,
+            };
+          });
+
+          return createSafeUnifiedResponse(
+            invoicesWithDaysOverdue,
+            Number(countResult[0]?.count || 0),
+            input.limit,
+            input.offset
+          );
+        }),
+
+      // Get client statement with invoices and payments
+      getClientStatement: protectedProcedure.use(requirePermission("accounting:read"))
+        .input(z.object({
+          clientId: z.number(),
+          startDate: z.date().optional(),
+          endDate: z.date().optional(),
+        }))
+        .query(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          logger.info({ msg: "[Accounting] Getting client statement", clientId: input.clientId });
+
+          // Get client info
+          const [client] = await db
+            .select({
+              id: clients.id,
+              name: clients.name,
+              email: clients.email,
+              phone: clients.phone,
+              totalOwed: clients.totalOwed,
+            })
+            .from(clients)
+            .where(eq(clients.id, input.clientId));
+
+          if (!client) {
+            throw new Error("Client not found");
+          }
+
+          // Build date conditions for invoices
+          const invoiceConditions = [
+            eq(invoices.customerId, input.clientId),
+            sql`${invoices.deletedAt} IS NULL`,
+          ];
+          if (input.startDate) {
+            const startDateStr = input.startDate.toISOString().split("T")[0];
+            invoiceConditions.push(sql`${invoices.invoiceDate} >= ${startDateStr}`);
+          }
+          if (input.endDate) {
+            const endDateStr = input.endDate.toISOString().split("T")[0];
+            invoiceConditions.push(sql`${invoices.invoiceDate} <= ${endDateStr}`);
+          }
+
+          // Get client invoices
+          const clientInvoices = await db
+            .select()
+            .from(invoices)
+            .where(and(...invoiceConditions))
+            .orderBy(desc(invoices.invoiceDate));
+
+          // Build date conditions for payments
+          const paymentConditions = [
+            eq(payments.customerId, input.clientId),
+            sql`${payments.deletedAt} IS NULL`,
+          ];
+          if (input.startDate) {
+            const startDateStr = input.startDate.toISOString().split("T")[0];
+            paymentConditions.push(sql`${payments.paymentDate} >= ${startDateStr}`);
+          }
+          if (input.endDate) {
+            const endDateStr = input.endDate.toISOString().split("T")[0];
+            paymentConditions.push(sql`${payments.paymentDate} <= ${endDateStr}`);
+          }
+
+          // Get client payments
+          const clientPayments = await db
+            .select()
+            .from(payments)
+            .where(and(...paymentConditions))
+            .orderBy(desc(payments.paymentDate));
+
+          // Calculate summary
+          const totalInvoiced = clientInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+          const totalPaid = clientPayments.reduce((sum, pmt) => sum + Number(pmt.amount), 0);
+          const currentBalance = Number(client.totalOwed || 0);
+
+          return {
+            client: {
+              id: client.id,
+              name: client.name,
+              email: client.email,
+              phone: client.phone,
+            },
+            invoices: clientInvoices.map(inv => ({
+              ...inv,
+              totalAmount: Number(inv.totalAmount),
+              amountDue: Number(inv.amountDue),
+              amountPaid: Number(inv.amountPaid),
+            })),
+            payments: clientPayments.map(pmt => ({
+              ...pmt,
+              amount: Number(pmt.amount),
+            })),
+            summary: {
+              totalInvoiced,
+              totalPaid,
+              currentBalance,
+              invoiceCount: clientInvoices.length,
+              paymentCount: clientPayments.length,
+            },
+          };
+        }),
+
+      // Get overdue bills (AP) list
+      getOverdueBills: protectedProcedure.use(requirePermission("accounting:read"))
+        .input(z.object({
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        }))
+        .query(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          const today = new Date();
+          const todayStr = today.toISOString().split("T")[0];
+
+          // Get overdue bills with vendor info
+          const overdueBills = await db
+            .select({
+              id: bills.id,
+              billNumber: bills.billNumber,
+              vendorId: bills.vendorId,
+              vendorName: clients.name,
+              billDate: bills.billDate,
+              dueDate: bills.dueDate,
+              totalAmount: bills.totalAmount,
+              amountDue: bills.amountDue,
+              status: bills.status,
+            })
+            .from(bills)
+            .leftJoin(clients, eq(bills.vendorId, clients.id))
+            .where(
+              and(
+                sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
+                sql`${bills.dueDate} < ${todayStr}`,
+                sql`${bills.deletedAt} IS NULL`
+              )
+            )
+            .orderBy(asc(bills.dueDate))
+            .limit(input.limit)
+            .offset(input.offset);
+
+          // Get total count
+          const countResult = await db
+            .select({ count: sql<number>`COUNT(*)` })
+            .from(bills)
+            .where(
+              and(
+                sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
+                sql`${bills.dueDate} < ${todayStr}`,
+                sql`${bills.deletedAt} IS NULL`
+              )
+            );
+
+          // Calculate days overdue for each bill
+          const billsWithDaysOverdue = overdueBills.map(bill => {
+            const dueDate = new Date(bill.dueDate);
+            const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+            return {
+              ...bill,
+              totalAmount: Number(bill.totalAmount),
+              amountDue: Number(bill.amountDue),
+              daysOverdue,
+            };
+          });
+
+          return createSafeUnifiedResponse(
+            billsWithDaysOverdue,
+            Number(countResult[0]?.count || 0),
+            input.limit,
+            input.offset
+          );
+        }),
+    }),
+
     // Chart of Accounts
     // PERF-003: Chart of Accounts with pagination
     accounts: router({
