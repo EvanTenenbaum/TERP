@@ -317,11 +317,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
             .where(eq(batches.id, item.batchId));
         }
       }
-      
-      // TODO: Create invoice (accounting integration)
-      // TODO: Record cash payment (accounting integration)
-      // TODO: Update credit exposure (credit intelligence integration)
-      
+
       // Create invoice from order (accounting integration)
       try {
         const invoiceId = await createInvoiceFromOrder({

@@ -1,10 +1,31 @@
 import { TRPCError } from "@trpc/server";
 import { logger } from "./logger";
+import { randomBytes } from "crypto";
+
+// ============================================================================
+// REQUEST ID GENERATION
+// ============================================================================
+
+/**
+ * Generate a unique request ID for error tracking and support
+ * Format: REQ-{timestamp}-{random}
+ */
+export function generateRequestId(): string {
+  const timestamp = Date.now().toString(36);
+  const random = randomBytes(4).toString("hex");
+  return `REQ-${timestamp}-${random}`;
+}
+
+// ============================================================================
+// CUSTOM ERROR CLASSES
+// ============================================================================
 
 /**
  * Custom application error class for expected errors
  */
 export class AppError extends Error {
+  public requestId?: string;
+
   constructor(
     message: string,
     public code: string,
@@ -13,6 +34,67 @@ export class AppError extends Error {
   ) {
     super(message);
     this.name = "AppError";
+    this.requestId = generateRequestId();
+  }
+}
+
+/**
+ * Validation error for invalid user input
+ */
+export class ValidationError extends TRPCError {
+  constructor(message: string, field?: string) {
+    super({
+      code: "BAD_REQUEST",
+      message: field ? `${field}: ${message}` : message,
+    });
+  }
+}
+
+/**
+ * Not found error for missing entities
+ */
+export class NotFoundError extends TRPCError {
+  constructor(entity: string, id?: number | string) {
+    super({
+      code: "NOT_FOUND",
+      message: id ? `${entity} with ID ${id} not found` : `${entity} not found`,
+    });
+  }
+}
+
+/**
+ * Permission error for unauthorized actions
+ */
+export class PermissionError extends TRPCError {
+  constructor(action: string, resource: string) {
+    super({
+      code: "FORBIDDEN",
+      message: `You do not have permission to ${action} this ${resource}`,
+    });
+  }
+}
+
+/**
+ * Conflict error for duplicate or conflicting data
+ */
+export class ConflictError extends TRPCError {
+  constructor(message: string) {
+    super({
+      code: "CONFLICT",
+      message,
+    });
+  }
+}
+
+/**
+ * Business rule error for domain-specific validation failures
+ */
+export class BusinessRuleError extends TRPCError {
+  constructor(message: string) {
+    super({
+      code: "BAD_REQUEST",
+      message,
+    });
   }
 }
 
@@ -140,35 +222,132 @@ export const ErrorCatalog = {
         403,
         { action }
       ),
+    SESSION_EXPIRED: () =>
+      new AppError("Your session has expired. Please log in again.", "UNAUTHORIZED", 401),
+  },
+
+  // Order/Sales Errors
+  ORDER: {
+    NOT_FOUND: (orderId: number) =>
+      new AppError(`Order ${orderId} not found`, "NOT_FOUND", 404, { orderId }),
+    ALREADY_FULFILLED: (orderId: number) =>
+      new AppError(`Order ${orderId} has already been fulfilled`, "CONFLICT", 409, { orderId }),
+    INVALID_STATUS_CHANGE: (from: string, to: string) =>
+      new AppError(`Cannot change order status from ${from} to ${to}`, "BAD_REQUEST", 400, { from, to }),
+    INSUFFICIENT_INVENTORY: (batchId: number, requested: number, available: number) =>
+      new AppError(
+        `Insufficient inventory in batch ${batchId}. Requested: ${requested}, Available: ${available}`,
+        "BAD_REQUEST",
+        400,
+        { batchId, requested, available }
+      ),
+  },
+
+  // Client Errors
+  CLIENT: {
+    NOT_FOUND: (clientId: number) =>
+      new AppError(`Client ${clientId} not found`, "NOT_FOUND", 404, { clientId }),
+    CREDIT_LIMIT_EXCEEDED: (clientId: number, limit: number, requested: number) =>
+      new AppError(
+        `Credit limit exceeded for client ${clientId}. Limit: $${limit}, Requested: $${requested}`,
+        "BAD_REQUEST",
+        400,
+        { clientId, limit, requested }
+      ),
+    DUPLICATE_TERI_CODE: (teriCode: string) =>
+      new AppError(`Client with TERI code ${teriCode} already exists`, "CONFLICT", 409, { teriCode }),
+  },
+
+  // Invoice/Payment Errors
+  ACCOUNTING: {
+    INVOICE_NOT_FOUND: (invoiceId: number) =>
+      new AppError(`Invoice ${invoiceId} not found`, "NOT_FOUND", 404, { invoiceId }),
+    PAYMENT_EXCEEDS_BALANCE: (amount: number, balance: number) =>
+      new AppError(
+        `Payment amount $${amount} exceeds outstanding balance $${balance}`,
+        "BAD_REQUEST",
+        400,
+        { amount, balance }
+      ),
+    INVOICE_ALREADY_PAID: (invoiceId: number) =>
+      new AppError(`Invoice ${invoiceId} has already been paid in full`, "CONFLICT", 409, { invoiceId }),
+  },
+
+  // Calendar Errors
+  CALENDAR: {
+    EVENT_NOT_FOUND: (eventId: number) =>
+      new AppError(`Calendar event ${eventId} not found`, "NOT_FOUND", 404, { eventId }),
+    SCHEDULING_CONFLICT: (startTime: string, endTime: string) =>
+      new AppError(
+        `Scheduling conflict: Time slot ${startTime} to ${endTime} is not available`,
+        "CONFLICT",
+        409,
+        { startTime, endTime }
+      ),
+    INVALID_DATE_RANGE: () =>
+      new AppError("End date must be after start date", "BAD_REQUEST", 400),
   },
 } as const;
 
 /**
  * Centralized error handler for all tRPC procedures
  * Logs errors with context and converts to TRPCError
+ * Includes request ID for support and debugging
  */
 export function handleError(error: unknown, context: string): never {
-  logger.error({ error }, `Error in ${context}`);
+  const requestId = generateRequestId();
+
+  logger.error({
+    requestId,
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+    context,
+  }, `Error in ${context}`);
 
   if (error instanceof AppError) {
     throw new TRPCError({
       code: mapErrorCode(error.code),
-      message: error.message,
+      message: `${error.message} (Request ID: ${error.requestId || requestId})`,
       cause: error,
     });
+  }
+
+  if (error instanceof TRPCError) {
+    // Re-throw TRPCErrors as-is, but add request ID to message if not present
+    if (!error.message.includes("Request ID:")) {
+      error.message = `${error.message} (Request ID: ${requestId})`;
+    }
+    throw error;
   }
 
   if (error instanceof Error) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: "An unexpected error occurred. Please try again.",
+      message: `An unexpected error occurred. Please try again. (Request ID: ${requestId})`,
       cause: error,
     });
   }
 
   throw new TRPCError({
     code: "INTERNAL_SERVER_ERROR",
-    message: "An unknown error occurred.",
+    message: `An unknown error occurred. (Request ID: ${requestId})`,
+  });
+}
+
+/**
+ * Create an error with request ID attached
+ * Use this to throw errors that need tracking
+ */
+export function createTrackedError(
+  code: TRPCError["code"],
+  message: string,
+  cause?: Error
+): TRPCError {
+  const requestId = generateRequestId();
+  return new TRPCError({
+    code,
+    message: `${message} (Request ID: ${requestId})`,
+    cause,
   });
 }
 
