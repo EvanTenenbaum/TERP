@@ -1,10 +1,12 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { purchaseOrders, purchaseOrderItems, supplierProfiles } from "../../drizzle/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { purchaseOrders, purchaseOrderItems, supplierProfiles, products, clients } from "../../drizzle/schema";
+import { eq, desc, sql, and, or } from "drizzle-orm";
 import { getSupplierByLegacyVendorId } from "../inventoryDb";
 import { createSafeUnifiedResponse } from "../_core/pagination";
+import { logger } from "../_core/logger";
+import { TRPCError } from "@trpc/server";
 
 export const purchaseOrdersRouter = router({
   // Create new purchase order
@@ -410,6 +412,153 @@ export const purchaseOrdersRouter = router({
 
     return items;
   }),
+
+  // Submit PO to vendor (changes status from DRAFT to SENT)
+  submit: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Verify PO exists and is in DRAFT status
+      const [po] = await db
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.id, input.id));
+
+      if (!po) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Purchase order not found" });
+      }
+
+      if (po.purchaseOrderStatus !== "DRAFT") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Purchase order cannot be submitted from ${po.purchaseOrderStatus} status`,
+        });
+      }
+
+      // Update PO status to SENT
+      await db
+        .update(purchaseOrders)
+        .set({
+          purchaseOrderStatus: "SENT",
+          sentAt: new Date(),
+        })
+        .where(eq(purchaseOrders.id, input.id));
+
+      logger.info({ poId: input.id, poNumber: po.poNumber }, "[PO] Purchase order submitted");
+
+      return { success: true, poNumber: po.poNumber };
+    }),
+
+  // Confirm PO (vendor has confirmed receipt, changes status from SENT to CONFIRMED)
+  confirm: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        vendorConfirmationNumber: z.string().optional(),
+        confirmedDeliveryDate: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Verify PO exists and is in SENT status
+      const [po] = await db
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.id, input.id));
+
+      if (!po) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Purchase order not found" });
+      }
+
+      if (po.purchaseOrderStatus !== "SENT") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Purchase order cannot be confirmed from ${po.purchaseOrderStatus} status`,
+        });
+      }
+
+      const updateData: Record<string, unknown> = {
+        purchaseOrderStatus: "CONFIRMED",
+        confirmedAt: new Date(),
+      };
+
+      // Store vendor confirmation number in notes if provided
+      if (input.vendorConfirmationNumber) {
+        const existingNotes = po.notes || "";
+        updateData.notes = existingNotes
+          ? `${existingNotes}\nVendor Confirmation: ${input.vendorConfirmationNumber}`
+          : `Vendor Confirmation: ${input.vendorConfirmationNumber}`;
+      }
+
+      // Update expected delivery date if vendor provides one
+      if (input.confirmedDeliveryDate) {
+        updateData.expectedDeliveryDate = new Date(input.confirmedDeliveryDate);
+      }
+
+      await db.update(purchaseOrders).set(updateData).where(eq(purchaseOrders.id, input.id));
+
+      logger.info(
+        { poId: input.id, poNumber: po.poNumber, vendorConfirmation: input.vendorConfirmationNumber },
+        "[PO] Purchase order confirmed"
+      );
+
+      return { success: true, poNumber: po.poNumber };
+    }),
+
+  // Get PO with full details including items and product info
+  getByIdWithDetails: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const [po] = await db
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.id, input.id));
+
+      if (!po) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Purchase order not found" });
+      }
+
+      // Get items with product details
+      const items = await db
+        .select({
+          id: purchaseOrderItems.id,
+          productId: purchaseOrderItems.productId,
+          quantityOrdered: purchaseOrderItems.quantityOrdered,
+          quantityReceived: purchaseOrderItems.quantityReceived,
+          unitCost: purchaseOrderItems.unitCost,
+          totalCost: purchaseOrderItems.totalCost,
+          notes: purchaseOrderItems.notes,
+          productName: products.nameCanonical,
+          category: products.category,
+          subcategory: products.subcategory,
+        })
+        .from(purchaseOrderItems)
+        .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+        .where(eq(purchaseOrderItems.purchaseOrderId, input.id));
+
+      // Get supplier info
+      let supplierInfo = null;
+      if (po.supplierClientId) {
+        const [supplier] = await db
+          .select({ id: clients.id, name: clients.name, email: clients.email, phone: clients.phone })
+          .from(clients)
+          .where(eq(clients.id, po.supplierClientId));
+        supplierInfo = supplier || null;
+      }
+
+      return {
+        ...po,
+        items,
+        supplier: supplierInfo,
+      };
+    }),
 });
 
 // Helper function to generate PO number
