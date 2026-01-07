@@ -35,6 +35,17 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 
+// Debug logging helpers - only logs in development to avoid console noise in production
+const debugLog = import.meta.env.DEV
+  ? (message: string, ...args: unknown[]) => console.log(message, ...args)
+  : () => {};
+const debugWarn = import.meta.env.DEV
+  ? (message: string, ...args: unknown[]) => console.warn(message, ...args)
+  : () => {};
+const debugError = import.meta.env.DEV
+  ? (message: string, ...args: unknown[]) => console.error(message, ...args)
+  : () => {};
+
 interface UseRetryableQueryOptions {
   /**
    * Maximum number of retry attempts allowed
@@ -115,13 +126,13 @@ export function useRetryableQuery<TData, TError>(
    */
   const handleRetry = useCallback(async () => {
     if (retryCount >= maxRetries) {
-      console.warn("[useRetryableQuery] Max retries reached, not retrying");
+      debugWarn("[useRetryableQuery] Max retries reached, not retrying");
       onMaxRetriesReached?.();
       return;
     }
 
     const attemptNumber = retryCount + 1;
-    console.log(`[useRetryableQuery] Retry attempt ${attemptNumber}/${maxRetries}`);
+    debugLog(`[useRetryableQuery] Retry attempt ${attemptNumber}/${maxRetries}`);
 
     setIsRetrying(true);
     setRetryCount(attemptNumber);
@@ -142,7 +153,7 @@ export function useRetryableQuery<TData, TError>(
         onRetrySuccess?.();
       }
     } catch (error) {
-      console.error("[useRetryableQuery] Retry failed:", error);
+      debugError("[useRetryableQuery] Retry failed:", error);
     } finally {
       setIsRetrying(false);
     }
@@ -168,7 +179,7 @@ export function useRetryableQuery<TData, TError>(
    */
   useEffect(() => {
     if (queryResult.isSuccess && retryCount > 0) {
-      console.log("[useRetryableQuery] Query succeeded, resetting retry count");
+      debugLog("[useRetryableQuery] Query succeeded, resetting retry count");
       setRetryCount(0);
     }
   }, [queryResult.isSuccess, retryCount]);
