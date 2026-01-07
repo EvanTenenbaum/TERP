@@ -1,267 +1,372 @@
-# Wave 3: Integration & Deploy
+# Wave 3: Testing & Validation
 
-**Agent Role**: Lead Developer  
-**Duration**: 3-4 hours  
-**Priority**: P0 - Thursday Deadline  
-**Dependencies**: Waves 1A, 1B, 2A, 2B complete
+**Agent Role**: QA Engineer  
+**Duration**: 4-6 hours  
+**Priority**: P0  
+**Dependencies**: Waves 1-2 PRs merged  
+**Deliverable**: Comprehensive test report with all findings
 
 ---
 
 ## Overview
 
-Merge all Wave 1 and Wave 2 PRs, run integration tests, deploy to production, and verify all critical fixes are working.
+All Wave 1 and Wave 2 PRs have been merged to main. This wave is about **testing everything on the live site** and **reporting back all issues found**. Do NOT create GitHub issues - instead, compile all findings into a structured report.
 
 ---
 
-## Pre-Flight Checklist
+## Live Site
 
-```bash
-cd /home/ubuntu/TERP
-git checkout main
-git pull origin main
-
-# Check PR status
-gh pr list --state open
-```
+**URL**: https://terp-app-b9s35.ondigitalocean.app
 
 ---
 
-## Task 1: Merge Wave PRs (1.5 hours)
+## Part 1: Critical Bug Fix Verification (1.5 hours)
 
-### Merge Order (Important!)
+Test each bug that was supposedly fixed in Waves 1-2.
 
-1. **Wave 1A** (Backend fixes) - No dependencies
-2. **Wave 1B** (Frontend fixes) - No dependencies  
-3. **Wave 2A** (Search fixes) - Depends on 1A
-4. **Wave 2B** (Navigation fixes) - No dependencies
+### BUG-040: Order Creator Inventory Loading
 
-### For Each PR
+**Test Steps**:
+1. Navigate to Orders → New Order
+2. Select a customer from the dropdown
+3. Wait for inventory to load
 
-```bash
-# Review the PR
-gh pr view <PR_NUMBER>
-gh pr diff <PR_NUMBER>
+**Expected**: Inventory loads successfully, products appear in the list
 
-# Check CI status
-gh pr checks <PR_NUMBER>
-
-# If all checks pass, merge
-gh pr merge <PR_NUMBER> --squash --delete-branch
-
-# Pull latest
-git pull origin main
-```
-
-### Conflict Resolution
-
-If conflicts occur:
-```bash
-git checkout main
-git pull origin main
-git checkout <branch-name>
-git rebase main
-
-# Fix conflicts in each file
-# Then:
-git add .
-git rebase --continue
-git push --force-with-lease
-```
+**Record**:
+- [ ] PASS / FAIL
+- Screenshot if failed
+- Error message if any
+- Console errors if any
 
 ---
 
-## Task 2: Run Full Test Suite (30 min)
+### BUG-041: Batch Detail View
 
-```bash
-# Install dependencies if needed
-pnpm install
+**Test Steps**:
+1. Navigate to Inventory/Batches
+2. Click "View" on any batch
+3. Drawer should open with batch details
 
-# Run all tests
-pnpm test
+**Expected**: Drawer opens without crash, shows batch info, locations, audit log
 
-# Run type checking
-pnpm typecheck
-
-# Run linting
-pnpm lint
-```
-
-### If Tests Fail
-
-1. Identify failing test
-2. Check if it's a real bug or test needs update
-3. Fix and commit:
-```bash
-git add .
-git commit -m "fix: Resolve test failures from merge"
-git push origin main
-```
+**Record**:
+- [ ] PASS / FAIL
+- Screenshot if failed
+- Error message if any
+- Console errors if any
 
 ---
 
-## Task 3: Deploy to Staging (30 min)
+### BUG-042: Global Search
 
-### Check DigitalOcean App Status
+**Test Steps**:
+1. Click the search icon in the header
+2. Type "OG Kush" (or another known product name)
+3. Press Enter or click search
 
-```bash
-# Using MCP
-manus-mcp-cli tool call get-deployment --server digitalocean --input '{"app_id": "terp-app-b9s35"}'
-```
+**Expected**: Search returns matching products by name, not just by SKU/code
 
-### Trigger Deployment
-
-Push to main triggers auto-deploy. Monitor:
-
-```bash
-# Check deployment logs
-manus-mcp-cli tool call get-deployment-logs --server digitalocean --input '{"app_id": "terp-app-b9s35"}'
-```
-
-### Wait for Deployment
-
-- Build: ~3-5 minutes
-- Deploy: ~2-3 minutes
-- Total: ~5-8 minutes
+**Record**:
+- [ ] PASS / FAIL
+- What results appeared (if any)
+- What should have appeared
+- Console errors if any
 
 ---
 
-## Task 4: Smoke Test All Fixed Flows (45 min)
+### BUG-043: Permission Service
 
-### Test Checklist
+**Test Steps**:
+1. This is a backend fix - test by accessing Settings → Users tab
+2. Also test any permission-restricted areas
 
-Open https://terp-app-b9s35.ondigitalocean.app and verify:
+**Expected**: No SQL errors, appropriate permission messages
 
-#### BUG-040: Order Creator Inventory Loading
-- [ ] Navigate to Orders → New Order
-- [ ] Select a customer
-- [ ] Verify inventory loads (no "Failed to load" error)
-- [ ] Verify products display with prices
-
-#### BUG-041: Batch Detail View
-- [ ] Navigate to Inventory
-- [ ] Click "View" on any batch
-- [ ] Verify drawer opens without crash
-- [ ] Verify locations and audit logs display
-
-#### BUG-042: Global Search
-- [ ] Click search icon in header
-- [ ] Search for "OG Kush" (or known product name)
-- [ ] Verify results include products by name
-- [ ] Verify clicking result navigates correctly
-
-#### QA-049: Products Page
-- [ ] Navigate to Products
-- [ ] Verify products list displays (not empty)
-- [ ] Verify count matches database
-
-#### QA-050: Samples Page
-- [ ] Navigate to Samples
-- [ ] Verify samples list displays (not empty)
-- [ ] Verify count matches database
-
-#### BUG-045: Retry Button
-- [ ] If any page shows error, click Retry
-- [ ] Verify it retries without full page reload
-- [ ] Verify form data is preserved
-
-#### Navigation
-- [ ] All sidebar links work (no 404s)
-- [ ] All modals open and close
-- [ ] Dark mode toggle works
+**Record**:
+- [ ] PASS / FAIL
+- Error messages observed
+- Console errors if any
 
 ---
 
-## Task 5: Production Deployment (30 min)
+### BUG-045: Retry Button
 
-### If All Smoke Tests Pass
+**Test Steps**:
+1. Navigate to Order Creator
+2. If inventory fails to load, click "Retry"
+3. Observe if form data is preserved
 
-Production deploys automatically from main. Verify:
+**Expected**: Retry should reload inventory WITHOUT losing customer selection
 
-1. Check deployment status in DigitalOcean
-2. Wait for healthy status
-3. Run smoke tests on production URL
-
-### Rollback Plan
-
-If critical issues found:
-
-```bash
-# Find last known good commit
-git log --oneline -10
-
-# Revert to previous commit
-git revert HEAD
-git push origin main
-
-# Or revert specific PR
-git revert -m 1 <merge-commit-hash>
-git push origin main
-```
+**Record**:
+- [ ] PASS / FAIL
+- Did form reset?
+- Console errors if any
 
 ---
 
-## Task 6: Post-Deployment Verification (15 min)
+### BUG-046: Settings Users Tab
 
-### Monitor for Errors
+**Test Steps**:
+1. Navigate to Settings
+2. Click on "Users" tab
 
-1. Check browser console for JavaScript errors
-2. Check network tab for failed API calls
-3. Check DigitalOcean logs for server errors
+**Expected**: Either shows users list OR shows clear permission error (not "Authentication required")
 
-### Document Any Issues
+**Record**:
+- [ ] PASS / FAIL
+- Exact error message shown
+- Is the message accurate/helpful?
 
-If issues found, create GitHub issue:
+---
 
-```bash
-gh issue create --title "Post-deploy issue: <description>" --body "
-## Description
-<what's wrong>
+### QA-049: Products Page
 
-## Steps to Reproduce
-1. ...
+**Test Steps**:
+1. Navigate to Products page
+2. Check if products are displayed
 
-## Expected Behavior
+**Expected**: Should show all products (previously showed "No results" despite 121 products)
+
+**Record**:
+- [ ] PASS / FAIL
+- How many products shown
+- Any filters applied by default?
+- Console errors if any
+
+---
+
+### QA-050: Samples Page
+
+**Test Steps**:
+1. Navigate to Samples page
+2. Check if samples are displayed
+
+**Expected**: Should show all samples (previously showed "All 0")
+
+**Record**:
+- [ ] PASS / FAIL
+- How many samples shown
+- Console errors if any
+
+---
+
+## Part 2: Full Navigation Audit (1 hour)
+
+Click through EVERY navigation link and record any issues.
+
+### Sidebar Navigation Checklist
+
+| Link | URL | Status | Notes |
+|------|-----|--------|-------|
+| Dashboard | / | | |
+| Orders | /orders | | |
+| Clients | /clients | | |
+| Products | /products | | |
+| Inventory/Batches | /inventory | | |
+| Samples | /samples | | |
+| Invoices | /invoices | | |
+| Quotes | /quotes | | |
+| Calendar | /calendar | | |
+| Reports/Analytics | /analytics | | |
+| AR/AP | /accounting | | |
+| Credits | /credits | | |
+| Purchase Orders | /purchase-orders | | |
+| Vendors | /vendors | | |
+| Returns | /returns | | |
+| Locations | /locations | | |
+| Todo Lists | /todo | | |
+| Settings | /settings | | |
+
+**For each link, record**:
+- Does it load? (200 OK vs 404)
+- Any console errors?
+- Does it show data or empty state?
+- Any obvious UI issues?
+
+---
+
+## Part 3: Core Workflow Testing (2 hours)
+
+### Workflow 1: View Client → See Transactions
+
+1. Go to Dashboard
+2. Click on a client in the Sales Leaderboard
+3. Verify client profile loads
+4. Click Transactions tab
+5. Verify transactions display
+
+**Record all issues**:
+
+---
+
+### Workflow 2: Create Order (Full Flow)
+
+1. Navigate to Orders → New Order
+2. Select a customer
+3. (If inventory loads) Add items to order
+4. Set quantities and prices
+5. Save as draft OR submit order
+
+**Record all issues**:
+
+---
+
+### Workflow 3: View Invoice → Record Payment
+
+1. Navigate to Invoices
+2. Click on an invoice row
+3. Verify invoice detail modal opens
+4. Click "Record Payment" (if available)
+5. Verify payment form works
+
+**Record all issues**:
+
+---
+
+### Workflow 4: View Batch → Check Details
+
+1. Navigate to Inventory/Batches
+2. Click View on a batch
+3. Check all tabs in the drawer
+4. Verify photos, locations, audit log display
+
+**Record all issues**:
+
+---
+
+### Workflow 5: Settings Configuration
+
+1. Navigate to Settings
+2. Test each tab:
+   - General
+   - Users (expect permission issue)
+   - Locations
+   - Categories
+   - Grades
+   - Feature Flags
+
+**Record all issues**:
+
+---
+
+### Workflow 6: Search Functionality
+
+1. Use global search for:
+   - A product name
+   - A client name
+   - A batch code
+   - An invoice number
+
+**Record what works and what doesn't**:
+
+---
+
+### Workflow 7: Export Functionality
+
+1. Go to Inventory/Batches
+2. Click "Export CSV"
+3. Verify file downloads
+4. Open file and verify data
+
+**Record all issues**:
+
+---
+
+## Part 4: UI/UX Issues (30 min)
+
+Look for and document:
+
+1. **Empty States**: Pages that show blank instead of helpful message
+2. **Loading States**: Pages that don't show loading indicator
+3. **Error Messages**: Unhelpful or confusing error messages
+4. **Broken Layouts**: Misaligned elements, overflow issues
+5. **Missing Data**: Fields that should have data but are empty
+6. **Console Errors**: Any JavaScript errors in browser console
+
+---
+
+## Part 5: Compile Report
+
+Create a comprehensive report with the following structure:
+
+```markdown
+# TERP Wave 3 Test Report
+
+**Date**: [Date]
+**Tester**: [Agent ID]
+**Environment**: https://terp-app-b9s35.ondigitalocean.app
+
+## Executive Summary
+
+- Total Tests: X
+- Passed: X
+- Failed: X
+- Pass Rate: X%
+
+## Critical Issues (Blocking)
+
+### Issue 1: [Title]
+- **Location**: [URL/Page]
+- **Steps to Reproduce**: 
+- **Expected**: 
+- **Actual**: 
+- **Screenshot**: [if applicable]
+- **Console Error**: [if applicable]
+
+## High Priority Issues
+
+### Issue 1: [Title]
 ...
 
-## Actual Behavior
+## Medium Priority Issues
+
+### Issue 1: [Title]
 ...
 
-## Priority
-P0/P1/P2
-"
+## Low Priority Issues (Polish)
+
+### Issue 1: [Title]
+...
+
+## Passed Tests
+
+- [x] BUG-040: Order Creator Inventory Loading
+- [x] BUG-041: Batch Detail View
+...
+
+## Recommendations
+
+1. [Recommendation 1]
+2. [Recommendation 2]
+...
 ```
+
+---
+
+## Deliverables
+
+1. **Test Report**: Save to `/home/ubuntu/TERP/test-flows/WAVE_3_TEST_REPORT.md`
+2. **Screenshots**: Save to `/home/ubuntu/TERP/test-flows/screenshots/` (if any failures)
+3. **Summary**: Post summary in the task response
+
+---
+
+## DO NOT
+
+- ❌ Create GitHub issues
+- ❌ Make any code changes
+- ❌ Merge anything
+- ❌ Skip any test
 
 ---
 
 ## Success Criteria
 
-- [ ] All 4 PRs merged to main
-- [ ] All tests passing
-- [ ] Deployment successful
-- [ ] BUG-040 fixed (Order Creator works)
-- [ ] BUG-041 fixed (Batch Detail works)
-- [ ] BUG-042 fixed (Search works)
-- [ ] QA-049 fixed (Products show)
-- [ ] QA-050 fixed (Samples show)
-- [ ] No new errors in console
-- [ ] No new 404s
-
----
-
-## Handoff
-
-After Wave 3 completion:
-
-1. Update MASTER_ROADMAP.md to mark bugs as DONE
-2. Notify team that Thursday build is ready
-3. Document any known issues for user training
-4. Prepare for Wave 4 (Stability) to begin
-
-```bash
-# Update roadmap
-git add docs/roadmaps/MASTER_ROADMAP.md
-git commit -m "docs: Mark Wave 1-3 bugs as complete"
-git push origin main
-```
-
-**Next**: Wave 4A/4B/4C/4D (4 parallel agents for Stability)
+- [ ] All critical bug fixes verified (PASS or documented FAIL)
+- [ ] All navigation links tested
+- [ ] All core workflows tested
+- [ ] All issues documented with reproduction steps
+- [ ] Report saved to repository
+- [ ] Summary provided to user
