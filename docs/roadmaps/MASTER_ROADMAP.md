@@ -3,7 +3,7 @@
 ## Single Source of Truth for All Development
 
 **Version:** 3.0
-**Last Updated:** 2026-01-06
+**Last Updated:** 2026-01-07
 **Status:** Active
 
 > ✅ **UX ENHANCEMENT WAVE 2 COMPLETE (Jan 3, 2026)**
@@ -138,6 +138,63 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | Task      | Description                      | Progress | Owner |
 | --------- | -------------------------------- | -------- | ----- |
 | AUDIT-001 | Comprehensive System Code Review | ~50%     | -     |
+
+### 🐛 Critical Bugs Discovered (Jan 7, 2026 - User Flow Testing)
+
+> **Source:** Comprehensive user flow testing on live site + codebase pattern analysis
+> **Documentation:** `test-flows/ROOT_CAUSE_ANALYSIS.md`, `test-flows/ADDITIONAL_BUGS_FOUND.md`
+> **Total Bugs:** 36 (6 from live testing + 30 from codebase analysis)
+
+#### P0 - Critical (Blocks Core Functionality)
+
+| Task    | Description                                      | File                                    | Status     |
+| ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
+| BUG-040 | Order Creator: Inventory loading fails           | `server/pricingEngine.ts`               | 🔴 OPEN    |
+| BUG-041 | Batch Detail View crashes app                    | `client/src/components/inventory/BatchDetailDrawer.tsx` | 🔴 OPEN    |
+| BUG-042 | Global Search returns no results                 | `server/routers/search.ts`              | 🔴 OPEN    |
+| BUG-043 | Permission Service empty array SQL crash         | `server/services/permissionService.ts`  | 🔴 OPEN    |
+| BUG-044 | VIP Portal empty batch IDs crash                 | `server/routers/vipPortal.ts`           | 🔴 OPEN    |
+
+#### P1 - High (Degrades User Experience)
+
+| Task    | Description                                      | File                                    | Status     |
+| ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
+| BUG-045 | Order Creator: Retry resets entire form          | `client/src/pages/OrderCreatorPage.tsx` | 🟡 OPEN    |
+| BUG-046 | Settings Users tab misleading auth error         | `server/_core/trpc.ts`                  | 🟡 OPEN    |
+| BUG-047 | Spreadsheet View shows empty grid                | `server/services/spreadsheetViewService.ts` | 🟡 OPEN    |
+| BUG-048 | ClientsListPage Retry resets filters             | `client/src/pages/ClientsListPage.tsx`  | 🟡 OPEN    |
+| BUG-049 | Live Catalog SQL injection risk                  | `server/services/liveCatalogService.ts` | 🟡 OPEN    |
+| BUG-050 | AuditModal unsafe .map() calls                   | `client/src/components/audit/AuditModal.tsx` | 🟡 OPEN    |
+| BUG-051 | Permission middleware generic errors             | `server/_core/permissionMiddleware.ts`  | 🟡 OPEN    |
+| BUG-052 | Tag Management empty array SQL                   | `server/tagManagementService.ts`        | 🟡 OPEN    |
+| BUG-053 | Credit Engine empty session IDs                  | `server/services/creditEngine-patch.ts` | 🟡 OPEN    |
+
+#### P2 - Medium (Minor Issues)
+
+| Task    | Description                                      | File                                    | Status     |
+| ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
+| BUG-054 | AppointmentRequestsList unsafe .map()            | `client/src/components/calendar/AppointmentRequestsList.tsx` | 🟢 BACKLOG |
+| BUG-055 | TimeOffRequestsList unsafe .map()                | `client/src/components/calendar/TimeOffRequestsList.tsx` | 🟢 BACKLOG |
+| BUG-056 | Dashboard widgets unsafe .map() calls            | `client/src/components/dashboard/widgets-v2/` | 🟢 BACKLOG |
+| BUG-057 | Search inconsistency (inventory vs global)       | `server/routers/search.ts`              | 🟢 BACKLOG |
+| BUG-058 | Auth helpers silent null return                  | `server/_core/authHelpers.ts`           | 🟢 BACKLOG |
+| BUG-059 | Inventory utils silent empty return              | `server/inventoryUtils.ts`              | 🟢 BACKLOG |
+| BUG-060 | Audit router silent empty array                  | `server/routers/audit.ts`               | 🟢 BACKLOG |
+
+#### P3 - Low (Polish/Improvements)
+
+| Task    | Description                                      | File                                    | Status     |
+| ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
+| BUG-061 | AnalyticsPage missing empty state                | `client/src/pages/AnalyticsPage.tsx`    | 🟢 BACKLOG |
+| BUG-062 | CalendarPage missing empty state                 | `client/src/pages/CalendarPage.tsx`     | 🟢 BACKLOG |
+| BUG-063 | NotificationsPage missing empty state            | `client/src/pages/NotificationsPage.tsx`| 🟢 BACKLOG |
+| BUG-064 | PhotographyPage missing empty state              | `client/src/pages/PhotographyPage.tsx`  | 🟢 BACKLOG |
+| BUG-065 | PickPackPage missing empty state                 | `client/src/pages/PickPackPage.tsx`     | 🟢 BACKLOG |
+| BUG-066 | ProductsPage missing empty state                 | `client/src/pages/ProductsPage.tsx`     | 🟢 BACKLOG |
+| BUG-067 | SampleManagement missing empty state             | `client/src/pages/SampleManagement.tsx` | 🟢 BACKLOG |
+| BUG-068 | Generic "Unauthorized" errors in accounting      | `server/routers/accounting.ts`          | 🟢 BACKLOG |
+| BUG-069 | Calendar "Permission denied" without details     | `server/routers/calendar.ts`            | 🟢 BACKLOG |
+
 
 ### ✅ FEATURE-012 Post-Deployment Tasks (P0 - COMPLETE)
 
