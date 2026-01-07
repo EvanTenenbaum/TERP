@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, InboxIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -20,6 +20,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState, ErrorState, NoSearchResults } from "./empty-state";
+import { LoadingState } from "./loading-state";
 
 export type SortDirection = "asc" | "desc" | null;
 
@@ -32,6 +34,15 @@ export interface DataTableColumn<T> {
   enableSorting?: boolean;
   enableFiltering?: boolean;
   searchable?: boolean;
+}
+
+export interface DataTableEmptyState {
+  /** Title for the empty state */
+  title: string;
+  /** Description for the empty state */
+  description?: string;
+  /** Action button configuration */
+  action?: { label: string; onClick: () => void };
 }
 
 export interface DataTableProps<T> {
@@ -48,6 +59,14 @@ export interface DataTableProps<T> {
   globalSearchPlaceholder?: string;
   onSelectionChange?: (selected: T[]) => void;
   getRowId?: (row: T, index: number) => string;
+  /** Loading state */
+  isLoading?: boolean;
+  /** Error object for error state */
+  error?: Error | null;
+  /** Retry function for error state */
+  onRetry?: () => void;
+  /** Empty state configuration */
+  emptyState?: DataTableEmptyState;
 }
 
 type VisibleColumnState = Record<string, boolean>;
@@ -176,6 +195,10 @@ function DataTableComponent<T>({
   globalSearchPlaceholder = "Search",
   onSelectionChange,
   getRowId,
+  isLoading = false,
+  error = null,
+  onRetry,
+  emptyState,
 }: DataTableProps<T>): React.ReactElement {
   const [sortState, setSortState] = useState<{
     columnId: string | null;
@@ -326,6 +349,28 @@ function DataTableComponent<T>({
     const start = (page - 1) * pageSize;
     return filteredData.slice(start, start + pageSize);
   }, [enablePagination, filteredData, page, pageSize]);
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <LoadingState message="Loading data..." />
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <ErrorState
+          title="Failed to load data"
+          description={error.message}
+          onRetry={onRetry}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -497,9 +542,29 @@ function DataTableComponent<T>({
                     columns.filter(column => visibleColumns[String(column.id)])
                       .length + (enableRowSelection ? 1 : 0)
                   }
-                  className="text-center text-muted-foreground"
+                  className="p-0"
                 >
-                  No results found
+                  {debouncedSearch ? (
+                    <NoSearchResults
+                      searchTerm={debouncedSearch}
+                      onClear={() => setSearchTerm("")}
+                    />
+                  ) : emptyState ? (
+                    <EmptyState
+                      icon={<InboxIcon className="h-12 w-12 text-muted-foreground/50" />}
+                      title={emptyState.title}
+                      description={emptyState.description}
+                      action={emptyState.action}
+                      size="sm"
+                    />
+                  ) : (
+                    <EmptyState
+                      variant="generic"
+                      title="No data"
+                      description="No data available to display."
+                      size="sm"
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             )}
