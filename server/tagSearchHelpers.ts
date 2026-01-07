@@ -8,6 +8,7 @@
 import { getDb } from "./db";
 import { tags, productTags } from "../drizzle/schema";
 import { inArray, sql } from "drizzle-orm";
+import { safeInArray } from "./lib/sqlSafety";
 
 /**
  * Tokenize search expression
@@ -78,9 +79,10 @@ export async function evaluateBooleanExpression(tokens: string[]): Promise<numbe
     const andTagIds = andTags.map(t => t.id);
 
     // Get products that have ALL these tags
+    // Use safeInArray for SQL safety - handles empty arrays gracefully
     const productTagsResult = await db.select()
       .from(productTags)
-      .where(inArray(productTags.tagId, andTagIds));
+      .where(safeInArray(productTags.tagId, andTagIds));
 
     // Count how many required tags each product has
     const productTagCounts: Record<number, number> = {};
@@ -103,9 +105,10 @@ export async function evaluateBooleanExpression(tokens: string[]): Promise<numbe
 
     const orTagIds = orTags.map(t => t.id);
 
+    // Use safeInArray for SQL safety - handles empty arrays gracefully
     const orProductTags = await db.select()
       .from(productTags)
-      .where(inArray(productTags.tagId, orTagIds));
+      .where(safeInArray(productTags.tagId, orTagIds));
 
     const orProductIds = Array.from(new Set(orProductTags.map(pt => pt.productId)));
 
@@ -126,9 +129,10 @@ export async function evaluateBooleanExpression(tokens: string[]): Promise<numbe
 
     const notTagIds = notTags.map(t => t.id);
 
+    // Use safeInArray for SQL safety - handles empty arrays gracefully
     const notProductTags = await db.select()
       .from(productTags)
-      .where(inArray(productTags.tagId, notTagIds));
+      .where(safeInArray(productTags.tagId, notTagIds));
 
     const notProductIds = new Set(notProductTags.map(pt => pt.productId));
 

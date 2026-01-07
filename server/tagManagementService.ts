@@ -17,6 +17,7 @@ import {
   type TagGroup
 } from "../drizzle/schema";
 import { eq, and, or, inArray } from "drizzle-orm";
+import { isSafeForInArray } from "./lib/sqlSafety";
 
 /**
  * Create tag hierarchy (parent-child relationship)
@@ -391,6 +392,8 @@ export async function bulkAddTags(
 
 /**
  * Bulk remove tags
+ *
+ * BUG-043 FIX: Safely handles empty arrays to prevent invalid SQL
  */
 export async function bulkRemoveTags(
   productIds: number[],
@@ -398,6 +401,12 @@ export async function bulkRemoveTags(
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // SQL Safety: Return early if either array is empty
+  // Prevents invalid SQL "WHERE productId IN () AND tagId IN ()"
+  if (!isSafeForInArray(productIds) || !isSafeForInArray(tagIds)) {
+    return; // Nothing to remove
+  }
 
   try {
     await db.delete(productTags)
