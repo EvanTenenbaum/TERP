@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
 import { batchLocations, inventoryMovements } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -12,6 +12,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const warehouseTransfersRouter = router({
   // Transfer batch quantity between locations
+  // SECURITY: performedBy is derived from authenticated context, not from input
   transfer: protectedProcedure
     .use(requirePermission("inventory:transfer"))
     .input(
@@ -25,10 +26,11 @@ export const warehouseTransfersRouter = router({
         toBin: z.string().optional(),
         quantity: z.string(),
         notes: z.string().optional(),
-        performedBy: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: Use authenticated user ID instead of input parameter
+      const performedBy = getAuthenticatedUserId(ctx);
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -116,7 +118,7 @@ export const warehouseTransfersRouter = router({
           referenceType: "WAREHOUSE_TRANSFER",
           referenceId: null,
           reason: input.notes || `Transfer to ${input.toSite}${input.toZone ? `/${input.toZone}` : ""}${input.toRack ? `/${input.toRack}` : ""}${input.toShelf ? `/${input.toShelf}` : ""}${input.toBin ? `/${input.toBin}` : ""}`,
-          performedBy: input.performedBy,
+          performedBy,
         });
 
         return { success: true };
@@ -168,20 +170,20 @@ export const warehouseTransfersRouter = router({
   getStats: protectedProcedure
     .use(requirePermission("inventory:read"))
     .query(async () => {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    const stats = await db
-      .select({
-        totalTransfers: sql<number>`COUNT(*)`,
-        recentTransfers: sql<number>`SUM(CASE WHEN ${inventoryMovements.createdAt} >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END)`,
-      })
-      .from(inventoryMovements)
-      .where(eq(inventoryMovements.inventoryMovementType, "TRANSFER"));
+      const stats = await db
+        .select({
+          totalTransfers: sql<number>`COUNT(*)`,
+          recentTransfers: sql<number>`SUM(CASE WHEN ${inventoryMovements.createdAt} >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END)`,
+        })
+        .from(inventoryMovements)
+        .where(eq(inventoryMovements.inventoryMovementType, "TRANSFER"));
 
-    return stats[0] || {
-      totalTransfers: 0,
-      recentTransfers: 0,
-    };
-  }),
+      return stats[0] || {
+        totalTransfers: 0,
+        recentTransfers: 0,
+      };
+    }),
 });

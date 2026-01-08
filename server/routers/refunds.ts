@@ -24,7 +24,6 @@ export const refundsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const limit = input?.limit ?? 100;
@@ -58,40 +57,41 @@ export const refundsRouter = router({
   // Get refund by ID
   getById: protectedProcedure
     .use(requirePermission("orders:read"))
-    .input(z.object({ id: z.number() })).query(async ({ input }) => {
-    const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) throw new Error("Database not available");
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    const [transaction] = await db
-      .select()
-      .from(transactions)
-      .where(eq(transactions.id, input.id));
+      const [transaction] = await db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, input.id));
 
-    if (!transaction) {
-      throw new Error("Refund transaction not found");
-    }
+      if (!transaction) {
+        throw new Error("Refund transaction not found");
+      }
 
-    // Get the link to original transaction
-    const [link] = await db
-      .select()
-      .from(transactionLinks)
-      .where(
-        and(
-          eq(transactionLinks.childTransactionId, input.id),
-          eq(transactionLinks.transactionLinkType, "REFUND_OF")
-        )
-      );
+      // Get the link to original transaction
+      const [link] = await db
+        .select()
+        .from(transactionLinks)
+        .where(
+          and(
+            eq(transactionLinks.childTransactionId, input.id),
+            eq(transactionLinks.transactionLinkType, "REFUND_OF")
+          )
+        );
 
-    return {
-      ...transaction,
-      originalTransactionId: link?.parentTransactionId,
-    };
-  }),
+      return {
+        ...transaction,
+        originalTransactionId: link?.parentTransactionId,
+      };
+    }),
 
   // Process a refund for a return
   // SECURITY: createdBy is derived from authenticated context, not from input
   create: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         returnId: z.number(),
@@ -104,7 +104,6 @@ export const refundsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const createdBy = getAuthenticatedUserId(ctx);
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       // Wrap in transaction for atomicity
@@ -161,33 +160,33 @@ export const refundsRouter = router({
   // Get refunds for a specific return
   getByReturn: protectedProcedure
     .use(requirePermission("orders:read"))
-    .input(z.object({ returnId: z.number() })).query(async ({ input }) => {
-    const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) throw new Error("Database not available");
+    .input(z.object({ returnId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    // Find transactions with notes mentioning this return ID
-    const refunds = await db
-      .select({
-        id: transactions.id,
-        amount: transactions.amount,
-        date: transactions.transactionDate,
-        metadata: transactions.metadata,
-        notes: transactions.notes,
-        createdBy: transactions.createdBy,
-        createdAt: transactions.createdAt,
-      })
-      .from(transactions)
-      .where(
-        and(
-          eq(transactions.transactionType, "REFUND"),
-          sql`${transactions.notes} LIKE ${`%return #${input.returnId}%`}`
+      // Find transactions with notes mentioning this return ID
+      const refunds = await db
+        .select({
+          id: transactions.id,
+          amount: transactions.amount,
+          date: transactions.transactionDate,
+          metadata: transactions.metadata,
+          notes: transactions.notes,
+          createdBy: transactions.createdBy,
+          createdAt: transactions.createdAt,
+        })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.transactionType, "REFUND"),
+            sql`${transactions.notes} LIKE ${`%return #${input.returnId}%`}`
+          )
         )
-      )
-      .orderBy(desc(transactions.transactionDate));
+        .orderBy(desc(transactions.transactionDate));
 
-    return refunds;
-  }),
+      return refunds;
+    }),
 
   // Get refunds for a specific original transaction
   getByOriginalTransaction: protectedProcedure
@@ -195,7 +194,6 @@ export const refundsRouter = router({
     .input(z.object({ transactionId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const refunds = await db
@@ -229,21 +227,20 @@ export const refundsRouter = router({
   getStats: protectedProcedure
     .use(requirePermission("orders:read"))
     .query(async () => {
-    const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) throw new Error("Database not available");
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    const stats = await db
-      .select({
-        totalRefunds: sql<number>`COUNT(*)`,
-        totalAmount: sql<string>`SUM(ABS(CAST(${transactions.amount} AS DECIMAL(15,2))))`,
-      })
-      .from(transactions)
-      .where(eq(transactions.transactionType, "REFUND"));
+      const stats = await db
+        .select({
+          totalRefunds: sql<number>`COUNT(*)`,
+          totalAmount: sql<string>`SUM(ABS(CAST(${transactions.amount} AS DECIMAL(15,2))))`,
+        })
+        .from(transactions)
+        .where(eq(transactions.transactionType, "REFUND"));
 
-    return stats[0] || {
-      totalRefunds: 0,
-      totalAmount: "0.00",
-    };
-  }),
+      return stats[0] || {
+        totalRefunds: 0,
+        totalAmount: "0.00",
+      };
+    }),
 });

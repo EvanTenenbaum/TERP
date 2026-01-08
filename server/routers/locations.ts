@@ -26,7 +26,6 @@ export const locationsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const limit = input?.limit ?? 100;
@@ -53,22 +52,22 @@ export const locationsRouter = router({
   // Get location by ID
   getById: protectedProcedure
     .use(requirePermission("inventory:read"))
-    .input(z.object({ id: z.number() })).query(async ({ input }) => {
-    const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) throw new Error("Database not available");
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    const [location] = await db
-      .select()
-      .from(locations)
-      .where(eq(locations.id, input.id));
+      const [location] = await db
+        .select()
+        .from(locations)
+        .where(eq(locations.id, input.id));
 
-    if (!location) {
-      throw new Error("Location not found");
-    }
+      if (!location) {
+        throw new Error("Location not found");
+      }
 
-    return location;
-  }),
+      return location;
+    }),
 
   // Create location
   create: protectedProcedure
@@ -85,7 +84,6 @@ export const locationsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const [result] = await db.insert(locations).values({
@@ -116,7 +114,6 @@ export const locationsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const { id, ...updates } = input;
@@ -137,15 +134,15 @@ export const locationsRouter = router({
   // Delete location (soft delete by setting isActive = 0)
   delete: protectedProcedure
     .use(requirePermission("inventory:locations:manage"))
-    .input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-    const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) throw new Error("Database not available");
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    await db.update(locations).set({ isActive: 0 }).where(eq(locations.id, input.id));
+      await db.update(locations).set({ isActive: 0 }).where(eq(locations.id, input.id));
 
-    return { success: true };
-  }),
+      return { success: true };
+    }),
 
   // Get batch locations (where batches are stored)
   getBatchLocations: protectedProcedure
@@ -153,7 +150,6 @@ export const locationsRouter = router({
     .input(z.object({ batchId: z.number().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       let query = db
@@ -194,7 +190,6 @@ export const locationsRouter = router({
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       const [result] = await db.insert(batchLocations).values({
@@ -216,7 +211,6 @@ export const locationsRouter = router({
     .input(z.object({ site: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
       if (!db) throw new Error("Database not available");
 
       let query = db

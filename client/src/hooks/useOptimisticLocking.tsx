@@ -7,7 +7,7 @@
  *
  * Usage:
  * ```tsx
- * const { handleMutationError, conflictState, ConflictDialog } = useOptimisticLocking({
+ * const { handleMutationError, conflictState, ConflictDialogComponent } = useOptimisticLocking({
  *   entityType: "Order",
  *   onRefresh: () => refetch(),
  *   onDiscard: () => navigate("/orders"),
@@ -20,13 +20,13 @@
  * return (
  *   <>
  *     Your form
- *     <ConflictDialog />
+ *     {ConflictDialogComponent}
  *   </>
  * );
  * ```
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { TRPCClientError } from "@trpc/client";
 import { ConflictDialog } from "@/components/common/ConflictDialog";
 
@@ -102,10 +102,12 @@ export function useOptimisticLocking({
   }, []);
 
   /**
-   * Render the ConflictDialog component
+   * Pre-rendered ConflictDialog component as JSX element
+   * PERFORMANCE FIX: Using useMemo instead of useCallback to return a JSX element
+   * This avoids creating a new component on each render which would cause unnecessary re-renders
    */
-  const ConflictDialogComponent = useCallback(() => {
-    return (
+  const ConflictDialogComponent = useMemo(
+    () => (
       <ConflictDialog
         open={conflictState.isOpen}
         onOpenChange={closeConflictDialog}
@@ -114,20 +116,24 @@ export function useOptimisticLocking({
         entityType={entityType}
         message={conflictState.message}
       />
-    );
-  }, [
-    conflictState,
-    closeConflictDialog,
-    onRefresh,
-    onDiscard,
-    entityType,
-  ]);
+    ),
+    [
+      conflictState.isOpen,
+      conflictState.message,
+      closeConflictDialog,
+      onRefresh,
+      onDiscard,
+      entityType,
+    ]
+  );
 
   return {
     conflictState,
     isOptimisticLockError,
     handleMutationError,
     closeConflictDialog,
+    ConflictDialogComponent,
+    // Keep legacy name for backward compatibility
     ConflictDialog: ConflictDialogComponent,
   };
 }
