@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { locations, batchLocations } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
@@ -12,7 +12,8 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const locationsRouter = router({
   // Get all locations
-  getAll: publicProcedure
+  getAll: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(
       z
         .object({
@@ -50,7 +51,9 @@ export const locationsRouter = router({
     }),
 
   // Get location by ID
-  getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+  getById: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
@@ -68,7 +71,8 @@ export const locationsRouter = router({
   }),
 
   // Create location
-  create: publicProcedure
+  create: protectedProcedure
+    .use(requirePermission("inventory:locations:manage"))
     .input(
       z.object({
         site: z.string().min(1),
@@ -97,7 +101,8 @@ export const locationsRouter = router({
     }),
 
   // Update location
-  update: publicProcedure
+  update: protectedProcedure
+    .use(requirePermission("inventory:locations:manage"))
     .input(
       z.object({
         id: z.number(),
@@ -130,7 +135,9 @@ export const locationsRouter = router({
     }),
 
   // Delete location (soft delete by setting isActive = 0)
-  delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+  delete: protectedProcedure
+    .use(requirePermission("inventory:locations:manage"))
+    .input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
@@ -141,7 +148,8 @@ export const locationsRouter = router({
   }),
 
   // Get batch locations (where batches are stored)
-  getBatchLocations: publicProcedure
+  getBatchLocations: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(z.object({ batchId: z.number().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -171,7 +179,8 @@ export const locationsRouter = router({
     }),
 
   // Assign batch to location
-  assignBatchToLocation: publicProcedure
+  assignBatchToLocation: protectedProcedure
+    .use(requirePermission("inventory:locations:manage"))
     .input(
       z.object({
         batchId: z.number(),
@@ -202,7 +211,8 @@ export const locationsRouter = router({
     }),
 
   // Get location inventory summary
-  getLocationInventory: publicProcedure
+  getLocationInventory: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(z.object({ site: z.string().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();

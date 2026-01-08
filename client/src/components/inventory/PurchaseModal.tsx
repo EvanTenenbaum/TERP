@@ -77,6 +77,7 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   const { data: locations } = trpc.settings.locations.list.useQuery();
 
   const uploadMediaMutation = trpc.inventory.uploadMedia.useMutation();
+  const deleteMediaMutation = trpc.inventory.deleteMedia.useMutation();
   const createPurchaseMutation = trpc.inventory.intake.useMutation({
     onSuccess: () => {
       toast.success("Product purchase created successfully!");
@@ -162,9 +163,12 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
     }
 
     // BUG-004: Upload media files first
-    let mediaUrls: Array<{ url: string; fileName: string; fileType: string; fileSize: number }> = [];
-    if (mediaFiles.length > 0) {
-      try {
+    // BUG-071: Track uploaded media URLs for rollback on failure
+    let uploadedMediaUrls: Array<{ url: string; fileName: string; fileType: string; fileSize: number }> = [];
+
+    try {
+      // Step 1: Upload media files
+      if (mediaFiles.length > 0) {
         toast.info("Uploading media files...");
         const uploadPromises = mediaFiles.map(async (file) => {
           return new Promise<{ url: string; fileName: string; fileType: string; fileSize: number }>((resolve, reject) => {
@@ -192,34 +196,51 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
           });
         });
 
-        mediaUrls = await Promise.all(uploadPromises);
-        toast.success(`Uploaded ${mediaUrls.length} file(s)`);
-      } catch (error) {
-        toast.error(`Failed to upload media files: ${error instanceof Error ? error.message : "Unknown error"}`);
-        return;
+        uploadedMediaUrls = await Promise.all(uploadPromises);
+        toast.success(`Uploaded ${uploadedMediaUrls.length} file(s)`);
       }
-    }
 
-    // Create purchase with media URLs
-    createPurchaseMutation.mutate({
-      vendorName: formData.vendorName,
-      brandName: formData.brandName,
-      productName: formData.productName,
-      category: formData.category,
-      subcategory: formData.subcategory || undefined,
-      grade: formData.grade,
-      strainId: formData.strainId,
-      quantity: parseFloat(formData.quantity),
-      cogsMode: formData.cogsMode,
-      unitCogs: formData.cogsMode === "FIXED" ? formData.unitCogs : undefined,
-      unitCogsMin: formData.cogsMode === "RANGE" ? formData.unitCogsMin : undefined,
-      unitCogsMax: formData.cogsMode === "RANGE" ? formData.unitCogsMax : undefined,
-      paymentTerms: formData.paymentTerms,
-      location: {
-        site: formData.locationSite || "Default",
-      },
-      mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
-    });
+      // Step 2: Create purchase with media URLs
+      await createPurchaseMutation.mutateAsync({
+        vendorName: formData.vendorName,
+        brandName: formData.brandName,
+        productName: formData.productName,
+        category: formData.category,
+        subcategory: formData.subcategory || undefined,
+        grade: formData.grade,
+        strainId: formData.strainId,
+        quantity: parseFloat(formData.quantity),
+        cogsMode: formData.cogsMode,
+        unitCogs: formData.cogsMode === "FIXED" ? formData.unitCogs : undefined,
+        unitCogsMin: formData.cogsMode === "RANGE" ? formData.unitCogsMin : undefined,
+        unitCogsMax: formData.cogsMode === "RANGE" ? formData.unitCogsMax : undefined,
+        paymentTerms: formData.paymentTerms,
+        location: {
+          site: formData.locationSite || "Default",
+        },
+        mediaUrls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
+      });
+    } catch (error) {
+      // Step 3: Rollback - Delete uploaded media files if purchase creation fails
+      if (uploadedMediaUrls.length > 0) {
+        toast.info("Cleaning up uploaded files...");
+        try {
+          await Promise.all(
+            uploadedMediaUrls.map((media) =>
+              deleteMediaMutation.mutateAsync({ url: media.url })
+            )
+          );
+          toast.info("Cleanup completed");
+        } catch (cleanupError) {
+          console.error("Failed to cleanup media files:", cleanupError);
+          toast.warning("Some media files could not be cleaned up");
+        }
+      }
+
+      // Re-throw the original error
+      toast.error(`Failed to create purchase: ${error instanceof Error ? error.message : "Unknown error"}`);
+      return;
+    }
   };
 
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

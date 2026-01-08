@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { batchLocations, inventoryMovements } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -12,7 +12,8 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const warehouseTransfersRouter = router({
   // Transfer batch quantity between locations
-  transfer: publicProcedure
+  transfer: protectedProcedure
+    .use(requirePermission("inventory:transfer"))
     .input(
       z.object({
         batchId: z.number(),
@@ -125,7 +126,8 @@ export const warehouseTransfersRouter = router({
     }),
 
   // Get transfer history for a batch
-  getTransferHistory: publicProcedure
+  getTransferHistory: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -146,7 +148,8 @@ export const warehouseTransfersRouter = router({
     }),
 
   // Get current locations for a batch
-  getBatchLocations: publicProcedure
+  getBatchLocations: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(z.object({ batchId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -162,7 +165,9 @@ export const warehouseTransfersRouter = router({
     }),
 
   // Get transfer statistics
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure
+    .use(requirePermission("inventory:read"))
+    .query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 

@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   returns,
@@ -146,7 +146,8 @@ export const returnsRouter = router({
     }),
 
   // Get all returns (legacy endpoint)
-  getAll: publicProcedure
+  getAll: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(
       z
         .object({
@@ -178,7 +179,8 @@ export const returnsRouter = router({
     }),
 
   // Get return by ID
-  getById: publicProcedure
+  getById: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -704,7 +706,8 @@ export const returnsRouter = router({
     }),
 
   // Get returns by order
-  getByOrder: publicProcedure
+  getByOrder: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -718,7 +721,9 @@ export const returnsRouter = router({
     }),
 
   // Get return statistics
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 

@@ -1,4 +1,4 @@
-import { router, publicProcedure } from "../_core/trpc";
+import { router, publicProcedure, adminProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { grades, categories, subcategories, locations } from "../../drizzle/schema";
@@ -14,7 +14,7 @@ const gradesRouter = router({
     if (!db) throw new Error("Database not available");
     return db.select().from(grades).where(isNull(grades.deletedAt));
   }),
-  create: publicProcedure
+  create: adminProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -22,7 +22,7 @@ const gradesRouter = router({
       await db.insert(grades).values({ name: input.name, description: input.description });
       return { success: true };
     }),
-  update: publicProcedure
+  update: adminProcedure
     .input(z.object({ id: z.number(), name: z.string().min(1).optional(), description: z.string().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -31,7 +31,7 @@ const gradesRouter = router({
       await db.update(grades).set(updates).where(eq(grades.id, id));
       return { success: true };
     }),
-  delete: publicProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -48,7 +48,7 @@ const categoriesRouter = router({
     if (!db) throw new Error("Database not available");
     return db.select().from(categories).where(isNull(categories.deletedAt));
   }),
-  create: publicProcedure
+  create: adminProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -56,7 +56,7 @@ const categoriesRouter = router({
       await db.insert(categories).values({ name: input.name, description: input.description });
       return { success: true };
     }),
-  update: publicProcedure
+  update: adminProcedure
     .input(z.object({ id: z.number(), name: z.string().min(1).optional(), description: z.string().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -65,7 +65,7 @@ const categoriesRouter = router({
       await db.update(categories).set(updates).where(eq(categories.id, id));
       return { success: true };
     }),
-  delete: publicProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -87,19 +87,19 @@ const subcategoriesRouter = router({
       }
       return db.select().from(subcategories).where(isNull(subcategories.deletedAt));
     }),
-  create: publicProcedure
+  create: adminProcedure
     .input(z.object({ categoryId: z.number(), name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.insert(subcategories).values({ 
-        categoryId: input.categoryId, 
-        name: input.name, 
-        description: input.description 
+      await db.insert(subcategories).values({
+        categoryId: input.categoryId,
+        name: input.name,
+        description: input.description
       });
       return { success: true };
     }),
-  update: publicProcedure
+  update: adminProcedure
     .input(z.object({ id: z.number(), name: z.string().min(1).optional(), description: z.string().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -108,7 +108,7 @@ const subcategoriesRouter = router({
       await db.update(subcategories).set(updates).where(eq(subcategories.id, id));
       return { success: true };
     }),
-  delete: publicProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -119,13 +119,13 @@ const subcategoriesRouter = router({
 });
 
 // Nested router for locations
-const locationsRouter = router({
+const locationsSettingsRouter = router({
   list: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
     return db.select().from(locations).where(isNull(locations.deletedAt));
   }),
-  create: publicProcedure
+  create: adminProcedure
     .input(z.object({ site: z.string().min(1), zone: z.string().optional(), rack: z.string().optional(), shelf: z.string().optional(), bin: z.string().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -133,7 +133,7 @@ const locationsRouter = router({
       await db.insert(locations).values(input);
       return { success: true };
     }),
-  update: publicProcedure
+  update: adminProcedure
     .input(z.object({ id: z.number(), site: z.string().optional(), zone: z.string().optional(), rack: z.string().optional(), shelf: z.string().optional(), bin: z.string().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -142,7 +142,7 @@ const locationsRouter = router({
       await db.update(locations).set(updates).where(eq(locations.id, id));
       return { success: true };
     }),
-  delete: publicProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -157,7 +157,7 @@ export const settingsRouter = router({
   grades: gradesRouter,
   categories: categoriesRouter,
   subcategories: subcategoriesRouter,
-  locations: locationsRouter,
+  locations: locationsSettingsRouter,
 
   hello: publicProcedure
     .input(z.object({ text: z.string().nullish() }).nullish())

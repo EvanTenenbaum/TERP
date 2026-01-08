@@ -348,7 +348,7 @@ function DroppablePipelineColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex-1 min-w-[300px] p-3 rounded-lg transition-colors ${
+      className={`w-full md:flex-1 md:min-w-[300px] p-3 rounded-lg transition-colors ${
         isOver ? `${stage.dropColor} border-2 border-dashed` : "bg-muted/30"
       }`}
     >
@@ -937,9 +937,9 @@ export default function UnifiedSalesPortalPage() {
 
       {/* Pipeline View */}
       {isLoading ? (
-        <div className="flex gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
           {PIPELINE_STAGES.map(stage => (
-            <div key={stage.id} className="flex-1 min-w-[300px]">
+            <div key={stage.id} className="w-full md:flex-1 md:min-w-[300px]">
               <Skeleton className="h-8 w-32 mb-4" />
               <Skeleton className="h-32 w-full mb-3" />
               <Skeleton className="h-32 w-full mb-3" />
@@ -956,7 +956,7 @@ export default function UnifiedSalesPortalPage() {
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex flex-col md:flex-row gap-4 overflow-x-auto md:overflow-visible pb-4">
             {PIPELINE_STAGES.map(stage => {
               const stageStats = pipelineData?.stages?.[stage.id] || {
                 count: 0,

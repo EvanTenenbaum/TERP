@@ -443,7 +443,7 @@ export function BatchDetailDrawer({
                 <div>
                   <p className="text-muted-foreground">Payment Terms</p>
                   <p className="font-medium">
-                    {batch.paymentTerms.replace(/_/g, " ")}
+                    {batch.paymentTerms?.replace(/_/g, " ") || "N/A"}
                   </p>
                 </div>
               </div>
@@ -469,7 +469,7 @@ export function BatchDetailDrawer({
                       Payment Terms:
                     </span>
                     <span className="font-medium">
-                      {batch.paymentTerms.replace(/_/g, " ")}
+                      {batch.paymentTerms?.replace(/_/g, " ") || "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">

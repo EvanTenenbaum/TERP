@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
+import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { getDb } from "../db";
 import { transactions, transactionLinks, returns } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -12,7 +12,8 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const refundsRouter = router({
   // Get all refunds
-  getAll: publicProcedure
+  getAll: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(
       z
         .object({
@@ -55,7 +56,9 @@ export const refundsRouter = router({
     }),
 
   // Get refund by ID
-  getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+  getById: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
@@ -156,7 +159,9 @@ export const refundsRouter = router({
     }),
 
   // Get refunds for a specific return
-  getByReturn: publicProcedure.input(z.object({ returnId: z.number() })).query(async ({ input }) => {
+  getByReturn: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ returnId: z.number() })).query(async ({ input }) => {
     const db = await getDb();
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
@@ -185,7 +190,8 @@ export const refundsRouter = router({
   }),
 
   // Get refunds for a specific original transaction
-  getByOriginalTransaction: publicProcedure
+  getByOriginalTransaction: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ transactionId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -220,7 +226,9 @@ export const refundsRouter = router({
     }),
 
   // Get refund statistics
-  getStats: publicProcedure.query(async () => {
+  getStats: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
     const db = await getDb();
         if (!db) throw new Error("Database not available");
     if (!db) throw new Error("Database not available");
