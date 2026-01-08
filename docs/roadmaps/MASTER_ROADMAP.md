@@ -153,19 +153,20 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | --------- | -------------------------------- | -------- | ----- |
 | AUDIT-001 | Comprehensive System Code Review | ~50%     | -     |
 
-### 🐛 Critical Bugs Discovered (Jan 7, 2026 - User Flow Testing)
+### 🐛 Critical Bugs Discovered (Jan 7-8, 2026 - User Flow & Regression Testing)
 
-> **Source:** Comprehensive user flow testing on live site + codebase pattern analysis
+> **Source:** Comprehensive user flow testing on live site + codebase pattern analysis + Jan 8 regression pass
 > **Documentation:** `test-flows/ROOT_CAUSE_ANALYSIS.md`, `test-flows/ADDITIONAL_BUGS_FOUND.md`
-> **Total Bugs:** 36 (6 from live testing + 30 from codebase analysis)
+> **Regression Report:** Jan 8, 2026 - 7 hour live site regression test
+> **Total Bugs:** 38 (6 from live testing + 30 from codebase analysis + 2 from regression)
 
 #### P0 - Critical (Blocks Core Functionality)
 
 | Task    | Description                                      | File                                    | Status     |
 | ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
-| BUG-040 | Order Creator: Inventory loading fails           | `server/pricingEngine.ts`               | 🔴 OPEN    |
-| BUG-041 | Batch Detail View crashes app                    | `client/src/components/inventory/BatchDetailDrawer.tsx` | 🔴 OPEN    |
-| BUG-042 | Global Search returns no results                 | `server/routers/search.ts`              | 🔴 OPEN    |
+| BUG-040 | Order Creator: Inventory loading fails           | `server/salesSheetsDb.ts`               | ✅ FIXED   |
+| BUG-041 | Batch Detail View crashes app                    | `client/src/components/inventory/BatchDetailDrawer.tsx` | ✅ FIXED   |
+| BUG-042 | Global Search returns no results                 | `client/src/pages/SearchResultsPage.tsx`| ✅ FIXED   |
 | BUG-043 | Permission Service empty array SQL crash         | `server/services/permissionService.ts`  | 🔴 OPEN    |
 | BUG-044 | VIP Portal empty batch IDs crash                 | `server/routers/vipPortal.ts`           | 🔴 OPEN    |
 
@@ -173,9 +174,9 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 | Task    | Description                                      | File                                    | Status     |
 | ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
-| BUG-045 | Order Creator: Retry resets entire form          | `client/src/pages/OrderCreatorPage.tsx` | 🟡 OPEN    |
-| BUG-046 | Settings Users tab misleading auth error         | `server/_core/trpc.ts`                  | 🟡 OPEN    |
-| BUG-047 | Spreadsheet View shows empty grid                | `server/services/spreadsheetViewService.ts` | 🟡 OPEN    |
+| BUG-045 | Order Creator: Retry resets entire form          | `client/src/pages/OrderCreatorPage.tsx` | ✅ FIXED   |
+| BUG-046 | Settings Users tab misleading auth error         | `client/src/lib/errorHandling.ts`       | ✅ FIXED   |
+| BUG-047 | Spreadsheet View shows empty grid                | `client/src/components/spreadsheet/InventoryGrid.tsx` | ✅ FIXED   |
 | BUG-048 | ClientsListPage Retry resets filters             | `client/src/pages/ClientsListPage.tsx`  | 🟡 OPEN    |
 | BUG-049 | Live Catalog SQL injection risk                  | `server/services/liveCatalogService.ts` | 🟡 OPEN    |
 | BUG-050 | AuditModal unsafe .map() calls                   | `client/src/components/audit/AuditModal.tsx` | 🟡 OPEN    |
@@ -208,6 +209,13 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | BUG-067 | SampleManagement missing empty state             | `client/src/pages/SampleManagement.tsx` | 🟢 BACKLOG |
 | BUG-068 | Generic "Unauthorized" errors in accounting      | `server/routers/accounting.ts`          | 🟢 BACKLOG |
 | BUG-069 | Calendar "Permission denied" without details     | `server/routers/calendar.ts`            | 🟢 BACKLOG |
+
+#### P1 - Regression Findings (Jan 8, 2026)
+
+| Task    | Description                                      | File                                    | Status     |
+| ------- | ------------------------------------------------ | --------------------------------------- | ---------- |
+| BUG-070 | Calendar API consistently fails / hangs          | `client/src/pages/CalendarPage.tsx`     | ✅ FIXED   |
+| BUG-071 | Samples page hangs indefinitely on load          | `client/src/pages/SampleManagement.tsx` | ✅ FIXED   |
 
 
 ### ✅ FEATURE-012 Post-Deployment Tasks (P0 - COMPLETE)

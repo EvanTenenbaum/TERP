@@ -121,13 +121,21 @@ export default function SampleManagement() {
   const { user } = useAuth();
 
   // Fetch all samples instead of just pending with debug logging
+  // BUG-071 FIX: Enhanced query options to prevent indefinite hanging under memory pressure
   const { data: samplesData, isLoading: samplesLoading, error: samplesError, refetch: refetchSamples, isError: isSamplesError } =
     trpc.samples.getAll.useQuery(
       { limit: 200 },
       {
-        // Retry logic for stability
+        // BUG-071 FIX: Retry logic for stability with exponential backoff
         retry: 2,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+        // BUG-071 FIX: Keep data fresh but cache for 30 seconds to prevent repeated requests
+        staleTime: 30 * 1000,
+        // BUG-071 FIX: Garbage collect after 5 minutes
+        gcTime: 5 * 60 * 1000,
+        // BUG-071 FIX: Refetch on mount but not on window focus to reduce load
+        refetchOnMount: true,
+        refetchOnWindowFocus: false,
       }
     );
 

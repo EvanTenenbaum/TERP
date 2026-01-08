@@ -107,12 +107,39 @@ export function getErrorMessage(error: unknown): string {
 
 /**
  * Extract error code from various error types
+ * BUG-046 FIX: Enhanced error code extraction to handle tRPC error shapes correctly
  */
 export function getErrorCode(error: unknown): string {
   if (isTRPCClientError(error)) {
+    // BUG-046 FIX: tRPC errors can have code in multiple locations depending on version
+    // Check .data.code first (tRPC v10+)
     const data = error.data as Record<string, unknown> | undefined;
-    const code = data?.code;
-    return (code as string) || "UNKNOWN";
+    if (data?.code) {
+      return data.code as string;
+    }
+
+    // BUG-046 FIX: Check .shape.data.code (alternative tRPC structure)
+    const shape = error.shape as { data?: { code?: string } } | undefined;
+    if (shape?.data?.code) {
+      return shape.data.code;
+    }
+
+    // BUG-046 FIX: Check the error's code property directly (tRPC v11+)
+    const errorWithCode = error as { code?: string };
+    if (errorWithCode.code) {
+      return errorWithCode.code;
+    }
+
+    // BUG-046 FIX: Parse from message as last resort for known patterns
+    const message = error.message.toLowerCase();
+    if (message.includes("permission denied") || message.includes("do not have permission") || message.includes("forbidden")) {
+      return "FORBIDDEN";
+    }
+    if (message.includes("authentication required") || message.includes("please log in") || message.includes("unauthorized")) {
+      return "UNAUTHORIZED";
+    }
+
+    return "UNKNOWN";
   }
 
   if (error instanceof Error) {
@@ -217,25 +244,27 @@ export function logError(error: unknown, context?: Record<string, unknown>): voi
 
 /**
  * BUG-046: Determine the specific type of auth error
+ * Enhanced to use getErrorCode for consistent code extraction
  */
 export function getAuthErrorType(error: unknown): AuthErrorType {
   if (!isTRPCClientError(error)) {
     return "UNKNOWN";
   }
 
-  const data = error.data as Record<string, unknown> | undefined;
-  const code = data?.code as string | undefined;
   const message = error.message.toLowerCase();
 
-  // Check for session expiry
+  // Check for session expiry first (before checking code)
   if (message.includes("session") && message.includes("expired")) {
     return "SESSION_EXPIRED";
   }
 
   // Check for demo user restriction
-  if (message.includes("demo") || message.includes("not available in demo")) {
+  if (message.includes("demo") || message.includes("not available in demo") || message.includes("public user")) {
     return "DEMO_USER_RESTRICTED";
   }
+
+  // BUG-046 FIX: Use getErrorCode for consistent extraction across tRPC versions
+  const code = getErrorCode(error);
 
   // Differentiate by error code
   if (code === "UNAUTHORIZED") {
@@ -244,6 +273,15 @@ export function getAuthErrorType(error: unknown): AuthErrorType {
 
   if (code === "FORBIDDEN") {
     return "PERMISSION_DENIED";
+  }
+
+  // BUG-046 FIX: Additional message-based detection for edge cases
+  if (message.includes("permission") || message.includes("access denied") || message.includes("not allowed")) {
+    return "PERMISSION_DENIED";
+  }
+
+  if (message.includes("log in") || message.includes("authentication required") || message.includes("not authenticated")) {
+    return "NOT_LOGGED_IN";
   }
 
   return "UNKNOWN";

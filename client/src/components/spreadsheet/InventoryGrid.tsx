@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { InventoryGridRow } from "@/types/spreadsheet";
+import { Loader2, AlertCircle, Package, RefreshCw } from "lucide-react";
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
@@ -318,24 +319,63 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         </div>
       </CardHeader>
       <CardContent>
-        {error && (
-          <div className="mb-3 text-sm text-destructive">{error.message}</div>
+        {/* BUG-047 FIX: Loading state */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center h-[600px] gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground">Loading inventory data...</p>
+          </div>
         )}
-        <div className="ag-theme-alpine h-[600px] w-full">
-          <AgGridReact<InventoryGridRow>
-            rowData={data?.rows ?? []}
-            columnDefs={columnDefs}
-            defaultColDef={defaultColDef}
-            // Row identity for efficient updates
-            getRowId={params => String(params.data.id)}
-            animateRows={false} // Disable for better performance
-            pagination
-            paginationPageSize={50}
-            onCellValueChanged={handleCellValueChanged}
-            onGridReady={onGridReady}
-            suppressLoadingOverlay={!isLoading}
-          />
-        </div>
+
+        {/* BUG-047 FIX: Error state with retry */}
+        {error && !isLoading && (
+          <div className="flex flex-col items-center justify-center h-[600px] gap-4">
+            <AlertCircle className="h-12 w-12 text-destructive" />
+            <div className="text-center">
+              <p className="text-lg font-medium text-destructive mb-1">Failed to load inventory</p>
+              <p className="text-sm text-muted-foreground mb-4">{error.message}</p>
+            </div>
+            <Button variant="outline" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        )}
+
+        {/* BUG-047 FIX: Empty state when no data */}
+        {!isLoading && !error && (!data?.rows || data.rows.length === 0) && (
+          <div className="flex flex-col items-center justify-center h-[600px] gap-4">
+            <Package className="h-12 w-12 text-muted-foreground/50" />
+            <div className="text-center">
+              <p className="text-lg font-medium mb-1">No inventory data</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                There are no inventory batches to display. Add inventory through the Intake workflow or check your filters.
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        )}
+
+        {/* Grid renders only when data is available */}
+        {!isLoading && !error && data?.rows && data.rows.length > 0 && (
+          <div className="ag-theme-alpine h-[600px] w-full">
+            <AgGridReact<InventoryGridRow>
+              rowData={data.rows}
+              columnDefs={columnDefs}
+              defaultColDef={defaultColDef}
+              // Row identity for efficient updates
+              getRowId={params => String(params.data.id)}
+              animateRows={false} // Disable for better performance
+              pagination
+              paginationPageSize={50}
+              onCellValueChanged={handleCellValueChanged}
+              onGridReady={onGridReady}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -48,6 +48,7 @@ export default function CalendarPage() {
   // const { data: defaultView } = trpc.calendarViews.getDefaultView.useQuery();
 
   // Load events for current date range
+  // BUG-070 FIX: Added retry logic and timeout handling for stability under memory pressure
   const dateRange = getDateRange(currentDate, currentView);
   const {
     data: eventsData,
@@ -59,6 +60,17 @@ export default function CalendarPage() {
     startDate: dateRange.start,
     endDate: dateRange.end,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  }, {
+    // BUG-070 FIX: Retry logic for API failures
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    // Keep data fresh but cache for 30 seconds
+    staleTime: 30 * 1000,
+    // Garbage collect after 5 minutes
+    gcTime: 5 * 60 * 1000,
+    // Refetch on mount but not on window focus during development
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   // Handle the response which could be an array or an object with data property

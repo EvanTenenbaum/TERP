@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,25 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, FileText, Users, Package, Loader2 } from "lucide-react";
-import { Link } from "wouter";
 
 export default function SearchResultsPage() {
   const [location, setLocation] = useLocation();
   const params = new URLSearchParams(location.split('?')[1] || '');
   const initialQuery = params.get('q') || '';
   const [searchQuery, setSearchQuery] = useState(initialQuery);
+  // BUG-042 FIX: Track navigation state to prevent stale UI
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Update query when URL changes
   useEffect(() => {
     const newParams = new URLSearchParams(location.split('?')[1] || '');
     const newQuery = newParams.get('q') || '';
     setSearchQuery(newQuery);
+    // Reset navigation state when URL changes
+    setIsNavigating(false);
   }, [location]);
 
   // Fetch search results
   const { data: results, isLoading, error } = trpc.search.global.useQuery(
     { query: searchQuery },
-    { enabled: searchQuery.trim().length > 0 }
+    { enabled: searchQuery.trim().length > 0 && !isNavigating }
   );
 
   const handleSearch = (e: React.FormEvent) => {
@@ -33,6 +36,25 @@ export default function SearchResultsPage() {
       setLocation(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
+
+  /**
+   * BUG-042 FIX: Safe navigation handler that prevents state issues.
+   *
+   * Root cause: When clicking search results, the Link component could cause
+   * race conditions where the destination page tries to load while the search
+   * page is still in a transitional state, leading to incorrect data display.
+   *
+   * Fix: Use programmatic navigation with state tracking to ensure clean transitions.
+   */
+  const handleResultClick = useCallback((url: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    // Set navigating state to pause queries and prevent race conditions
+    setIsNavigating(true);
+    // Use setTimeout to ensure state is updated before navigation
+    setTimeout(() => {
+      setLocation(url);
+    }, 0);
+  }, [setLocation]);
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -86,7 +108,7 @@ export default function SearchResultsPage() {
           {/* Results */}
           {!isLoading && !error && searchQuery.trim() && results && (
             <div className="space-y-6">
-              {/* Quotes Section */}
+              {/* Quotes Section - BUG-042 FIX: Use onClick handler for reliable navigation */}
               {results.quotes.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
@@ -95,7 +117,11 @@ export default function SearchResultsPage() {
                   </div>
                   <div className="space-y-2">
                     {results.quotes.map((quote) => (
-                      <Link key={quote.id} href={quote.url}>
+                      <a
+                        key={quote.id}
+                        href={quote.url}
+                        onClick={(e) => handleResultClick(quote.url, e)}
+                      >
                         <Card className="hover:bg-accent cursor-pointer transition-colors">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
@@ -118,13 +144,13 @@ export default function SearchResultsPage() {
                             </div>
                           </CardContent>
                         </Card>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Customers Section */}
+              {/* Customers Section - BUG-042 FIX: Use onClick handler for reliable navigation */}
               {results.customers.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
@@ -133,7 +159,11 @@ export default function SearchResultsPage() {
                   </div>
                   <div className="space-y-2">
                     {results.customers.map((customer) => (
-                      <Link key={customer.id} href={customer.url}>
+                      <a
+                        key={customer.id}
+                        href={customer.url}
+                        onClick={(e) => handleResultClick(customer.url, e)}
+                      >
                         <Card className="hover:bg-accent cursor-pointer transition-colors">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
@@ -156,13 +186,13 @@ export default function SearchResultsPage() {
                             </div>
                           </CardContent>
                         </Card>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Products Section */}
+              {/* Products Section - BUG-042 FIX: Use onClick handler for reliable navigation */}
               {results.products.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
@@ -171,7 +201,11 @@ export default function SearchResultsPage() {
                   </div>
                   <div className="space-y-2">
                     {results.products.map((product) => (
-                      <Link key={product.id} href={product.url}>
+                      <a
+                        key={product.id}
+                        href={product.url}
+                        onClick={(e) => handleResultClick(product.url, e)}
+                      >
                         <Card className="hover:bg-accent cursor-pointer transition-colors">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
@@ -201,7 +235,7 @@ export default function SearchResultsPage() {
                             </div>
                           </CardContent>
                         </Card>
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>
