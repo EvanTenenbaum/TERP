@@ -20,6 +20,7 @@ import { eq, desc, sql, and } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
+import { TRPCError } from "@trpc/server";
 import * as creditsDb from "../creditsDb";
 
 // Extended return reason enum for API input (includes values that map to database values)
@@ -96,7 +97,7 @@ export const returnsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       logger.info({ msg: "[Returns] Listing returns", filters: input });
 
@@ -159,7 +160,7 @@ export const returnsRouter = router({
     )
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       const limit = input?.limit ?? 100;
       const offset = input?.offset ?? 0;
@@ -184,7 +185,7 @@ export const returnsRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       const [returnRecord] = await db
         .select()
@@ -240,7 +241,7 @@ export const returnsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       logger.info({
         msg: "[Returns] Creating return",
@@ -337,7 +338,7 @@ export const returnsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       const userId = ctx.user?.id;
       if (!userId) {
@@ -388,7 +389,7 @@ export const returnsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       const userId = ctx.user?.id;
       if (!userId) {
@@ -444,7 +445,7 @@ export const returnsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       const userId = ctx.user?.id;
       if (!userId) {
@@ -588,7 +589,7 @@ export const returnsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       const userId = ctx.user?.id;
       if (!userId) {
@@ -711,7 +712,7 @@ export const returnsRouter = router({
     .input(z.object({ orderId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       return await db
         .select()
@@ -725,7 +726,7 @@ export const returnsRouter = router({
     .use(requirePermission("orders:read"))
     .query(async () => {
     const db = await getDb();
-    if (!db) throw new Error("Database not available");
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
     const stats = await db
       .select({
@@ -784,7 +785,7 @@ export const returnsRouter = router({
     .use(requirePermission("orders:read"))
     .query(async () => {
       const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
       logger.info({ msg: "[Returns] Getting returns summary" });
 

@@ -3,7 +3,7 @@
  * Displays receipt preview with download, email, SMS, and copy link actions
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   Dialog,
@@ -47,6 +47,16 @@ export function ReceiptPreview({
   const [phone, setPhone] = useState(clientPhone || "");
   const [customMessage, setCustomMessage] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
+  const linkCopiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // FIXED: Clean up timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (linkCopiedTimeoutRef.current) {
+        clearTimeout(linkCopiedTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Fetch receipt preview
   const { data: previewHtml, isLoading: previewLoading } =
@@ -99,7 +109,11 @@ export function ReceiptPreview({
     if (getShareableLinkQuery.data?.url) {
       await navigator.clipboard.writeText(getShareableLinkQuery.data.url);
       setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
+      // FIXED: Use ref to track timeout for proper cleanup
+      if (linkCopiedTimeoutRef.current) {
+        clearTimeout(linkCopiedTimeoutRef.current);
+      }
+      linkCopiedTimeoutRef.current = setTimeout(() => setLinkCopied(false), 2000);
     }
   };
 
