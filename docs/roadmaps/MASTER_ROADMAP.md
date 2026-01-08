@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 4.0
+**Version:** 4.1
 **Last Updated:** 2026-01-08
 **Status:** Active
 
@@ -48,11 +48,136 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 # 🎯 MVP MILESTONE
 
 > All tasks in this section must be completed to reach the Minimum Viable Product.
-> These are the current open tasks from the existing roadmap.
 
 ---
 
-## MVP: Critical Bugs (P0)
+## ✅ MVP: Completed Work
+
+> The following major work has been completed and verified.
+
+### ✅ Infrastructure & Stability (COMPLETE)
+
+| Task | Description | Status | Completion Date |
+|------|-------------|--------|-----------------|
+| ST-005 | Add Missing Database Indexes | ✅ COMPLETE | Dec 2025 |
+| ST-007 | Implement System-Wide Pagination | ✅ COMPLETE | Dec 2025 |
+| ST-008 | Implement Error Tracking (Sentry) | ✅ COMPLETE | Dec 2025 |
+| ST-009 | Implement API Monitoring | ✅ COMPLETE | Dec 2025 |
+| ST-020 | Add Drizzle Schema to TypeScript Checking | ✅ COMPLETE | Dec 2025 |
+| ST-021 | Fix Malformed Soft Delete Column Definitions | ✅ COMPLETE | Dec 2025 |
+| ST-022 | Remove Broken Index Definitions | ✅ COMPLETE | Dec 2025 |
+| ST-023 | Stabilize Deploy-Time Data Operations | ✅ COMPLETE | Dec 2025 |
+| INFRA-001 | Remove Obsolete GitHub Workflows | ✅ COMPLETE | Dec 2025 |
+| INFRA-002 | Add Session Cleanup Validation | ✅ COMPLETE | Dec 2025 |
+| INFRA-003 | Fix Database Schema Sync | ✅ COMPLETE | Dec 2025 |
+| INFRA-005 | Fix Pre-Push Hook Protocol Conflict | ✅ COMPLETE | Dec 2025 |
+| INFRA-006 | Enhance Conflict Resolution | ✅ COMPLETE | Dec 2025 |
+| INFRA-008 | Fix Migration Consolidation | ✅ COMPLETE | Dec 2025 |
+| INFRA-009 | Update All Prompts | ✅ COMPLETE | Dec 2025 |
+| INFRA-010 | Update Documentation | ✅ COMPLETE | Dec 2025 |
+| INFRA-011 | Update Deployment Configuration | ✅ COMPLETE | Dec 2025 |
+| INFRA-013 | Create RBAC Database Tables Migration | ✅ COMPLETE | Dec 2025 |
+
+### ✅ Security (COMPLETE)
+
+| Task | Description | Status | Completion Date |
+|------|-------------|--------|-----------------|
+| SEC-001 | Fix Permission System Bypass | ✅ COMPLETE | Dec 2025 |
+| SEC-002 | Require JWT_SECRET Environment Variable | ✅ COMPLETE | Dec 2025 |
+| SEC-003 | Remove Hardcoded Admin Credentials | ✅ COMPLETE | Dec 2025 |
+| SEC-004 | Remove Debug Code from Production | ✅ COMPLETE | Dec 2025 |
+
+### ✅ Bug Fixes (COMPLETE)
+
+| Task | Description | Status | Completion Date |
+|------|-------------|--------|-----------------|
+| BUG-019 | Global Search Bar Returns 404 Error | ✅ COMPLETE | Dec 2025 |
+| BUG-020 | Todo Lists Page Returns 404 | ✅ COMPLETE | Dec 2025 |
+| BUG-021 | Command Palette (Cmd+K) Not Working | ✅ COMPLETE | Dec 2025 |
+| BUG-022 | Theme Toggle Not Implemented | ✅ COMPLETE | Dec 2025 |
+| BUG-023 | Inconsistent Layout Between Dashboard and Module Pages | ✅ COMPLETE | Dec 2025 |
+| BUG-024 | Fix Production Infinite Spinner | ✅ COMPLETE | Dec 2025 |
+| BUG-025 | Analytics Data Not Populated | ✅ COMPLETE | Dec 2025 |
+| BUG-026 | Fix Pino Logger API Signature Errors | ✅ COMPLETE | Dec 2025 |
+
+### ✅ Quality & Reliability (COMPLETE)
+
+| Task | Description | Status | Completion Date |
+|------|-------------|--------|-----------------|
+| QUAL-001 | Standardize Error Handling | ✅ COMPLETE | Dec 2025 |
+| QUAL-002 | Add Comprehensive Input Validation | ✅ COMPLETE | Dec 2025 |
+| QUAL-005 | COGS Module & Calendar Financials Integration | ✅ COMPLETE | Dec 2025 |
+| QUAL-006 | VIP Portal Supply CRUD & Dashboard Real Metrics | ✅ COMPLETE | Dec 2025 |
+| REL-001-OLD | Deploy Multiple Instances | ✅ COMPLETE | Dec 2025 |
+| REL-003-OLD | Fix Memory Leak in Connection Pool | ✅ COMPLETE | Dec 2025 |
+| REL-004-OLD | Increase Connection Pool Size | ✅ COMPLETE | Dec 2025 |
+| PERF-003 | Add Pagination to All List Endpoints | ✅ COMPLETE | Dec 2025 |
+
+### ✅ Features (COMPLETE)
+
+| Task | Description | Status | Completion Date |
+|------|-------------|--------|-----------------|
+| FEATURE-004 | Clarify Vendor vs Buyer vs Client Distinction | ✅ COMPLETE | Dec 2025 |
+| FEATURE-011 | Unified Product Catalogue (Foundation) | ✅ COMPLETE | Jan 2026 |
+| FEATURE-012 | VIP Portal Admin Impersonation Tool | ✅ COMPLETE | Dec 31, 2025 |
+| FEATURE-015 | VIP Portal Settings in Client Profile | ✅ COMPLETE | Dec 2025 |
+
+### ✅ Feature Flag System (COMPLETE - Dec 31, 2025)
+
+- Database-driven feature flags with 4 tables
+- 20 tRPC endpoints for flag management
+- Admin UI at `/settings/feature-flags`
+- 15 default flags (all enabled)
+- Per-user and role override management
+
+### ✅ Cooper Rd Sprint (COMPLETE - Jan 7, 2026)
+
+All 15 tasks from the Cooper Rd Working Session completed:
+
+| Task | Description | Status |
+|------|-------------|--------|
+| WS-001 | Quick Action: Receive Client Payment | ✅ COMPLETE |
+| WS-002 | Quick Action: Pay Vendor | ✅ COMPLETE |
+| WS-003 | Pick & Pack Module: Group Bagging/Packing | ✅ COMPLETE |
+| WS-004 | Sales: Multi-Order & Referral Credit System | ✅ COMPLETE |
+| WS-005 | No Black Box Audit Trail | ✅ COMPLETE |
+| WS-006 | Immediate Tab Screenshot/Receipt | ✅ COMPLETE |
+| WS-007 | Complex Flower Intake Flow | ✅ COMPLETE |
+| WS-008 | Low Stock & Needs-Based Alerts | ✅ COMPLETE |
+| WS-009 | Pick & Pack: Inventory Movement SOP | ✅ COMPLETE |
+| WS-010 | Photography Module | ✅ COMPLETE |
+| WS-011 | Sales: Quick Customer Creation | ✅ COMPLETE |
+| WS-012 | Customer Preferences & Purchase History | ✅ COMPLETE |
+| WS-013 | Simple Task Management | ✅ COMPLETE |
+| WS-014 | Vendor "Harvesting Again" Reminder | ✅ COMPLETE |
+| WS-015 | Sales: Customer Wishlist Field | ✅ COMPLETE |
+
+### ✅ ST-045: User Flow Mapping (COMPLETE - Jan 8, 2026)
+
+- Complete User Flow Matrix created
+- RBAC Permission Mismatches documented
+- Flow Guide documentation completed
+- Reference files in `docs/reference/`
+
+### ✅ Data Seeding (COMPLETE)
+
+| Task | Description | Status |
+|------|-------------|--------|
+| DATA-001 | Seed Core Tables | ✅ COMPLETE |
+| DATA-002 | Seed Comments and Dashboard Tables | ✅ COMPLETE |
+| DATA-003 | Seed Pricing Tables | ✅ COMPLETE |
+| DATA-006 | Seed Batches | ✅ COMPLETE |
+| DATA-008 | Seed Client Contacts & Interactions | ✅ COMPLETE |
+| DATA-009 | Seed Client Price Alerts | ✅ COMPLETE |
+| DATA-011 | Seed Additional Tables | ✅ COMPLETE |
+
+---
+
+## 🔴 MVP: Open Work
+
+> The following tasks are still required for MVP.
+
+### Critical Bugs (P0)
 
 | Task | Description | Priority | Status |
 |------|-------------|----------|--------|
@@ -75,637 +200,132 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ---
 
-## MVP: Security Tasks
+### Security Tasks (P0)
 
-### SEC-005: Protect Location Router Mutations
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 4-8h
-**Module:** `server/routers/locations.ts`
-**Dependencies:** None
-**Prompt:** `docs/prompts/SEC-005.md`
-
-**Problem:**
-Location router mutations lack proper permission protection.
-
-**Objectives:**
-
-1. Add permission middleware to all location mutations
-2. Implement proper authorization checks
-3. Add audit logging for location changes
-
-**Deliverables:**
-
-- [ ] Permission middleware added to location router
-- [ ] Authorization checks implemented
-- [ ] Audit logging for mutations
-- [ ] Tests for permission enforcement
-- [ ] Documentation updated
+| Task | Description | Priority | Status | Prompt |
+|------|-------------|----------|--------|--------|
+| SEC-005 | Protect Location Router Mutations | HIGH | ready | `docs/prompts/SEC-005.md` |
+| SEC-006 | Protect Warehouse Transfer Mutations | HIGH | ready | `docs/prompts/SEC-006.md` |
+| SEC-007 | Protect Order Enhancement Mutations (11 Endpoints) | HIGH | ready | `docs/prompts/SEC-007.md` |
+| SEC-008 | Protect Settings Router Mutations | HIGH | ready | `docs/prompts/SEC-008.md` |
+| SEC-009 | Protect VIP Portal Needs Data Exposure | HIGH | ready | `docs/prompts/SEC-009.md` |
+| SEC-010 | Protect Returns and Refunds Query Endpoints | HIGH | ready | `docs/prompts/SEC-010.md` |
+| SEC-011 | Reduce VIP Portal Session Duration | HIGH | ready | `docs/prompts/SEC-011.md` |
+| SEC-012 | Secure Admin Setup Endpoint | HIGH | ready | `docs/prompts/SEC-012.md` |
 
 ---
 
-### SEC-006: Protect Warehouse Transfer Mutations
+### Stability Tasks (P1)
 
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 4-8h
-**Module:** `server/routers/warehouse.ts`
-**Dependencies:** None
-**Prompt:** `docs/prompts/SEC-006.md`
-
-**Problem:**
-Warehouse transfer mutations lack proper permission protection.
-
-**Objectives:**
-
-1. Add permission middleware to warehouse transfer mutations
-2. Implement proper authorization checks
-3. Add audit logging for transfers
-
-**Deliverables:**
-
-- [ ] Permission middleware added
-- [ ] Authorization checks implemented
-- [ ] Audit logging for transfers
-- [ ] Tests for permission enforcement
-- [ ] Documentation updated
+| Task | Description | Priority | Status | Prompt |
+|------|-------------|----------|--------|--------|
+| ST-025 | Add Error Boundaries to Critical Pages | HIGH | ready | `docs/prompts/ST-025.md` |
+| ST-026 | Implement Concurrent Edit Detection | HIGH | ready | `docs/prompts/ST-026.md` |
+| ST-010 | Implement Caching Layer (Redis) | MEDIUM | ready | `docs/prompts/ST-010.md` |
+| ST-024 | Remove Comments Feature | LOW | ready | `docs/prompts/ST-024.md` |
 
 ---
 
-### SEC-007: Protect Order Enhancement Mutations (11 Endpoints)
+### UX Tasks (P1)
 
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 8-16h
-**Module:** `server/routers/orders.ts`
-**Dependencies:** None
-**Prompt:** `docs/prompts/SEC-007.md`
-
-**Problem:**
-Order enhancement mutations lack proper permission protection across 11 endpoints.
-
-**Objectives:**
-
-1. Audit all 11 order enhancement endpoints
-2. Add permission middleware to each endpoint
-3. Implement proper authorization checks
-
-**Deliverables:**
-
-- [ ] All 11 endpoints audited
-- [ ] Permission middleware added
-- [ ] Authorization checks implemented
-- [ ] Tests for each endpoint
-- [ ] Documentation updated
+| Task | Description | Priority | Status | Prompt |
+|------|-------------|----------|--------|--------|
+| UX-001 | Implement Form Dirty State Protection | MEDIUM | ready | - |
+| UX-003 | Fix Mobile Kanban Overflow | MEDIUM | ready | - |
+| UX-006 | Add Error Recovery UI with Retry | MEDIUM | ready | - |
 
 ---
 
-### SEC-008: Protect Settings Router Mutations
+### Feature Tasks (P2)
 
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 4-8h
-**Module:** `server/routers/settings.ts`
-**Dependencies:** None
-**Prompt:** `docs/prompts/SEC-008.md`
-
-**Problem:**
-Settings router mutations lack proper permission protection.
-
-**Objectives:**
-
-1. Add permission middleware to settings mutations
-2. Implement proper authorization checks
-3. Add audit logging
-
-**Deliverables:**
-
-- [ ] Permission middleware added
-- [ ] Authorization checks implemented
-- [ ] Audit logging added
-- [ ] Tests for permission enforcement
-- [ ] Documentation updated
-
----
-
-### SEC-009: Protect VIP Portal Needs Data Exposure
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 4-8h
-**Module:** `server/routers/vipPortal.ts`
-**Dependencies:** None
-**Prompt:** `docs/prompts/SEC-009.md`
-
-**Problem:**
-VIP Portal exposes sensitive data without proper protection.
-
-**Objectives:**
-
-1. Audit VIP Portal data exposure
-2. Add proper data filtering
-3. Implement authorization checks
-
-**Deliverables:**
-
-- [ ] Data exposure audited
-- [ ] Data filtering implemented
-- [ ] Authorization checks added
-- [ ] Tests for data protection
-- [ ] Documentation updated
+| Task | Description | Priority | Status | Prompt |
+|------|-------------|----------|--------|--------|
+| FEAT-001 | Client Form Field Updates | MEDIUM | ready | - |
+| FEAT-002 | Tag System Revamp for Clients and Products | MEDIUM | ready | - |
+| FEAT-003 | Order Creator Quick Add Quantity Field | MEDIUM | ready | - |
+| FEAT-004 | Add Dollar Amount Discount Option | MEDIUM | ready | - |
+| FEAT-005 | Merge Draft and Quote Workflows | MEDIUM | ready | - |
+| FEAT-006 | Show Product Name Instead of SKU in Order Creator | MEDIUM | ready | - |
+| FEAT-007 | Add Payment Recording Against Invoices | HIGH | ready | - |
+| FEAT-008 | Invoice Editing from Order View | MEDIUM | ready | - |
+| FEAT-009 | Add Product Subcategories (Smalls, Trim, etc.) | MEDIUM | ready | - |
+| FEAT-010 | Default Warehouse Selection | MEDIUM | ready | - |
+| FEAT-011 | COGS Logic and Sales Flow Integration | HIGH | ready | - |
+| FEAT-012 | Make Grade Field Optional/Customizable | LOW | ready | - |
+| FEAT-013 | Add Packaged Unit Type for Products | LOW | ready | - |
+| FEAT-014 | Remove Expected Delivery from Purchases | LOW | ready | - |
+| FEAT-015 | Finance Status Customization | LOW | ready | - |
+| FEAT-016 | Rename Credits to Credit Settings | LOW | ready | - |
+| FEAT-017 | Feature Flags Direct Access | LOW | ready | - |
+| FEAT-018 | Remove Development-Only Features from User-Facing UI | LOW | ready | - |
+| FEAT-019 | VIP Status and Tiers Implementation | MEDIUM | ready | - |
+| FEAT-020 | Product Subcategory and Strain Matching | MEDIUM | ready | - |
+| FEAT-021 | Settings Changes Apply to Entire Team | MEDIUM | ready | - |
+| FEAT-022 | Show Role Names Instead of Count in Permissions | LOW | ready | - |
+| FEAT-023 | Notification Preferences - System vs User Level | MEDIUM | ready | - |
+| FEAT-024 | Inline Notifications Without Page Navigation | MEDIUM | ready | - |
+| FEATURE-003 | Live Shopping & Price Negotiation System | MEDIUM | ready | - |
 
 ---
 
-### SEC-010: Protect Returns and Refunds Query Endpoints
+### Video Testing Session Tasks (Jan 7, 2026)
 
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 4-8h
-**Module:** `server/routers/returns.ts`
-**Dependencies:** None
-**Prompt:** `docs/prompts/SEC-010.md`
-
-**Problem:**
-Returns and refunds query endpoints lack proper protection.
-
-**Objectives:**
-
-1. Add permission middleware to query endpoints
-2. Implement proper authorization checks
-3. Add audit logging
-
-**Deliverables:**
-
-- [ ] Permission middleware added
-- [ ] Authorization checks implemented
-- [ ] Audit logging added
-- [ ] Tests for permission enforcement
-- [ ] Documentation updated
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| UX-009 | Fix Sidebar Slide Animation | LOW | ready |
+| UX-010 | Clarify My Account vs User Settings Navigation | LOW | ready |
+| UX-011 | Fix Two Export Buttons Issue | LOW | ready |
+| UX-012 | Fix Period Display Formatting | LOW | ready |
+| UX-013 | Fix Mirrored Elements Issue | LOW | ready |
+| UX-014 | Make Optional Fields Clear | LOW | ready |
 
 ---
 
-### SEC-011: Reduce VIP Portal Session Duration
+### Infrastructure Tasks (P2)
 
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2-4h
-**Module:** `server/routers/vipPortal.ts`
-**Dependencies:** None
-**Prompt:** `docs/prompts/SEC-011.md`
-
-**Problem:**
-VIP Portal session duration is too long, creating security risk.
-
-**Objectives:**
-
-1. Reduce session duration to appropriate length
-2. Implement session refresh mechanism
-3. Add session timeout warnings
-
-**Deliverables:**
-
-- [ ] Session duration reduced
-- [ ] Refresh mechanism implemented
-- [ ] Timeout warnings added
-- [ ] Tests for session management
-- [ ] Documentation updated
+| Task | Description | Priority | Status | Prompt |
+|------|-------------|----------|--------|--------|
+| INFRA-004 | Implement Deployment Monitoring Enforcement | MEDIUM | ready | - |
+| INFRA-007 | Update Swarm Manager | LOW | ready | - |
+| INFRA-012 | Deploy TERP Commander Slack Bot | LOW | ready | - |
+| CLEANUP-001 | Remove LLM/AI from Codebase | LOW | ready | - |
 
 ---
 
-### SEC-012: Secure Admin Setup Endpoint
+### Quality Tasks (P2)
 
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 4-8h
-**Module:** `server/routers/admin.ts`
-**Dependencies:** None
-**Prompt:** `docs/prompts/SEC-012.md`
-
-**Problem:**
-Admin setup endpoint needs additional security measures.
-
-**Objectives:**
-
-1. Add rate limiting to admin setup
-2. Implement additional authentication checks
-3. Add audit logging
-
-**Deliverables:**
-
-- [ ] Rate limiting added
-- [ ] Authentication checks implemented
-- [ ] Audit logging added
-- [ ] Tests for security measures
-- [ ] Documentation updated
+| Task | Description | Priority | Status | Prompt |
+|------|-------------|----------|--------|--------|
+| QUAL-003 | Complete Critical TODOs | MEDIUM | ready | - |
+| QUAL-004 | Review Referential Integrity (CASCADE Deletes) | HIGH | ready | - |
+| QUAL-007 | Final TODO Audit & Documentation | MEDIUM | ready | - |
+| ROADMAP-001 | Process Consolidated Roadmap Update Report | LOW | ready | - |
 
 ---
 
-## MVP: Stability Tasks
+### Improvement Tasks (P3)
 
-### ST-025: Add Error Boundaries to Critical Pages
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 8h
-**Module:** `client/src/pages/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/ST-025.md`
-
-**Problem:**
-Critical pages lack error boundaries, causing full app crashes on errors.
-
-**Objectives:**
-
-1. Identify all critical pages
-2. Add error boundaries with graceful fallbacks
-3. Implement error reporting
-
-**Deliverables:**
-
-- [ ] Critical pages identified
-- [ ] Error boundaries added
-- [ ] Graceful fallbacks implemented
-- [ ] Error reporting integrated
-- [ ] Documentation updated
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| IMPROVE-001 | Fix Backup Script Security | MEDIUM | ready |
+| IMPROVE-002 | Enhance Health Check Endpoints | MEDIUM | ready |
+| IMPROVE-003 | Add Composite Database Indexes | MEDIUM | ready |
+| IMPROVE-004 | Reduce Rate Limiting Thresholds | LOW | ready |
 
 ---
 
-### ST-026: Implement Concurrent Edit Detection
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** `server/`, `client/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/ST-026.md`
-
-**Problem:**
-No detection for concurrent edits, leading to data overwrites.
-
-**Objectives:**
-
-1. Implement optimistic locking
-2. Add conflict detection UI
-3. Provide resolution options
-
-**Deliverables:**
-
-- [ ] Optimistic locking implemented
-- [ ] Conflict detection UI added
-- [ ] Resolution options provided
-- [ ] Tests for concurrent scenarios
-- [ ] Documentation updated
-
----
-
-### ST-045: Complete User Flow Mapping and Documentation
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2-4d
-**Module:** `docs/`, `server/`, `client/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/ST-045.md`
-
-**Problem:**
-The ERP system lacks a complete, exhaustive map of all user flows including variants and edge cases.
-
-**Objectives:**
-
-1. Create a complete User Flow Matrix covering all entities and flow variants
-2. Document all RBAC permission mismatches between code and database
-3. Identify all dead/legacy flows and unreachable code paths
-4. Create structured Flow Guide organized by Domain → Entity → Role → Task
-5. Validate all state transitions against both code enums and database values
-
-**Deliverables:**
-
-- [ ] Phase 0: Domain, Entity, Role, and Key Workflows lists
-- [ ] Phase 1: Flow archetype enumeration for all entities
-- [ ] Phase 2: Variants and edge case expansion
-- [ ] Phase 3: Consistency and dead flow analysis report
-- [ ] Phase 4: User Flow Matrix (Markdown + CSV)
-- [ ] Phase 5: Flow Guide (Markdown)
-- [ ] Updated reference files in `docs/assets/ST-045/`
-- [ ] RBAC mismatches summary document
-- [ ] Final documentation
-
----
-
-## MVP: UX Tasks
-
-### UX-001: Implement Form Dirty State Protection
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 8h
-**Module:** `client/src/components/forms/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/UX-001.md`
-
-**Problem:**
-Users can navigate away from forms with unsaved changes without warning.
-
-**Objectives:**
-
-1. Implement dirty state tracking
-2. Add navigation guards
-3. Show confirmation dialogs
-
-**Deliverables:**
-
-- [ ] Dirty state tracking implemented
-- [ ] Navigation guards added
-- [ ] Confirmation dialogs shown
-- [ ] Tests for dirty state scenarios
-- [ ] Documentation updated
-
----
-
-### UX-003: Fix Mobile Kanban Overflow
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 4h
-**Module:** `client/src/components/kanban/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/UX-003.md`
-
-**Problem:**
-Kanban board overflows on mobile devices.
-
-**Objectives:**
-
-1. Fix horizontal overflow
-2. Implement responsive design
-3. Add touch-friendly interactions
-
-**Deliverables:**
-
-- [ ] Overflow fixed
-- [ ] Responsive design implemented
-- [ ] Touch interactions added
-- [ ] Mobile testing completed
-- [ ] Documentation updated
-
----
-
-### UX-006: Add Error Recovery UI with Retry
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 8h
-**Module:** `client/src/components/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/UX-006.md`
-
-**Problem:**
-Error states don't provide recovery options.
-
-**Objectives:**
-
-1. Add retry buttons to error states
-2. Implement automatic retry logic
-3. Show helpful error messages
-
-**Deliverables:**
-
-- [ ] Retry buttons added
-- [ ] Automatic retry implemented
-- [ ] Error messages improved
-- [ ] Tests for error recovery
-- [ ] Documentation updated
-
----
-
-## MVP: Feature Tasks
-
-### FEAT-001: Client Form Field Updates
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 4-8h
-**Module:** `client/src/components/clients/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/FEAT-001.md`
-
-**Problem:**
-Client form fields need updates based on user feedback.
-
-**Objectives:**
-
-1. Update client form fields
-2. Add validation rules
-3. Improve UX
-
-**Deliverables:**
-
-- [ ] Form fields updated
-- [ ] Validation rules added
-- [ ] UX improvements made
-- [ ] Tests updated
-- [ ] Documentation updated
-
----
-
-### FEAT-002: Tag System Revamp for Clients and Products
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 16h
-**Module:** `client/src/`, `server/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/FEAT-002.md`
-
-**Problem:**
-Tag system needs revamp for better organization.
-
-**Objectives:**
-
-1. Redesign tag system
-2. Add tag categories
-3. Improve tag management UI
-
-**Deliverables:**
-
-- [ ] Tag system redesigned
-- [ ] Categories added
-- [ ] Management UI improved
-- [ ] Migration script created
-- [ ] Documentation updated
-
----
-
-### FEAT-003: Order Creator Quick Add Quantity Field
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 4h
-**Module:** `client/src/pages/OrderCreatorPage.tsx`
-**Dependencies:** None
-**Prompt:** `docs/prompts/FEAT-003.md`
-
-**Problem:**
-Order creator lacks quick add quantity field.
-
-**Objectives:**
-
-1. Add quick quantity input
-2. Implement keyboard shortcuts
-3. Add validation
-
-**Deliverables:**
-
-- [ ] Quick quantity input added
-- [ ] Keyboard shortcuts implemented
-- [ ] Validation added
-- [ ] Tests added
-- [ ] Documentation updated
-
----
-
-### FEAT-007: Add Payment Recording Against Invoices
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** `client/src/`, `server/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/FEAT-007.md`
-
-**Problem:**
-Cannot record payments against specific invoices.
-
-**Objectives:**
-
-1. Add payment recording UI
-2. Implement payment allocation
-3. Update invoice balances
-
-**Deliverables:**
-
-- [ ] Payment recording UI added
-- [ ] Allocation logic implemented
-- [ ] Balance updates working
-- [ ] Tests added
-- [ ] Documentation updated
-
----
-
-### FEAT-011: COGS Logic and Sales Flow Integration
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2d
-**Module:** `server/`, `client/src/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/FEAT-011.md`
-
-**Problem:**
-COGS logic not integrated with sales flow.
-
-**Objectives:**
-
-1. Implement COGS calculation
-2. Integrate with sales flow
-3. Add reporting
-
-**Deliverables:**
-
-- [ ] COGS calculation implemented
-- [ ] Sales flow integration complete
-- [ ] Reporting added
-- [ ] Tests added
-- [ ] Documentation updated
-
----
-
-## MVP: Infrastructure Tasks
-
-### REL-002: Implement Automated Database Backups
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 8h
-**Module:** `scripts/`, deployment
-**Dependencies:** None
-**Prompt:** `docs/prompts/REL-002.md`
-
-**Problem:**
-No automated database backup system.
-
-**Objectives:**
-
-1. Implement automated backups
-2. Set up retention policy
-3. Add backup verification
-
-**Deliverables:**
-
-- [ ] Automated backups implemented
-- [ ] Retention policy configured
-- [ ] Verification added
-- [ ] Monitoring set up
-- [ ] Documentation updated
-
----
-
-## MVP: Quality Tasks
-
-### QUAL-007: Final TODO Audit & Documentation
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 8h
-**Module:** `docs/`, all code
-**Dependencies:** None
-**Prompt:** `docs/prompts/QUAL-007.md`
-
-**Problem:**
-TODOs scattered throughout codebase need audit.
-
-**Objectives:**
-
-1. Audit all TODOs
-2. Create tracking document
-3. Prioritize and assign
-
-**Deliverables:**
-
-- [ ] All TODOs audited
-- [ ] Tracking document created
-- [ ] Priorities assigned
-- [ ] Critical TODOs addressed
-- [ ] Documentation updated
-
----
-
-### QUAL-004: Review Referential Integrity (CASCADE Deletes)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** `drizzle/`, `server/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/QUAL-004.md`
-
-**Problem:**
-CASCADE deletes may cause unintended data loss.
-
-**Objectives:**
-
-1. Audit all CASCADE deletes
-2. Implement soft deletes where needed
-3. Add safeguards
-
-**Deliverables:**
-
-- [ ] CASCADE deletes audited
-- [ ] Soft deletes implemented
-- [ ] Safeguards added
-- [ ] Tests added
-- [ ] Documentation updated
+## 📊 MVP Summary
+
+| Category | Completed | Open | Total |
+|----------|-----------|------|-------|
+| Infrastructure | 18 | 4 | 22 |
+| Security | 4 | 8 | 12 |
+| Bug Fixes | 8 | 16 | 24 |
+| Stability | 7 | 4 | 11 |
+| Quality | 8 | 4 | 12 |
+| Features | 4 | 25+ | 29+ |
+| UX | 0 | 9 | 9 |
+| **TOTAL** | **49+** | **70+** | **119+** |
 
 ---
 
@@ -716,9 +336,11 @@ CASCADE deletes may cause unintended data loss.
 
 ---
 
-## 🛡️ Reliability Program (99.99): Inventory + Money + Ledger + AR/AP (Jan 2026)
+## 🛡️ Reliability Program (99.99): Inventory + Money + Ledger + AR/AP
 
 **Goal:** Make "can't be wrong" business data (inventory quantities, money amounts, AR/AP balances, ledger postings) durable, reconstructable, and safe under retries + concurrency.
+
+**Status:** All tasks ready for implementation (none started)
 
 **Critical Code Anchors (already in repo):**
 - Transactions + retries: `server/_core/dbTransaction.ts`
@@ -726,7 +348,7 @@ CASCADE deletes may cause unintended data loss.
 - Optimistic locking helpers: `server/_core/optimisticLocking.ts`
 - Inventory truth + movements: `server/inventoryDb.ts`, `server/inventoryMovementsDb.ts`, `server/inventoryUtils.ts`
 - Accounting + ledger logic: `server/accountingDb.ts`, `server/services/orderAccountingService.ts`, `server/_core/fiscalPeriod.ts`
-- RBAC: `server/_core/permissionMiddleware.ts`, `server/_core/permissionService.ts`, `server/services/rbacDefinitions.ts`, `server/services/seedRBAC.ts`
+- RBAC: `server/_core/permissionMiddleware.ts`, `server/_core/permissionService.ts`, `server/services/rbacDefinitions.ts`
 - Observability: `server/_core/logger.ts`, `server/_core/monitoring.ts`, `sentry.*.config.ts`
 
 ### Program Definition of Done (Non-Negotiable)
@@ -737,478 +359,46 @@ CASCADE deletes may cause unintended data loss.
 
 ---
 
-### REL-001: Define Truth Model + Invariants for Inventory and Money
+### Beta: Reliability Tasks
 
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 8h
-**Module:** `docs/reliability/`, `drizzle/`, `server/`
-**Dependencies:** None
-**Prompt:** `docs/prompts/REL-001.md`
-
-**Problem:** "Truth sources" and invariants are implicit in code; drift and partial implementations are hard to detect and prevent.
-
-**Objectives:**
-
-1. Explicitly define canonical sources of truth (journals vs projections) for inventory and money.
-2. Define invariant queries that detect drift and impossible states.
-3. Create a shared reference that all future critical flows must follow.
-
-**Deliverables:**
-
-- [ ] Add `docs/reliability/TRUTH_MODEL.md` (inventory + money canonical models)
-- [ ] Add `docs/reliability/INVARIANTS.md` with SQL/drizzle query definitions
-- [ ] Add an "Invariants checklist" section to `docs/protocols/INITIATIVE_TO_ROADMAP_WORKFLOW.md`
-- [ ] Add reference comments in `server/inventoryMovementsDb.ts` and `server/accountingDb.ts` pointing to TRUTH_MODEL
-- [ ] Add a `scripts/reliability/README.md` scaffold for reconciliation tooling
+| Task | Description | Priority | Status | Estimate | Prompt |
+|------|-------------|----------|--------|----------|--------|
+| REL-001 | Define Truth Model + Invariants for Inventory and Money | HIGH | ready | 8h | `docs/prompts/REL-001.md` |
+| REL-002 | Migrate Inventory Quantities to DECIMAL | HIGH | ready | 2d | `docs/prompts/REL-002.md` |
+| REL-003 | Migrate Money Amounts to DECIMAL | HIGH | ready | 2d | `docs/prompts/REL-003.md` |
+| REL-004 | Critical Mutation Wrapper (Transactional + Retry) | HIGH | ready | 16h | `docs/prompts/REL-004.md` |
+| REL-005 | Idempotency Keys for Critical Mutations | HIGH | ready | 2d | `docs/prompts/REL-005.md` |
+| REL-006 | Inventory Concurrency Hardening | HIGH | ready | 2d | `docs/prompts/REL-006.md` |
+| REL-007 | Inventory Movements Immutability + Reversal | HIGH | ready | 16h | `docs/prompts/REL-007.md` |
+| REL-008 | Ledger Immutability + Reversal + Fiscal Period Lock | HIGH | ready | 2d | `docs/prompts/REL-008.md` |
+| REL-009 | Reconciliation Framework | HIGH | ready | 2d | `docs/prompts/REL-009.md` |
+| REL-010 | Inventory Reconciliation Pack | HIGH | ready | 16h | `docs/prompts/REL-010.md` |
+| REL-011 | AR/AP Reconciliation Pack | HIGH | ready | 2d | `docs/prompts/REL-011.md` |
+| REL-012 | Ledger Reconciliation Pack | HIGH | ready | 16h | `docs/prompts/REL-012.md` |
+| REL-013 | RBAC Drift Detector | HIGH | ready | 16h | `docs/prompts/REL-013.md` |
+| REL-014 | Critical Correctness Test Harness | HIGH | ready | 2d | `docs/prompts/REL-014.md` |
+| REL-015 | Observability for Critical Mutations | HIGH | ready | 16h | `docs/prompts/REL-015.md` |
+| REL-016 | Backup/Restore Reliability Runbook | MEDIUM | ready | 2d | `docs/prompts/REL-016.md` |
+| REL-017 | CI/PR Gates for Critical Domains | HIGH | ready | 16h | `docs/prompts/REL-017.md` |
 
 ---
 
-### REL-002: Migrate Inventory Quantities to DECIMAL (Dual-Write + Backfill + Cutover)
+## 📊 Beta Summary
 
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2d
-**Module:** `drizzle/`, `server/inventory*.ts`
-**Dependencies:** REL-001
-**Prompt:** `docs/prompts/REL-002.md`
-
-**Problem:** Inventory quantities include string-backed fields (e.g., migrations show `batches.onHandQty` as `varchar(20)`), increasing drift/parse/rounding risk and making constraints harder.
-
-**Objectives:**
-
-1. Identify all quantity-like fields stored as strings and migrate them safely to DECIMAL.
-2. Implement dual-write, backfill, and safe read cutover (feature-flagged).
-3. Add DB constraints to prevent negative and invalid quantities where applicable.
-
-**Deliverables:**
-
-- [ ] Schema audit doc added under `docs/reliability/`
-- [ ] New DECIMAL columns added + migrations committed
-- [ ] Dual-write implemented in all inventory write paths
-- [ ] Backfill script added + verified on seeded dataset
-- [ ] Cutover flag and mismatch logging (old vs new) implemented
+| Category | Completed | Open | Total |
+|----------|-----------|------|-------|
+| Reliability Program | 0 | 17 | 17 |
+| **TOTAL** | **0** | **17** | **17** |
 
 ---
 
-### REL-003: Migrate Money Amounts to DECIMAL (Dual-Write + Backfill + Cutover)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2d
-**Module:** `drizzle/`, `server/accountingDb.ts`, `server/services/orderAccountingService.ts`
-**Dependencies:** REL-001
-**Prompt:** `docs/prompts/REL-003.md`
-
-**Problem:** Money fields stored as strings (and mixed representations across operational tables vs ledger) can cause rounding drift, incorrect AR/AP, and hard-to-debug discrepancies.
-
-**Objectives:**
-
-1. Identify all money fields stored as strings and migrate safely to DECIMAL.
-2. Define canonical money truth (ledger vs operational balances) and enforce it in code.
-3. Add invariant checks ensuring AR/AP and ledger remain consistent.
-
-**Deliverables:**
-
-- [ ] Money schema audit added under `docs/reliability/`
-- [ ] DECIMAL columns added + migrations committed
-- [ ] Dual-write implemented for all money mutations
-- [ ] Backfill + reconciliation report confirms parity
-- [ ] Cutover flag + mismatch alerting implemented
-
----
-
-### REL-004: Critical Mutation Wrapper (Transactional + Retry + Standardized Errors)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** `server/_core/`, `server/inventory*.ts`, `server/accounting*.ts`
-**Dependencies:** REL-001
-**Prompt:** `docs/prompts/REL-004.md`
-
-**Problem:** Critical multi-table writes risk partial completion, inconsistent error handling, and non-uniform retry safety.
-
-**Objectives:**
-
-1. Create a single "critical mutation" wrapper built on `withRetryableTransaction`.
-2. Standardize error shaping for business-rule failures vs transient DB failures.
-3. Ensure all P0 inventory/money mutations route through this wrapper.
-
-**Deliverables:**
-
-- [ ] Add `server/_core/criticalMutation.ts`
-- [ ] Refactor inventory movement writes to use wrapper
-- [ ] Refactor ledger posting / invoice/payment flows to use wrapper
-- [ ] Add structured logs with mutationId + correlationId
-- [ ] Add integration tests asserting atomicity (no partial write)
-
----
-
-### REL-005: Idempotency Keys for Critical Mutations (Replay-Safe Money + Inventory)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2d
-**Module:** `drizzle/`, `server/_core/`, `server/routers/`
-**Dependencies:** REL-004
-**Prompt:** `docs/prompts/REL-005.md`
-
-**Problem:** Retries/timeouts can cause double-apply (double payment, double adjustment, double fulfillment) without a universal idempotency layer.
-
-**Objectives:**
-
-1. Add a DB-backed idempotency key store.
-2. Add middleware/helper to enforce idempotency for critical procedures.
-3. Require idempotency keys for high-risk money and inventory mutations.
-
-**Deliverables:**
-
-- [ ] New `idempotency_keys` table + migration
-- [ ] Middleware/helper for tRPC procedures (or service-level helper)
-- [ ] Applied to: record payment, apply credit, receive inventory, fulfill/ship, generate invoice, reverse/void
-- [ ] Integration test proving repeated calls do not double-apply
-- [ ] Docs: `docs/reliability/IDEMPOTENCY.md`
-
----
-
-### REL-006: Inventory Concurrency Hardening (Row Locks + Optimistic Locking Enforcement)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2d
-**Module:** `server/_core/`, `server/inventoryDb.ts`, `server/inventoryMovementsDb.ts`
-**Dependencies:** REL-004
-**Prompt:** `docs/prompts/REL-006.md`
-
-**Problem:** Concurrent inventory writes can cause negative on-hand, lost updates, or mismatched movements vs projections if not locked/checked consistently.
-
-**Objectives:**
-
-1. Ensure row-level locks are taken on the correct batch/location projection rows before mutation.
-2. Enforce optimistic locking where `version` exists (or add where missing for key inventory entities).
-3. Add concurrency tests that simulate parallel receive/fulfill/adjust.
-
-**Deliverables:**
-
-- [ ] Locking added/verified in inventory adjustment + fulfillment + intake paths
-- [ ] Optimistic lock checks added where missing
-- [ ] Concurrency integration test suite added
-- [ ] Invariant: sum(movements) equals projection after concurrent operations
-- [ ] Clear conflict errors (`CONFLICT`) surfaced for stale updates
-
----
-
-### REL-007: Inventory Movements Immutability + Reversal-Only Corrections
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** `server/inventoryMovementsDb.ts`, `drizzle/`
-**Dependencies:** REL-004
-**Prompt:** `docs/prompts/REL-007.md`
-
-**Problem:** If movements can be edited/deleted in-place, auditability breaks and reconstruction becomes unreliable.
-
-**Objectives:**
-
-1. Make inventory movements append-only.
-2. Implement reversal flow (reversal movement references original).
-3. Ensure projections are derived and corrected by movements, not silent overwrites.
-
-**Deliverables:**
-
-- [ ] Schema supports `reversalOfMovementId` (or equivalent linkage) + indexes
-- [ ] Reverse movement function implemented + tested
-- [ ] Block/guard any update/delete of posted movements (except strict admin audited soft-delete)
-- [ ] Reconciliation query proves reconstructability
-- [ ] Docs: `docs/reliability/INVENTORY_JOURNAL.md`
-
----
-
-### REL-008: Ledger Immutability + Reversal + Fiscal Period Lock Enforcement
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2d
-**Module:** `server/accountingDb.ts`, `server/_core/fiscalPeriod.ts`, `drizzle/`
-**Dependencies:** REL-004, REL-001
-**Prompt:** `docs/prompts/REL-008.md`
-
-**Problem:** Ledger mutations without immutability, balance enforcement, and period locks lead to un-auditable financial statements and incorrect history.
-
-**Objectives:**
-
-1. Ensure posted ledger entries/journals are immutable.
-2. Implement reversal-only corrections (no in-place edits) for posted entries.
-3. Enforce fiscal period locks in all posting paths.
-
-**Deliverables:**
-
-- [ ] Balance enforcement (debits == credits) validated on write
-- [ ] Reversal entry flow implemented + tested
-- [ ] Period lock blocks postings into locked periods
-- [ ] Audit events for posting/reversal include actor + reason
-- [ ] Docs: `docs/reliability/LEDGER_JOURNAL.md`
-
----
-
-### REL-009: Reconciliation Framework (Report Mode + Controlled Fix Hooks)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2d
-**Module:** `server/_core/`, `scripts/`, `docs/reliability/`
-**Dependencies:** REL-001
-**Prompt:** `docs/prompts/REL-009.md`
-
-**Problem:** No unified reconciliation engine for detecting drift across inventory/money/ledger; issues surface only via user reports.
-
-**Objectives:**
-
-1. Implement a common reconciliation runner with modules (inventory, AR/AP, ledger, RBAC).
-2. Provide CLI report output (JSON) suitable for CI and scheduled jobs.
-3. Provide a *controlled* fix mode for limited, auditable repairs.
-
-**Deliverables:**
-
-- [ ] Add `server/_core/reconciliationService.ts`
-- [ ] Add `scripts/reconcile.ts --mode=report|fix --scope=inventory|ar|ap|ledger|rbac`
-- [ ] Integrate with logging + Sentry breadcrumbs
-- [ ] Add docs + runbook for interpreting reports
-- [ ] Tests for report generation
-
----
-
-### REL-010: Inventory Reconciliation Pack (Drift + Impossible State Detection + Fix via Adjustment Movements)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** `server/_core/reconciliationService.ts`, `server/inventory*.ts`
-**Dependencies:** REL-009, REL-007
-**Prompt:** `docs/prompts/REL-010.md`
-
-**Problem:** Inventory drift and impossible states (negative on-hand, orphan movements, inconsistent reserved vs onhand) can silently corrupt availability and fulfillment.
-
-**Objectives:**
-
-1. Detect inventory drift between movements and projections.
-2. Detect impossible states and orphan references.
-3. Implement fix mode that ONLY creates explicit adjustment movements (no silent edits).
-
-**Deliverables:**
-
-- [ ] Inventory reconciliation module added
-- [ ] Report includes causality pointers (which batch/location/movement)
-- [ ] Fix mode generates explicit adjustment movements (audited)
-- [ ] Safety rails: fix requires `--confirm` and logs every change
-- [ ] Tests cover drift detection and safe repair behavior
-
----
-
-### REL-011: AR/AP Reconciliation Pack (Invoice/Payment/Credit Integrity)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2d
-**Module:** `server/_core/reconciliationService.ts`, `server/accountingDb.ts`, `server/routers/`
-**Dependencies:** REL-009, REL-005
-**Prompt:** `docs/prompts/REL-011.md`
-
-**Problem:** Misapplied payments/credits and mismatched invoice balances cause incorrect "amount due" and break collections + cash forecasting.
-
-**Objectives:**
-
-1. Detect mismatches between invoice totals and applied payments/credits.
-2. Detect unallocated or over-allocated payments/credits.
-3. Provide repair guidance and limited safe repairs (where provable).
-
-**Deliverables:**
-
-- [ ] AR/AP reconciliation module added
-- [ ] Invariants: amountDue matches computed balance
-- [ ] Idempotency replay checks for payment application paths
-- [ ] Report lists specific broken references and how to fix
-- [ ] Integration tests for partial payments + overpayment + credit memo scenarios
-
----
-
-### REL-012: Ledger Reconciliation Pack (Balance, Duplicates, Orphans, Locked Period Violations)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** `server/_core/reconciliationService.ts`, `server/accountingDb.ts`
-**Dependencies:** REL-009, REL-008
-**Prompt:** `docs/prompts/REL-012.md`
-
-**Problem:** A single unbalanced or duplicate journal can corrupt financial reporting, and violations may not be visible in UI.
-
-**Objectives:**
-
-1. Detect unbalanced journals and duplicate postings.
-2. Detect ledger entries referencing missing operational records (orphans).
-3. Detect postings into locked periods.
-
-**Deliverables:**
-
-- [ ] Ledger reconciliation module added
-- [ ] Unbalanced/double-post/orphan checks implemented
-- [ ] Report includes remediation steps (reversal vs re-post)
-- [ ] Fix mode: limited to safe reversals with strict guardrails
-- [ ] Tests covering each violation class
-
----
-
-### REL-013: RBAC Drift Detector (Code vs DB Permissions + Audit Trail)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** `server/services/`, `server/_core/`, `scripts/`
-**Dependencies:** REL-009
-**Prompt:** `docs/prompts/REL-013.md`
-
-**Problem:** Permission strings used in guards can drift from seeded/DB permissions, leading to unauthorized access or broken functionality.
-
-**Objectives:**
-
-1. Extract permission strings referenced in code guards/middleware.
-2. Compare against seeded RBAC definitions and DB permissions.
-3. Emit reconciliation report and optionally generate safe migration suggestions.
-
-**Deliverables:**
-
-- [ ] Script to extract `requirePermission(...)` usages
-- [ ] Compare output vs `server/services/rbacDefinitions.ts` and DB
-- [ ] Reconciliation scope `rbac` added to `scripts/reconcile.ts`
-- [ ] Audit log for permission changes retained and queryable
-- [ ] Tests for extraction + mismatch detection
-
----
-
-### REL-014: Critical Correctness Test Harness (Seed + Invariant Suite + Concurrency Scenarios)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 2d
-**Module:** `server/*integration.test.ts`, `scripts/`, `drizzle/`
-**Dependencies:** REL-001, REL-004, REL-009
-**Prompt:** `docs/prompts/REL-014.md`
-
-**Problem:** We do not currently have a single "accounting-grade" suite that proves invariants after sequences of real mutations and under concurrency.
-
-**Objectives:**
-
-1. Define deterministic seed fixtures for inventory + accounting scenarios.
-2. Execute critical flows step-by-step and assert invariants after each step.
-3. Add concurrency simulations that validate locking/idempotency.
-
-**Deliverables:**
-
-- [ ] Deterministic seed fixture(s) for reliability tests
-- [ ] "critical correctness suite" test command documented
-- [ ] Property-style/randomized edge-case generation for amounts/qty within constraints
-- [ ] Concurrency test scenarios added
-- [ ] CI job runs the suite for PRs touching critical domains
-
----
-
-### REL-015: Observability for Critical Mutations (Correlation IDs + Structured Logging + Sentry Tagging)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** `server/_core/logger.ts`, `server/_core/requestLogger.ts`, `server/_core/monitoring.ts`
-**Dependencies:** REL-004
-**Prompt:** `docs/prompts/REL-015.md`
-
-**Problem:** When drift or failure occurs, root-cause is slow without consistent correlation IDs and structured mutation logs.
-
-**Objectives:**
-
-1. Implement correlation ID propagation request → service → DB write.
-2. Log structured mutation events (actor, permission, entity, idempotencyKey, before/after summary).
-3. Add Sentry breadcrumbs/tags for critical mutation events.
-
-**Deliverables:**
-
-- [ ] correlationId/mutationId added to request context
-- [ ] Structured log schema documented and enforced
-- [ ] Critical mutations emit standardized log events
-- [ ] Sentry tags set for inventory/money critical events
-- [ ] Troubleshooting runbook added under `docs/reliability/`
-
----
-
-### REL-016: Backup/Restore Reliability Runbook + Automated Restore Validation (Staging)
-
-**Status:** ready
-**Priority:** MEDIUM
-**Estimate:** 2d
-**Module:** `docs/`, `scripts/`, deployment docs
-**Dependencies:** REL-009
-**Prompt:** `docs/prompts/REL-016.md`
-
-**Problem:** 99.99 reliability requires proven recovery. Backups without restore drills are an unknown risk.
-
-**Objectives:**
-
-1. Document backup policy, retention, and restore procedures (RPO/RTO targets).
-2. Implement an automated staging restore validation workflow.
-3. Validate post-restore invariants using reconciliation report mode.
-
-**Deliverables:**
-
-- [ ] `docs/reliability/DR_RUNBOOK.md` (backup/restore procedures)
-- [ ] Automated staging restore validation script/workflow
-- [ ] Post-restore reconciliation must pass (or produce actionable report)
-- [ ] Record of drill results and timestamps
-- [ ] Backout/rollback checklist included
-
----
-
-### REL-017: CI/PR Gates for Critical Domains (Block Merge on Invariant Failures)
-
-**Status:** ready
-**Priority:** HIGH
-**Estimate:** 16h
-**Module:** CI config, `scripts/`, `server/`
-**Dependencies:** REL-009, REL-014
-**Prompt:** `docs/prompts/REL-017.md`
-
-**Problem:** Without automated merge gates, regressions in money/inventory logic can ship.
-
-**Objectives:**
-
-1. Detect when a PR touches critical files and enforce the reliability suite.
-2. Run reconciliation report mode in CI and fail on critical violations.
-3. Require migrations + tests for schema-affecting changes.
-
-**Deliverables:**
-
-- [ ] CI rule detects changes under critical paths (inventory/accounting/ledger/schema)
-- [ ] Runs critical correctness suite and reconciliation report
-- [ ] Fails build on invariant violations
-- [ ] PR checklist updated to reflect reliability gates
-- [ ] Docs: `docs/reliability/CI_GATES.md`
-
----
-
-## Beta: Additional Tasks
-
-> Additional tasks for Beta milestone will be added here as they are identified.
-> These may include performance optimizations, additional features, and polish items.
-
----
-
-## 📊 Milestone Summary
-
-| Milestone | Total Tasks | Status |
-|-----------|-------------|--------|
-| MVP | ~50+ tasks | In Progress |
-| Beta | 17 tasks (Reliability Program) | Ready |
+## 📊 Overall Roadmap Summary
+
+| Milestone | Completed | Open | Total | Progress |
+|-----------|-----------|------|-------|----------|
+| MVP | 49+ | 70+ | 119+ | ~41% |
+| Beta | 0 | 17 | 17 | 0% |
+| **TOTAL** | **49+** | **87+** | **136+** | ~36% |
 
 ---
 
