@@ -1,10 +1,10 @@
 /**
  * Empty State Component
  * UX-010: Add Empty States to All Widgets/Lists
- * 
- * A reusable component for displaying empty states with optional icon, 
+ *
+ * A reusable component for displaying empty states with optional icon,
  * title, description, and call-to-action button.
- * 
+ *
  * @example
  * ```tsx
  * <EmptyState
@@ -38,16 +38,17 @@ import {
   CheckSquareIcon,
   FileSpreadsheetIcon,
   FlaskConicalIcon,
-  RefreshCwIcon
 } from "lucide-react";
 
 export interface EmptyStateAction {
   /** Button label */
-  label: string;
-  /** Click handler */
-  onClick: () => void;
+  label: string | React.ReactNode;
+  /** Click handler - can return anything (common for window.open, refetch, etc.) */
+  onClick: () => unknown;
   /** Button variant */
   variant?: "default" | "outline" | "secondary";
+  /** Disabled state */
+  disabled?: boolean;
 }
 
 export interface EmptyStateProps {
@@ -66,7 +67,22 @@ export interface EmptyStateProps {
   /** Additional CSS classes */
   className?: string;
   /** Preset variant for common empty states */
-  variant?: "orders" | "clients" | "inventory" | "calendar" | "invoices" | "analytics" | "inbox" | "search" | "generic" | "notifications" | "photography" | "todos" | "spreadsheet" | "samples" | "reports";
+  variant?:
+    | "orders"
+    | "clients"
+    | "inventory"
+    | "calendar"
+    | "invoices"
+    | "analytics"
+    | "inbox"
+    | "search"
+    | "generic"
+    | "notifications"
+    | "photography"
+    | "todos"
+    | "spreadsheet"
+    | "samples"
+    | "reports";
 }
 
 // Default icons for each variant
@@ -83,7 +99,9 @@ const variantIcons: Record<string, React.ReactNode> = {
   notifications: <BellIcon className="h-12 w-12 text-muted-foreground/50" />,
   photography: <CameraIcon className="h-12 w-12 text-muted-foreground/50" />,
   todos: <CheckSquareIcon className="h-12 w-12 text-muted-foreground/50" />,
-  spreadsheet: <FileSpreadsheetIcon className="h-12 w-12 text-muted-foreground/50" />,
+  spreadsheet: (
+    <FileSpreadsheetIcon className="h-12 w-12 text-muted-foreground/50" />
+  ),
   samples: <FlaskConicalIcon className="h-12 w-12 text-muted-foreground/50" />,
   reports: <FileTextIcon className="h-12 w-12 text-muted-foreground/50" />,
 };
@@ -144,13 +162,16 @@ export const EmptyState = React.memo(function EmptyState({
       )}
 
       {/* Title */}
-      <h3 className={cn(sizes.title, "text-muted-foreground mb-1")}>
-        {title}
-      </h3>
+      <h3 className={cn(sizes.title, "text-muted-foreground mb-1")}>{title}</h3>
 
       {/* Description */}
       {description && (
-        <p className={cn(sizes.description, "text-muted-foreground/70 max-w-sm mb-4")}>
+        <p
+          className={cn(
+            sizes.description,
+            "text-muted-foreground/70 max-w-sm mb-4"
+          )}
+        >
           {description}
         </p>
       )}
@@ -163,6 +184,7 @@ export const EmptyState = React.memo(function EmptyState({
               variant={action.variant || "default"}
               className={sizes.button}
               onClick={action.onClick}
+              disabled={action.disabled}
             >
               {action.label}
             </Button>
@@ -172,6 +194,7 @@ export const EmptyState = React.memo(function EmptyState({
               variant={secondaryAction.variant || "outline"}
               className={sizes.button}
               onClick={secondaryAction.onClick}
+              disabled={secondaryAction.disabled}
             >
               {secondaryAction.label}
             </Button>
@@ -191,10 +214,14 @@ export const EmptyStatePresets = {
       variant="orders"
       title="No orders yet"
       description="Create your first order to start tracking sales"
-      action={props.onCreateOrder ? {
-        label: "Create Order",
-        onClick: props.onCreateOrder,
-      } : undefined}
+      action={
+        props.onCreateOrder
+          ? {
+              label: "Create Order",
+              onClick: props.onCreateOrder,
+            }
+          : undefined
+      }
     />
   ),
 
@@ -203,10 +230,14 @@ export const EmptyStatePresets = {
       variant="clients"
       title="No clients found"
       description="Add your first client to start building relationships"
-      action={props.onAddClient ? {
-        label: "Add Client",
-        onClick: props.onAddClient,
-      } : undefined}
+      action={
+        props.onAddClient
+          ? {
+              label: "Add Client",
+              onClick: props.onAddClient,
+            }
+          : undefined
+      }
     />
   ),
 
@@ -215,10 +246,14 @@ export const EmptyStatePresets = {
       variant="inventory"
       title="No inventory"
       description="Add your first batch to start tracking inventory"
-      action={props.onAddBatch ? {
-        label: "Add Batch",
-        onClick: props.onAddBatch,
-      } : undefined}
+      action={
+        props.onAddBatch
+          ? {
+              label: "Add Batch",
+              onClick: props.onAddBatch,
+            }
+          : undefined
+      }
     />
   ),
 
@@ -227,10 +262,14 @@ export const EmptyStatePresets = {
       variant="calendar"
       title="No events scheduled"
       description="Create an event to start organizing your calendar"
-      action={props.onCreateEvent ? {
-        label: "Create Event",
-        onClick: props.onCreateEvent,
-      } : undefined}
+      action={
+        props.onCreateEvent
+          ? {
+              label: "Create Event",
+              onClick: props.onCreateEvent,
+            }
+          : undefined
+      }
     />
   ),
 
@@ -239,10 +278,14 @@ export const EmptyStatePresets = {
       variant="invoices"
       title="No invoices"
       description="Invoices will appear here when orders are finalized"
-      action={props.onCreateInvoice ? {
-        label: "Create Invoice",
-        onClick: props.onCreateInvoice,
-      } : undefined}
+      action={
+        props.onCreateInvoice
+          ? {
+              label: "Create Invoice",
+              onClick: props.onCreateInvoice,
+            }
+          : undefined
+      }
     />
   ),
 
@@ -259,10 +302,14 @@ export const EmptyStatePresets = {
       variant="search"
       title="No results found"
       description="Try adjusting your search or filters"
-      action={props.onClearFilters ? {
-        label: "Clear Filters",
-        onClick: props.onClearFilters,
-      } : undefined}
+      action={
+        props.onClearFilters
+          ? {
+              label: "Clear Filters",
+              onClick: props.onClearFilters,
+            }
+          : undefined
+      }
     />
   ),
 
@@ -280,10 +327,14 @@ export const EmptyStatePresets = {
       icon={<AlertCircleIcon className="h-12 w-12 text-destructive/50" />}
       title="Something went wrong"
       description={props.message || "An error occurred while loading data"}
-      action={props.onRetry ? {
-        label: "Try Again",
-        onClick: props.onRetry,
-      } : undefined}
+      action={
+        props.onRetry
+          ? {
+              label: "Try Again",
+              onClick: props.onRetry,
+            }
+          : undefined
+      }
     />
   ),
 
@@ -308,10 +359,14 @@ export const EmptyStatePresets = {
       variant="todos"
       title="No tasks"
       description="You have no tasks assigned. Tasks will appear here when created or assigned to you."
-      action={props.onCreateTodo ? {
-        label: "Create Task",
-        onClick: props.onCreateTodo,
-      } : undefined}
+      action={
+        props.onCreateTodo
+          ? {
+              label: "Create Task",
+              onClick: props.onCreateTodo,
+            }
+          : undefined
+      }
     />
   ),
 
@@ -328,10 +383,14 @@ export const EmptyStatePresets = {
       variant="samples"
       title="No samples yet"
       description="Sample requests will appear here when clients request product samples."
-      action={props.onCreateSample ? {
-        label: "Create Sample Request",
-        onClick: props.onCreateSample,
-      } : undefined}
+      action={
+        props.onCreateSample
+          ? {
+              label: "Create Sample Request",
+              onClick: props.onCreateSample,
+            }
+          : undefined
+      }
     />
   ),
 
@@ -363,7 +422,9 @@ export function NoSearchResults({
           ? `No items match "${searchTerm}". Try adjusting your search or filters.`
           : "Try adjusting your search or filters to find what you're looking for."
       }
-      action={onClear ? { label: "Clear filters", onClick: onClear } : undefined}
+      action={
+        onClear ? { label: "Clear filters", onClick: onClear } : undefined
+      }
     />
   );
 }
@@ -386,7 +447,10 @@ export function ErrorState({
     <EmptyState
       icon={<AlertCircleIcon className="h-12 w-12 text-destructive/50" />}
       title={title}
-      description={description ?? "An error occurred while loading this content. Please try again."}
+      description={
+        description ??
+        "An error occurred while loading this content. Please try again."
+      }
       action={onRetry ? { label: "Try again", onClick: onRetry } : undefined}
       secondaryAction={
         showSupport
@@ -442,7 +506,12 @@ export function DatabaseErrorState({
 /**
  * Helper to detect if an error is database-related
  */
-export function isDatabaseError(error: { message?: string; data?: { code?: string } } | null | undefined): boolean {
+export function isDatabaseError(
+  error:
+    | { message?: string; data?: { code?: string } | null }
+    | null
+    | undefined
+): boolean {
   if (!error) return false;
 
   const message = error.message?.toLowerCase() || "";
@@ -465,12 +534,14 @@ export const emptyStateConfigs = {
   analytics: {
     variant: "analytics" as const,
     title: "No analytics data yet",
-    description: "Analytics will appear once you have orders and transactions in the system.",
+    description:
+      "Analytics will appear once you have orders and transactions in the system.",
   },
   calendar: {
     variant: "calendar" as const,
     title: "No events scheduled",
-    description: "Your calendar is empty. Create an appointment or task to get started.",
+    description:
+      "Your calendar is empty. Create an appointment or task to get started.",
   },
   notifications: {
     variant: "notifications" as const,
@@ -480,22 +551,26 @@ export const emptyStateConfigs = {
   photography: {
     variant: "photography" as const,
     title: "No photos to review",
-    description: "There are no batches awaiting photography. Photos will appear here when batches need imaging.",
+    description:
+      "There are no batches awaiting photography. Photos will appear here when batches need imaging.",
   },
   reports: {
     variant: "reports" as const,
     title: "No reports available",
-    description: "Reports will be generated as you accumulate data in the system.",
+    description:
+      "Reports will be generated as you accumulate data in the system.",
   },
   todos: {
     variant: "todos" as const,
     title: "No tasks",
-    description: "You have no tasks assigned. Tasks will appear here when created or assigned to you.",
+    description:
+      "You have no tasks assigned. Tasks will appear here when created or assigned to you.",
   },
   spreadsheet: {
     variant: "spreadsheet" as const,
     title: "No inventory data",
-    description: "The spreadsheet view will populate once you have inventory batches in the system.",
+    description:
+      "The spreadsheet view will populate once you have inventory batches in the system.",
   },
   orders: {
     variant: "orders" as const,
@@ -505,17 +580,20 @@ export const emptyStateConfigs = {
   clients: {
     variant: "clients" as const,
     title: "No clients yet",
-    description: "Add your first client to start managing your customer relationships.",
+    description:
+      "Add your first client to start managing your customer relationships.",
   },
   inventory: {
     variant: "inventory" as const,
     title: "No inventory",
-    description: "Your inventory is empty. Create a purchase order to receive new stock.",
+    description:
+      "Your inventory is empty. Create a purchase order to receive new stock.",
   },
   samples: {
     variant: "samples" as const,
     title: "No samples yet",
-    description: "Sample requests will appear here when clients request product samples.",
+    description:
+      "Sample requests will appear here when clients request product samples.",
   },
 };
 

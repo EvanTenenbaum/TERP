@@ -27,10 +27,12 @@ export const logger = pino({
  * Call this in server startup
  */
 export function replaceConsole() {
+  /* eslint-disable no-console */
   console.log = (...args: unknown[]) => logger.info(args);
   console.error = (...args: unknown[]) => logger.error(args);
   console.warn = (...args: unknown[]) => logger.warn(args);
   console.debug = (...args: unknown[]) => logger.debug(args);
+  /* eslint-enable no-console */
 }
 
 /**
@@ -128,6 +130,14 @@ export const inventoryLogger = {
       `Quantity changed for batch ${batchId}: ${before} → ${after} (${change > 0 ? "+" : ""}${change})`
     );
   },
+
+  /**
+   * Log inventory warning
+   */
+  warn: (context: Record<string, unknown>) => {
+    const { msg, ...rest } = context;
+    logger.warn(rest, String(msg ?? "Inventory warning"));
+  },
 };
 
 /**
@@ -220,7 +230,9 @@ export const piiMasker = {
    * Mask an object's PII fields
    * Automatically detects and masks common PII field names
    */
-  object: <T extends Record<string, unknown>>(obj: T): Record<string, unknown> => {
+  object: <T extends Record<string, unknown>>(
+    obj: T
+  ): Record<string, unknown> => {
     if (!obj || typeof obj !== "object") return obj;
 
     const piiFields: Record<string, (val: string) => string> = {
@@ -243,8 +255,8 @@ export const piiMasker = {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       const lowerKey = key.toLowerCase();
-      const maskFn = Object.entries(piiFields).find(
-        ([fieldName]) => lowerKey.includes(fieldName.toLowerCase())
+      const maskFn = Object.entries(piiFields).find(([fieldName]) =>
+        lowerKey.includes(fieldName.toLowerCase())
       )?.[1];
 
       if (maskFn && typeof value === "string") {
@@ -271,7 +283,10 @@ export const vipPortalLogger = {
   /**
    * Log VIP portal operation start
    */
-  operationStart: (operation: string, context: Record<string, unknown>): void => {
+  operationStart: (
+    operation: string,
+    context: Record<string, unknown>
+  ): void => {
     logger.info(
       { operation, ...piiMasker.object(context) },
       `VIP Portal: Starting ${operation}`
@@ -281,7 +296,10 @@ export const vipPortalLogger = {
   /**
    * Log VIP portal operation success
    */
-  operationSuccess: (operation: string, context: Record<string, unknown>): void => {
+  operationSuccess: (
+    operation: string,
+    context: Record<string, unknown>
+  ): void => {
     logger.info(
       { operation, ...piiMasker.object(context) },
       `VIP Portal: Completed ${operation}`
@@ -299,7 +317,12 @@ export const vipPortalLogger = {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
     logger.error(
-      { operation, error: errorMessage, stack: errorStack, ...piiMasker.object(context) },
+      {
+        operation,
+        error: errorMessage,
+        stack: errorStack,
+        ...piiMasker.object(context),
+      },
       `VIP Portal: Failed ${operation}`
     );
   },
@@ -355,7 +378,13 @@ export const vipPortalLogger = {
    */
   marketplaceActivity: (
     clientId: number,
-    action: "create_need" | "update_need" | "cancel_need" | "create_supply" | "update_supply" | "cancel_supply",
+    action:
+      | "create_need"
+      | "update_need"
+      | "cancel_need"
+      | "create_supply"
+      | "update_supply"
+      | "cancel_supply",
     itemId?: number,
     context?: Record<string, unknown>
   ): void => {
@@ -374,7 +403,12 @@ export const calendarLogger = {
   /**
    * Log calendar event creation
    */
-  eventCreated: (eventId: number, userId: number, eventType: string, context?: Record<string, unknown>) => {
+  eventCreated: (
+    eventId: number,
+    userId: number,
+    eventType: string,
+    context?: Record<string, unknown>
+  ) => {
     logger.info(
       { eventId, userId, eventType, ...context },
       `Calendar event created: ${eventType} (ID: ${eventId})`
@@ -399,7 +433,11 @@ export const calendarLogger = {
   /**
    * Log order creation from appointment
    */
-  orderCreated: (orderId: number, eventId: number, context?: Record<string, unknown>) => {
+  orderCreated: (
+    orderId: number,
+    eventId: number,
+    context?: Record<string, unknown>
+  ) => {
     logger.info(
       { orderId, eventId, ...context },
       `Order created from appointment (Order ID: ${orderId}, Event ID: ${eventId})`
@@ -409,7 +447,7 @@ export const calendarLogger = {
   /**
    * Log conflict detection
    */
-  conflictDetected: (conflictCount: number, requestedSlot: any) => {
+  conflictDetected: (conflictCount: number, requestedSlot: unknown) => {
     logger.warn(
       { conflictCount, requestedSlot },
       `Scheduling conflict detected: ${conflictCount} conflicting event(s)`
@@ -429,7 +467,11 @@ export const calendarLogger = {
   /**
    * Log VIP portal booking
    */
-  externalBooking: (eventId: number, clientId: number, confirmationNumber: string) => {
+  externalBooking: (
+    eventId: number,
+    clientId: number,
+    confirmationNumber: string
+  ) => {
     logger.info(
       { eventId, clientId, confirmationNumber },
       `External booking created via VIP portal (Confirmation: ${confirmationNumber})`

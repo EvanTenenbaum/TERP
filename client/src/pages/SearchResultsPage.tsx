@@ -1,7 +1,13 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,19 +16,23 @@ import { Link } from "wouter";
 
 export default function SearchResultsPage() {
   const [location, setLocation] = useLocation();
-  const params = new URLSearchParams(location.split('?')[1] || '');
-  const initialQuery = params.get('q') || '';
+  const params = new URLSearchParams(location.split("?")[1] || "");
+  const initialQuery = params.get("q") || "";
   const [searchQuery, setSearchQuery] = useState(initialQuery);
 
   // Update query when URL changes
   useEffect(() => {
-    const newParams = new URLSearchParams(location.split('?')[1] || '');
-    const newQuery = newParams.get('q') || '';
+    const newParams = new URLSearchParams(location.split("?")[1] || "");
+    const newQuery = newParams.get("q") || "";
     setSearchQuery(newQuery);
   }, [location]);
 
   // Fetch search results
-  const { data: results, isLoading, error } = trpc.search.global.useQuery(
+  const {
+    data: results,
+    isLoading,
+    error,
+  } = trpc.search.global.useQuery(
     { query: searchQuery },
     { enabled: searchQuery.trim().length > 0 }
   );
@@ -40,12 +50,17 @@ export default function SearchResultsPage() {
         <CardHeader>
           <CardTitle>Search Results</CardTitle>
           <CardDescription>
-            {searchQuery ? `Results for "${searchQuery}"` : "Enter a search query"}
+            {searchQuery
+              ? `Results for "${searchQuery}"`
+              : "Enter a search query"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {/* Search Form */}
-          <form onSubmit={handleSearch} className="flex items-center gap-2 mb-6">
+          <form
+            onSubmit={handleSearch}
+            className="flex items-center gap-2 mb-6"
+          >
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -53,7 +68,7 @@ export default function SearchResultsPage() {
                 placeholder="Search quotes, customers, products..."
                 className="pl-10 w-full"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
             <Button type="submit" disabled={!searchQuery.trim()}>
@@ -79,7 +94,9 @@ export default function SearchResultsPage() {
           {/* No Query State */}
           {!searchQuery.trim() && !isLoading && (
             <div className="text-center py-12 text-muted-foreground">
-              <p>Enter a search query to find quotes, customers, and products.</p>
+              <p>
+                Enter a search query to find quotes, customers, and products.
+              </p>
             </div>
           )}
 
@@ -91,10 +108,12 @@ export default function SearchResultsPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <FileText className="h-5 w-5" />
-                    <h2 className="text-xl font-semibold">Quotes ({results.quotes.length})</h2>
+                    <h2 className="text-xl font-semibold">
+                      Quotes ({results.quotes.length})
+                    </h2>
                   </div>
                   <div className="space-y-2">
-                    {results.quotes.map((quote) => (
+                    {results.quotes.map(quote => (
                       <Link key={quote.id} href={quote.url}>
                         <Card className="hover:bg-accent cursor-pointer transition-colors">
                           <CardContent className="p-4">
@@ -109,11 +128,15 @@ export default function SearchResultsPage() {
                                     {quote.description}
                                   </p>
                                 )}
-                                {quote.metadata?.total && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    Total: ${Number(quote.metadata.total).toFixed(2)}
-                                  </p>
-                                )}
+                                {quote.metadata?.total !== null &&
+                                  quote.metadata?.total !== undefined && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                      Total: $
+                                      {Number(
+                                        quote.metadata.total as number
+                                      ).toFixed(2)}
+                                    </p>
+                                  )}
                               </div>
                             </div>
                           </CardContent>
@@ -129,17 +152,21 @@ export default function SearchResultsPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Users className="h-5 w-5" />
-                    <h2 className="text-xl font-semibold">Customers ({results.customers.length})</h2>
+                    <h2 className="text-xl font-semibold">
+                      Customers ({results.customers.length})
+                    </h2>
                   </div>
                   <div className="space-y-2">
-                    {results.customers.map((customer) => (
+                    {results.customers.map(customer => (
                       <Link key={customer.id} href={customer.url}>
                         <Card className="hover:bg-accent cursor-pointer transition-colors">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-medium">{customer.title}</h3>
+                                  <h3 className="font-medium">
+                                    {customer.title}
+                                  </h3>
                                   <Badge variant="outline">Customer</Badge>
                                 </div>
                                 {customer.description && (
@@ -147,11 +174,12 @@ export default function SearchResultsPage() {
                                     {customer.description}
                                   </p>
                                 )}
-                                {customer.metadata?.phone && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    Phone: {customer.metadata.phone}
-                                  </p>
-                                )}
+                                {customer.metadata?.phone !== null &&
+                                  customer.metadata?.phone !== undefined && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                      Phone: {String(customer.metadata.phone)}
+                                    </p>
+                                  )}
                               </div>
                             </div>
                           </CardContent>
@@ -167,17 +195,21 @@ export default function SearchResultsPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <Package className="h-5 w-5" />
-                    <h2 className="text-xl font-semibold">Products ({results.products.length})</h2>
+                    <h2 className="text-xl font-semibold">
+                      Products ({results.products.length})
+                    </h2>
                   </div>
                   <div className="space-y-2">
-                    {results.products.map((product) => (
+                    {results.products.map(product => (
                       <Link key={product.id} href={product.url}>
                         <Card className="hover:bg-accent cursor-pointer transition-colors">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-medium">{product.title}</h3>
+                                  <h3 className="font-medium">
+                                    {product.title}
+                                  </h3>
                                   <Badge variant="outline">Product</Badge>
                                 </div>
                                 {product.description && (
@@ -186,16 +218,28 @@ export default function SearchResultsPage() {
                                   </p>
                                 )}
                                 <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                                  {product.metadata?.quantityAvailable !== undefined && (
-                                    <span>
-                                      Qty: {Number(product.metadata.quantityAvailable)}
-                                    </span>
-                                  )}
-                                  {product.metadata?.unitPrice && (
-                                    <span>
-                                      Price: ${Number(product.metadata.unitPrice).toFixed(2)}
-                                    </span>
-                                  )}
+                                  {product.metadata?.quantityAvailable !==
+                                    null &&
+                                    product.metadata?.quantityAvailable !==
+                                      undefined && (
+                                      <span>
+                                        Qty:{" "}
+                                        {Number(
+                                          product.metadata
+                                            .quantityAvailable as number
+                                        )}
+                                      </span>
+                                    )}
+                                  {product.metadata?.unitPrice !== null &&
+                                    product.metadata?.unitPrice !==
+                                      undefined && (
+                                      <span>
+                                        Price: $
+                                        {Number(
+                                          product.metadata.unitPrice as number
+                                        ).toFixed(2)}
+                                      </span>
+                                    )}
                                 </div>
                               </div>
                             </div>
@@ -223,4 +267,3 @@ export default function SearchResultsPage() {
     </div>
   );
 }
-
