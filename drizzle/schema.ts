@@ -1466,6 +1466,7 @@ export const clients = mysqlTable(
     // Customer wishlist/preferences (WS-015)
     wishlist: text("wishlist"), // Free-form text for customer product wishes/preferences
 
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   },

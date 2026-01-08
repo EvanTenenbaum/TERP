@@ -1826,9 +1826,20 @@ export const vipPortalRouter = router({
             hasChanges: false,
           };
         }
-        
+
         // Get batch details
         const batchIds = drafts.map(d => d.batchId);
+
+        // Guard against empty batch IDs to prevent SQL IN () crash (BUG-044)
+        if (batchIds.length === 0) {
+          return {
+            items: [],
+            totalItems: 0,
+            totalValue: '0.00',
+            hasChanges: false,
+          };
+        }
+
         const batchesData = await db
           .select({
             batch: batches,
@@ -2040,9 +2051,18 @@ export const vipPortalRouter = router({
             message: "Draft is empty",
           });
         }
-        
+
         // Get batch details and calculate prices
         const batchIds = drafts.map(d => d.batchId);
+
+        // Guard against empty batch IDs to prevent SQL IN () crash (BUG-044)
+        if (batchIds.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No batch IDs found in draft",
+          });
+        }
+
         const batchesData = await db
           .select({
             batch: batches,

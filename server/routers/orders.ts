@@ -177,13 +177,15 @@ export const ordersRouter = router({
     .input(
       z.object({
         id: z.number(),
+        version: z.number().optional(), // ST-026: Optional for backward compatibility
         notes: z.string().optional(),
         validUntil: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
-      const { id, ...updates } = input;
-      return await ordersDb.updateOrder(id, updates);
+      const { id, version, ...updates } = input;
+      // ST-026: Pass version to updateOrder for optimistic locking
+      return await ordersDb.updateOrder(id, updates, version);
     }),
 
   /**
@@ -471,7 +473,17 @@ export const ordersRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
-      // Get existing order
+      // ST-026: Check version for concurrent edit detection
+      const { checkVersion } = await import("../_core/optimisticLocking");
+      await checkVersion(
+        db,
+        orders,
+        "Order",
+        input.orderId,
+        input.version
+      );
+
+      // Get full existing order
       const existingOrder = await db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
       });
@@ -558,7 +570,8 @@ export const ordersRouter = router({
         overallMarginPercent: totals.avgMarginPercent,
       });
 
-      // Update order
+      // ST-026: Update order with version increment
+      const { sql } = await import("drizzle-orm");
       await db
         .update(orders)
         .set({
@@ -566,6 +579,7 @@ export const ordersRouter = router({
           subtotal: totals.subtotal.toString(),
           avgMarginPercent: totals.avgMarginPercent.toString(),
           notes: input.notes,
+          version: sql`version + 1`,
         })
         .where(eq(orders.id, input.orderId));
 
@@ -627,7 +641,17 @@ export const ordersRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
-      // Get existing order
+      // ST-026: Check version for concurrent edit detection
+      const { checkVersion } = await import("../_core/optimisticLocking");
+      await checkVersion(
+        db,
+        orders,
+        "Order",
+        input.orderId,
+        input.version
+      );
+
+      // Get full existing order
       const existingOrder = await db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
       });
@@ -661,12 +685,14 @@ export const ordersRouter = router({
         throw new Error(`Cannot finalize: ${validation.errors.join(", ")}`);
       }
 
-      // Update order to finalized
+      // ST-026: Update order to finalized with version increment
+      const { sql } = await import("drizzle-orm");
       await db
         .update(orders)
         .set({
           isDraft: false,
           confirmedAt: new Date(),
+          version: sql`version + 1`,
         })
         .where(eq(orders.id, input.orderId));
 

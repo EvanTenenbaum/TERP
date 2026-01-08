@@ -191,12 +191,15 @@ export const searchRouter = router({
             })
             .from(clients)
             .where(
-              or(
-                like(clients.name, searchTerm),
-                like(clients.email, searchTerm),
-                like(clients.phone, searchTerm),
-                like(clients.teriCode, searchTerm),
-                like(clients.address, searchTerm)
+              and(
+                isNull(clients.deletedAt),
+                or(
+                  like(clients.name, searchTerm),
+                  like(clients.email, searchTerm),
+                  like(clients.phone, searchTerm),
+                  like(clients.teriCode, searchTerm),
+                  like(clients.address, searchTerm)
+                )
               )
             )
             .limit(limit);
@@ -232,7 +235,6 @@ export const searchRouter = router({
       if (
         !types ||
         types.includes("product") ||
-        !types ||
         types.includes("batch")
       ) {
         try {

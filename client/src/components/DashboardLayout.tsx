@@ -26,6 +26,7 @@ import {
 import { APP_LOGO, APP_TITLE } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
+import { useToast } from "@/hooks/use-toast";
 import { LogOut, LogIn, Settings, PanelLeft, Menu } from "lucide-react";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -80,20 +81,43 @@ function DashboardLayoutContent({
     name: string;
     email: string;
   } | null>(null);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     fetch("/api/auth/me")
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          // Unauthenticated state (401) - don't show error
+          if (res.status === 401) {
+            setUser({ name: "Guest", email: "guest@example.com" });
+            return null;
+          }
+          // Other HTTP errors
+          throw new Error(`Authentication check failed with status ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
-        if (data.user) {
+        if (data && data.user) {
           setUser(data.user);
+        } else if (data === null) {
+          // Already handled 401 case above
+          return;
         }
       })
-      .catch(() => {
-        // User not logged in
+      .catch((error) => {
+        console.error('Auth check failed:', error);
+        // Network error or server error - notify user
+        toast({
+          title: "Authentication Error",
+          description: error.message || "Unable to verify authentication status. You are logged in as a guest.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        // Set guest user but make it clear they're not authenticated
         setUser({ name: "Guest", email: "guest@example.com" });
       });
-  }, []);
+  }, [toast]);
 
   const logout = async () => {
     try {

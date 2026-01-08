@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { router, adminProcedure, publicProcedure } from "../_core/trpc";
+import { router, adminProcedure, vipPortalProcedure } from "../_core/trpc";
 import { db } from "../db";
 import { clients, clientNeeds } from "../../drizzle/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -172,8 +172,11 @@ export const alertsRouter = router({
 
   /**
    * Get needs for VIP portal
+   * SEC-009: Protected with VIP portal authentication to prevent public exposure
    */
-  getNeedsForVipPortal: publicProcedure.query(async () => {
+  getNeedsForVipPortal: vipPortalProcedure.query(async ({ ctx }) => {
+    // Only return needs for the authenticated VIP client
+    const clientId = ctx.clientId;
     const needs = await db
       .select({
         id: clientNeeds.id,
@@ -186,7 +189,7 @@ export const alertsRouter = router({
       })
       .from(clientNeeds)
       .leftJoin(clients, eq(clientNeeds.clientId, clients.id))
-      .where(eq(clientNeeds.status, "ACTIVE"))
+      .where(eq(clientNeeds.clientId, clientId))
       .orderBy(desc(clientNeeds.createdAt));
 
     // Aggregate by product/strain

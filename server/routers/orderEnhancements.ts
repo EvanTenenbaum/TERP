@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import * as recurringOrdersDb from "../recurringOrdersDb";
 import * as orderEnhancements from "../orderEnhancements";
 import * as productRecommendations from "../productRecommendations";
@@ -8,8 +8,9 @@ import { requirePermission } from "../_core/permissionMiddleware";
 
 export const orderEnhancementsRouter = router({
   // ===== RECURRING ORDERS =====
-  
-  createRecurringOrder: publicProcedure
+
+  createRecurringOrder: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         clientId: z.number(),
@@ -36,7 +37,8 @@ export const orderEnhancementsRouter = router({
       return await recurringOrdersDb.createRecurringOrder(input);
     }),
 
-  updateRecurringOrder: publicProcedure
+  updateRecurringOrder: protectedProcedure
+    .use(requirePermission("orders:update"))
     .input(
       z.object({
         recurringOrderId: z.number(),
@@ -55,41 +57,49 @@ export const orderEnhancementsRouter = router({
       return await recurringOrdersDb.updateRecurringOrder(recurringOrderId, data);
     }),
 
-  pauseRecurringOrder: publicProcedure
+  pauseRecurringOrder: protectedProcedure
+    .use(requirePermission("orders:update"))
     .input(z.object({ recurringOrderId: z.number() }))
     .mutation(async ({ input }) => {
       return await recurringOrdersDb.pauseRecurringOrder(input.recurringOrderId);
     }),
 
-  resumeRecurringOrder: publicProcedure
+  resumeRecurringOrder: protectedProcedure
+    .use(requirePermission("orders:update"))
     .input(z.object({ recurringOrderId: z.number() }))
     .mutation(async ({ input }) => {
       return await recurringOrdersDb.resumeRecurringOrder(input.recurringOrderId);
     }),
 
-  cancelRecurringOrder: publicProcedure
+  cancelRecurringOrder: protectedProcedure
+    .use(requirePermission("orders:update"))
     .input(z.object({ recurringOrderId: z.number() }))
     .mutation(async ({ input }) => {
       return await recurringOrdersDb.cancelRecurringOrder(input.recurringOrderId);
     }),
 
-  listRecurringOrdersForClient: publicProcedure
+  listRecurringOrdersForClient: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       return await recurringOrdersDb.listRecurringOrdersForClient(input.clientId);
     }),
 
-  listAllRecurringOrders: publicProcedure
+  listAllRecurringOrders: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(z.object({ status: z.string().optional() }).optional())
     .query(async ({ input }) => {
       return await recurringOrdersDb.listAllRecurringOrders(input?.status);
     }),
 
-  getDueRecurringOrders: publicProcedure.query(async () => {
-    return await recurringOrdersDb.getDueRecurringOrders();
-  }),
+  getDueRecurringOrders: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .query(async () => {
+      return await recurringOrdersDb.getDueRecurringOrders();
+    }),
 
-  markRecurringOrderGenerated: publicProcedure
+  markRecurringOrderGenerated: protectedProcedure
+    .use(requirePermission("orders:update"))
     .input(z.object({ recurringOrderId: z.number() }))
     .mutation(async ({ input }) => {
       return await recurringOrdersDb.markRecurringOrderGenerated(input.recurringOrderId);
@@ -97,7 +107,8 @@ export const orderEnhancementsRouter = router({
 
   // ===== REORDER FUNCTIONALITY =====
 
-  reorderFromPrevious: publicProcedure
+  reorderFromPrevious: protectedProcedure
+    .use(requirePermission("orders:create"))
     .input(
       z.object({
         originalOrderId: z.number(),
@@ -118,7 +129,8 @@ export const orderEnhancementsRouter = router({
       return await orderEnhancements.reorderFromPrevious(input);
     }),
 
-  getRecentOrdersForReorder: publicProcedure
+  getRecentOrdersForReorder: protectedProcedure
+    .use(requirePermission("orders:read"))
     .input(
       z.object({
         clientId: z.number(),
@@ -134,7 +146,8 @@ export const orderEnhancementsRouter = router({
 
   // ===== PAYMENT TERMS =====
 
-  updateClientPaymentTerms: publicProcedure
+  updateClientPaymentTerms: protectedProcedure
+    .use(requirePermission("clients:update"))
     .input(
       z.object({
         clientId: z.number(),
@@ -150,7 +163,8 @@ export const orderEnhancementsRouter = router({
       );
     }),
 
-  getClientPaymentTerms: publicProcedure
+  getClientPaymentTerms: protectedProcedure
+    .use(requirePermission("clients:read"))
     .input(z.object({ clientId: z.number() }))
     .query(async ({ input }) => {
       return await orderEnhancements.getClientPaymentTerms(input.clientId);
@@ -158,7 +172,8 @@ export const orderEnhancementsRouter = router({
 
   // ===== PRODUCT RECOMMENDATIONS =====
 
-  getProductRecommendations: publicProcedure
+  getProductRecommendations: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(
       z.object({
         clientId: z.number(),
@@ -172,7 +187,8 @@ export const orderEnhancementsRouter = router({
       );
     }),
 
-  getSimilarProducts: publicProcedure
+  getSimilarProducts: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(
       z.object({
         productId: z.number(),
@@ -186,7 +202,8 @@ export const orderEnhancementsRouter = router({
       );
     }),
 
-  getFrequentlyBoughtTogether: publicProcedure
+  getFrequentlyBoughtTogether: protectedProcedure
+    .use(requirePermission("inventory:read"))
     .input(
       z.object({
         productId: z.number(),
@@ -202,7 +219,8 @@ export const orderEnhancementsRouter = router({
 
   // ===== ALERT CONFIGURATION =====
 
-  createAlertConfiguration: publicProcedure
+  createAlertConfiguration: protectedProcedure
+    .use(requirePermission("alerts:manage"))
     .input(
       z.object({
         userId: z.number(),
@@ -226,7 +244,8 @@ export const orderEnhancementsRouter = router({
       return await alertConfigurationDb.createAlertConfiguration(input);
     }),
 
-  updateAlertConfiguration: publicProcedure
+  updateAlertConfiguration: protectedProcedure
+    .use(requirePermission("alerts:manage"))
     .input(
       z.object({
         alertConfigId: z.number(),
@@ -242,23 +261,28 @@ export const orderEnhancementsRouter = router({
       return await alertConfigurationDb.updateAlertConfiguration(alertConfigId, data);
     }),
 
-  deleteAlertConfiguration: publicProcedure
+  deleteAlertConfiguration: protectedProcedure
+    .use(requirePermission("alerts:manage"))
     .input(z.object({ alertConfigId: z.number() }))
     .mutation(async ({ input }) => {
       return await alertConfigurationDb.deleteAlertConfiguration(input.alertConfigId);
     }),
 
-  getUserAlertConfigurations: publicProcedure
+  getUserAlertConfigurations: protectedProcedure
+    .use(requirePermission("alerts:read"))
     .input(z.object({ userId: z.number() }))
     .query(async ({ input }) => {
       return await alertConfigurationDb.getUserAlertConfigurations(input.userId);
     }),
 
-  getAllActiveAlertConfigurations: publicProcedure.query(async () => {
-    return await alertConfigurationDb.getAllActiveAlertConfigurations();
-  }),
+  getAllActiveAlertConfigurations: protectedProcedure
+    .use(requirePermission("alerts:read"))
+    .query(async () => {
+      return await alertConfigurationDb.getAllActiveAlertConfigurations();
+    }),
 
-  toggleAlertConfiguration: publicProcedure
+  toggleAlertConfiguration: protectedProcedure
+    .use(requirePermission("alerts:manage"))
     .input(z.object({ alertConfigId: z.number() }))
     .mutation(async ({ input }) => {
       return await alertConfigurationDb.toggleAlertConfiguration(input.alertConfigId);

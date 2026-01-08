@@ -555,50 +555,63 @@ export async function getAllOrders(filters?: {
 
 /**
  * Update an existing order
+ * ST-026: Added version parameter for optimistic locking
  */
 export async function updateOrder(
   id: number,
-  updates: Partial<CreateOrderInput>
+  updates: Partial<CreateOrderInput>,
+  expectedVersion?: number
 ): Promise<Order> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
+  // ST-026: Check version if provided
+  if (expectedVersion !== undefined) {
+    const { checkVersion } = await import("./_core/optimisticLocking");
+    await checkVersion(db, orders, "Order", id, expectedVersion);
+  }
+
   // Get existing order
   const existingOrder = await getOrderById(id);
   if (!existingOrder) {
     throw new Error(`Order ${id} not found`);
   }
-  
+
   // If it's a SALE, don't allow modifications (business rule)
   if (existingOrder.orderType === 'SALE') {
     throw new Error("Cannot modify a sale order. Create a new sale or cancel this one.");
   }
-  
+
   // For quotes, allow updates
   const updateData: any = {};
-  
+
   if (updates.notes !== undefined) {
     updateData.notes = updates.notes;
   }
-  
+
   if (updates.validUntil !== undefined) {
     updateData.validUntil = updates.validUntil;
   }
-  
+
+  // ST-026: Increment version if version checking was used
+  if (expectedVersion !== undefined) {
+    updateData.version = sql`version + 1`;
+  }
+
   // Note: Items updates require recalculating COGS, totals, etc.
   // This is handled by updateDraftOrder() for draft orders.
   // For non-draft orders, items cannot be modified (business rule).
-  
+
   await db
     .update(orders)
     .set(updateData)
     .where(eq(orders.id, id));
-  
+
   const updatedOrder = await getOrderById(id);
   if (!updatedOrder) {
     throw new Error(`Failed to retrieve updated order ${id}`);
   }
-  
+
   return updatedOrder;
 }
 

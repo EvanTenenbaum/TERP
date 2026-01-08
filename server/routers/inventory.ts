@@ -12,7 +12,7 @@ import * as inventoryDb from "../inventoryDb";
 import * as inventoryUtils from "../inventoryUtils";
 import type { BatchStatus } from "../inventoryUtils";
 import { requirePermission } from "../_core/permissionMiddleware";
-import { storagePut } from "../storage";
+import { storagePut, storageDelete } from "../storage";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 
 export const inventoryRouter = router({
@@ -66,6 +66,44 @@ export const inventoryRouter = router({
           fileName: input.fileName,
         });
         handleError(error, "inventory.uploadMedia");
+        throw error;
+      }
+    }),
+
+  // Delete media file from storage
+  // BUG-071: Rollback support for orphaned media files
+  deleteMedia: protectedProcedure
+    .use(requirePermission("inventory:update"))
+    .input(
+      z.object({
+        url: z.string(), // The URL of the media file to delete
+      })
+    )
+    .mutation(async ({ input, ctx: _ctx }) => {
+      try {
+        // Check if storage is configured
+        const { isStorageConfigured } = await import("../storage");
+        if (!isStorageConfigured()) {
+          throw ErrorCatalog.STORAGE_NOT_CONFIGURED;
+        }
+
+        // Extract the storage key from the URL
+        // URL format: https://.../batch-media/.../filename.ext
+        const urlPath = new URL(input.url).pathname;
+        const storageKey = urlPath.split("/").slice(-3).join("/"); // Get last 3 parts: batch-media/folder/file
+
+        // Delete from storage
+        await storageDelete(storageKey);
+
+        return {
+          success: true,
+          url: input.url,
+        };
+      } catch (error) {
+        inventoryLogger.operationFailure("deleteMedia", error as Error, {
+          url: input.url,
+        });
+        handleError(error, "inventory.deleteMedia");
         throw error;
       }
     }),
@@ -233,12 +271,31 @@ export const inventoryRouter = router({
 
   // Update batch status
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
+  // ST-026: Added version checking for concurrent edit detection
   updateStatus: protectedProcedure
     .use(requirePermission("inventory:update"))
-    .input(batchUpdateSchema)
+    .input(batchUpdateSchema.extend({
+      version: z.number().optional(), // ST-026: Optional for backward compatibility
+    }))
     .mutation(async ({ input, ctx }) => {
       const batch = await inventoryDb.getBatchById(input.id);
       if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.id);
+
+      // ST-026: Check version if provided
+      if (input.version !== undefined) {
+        const { checkVersion } = await import("../_core/optimisticLocking");
+        const { batches } = await import("../../drizzle/schema");
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        await checkVersion(
+          db,
+          batches,
+          "Batch",
+          input.id,
+          input.version
+        );
+      }
 
       // Validate transition
       if (
@@ -256,7 +313,7 @@ export const inventoryRouter = router({
       const before = inventoryUtils.createAuditSnapshot(
         batch as unknown as Record<string, unknown>
       );
-      await inventoryDb.updateBatchStatus(input.id, input.status);
+      await inventoryDb.updateBatchStatus(input.id, input.status, input.version);
       const after = await inventoryDb.getBatchById(input.id);
 
       // Create audit log
@@ -328,11 +385,13 @@ export const inventoryRouter = router({
     }),
 
   // TERP-SS-009: Update batch fields (ticket/unitCogs, notes) for spreadsheet editing
+  // ST-026: Added version checking for concurrent edit detection
   updateBatch: protectedProcedure
     .use(requirePermission("inventory:update"))
     .input(
       z.object({
         id: z.number(),
+        version: z.number().optional(), // ST-026: Optional for backward compatibility
         ticket: z.number().min(0).optional(), // unitCogs value
         notes: z.string().nullable().optional(),
         reason: z.string(),
@@ -341,6 +400,22 @@ export const inventoryRouter = router({
     .mutation(async ({ input, ctx }) => {
       const batch = await inventoryDb.getBatchById(input.id);
       if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.id);
+
+      // ST-026: Check version if provided
+      if (input.version !== undefined) {
+        const { checkVersion } = await import("../_core/optimisticLocking");
+        const { batches } = await import("../../drizzle/schema");
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        await checkVersion(
+          db,
+          batches,
+          "Batch",
+          input.id,
+          input.version
+        );
+      }
 
       const before = inventoryUtils.createAuditSnapshot(batch);
       const updates: Record<string, unknown> = {};
@@ -357,6 +432,13 @@ export const inventoryRouter = router({
           : {};
         currentMetadata.notes = input.notes;
         updates.metadata = JSON.stringify(currentMetadata);
+      }
+
+      // ST-026: Increment version if version checking was used
+      if (input.version !== undefined) {
+        const { sql } = await import("drizzle-orm");
+        const { batches } = await import("../../drizzle/schema");
+        updates.version = sql`${batches.version} + 1`;
       }
 
       if (Object.keys(updates).length === 0) {

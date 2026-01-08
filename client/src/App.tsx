@@ -73,122 +73,131 @@ import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
+import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
+
+// Helper to wrap route components with error boundary
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const withErrorBoundary = (Component: React.ComponentType<any>) => () => (
+  <PageErrorBoundary>
+    <Component />
+  </PageErrorBoundary>
+);
 
 function Router() {
   return (
     <Switch>
       {/* Public routes - no AppShell */}
-      <Route path="/admin-setup" component={AdminSetupPage} />
-      <Route path="/login" component={Login} />
-      <Route path="/vip-portal/login" component={VIPLogin} />
-      <Route path="/vip-portal/dashboard" component={VIPDashboard} />
-      <Route path="/vip-portal/auth/impersonate" component={ImpersonatePage} />
-      <Route path="/vip-portal/session-ended" component={SessionEndedPage} />
-      <Route path="/vip-portal" component={VIPDashboard} />
+      <Route path="/admin-setup" component={withErrorBoundary(AdminSetupPage)} />
+      <Route path="/login" component={withErrorBoundary(Login)} />
+      <Route path="/vip-portal/login" component={withErrorBoundary(VIPLogin)} />
+      <Route path="/vip-portal/dashboard" component={withErrorBoundary(VIPDashboard)} />
+      <Route path="/vip-portal/auth/impersonate" component={withErrorBoundary(ImpersonatePage)} />
+      <Route path="/vip-portal/session-ended" component={withErrorBoundary(SessionEndedPage)} />
+      <Route path="/vip-portal" component={withErrorBoundary(VIPDashboard)} />
 
       {/* Protected routes - wrapped in AppShell */}
       <Route>
         {() => (
           <AppShell>
             <Switch>
-              <Route path="/" component={DashboardV3} />
-              <Route path="/dashboard" component={DashboardV3} />
-              <Route path="/inventory" component={Inventory} />
-              <Route path="/inventory/:id" component={Inventory} />
-              <Route path="/products" component={ProductsPage} />
+              <Route path="/" component={withErrorBoundary(DashboardV3)} />
+              <Route path="/dashboard" component={withErrorBoundary(DashboardV3)} />
+              <Route path="/inventory" component={withErrorBoundary(Inventory)} />
+              <Route path="/inventory/:id" component={withErrorBoundary(Inventory)} />
+              <Route path="/products" component={withErrorBoundary(ProductsPage)} />
               {/* Accounting - redirect /accounting to /accounting/dashboard */}
-              <Route path="/accounting" component={AccountingDashboard} />
+              <Route path="/accounting" component={withErrorBoundary(AccountingDashboard)} />
               <Route
                 path="/accounting/dashboard"
-                component={AccountingDashboard}
+                component={withErrorBoundary(AccountingDashboard)}
               />
               <Route
                 path="/accounting/chart-of-accounts"
-                component={ChartOfAccounts}
+                component={withErrorBoundary(ChartOfAccounts)}
               />
               <Route
                 path="/accounting/general-ledger"
-                component={GeneralLedger}
+                component={withErrorBoundary(GeneralLedger)}
               />
               <Route
                 path="/accounting/fiscal-periods"
-                component={FiscalPeriods}
+                component={withErrorBoundary(FiscalPeriods)}
               />
-              <Route path="/accounting/invoices" component={Invoices} />
-              <Route path="/accounting/bills" component={Bills} />
-              <Route path="/accounting/payments" component={Payments} />
+              <Route path="/accounting/invoices" component={withErrorBoundary(Invoices)} />
+              <Route path="/accounting/bills" component={withErrorBoundary(Bills)} />
+              <Route path="/accounting/payments" component={withErrorBoundary(Payments)} />
               <Route
                 path="/accounting/bank-accounts"
-                component={BankAccounts}
+                component={withErrorBoundary(BankAccounts)}
               />
               <Route
                 path="/accounting/bank-transactions"
-                component={BankTransactions}
+                component={withErrorBoundary(BankTransactions)}
               />
-              <Route path="/accounting/expenses" component={Expenses} />
-              <Route path="/clients" component={ClientsListPage} />
-              <Route path="/clients/:id" component={ClientProfilePage} />
-              <Route path="/users" component={UsersPage} />
-              <Route path="/pricing/rules" component={PricingRulesPage} />
-              <Route path="/pricing/profiles" component={PricingProfilesPage} />
-              <Route path="/sales-sheets" component={SalesSheetCreatorPage} />
-              <Route path="/sales-portal" component={UnifiedSalesPortalPage} />
-              <Route path="/orders" component={Orders} />
-              <Route path="/pick-pack" component={PickPackPage} />
-              <Route path="/photography" component={PhotographyPage} />
-              <Route path="/orders/create" component={OrderCreatorPage} />
-              <Route path="/quotes" component={Quotes} />
-              <Route path="/settings/cogs" component={CogsSettingsPage} />
+              <Route path="/accounting/expenses" component={withErrorBoundary(Expenses)} />
+              <Route path="/clients" component={withErrorBoundary(ClientsListPage)} />
+              <Route path="/clients/:id" component={withErrorBoundary(ClientProfilePage)} />
+              <Route path="/users" component={withErrorBoundary(UsersPage)} />
+              <Route path="/pricing/rules" component={withErrorBoundary(PricingRulesPage)} />
+              <Route path="/pricing/profiles" component={withErrorBoundary(PricingProfilesPage)} />
+              <Route path="/sales-sheets" component={withErrorBoundary(SalesSheetCreatorPage)} />
+              <Route path="/sales-portal" component={withErrorBoundary(UnifiedSalesPortalPage)} />
+              <Route path="/orders" component={withErrorBoundary(Orders)} />
+              <Route path="/pick-pack" component={withErrorBoundary(PickPackPage)} />
+              <Route path="/photography" component={withErrorBoundary(PhotographyPage)} />
+              <Route path="/orders/create" component={withErrorBoundary(OrderCreatorPage)} />
+              <Route path="/quotes" component={withErrorBoundary(Quotes)} />
+              <Route path="/settings/cogs" component={withErrorBoundary(CogsSettingsPage)} />
               <Route
                 path="/settings/notifications"
-                component={NotificationPreferencesPage}
+                component={withErrorBoundary(NotificationPreferencesPage)}
               />
               <Route
                 path="/settings/feature-flags"
-                component={FeatureFlagsPage}
+                component={withErrorBoundary(FeatureFlagsPage)}
               />
-              <Route path="/settings" component={Settings} />
-              <Route path="/account" component={AccountPage} />
-              <Route path="/credit-settings" component={CreditSettingsPage} />
-              <Route path="/needs" component={NeedsManagementPage} />
-              <Route path="/interest-list" component={InterestListPage} />
-              <Route path="/vendor-supply" component={VendorSupplyPage} />
-              <Route path="/vendors" component={VendorsPage} />
-              <Route path="/vendors/:id" component={VendorRedirect} />
-              <Route path="/purchase-orders" component={PurchaseOrdersPage} />
-              <Route path="/returns" component={ReturnsPage} />
-              <Route path="/samples" component={SampleManagement} />
-              <Route path="/locations" component={LocationsPage} />
-              <Route path="/matchmaking" component={MatchmakingServicePage} />
-              <Route path="/live-shopping" component={LiveShoppingPage} />
+              <Route path="/settings" component={withErrorBoundary(Settings)} />
+              <Route path="/account" component={withErrorBoundary(AccountPage)} />
+              <Route path="/credit-settings" component={withErrorBoundary(CreditSettingsPage)} />
+              <Route path="/needs" component={withErrorBoundary(NeedsManagementPage)} />
+              <Route path="/interest-list" component={withErrorBoundary(InterestListPage)} />
+              <Route path="/vendor-supply" component={withErrorBoundary(VendorSupplyPage)} />
+              <Route path="/vendors" component={withErrorBoundary(VendorsPage)} />
+              <Route path="/vendors/:id" component={withErrorBoundary(VendorRedirect)} />
+              <Route path="/purchase-orders" component={withErrorBoundary(PurchaseOrdersPage)} />
+              <Route path="/returns" component={withErrorBoundary(ReturnsPage)} />
+              <Route path="/samples" component={withErrorBoundary(SampleManagement)} />
+              <Route path="/locations" component={withErrorBoundary(LocationsPage)} />
+              <Route path="/matchmaking" component={withErrorBoundary(MatchmakingServicePage)} />
+              <Route path="/live-shopping" component={withErrorBoundary(LiveShoppingPage)} />
               <Route
                 path="/live-shopping/:sessionId"
-                component={LiveShoppingPage}
+                component={withErrorBoundary(LiveShoppingPage)}
               />
-              <Route path="/spreadsheet-view" component={SpreadsheetViewPage} />
-              <Route path="/help" component={Help} />
+              <Route path="/spreadsheet-view" component={withErrorBoundary(SpreadsheetViewPage)} />
+              <Route path="/help" component={withErrorBoundary(Help)} />
               <Route
                 path="/clients/:clientId/vip-portal-config"
-                component={VIPPortalConfigPage}
+                component={withErrorBoundary(VIPPortalConfigPage)}
               />
               {/* Todo Lists - support both /todo and /todos */}
-              <Route path="/todo" component={TodoListsPage} />
-              <Route path="/todos" component={TodoListsPage} />
-              <Route path="/todos/:listId" component={TodoListDetailPage} />
-              <Route path="/notifications" component={NotificationsPage} />
-              <Route path="/inbox" component={InboxPage} />
-              <Route path="/calendar" component={CalendarPage} />
-              <Route path="/workflow-queue" component={WorkflowQueuePage} />
-              <Route path="/analytics" component={AnalyticsPage} />
-              <Route path="/search" component={SearchResultsPage} />
-              <Route path="/leaderboard" component={LeaderboardPage} />
+              <Route path="/todo" component={withErrorBoundary(TodoListsPage)} />
+              <Route path="/todos" component={withErrorBoundary(TodoListsPage)} />
+              <Route path="/todos/:listId" component={withErrorBoundary(TodoListDetailPage)} />
+              <Route path="/notifications" component={withErrorBoundary(NotificationsPage)} />
+              <Route path="/inbox" component={withErrorBoundary(InboxPage)} />
+              <Route path="/calendar" component={withErrorBoundary(CalendarPage)} />
+              <Route path="/workflow-queue" component={withErrorBoundary(WorkflowQueuePage)} />
+              <Route path="/analytics" component={withErrorBoundary(AnalyticsPage)} />
+              <Route path="/search" component={withErrorBoundary(SearchResultsPage)} />
+              <Route path="/leaderboard" component={withErrorBoundary(LeaderboardPage)} />
               {/* Dev-only route for component showcase - only renders in development mode */}
               {import.meta.env.DEV && (
-                <Route path="/dev/showcase" component={ComponentShowcase} />
+                <Route path="/dev/showcase" component={withErrorBoundary(ComponentShowcase)} />
               )}
-              <Route path="/404" component={NotFound} />
+              <Route path="/404" component={withErrorBoundary(NotFound)} />
               {/* Final fallback route */}
-              <Route component={NotFound} />
+              <Route component={withErrorBoundary(NotFound)} />
             </Switch>
           </AppShell>
         )}
