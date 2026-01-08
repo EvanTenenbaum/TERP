@@ -209,6 +209,66 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | BUG-068 | Generic "Unauthorized" errors in accounting      | `server/routers/accounting.ts`          | 🟢 BACKLOG |
 | BUG-069 | Calendar "Permission denied" without details     | `server/routers/calendar.ts`            | 🟢 BACKLOG |
 
+---
+
+### 🔒 CRITICAL SECURITY VULNERABILITIES (Jan 8, 2026 - QA Chaos Testing)
+
+> **Source:** Comprehensive QA Chaos Testing with 1,247 flow simulations
+> **Documentation:** `docs/COMPREHENSIVE_QA_CHAOS_TESTING_REPORT.md`
+> **Total New Issues:** 22 (8 Security, 5 Bugs, 2 Stabilization, 7 UX)
+
+#### SEC - Security (CRITICAL - Unprotected API Mutations)
+
+| Task    | Description                                      | File                                    | Status     | Priority |
+| ------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
+| SEC-005 | Unprotected Location Router Mutations            | `server/routers/locations.ts`           | 🔴 OPEN    | HIGH     |
+| SEC-006 | Unprotected Warehouse Transfer Mutations         | `server/routers/warehouseTransfers.ts`  | 🔴 OPEN    | HIGH     |
+| SEC-007 | Unprotected Order Enhancement Mutations (11 eps) | `server/routers/orderEnhancements.ts`   | 🔴 OPEN    | HIGH     |
+| SEC-008 | Unprotected Settings Router Mutations            | `server/routers/settings.ts`            | 🔴 OPEN    | HIGH     |
+| SEC-009 | VIP Portal Needs Data Publicly Exposed           | `server/routers/alerts.ts`              | 🔴 OPEN    | HIGH     |
+| SEC-010 | Unprotected Returns/Refunds Query Endpoints      | `server/routers/returns.ts, refunds.ts` | 🔴 OPEN    | HIGH     |
+| SEC-011 | VIP Portal Session Duration Too Long (30 days)   | `server/routers/vipPortal.ts`           | 🟡 OPEN    | MEDIUM   |
+| SEC-012 | Admin Setup Endpoint Security Weaknesses         | `server/routers/adminSetup.ts`          | 🟡 OPEN    | MEDIUM   |
+
+**Impact:** 28+ API endpoints accessible without authentication. Anyone can:
+- Create/modify warehouse locations
+- Transfer inventory between locations
+- Create recurring orders and modify payment terms
+- Access all client needs (business intelligence leak)
+- View financial returns and refunds data
+
+**Recommended Action:** Immediate remediation required before production use.
+
+#### BUG - New Bugs from Chaos Testing
+
+| Task    | Description                                      | File                                    | Status     | Priority |
+| ------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
+| BUG-070 | Silent Auth Failure in DashboardLayout           | `client/src/components/DashboardLayout.tsx` | 🟡 OPEN | HIGH     |
+| BUG-071 | PurchaseModal Media Upload Without Rollback      | `client/src/components/inventory/PurchaseModal.tsx` | 🟡 OPEN | HIGH |
+| BUG-072 | Silent localStorage Failure                      | `client/src/pages/Orders.tsx`           | 🟢 BACKLOG | MEDIUM   |
+| BUG-073 | Race Conditions in Debounced Search              | `client/src/components/inventory/PurchaseModal.tsx` | 🟢 BACKLOG | MEDIUM |
+| BUG-074 | ClientProfilePage Missing isPending Checks       | `client/src/pages/ClientProfilePage.tsx`| 🟢 BACKLOG | MEDIUM   |
+
+#### ST - Stabilization Tasks
+
+| Task   | Description                                      | File                                    | Status     | Priority |
+| ------ | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
+| ST-025 | Add Error Boundaries to Critical Pages           | `client/src/pages/*.tsx`                | 🟡 OPEN    | HIGH     |
+| ST-026 | Implement Concurrent Edit Detection              | `drizzle/schema.ts`, `server/routers/`  | 🟡 OPEN    | HIGH     |
+
+#### UX - User Experience Improvements
+
+| Task   | Description                                      | File                                    | Status     | Priority |
+| ------ | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
+| UX-001 | Implement Form Dirty State Protection            | `client/src/hooks/`                     | 🟡 OPEN    | HIGH     |
+| UX-002 | Add Delete Confirmation to TaskDetailModal       | `client/src/components/todos/TaskDetailModal.tsx` | 🟢 BACKLOG | MEDIUM |
+| UX-003 | Fix Mobile Kanban Overflow                       | `client/src/pages/UnifiedSalesPortalPage.tsx` | 🟡 OPEN | HIGH     |
+| UX-004 | Coordinate Loading States on Multi-Query Pages   | `client/src/pages/ClientProfilePage.tsx`| 🟢 BACKLOG | MEDIUM   |
+| UX-005 | Make Select Dropdowns Responsive                 | Multiple components                     | 🟢 BACKLOG | MEDIUM   |
+| UX-006 | Add Error Recovery UI with Retry                 | `client/src/components/common/`         | 🟡 OPEN    | HIGH     |
+| UX-007 | Fix Sidebar Skeleton Responsive Width            | `client/src/components/DashboardLayoutSkeleton.tsx` | 🟢 BACKLOG | LOW |
+
+---
 
 ### ✅ FEATURE-012 Post-Deployment Tasks (P0 - COMPLETE)
 
@@ -938,6 +998,396 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 - [ ] Session archived
 
 **Note:** This task merges SEC-004 (audit), BUG-011 (desktop debug dashboard), and BUG-M002 (mobile debug dashboard) into one fix. **Upgraded to P0** because debug code exposes internal data and is unprofessional.
+
+---
+
+### SEC-005: Protect Location Router Mutations
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/locations.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/SEC-005.md`
+
+**Problem:** All CRUD mutations in `locations.ts` use `publicProcedure`, allowing anyone to create, update, or delete warehouse locations without authentication.
+
+**Objectives:**
+- Replace `publicProcedure` with `protectedProcedure` for all mutations
+- Add `requirePermission('inventory:locations:manage')` middleware
+- Maintain read access with appropriate permissions
+
+**Deliverables:**
+- [ ] Import `protectedProcedure` from `server/_core/trpc`
+- [ ] Replace `publicProcedure` on create, update, delete
+- [ ] Add permission middleware
+- [ ] Verify unauthenticated requests return 401
+- [ ] All existing tests pass
+
+---
+
+### SEC-006: Protect Warehouse Transfer Mutations
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/warehouseTransfers.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/SEC-006.md`
+
+**Problem:** The `transfer` mutation uses `publicProcedure`, allowing anyone to move inventory between locations without authentication.
+
+**Objectives:**
+- Protect transfer mutation with authentication
+- Add inventory transfer permission check
+- Protect stats query with read permission
+
+**Deliverables:**
+- [ ] Replace `publicProcedure` with `protectedProcedure`
+- [ ] Add `requirePermission('inventory:transfer')` middleware
+- [ ] Verify unauthenticated requests rejected
+- [ ] Inventory integrity protected
+- [ ] All tests pass
+
+---
+
+### SEC-007: Protect Order Enhancement Mutations (11 Endpoints)
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `server/routers/orderEnhancements.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/SEC-007.md`
+
+**Problem:** All 11 mutations in `orderEnhancements.ts` use `publicProcedure`, exposing recurring orders, payment terms, and alert configurations to unauthenticated access.
+
+**Affected Endpoints:**
+1. `createRecurringOrder`, `updateRecurringOrder`, `pauseRecurringOrder`, `resumeRecurringOrder`, `cancelRecurringOrder`
+2. `reorderFromPrevious`, `updateClientPaymentTerms`
+3. `createAlertConfiguration`, `updateAlertConfiguration`, `deleteAlertConfiguration`, `toggleAlertConfiguration`
+
+**Objectives:**
+- Protect all 11 endpoints with authentication
+- Add appropriate permission checks per operation type
+- No regression in authenticated user functionality
+
+**Deliverables:**
+- [ ] Replace all `publicProcedure` with `protectedProcedure`
+- [ ] Add recurring order permissions
+- [ ] Add payment terms permissions
+- [ ] Add alert configuration permissions
+- [ ] Verify all 11 endpoints require auth
+- [ ] All tests pass
+
+---
+
+### SEC-008: Protect Settings Router Mutations
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/settings.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/SEC-008.md`
+
+**Problem:** All CRUD mutations for grades, categories, subcategories, and locations use `publicProcedure`, allowing anyone to corrupt master data.
+
+**Objectives:**
+- Protect all settings mutations with admin authentication
+- Prevent unauthorized master data manipulation
+- Maintain admin functionality
+
+**Deliverables:**
+- [ ] Replace all `publicProcedure` with `adminProcedure`
+- [ ] Verify non-admin users receive 403 Forbidden
+- [ ] Existing admin functionality preserved
+- [ ] All tests pass
+- [ ] Zero TypeScript errors
+
+---
+
+### SEC-009: Protect VIP Portal Needs Data Exposure
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/alerts.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/SEC-009.md`
+
+**Problem:** The `getNeedsForVipPortal` endpoint exposes all active client needs publicly - a critical business intelligence leak.
+
+**Objectives:**
+- Change from `publicProcedure` to `vipPortalProcedure`
+- Filter results to only show authenticated client's own needs
+- Add proper VIP session validation
+
+**Deliverables:**
+- [ ] Replace `publicProcedure` with `vipPortalProcedure`
+- [ ] Filter by `ctx.vipPortalClientId`
+- [ ] Unauthenticated requests return 401
+- [ ] No exposure of other clients' data
+- [ ] All tests pass
+
+---
+
+### SEC-010: Protect Returns and Refunds Query Endpoints
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `server/routers/returns.ts`, `server/routers/refunds.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/SEC-010.md`
+
+**Problem:** Returns and refunds routers expose financial data through public queries.
+
+**Affected Endpoints:**
+- `returns.getAll`, `returns.getById`
+- `refunds.getAll`, `refunds.getById`, `refunds.getByReturn`, `refunds.getByOriginalTransaction`
+
+**Objectives:**
+- Protect all financial data queries with authentication
+- Add orders read permission check
+- Protect privacy of financial records
+
+**Deliverables:**
+- [ ] Replace `publicProcedure` with `protectedProcedure`
+- [ ] Add `requirePermission('orders:read')` middleware
+- [ ] Unauthenticated requests return 401
+- [ ] All tests pass
+- [ ] Privacy protected
+
+---
+
+### SEC-011: Reduce VIP Portal Session Duration
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `server/routers/vipPortal.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/SEC-011.md`
+
+**Problem:** VIP Portal sessions are valid for 30 days, which is excessive and increases security risk.
+
+**Objectives:**
+- Reduce session duration to 7-14 days
+- Add session revocation on logout
+- Consider refresh token pattern for extended sessions
+
+**Deliverables:**
+- [ ] Reduce `sessionExpiresAt` to 14 days
+- [ ] Clear DB record on logout
+- [ ] Old sessions properly revoked
+- [ ] No impact on active legitimate users
+- [ ] All tests pass
+
+---
+
+### SEC-012: Secure Admin Setup Endpoint
+
+**Status:** ready
+**Priority:** MEDIUM
+**Estimate:** 4h
+**Module:** `server/routers/adminSetup.ts`
+**Dependencies:** None
+**Prompt:** `docs/prompts/SEC-012.md`
+
+**Problem:** The `promoteToAdmin` endpoint has security weaknesses: no rate limiting, no logging, secret key could leak.
+
+**Objectives:**
+- Add rate limiting (max 3 attempts per minute)
+- Add comprehensive audit logging
+- Log IP address and attempt details
+
+**Deliverables:**
+- [ ] Add rate limiting logic
+- [ ] Add audit logging for all attempts
+- [ ] Log IP address and email
+- [ ] Clear security documentation
+- [ ] All tests pass
+
+---
+
+### BUG-070: Fix Silent Auth Failure in DashboardLayout
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 4h
+**Module:** `client/src/components/DashboardLayout.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/BUG-070.md`
+
+**Problem:** Auth check failures silently set a default guest user without notification. Users don't know if authentication failed.
+
+**Objectives:**
+- Show explicit error message when auth fails
+- Redirect to login on auth failure
+- Distinguish between network errors and unauthenticated state
+
+**Deliverables:**
+- [ ] Add error handling with user notification
+- [ ] Add redirect to login on session issues
+- [ ] Network errors distinguished from auth errors
+- [ ] Clear user feedback
+- [ ] All tests pass
+
+---
+
+### BUG-071: Add Rollback to PurchaseModal Media Upload
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `client/src/components/inventory/PurchaseModal.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/BUG-071.md`
+
+**Problem:** Media files are uploaded before record creation. If purchase creation fails, orphaned media files remain.
+
+**Objectives:**
+- Implement cleanup on purchase creation failure
+- Track uploaded media IDs
+- Delete orphaned media on error
+
+**Deliverables:**
+- [ ] Track uploaded media IDs during upload
+- [ ] Add try/catch with cleanup logic
+- [ ] Delete orphaned media on failure
+- [ ] Clear error message to user
+- [ ] Data integrity maintained
+
+---
+
+### ST-025: Add Error Boundaries to Critical Pages
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `client/src/pages/*.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/ST-025.md`
+
+**Problem:** Only 2-3 ErrorBoundary usages found. 20+ pages lack error boundaries, causing entire page crashes.
+
+**Objectives:**
+- Create PageErrorBoundary wrapper component
+- Apply to all page-level components
+- Add retry and error reporting functionality
+
+**Deliverables:**
+- [ ] Create `PageErrorBoundary.tsx` component
+- [ ] Wrap Inventory.tsx with ErrorBoundary
+- [ ] Wrap ClientProfilePage.tsx with ErrorBoundary
+- [ ] Wrap Orders.tsx with ErrorBoundary
+- [ ] Wrap OrderCreatorPage.tsx with ErrorBoundary
+- [ ] Graceful error display with retry
+- [ ] Errors logged for debugging
+
+---
+
+### ST-026: Implement Concurrent Edit Detection
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 16h
+**Module:** `drizzle/schema.ts`, `server/routers/`
+**Dependencies:** None
+**Prompt:** `docs/prompts/ST-026.md`
+
+**Problem:** System uses "last write wins" for all updates. Multiple users editing same record causes silent data loss.
+
+**Objectives:**
+- Add version field to critical tables (orders, clients, batches)
+- Include version in update mutations
+- Reject updates with stale version numbers
+- Show conflict resolution UI
+
+**Deliverables:**
+- [ ] Add version columns to orders, clients, batches tables
+- [ ] Add version check to orders router
+- [ ] Add version check to clients router
+- [ ] Add version check to inventory router
+- [ ] Create ConflictDialog component
+- [ ] Stale updates rejected with clear error
+- [ ] No silent data loss
+
+---
+
+### UX-001: Implement Form Dirty State Protection
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `client/src/hooks/`
+**Dependencies:** None
+**Prompt:** `docs/prompts/UX-001.md`
+
+**Problem:** Users can navigate away from forms with unsaved changes without any warning.
+
+**Objectives:**
+- Create `useFormDirtyState` hook
+- Add `beforeunload` event listener
+- Show confirmation dialog on navigation with unsaved changes
+
+**Deliverables:**
+- [ ] Create useFormDirtyState.ts hook
+- [ ] Add beforeunload handler
+- [ ] Browser prompts before navigation with unsaved changes
+- [ ] In-app navigation shows confirmation dialog
+- [ ] Form data preserved until explicitly discarded
+
+---
+
+### UX-003: Fix Mobile Kanban Overflow
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `client/src/pages/UnifiedSalesPortalPage.tsx`
+**Dependencies:** None
+**Prompt:** `docs/prompts/UX-003.md`
+
+**Problem:** Kanban columns use `min-w-[300px]` causing horizontal overflow on mobile devices.
+
+**Objectives:**
+- Stack columns vertically on mobile
+- Use responsive breakpoints for width
+- Add swipe navigation for mobile kanban
+
+**Deliverables:**
+- [ ] Add responsive container classes
+- [ ] Columns stack on mobile (< 768px)
+- [ ] Horizontal scroll with snap points on tablet
+- [ ] No horizontal overflow on phones
+- [ ] Kanban usable on all devices
+
+---
+
+### UX-006: Add Error Recovery UI with Retry
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 8h
+**Module:** `client/src/components/common/`
+**Dependencies:** None
+**Prompt:** `docs/prompts/UX-006.md`
+
+**Problem:** Failed data loads show error but no retry mechanism. Users must manually refresh.
+
+**Objectives:**
+- Create ErrorWithRetry component
+- Include refetch function in error display
+- Add loading indicator during retry
+
+**Deliverables:**
+- [ ] Create ErrorWithRetry.tsx component
+- [ ] Add retry button to error states
+- [ ] Loading indicator during retry
+- [ ] Clear error message displayed
+- [ ] Apply to Inventory.tsx, ClientProfilePage.tsx
 
 ---
 
