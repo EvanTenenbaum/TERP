@@ -152,6 +152,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | Task      | Description                      | Progress | Owner |
 | --------- | -------------------------------- | -------- | ----- |
 | AUDIT-001 | Comprehensive System Code Review | ~50%     | -     |
+| ST-045  | Complete User Flow Mapping and Documentation | ready | - |
 
 ### 🐛 Critical Bugs Discovered (Jan 7, 2026 - User Flow Testing)
 
@@ -10900,5 +10901,47 @@ Should be clear when fields are optional. If you don't set something, it should 
 - [ ] Help text for optional fields
 
 **Source Timestamps:** 30:36, 30:41
+
+---
+### ST-045: Complete User Flow Mapping and Documentation
+
+**Status:** ready
+**Priority:** HIGH
+**Estimate:** 2-4d
+**Module:** `docs/`, `server/`, `client/`
+**Dependencies:** None
+**Prompt:** `docs/prompts/ST-045.md`
+
+**Problem:**
+The ERP system lacks a complete, exhaustive map of all user flows including variants and edge cases. This makes it difficult to ensure full test coverage, identify dead code, and verify RBAC permissions are correctly implemented.
+
+**Objectives:**
+
+1. Create a complete User Flow Matrix covering all entities and flow variants
+2. Document all RBAC permission mismatches between code and database
+3. Identify all dead/legacy flows and unreachable code paths
+4. Create structured Flow Guide organized by Domain → Entity → Role → Task
+5. Validate all state transitions against both code enums and database values
+
+**Deliverables:**
+
+- [ ] Phase 0: Domain, Entity, Role, and Key Workflows lists from repo and DB scan
+- [ ] Phase 1: Flow archetype enumeration for all entities (CREATE, READ, UPDATE, DELETE, etc.)
+- [ ] Phase 2: Variants and edge case expansion (role, state, conditions, UI paths, happy/sad paths)
+- [ ] Phase 3: Consistency and dead flow analysis report
+- [ ] Phase 4: User Flow Matrix (Markdown tables + CSV) with all required columns
+- [ ] Phase 5: Flow Guide (Markdown) organized by Domain → Entity → Role → Task
+- [ ] Updated `docs/assets/ST-045/TERP_User_Flow_Matrix_FULL.csv`
+- [ ] Updated `docs/assets/ST-045/TERP_Flow_Guide.md`
+- [ ] RBAC mismatches summary document
+
+**Reference Assets:**
+
+| File | Location |
+|------|----------|
+| Routes CSV | `docs/assets/ST-045/TERP_Routes.csv` |
+| Flow Guide | `docs/assets/ST-045/TERP_Flow_Guide.md` |
+| RBAC Mismatches | `docs/assets/ST-045/TERP_RBAC_Permission_Mismatches.csv` |
+| User Flow Matrix | `docs/assets/ST-045/TERP_User_Flow_Matrix_FULL.csv` |
 
 ---

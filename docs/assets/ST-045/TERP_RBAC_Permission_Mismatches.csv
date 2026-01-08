@@ -1,0 +1,280 @@
+Domain,Entity,Flow Name,tRPC,Permissions,Router File,Business Purpose (from code docs),Implementation Status,Client References
+Accounting,accounting,Close,accounting.close,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Create,accounting.create,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Generate Number,accounting.generateNumber,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Generate Number,accounting.generateNumber,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Generate Number,accounting.generateNumber,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Generate Number,accounting.generateNumber,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get APAging,accounting.getAPAging,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get APSummary,accounting.getAPSummary,accounting:read,server/routers/accounting.ts,Get comprehensive AP summary by vendor,API-only / Unreferenced in client,
+Accounting,accounting,Get ARAging,accounting.getARAging,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get ARSummary,accounting.getARSummary,accounting:read,server/routers/accounting.ts,Get comprehensive AR summary with aging and top debtors,API-only / Unreferenced in client,
+Accounting,accounting,Get Balance,accounting.getBalance,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Balance At Date,accounting.getBalanceAtDate,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Breakdown By Category,accounting.getBreakdownByCategory,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Id,accounting.getById,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get By Number,accounting.getByNumber,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Chart Of Accounts,accounting.getChartOfAccounts,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Client Statement,accounting.getClientStatement,accounting:read,server/routers/accounting.ts,Get client statement with invoices and payments,API-only / Unreferenced in client,
+Accounting,accounting,Get Current,accounting.getCurrent,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get For Bill,accounting.getForBill,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get For Invoice,accounting.getForInvoice,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Outstanding Payables,accounting.getOutstandingPayables,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Outstanding Receivables,accounting.getOutstandingReceivables,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Overdue Bills,accounting.getOverdueBills,accounting:read,server/routers/accounting.ts,Get overdue bills (AP) list,API-only / Unreferenced in client,
+Accounting,accounting,Get Overdue Invoices,accounting.getOverdueInvoices,accounting:read,server/routers/accounting.ts,Get overdue invoices list,API-only / Unreferenced in client,
+Accounting,accounting,Get Pending Reimbursements,accounting.getPendingReimbursements,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Recent Clients,accounting.getRecentClients,accounting:read,server/routers/accounting.ts,Get recent clients for quick selection,API-only / Unreferenced in client,
+Accounting,accounting,Get Recent Vendors,accounting.getRecentVendors,accounting:read,server/routers/accounting.ts,Get recent vendors for quick selection,API-only / Unreferenced in client,
+Accounting,accounting,Get Total Cash Balance,accounting.getTotalCashBalance,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Total Expenses,accounting.getTotalExpenses,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Trial Balance,accounting.getTrialBalance,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Get Unreconciled,accounting.getUnreconciled,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,List,accounting.list,accounting:read,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Lock,accounting.lock,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Mark Reimbursed,accounting.markReimbursed,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Pay Vendor,accounting.payVendor,accounting:create,server/routers/accounting.ts,WS-002: Pay vendor (cash out),API-only / Unreferenced in client,
+Accounting,accounting,Post Journal Entry,accounting.postJournalEntry,accounting:create,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Preview Payment Balance,accounting.previewPaymentBalance,accounting:read,server/routers/accounting.ts,WS-001: Preview client balance before payment,API-only / Unreferenced in client,
+Accounting,accounting,Receive Client Payment,accounting.receiveClientPayment,accounting:create,server/routers/accounting.ts,WS-001: Receive client payment (cash drop-off),API-only / Unreferenced in client,
+Accounting,accounting,Reconcile,accounting.reconcile,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Record Payment,accounting.recordPayment,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Record Payment,accounting.recordPayment,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Reopen,accounting.reopen,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Update,accounting.update,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Update,accounting.update,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Update,accounting.update,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Update,accounting.update,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Update,accounting.update,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Update,accounting.update,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Update Balance,accounting.updateBalance,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Update Status,accounting.updateStatus,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accounting,Update Status,accounting.updateStatus,accounting:update,server/routers/accounting.ts,,API-only / Unreferenced in client,
+Accounting,accountingHooks,Calculate Inventory Value,accountingHooks.calculateInventoryValue,accounting:manage,server/routers/accountingHooks.ts,/** Calculate total inventory value,API-only / Unreferenced in client,
+Accounting,accountingHooks,Calculate Sale COGS,accountingHooks.calculateSaleCOGS,accounting:manage,server/routers/accountingHooks.ts,/** Calculate COGS for a sale,API-only / Unreferenced in client,
+Accounting,accountingHooks,Calculate Weighted Average COGS,accountingHooks.calculateWeightedAverageCOGS,accounting:manage,server/routers/accountingHooks.ts,/** Calculate weighted average COGS,API-only / Unreferenced in client,
+Accounting,accountingHooks,Get COGSBreakdown,accountingHooks.getCOGSBreakdown,accounting:manage,server/routers/accountingHooks.ts,/** Get COGS breakdown by product,API-only / Unreferenced in client,
+Accounting,accountingHooks,Reverse GLEntries,accountingHooks.reverseGLEntries,accounting:manage,server/routers/accountingHooks.ts,/** Reverse GL entries for a transaction,API-only / Unreferenced in client,
+Accounting,accountingHooks,Seed Accounts,accountingHooks.seedAccounts,accounting:manage,server/routers/accountingHooks.ts,/** Seed standard chart of accounts,API-only / Unreferenced in client,
+Accounting,cogs,Calculate Impact,cogs.calculateImpact,cogs:read,server/routers/cogs.ts,/** Calculate COGS impact for a batch cost change Shows what would happen if COGS is updated,Client-wired,client/src/components/inventory/CogsEditModal.tsx
+Accounting,cogs,Get COGS,cogs.getCOGS,cogs:read,server/routers/cogs.ts,"/** Get COGS summary for a period Returns total COGS, revenue, gross profit, and margin",API-only / Unreferenced in client,
+Accounting,cogs,Get COGSBy Batch,cogs.getCOGSByBatch,cogs:read,server/routers/cogs.ts,/** Get COGS breakdown by batch for a period,API-only / Unreferenced in client,
+Accounting,cogs,Get History,cogs.getHistory,cogs:read,server/routers/cogs.ts,/** Get COGS adjustment history for a batch,API-only / Unreferenced in client,
+Accounting,cogs,Update Batch Cogs,cogs.updateBatchCogs,cogs:update,server/routers/cogs.ts,/** Update batch COGS with audit trail,Client-wired,client/src/components/inventory/CogsEditModal.tsx
+Accounting,invoices,Check Overdue,invoices.checkOverdue,accounting:update,server/routers/invoices.ts,/** Check and update overdue invoices,API-only / Unreferenced in client,
+Accounting,invoices,Generate From Order,invoices.generateFromOrder,accounting:create,server/routers/invoices.ts,/** Generate invoice from order Creates an invoice for a shipped/delivered order,API-only / Unreferenced in client,
+Accounting,invoices,Get By Id,invoices.getById,accounting:read,server/routers/invoices.ts,/** Get invoice by ID with line items,API-only / Unreferenced in client,
+Accounting,invoices,Get Summary,invoices.getSummary,accounting:read,server/routers/invoices.ts,/** Get invoice summary statistics,API-only / Unreferenced in client,
+Accounting,invoices,List,invoices.list,accounting:read,server/routers/invoices.ts,/** List invoices with optional filters,API-only / Unreferenced in client,
+Accounting,invoices,Mark Sent,invoices.markSent,accounting:update,server/routers/invoices.ts,/** Mark invoice as sent,API-only / Unreferenced in client,
+Accounting,invoices,Update Status,invoices.updateStatus,accounting:update,server/routers/invoices.ts,/** Update invoice status,API-only / Unreferenced in client,
+Accounting,invoices,Void,invoices.void,accounting:delete,server/routers/invoices.ts,/** Void an invoice,API-only / Unreferenced in client,
+Accounting,payments,Get By Client,payments.getByClient,accounting:read,server/routers/payments.ts,/** Get payments for a specific client,API-only / Unreferenced in client,
+Accounting,payments,Get By Id,payments.getById,accounting:read,server/routers/payments.ts,/** Get payment by ID,API-only / Unreferenced in client,
+Accounting,payments,Get Client Summary,payments.getClientSummary,accounting:read,server/routers/payments.ts,/** Get payment summary for a client,API-only / Unreferenced in client,
+Accounting,payments,List,payments.list,accounting:read,server/routers/payments.ts,/** List payments with optional filters,API-only / Unreferenced in client,
+Accounting,payments,Record Payment,payments.recordPayment,accounting:create,server/routers/payments.ts,/** Record a payment against an invoice,API-only / Unreferenced in client,
+Accounting,payments,Void,payments.void,accounting:delete,server/routers/payments.ts,/** Void a payment,API-only / Unreferenced in client,
+Admin/Settings,admin,Get Strain System Status,admin.getStrainSystemStatus,system:manage,server/routers/admin.ts,/** Get Strain System Status Quick status check without running full verification.,API-only / Unreferenced in client,
+Admin/Settings,admin,Setup Strain System,admin.setupStrainSystem,system:manage,server/routers/admin.ts,"/** Setup Strain Fuzzy Matching System This endpoint performs all necessary database setup for the strain fuzzy matching system: 1. Adds openthcId and openthcStub columns to strains table 2. Creates performance indexes 3. Imports 12,804 OpenTHC strains Safe to run multiple times (all operations are idempotent).",API-only / Unreferenced in client,
+Admin/Settings,admin,Verify Strain System,admin.verifyStrainSystem,system:manage,server/routers/admin.ts,/** Verify Strain System Setup Checks that all components of the strain system are properly configured: - Schema columns exist - Indexes are created - Strains are imported - Performance is acceptable,API-only / Unreferenced in client,
+Admin/Settings,adminDataAugment,Get Status,adminDataAugment.getStatus,system:manage,server/routers/adminDataAugment.ts,/** Get status of last run,API-only / Unreferenced in client,
+Admin/Settings,adminDataAugment,Run All,adminDataAugment.runAll,system:manage,server/routers/adminDataAugment.ts,/** Run all augmentation scripts in order,API-only / Unreferenced in client,
+Admin/Settings,adminDataAugment,Run Script,adminDataAugment.runScript,system:manage,server/routers/adminDataAugment.ts,/** Run individual script,API-only / Unreferenced in client,
+Admin/Settings,adminImport,Get Import Progress,adminImport.getImportProgress,system:manage,server/routers/adminImport.ts,/** Get import progress,API-only / Unreferenced in client,
+Admin/Settings,adminImport,Import Strains Batch,adminImport.importStrainsBatch,system:manage,server/routers/adminImport.ts,"/** Import strains in batches Returns immediately with status, continues in background",API-only / Unreferenced in client,
+Admin/Settings,adminSchema,Validate,adminSchema.validate,system:manage,server/routers/adminSchema.ts,/** Run Schema Validation Validates Drizzle schema against actual database structure. Returns validation report with schema drift issues.,API-only / Unreferenced in client,
+Admin/Settings,auditLogs,Export,auditLogs.export,audit:read,server/routers/auditLogs.ts,/** Export audit logs to JSON,API-only / Unreferenced in client,
+Admin/Settings,auditLogs,Get Entity Trail,auditLogs.getEntityTrail,audit:read,server/routers/auditLogs.ts,/** Get audit trail for a specific entity,API-only / Unreferenced in client,
+Admin/Settings,auditLogs,Query,auditLogs.query,audit:read,server/routers/auditLogs.ts,/** Query audit logs with filters,API-only / Unreferenced in client,
+Admin/Settings,rbac-permissions,Create,rbac-permissions.create,rbac:permissions:create,server/routers/rbac-permissions.ts,/** Create a new custom permission Requires: rbac:permissions:create permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-permissions,Delete,rbac-permissions.delete,rbac:permissions:delete,server/routers/rbac-permissions.ts,/** Delete a custom permission Requires: rbac:permissions:delete permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-permissions,Get By Id,rbac-permissions.getById,rbac:permissions:read,server/routers/rbac-permissions.ts,/** Get a specific permission with its role assignments Requires: rbac:permissions:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-permissions,Get By Module,rbac-permissions.getByModule,rbac:permissions:read,server/routers/rbac-permissions.ts,/** Get permissions grouped by module Requires: rbac:permissions:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-permissions,Get Modules,rbac-permissions.getModules,rbac:permissions:read,server/routers/rbac-permissions.ts,/** Get all unique modules Requires: rbac:permissions:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-permissions,Get Stats,rbac-permissions.getStats,rbac:permissions:read,server/routers/rbac-permissions.ts,/** Get permission statistics Requires: rbac:permissions:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-permissions,List,rbac-permissions.list,rbac:permissions:read,server/routers/rbac-permissions.ts,/** List all permissions with optional filtering by module Requires: rbac:permissions:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-permissions,Search,rbac-permissions.search,rbac:permissions:read,server/routers/rbac-permissions.ts,/** Search permissions by name or description Requires: rbac:permissions:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-permissions,Update,rbac-permissions.update,rbac:permissions:update,server/routers/rbac-permissions.ts,/** Update a permission's details Requires: rbac:permissions:update permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-roles,Assign Permission,rbac-roles.assignPermission,rbac:roles:assign_permission,server/routers/rbac-roles.ts,/** Assign a permission to a role Requires: rbac:roles:assign_permission permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-roles,Bulk Assign Permissions,rbac-roles.bulkAssignPermissions,rbac:roles:assign_permission,server/routers/rbac-roles.ts,/** Bulk assign permissions to a role Requires: rbac:roles:assign_permission permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-roles,Create,rbac-roles.create,rbac:roles:create,server/routers/rbac-roles.ts,/** Create a new custom role Requires: rbac:roles:create permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-roles,Delete,rbac-roles.delete,rbac:roles:delete,server/routers/rbac-roles.ts,/** Delete a custom role System roles cannot be deleted Requires: rbac:roles:delete permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-roles,Get By Id,rbac-roles.getById,rbac:roles:read,server/routers/rbac-roles.ts,/** Get a specific role with its permissions Requires: rbac:roles:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-roles,List,rbac-roles.list,rbac:roles:read,server/routers/rbac-roles.ts,/** List all roles with their permission counts Requires: rbac:roles:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-roles,Remove Permission,rbac-roles.removePermission,rbac:roles:remove_permission,server/routers/rbac-roles.ts,/** Remove a permission from a role Requires: rbac:roles:remove_permission permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-roles,Replace Permissions,rbac-roles.replacePermissions,rbac:roles:assign_permission,server/routers/rbac-roles.ts,/** Replace all permissions for a role Requires: rbac:roles:assign_permission permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-roles,Update,rbac-roles.update,rbac:roles:update,server/routers/rbac-roles.ts,/** Update a role's details System roles cannot be updated Requires: rbac:roles:update permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-users,Assign Role,rbac-users.assignRole,rbac:users:assign_role,server/routers/rbac-users.ts,/** Assign a role to a user Requires: rbac:users:assign_role permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-users,Bulk Assign Roles,rbac-users.bulkAssignRoles,rbac:users:assign_role,server/routers/rbac-users.ts,/** Bulk assign roles to a user Requires: rbac:users:assign_role permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-users,Get By Id,rbac-users.getById,rbac:users:read,server/routers/rbac-users.ts,/** Get a specific user's roles and permissions Requires: rbac:users:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-users,Grant Permission,rbac-users.grantPermission,rbac:users:grant_permission,server/routers/rbac-users.ts,/** Grant a permission override to a user Requires: rbac:users:grant_permission permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-users,List,rbac-users.list,rbac:users:read,server/routers/rbac-users.ts,/** List all users with their assigned roles Requires: rbac:users:read permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-users,Remove Permission Override,rbac-users.removePermissionOverride,rbac:users:remove_permission_override,server/routers/rbac-users.ts,/** Remove a permission override from a user (delete the override entirely) Requires: rbac:users:remove_permission_override permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-users,Remove Role,rbac-users.removeRole,rbac:users:remove_role,server/routers/rbac-users.ts,/** Remove a role from a user Requires: rbac:users:remove_role permission,API-only / Unreferenced in client,
+Admin/Settings,rbac-users,Revoke Permission,rbac-users.revokePermission,rbac:users:revoke_permission,server/routers/rbac-users.ts,/** Revoke a permission override from a user Requires: rbac:users:revoke_permission permission,API-only / Unreferenced in client,
+Admin/Settings,userManagement,Create User,userManagement.createUser,users:manage,server/routers/userManagement.ts,Create a new user - requires authentication and users:manage permission,Client-wired,client/src/components/UserManagement.tsx
+Admin/Settings,userManagement,Delete User,userManagement.deleteUser,users:manage,server/routers/userManagement.ts,Delete a user - requires authentication and users:manage permission,Client-wired,client/src/components/UserManagement.tsx
+Admin/Settings,userManagement,Reset Password,userManagement.resetPassword,users:manage,server/routers/userManagement.ts,Reset user password - requires authentication and users:manage permission,Client-wired,client/src/components/UserManagement.tsx
+Inventory,samples,Approve Return,samples.approveReturn,samples:approve,server/routers/samples.ts,Approve a sample return,Client-wired,client/src/pages/SampleManagement.tsx
+Inventory,samples,Complete Return,samples.completeReturn,samples:return,server/routers/samples.ts,Complete a sample return,Client-wired,client/src/pages/SampleManagement.tsx
+Inventory,samples,Confirm Vendor Return,samples.confirmVendorReturn,samples:vendorReturn,server/routers/samples.ts,Confirm vendor received the sample,Client-wired,client/src/pages/SampleManagement.tsx
+Inventory,samples,Request Return,samples.requestReturn,samples:return,server/routers/samples.ts,Request a sample return,Client-wired,client/src/pages/SampleManagement.tsx
+Inventory,samples,Request Vendor Return,samples.requestVendorReturn,samples:vendorReturn,server/routers/samples.ts,Request a vendor return,Client-wired,client/src/pages/SampleManagement.tsx
+Inventory,samples,Ship To Vendor,samples.shipToVendor,samples:vendorReturn,server/routers/samples.ts,Ship sample to vendor,Client-wired,client/src/pages/SampleManagement.tsx
+Other,badDebt,Get Aging Report,badDebt.getAgingReport,accounting:manage,server/routers/badDebt.ts,Get bad debt aging report,API-only / Unreferenced in client,
+Other,badDebt,Get By Client,badDebt.getByClient,accounting:manage,server/routers/badDebt.ts,Bad Debt Router API endpoints for bad debt write-off management,API-only / Unreferenced in client,
+Other,badDebt,Get Client Total,badDebt.getClientTotal,accounting:manage,server/routers/badDebt.ts,Bad Debt Router API endpoints for bad debt write-off management,API-only / Unreferenced in client,
+Other,badDebt,Reverse,badDebt.reverse,accounting:manage,server/routers/badDebt.ts,Bad Debt Router API endpoints for bad debt write-off management,API-only / Unreferenced in client,
+Other,badDebt,Write Off,badDebt.writeOff,accounting:manage,server/routers/badDebt.ts,Bad Debt Router API endpoints for bad debt write-off management,API-only / Unreferenced in client,
+Other,configuration,Apply Preset,configuration.applyPreset,settings:manage,server/routers/configuration.ts,/** Apply a configuration preset,API-only / Unreferenced in client,
+Other,configuration,Get,configuration.get,settings:manage,server/routers/configuration.ts,/** Get current configuration,API-only / Unreferenced in client,
+Other,configuration,Get Feature Flags,configuration.getFeatureFlags,settings:manage,server/routers/configuration.ts,/** Get feature flags,API-only / Unreferenced in client,
+Other,configuration,Get History,configuration.getHistory,settings:manage,server/routers/configuration.ts,/** Get configuration change history,API-only / Unreferenced in client,
+Other,configuration,Get Value,configuration.getValue,settings:manage,server/routers/configuration.ts,/** Get a specific configuration value,API-only / Unreferenced in client,
+Other,configuration,Reset,configuration.reset,settings:manage,server/routers/configuration.ts,/** Reset configuration to defaults,API-only / Unreferenced in client,
+Other,configuration,Set Value,configuration.setValue,settings:manage,server/routers/configuration.ts,/** Set a configuration value,API-only / Unreferenced in client,
+Other,configuration,Validate,configuration.validate,settings:manage,server/routers/configuration.ts,/** Validate configuration,API-only / Unreferenced in client,
+Other,inbox,Archive,inbox.archive,todos:read,server/routers/inbox.ts,Archive an item,Client-wired,client/src/components/inbox/InboxItem.tsx
+Other,inbox,Auto Archive Old,inbox.autoArchiveOld,todos:read,server/routers/inbox.ts,Auto-archive old completed items,API-only / Unreferenced in client,
+Other,inbox,Bulk Mark As Completed,inbox.bulkMarkAsCompleted,todos:read,server/routers/inbox.ts,Bulk mark items as completed,API-only / Unreferenced in client,
+Other,inbox,Bulk Mark As Seen,inbox.bulkMarkAsSeen,todos:read,server/routers/inbox.ts,Bulk mark items as seen,Client-wired,client/src/components/inbox/InboxPanel.tsx
+Other,inbox,Delete,inbox.delete,todos:read,server/routers/inbox.ts,Delete an inbox item,Client-wired,client/src/components/inbox/InboxItem.tsx
+Other,inbox,Get By Id,inbox.getById,todos:read,server/routers/inbox.ts,Get a specific inbox item,API-only / Unreferenced in client,
+Other,inbox,Get By Status,inbox.getByStatus,todos:read,server/routers/inbox.ts,Inbox Router API endpoints for unified inbox management PERF-003: Added pagination support,API-only / Unreferenced in client,
+Other,inbox,Get My Items,inbox.getMyItems,todos:read,server/routers/inbox.ts,Inbox Router API endpoints for unified inbox management PERF-003: Added pagination support,Client-wired,client/src/components/inbox/InboxPanel.tsx; client/src/components/inbox/InboxWidget.tsx
+Other,inbox,Get Stats,inbox.getStats,todos:read,server/routers/inbox.ts,Get inbox statistics,Client-wired,client/src/components/inbox/InboxPanel.tsx
+Other,inbox,Get Unread,inbox.getUnread,todos:read,server/routers/inbox.ts,Inbox Router API endpoints for unified inbox management PERF-003: Added pagination support,Client-wired,client/src/components/inbox/InboxPanel.tsx
+Other,inbox,Mark As Completed,inbox.markAsCompleted,todos:read,server/routers/inbox.ts,Mark item as completed,Client-wired,client/src/components/inbox/InboxItem.tsx
+Other,inbox,Mark As Seen,inbox.markAsSeen,todos:read,server/routers/inbox.ts,Mark item as seen,Client-wired,client/src/components/inbox/InboxItem.tsx; client/src/components/inbox/InboxWidget.tsx
+Other,inbox,Mark As Unread,inbox.markAsUnread,todos:read,server/routers/inbox.ts,Mark item as unread,API-only / Unreferenced in client,
+Other,inbox,Unarchive,inbox.unarchive,todos:read,server/routers/inbox.ts,Unarchive an item,API-only / Unreferenced in client,
+Other,pricing,Apply Profile To Client,pricing.applyProfileToClient,pricing:read,server/routers/pricing.ts,,Client-wired,client/src/components/pricing/PricingConfigTab.tsx
+Other,pricing,Create Profile,pricing.createProfile,pricing:create,server/routers/pricing.ts,,Client-wired,client/src/pages/PricingProfilesPage.tsx
+Other,pricing,Create Rule,pricing.createRule,pricing:create,server/routers/pricing.ts,Pricing Router QUAL-002: Updated with proper validation schemas (no z.any()),Client-wired,client/src/pages/PricingRulesPage.tsx
+Other,pricing,Delete Profile,pricing.deleteProfile,pricing:read,server/routers/pricing.ts,,Client-wired,client/src/pages/PricingProfilesPage.tsx
+Other,pricing,Delete Rule,pricing.deleteRule,pricing:read,server/routers/pricing.ts,Pricing Router QUAL-002: Updated with proper validation schemas (no z.any()),Client-wired,client/src/pages/PricingRulesPage.tsx
+Other,pricing,Get Client Pricing Rules,pricing.getClientPricingRules,pricing:read,server/routers/pricing.ts,Client Pricing,Client-wired,client/src/components/pricing/PricingConfigTab.tsx
+Other,pricing,Get Profile By Id,pricing.getProfileById,pricing:read,server/routers/pricing.ts,,API-only / Unreferenced in client,
+Other,pricing,Get Rule By Id,pricing.getRuleById,pricing:read,server/routers/pricing.ts,Pricing Router QUAL-002: Updated with proper validation schemas (no z.any()),API-only / Unreferenced in client,
+Other,pricing,List Profiles,pricing.listProfiles,pricing:read,server/routers/pricing.ts,Pricing Router QUAL-002: Updated with proper validation schemas (no z.any()),Client-wired,client/src/components/pricing/PricingConfigTab.tsx; client/src/pages/PricingProfilesPage.tsx
+Other,pricing,List Rules,pricing.listRules,pricing:read,server/routers/pricing.ts,Pricing Router QUAL-002: Updated with proper validation schemas (no z.any()),Client-wired,client/src/pages/PricingProfilesPage.tsx; client/src/pages/PricingRulesPage.tsx
+Other,pricing,Update Profile,pricing.updateProfile,pricing:update,server/routers/pricing.ts,,Client-wired,client/src/pages/PricingProfilesPage.tsx
+Other,pricing,Update Rule,pricing.updateRule,pricing:update,server/routers/pricing.ts,Pricing Router QUAL-002: Updated with proper validation schemas (no z.any()),Client-wired,client/src/pages/PricingRulesPage.tsx
+Other,pricingDefaults,Get All,pricingDefaults.getAll,pricing:read,server/routers/pricingDefaults.ts,/** Get all default margins,API-only / Unreferenced in client,
+Other,pricingDefaults,Get By Category,pricingDefaults.getByCategory,pricing:read,server/routers/pricingDefaults.ts,/** Get default margin for category,API-only / Unreferenced in client,
+Other,pricingDefaults,Get Margin With Fallback,pricingDefaults.getMarginWithFallback,pricing:read,server/routers/pricingDefaults.ts,/** Get margin with fallback logic Used by order creation to determine margin,API-only / Unreferenced in client,
+Other,pricingDefaults,Upsert,pricingDefaults.upsert,pricing:read,server/routers/pricingDefaults.ts,/** Create or update default margin,API-only / Unreferenced in client,
+Other,scratchPad,Count,scratchPad.count,notes:read,server/routers/scratchPad.ts,Get note count,API-only / Unreferenced in client,
+Other,scratchPad,Delete,scratchPad.delete,notes:delete,server/routers/scratchPad.ts,Delete note,Client-wired,client/src/components/dashboard/ScratchPad.tsx
+Other,scratchPad,List,scratchPad.list,notes:read,server/routers/scratchPad.ts,Get user's notes (infinite scroll),Client-wired,client/src/components/dashboard/ScratchPad.tsx
+Other,scratchPad,Toggle Complete,scratchPad.toggleComplete,notes:read,server/routers/scratchPad.ts,Toggle note completion,Client-wired,client/src/components/dashboard/ScratchPad.tsx
+Reporting/Analytics,analytics,Client Strain Preferences,analytics.clientStrainPreferences,analytics:read,server/routers/analytics.ts,,Client-wired,client/src/hooks/useStrainHooks.ts
+Reporting/Analytics,analytics,Export Data,analytics.exportData,analytics:read,server/routers/analytics.ts,,Client-wired,client/src/pages/AnalyticsPage.tsx
+Reporting/Analytics,analytics,Get Extended Summary,analytics.getExtendedSummary,analytics:read,server/routers/analytics.ts,,Client-wired,client/src/pages/AnalyticsPage.tsx
+Reporting/Analytics,analytics,Get Revenue Trends,analytics.getRevenueTrends,analytics:read,server/routers/analytics.ts,,Client-wired,client/src/pages/AnalyticsPage.tsx
+Reporting/Analytics,analytics,Get Summary,analytics.getSummary,analytics:read,server/routers/analytics.ts,,API-only / Unreferenced in client,
+Reporting/Analytics,analytics,Get Top Clients,analytics.getTopClients,analytics:read,server/routers/analytics.ts,,Client-wired,client/src/pages/AnalyticsPage.tsx
+Reporting/Analytics,analytics,Strain Family Trends,analytics.strainFamilyTrends,analytics:read,server/routers/analytics.ts,,Client-wired,client/src/hooks/useStrainHooks.ts
+Reporting/Analytics,analytics,Top Strain Families,analytics.topStrainFamilies,analytics:read,server/routers/analytics.ts,,Client-wired,client/src/hooks/useStrainHooks.ts
+VIP Portal,vipPortalAdmin,Add To Draft Order,vipPortalAdmin.addToDraftOrder,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Add To New Order,vipPortalAdmin.addToNewOrder,vip_portal:manage,server/routers/vipPortalAdmin.ts,These would need additional service methods or separate order service integration,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Apply Template,vipPortalAdmin.applyTemplate,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Copy Config,vipPortalAdmin.copyConfig,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Deactivate,vipPortalAdmin.deactivate,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Disable Vip Portal,vipPortalAdmin.disableVipPortal,vip_portal:manage,server/routers/vipPortalAdmin.ts,VIP Portal Admin Router (Streamlined) Admin-facing endpoints for managing VIP client portals Refactored to use service layer for better maintainability,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Enable Vip Portal,vipPortalAdmin.enableVipPortal,vip_portal:manage,server/routers/vipPortalAdmin.ts,VIP Portal Admin Router (Streamlined) Admin-facing endpoints for managing VIP client portals Refactored to use service layer for better maintainability,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Get,vipPortalAdmin.get,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Get By Client,vipPortalAdmin.getByClient,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Get By Client,vipPortalAdmin.getByClient,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Get By Id,vipPortalAdmin.getById,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Get Config,vipPortalAdmin.getConfig,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Get Config,vipPortalAdmin.getConfig,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Get Configuration,vipPortalAdmin.getConfiguration,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Get Last Login,vipPortalAdmin.getLastLogin,vip_portal:manage,server/routers/vipPortalAdmin.ts,VIP Portal Admin Router (Streamlined) Admin-facing endpoints for managing VIP client portals Refactored to use service layer for better maintainability,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Impersonate,vipPortalAdmin.impersonate,vip_portal:manage,server/routers/vipPortalAdmin.ts,VIP Portal Admin Router (Streamlined) Admin-facing endpoints for managing VIP client portals Refactored to use service layer for better maintainability,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,List,vipPortalAdmin.list,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,List Vip Clients,vipPortalAdmin.listVipClients,vip_portal:manage,server/routers/vipPortalAdmin.ts,VIP Portal Admin Router (Streamlined) Admin-facing endpoints for managing VIP client portals Refactored to use service layer for better maintainability,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Save Configuration,vipPortalAdmin.saveConfiguration,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Update,vipPortalAdmin.update,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Update Config,vipPortalAdmin.updateConfig,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Update Config,vipPortalAdmin.updateConfig,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+VIP Portal,vipPortalAdmin,Update Status,vipPortalAdmin.updateStatus,vip_portal:manage,server/routers/vipPortalAdmin.ts,,API-only / Unreferenced in client,
+Workflow/Productivity,calendarRecurrence,Regenerate All Instances,calendarRecurrence.regenerateAllInstances,calendar:admin,server/routers/calendarRecurrence.ts,Regenerate all instances (admin/background job),API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,Delete,freeformNotes.delete,notes:delete,server/routers/freeformNotes.ts,Delete note,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,Get By Id,freeformNotes.getById,notes:read,server/routers/freeformNotes.ts,Get single note by ID,Client-wired,client/src/components/dashboard/widgets-v2/FreeformNoteWidget.tsx
+Workflow/Productivity,freeformNotes,Get By Tag,freeformNotes.getByTag,notes:read,server/routers/freeformNotes.ts,Get notes by tag,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,Get By Template,freeformNotes.getByTemplate,notes:read,server/routers/freeformNotes.ts,Get notes by template,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,List,freeformNotes.list,notes:read,server/routers/freeformNotes.ts,Get all notes for user,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,List,freeformNotes.list,notes:read,server/routers/freeformNotes.ts,,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,List,freeformNotes.list,notes:read,server/routers/freeformNotes.ts,,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,Resolve,freeformNotes.resolve,notes:read,server/routers/freeformNotes.ts,,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,Search,freeformNotes.search,notes:read,server/routers/freeformNotes.ts,Search notes,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,Share,freeformNotes.share,notes:read,server/routers/freeformNotes.ts,Share note,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,Toggle Archive,freeformNotes.toggleArchive,notes:read,server/routers/freeformNotes.ts,Toggle archive,API-only / Unreferenced in client,
+Workflow/Productivity,freeformNotes,Toggle Pin,freeformNotes.togglePin,notes:read,server/routers/freeformNotes.ts,Toggle pin,API-only / Unreferenced in client,
+Workflow/Productivity,todoActivity,Get My Recent Activity,todoActivity.getMyRecentActivity,todos:read,server/routers/todoActivity.ts,Todo Activity Router API endpoints for task activity and audit trail,API-only / Unreferenced in client,
+Workflow/Productivity,todoActivity,Get Task Activity,todoActivity.getTaskActivity,todos:read,server/routers/todoActivity.ts,Todo Activity Router API endpoints for task activity and audit trail,Client-wired,client/src/components/todos/TaskDetailModal.tsx
+Workflow/Productivity,todoLists,Add Member,todoLists.addMember,todos:create,server/routers/todoLists.ts,Add a member to a list,Client-wired,client/src/components/todos/ShareListModal.tsx; client/src/components/todos/TodoListForm.tsx
+Workflow/Productivity,todoLists,Create,todoLists.create,todos:create,server/routers/todoLists.ts,Todo Lists Router API endpoints for todo list management,Client-wired,client/src/components/todos/TodoListForm.tsx
+Workflow/Productivity,todoLists,Delete,todoLists.delete,todos:delete,server/routers/todoLists.ts,Delete a list,Client-wired,client/src/pages/TodoListDetailPage.tsx; client/src/pages/TodoListsPage.tsx
+Workflow/Productivity,todoLists,Get By Id,todoLists.getById,todos:read,server/routers/todoLists.ts,Todo Lists Router API endpoints for todo list management,Client-wired,client/src/pages/TodoListDetailPage.tsx
+Workflow/Productivity,todoLists,Get Members,todoLists.getMembers,todos:read,server/routers/todoLists.ts,BUG-034: Standardized pagination response,Client-wired,client/src/components/todos/ShareListModal.tsx; client/src/components/todos/TodoListForm.tsx
+Workflow/Productivity,todoLists,Get My Lists,todoLists.getMyLists,todos:read,server/routers/todoLists.ts,Todo Lists Router API endpoints for todo list management,Client-wired,client/src/components/todos/QuickAddTaskModal.tsx; client/src/pages/TodoListsPage.tsx
+Workflow/Productivity,todoLists,Get My Role,todoLists.getMyRole,todos:read,server/routers/todoLists.ts,Get user's role in a list,API-only / Unreferenced in client,
+Workflow/Productivity,todoLists,Remove Member,todoLists.removeMember,todos:delete,server/routers/todoLists.ts,Remove a member from a list,Client-wired,client/src/components/todos/ShareListModal.tsx; client/src/components/todos/TodoListForm.tsx
+Workflow/Productivity,todoLists,Update,todoLists.update,todos:update,server/routers/todoLists.ts,Todo Lists Router API endpoints for todo list management,Client-wired,client/src/components/todos/TodoListForm.tsx
+Workflow/Productivity,todoLists,Update Member Role,todoLists.updateMemberRole,todos:update,server/routers/todoLists.ts,Update member role,Client-wired,client/src/components/todos/ShareListModal.tsx
+Workflow/Productivity,todoTasks,Assign,todoTasks.assign,todos:read,server/routers/todoTasks.ts,Assign task to a user,API-only / Unreferenced in client,
+Workflow/Productivity,todoTasks,Complete,todoTasks.complete,todos:read,server/routers/todoTasks.ts,Mark task as completed,Client-wired,client/src/components/todos/TaskDetailModal.tsx; client/src/pages/TodoListDetailPage.tsx
+Workflow/Productivity,todoTasks,Create,todoTasks.create,todos:create,server/routers/todoTasks.ts,Create a new task,Client-wired,client/src/components/todos/QuickAddTaskModal.tsx; client/src/components/todos/TaskForm.tsx
+Workflow/Productivity,todoTasks,Delete,todoTasks.delete,todos:delete,server/routers/todoTasks.ts,Delete a task,Client-wired,client/src/pages/TodoListDetailPage.tsx
+Workflow/Productivity,todoTasks,Get By Id,todoTasks.getById,todos:read,server/routers/todoTasks.ts,Get a specific task by ID,Client-wired,client/src/components/todos/TaskDetailModal.tsx
+Workflow/Productivity,todoTasks,Get Due Soon,todoTasks.getDueSoon,todos:read,server/routers/todoTasks.ts,BUG-034: Standardized pagination response,API-only / Unreferenced in client,
+Workflow/Productivity,todoTasks,Get List Stats,todoTasks.getListStats,todos:read,server/routers/todoTasks.ts,Get task statistics for a list,Client-wired,client/src/pages/TodoListDetailPage.tsx
+Workflow/Productivity,todoTasks,Get List Tasks,todoTasks.getListTasks,todos:read,server/routers/todoTasks.ts,Todo Tasks Router API endpoints for task management within lists PERF-003: Added pagination support,Client-wired,client/src/pages/TodoListDetailPage.tsx
+Workflow/Productivity,todoTasks,Get My Tasks,todoTasks.getMyTasks,todos:read,server/routers/todoTasks.ts,Todo Tasks Router API endpoints for task management within lists PERF-003: Added pagination support,API-only / Unreferenced in client,
+Workflow/Productivity,todoTasks,Get Overdue,todoTasks.getOverdue,todos:read,server/routers/todoTasks.ts,BUG-034: Standardized pagination response,API-only / Unreferenced in client,
+Workflow/Productivity,todoTasks,Reorder,todoTasks.reorder,todos:read,server/routers/todoTasks.ts,Reorder tasks in a list,API-only / Unreferenced in client,
+Workflow/Productivity,todoTasks,Uncomplete,todoTasks.uncomplete,todos:read,server/routers/todoTasks.ts,Mark task as incomplete,Client-wired,client/src/components/todos/TaskDetailModal.tsx; client/src/pages/TodoListDetailPage.tsx
+Workflow/Productivity,todoTasks,Update,todoTasks.update,todos:update,server/routers/todoTasks.ts,Update a task,Client-wired,client/src/components/todos/TaskForm.tsx
+Workflow/Productivity,workflow-queue,Add Batches To Queue,workflow-queue.addBatchesToQueue,workflow:update,server/routers/workflow-queue.ts,/** Add multiple batches to workflow queue Permission: workflow:update,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Create Status,workflow-queue.createStatus,workflow:manage,server/routers/workflow-queue.ts,/** Create a new workflow status Permission: workflow:manage,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Delete Status,workflow-queue.deleteStatus,workflow:manage,server/routers/workflow-queue.ts,/** Delete (soft delete) a workflow status Permission: workflow:manage,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Get Batch History,workflow-queue.getBatchHistory,workflow:read,server/routers/workflow-queue.ts,/** Get status change history for a specific batch Permission: workflow:read,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Get Batches By Status,workflow-queue.getBatchesByStatus,workflow:read,server/routers/workflow-queue.ts,/** Get batches for a specific workflow status Permission: workflow:read,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Get Batches Not In Queue,workflow-queue.getBatchesNotInQueue,workflow:read,server/routers/workflow-queue.ts,/** Get batches not in workflow queue (statusId is null) Permission: workflow:read,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Get Queues,workflow-queue.getQueues,workflow:read,server/routers/workflow-queue.ts,/** Get all batches grouped by workflow status Permission: workflow:read,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Get Recent Changes,workflow-queue.getRecentChanges,workflow:read,server/routers/workflow-queue.ts,/** Get recent status changes across all batches Permission: workflow:read,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Get Status,workflow-queue.getStatus,workflow:read,server/routers/workflow-queue.ts,/** Get a single workflow status by ID Permission: workflow:read,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,List Statuses,workflow-queue.listStatuses,workflow:read,server/routers/workflow-queue.ts,/** List all active workflow statuses Permission: workflow:read,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Reorder Statuses,workflow-queue.reorderStatuses,workflow:manage,server/routers/workflow-queue.ts,/** Reorder workflow statuses Permission: workflow:manage,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Update Batch Status,workflow-queue.updateBatchStatus,workflow:update,server/routers/workflow-queue.ts,/** Update a batch's workflow status Permission: workflow:update,API-only / Unreferenced in client,
+Workflow/Productivity,workflow-queue,Update Status,workflow-queue.updateStatus,workflow:manage,server/routers/workflow-queue.ts,/** Update an existing workflow status Permission: workflow:manage,API-only / Unreferenced in client,
