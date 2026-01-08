@@ -28,6 +28,16 @@ export function MentionInput({
   const [mentionQuery, setMentionQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // FIXED: Clean up timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (focusTimeoutRef.current) {
+        clearTimeout(focusTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Fetch all users for mentions
   const { data: allUsers = [] } = trpc.userManagement.listUsers.useQuery();
@@ -79,7 +89,11 @@ export function MentionInput({
     setShowSuggestions(false);
 
     // Focus back on textarea and position cursor after mention
-    setTimeout(() => {
+    // FIXED: Use ref to track timeout for proper cleanup
+    if (focusTimeoutRef.current) {
+      clearTimeout(focusTimeoutRef.current);
+    }
+    focusTimeoutRef.current = setTimeout(() => {
       textareaRef.current?.focus();
       const newCursorPos = lastAtSymbol + mentionText.length + 1;
       textareaRef.current?.setSelectionRange(newCursorPos, newCursorPos);

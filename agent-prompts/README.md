@@ -1,8 +1,8 @@
 # TERP Agent Prompts
 
-**Self-contained AI agent prompts with all credentials included**
+**Self-contained AI agent prompts for the TERP autonomous development system**
 
-Each prompt contains everything an AI agent needs to start working on TERP - no additional setup required!
+Each prompt contains everything an AI agent needs to understand their role - credentials must be provided via environment variables.
 
 ---
 
@@ -40,9 +40,7 @@ https://github.com/EvanTenenbaum/TERP/blob/main/agent-prompts/initiative-creator
 
 Each prompt contains:
 - ✅ **Complete role description** - What to do and how to do it
-- ✅ **API keys** - Digital Ocean API for deployment monitoring
-- ✅ **Database credentials** - Production database access
-- ✅ **GitHub access** - Repository information
+- ✅ **Environment variable references** - How to access credentials securely
 - ✅ **Step-by-step workflows** - From start to completion
 - ✅ **Code examples** - Ready-to-use commands
 - ✅ **Monitoring instructions** - How to check deployment health
@@ -50,34 +48,52 @@ Each prompt contains:
 
 ---
 
-## 🔑 Credentials Included
+## 🔑 Environment Variables Required
 
-All prompts include these credentials (no need to provide separately):
+Credentials must be provided via environment variables. Set these in your `.env` file:
 
 ### Digital Ocean API
-- **API Key**: `dop_v1_528408bf76b243af7d996080a71ac8059484bea8a8bd9c724439da99428a585d`
+```bash
+DO_API_TOKEN="your-digitalocean-api-token"
+```
 - **Used for**: Deployment monitoring, logs, health checks
 
 ### Production Database
-- **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
-- **Port**: `25060`
-- **User**: `doadmin`
-- **Password**: `AVNS_yEKEhPWr5qFJwqJaQnC`
-- **Database**: `defaultdb`
-- **SSL**: Required
+```bash
+DATABASE_HOST="your-db-host"
+DATABASE_PORT="25060"
+DATABASE_USER="your-db-user"
+DATABASE_PASSWORD="your-db-password"
+DATABASE_NAME="defaultdb"
+```
 
-### Production App
-- **URL**: https://terp-app-b9s35.ondigitalocean.app
+### Google Gemini API (for Swarm Manager)
+```bash
+GOOGLE_GEMINI_API_KEY="your-gemini-api-key"
+```
 
 ---
 
 ## 📚 Resources
 
 - **TERP Repository**: https://github.com/EvanTenenbaum/TERP
-- **PM Dashboard**: https://evantenenbaum.github.io/TERP/
-- **PM System Overview**: https://github.com/EvanTenenbaum/TERP/blob/main/TERP-PM-COORDINATION-SYSTEM.md
-- **Quick Start Guide**: https://github.com/EvanTenenbaum/TERP/blob/main/AGENT-PROMPT-QUICK-START.md
+- **Environment Setup**: docs/ENVIRONMENT_VARIABLES.md
+- **PM System Overview**: product-management/SYSTEM_DESIGN.md
+- **Quick Start Guide**: product-management/START_HERE.md
 
 ---
 
-**That's it!** Just give an agent the URL and they're ready to work. No additional setup, credentials, or instructions needed.
+## ⚠️ Security Notice
+
+**NEVER hardcode credentials in agent prompts or code.**
+
+All sensitive information must be stored in:
+1. Environment variables (`.env` files - gitignored)
+2. CI/CD secrets (for automated deployments)
+3. Secure credential managers
+
+See `docs/ENVIRONMENT_VARIABLES.md` for complete setup instructions.
+
+---
+
+**That's it!** Just give an agent the URL and ensure environment variables are configured. The agent will know how to access credentials securely.

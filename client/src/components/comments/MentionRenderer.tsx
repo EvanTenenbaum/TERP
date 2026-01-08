@@ -9,8 +9,9 @@ interface MentionRendererProps {
 /**
  * Renders comment content with highlighted mentions
  * Parses mentions in the format @[username](userId) and renders them as badges
+ * FIXED: Added React.memo for performance optimization
  */
-export function MentionRenderer({ content, className }: MentionRendererProps) {
+export const MentionRenderer = React.memo(function MentionRenderer({ content, className }: MentionRendererProps) {
   // Regular expression to match mentions: @[username](userId)
   const mentionRegex = /@\[([^\]]+)\]\((\d+)\)/g;
 
@@ -58,4 +59,4 @@ export function MentionRenderer({ content, className }: MentionRendererProps) {
       {parts.length > 0 ? parts : content}
     </div>
   );
-}
+});

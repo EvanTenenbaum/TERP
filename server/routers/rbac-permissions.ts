@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { publicProcedure as protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { 
   permissions, 
@@ -34,7 +35,7 @@ export const rbacPermissionsRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
 
         
@@ -120,7 +121,7 @@ export const rbacPermissionsRouter = router({
     .query(async () => {
       try {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
 
         const modules = await db
@@ -154,7 +155,7 @@ export const rbacPermissionsRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
 
         // Get permission details
@@ -232,7 +233,7 @@ export const rbacPermissionsRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         // Check if permission name already exists
         const existing = await db
           .select({ id: permissions.id })
@@ -287,7 +288,7 @@ export const rbacPermissionsRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         // Check if permission exists
         const permission = await db
           .select({ 
@@ -352,7 +353,7 @@ export const rbacPermissionsRouter = router({
     .mutation(async ({ input, ctx }) => {
       try {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
         // Check if permission exists
         const permission = await db
           .select({ 
@@ -398,7 +399,7 @@ export const rbacPermissionsRouter = router({
     .query(async () => {
       try {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
 
         // Get all permissions
@@ -468,7 +469,7 @@ export const rbacPermissionsRouter = router({
     .query(async ({ input }) => {
       try {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
 
         // Get all permissions (we'll filter client-side for simplicity)
@@ -517,7 +518,7 @@ export const rbacPermissionsRouter = router({
     .query(async () => {
       try {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
 
         // Total permissions

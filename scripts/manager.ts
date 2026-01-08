@@ -211,42 +211,61 @@ function parseRoadmap(): { tasks: Task[]; phase: string } {
 // SAFE GIT WRAPPER
 // ============================================================================
 
+/**
+ * Check if a git lock file is stale (older than 10 minutes)
+ */
+function isLockFileStale(lockPath: string, maxAgeMinutes: number = 10): boolean {
+  try {
+    const stats = require('fs').statSync(lockPath);
+    const ageMs = Date.now() - stats.mtimeMs;
+    return ageMs > (maxAgeMinutes * 60 * 1000);
+  } catch {
+    return false;
+  }
+}
+
 async function safeGit<T>(
   operation: (git: SimpleGit) => Promise<T>,
   retries: number = GIT_RETRY_ATTEMPTS
 ): Promise<T> {
   const git = simpleGit(process.cwd());
-  
+
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       return await operation(git);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (errorMessage.includes('index.lock') || errorMessage.includes('locked')) {
         if (attempt < retries) {
           console.log(chalk.yellow(`⚠️  Git lock detected (attempt ${attempt}/${retries}). Retrying in ${GIT_RETRY_DELAY}ms...`));
           await new Promise(resolve => setTimeout(resolve, GIT_RETRY_DELAY));
           continue;
         } else {
-          // Last attempt - try to remove lock file
+          // Last attempt - only remove lock file if it's stale (>10 minutes old)
           try {
             const lockPath = join(process.cwd(), '.git', 'index.lock');
-            if (existsSync(lockPath)) {
+            if (existsSync(lockPath) && isLockFileStale(lockPath)) {
+              console.log(chalk.yellow('🔓 Removing stale lock file (>10 minutes old)...'));
               execSync(`rm -f "${lockPath}"`, { cwd: process.cwd() });
-              console.log(chalk.yellow('🔓 Removed stale lock file. Retrying...'));
               return await operation(git);
+            } else if (existsSync(lockPath)) {
+              console.log(chalk.red('❌ Lock file exists but is recent. Another process may be using git.'));
+              throw new Error('Git lock file is actively in use by another process');
             }
           } catch (lockError) {
-            // Ignore lock removal errors
+            if (lockError instanceof Error && lockError.message.includes('actively in use')) {
+              throw lockError;
+            }
+            // Ignore other lock removal errors
           }
         }
       }
-      
+
       throw error;
     }
   }
-  
+
   throw new Error('Git operation failed after all retries');
 }
 
@@ -329,16 +348,17 @@ async function executeGitWorkflow(taskId: string, files: string[]): Promise<stri
     }
   });
   
-  // Push (with force if needed)
+  // Push (with --force-with-lease for safer force push)
   await safeGit(async (git) => {
     try {
-      await git.push('origin', branchName);
+      await git.push('origin', branchName, ['--set-upstream']);
     } catch (error) {
-      // If branch exists on remote, force push
+      // If branch exists on remote, use --force-with-lease (safer than --force)
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('failed to push') || errorMessage.includes('rejected')) {
-        console.log(chalk.yellow(`⚠️  Branch exists on remote. Force pushing...`));
-        await git.push(['origin', branchName, '--force']);
+        console.log(chalk.yellow(`⚠️  Branch exists on remote. Using --force-with-lease for safe force push...`));
+        // --force-with-lease ensures we don't overwrite someone else's changes
+        await git.push(['origin', branchName, '--force-with-lease']);
       } else {
         throw error;
       }
@@ -346,11 +366,31 @@ async function executeGitWorkflow(taskId: string, files: string[]): Promise<stri
   });
   
   // INFRA-007: Merge branch to main after successful push
+  // SAFETY: Check if merge is safe before attempting
   await safeGit(async (git) => {
-    console.log(chalk.blue(`🔄 Merging ${branchName} to main...`));
+    console.log(chalk.blue(`🔄 Checking merge safety for ${branchName}...`));
     await git.checkout('main');
     await git.pull('origin', 'main');
-    
+
+    // Check for potential merge conflicts before attempting merge
+    try {
+      // Dry-run merge check using git merge-tree
+      const mergeBase = await git.raw(['merge-base', 'main', branchName]);
+      const mergeTreeOutput = await git.raw(['merge-tree', mergeBase.trim(), 'main', branchName]);
+
+      // Check if merge-tree output contains conflict markers
+      if (mergeTreeOutput.includes('<<<<<<<') || mergeTreeOutput.includes('>>>>>>>')) {
+        console.log(chalk.yellow(`⚠️  Potential merge conflicts detected. Skipping auto-merge.`));
+        console.log(chalk.yellow(`   Branch ${branchName} pushed. Create a PR for manual review.`));
+        await git.checkout(branchName); // Return to feature branch
+        return;
+      }
+    } catch (checkError) {
+      // If merge-tree fails, continue with traditional merge attempt
+      console.log(chalk.yellow(`⚠️  Could not verify merge safety: ${checkError instanceof Error ? checkError.message : String(checkError)}`));
+    }
+
+    console.log(chalk.blue(`🔄 Merging ${branchName} to main...`));
     try {
       await git.merge([branchName, '--no-ff', '-m', `Merge ${branchName}: ${taskId} autonomous implementation`]);
       await git.push('origin', 'main');
@@ -358,19 +398,16 @@ async function executeGitWorkflow(taskId: string, files: string[]): Promise<stri
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('conflict') || errorMessage.includes('CONFLICT')) {
-        console.log(chalk.yellow(`⚠️  Merge conflict detected. Attempting auto-resolution...`));
-        // Try auto-resolution
+        console.log(chalk.yellow(`⚠️  Merge conflict detected during merge.`));
+        // Abort the merge instead of auto-resolving (safer)
         try {
-          execSync('bash scripts/auto-resolve-conflicts.sh', { stdio: 'inherit' });
-          await git.add('.');
-          await git.commit(`Merge ${branchName}: ${taskId} (auto-resolved conflicts)`);
-          await git.push('origin', 'main');
-          console.log(chalk.green(`✅ Auto-resolved conflicts and merged to main`));
-        } catch (resolveError) {
-          console.log(chalk.red(`❌ Auto-resolution failed. Manual intervention required.`));
-          console.log(chalk.yellow(`   Branch ${branchName} pushed but not merged to main.`));
-          throw resolveError;
+          await git.raw(['merge', '--abort']);
+          console.log(chalk.yellow(`   Merge aborted. Branch ${branchName} pushed but not merged.`));
+          console.log(chalk.yellow(`   Please create a PR for manual review and conflict resolution.`));
+        } catch (abortError) {
+          console.log(chalk.red(`❌ Could not abort merge. Manual cleanup may be required.`));
         }
+        // Don't throw - the branch push succeeded, just the merge to main didn't
       } else {
         throw error;
       }

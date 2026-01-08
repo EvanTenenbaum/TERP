@@ -373,14 +373,14 @@ function modulePathExists(modulePath: string): boolean {
 function getChangedTaskIds(): string[] {
   try {
     const diff = execSync('git diff --cached docs/roadmaps/MASTER_ROADMAP.md', { encoding: 'utf-8' });
-    
-    // Extract task IDs from diff
+
+    // Extract task IDs from diff - support all prefixes (ST, BUG, QA, DATA, CL, FEATURE, etc.)
     const taskIds = new Set<string>();
-    const matches = diff.matchAll(/^[+\-]### (ST-\d+):/gm);
+    const matches = diff.matchAll(/^[+\-]### ([A-Z]+-\d+(?:-[A-Z]+)?):/gm);
     for (const match of matches) {
       taskIds.add(match[1]);
     }
-    
+
     return Array.from(taskIds);
   } catch {
     // If git command fails, validate all tasks

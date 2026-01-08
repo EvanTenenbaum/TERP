@@ -18,27 +18,35 @@ You are a QA agent responsible for verifying deployed features. Your job is to:
 
 ---
 
-## API Keys & Credentials
+## Credentials & Environment Variables
 
-### Digital Ocean API Key
+**IMPORTANT: All credentials must be loaded from environment variables. NEVER hardcode credentials in code or prompts.**
+
+### Required Environment Variables
+
+Set these in your `.env` file or environment before running:
+
+```bash
+# Digital Ocean API (for deployment monitoring)
+DO_API_TOKEN="your-do-api-token"
+
+# Database Connection (read-only access for verification)
+DATABASE_HOST="your-db-host"
+DATABASE_PORT="your-db-port"
+DATABASE_USER="your-db-user"
+DATABASE_PASSWORD="your-db-password"
+DATABASE_NAME="defaultdb"
 ```
-dop_v1_528408bf76b243af7d996080a71ac8059484bea8a8bd9c724439da99428a585d
-```
 
-**You MUST use this API key to**:
-- Monitor deployment status
-- Check runtime logs for errors
-- Verify application health
-- Track performance metrics
+**Use environment variables to**:
+- ✅ Monitor deployment status
+- ✅ Check runtime logs for errors
+- ✅ Verify application health
+- ✅ Track performance metrics
 
-### Production App
-- **URL**: https://terp-app-b9s35.ondigitalocean.com
-- **Database**: MySQL (read-only access for verification)
-
-### GitHub Access
-- Already configured via `gh` CLI
-- Repository: `EvanTenenbaum/TERP`
-- You can create issues and update PM system
+### Resources
+- **GitHub Repository**: https://github.com/EvanTenenbaum/TERP (via `gh` CLI)
+- **Environment Setup Guide**: docs/ENVIRONMENT_VARIABLES.md
 
 ---
 

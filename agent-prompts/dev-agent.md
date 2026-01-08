@@ -4,73 +4,61 @@
 
 ---
 
-## 🔑 CRITICAL: API Keys & Credentials
+## 🔑 Credentials & Environment Variables
 
-**You MUST use these credentials to monitor deployments and verify production health!**
+**IMPORTANT: All credentials must be loaded from environment variables. NEVER hardcode credentials in code or prompts.**
 
-### Digital Ocean API
+### Required Environment Variables
 
-**API Key**: `dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd`
+Set these in your `.env` file or environment before running:
 
-**Use this API key to**:
+```bash
+# Digital Ocean API (for deployment monitoring)
+DO_API_TOKEN="your-do-api-token"
+
+# Database Connection (loaded automatically from .env)
+DATABASE_HOST="your-db-host"
+DATABASE_PORT="your-db-port"
+DATABASE_USER="your-db-user"
+DATABASE_PASSWORD="your-db-password"
+DATABASE_NAME="defaultdb"
+```
+
+**Use environment variables to**:
 
 - ✅ Check deployment status after every push
 - ✅ View build logs when deployment fails
 - ✅ Monitor application health
-- ✅ Trigger redeployments if needed
-- ✅ Check runtime logs for errors
+- ✅ Verify database migrations
+- ✅ Check data integrity after deployment
 
 **Example - Check Deployment Status**:
 
 ```bash
-# Get app info and latest deployment
+# Get app info using environment variable
 curl -X GET \
-  -H "Authorization: Bearer dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd" \
+  -H "Authorization: Bearer $DO_API_TOKEN" \
   -H "Content-Type: application/json" \
   https://api.digitalocean.com/v2/apps | jq '.apps[] | select(.spec.name=="terp-app")'
-
-# Check deployment logs
-APP_ID="YOUR_APP_ID"
-DEPLOYMENT_ID="LATEST_DEPLOYMENT_ID"
-curl -s -H "Authorization: Bearer dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd" \
-  "https://api.digitalocean.com/v2/apps/$APP_ID/deployments/$DEPLOYMENT_ID/logs" \
-  | jq -r '.historic_urls[]' | while read url; do curl -s "$url" | gunzip; done
 ```
 
-### Production Database
-
-- **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
-- **Port**: `25060`
-- **User**: `doadmin`
-- **Password**: `AVNS_Q_RGkS7-uB3Bk7xC2am``
-- **Database**: `defaultdb`
-- **SSL**: Required
-
-**Use this to**:
-
-- ✅ Verify database migrations were applied
-- ✅ Check data integrity after deployment
-- ✅ Debug production issues
-
-**Example - Verify Migrations**:
+**Example - Database Operations**:
 
 ```bash
-mysql --host=terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com \
-      --port=25060 \
-      --user=doadmin \
-      --password=AVNS_Q_RGkS7-uB3Bk7xC2am \
-      --database=defaultdb \
+# Use environment variables for database access
+mysql --host="$DATABASE_HOST" \
+      --port="$DATABASE_PORT" \
+      --user="$DATABASE_USER" \
+      --password="$DATABASE_PASSWORD" \
+      --database="$DATABASE_NAME" \
       --ssl-mode=REQUIRED \
       -e "SHOW TABLES;"
 ```
 
-### Production App
+### Resources
 
-**URL**: https://terp-app-b9s35.ondigitalocean.com
-
-### GitHub Repository
-
-**URL**: https://github.com/EvanTenenbaum/TERP
+- **GitHub Repository**: https://github.com/EvanTenenbaum/TERP
+- **Environment Setup Guide**: docs/ENVIRONMENT_VARIABLES.md
 
 ---
 

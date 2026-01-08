@@ -18,7 +18,8 @@ import { requirePermission } from "../_core/permissionMiddleware";
 import * as ordersDb from "../ordersDb";
 import { getDb } from "../db";
 import { orders, orderLineItems, batches } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
 import { pricingService } from "../services/pricingService";
 import { marginCalculationService } from "../services/marginCalculationService";
@@ -1085,15 +1086,23 @@ export const ordersRouter = router({
         throw new Error("Failed to parse order items - data may be corrupted");
       }
 
+      // FIXED: Batch query instead of N+1 individual queries
+      const batchIds = orderItems.map((item: { batchId: number }) => item.batchId);
+      const batchRecords = await db
+        .select()
+        .from(batches)
+        .where(inArray(batches.id, batchIds));
+
+      const batchMap = new Map(batchRecords.map(b => [b.id, b]));
+
       for (const item of orderItems) {
-        const [batch] = await db
-          .select()
-          .from(batches)
-          .where(eq(batches.id, item.batchId))
-          .limit(1);
+        const batch = batchMap.get(item.batchId);
 
         if (!batch) {
-          throw new Error(`Batch ${item.batchId} not found`);
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: `Batch ${item.batchId} not found`,
+          });
         }
 
         const availableQty = item.isSample
@@ -1101,10 +1110,11 @@ export const ordersRouter = router({
           : parseFloat(batch.onHandQty || "0");
 
         if (availableQty < item.quantity) {
-          throw new Error(
-            `Insufficient inventory for batch ${batch.sku || batch.id}. ` +
-              `Available: ${availableQty}, Required: ${item.quantity}`
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient inventory for batch ${batch.sku || batch.id}. ` +
+              `Available: ${availableQty}, Required: ${item.quantity}`,
+          });
         }
       }
 
