@@ -3,23 +3,47 @@
 File Locking System for TERP Product Management
 
 Prevents multiple agents from editing the same files simultaneously.
+Uses file-based locking to prevent race conditions.
 """
 
 import json
 import sys
 import os
-from datetime import datetime, timedelta
+import fcntl
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 LOCKS_FILE = Path(__file__).parent.parent.parent / "pm-evaluation" / "file-locks.json"
+LOCKFILE_PATH = Path(__file__).parent.parent.parent / "pm-evaluation" / ".file-locks.lock"
+
+
+class FileLockContext:
+    """Context manager for file-based locking to prevent race conditions"""
+    def __init__(self, lock_path):
+        self.lock_path = lock_path
+        self.lock_file = None
+
+    def __enter__(self):
+        self.lock_path.parent.mkdir(parents=True, exist_ok=True)
+        self.lock_file = open(self.lock_path, 'w')
+        fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_EX)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.lock_file:
+            fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_UN)
+            self.lock_file.close()
+        return False
+
 
 def load_locks():
     """Load current file locks"""
     if not LOCKS_FILE.exists():
         return {"locks": {}}
-    
+
     with open(LOCKS_FILE, 'r') as f:
         return json.load(f)
+
 
 def save_locks(locks_data):
     """Save file locks"""
@@ -27,79 +51,99 @@ def save_locks(locks_data):
     with open(LOCKS_FILE, 'w') as f:
         json.dump(locks_data, f, indent=2)
 
+
 def clean_stale_locks(locks_data, max_age_hours=24):
     """Remove locks older than max_age_hours"""
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     stale_files = []
-    
+
     for file_path, lock_info in list(locks_data["locks"].items()):
-        locked_at = datetime.fromisoformat(lock_info["locked_at"].replace('Z', '+00:00'))
-        age = now - locked_at.replace(tzinfo=None)
-        
-        if age > timedelta(hours=max_age_hours):
+        try:
+            # Handle ISO format with or without 'Z' suffix
+            locked_at_str = lock_info["locked_at"]
+            if locked_at_str.endswith('Z'):
+                locked_at_str = locked_at_str[:-1] + '+00:00'
+            locked_at = datetime.fromisoformat(locked_at_str)
+            # Ensure timezone-aware comparison
+            if locked_at.tzinfo is None:
+                locked_at = locked_at.replace(tzinfo=timezone.utc)
+            age = now - locked_at
+
+            if age > timedelta(hours=max_age_hours):
+                stale_files.append(file_path)
+                del locks_data["locks"][file_path]
+        except (ValueError, KeyError) as e:
+            # If timestamp is malformed, consider it stale
+            print(f"⚠️  Malformed lock for {file_path}, removing: {e}")
             stale_files.append(file_path)
-            del locks_data["locks"][file_path]
-    
+            if file_path in locks_data["locks"]:
+                del locks_data["locks"][file_path]
+
     if stale_files:
         print(f"🧹 Cleaned {len(stale_files)} stale locks (>{max_age_hours}h old)")
-    
+
     return locks_data
 
 def claim_files(initiative_id, files, agent_id="unknown"):
-    """Claim files for an initiative"""
-    locks_data = load_locks()
-    locks_data = clean_stale_locks(locks_data)
-    
-    # Check if any files are already locked
-    conflicts = []
-    for file_path in files:
-        if file_path in locks_data["locks"]:
-            existing_lock = locks_data["locks"][file_path]
-            if existing_lock["initiative_id"] != initiative_id:
-                conflicts.append((file_path, existing_lock))
-    
-    if conflicts:
-        print("❌ Cannot claim files - conflicts detected:")
-        for file_path, lock in conflicts:
-            print(f"   {file_path}")
-            print(f"   └─ Locked by {lock['initiative_id']} ({lock['locked_by']})")
-        return False
-    
-    # Claim all files
-    now = datetime.now().isoformat() + 'Z'
-    for file_path in files:
-        locks_data["locks"][file_path] = {
-            "initiative_id": initiative_id,
-            "locked_at": now,
-            "locked_by": agent_id
-        }
-    
-    save_locks(locks_data)
-    print(f"✅ Claimed {len(files)} file(s) for {initiative_id}")
-    for file_path in files:
-        print(f"   📄 {file_path}")
-    return True
+    """Claim files for an initiative (thread-safe)"""
+    # Use file-based locking to prevent race conditions
+    with FileLockContext(LOCKFILE_PATH):
+        locks_data = load_locks()
+        locks_data = clean_stale_locks(locks_data)
+
+        # Check if any files are already locked
+        conflicts = []
+        for file_path in files:
+            if file_path in locks_data["locks"]:
+                existing_lock = locks_data["locks"][file_path]
+                if existing_lock["initiative_id"] != initiative_id:
+                    conflicts.append((file_path, existing_lock))
+
+        if conflicts:
+            print("❌ Cannot claim files - conflicts detected:")
+            for file_path, lock in conflicts:
+                print(f"   {file_path}")
+                print(f"   └─ Locked by {lock['initiative_id']} ({lock['locked_by']})")
+            return False
+
+        # Claim all files
+        now = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+        for file_path in files:
+            locks_data["locks"][file_path] = {
+                "initiative_id": initiative_id,
+                "locked_at": now,
+                "locked_by": agent_id
+            }
+
+        save_locks(locks_data)
+        print(f"✅ Claimed {len(files)} file(s) for {initiative_id}")
+        for file_path in files:
+            print(f"   📄 {file_path}")
+        return True
+
 
 def release_files(initiative_id):
-    """Release all files claimed by an initiative"""
-    locks_data = load_locks()
-    
-    # Find and remove all locks for this initiative
-    released = []
-    for file_path, lock_info in list(locks_data["locks"].items()):
-        if lock_info["initiative_id"] == initiative_id:
-            released.append(file_path)
-            del locks_data["locks"][file_path]
-    
-    if released:
-        save_locks(locks_data)
-        print(f"✅ Released {len(released)} file(s) from {initiative_id}")
-        for file_path in released:
-            print(f"   📄 {file_path}")
-    else:
-        print(f"ℹ️  No files locked by {initiative_id}")
-    
-    return True
+    """Release all files claimed by an initiative (thread-safe)"""
+    # Use file-based locking to prevent race conditions
+    with FileLockContext(LOCKFILE_PATH):
+        locks_data = load_locks()
+
+        # Find and remove all locks for this initiative
+        released = []
+        for file_path, lock_info in list(locks_data["locks"].items()):
+            if lock_info["initiative_id"] == initiative_id:
+                released.append(file_path)
+                del locks_data["locks"][file_path]
+
+        if released:
+            save_locks(locks_data)
+            print(f"✅ Released {len(released)} file(s) from {initiative_id}")
+            for file_path in released:
+                print(f"   📄 {file_path}")
+        else:
+            print(f"ℹ️  No files locked by {initiative_id}")
+
+        return True
 
 def check_locks(files):
     """Check if files are locked"""

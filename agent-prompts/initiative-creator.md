@@ -4,42 +4,37 @@
 
 ---
 
-## 🔑 CRITICAL: API Keys & Credentials
+## 🔑 Credentials & Environment Variables
 
-**You MUST use these credentials to verify production state before creating initiatives!**
+**IMPORTANT: All credentials must be loaded from environment variables. NEVER hardcode credentials in code or prompts.**
 
-### Digital Ocean API
+### Required Environment Variables
 
-**API Key**: `dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd`
+Set these in your `.env` file or environment before running:
 
-**Use this API key to**:
+```bash
+# Digital Ocean API (for deployment monitoring)
+DO_API_TOKEN="your-do-api-token"
+
+# Database Connection (loaded automatically from .env)
+DATABASE_HOST="your-db-host"
+DATABASE_PORT="your-db-port"
+DATABASE_USER="your-db-user"
+DATABASE_PASSWORD="your-db-password"
+DATABASE_NAME="defaultdb"
+```
+
+**Use environment variables to**:
 
 - ✅ Check current production features (avoid duplicates)
 - ✅ Verify deployment health before proposing new work
-- ✅ Understand production constraints
-
-### Production Database
-
-- **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
-- **Port**: `25060`
-- **User**: `doadmin`
-- **Password**: `AVNS_Q_RGkS7-uB3Bk7xC2am``
-- **Database**: `defaultdb`
-- **SSL**: Required
-
-**Use this to**:
-
 - ✅ Check existing database schema
 - ✅ Avoid duplicate tables/columns
-- ✅ Understand data constraints
 
-### Production App
+### Resources
 
-**URL**: https://terp-app-b9s35.ondigitalocean.app
-
-### GitHub Repository
-
-**URL**: https://github.com/EvanTenenbaum/TERP
+- **GitHub Repository**: https://github.com/EvanTenenbaum/TERP
+- **Environment Setup Guide**: docs/ENVIRONMENT_VARIABLES.md
 
 ---
 

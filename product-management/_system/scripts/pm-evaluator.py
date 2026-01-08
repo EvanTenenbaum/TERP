@@ -557,45 +557,58 @@ def analyze_dependencies():
 
 
 def get_next_task(agent_id=None):
-    """Get the next available task from the roadmap"""
-    import fcntl
-    
+    """Get the next available task from the roadmap (cross-platform)"""
+    # Cross-platform file locking
+    try:
+        import fcntl
+        HAS_FCNTL = True
+    except ImportError:
+        # Windows doesn't have fcntl, use msvcrt instead
+        HAS_FCNTL = False
+        try:
+            import msvcrt
+        except ImportError:
+            msvcrt = None
+
     # Load registry with file lock for atomic operation
     registry_file = INITIATIVES_DIR / "registry.json"
     roadmap_order_file = PM_EVAL_DIR / "roadmap_order.json"
-    
+
     if not registry_file.exists():
         print("ℹ️  No initiatives in registry")
         return None
-    
+
     with open(registry_file, 'r+') as f:
-        # Acquire exclusive lock
-        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-        
+        # Acquire exclusive lock (cross-platform)
+        if HAS_FCNTL:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        elif msvcrt:
+            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+
         try:
             registry = json.load(f)
-            
+
             # Load roadmap order if available
             roadmap_order = []
             if roadmap_order_file.exists():
                 with open(roadmap_order_file, 'r') as rf:
                     roadmap_data = json.load(rf)
                     roadmap_order = [sprint["initiative_id"] for sprint in roadmap_data.get("sprints", [])]
-            
+
             # Filter to approved initiatives not in progress
             candidates = []
             for init in registry["initiatives"]:
                 if init["status"] != "approved":
                     continue
-                
+
                 # Check if dependencies are satisfied
                 # (Simplified - assumes no dependencies for now)
                 candidates.append(init)
-            
+
             if not candidates:
                 print("ℹ️  No tasks available")
                 return None
-            
+
             # Sort by roadmap order first, then by priority
             def sort_key(init):
                 init_id = init["id"]
@@ -605,12 +618,12 @@ def get_next_task(agent_id=None):
                 # Otherwise sort by priority
                 priority_order = {"high": 3, "medium": 2, "low": 1, None: 0}
                 return (1, -priority_order.get(init.get("priority"), 0))
-            
+
             candidates.sort(key=sort_key)
-            
+
             # Get top task
             next_task = candidates[0]
-            
+
             # Update status to in-progress atomically
             for init in registry["initiatives"]:
                 if init["id"] == next_task["id"]:
@@ -618,23 +631,27 @@ def get_next_task(agent_id=None):
                     if agent_id:
                         init["assigned_to"] = agent_id
                     break
-            
+
             # Write back
             f.seek(0)
             json.dump(registry, f, indent=2)
             f.truncate()
-            
+
             print(f"✅ Next task: {next_task['id']}")
             print(f"   Title: {next_task['title']}")
             print(f"   Priority: {next_task.get('priority', 'not set')}")
             if agent_id:
                 print(f"   Assigned to: {agent_id}")
-            
+
             return next_task
-            
+
         finally:
-            # Release lock
-            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            # Release lock (cross-platform)
+            if HAS_FCNTL:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            elif msvcrt:
+                f.seek(0)
+                msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 

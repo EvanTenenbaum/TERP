@@ -276,16 +276,37 @@ function analyzeExecutionStrategy(tasks: Task[]): ExecutionPlan {
     
     for (const task of sortedTasks) {
       if (processed.has(task.id)) continue;
-      
-      // Check module conflicts
-      const taskModule = task.module || 'unknown';
-      if (batchModules.has(taskModule)) continue;
-      
+
+      // Check module conflicts (exact match and partial overlap)
+      const taskModule = (task.module || 'unknown').toLowerCase();
+      let hasConflict = false;
+
+      // Check for exact match or partial overlap with existing modules
+      for (const existingModule of batchModules) {
+        const existingLower = existingModule.toLowerCase();
+        // Exact match
+        if (existingLower === taskModule) {
+          hasConflict = true;
+          break;
+        }
+        // Partial overlap: one module is a prefix of the other
+        // e.g., 'calendar' and 'calendar-reminders' would conflict
+        if (existingLower.startsWith(taskModule + '-') ||
+            taskModule.startsWith(existingLower + '-') ||
+            existingLower.includes('/' + taskModule) ||
+            taskModule.includes('/' + existingLower)) {
+          hasConflict = true;
+          break;
+        }
+      }
+
+      if (hasConflict) continue;
+
       // Add to batch
       batch.push(task);
-      batchModules.add(taskModule);
+      batchModules.add(task.module || 'unknown');
       processed.add(task.id);
-      
+
       // Limit batch size to 4
       if (batch.length >= 4) break;
     }
@@ -392,10 +413,10 @@ function executePlan(phases: string[]): void {
       console.error(`❌ Batch ${batch.batchNumber} failed:`, error);
     }
     
-    // Small delay between batches
+    // Small delay between batches (use proper async delay instead of blocking execSync)
     if (batch.batchNumber < plan.batches.length) {
       console.log('⏳ Waiting 5 seconds before next batch...');
-      execSync('sleep 5');
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
   

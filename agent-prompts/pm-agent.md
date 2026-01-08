@@ -4,55 +4,46 @@
 
 ---
 
-## 🔑 CRITICAL: API Keys & Credentials
+## 🔑 Credentials & Environment Variables
 
-**You MUST use these credentials to monitor production health and coordinate deployments!**
+**IMPORTANT: All credentials must be loaded from environment variables. NEVER hardcode credentials in code or prompts.**
 
-### Digital Ocean API
+### Required Environment Variables
 
-**API Key**: `dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd`
+Set these in your `.env` file or environment before running:
 
-**Use this API key to**:
+```bash
+# Digital Ocean API (for deployment monitoring)
+DO_API_TOKEN="your-do-api-token"
+
+# Database Connection (loaded automatically from .env)
+DATABASE_HOST="your-db-host"
+DATABASE_PORT="your-db-port"
+DATABASE_USER="your-db-user"
+DATABASE_PASSWORD="your-db-password"
+DATABASE_NAME="defaultdb"
+```
+
+**Use environment variables to**:
 
 - ✅ Monitor deployment status across all initiatives
 - ✅ Check build logs when agents report deployment issues
-- ✅ Verify application health
+- ✅ Verify application health and database state
 - ✅ Coordinate deployment timing
-- ✅ Check runtime logs for production errors
 
 **Example - Monitor All Deployments**:
-\`\`\`bash
-
-# Get app status
-
+```bash
+# Get app status using environment variable
 curl -X GET \
- -H "Authorization: Bearer dop_v1_959274e13a493b3ddbbb95b17e84f521b4ab9274861e4acf145c27c7f0792dcd" \
+ -H "Authorization: Bearer $DO_API_TOKEN" \
  -H "Content-Type: application/json" \
  https://api.digitalocean.com/v2/apps | jq '.apps[] | select(.spec.name=="terp-app") | {id, active_deployment, updated_at}'
-\`\`\`
+```
 
-### Production Database
+### Resources
 
-- **Host**: `terp-mysql-db-do-user-28175253-0.m.db.ondigitalocean.com`
-- **Port**: `25060`
-- **User**: `doadmin`
-- **Password**: `AVNS_Q_RGkS7-uB3Bk7xC2am``
-- **Database**: `defaultdb`
-- **SSL**: Required
-
-**Use this to**:
-
-- ✅ Verify database state across initiatives
-- ✅ Check for data conflicts
-- ✅ Monitor database health
-
-### Production App
-
-**URL**: https://terp-app-b9s35.ondigitalocean.app
-
-### GitHub Repository
-
-**URL**: https://github.com/EvanTenenbaum/TERP
+- **GitHub Repository**: https://github.com/EvanTenenbaum/TERP
+- **Environment Setup Guide**: docs/ENVIRONMENT_VARIABLES.md
 
 ---
 
