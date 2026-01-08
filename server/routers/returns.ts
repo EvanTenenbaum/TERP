@@ -9,30 +9,57 @@
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { returns, batches, inventoryMovements, credits, clients, orders } from "../../drizzle/schema";
-import { eq, desc, sql, and, inArray, like, or } from "drizzle-orm";
+import {
+  returns,
+  batches,
+  inventoryMovements,
+  clients,
+  orders,
+} from "../../drizzle/schema";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import * as creditsDb from "../creditsDb";
 
-// Return reason enum
-const returnReasonEnum = z.enum([
+// Extended return reason enum for API input (includes values that map to database values)
+const returnReasonInputEnum = z.enum([
   "DEFECTIVE",
   "WRONG_ITEM",
   "NOT_AS_DESCRIBED",
   "CUSTOMER_CHANGED_MIND",
-  "DAMAGED_IN_TRANSIT",
-  "QUALITY_ISSUE",
-  "OTHER"
+  "DAMAGED_IN_TRANSIT", // Maps to DEFECTIVE
+  "QUALITY_ISSUE", // Maps to DEFECTIVE
+  "OTHER",
 ]);
+
+// Database-compatible return reason type
+type DbReturnReason =
+  | "DEFECTIVE"
+  | "WRONG_ITEM"
+  | "NOT_AS_DESCRIBED"
+  | "CUSTOMER_CHANGED_MIND"
+  | "OTHER";
+
+// Map extended reasons to database-compatible values
+function mapReturnReason(
+  reason: z.infer<typeof returnReasonInputEnum>
+): DbReturnReason {
+  switch (reason) {
+    case "DAMAGED_IN_TRANSIT":
+    case "QUALITY_ISSUE":
+      return "DEFECTIVE";
+    default:
+      return reason;
+  }
+}
 
 // Return item condition enum
 const itemConditionEnum = z.enum([
   "SELLABLE",
   "DAMAGED",
   "DESTROYED",
-  "QUARANTINE"
+  "QUARANTINE",
 ]);
 
 // Return status enum
@@ -42,7 +69,7 @@ const returnStatusEnum = z.enum([
   "REJECTED",
   "RECEIVED",
   "PROCESSED",
-  "CANCELLED"
+  "CANCELLED",
 ]);
 
 // Return item schema for creating returns
@@ -55,15 +82,18 @@ const returnItemSchema = z.object({
 
 export const returnsRouter = router({
   // List returns with filtering and pagination
-  list: protectedProcedure.use(requirePermission("orders:read"))
-    .input(z.object({
-      status: returnStatusEnum.optional(),
-      orderId: z.number().optional(),
-      clientId: z.number().optional(),
-      searchTerm: z.string().optional(),
-      limit: z.number().min(1).max(100).default(50),
-      offset: z.number().min(0).default(0),
-    }))
+  list: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        status: returnStatusEnum.optional(),
+        orderId: z.number().optional(),
+        clientId: z.number().optional(),
+        searchTerm: z.string().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -100,7 +130,8 @@ export const returnsRouter = router({
       const returnList = await query;
 
       // Get total count
-      const countConditions = conditions.length > 0 ? and(...conditions) : undefined;
+      const countConditions =
+        conditions.length > 0 ? and(...conditions) : undefined;
       const countResult = await db
         .select({ count: sql<number>`COUNT(*)` })
         .from(returns)
@@ -147,49 +178,51 @@ export const returnsRouter = router({
     }),
 
   // Get return by ID
-  getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+  getById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    const [returnRecord] = await db
-      .select()
-      .from(returns)
-      .where(eq(returns.id, input.id));
+      const [returnRecord] = await db
+        .select()
+        .from(returns)
+        .where(eq(returns.id, input.id));
 
-    if (!returnRecord) {
-      throw new Error("Return not found");
-    }
+      if (!returnRecord) {
+        throw new Error("Return not found");
+      }
 
-    // Get order details
-    const [order] = await db
-      .select({
-        id: orders.id,
-        orderNumber: orders.orderNumber,
-        clientId: orders.clientId,
-        total: orders.total,
-      })
-      .from(orders)
-      .where(eq(orders.id, returnRecord.orderId));
-
-    // Get client details if order exists
-    let client = null;
-    if (order?.clientId) {
-      const [clientResult] = await db
+      // Get order details
+      const [order] = await db
         .select({
-          id: clients.id,
-          name: clients.name,
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          clientId: orders.clientId,
+          total: orders.total,
         })
-        .from(clients)
-        .where(eq(clients.id, order.clientId));
-      client = clientResult;
-    }
+        .from(orders)
+        .where(eq(orders.id, returnRecord.orderId));
 
-    return {
-      ...returnRecord,
-      order,
-      client,
-    };
-  }),
+      // Get client details if order exists
+      let client = null;
+      if (order?.clientId) {
+        const [clientResult] = await db
+          .select({
+            id: clients.id,
+            name: clients.name,
+          })
+          .from(clients)
+          .where(eq(clients.id, order.clientId));
+        client = clientResult;
+      }
+
+      return {
+        ...returnRecord,
+        order,
+        client,
+      };
+    }),
 
   // Create a return request
   create: protectedProcedure
@@ -198,7 +231,7 @@ export const returnsRouter = router({
       z.object({
         orderId: z.number(),
         items: z.array(returnItemSchema).min(1),
-        reason: returnReasonEnum,
+        reason: returnReasonInputEnum,
         notes: z.string().optional(),
         restockInventory: z.boolean().default(true),
       })
@@ -207,10 +240,14 @@ export const returnsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      logger.info({ msg: "[Returns] Creating return", orderId: input.orderId, itemCount: input.items.length });
+      logger.info({
+        msg: "[Returns] Creating return",
+        orderId: input.orderId,
+        itemCount: input.items.length,
+      });
 
       // Wrap in transaction to ensure atomicity
-      const result = await db.transaction(async (tx) => {
+      const result = await db.transaction(async tx => {
         // Get authenticated user ID
         const userId = ctx.user?.id;
         if (!userId) {
@@ -227,11 +264,12 @@ export const returnsRouter = router({
           throw new Error("Order not found");
         }
 
-        // Create return record
+        // Create return record - map extended reasons to database-compatible values
+        const mappedReason = mapReturnReason(input.reason);
         const [returnRecord] = await tx.insert(returns).values({
           orderId: input.orderId,
           items: input.items as unknown,
-          returnReason: input.reason,
+          returnReason: mappedReason,
           notes: input.notes,
           processedBy: userId,
         });
@@ -275,7 +313,10 @@ export const returnsRouter = router({
           }
         }
 
-        logger.info({ msg: "[Returns] Return created", returnId: returnRecord.insertId });
+        logger.info({
+          msg: "[Returns] Return created",
+          returnId: returnRecord.insertId,
+        });
 
         return { id: returnRecord.insertId };
       });
@@ -286,10 +327,12 @@ export const returnsRouter = router({
   // Approve a return (updates status from PENDING to APPROVED)
   approve: protectedProcedure
     .use(requirePermission("orders:update"))
-    .input(z.object({
-      id: z.number(),
-      approvalNotes: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        approvalNotes: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -316,7 +359,9 @@ export const returnsRouter = router({
         returnRecord.notes,
         `[APPROVED by User #${userId} at ${new Date().toISOString()}]`,
         input.approvalNotes ? `Approval notes: ${input.approvalNotes}` : null,
-      ].filter(Boolean).join(" | ");
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
       // Update the return record (note: current schema doesn't have status field)
       // For now, we append to notes as a workaround
@@ -333,10 +378,12 @@ export const returnsRouter = router({
   // Reject a return
   reject: protectedProcedure
     .use(requirePermission("orders:update"))
-    .input(z.object({
-      id: z.number(),
-      rejectionReason: z.string(),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        rejectionReason: z.string(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -363,7 +410,9 @@ export const returnsRouter = router({
         returnRecord.notes,
         `[REJECTED by User #${userId} at ${new Date().toISOString()}]`,
         `Rejection reason: ${input.rejectionReason}`,
-      ].filter(Boolean).join(" | ");
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
       await db
         .update(returns)
@@ -378,15 +427,19 @@ export const returnsRouter = router({
   // Receive items from a return
   receive: protectedProcedure
     .use(requirePermission("orders:update"))
-    .input(z.object({
-      id: z.number(),
-      receivedItems: z.array(z.object({
-        batchId: z.number(),
-        receivedQuantity: z.string(),
-        actualCondition: itemConditionEnum,
-        notes: z.string().optional(),
-      })),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        receivedItems: z.array(
+          z.object({
+            batchId: z.number(),
+            receivedQuantity: z.string(),
+            actualCondition: itemConditionEnum,
+            notes: z.string().optional(),
+          })
+        ),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -396,7 +449,10 @@ export const returnsRouter = router({
         throw new Error("User not authenticated");
       }
 
-      logger.info({ msg: "[Returns] Receiving return items", returnId: input.id });
+      logger.info({
+        msg: "[Returns] Receiving return items",
+        returnId: input.id,
+      });
 
       // Get the return
       const [returnRecord] = await db
@@ -409,7 +465,7 @@ export const returnsRouter = router({
       }
 
       // Process each received item
-      await db.transaction(async (tx) => {
+      await db.transaction(async tx => {
         for (const item of input.receivedItems) {
           const receivedQty = parseFloat(item.receivedQuantity);
 
@@ -445,7 +501,10 @@ export const returnsRouter = router({
                 condition: item.actualCondition,
               });
             }
-          } else if (item.actualCondition === "DAMAGED" || item.actualCondition === "DESTROYED") {
+          } else if (
+            item.actualCondition === "DAMAGED" ||
+            item.actualCondition === "DESTROYED"
+          ) {
             // For damaged/destroyed items, reverse the inventory if it was previously restored
             const [batch] = await tx
               .select()
@@ -464,7 +523,7 @@ export const returnsRouter = router({
 
               await tx.insert(inventoryMovements).values({
                 batchId: item.batchId,
-                inventoryMovementType: "SHRINKAGE",
+                inventoryMovementType: "DISPOSAL",
                 quantityChange: `-${receivedQty}`,
                 quantityBefore: currentQty.toString(),
                 quantityAfter: newQty.toString(),
@@ -485,15 +544,20 @@ export const returnsRouter = router({
         }
 
         // Update return notes with receiving info
-        const receivingDetails = input.receivedItems.map(item =>
-          `Batch #${item.batchId}: ${item.receivedQuantity} units (${item.actualCondition})`
-        ).join(", ");
+        const receivingDetails = input.receivedItems
+          .map(
+            item =>
+              `Batch #${item.batchId}: ${item.receivedQuantity} units (${item.actualCondition})`
+          )
+          .join(", ");
 
         const updatedNotes = [
           returnRecord.notes,
           `[RECEIVED by User #${userId} at ${new Date().toISOString()}]`,
           `Received items: ${receivingDetails}`,
-        ].filter(Boolean).join(" | ");
+        ]
+          .filter(Boolean)
+          .join(" | ");
 
         await tx
           .update(returns)
@@ -501,7 +565,10 @@ export const returnsRouter = router({
           .where(eq(returns.id, input.id));
       });
 
-      logger.info({ msg: "[Returns] Return items received", returnId: input.id });
+      logger.info({
+        msg: "[Returns] Return items received",
+        returnId: input.id,
+      });
 
       return { success: true, returnId: input.id };
     }),
@@ -509,12 +576,14 @@ export const returnsRouter = router({
   // Process a return and optionally issue credit
   process: protectedProcedure
     .use(requirePermission("orders:update"))
-    .input(z.object({
-      id: z.number(),
-      issueCredit: z.boolean().default(true),
-      creditAmount: z.number().optional(),
-      creditNotes: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        id: z.number(),
+        issueCredit: z.boolean().default(true),
+        creditAmount: z.number().optional(),
+        creditNotes: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
@@ -524,7 +593,11 @@ export const returnsRouter = router({
         throw new Error("User not authenticated");
       }
 
-      logger.info({ msg: "[Returns] Processing return", returnId: input.id, issueCredit: input.issueCredit });
+      logger.info({
+        msg: "[Returns] Processing return",
+        returnId: input.id,
+        issueCredit: input.issueCredit,
+      });
 
       // Get the return with order details
       const [returnRecord] = await db
@@ -564,10 +637,14 @@ export const returnsRouter = router({
         if (!calculatedAmount) {
           // Calculate from items - this is a simplified calculation
           const items = returnRecord.items as Array<{ quantity: string }>;
-          const totalQty = items.reduce((sum, item) => sum + parseFloat(item.quantity || "0"), 0);
+          const totalQty = items.reduce(
+            (sum, item) => sum + parseFloat(item.quantity || "0"),
+            0
+          );
           const orderTotal = parseFloat(order.total || "0");
           // Proportional calculation (simplified)
-          calculatedAmount = orderTotal > 0 ? Math.min(orderTotal, totalQty * 10) : 0;
+          calculatedAmount =
+            orderTotal > 0 ? Math.min(orderTotal, totalQty * 10) : 0;
         }
 
         if (calculatedAmount > 0) {
@@ -604,14 +681,20 @@ export const returnsRouter = router({
         `[PROCESSED by User #${userId} at ${new Date().toISOString()}]`,
         creditId ? `Credit issued: Credit #${creditId}` : "No credit issued",
         input.creditNotes,
-      ].filter(Boolean).join(" | ");
+      ]
+        .filter(Boolean)
+        .join(" | ");
 
       await db
         .update(returns)
         .set({ notes: updatedNotes })
         .where(eq(returns.id, input.id));
 
-      logger.info({ msg: "[Returns] Return processed", returnId: input.id, creditId });
+      logger.info({
+        msg: "[Returns] Return processed",
+        returnId: input.id,
+        creditId,
+      });
 
       return {
         success: true,
@@ -621,16 +704,18 @@ export const returnsRouter = router({
     }),
 
   // Get returns by order
-  getByOrder: publicProcedure.input(z.object({ orderId: z.number() })).query(async ({ input }) => {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+  getByOrder: publicProcedure
+    .input(z.object({ orderId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
 
-    return await db
-      .select()
-      .from(returns)
-      .where(eq(returns.orderId, input.orderId))
-      .orderBy(desc(returns.processedAt));
-  }),
+      return await db
+        .select()
+        .from(returns)
+        .where(eq(returns.orderId, input.orderId))
+        .orderBy(desc(returns.processedAt));
+    }),
 
   // Get return statistics
   getStats: publicProcedure.query(async () => {
@@ -690,7 +775,8 @@ export const returnsRouter = router({
   }),
 
   // Get returns summary for dashboard
-  getSummary: protectedProcedure.use(requirePermission("orders:read"))
+  getSummary: protectedProcedure
+    .use(requirePermission("orders:read"))
     .query(async () => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");

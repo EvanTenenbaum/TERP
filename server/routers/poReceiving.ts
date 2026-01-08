@@ -4,11 +4,21 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { purchaseOrders, purchaseOrderItems, batches, inventoryMovements, intakeSessions, products, clients, lots, batchLocations, locations } from "../../drizzle/schema";
-import { eq, and, desc, sql, or, inArray } from "drizzle-orm";
-import { requirePermission } from "../_core/permissionMiddleware";
+import {
+  purchaseOrders,
+  purchaseOrderItems,
+  batches,
+  inventoryMovements,
+  intakeSessions,
+  products,
+  clients,
+  lots,
+  batchLocations,
+  locations,
+} from "../../drizzle/schema";
+import { eq, and, desc, sql, or } from "drizzle-orm";
 import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 
@@ -40,9 +50,9 @@ export const poReceivingRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      
+
       // Wrap in transaction for atomicity
-      const result = await db.transaction(async (tx) => {
+      const result = await db.transaction(async tx => {
         // Verify PO exists
         const [po] = await tx
           .select()
@@ -56,9 +66,18 @@ export const poReceivingRouter = router({
 
         // Create intake session for this receipt
         const sessionNumber = `IS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const validPaymentTerms = ["COD", "NET_7", "NET_15", "NET_30", "CONSIGNMENT", "PARTIAL"] as const;
-        const paymentTermsValue = validPaymentTerms.includes(po.paymentTerms as typeof validPaymentTerms[number]) 
-          ? (po.paymentTerms as typeof validPaymentTerms[number])
+        const validPaymentTerms = [
+          "COD",
+          "NET_7",
+          "NET_15",
+          "NET_30",
+          "CONSIGNMENT",
+          "PARTIAL",
+        ] as const;
+        const paymentTermsValue = validPaymentTerms.includes(
+          po.paymentTerms as (typeof validPaymentTerms)[number]
+        )
+          ? (po.paymentTerms as (typeof validPaymentTerms)[number])
           : "NET_30";
         const [intakeSession] = await tx.insert(intakeSessions).values({
           sessionNumber,
@@ -135,7 +154,8 @@ export const poReceivingRouter = router({
 
           if (poItem) {
             const currentReceived = parseFloat(poItem.quantityReceived || "0");
-            const newReceived = currentReceived + parseFloat(item.receivedQuantity);
+            const newReceived =
+              currentReceived + parseFloat(item.receivedQuantity);
 
             await tx
               .update(purchaseOrderItems)
@@ -238,10 +258,12 @@ export const poReceivingRouter = router({
       .from(inventoryMovements)
       .where(eq(inventoryMovements.referenceType, "PO_RECEIPT"));
 
-    return stats[0] || {
-      totalReceipts: 0,
-      recentReceipts: 0,
-    };
+    return (
+      stats[0] || {
+        totalReceipts: 0,
+        recentReceipts: 0,
+      }
+    );
   }),
 
   // Get purchase orders pending receiving (CONFIRMED, RECEIVING status)
@@ -305,7 +327,9 @@ export const poReceivingRouter = router({
           items,
           itemCount: items.length,
           receivedItemCount: items.filter(
-            i => parseFloat(i.quantityReceived || "0") >= parseFloat(i.quantityOrdered)
+            i =>
+              parseFloat(i.quantityReceived || "0") >=
+              parseFloat(i.quantityOrdered)
           ).length,
         };
       })
@@ -347,7 +371,10 @@ export const poReceivingRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      logger.info({ poId: input.purchaseOrderId, itemCount: input.items.length }, "[Receiving] Starting goods receiving");
+      logger.info(
+        { poId: input.purchaseOrderId, itemCount: input.items.length },
+        "[Receiving] Starting goods receiving"
+      );
 
       // Verify PO exists and is in receivable status
       const [po] = await db
@@ -356,7 +383,10 @@ export const poReceivingRouter = router({
         .where(eq(purchaseOrders.id, input.purchaseOrderId));
 
       if (!po) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Purchase order not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Purchase order not found",
+        });
       }
 
       if (!["CONFIRMED", "RECEIVING"].includes(po.purchaseOrderStatus)) {
@@ -378,7 +408,11 @@ export const poReceivingRouter = router({
 
       const poItemMap = new Map(poItems.map(i => [i.item.id, i]));
 
-      const createdBatches: Array<{ id: number; code: string; quantity: number }> = [];
+      const createdBatches: Array<{
+        id: number;
+        code: string;
+        quantity: number;
+      }> = [];
 
       // Process each received item in a transaction
       await db.transaction(async tx => {
@@ -406,7 +440,8 @@ export const poReceivingRouter = router({
 
           // Check if receiving more than ordered
           const remainingToReceive =
-            parseFloat(poItem.quantityOrdered) - parseFloat(poItem.quantityReceived || "0");
+            parseFloat(poItem.quantityOrdered) -
+            parseFloat(poItem.quantityReceived || "0");
           if (item.quantity > remainingToReceive) {
             logger.warn(
               {
@@ -420,11 +455,15 @@ export const poReceivingRouter = router({
           }
 
           // Generate batch code
-          const batchCode = await generateBatchCode(db, product?.nameCanonical || "BATCH");
-          const batchSku = `${product?.nameCanonical?.substring(0, 10) || "SKU"}-${Date.now()}`.replace(
-            /[^a-zA-Z0-9-]/g,
-            ""
+          const batchCode = await generateBatchCode(
+            db,
+            product?.nameCanonical || "BATCH"
           );
+          const batchSku =
+            `${product?.nameCanonical?.substring(0, 10) || "SKU"}-${Date.now()}`.replace(
+              /[^a-zA-Z0-9-]/g,
+              ""
+            );
 
           // Create batch
           const [newBatch] = await tx.insert(batches).values({
@@ -440,7 +479,22 @@ export const poReceivingRouter = router({
             defectiveQty: "0",
             unitCogs: poItem.unitCost,
             cogsMode: "FIXED",
-            paymentTerms: po.paymentTerms || "NET_30",
+            paymentTerms: ([
+              "COD",
+              "NET_7",
+              "NET_15",
+              "NET_30",
+              "CONSIGNMENT",
+              "PARTIAL",
+            ].includes(po.paymentTerms ?? "")
+              ? po.paymentTerms
+              : "NET_30") as
+              | "COD"
+              | "NET_7"
+              | "NET_15"
+              | "NET_30"
+              | "CONSIGNMENT"
+              | "PARTIAL",
             batchStatus: "AWAITING_INTAKE",
             metadata: JSON.stringify({
               lotNumber: item.lotNumber,
@@ -488,7 +542,8 @@ export const poReceivingRouter = router({
           }
 
           // Update PO item received quantity
-          const newReceived = parseFloat(poItem.quantityReceived || "0") + item.quantity;
+          const newReceived =
+            parseFloat(poItem.quantityReceived || "0") + item.quantity;
           await tx
             .update(purchaseOrderItems)
             .set({ quantityReceived: newReceived.toString() })
@@ -507,9 +562,16 @@ export const poReceivingRouter = router({
             performedBy: ctx.user?.id || 0,
           });
 
-          createdBatches.push({ id: batchId, code: batchCode, quantity: item.quantity });
+          createdBatches.push({
+            id: batchId,
+            code: batchCode,
+            quantity: item.quantity,
+          });
 
-          logger.info({ batchId, batchCode, quantity: item.quantity }, "[Receiving] Batch created");
+          logger.info(
+            { batchId, batchCode, quantity: item.quantity },
+            "[Receiving] Batch created"
+          );
         }
 
         // Update PO status based on received quantities
@@ -522,11 +584,19 @@ export const poReceivingRouter = router({
           .where(eq(purchaseOrderItems.purchaseOrderId, input.purchaseOrderId));
 
         const allReceived = updatedItems.every(
-          i => parseFloat(i.quantityReceived || "0") >= parseFloat(i.quantityOrdered)
+          i =>
+            parseFloat(i.quantityReceived || "0") >=
+            parseFloat(i.quantityOrdered)
         );
-        const anyReceived = updatedItems.some(i => parseFloat(i.quantityReceived || "0") > 0);
+        const anyReceived = updatedItems.some(
+          i => parseFloat(i.quantityReceived || "0") > 0
+        );
 
-        const newStatus = allReceived ? "RECEIVED" : anyReceived ? "RECEIVING" : po.purchaseOrderStatus;
+        const newStatus = allReceived
+          ? "RECEIVED"
+          : anyReceived
+            ? "RECEIVING"
+            : po.purchaseOrderStatus;
 
         await tx
           .update(purchaseOrders)
@@ -537,7 +607,11 @@ export const poReceivingRouter = router({
           .where(eq(purchaseOrders.id, input.purchaseOrderId));
 
         logger.info(
-          { poId: input.purchaseOrderId, newStatus, batchCount: createdBatches.length },
+          {
+            poId: input.purchaseOrderId,
+            newStatus,
+            batchCount: createdBatches.length,
+          },
           "[Receiving] Goods received"
         );
       });
@@ -558,11 +632,19 @@ export const poReceivingRouter = router({
       .select()
       .from(locations)
       .where(eq(locations.isActive, 1))
-      .orderBy(locations.site, locations.zone, locations.rack, locations.shelf, locations.bin);
+      .orderBy(
+        locations.site,
+        locations.zone,
+        locations.rack,
+        locations.shelf,
+        locations.bin
+      );
 
     return availableLocations.map(loc => ({
       id: loc.id,
-      label: [loc.site, loc.zone, loc.rack, loc.shelf, loc.bin].filter(Boolean).join(" > "),
+      label: [loc.site, loc.zone, loc.rack, loc.shelf, loc.bin]
+        .filter(Boolean)
+        .join(" > "),
       site: loc.site,
       zone: loc.zone,
       rack: loc.rack,
@@ -573,7 +655,9 @@ export const poReceivingRouter = router({
 });
 
 // Helper function to generate lot code
-async function generateLotCode(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<string> {
+async function generateLotCode(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>
+): Promise<string> {
   const date = new Date();
   const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(
     date.getDate()
@@ -595,7 +679,10 @@ async function generateBatchCode(
   const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(
     date.getDate()
   ).padStart(2, "0")}`;
-  const prefix = productName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "X");
+  const prefix = productName
+    .substring(0, 3)
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "X");
   const count = await db
     .select({ count: sql<number>`count(*)` })
     .from(batches)

@@ -33,11 +33,11 @@
  */
 
 import { useState, useCallback, useEffect } from "react";
-import { useQueryClient, type UseQueryResult } from "@tanstack/react-query";
+import type { UseQueryResult } from "@tanstack/react-query";
 
 // Debug logging helpers - only logs in development to avoid console noise in production
 const debugLog = import.meta.env.DEV
-  ? (message: string, ...args: unknown[]) => console.log(message, ...args)
+  ? (message: string, ...args: unknown[]) => console.info(message, ...args)
   : () => {};
 const debugWarn = import.meta.env.DEV
   ? (message: string, ...args: unknown[]) => console.warn(message, ...args)
@@ -69,7 +69,7 @@ interface UseRetryableQueryOptions {
   onRetrySuccess?: () => void;
 }
 
-interface UseRetryableQueryResult<TData, TError> extends UseQueryResult<TData, TError> {
+type UseRetryableQueryResult<TData, TError> = UseQueryResult<TData, TError> & {
   /**
    * Number of retry attempts made
    */
@@ -99,7 +99,7 @@ interface UseRetryableQueryResult<TData, TError> extends UseQueryResult<TData, T
    * Number of remaining retry attempts
    */
   remainingRetries: number;
-}
+};
 
 /**
  * Hook that wraps a tRPC query result with retry functionality
@@ -118,10 +118,9 @@ export function useRetryableQuery<TData, TError>(
 
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
-  const queryClient = useQueryClient();
 
   /**
-   * Handle retry by invalidating cache and refetching
+   * Handle retry by refetching
    * This preserves all React state unlike window.location.reload()
    */
   const handleRetry = useCallback(async () => {
@@ -132,24 +131,20 @@ export function useRetryableQuery<TData, TError>(
     }
 
     const attemptNumber = retryCount + 1;
-    debugLog(`[useRetryableQuery] Retry attempt ${attemptNumber}/${maxRetries}`);
+    debugLog(
+      `[useRetryableQuery] Retry attempt ${attemptNumber}/${maxRetries}`
+    );
 
     setIsRetrying(true);
     setRetryCount(attemptNumber);
     onRetry?.(attemptNumber);
 
     try {
-      // Invalidate the query cache to force a fresh fetch
-      // Use the query key from the result
-      if (queryResult.queryKey) {
-        await queryClient.invalidateQueries({ queryKey: queryResult.queryKey });
-      }
-
-      // Trigger a refetch
-      await queryResult.refetch();
+      // Trigger a refetch - this bypasses cache by default
+      const result = await queryResult.refetch();
 
       // If successful, call success callback
-      if (!queryResult.isError) {
+      if (result.isSuccess) {
         onRetrySuccess?.();
       }
     } catch (error) {
@@ -160,7 +155,6 @@ export function useRetryableQuery<TData, TError>(
   }, [
     retryCount,
     maxRetries,
-    queryClient,
     queryResult,
     onMaxRetriesReached,
     onRetry,
@@ -196,18 +190,20 @@ export function useRetryableQuery<TData, TError>(
   const canRetry = retryCount < maxRetries;
   const remainingRetries = Math.max(0, maxRetries - retryCount);
 
+  // Spread the query result and add retry-specific properties
+  // Note: isLoading includes retry state
+  const isLoadingWithRetry = queryResult.isLoading || isRetrying;
+
   return {
     ...queryResult,
-    // Override isLoading to include retry state
-    isLoading: queryResult.isLoading || isRetrying,
-    // Add retry-specific properties
+    isLoading: isLoadingWithRetry,
     retryCount,
     maxRetries,
     canRetry,
     handleRetry,
     resetRetryCount,
     remainingRetries,
-  };
+  } as UseRetryableQueryResult<TData, TError>;
 }
 
 export default useRetryableQuery;

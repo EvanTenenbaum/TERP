@@ -7,7 +7,13 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { clients, batches, orders, products, strains } from "../../drizzle/schema";
+import {
+  clients,
+  batches,
+  orders,
+  products,
+  strains,
+} from "../../drizzle/schema";
 import { like, or, and, eq, sql, isNull } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
@@ -24,22 +30,24 @@ interface SearchResult {
 }
 
 // Search query validation with reasonable constraints
-const searchQuerySchema = z.string()
+const searchQuerySchema = z
+  .string()
   .min(1, "Search query is required")
   .max(200, "Search query too long")
   .transform(s => s.trim());
 
 // Search limit validation
-const searchLimitSchema = z.number()
+const searchLimitSchema = z
+  .number()
   .int("Limit must be a whole number")
   .min(1, "Limit must be at least 1")
   .max(100, "Limit cannot exceed 100")
   .default(10);
 
 // Search types enum
-const searchTypesSchema = z.array(
-  z.enum(["quote", "customer", "product", "batch"])
-).optional();
+const searchTypesSchema = z
+  .array(z.enum(["quote", "customer", "product", "batch"]))
+  .optional();
 
 /**
  * Sanitize search input to prevent SQL injection via wildcards
@@ -48,8 +56,8 @@ const searchTypesSchema = z.array(
 function sanitizeSearchTerm(term: string): string {
   return term
     .replace(/\\/g, "\\\\") // Escape backslash first
-    .replace(/%/g, "\\%")   // Escape percent
-    .replace(/_/g, "\\_");  // Escape underscore
+    .replace(/%/g, "\\%") // Escape percent
+    .replace(/_/g, "\\_"); // Escape underscore
 }
 
 /**
@@ -76,7 +84,9 @@ function calculateRelevance(
       score += 75;
     }
     // Word starts with (e.g., "OG" matches "Blue OG")
-    else if (lowerField.split(/\s+/).some(word => word.startsWith(lowerQuery))) {
+    else if (
+      lowerField.split(/\s+/).some(word => word.startsWith(lowerQuery))
+    ) {
       score += 60;
     }
     // Contains = medium score
@@ -146,19 +156,21 @@ export const searchRouter = router({
             )
             .limit(limit);
 
-          allResults.push(...quotes.map((q) => ({
-            id: q.id,
-            type: "quote" as const,
-            title: `Quote #${q.orderNumber || q.id}`,
-            description: q.notes || undefined,
-            url: `/quotes?selected=${q.id}`,
-            metadata: {
-              orderNumber: q.orderNumber,
-              total: q.total,
-              clientId: q.clientId,
-            },
-            relevance: calculateRelevance(query, q.orderNumber, q.notes),
-          })));
+          allResults.push(
+            ...quotes.map(q => ({
+              id: q.id,
+              type: "quote" as const,
+              title: `Quote #${q.orderNumber || q.id}`,
+              description: q.notes || undefined,
+              url: `/quotes?selected=${q.id}`,
+              metadata: {
+                orderNumber: q.orderNumber,
+                total: q.total,
+                clientId: q.clientId,
+              },
+              relevance: calculateRelevance(query, q.orderNumber, q.notes),
+            }))
+          );
         } catch (error) {
           logger.warn({ msg: "Quote search failed", error });
         }
@@ -179,32 +191,37 @@ export const searchRouter = router({
             })
             .from(clients)
             .where(
-              and(
-                isNull(clients.deletedAt),
-                or(
-                  like(clients.name, searchTerm),
-                  like(clients.email, searchTerm),
-                  like(clients.phone, searchTerm),
-                  like(clients.teriCode, searchTerm),
-                  like(clients.address, searchTerm)
-                )
+              or(
+                like(clients.name, searchTerm),
+                like(clients.email, searchTerm),
+                like(clients.phone, searchTerm),
+                like(clients.teriCode, searchTerm),
+                like(clients.address, searchTerm)
               )
             )
             .limit(limit);
 
-          allResults.push(...customers.map((c) => ({
-            id: c.id,
-            type: "customer" as const,
-            title: c.name || "Unknown",
-            description: c.email || c.teriCode || undefined,
-            url: `/clients/${c.id}`,
-            metadata: {
-              email: c.email,
-              phone: c.phone,
-              teriCode: c.teriCode,
-            },
-            relevance: calculateRelevance(query, c.name, c.email, c.teriCode, c.phone),
-          })));
+          allResults.push(
+            ...customers.map(c => ({
+              id: c.id,
+              type: "customer" as const,
+              title: c.name || "Unknown",
+              description: c.email || c.teriCode || undefined,
+              url: `/clients/${c.id}`,
+              metadata: {
+                email: c.email,
+                phone: c.phone,
+                teriCode: c.teriCode,
+              },
+              relevance: calculateRelevance(
+                query,
+                c.name,
+                c.email,
+                c.teriCode,
+                c.phone
+              ),
+            }))
+          );
         } catch (error) {
           logger.warn({ msg: "Customer search failed", error });
         }
@@ -212,7 +229,12 @@ export const searchRouter = router({
 
       // Search products (via batches with product/strain join)
       // BUG-042: Now includes product name, strain, and category
-      if (!types || types.includes("product") || !types || types.includes("batch")) {
+      if (
+        !types ||
+        types.includes("product") ||
+        !types ||
+        types.includes("batch")
+      ) {
         try {
           const batchResults = await db
             .select({
@@ -256,47 +278,52 @@ export const searchRouter = router({
 
           // Add batch results if searching for batches
           if (!types || types.includes("batch")) {
-            allResults.push(...batchResults.map((b) => ({
-              id: b.id,
-              type: "batch" as const,
-              title: b.code || "Unknown Batch",
-              description: b.productName
-                ? `${b.productName}${b.strainName ? ` - ${b.strainName}` : ""}`
-                : b.sku || undefined,
-              url: `/inventory/${b.id}`,
-              metadata: {
-                sku: b.sku,
-                productName: b.productName,
-                strainName: b.strainName,
-                category: b.category,
-                quantityAvailable: b.onHandQty,
-                unitPrice: b.unitCogs,
-              },
-              relevance: calculateRelevance(
-                query,
-                b.code,
-                b.sku,
-                b.productName,
-                b.strainName,
-                b.category
-              ),
-            })));
+            allResults.push(
+              ...batchResults.map(b => ({
+                id: b.id,
+                type: "batch" as const,
+                title: b.code || "Unknown Batch",
+                description: b.productName
+                  ? `${b.productName}${b.strainName ? ` - ${b.strainName}` : ""}`
+                  : b.sku || undefined,
+                url: `/inventory/${b.id}`,
+                metadata: {
+                  sku: b.sku,
+                  productName: b.productName,
+                  strainName: b.strainName,
+                  category: b.category,
+                  quantityAvailable: b.onHandQty,
+                  unitPrice: b.unitCogs,
+                },
+                relevance: calculateRelevance(
+                  query,
+                  b.code,
+                  b.sku,
+                  b.productName,
+                  b.strainName,
+                  b.category
+                ),
+              }))
+            );
           }
 
           // Add product results (deduplicated by productId) if searching for products
           if (!types || types.includes("product")) {
             const seenProductIds = new Set<number>();
             const productResults = batchResults
-              .filter((b) => {
-                if (!b.productId || seenProductIds.has(b.productId)) return false;
+              .filter(b => {
+                if (!b.productId || seenProductIds.has(b.productId))
+                  return false;
                 seenProductIds.add(b.productId);
                 return true;
               })
-              .map((b) => ({
-                id: b.productId!,
+              .map(b => ({
+                id: b.productId as number,
                 type: "product" as const,
                 title: b.productName || "Unknown Product",
-                description: [b.strainName, b.category].filter(Boolean).join(" - ") || undefined,
+                description:
+                  [b.strainName, b.category].filter(Boolean).join(" - ") ||
+                  undefined,
                 url: `/products/${b.productId}`,
                 metadata: {
                   category: b.category,
@@ -331,30 +358,36 @@ export const searchRouter = router({
 
       // Return in the original format for backward compatibility
       return {
-        quotes: finalResults.filter((r) => r.type === "quote").map((r) => ({
-          id: r.id,
-          type: r.type,
-          title: r.title,
-          description: r.description,
-          url: r.url,
-          metadata: r.metadata,
-        })),
-        customers: finalResults.filter((r) => r.type === "customer").map((r) => ({
-          id: r.id,
-          type: r.type,
-          title: r.title,
-          description: r.description,
-          url: r.url,
-          metadata: r.metadata,
-        })),
-        products: finalResults.filter((r) => r.type === "product" || r.type === "batch").map((r) => ({
-          id: r.id,
-          type: r.type,
-          title: r.title,
-          description: r.description,
-          url: r.url,
-          metadata: r.metadata,
-        })),
+        quotes: finalResults
+          .filter(r => r.type === "quote")
+          .map(r => ({
+            id: r.id,
+            type: r.type,
+            title: r.title,
+            description: r.description,
+            url: r.url,
+            metadata: r.metadata,
+          })),
+        customers: finalResults
+          .filter(r => r.type === "customer")
+          .map(r => ({
+            id: r.id,
+            type: r.type,
+            title: r.title,
+            description: r.description,
+            url: r.url,
+            metadata: r.metadata,
+          })),
+        products: finalResults
+          .filter(r => r.type === "product" || r.type === "batch")
+          .map(r => ({
+            id: r.id,
+            type: r.type,
+            title: r.title,
+            description: r.description,
+            url: r.url,
+            metadata: r.metadata,
+          })),
       };
     }),
 });
