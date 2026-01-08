@@ -152,7 +152,43 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | Task      | Description                      | Progress | Owner |
 | --------- | -------------------------------- | -------- | ----- |
 | AUDIT-001 | Comprehensive System Code Review | ~50%     | -     |
-| ST-045  | Complete User Flow Mapping and Documentation | ready | - |
+
+### ✅ ST-045 Complete (Jan 8, 2026)
+
+> **Task:** Complete User Flow Mapping and Documentation
+> **Status:** ✅ COMPLETE
+> **Documentation:**
+> - `docs/reference/FLOW_GUIDE.md` - Comprehensive flow guide by domain/entity
+> - `docs/reference/USER_FLOW_MATRIX.csv` - 200+ deduplicated user flows
+> - `docs/assets/ST-045/` - Working files and raw data
+
+**Key Findings from ST-045:**
+- 245+ unique tRPC procedures across 21 routers
+- 10 business domains documented
+- RBAC permission gaps identified (see RBAC-001)
+- Calendar router security issue (see SEC-013)
+- Deprecated vendors router needs migration (see DATA-012)
+
+### 📋 New Tasks from ST-045 Analysis (Jan 8, 2026)
+
+#### RBAC & Security
+
+| Task    | Description                                      | File                                    | Status     | Priority |
+| ------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
+| RBAC-001 | RBAC Permission Harmonization                   | `server/db/seed.ts`                     | 🟡 OPEN    | HIGH     |
+| SEC-013 | Calendar Router Security - Uses publicProcedure | `server/routers/calendar*.ts`           | 🟡 OPEN    | MEDIUM   |
+
+#### Data & Migration
+
+| Task     | Description                                      | File                                    | Status     | Priority |
+| -------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
+| DATA-012 | Complete Vendors→Clients Migration               | `server/routers/vendors.ts`             | 🟡 OPEN    | MEDIUM   |
+
+#### Documentation
+
+| Task    | Description                                      | File                                    | Status     | Priority |
+| ------- | ------------------------------------------------ | --------------------------------------- | ---------- | -------- |
+| DOC-002 | API Documentation from Flow Matrix               | `docs/reference/`                       | 🟢 BACKLOG | LOW      |
 
 ### 🐛 Critical Bugs Discovered (Jan 7, 2026 - User Flow Testing)
 
