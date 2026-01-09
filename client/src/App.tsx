@@ -5,6 +5,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import DashboardV3 from "./pages/DashboardV3";
 import Inventory from "@/pages/Inventory";
 import ProductsPage from "@/pages/ProductsPage";
@@ -96,11 +97,12 @@ function Router() {
       <Route path="/vip-portal/session-ended" component={withErrorBoundary(SessionEndedPage)} />
       <Route path="/vip-portal" component={withErrorBoundary(VIPDashboard)} />
 
-      {/* Protected routes - wrapped in AppShell */}
+      {/* Protected routes - wrapped in AppShell and ProtectedRoute */}
       <Route>
         {() => (
-          <AppShell>
-            <Switch>
+          <ProtectedRoute>
+            <AppShell>
+              <Switch>
               <Route path="/" component={withErrorBoundary(DashboardV3)} />
               <Route path="/dashboard" component={withErrorBoundary(DashboardV3)} />
               <Route path="/inventory" component={withErrorBoundary(Inventory)} />
@@ -195,8 +197,9 @@ function Router() {
               <Route path="/404" component={withErrorBoundary(NotFound)} />
               {/* Final fallback route */}
               <Route component={withErrorBoundary(NotFound)} />
-            </Switch>
-          </AppShell>
+              </Switch>
+            </AppShell>
+          </ProtectedRoute>
         )}
       </Route>
     </Switch>

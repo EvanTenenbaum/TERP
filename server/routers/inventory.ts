@@ -333,8 +333,10 @@ export const inventoryRouter = router({
     }),
 
   // Adjust batch quantity
+  // SEC-FIX: Changed permission from inventory:read to inventory:update
+  // This is a write operation that modifies inventory quantities
   adjustQty: protectedProcedure
-    .use(requirePermission("inventory:read"))
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         id: z.number(),
@@ -345,8 +347,11 @@ export const inventoryRouter = router({
           "holdQty",
           "defectiveQty",
         ]),
-        adjustment: z.number(),
-        reason: z.string(),
+        // SEC-FIX: Add bounds validation to prevent overflow/precision issues
+        adjustment: z.number()
+          .min(-1000000, "Adjustment too small")
+          .max(1000000, "Adjustment too large"),
+        reason: z.string().min(1, "Reason is required").max(500, "Reason too long"),
       })
     )
     .mutation(async ({ input, ctx }) => {

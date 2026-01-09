@@ -212,7 +212,9 @@ export const clientsRouter = router({
         return await clientsDb.updateTransaction(transactionId, ctx.user.id, data);
       }),
 
-    recordPayment: protectedProcedure.use(requirePermission("clients:read"))
+    // FIX-SEC: Changed permission from clients:read to clients:update
+    // Recording a payment is a write operation, not a read operation
+    recordPayment: protectedProcedure.use(requirePermission("clients:update"))
       .input(z.object({
         transactionId: z.number(),
         paymentDate: z.date(),

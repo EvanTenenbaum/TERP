@@ -40,6 +40,24 @@ import { PriceSimulationModal } from "./PriceSimulationModal";
 import { BatchMediaUpload } from "./BatchMediaUpload";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { useState } from "react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Profitability Section Component
 function ProfitabilitySection({ batchId }: { batchId: number }) {
@@ -184,6 +202,17 @@ interface BatchDetailDrawerProps {
   onClose: () => void;
 }
 
+// Status options with labels
+const BATCH_STATUSES = [
+  { value: "AWAITING_INTAKE", label: "Awaiting Intake" },
+  { value: "QC_PENDING", label: "QC Pending" },
+  { value: "LIVE", label: "Live" },
+  { value: "ON_HOLD", label: "On Hold" },
+  { value: "QUARANTINED", label: "Quarantined" },
+  { value: "SOLD_OUT", label: "Sold Out" },
+  { value: "CLOSED", label: "Closed" },
+] as const;
+
 export function BatchDetailDrawer({
   batchId,
   open,
@@ -191,6 +220,40 @@ export function BatchDetailDrawer({
 }: BatchDetailDrawerProps) {
   const [showCogsEdit, setShowCogsEdit] = useState(false);
   const [showPriceSimulation, setShowPriceSimulation] = useState(false);
+  // FIX-BATCH-001: Add modals for action buttons
+  const [showQtyAdjust, setShowQtyAdjust] = useState(false);
+  const [showStatusChange, setShowStatusChange] = useState(false);
+  const [qtyAdjustment, setQtyAdjustment] = useState("");
+  const [qtyReason, setQtyReason] = useState("");
+  const [newStatus, setNewStatus] = useState<string>("");
+  const [statusReason, setStatusReason] = useState("");
+
+  // Mutations for actions
+  const adjustQtyMutation = trpc.inventory.adjustQty.useMutation({
+    onSuccess: () => {
+      toast.success("Quantity adjusted successfully");
+      refetch();
+      setShowQtyAdjust(false);
+      setQtyAdjustment("");
+      setQtyReason("");
+    },
+    onError: (error) => {
+      toast.error(`Failed to adjust quantity: ${error.message}`);
+    },
+  });
+
+  const updateStatusMutation = trpc.inventory.updateStatus.useMutation({
+    onSuccess: () => {
+      toast.success("Status updated successfully");
+      refetch();
+      setShowStatusChange(false);
+      setNewStatus("");
+      setStatusReason("");
+    },
+    onError: (error) => {
+      toast.error(`Failed to update status: ${error.message}`);
+    },
+  });
 
   const { data, isLoading, error, refetch } = trpc.inventory.getById.useQuery(
     batchId as number,
@@ -610,16 +673,145 @@ export function BatchDetailDrawer({
 
             {/* Actions */}
             <div className="flex gap-2 pt-4">
-              <Button variant="outline" className="flex-1">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowQtyAdjust(true)}
+              >
                 Adjust Quantity
               </Button>
-              <Button variant="outline" className="flex-1">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setNewStatus(batch.batchStatus);
+                  setShowStatusChange(true);
+                }}
+              >
                 Change Status
               </Button>
             </div>
           </div>
         )}
       </SheetContent>
+
+      {/* Quantity Adjustment Dialog */}
+      <Dialog open={showQtyAdjust} onOpenChange={setShowQtyAdjust}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Quantity</DialogTitle>
+            <DialogDescription>
+              Enter a positive or negative number to adjust the on-hand quantity.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="qty-adjustment">Adjustment Amount</Label>
+              <Input
+                id="qty-adjustment"
+                type="number"
+                placeholder="e.g., 10 or -5"
+                value={qtyAdjustment}
+                onChange={(e) => setQtyAdjustment(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Current on-hand: {batch ? parseFloat(batch.onHandQty).toFixed(2) : 0}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="qty-reason">Reason</Label>
+              <Input
+                id="qty-reason"
+                placeholder="Reason for adjustment"
+                value={qtyReason}
+                onChange={(e) => setQtyReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQtyAdjust(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!qtyAdjustment || !qtyReason || !batchId) {
+                  toast.error("Please enter adjustment amount and reason");
+                  return;
+                }
+                adjustQtyMutation.mutate({
+                  id: batchId,
+                  field: "onHandQty",
+                  adjustment: parseFloat(qtyAdjustment),
+                  reason: qtyReason,
+                });
+              }}
+              disabled={adjustQtyMutation.isPending}
+            >
+              {adjustQtyMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Change Dialog */}
+      <Dialog open={showStatusChange} onOpenChange={setShowStatusChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Batch Status</DialogTitle>
+            <DialogDescription>
+              Select a new status for this batch.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-status">New Status</Label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BATCH_STATUSES.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status-reason">Reason</Label>
+              <Input
+                id="status-reason"
+                placeholder="Reason for status change"
+                value={statusReason}
+                onChange={(e) => setStatusReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStatusChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!newStatus || !statusReason || !batchId) {
+                  toast.error("Please select a status and enter a reason");
+                  return;
+                }
+                updateStatusMutation.mutate({
+                  id: batchId,
+                  status: newStatus as typeof BATCH_STATUSES[number]["value"],
+                  reason: statusReason,
+                  version: batch?.version,
+                });
+              }}
+              disabled={updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* COGS Edit Modal */}
       {batch && (

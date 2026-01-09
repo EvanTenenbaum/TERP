@@ -97,6 +97,9 @@ export async function getClients(options: {
   // Build WHERE conditions
   const conditions: (SQL<unknown> | undefined)[] = [];
 
+  // FIX: Always filter out soft-deleted clients unless explicitly requested
+  conditions.push(sql`${clients.deletedAt} IS NULL`);
+
   // Enhanced multi-field search (TERI code, name, email, phone, address)
   if (search) {
     conditions.push(
@@ -212,6 +215,9 @@ export async function getClientCount(options: {
   // Build WHERE conditions (same as getClients)
   const conditions: (SQL<unknown> | undefined)[] = [];
 
+  // FIX: Always filter out soft-deleted clients
+  conditions.push(sql`${clients.deletedAt} IS NULL`);
+
   // Enhanced multi-field search (same as getClients)
   if (search) {
     conditions.push(
@@ -262,6 +268,8 @@ export async function getClientCount(options: {
 
 /**
  * Get single client by ID
+ *
+ * SEC-FIX: Added deletedAt filter to prevent access to soft-deleted clients
  */
 export async function getClientById(clientId: number) {
   const db = await getDb();
@@ -270,7 +278,10 @@ export async function getClientById(clientId: number) {
   const result = await db
     .select()
     .from(clients)
-    .where(eq(clients.id, clientId))
+    .where(and(
+      eq(clients.id, clientId),
+      sql`${clients.deletedAt} IS NULL`
+    ))
     .limit(1);
 
   return result[0] || null;
@@ -278,6 +289,8 @@ export async function getClientById(clientId: number) {
 
 /**
  * Get client by TERI code
+ *
+ * SEC-FIX: Added deletedAt filter to prevent access to soft-deleted clients
  */
 export async function getClientByTeriCode(teriCode: string) {
   const db = await getDb();
@@ -286,7 +299,10 @@ export async function getClientByTeriCode(teriCode: string) {
   const result = await db
     .select()
     .from(clients)
-    .where(eq(clients.teriCode, teriCode))
+    .where(and(
+      eq(clients.teriCode, teriCode),
+      sql`${clients.deletedAt} IS NULL`
+    ))
     .limit(1);
 
   return result[0] || null;
@@ -400,13 +416,52 @@ export async function updateClient(
 }
 
 /**
- * Delete client (soft delete by marking as inactive)
+ * Delete client (soft delete by setting deletedAt timestamp)
+ *
+ * SEC-FIX: Changed from hard delete to soft delete to preserve data integrity
+ * and allow recovery of accidentally deleted clients.
+ *
+ * @param clientId - Client ID to archive
+ * @param userId - User performing the deletion (for audit logging)
  */
-export async function deleteClient(clientId: number) {
+export async function deleteClient(clientId: number, userId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(clients).where(eq(clients.id, clientId));
+  // Soft delete by setting deletedAt timestamp
+  await db
+    .update(clients)
+    .set({ deletedAt: new Date() })
+    .where(eq(clients.id, clientId));
+
+  // Log activity if userId provided
+  if (userId) {
+    await logActivity(clientId, userId, "UPDATED", { action: "archived" });
+  }
+
+  return true;
+}
+
+/**
+ * Restore a soft-deleted client
+ *
+ * @param clientId - Client ID to restore
+ * @param userId - User performing the restore (for audit logging)
+ */
+export async function restoreClient(clientId: number, userId?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Restore by clearing deletedAt timestamp
+  await db
+    .update(clients)
+    .set({ deletedAt: null })
+    .where(eq(clients.id, clientId));
+
+  // Log activity if userId provided
+  if (userId) {
+    await logActivity(clientId, userId, "UPDATED", { action: "restored" });
+  }
 
   return true;
 }
@@ -783,13 +838,18 @@ export async function getClientActivity(clientId: number, limit: number = 50) {
 // ============================================================================
 
 /**
- * Get all unique tags across all clients
+ * Get all unique tags from clients
+ *
+ * SEC-FIX: Filter out soft-deleted clients to prevent tag leakage
  */
 export async function getAllTags() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const allClients = await db.select({ tags: clients.tags }).from(clients);
+  const allClients = await db
+    .select({ tags: clients.tags })
+    .from(clients)
+    .where(sql`${clients.deletedAt} IS NULL`);
 
   const tagsSet = new Set<string>();
   for (const client of allClients) {

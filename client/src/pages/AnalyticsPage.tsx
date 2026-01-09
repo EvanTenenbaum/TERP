@@ -138,7 +138,7 @@ export default function AnalyticsPage() {
                   size="sm"
                   action={{
                     label: "Create your first order",
-                    onClick: () => setLocation("/orders/new"),
+                    onClick: () => setLocation("/orders/create"),
                   }}
                 />
               )}
@@ -223,8 +223,8 @@ export default function AnalyticsPage() {
                   description="No client data available. Start adding clients and orders to see analytics."
                   size="sm"
                   action={{
-                    label: "Add your first client",
-                    onClick: () => setLocation("/clients/new"),
+                    label: "View clients",
+                    onClick: () => setLocation("/clients"),
                   }}
                 />
               )}
