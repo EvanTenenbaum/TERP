@@ -127,7 +127,7 @@ export async function fulfillSampleRequest(
         quantityAfter,
         referenceType: "SAMPLE_REQUEST",
         referenceId: requestId,
-        reason: `Sample request #${requestId}`,
+        notes: `Sample request #${requestId}`,
         performedBy: fulfilledBy
       });
 

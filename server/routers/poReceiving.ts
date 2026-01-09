@@ -141,7 +141,7 @@ export const poReceivingRouter = router({
               quantityAfter: newQty.toString(),
               referenceType: "PO_RECEIPT",
               referenceId: input.poId,
-              reason: `Received from PO #${po.poNumber}`,
+              notes: `Received from PO #${po.poNumber}`,
               performedBy: input.receivedBy,
             });
           }
@@ -558,7 +558,7 @@ export const poReceivingRouter = router({
             quantityAfter: item.quantity.toString(),
             referenceType: "PO_RECEIPT",
             referenceId: input.purchaseOrderId,
-            reason: `Received from PO #${po.poNumber}`,
+            notes: `Received from PO #${po.poNumber}`,
             performedBy: ctx.user?.id || 0,
           });
 

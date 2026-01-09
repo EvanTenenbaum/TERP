@@ -1546,7 +1546,7 @@ export async function processReturn(input: {
         quantityAfter: quantityAfter.toString(),
         referenceType: 'RETURN',
         referenceId: returnRecord.id,
-        reason: `Return from order #${orderId}: ${reason}`,
+        notes: `Return from order #${orderId}: ${reason}`,
         performedBy: userId,
       });
     }

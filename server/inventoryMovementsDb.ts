@@ -139,7 +139,7 @@ export async function decreaseInventory(
           quantityAfter: newQty.toString(),
           referenceType,
           referenceId,
-          reason,
+          notes: reason,
           performedBy: userId,
         })
         .$returningId();
@@ -239,7 +239,7 @@ export async function increaseInventory(
           quantityAfter: newQty.toString(),
           referenceType,
           referenceId,
-          reason,
+          notes: reason,
           performedBy: userId,
         })
         .$returningId();
@@ -337,7 +337,7 @@ export async function adjustInventory(
           quantityAfter: newQty.toString(),
           referenceType: "MANUAL_ADJUSTMENT",
           referenceId: null,
-          reason: notes ? `${reason} - ${notes}` : reason,
+          notes: notes ? `${reason} - ${notes}` : reason,
           performedBy: userId,
         })
         .$returningId();
@@ -584,7 +584,7 @@ export async function reverseInventoryMovement(
           quantityAfter: newQty.toString(),
           referenceType: "REVERSAL",
           referenceId: movementId,
-          reason,
+          notes: reason,
           performedBy: userId,
         })
         .$returningId();

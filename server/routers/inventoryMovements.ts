@@ -32,7 +32,7 @@ export const inventoryMovementsRouter = router({
         quantityAfter: input.quantityAfter,
         referenceType: input.referenceType,
         referenceId: input.referenceId,
-        reason: input.reason,
+        notes: input.reason,
         performedBy: ctx.user.id
       });
     }),
