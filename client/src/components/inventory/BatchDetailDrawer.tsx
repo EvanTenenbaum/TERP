@@ -205,7 +205,7 @@ interface BatchDetailDrawerProps {
 // Status options with labels
 const BATCH_STATUSES = [
   { value: "AWAITING_INTAKE", label: "Awaiting Intake" },
-  { value: "QC_PENDING", label: "QC Pending" },
+  { value: "PHOTOGRAPHY_COMPLETE", label: "Photography Complete" },
   { value: "LIVE", label: "Live" },
   { value: "ON_HOLD", label: "On Hold" },
   { value: "QUARANTINED", label: "Quarantined" },

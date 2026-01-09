@@ -378,7 +378,7 @@ export async function createClient(
   const clientId = Number(result[0].insertId);
 
   // Log activity
-  await logActivity(clientId, userId, "CREATED", null);
+  await logActivity(clientId, userId, "CREATED", {});
 
   return clientId;
 }
@@ -619,11 +619,21 @@ export async function getClientTransactions(
   }
 
   if (transactionType) {
-    conditions.push(eq(clientTransactions.transactionType, transactionType));
+    conditions.push(
+      eq(
+        clientTransactions.transactionType,
+        transactionType as (typeof clientTransactions.transactionType.enumValues)[number]
+      )
+    );
   }
 
   if (paymentStatus) {
-    conditions.push(eq(clientTransactions.paymentStatus, paymentStatus));
+    conditions.push(
+      eq(
+        clientTransactions.paymentStatus,
+        paymentStatus as (typeof clientTransactions.paymentStatus.enumValues)[number]
+      )
+    );
   }
 
   if (startDate) {
@@ -698,12 +708,10 @@ export async function createTransaction(
     clientId: data.clientId,
     transactionType: data.transactionType,
     transactionNumber: data.transactionNumber || null,
-    transactionDate: data.transactionDate.toISOString().split("T")[0],
+    transactionDate: data.transactionDate,
     amount: data.amount.toFixed(2),
     paymentStatus: data.paymentStatus || "PENDING",
-    paymentDate: data.paymentDate
-      ? data.paymentDate.toISOString().split("T")[0]
-      : null,
+    paymentDate: data.paymentDate ?? null,
     paymentAmount: data.paymentAmount ? data.paymentAmount.toFixed(2) : null,
     notes: data.notes || null,
     metadata: data.metadata || null,
@@ -797,7 +805,7 @@ export async function recordPayment(
       .update(clientTransactions)
       .set({
         paymentStatus: newPaymentStatus,
-        paymentDate: paymentDate.toISOString().split("T")[0],
+        paymentDate: paymentDate,
         paymentAmount: paymentAmount.toFixed(2),
       })
       .where(eq(clientTransactions.id, transactionId));
