@@ -10,9 +10,9 @@
 
 ## 🟢 Currently Working
 
-| Session ID | Task | Branch | Module | Status | Started | ETA |
-| ---------- | ---- | ------ | ------ | ------ | ------- | --- |
-| _(none)_   | -    | -      | -      | -      | -       | -   |
+| Session ID                     | Task                         | Branch | Module        | Status      | Started    | ETA |
+| ------------------------------ | ---------------------------- | ------ | ------------- | ----------- | ---------- | --- |
+| Session-20260109-QA-E2E-a63131 | QA-E2E full browser coverage | main   | QA/Automation | In Progress | 2026-01-09 | -   |
 
 ## ⏸️ Paused / Waiting
 

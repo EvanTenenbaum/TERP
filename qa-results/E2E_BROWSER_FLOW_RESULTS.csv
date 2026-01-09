@@ -1,0 +1,6 @@
+Role,Path,URL,HTTP Status,Result
+Super Admin,/accounting/bank-accounts,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-accounts,200,OK
+Super Admin,/accounting/bank-accounts/1,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-accounts/1,200,Access/NotFound text detected
+Super Admin,/accounting/bank-accounts/new,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-accounts/new,200,Access/NotFound text detected
+Super Admin,/accounting/bank-transactions,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-transactions,200,OK
+Super Admin,/accounting/bank-transactions/new,https://terp-app-b9s35.ondigitalocean.app/accounting/bank-transactions/new,200,Access/NotFound text detected

@@ -1,0 +1,6 @@
+Domain,Entity,Transition,Expected,Observed,Status,Notes
+Accounting,Invoices,"DRAFT -> SENT -> VIEWED -> PARTIAL -> PAID (OVERDUE, VOID terminal)",Per FLOW_GUIDE,,Not executed,Blocked pending full role coverage
+Accounting,Fiscal Periods,OPEN -> CLOSED -> LOCKED (reopen allowed),Per FLOW_GUIDE,,Not executed,Blocked pending full role coverage
+Orders,Quotes/Sales,QUOTE PENDING -> ACCEPTED -> SALE (REJECTED/EXPIRED),Per FLOW_GUIDE,,Not executed,Blocked pending full role coverage
+Orders,Fulfillment,PENDING -> PACKED -> SHIPPED -> DELIVERED,Per FLOW_GUIDE,,Not executed,Blocked pending full role coverage
+Calendar,Time Off,PENDING -> APPROVED/REJECTED -> CANCELLED,Per FLOW_GUIDE,,Not executed,Blocked pending full role coverage
