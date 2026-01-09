@@ -22,6 +22,7 @@ import { eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
 import { pricingService } from "../services/pricingService";
+import { onOrderCreated } from "../services/notificationTriggers";
 import { marginCalculationService } from "../services/marginCalculationService";
 import { priceCalculationService } from "../services/priceCalculationService";
 import { orderValidationService } from "../services/orderValidationService";
@@ -109,10 +110,24 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);
-      return await ordersDb.createOrder({
+      const order = await ordersDb.createOrder({
         ...input,
         createdBy: userId,
       });
+
+      // Trigger notification for new order
+      onOrderCreated({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        clientId: order.clientId,
+        total: order.total,
+        orderType: order.orderType,
+      }).catch(error => {
+        // Don't fail the mutation if notification fails
+        console.error("Failed to send order created notification:", error);
+      });
+
+      return order;
     }),
 
   /**

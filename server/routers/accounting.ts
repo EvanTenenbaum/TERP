@@ -16,6 +16,7 @@ import { getDb } from "../db";
 import { invoices, bills, payments, clients } from "../../drizzle/schema";
 import { eq, and, gt, lt, gte, lte, sql, desc, asc, inArray, or } from "drizzle-orm";
 import { logger } from "../_core/logger";
+import { onInvoiceCreated, onPaymentReceived } from "../services/notificationTriggers";
 
 export const accountingRouter = router({
     // ============================================================================
@@ -663,15 +664,30 @@ export const accountingRouter = router({
           const { lineItems, ...invoiceData } = input;
           // Calculate amountDue (initially equals totalAmount)
           const totalAmount = parseFloat(invoiceData.totalAmount);
-          return await arApDb.createInvoice(
-            { 
-              ...invoiceData, 
+          const invoiceId = await arApDb.createInvoice(
+            {
+              ...invoiceData,
               amountPaid: "0.00",
               amountDue: totalAmount.toFixed(2),
-              createdBy: ctx.user.id 
+              createdBy: ctx.user.id
             },
             lineItems
           );
+
+          // Trigger notification for new invoice
+          onInvoiceCreated({
+            id: invoiceId,
+            invoiceNumber: invoiceData.invoiceNumber,
+            clientId: invoiceData.customerId,
+            totalAmount: invoiceData.totalAmount,
+            amountDue: totalAmount.toFixed(2),
+            dueDate: invoiceData.dueDate,
+          }).catch(error => {
+            // Don't fail the mutation if notification fails
+            console.error("Failed to send invoice created notification:", error);
+          });
+
+          return invoiceId;
         }),
 
       update: protectedProcedure.use(requirePermission("accounting:update"))
@@ -706,7 +722,24 @@ export const accountingRouter = router({
           amount: z.number(),
         }))
         .mutation(async ({ input }) => {
-          return await arApDb.recordInvoicePayment(input.invoiceId, input.amount);
+          const result = await arApDb.recordInvoicePayment(input.invoiceId, input.amount);
+
+          // Get invoice details for notification
+          const invoice = await arApDb.getInvoiceById(input.invoiceId);
+          if (invoice) {
+            onPaymentReceived({
+              id: input.invoiceId, // Use invoice ID as reference
+              clientId: invoice.customerId,
+              amount: input.amount,
+              invoiceId: input.invoiceId,
+              invoiceNumber: invoice.invoiceNumber,
+            }).catch(error => {
+              // Don't fail the mutation if notification fails
+              console.error("Failed to send payment received notification:", error);
+            });
+          }
+
+          return result;
         }),
 
       getOutstandingReceivables: protectedProcedure.use(requirePermission("accounting:read"))
