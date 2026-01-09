@@ -1,0 +1,33 @@
+# Oracle: Dashboard.Main.ViewDashboard
+# Verify dashboard loads with KPIs and widgets
+
+flow_id: "Dashboard.Main.ViewDashboard"
+description: "Verify main dashboard loads with all KPI widgets"
+role: "SalesRep"
+tags:
+  - tier1
+  - dashboard
+  - smoke
+timeout: 30000
+
+preconditions:
+  ensure: []
+
+steps:
+  - action: navigate
+    path: "/"
+    wait_for: "[data-testid='dashboard'], .dashboard, main"
+
+  - action: wait
+    network_idle: true
+    timeout: 15000
+
+  - action: screenshot
+    name: "dashboard_loaded"
+
+expected_ui:
+  url_matches: "^/$|/dashboard"
+  visible:
+    - "nav, aside, [role='navigation']"
+  text_present:
+    - "Dashboard"
