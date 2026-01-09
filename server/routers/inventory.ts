@@ -274,9 +274,11 @@ export const inventoryRouter = router({
   // ST-026: Added version checking for concurrent edit detection
   updateStatus: protectedProcedure
     .use(requirePermission("inventory:update"))
-    .input(batchUpdateSchema.extend({
-      version: z.number().optional(), // ST-026: Optional for backward compatibility
-    }))
+    .input(
+      batchUpdateSchema.extend({
+        version: z.number().optional(), // ST-026: Optional for backward compatibility
+      })
+    )
     .mutation(async ({ input, ctx }) => {
       const batch = await inventoryDb.getBatchById(input.id);
       if (!batch) throw ErrorCatalog.INVENTORY.BATCH_NOT_FOUND(input.id);
@@ -288,13 +290,7 @@ export const inventoryRouter = router({
         const { getDb } = await import("../db");
         const db = await getDb();
         if (!db) throw new Error("Database not available");
-        await checkVersion(
-          db,
-          batches,
-          "Batch",
-          input.id,
-          input.version
-        );
+        await checkVersion(db, batches, "Batch", input.id, input.version);
       }
 
       // Validate transition
@@ -313,7 +309,11 @@ export const inventoryRouter = router({
       const before = inventoryUtils.createAuditSnapshot(
         batch as unknown as Record<string, unknown>
       );
-      await inventoryDb.updateBatchStatus(input.id, input.status, input.version);
+      await inventoryDb.updateBatchStatus(
+        input.id,
+        input.status,
+        input.version
+      );
       const after = await inventoryDb.getBatchById(input.id);
 
       // Create audit log
@@ -333,8 +333,10 @@ export const inventoryRouter = router({
     }),
 
   // Adjust batch quantity
+  // SEC-FIX: Changed permission from inventory:read to inventory:update
+  // This is a write operation that modifies inventory quantities
   adjustQty: protectedProcedure
-    .use(requirePermission("inventory:read"))
+    .use(requirePermission("inventory:update"))
     .input(
       z.object({
         id: z.number(),
@@ -345,8 +347,15 @@ export const inventoryRouter = router({
           "holdQty",
           "defectiveQty",
         ]),
-        adjustment: z.number(),
-        reason: z.string(),
+        // SEC-FIX: Add bounds validation to prevent overflow/precision issues
+        adjustment: z
+          .number()
+          .min(-1000000, "Adjustment too small")
+          .max(1000000, "Adjustment too large"),
+        reason: z
+          .string()
+          .min(1, "Reason is required")
+          .max(500, "Reason too long"),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -408,13 +417,7 @@ export const inventoryRouter = router({
         const { getDb } = await import("../db");
         const db = await getDb();
         if (!db) throw new Error("Database not available");
-        await checkVersion(
-          db,
-          batches,
-          "Batch",
-          input.id,
-          input.version
-        );
+        await checkVersion(db, batches, "Batch", input.id, input.version);
       }
 
       const before = inventoryUtils.createAuditSnapshot(batch);
