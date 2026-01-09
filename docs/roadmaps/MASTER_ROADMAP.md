@@ -2,7 +2,7 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 4.2
+**Version:** 4.3
 **Last Updated:** 2026-01-09
 **Status:** Active
 
@@ -121,6 +121,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | FEATURE-011 | Unified Product Catalogue (Foundation) | ✅ COMPLETE | Jan 2026 |
 | FEATURE-012 | VIP Portal Admin Impersonation Tool | ✅ COMPLETE | Dec 31, 2025 |
 | FEATURE-015 | VIP Portal Settings in Client Profile | ✅ COMPLETE | Dec 2025 |
+| NOTIF-001 | Notification Triggers for Business Events | ✅ COMPLETE | Jan 9, 2026 |
 
 ### ✅ Feature Flag System (COMPLETE - Dec 31, 2025)
 
@@ -224,8 +225,8 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | SEC-008 | Protect Settings Router Mutations | HIGH | ready | `docs/prompts/SEC-008.md` |
 | SEC-009 | Protect VIP Portal Needs Data Exposure | HIGH | ready | `docs/prompts/SEC-009.md` |
 | SEC-010 | Protect Returns and Refunds Query Endpoints | HIGH | ready | `docs/prompts/SEC-010.md` |
-| SEC-011 | Reduce VIP Portal Session Duration | HIGH | ready | `docs/prompts/SEC-011.md` |
-| SEC-012 | Secure Admin Setup Endpoint | HIGH | ready | `docs/prompts/SEC-012.md` |
+| SEC-011 | Reduce VIP Portal Session Duration | HIGH | ✅ COMPLETE | `docs/prompts/SEC-011.md` |
+| SEC-012 | Secure Admin Setup Endpoint | HIGH | ✅ COMPLETE | `docs/prompts/SEC-012.md` |
 
 ---
 
