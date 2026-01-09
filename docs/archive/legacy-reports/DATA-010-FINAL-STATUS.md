@@ -1,11 +1,18 @@
 # DATA-010: Schema Validation System - FINAL STATUS
 
-**Date:** December 2, 2025  
-**Status:** ✅ **DEPLOYED TO PRODUCTION - READY FOR TESTING**
+**Date:** December 2, 2025
+**Status:** ⚠️ PARTIAL - Core deployed, testing & debt outstanding
+**Reopened:** January 9, 2026 (Red Hat QA)
 
-## 🎉 Achievement Summary
+> **⚠️ RED HAT QA (Jan 2026):** Task marked complete prematurely.
+> See `docs/qa/DATA-010-REDHAT-QA-EXECUTION-ROADMAP.md` for remaining work.
 
-Successfully designed, implemented, and deployed a comprehensive Schema Validation System in **~5 hours** (vs 80h estimated). All core functionality is live in production and ready for use.
+## Achievement Summary
+
+Core schema validation tools were designed and deployed in **~5 hours** (vs 80h estimated). However, Red Hat QA review identified:
+- **14% test coverage** (4/29 tests implemented)
+- **2 schema debt items** outstanding (adjustmentReason, orderStatusHistory)
+- **10 priority tables** still empty
 
 ## ✅ What's Deployed
 
