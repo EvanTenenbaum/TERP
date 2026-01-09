@@ -39,7 +39,7 @@ import { PotentialBuyersWidget } from "./PotentialBuyersWidget";
 import { PriceSimulationModal } from "./PriceSimulationModal";
 import { BatchMediaUpload } from "./BatchMediaUpload";
 import { CommentWidget } from "@/components/comments/CommentWidget";
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -227,6 +227,8 @@ export function BatchDetailDrawer({
   const [qtyReason, setQtyReason] = useState("");
   const [newStatus, setNewStatus] = useState<string>("");
   const [statusReason, setStatusReason] = useState("");
+  // BUG-041 FIX: Track closing state to prevent race conditions
+  const isClosingRef = useRef(false);
 
   // Mutations for actions
   const adjustQtyMutation = trpc.inventory.adjustQty.useMutation({
@@ -262,13 +264,48 @@ export function BatchDetailDrawer({
     }
   );
 
+  /**
+   * BUG-041 FIX: Safe close handler that prevents crashes during drawer close.
+   *
+   * Root cause: The Sheet component's onOpenChange can trigger during render
+   * while data is still loading or when React state updates race with the close.
+   * This handler ensures clean close by:
+   * 1. Using a ref to prevent multiple close calls
+   * 2. Resetting modal states before calling onClose
+   * 3. Using requestAnimationFrame to defer the close to the next frame
+   */
+  const handleSafeClose = useCallback(
+    (newOpen: boolean) => {
+      if (!newOpen && !isClosingRef.current) {
+        isClosingRef.current = true;
+        // Reset internal states to prevent stale state issues
+        setShowCogsEdit(false);
+        setShowPriceSimulation(false);
+        // Defer close to next animation frame to prevent render crashes
+        window.requestAnimationFrame(() => {
+          try {
+            onClose();
+          } catch (closeError) {
+            console.error(
+              "[BatchDetailDrawer] BUG-041: Error during close",
+              closeError
+            );
+          } finally {
+            isClosingRef.current = false;
+          }
+        });
+      }
+    },
+    [onClose]
+  );
+
   if (!batchId || !open) return null;
 
   // BUG-041 FIX: Handle error state
   if (error) {
     console.error(`[BatchDetailDrawer] Error loading batch ${batchId}:`, error);
     return (
-      <Sheet open={open} onOpenChange={onClose}>
+      <Sheet open={open} onOpenChange={handleSafeClose}>
         <SheetContent className="w-full sm:max-w-2xl">
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <AlertCircle className="h-12 w-12 text-destructive" />
@@ -339,7 +376,7 @@ export function BatchDetailDrawer({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
+    <Sheet open={open} onOpenChange={handleSafeClose}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         {isLoading ? (
           <DrawerSkeleton sections={5} />

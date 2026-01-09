@@ -150,3 +150,5 @@ playwright/.cache/
 !qa-results/audit/
 .env.production
 .vercel/
+scripts/seed-qa-test-users.ts
+scripts/test-adjust-api.ts

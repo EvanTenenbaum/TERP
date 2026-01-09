@@ -51,18 +51,39 @@ function parseNumber(value: unknown, defaultValue: number = 0): number {
 // INVENTORY WITH PRICING
 // ============================================================================
 
+/**
+ * BUG-040 FIX: Enhanced inventory loading with better error handling and fallbacks.
+ *
+ * Root cause analysis: The original implementation could fail silently or with generic
+ * errors when:
+ * 1. Client doesn't exist (pricingEngine throws)
+ * 2. Database queries timeout under memory pressure
+ * 3. Pricing rules have invalid data
+ *
+ * Fix: Added specific error messages, fallback pricing, and logging for debugging.
+ */
 export async function getInventoryWithPricing(
   clientId: number,
   options?: { limit?: number; offset?: number }
 ): Promise<PricedInventoryItem[]> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) {
+    logger.error(
+      { clientId },
+      "BUG-040: Database not available for inventory fetch"
+    );
+    throw new Error("Database temporarily unavailable. Please try again.");
+  }
 
   const limit = Math.min(options?.limit || 100, 1000); // Max 1000
   const offset = options?.offset || 0;
 
   try {
     // Get batches with status filter
+    logger.info(
+      { clientId, limit, offset },
+      "BUG-040: Fetching inventory batches"
+    );
     const inventoryBatches = await db
       .select()
       .from(batches)
@@ -70,8 +91,38 @@ export async function getInventoryWithPricing(
       .limit(limit)
       .offset(offset);
 
-    // Get client pricing rules
-    const clientRules = await pricingEngine.getClientPricingRules(clientId);
+    // BUG-040 FIX: Log batch count for debugging
+    logger.info(
+      { clientId, batchCount: inventoryBatches.length },
+      "BUG-040: Batches fetched"
+    );
+
+    // BUG-040 FIX: Return empty array with clear indication when no batches available
+    if (inventoryBatches.length === 0) {
+      logger.info({ clientId }, "BUG-040: No inventory batches available");
+      return [];
+    }
+
+    // Get client pricing rules with error handling
+    let clientRules: Awaited<
+      ReturnType<typeof pricingEngine.getClientPricingRules>
+    > = [];
+    try {
+      clientRules = await pricingEngine.getClientPricingRules(clientId);
+      logger.info(
+        { clientId, ruleCount: clientRules.length },
+        "BUG-040: Pricing rules loaded"
+      );
+    } catch (ruleError) {
+      // BUG-040 FIX: If client pricing rules fail, use empty rules (base pricing)
+      const errorMsg =
+        ruleError instanceof Error ? ruleError.message : "Unknown error";
+      logger.warn(
+        { clientId, error: errorMsg },
+        "BUG-040: Failed to load client pricing rules, using base pricing"
+      );
+      // Continue with empty rules - items will use base price as retail price
+    }
 
     // Convert batches to inventory items format with safe number parsing
     const inventoryItems = inventoryBatches.map(batch => ({
@@ -99,7 +150,10 @@ export async function getInventoryWithPricing(
         quantity: item.quantity || 0,
       }));
     } catch (pricingError) {
-      logger.error({ error: pricingError }, "Pricing engine error, using fallback pricing");
+      logger.error(
+        { error: pricingError, clientId },
+        "BUG-040: Pricing engine error, using fallback pricing"
+      );
 
       // Return items with base prices as fallback
       return inventoryItems.map(item => ({
@@ -110,8 +164,22 @@ export async function getInventoryWithPricing(
       }));
     }
   } catch (error) {
-    logger.error({ error }, "Error fetching inventory");
-    throw new Error("Failed to fetch inventory");
+    const errorMsg = error instanceof Error ? error.message : "Unknown error";
+    logger.error(
+      { error: errorMsg, clientId },
+      "BUG-040: Error fetching inventory"
+    );
+
+    // BUG-040 FIX: Provide specific error message based on error type
+    if (errorMsg.includes("timeout") || errorMsg.includes("ETIMEDOUT")) {
+      throw new Error(
+        "Inventory loading timed out. The server may be under heavy load. Please try again."
+      );
+    }
+    if (errorMsg.includes("Client not found")) {
+      throw new Error("Customer not found. Please select a valid customer.");
+    }
+    throw new Error(`Failed to load inventory: ${errorMsg}`);
   }
 }
 

@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Calendar, List, Grid3x3, Clock, Inbox, Palmtree, AlertCircle } from "lucide-react";
+import {
+  Calendar,
+  List,
+  Grid3x3,
+  Clock,
+  Inbox,
+  Palmtree,
+  AlertCircle,
+} from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import MonthView from "../components/calendar/MonthView";
 import WeekView from "../components/calendar/WeekView";
@@ -37,17 +45,22 @@ export default function CalendarPage() {
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(
+    null
+  );
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
   // Get pending counts for badges
-  const { data: pendingRequestCount } = trpc.appointmentRequests.getPendingCount.useQuery({});
-  const { data: teamTimeOffCount } = trpc.timeOffRequests.getTeamPendingCount.useQuery();
+  const { data: pendingRequestCount } =
+    trpc.appointmentRequests.getPendingCount.useQuery({});
+  const { data: teamTimeOffCount } =
+    trpc.timeOffRequests.getTeamPendingCount.useQuery();
 
   // Load user's default view (for future use)
   // const { data: defaultView } = trpc.calendarViews.getDefaultView.useQuery();
 
   // Load events for current date range
+  // BUG-070 FIX: Added retry logic and timeout handling for stability under memory pressure
   const dateRange = getDateRange(currentDate, currentView);
   const {
     data: eventsData,
@@ -55,11 +68,25 @@ export default function CalendarPage() {
     isLoading: eventsLoading,
     error: eventsError,
     isError: isEventsError,
-  } = trpc.calendar.getEvents.useQuery({
-    startDate: dateRange.start,
-    endDate: dateRange.end,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  });
+  } = trpc.calendar.getEvents.useQuery(
+    {
+      startDate: dateRange.start,
+      endDate: dateRange.end,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+    {
+      // BUG-070 FIX: Retry logic for API failures
+      retry: 2,
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000),
+      // Keep data fresh but cache for 30 seconds
+      staleTime: 30 * 1000,
+      // Garbage collect after 5 minutes
+      gcTime: 5 * 60 * 1000,
+      // Refetch on mount but not on window focus during development
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+    }
+  );
 
   // Handle the response which could be an array or an object with data property
   const events = Array.isArray(eventsData)
@@ -83,7 +110,7 @@ export default function CalendarPage() {
     eventType: "eventType" in event ? event.eventType : "MEETING",
     status: "status" in event ? event.status : "SCHEDULED",
     priority: "priority" in event ? event.priority : "MEDIUM",
-    module: "module" in event ? (event.module || "") : "",
+    module: "module" in event ? event.module || "" : "",
   }));
 
   // Handle view change
@@ -157,7 +184,9 @@ export default function CalendarPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <BackButton label="Back to Dashboard" to="/" />
-              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Calendar</h1>
+              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
+                Calendar
+              </h1>
             </div>
             <button
               onClick={handleCreateEvent}
@@ -180,7 +209,10 @@ export default function CalendarPage() {
             ) : (
               <ErrorState
                 title="Failed to load calendar"
-                description={eventsError?.message || "An error occurred while loading calendar events."}
+                description={
+                  eventsError?.message ||
+                  "An error occurred while loading calendar events."
+                }
                 onRetry={() => refetchEvents()}
                 showSupport
               />
@@ -211,7 +243,9 @@ export default function CalendarPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="flex items-center gap-3">
               <BackButton label="Back to Dashboard" to="/" />
-              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Calendar</h1>
+              <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
+                Calendar
+              </h1>
             </div>
 
             {/* Date Navigation */}
@@ -418,7 +452,7 @@ export default function CalendarPage() {
         {/* Requests Tab */}
         {activeTab === "requests" && (
           <AppointmentRequestsList
-            onSelectRequest={(id) => {
+            onSelectRequest={id => {
               setSelectedRequestId(id);
               setIsRequestModalOpen(true);
             }}
@@ -426,9 +460,7 @@ export default function CalendarPage() {
         )}
 
         {/* Time Off Tab */}
-        {activeTab === "timeoff" && (
-          <TimeOffRequestsList isAdmin={true} />
-        )}
+        {activeTab === "timeoff" && <TimeOffRequestsList isAdmin={true} />}
       </div>
 
       {/* Event Form Dialog */}

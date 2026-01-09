@@ -14,6 +14,7 @@ import {
   Coins,
   BarChart3,
   Table,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 
@@ -42,6 +43,13 @@ export const navigationItems: NavigationItem[] = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, group: "sales" },
   { name: "Clients", path: "/clients", icon: Users, group: "sales" },
   { name: "Orders", path: "/orders", icon: ShoppingCart, group: "sales" },
+  {
+    name: "Live Shopping",
+    path: "/live-shopping",
+    icon: Video,
+    group: "sales",
+    ariaLabel: "Live shopping sessions with clients",
+  },
   {
     name: "Invoices",
     path: "/accounting/invoices",

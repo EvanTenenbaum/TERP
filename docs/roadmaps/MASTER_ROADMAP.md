@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 4.6
-**Last Updated:** 2026-01-09 (QA Auth Layer Added)
+**Version:** 4.7
+**Last Updated:** 2026-01-09 (48-Hour Commit Reconciliation)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -90,11 +90,12 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 ### ✅ QA & Testing Infrastructure (COMPLETE)
 
-| Task        | Description                                        | Status      | Completion Date |
-| ----------- | -------------------------------------------------- | ----------- | --------------- |
-| AUTH-QA-001 | QA Authentication Layer for Deterministic RBAC     | ✅ COMPLETE | Jan 9, 2026     |
+| Task        | Description                                    | Status      | Completion Date |
+| ----------- | ---------------------------------------------- | ----------- | --------------- |
+| AUTH-QA-001 | QA Authentication Layer for Deterministic RBAC | ✅ COMPLETE | Jan 9, 2026     |
 
 > **AUTH-QA-001 Details:**
+>
 > - Deterministic QA login for 7 roles (Super Admin, Sales Manager, Sales Rep, Inventory, Fulfillment, Accounting, Auditor)
 > - API endpoints: `/api/qa-auth/login`, `/api/qa-auth/roles`, `/api/qa-auth/status`
 > - Environment flag: `QA_AUTH_ENABLED=true` (auto-disabled in production)
@@ -216,8 +217,8 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | BUG-040 | Order Creator: Inventory loading fails      | HIGH     | 🔴 OPEN                   |
 | BUG-041 | Batch Detail View crashes app               | HIGH     | ✅ COMPLETE (Jan 9, 2026) |
 | BUG-042 | Global Search returns no results            | HIGH     | ✅ COMPLETE (Jan 9, 2026) |
-| BUG-043 | Permission Service empty array SQL crash    | HIGH     | 🔴 OPEN                   |
-| BUG-044 | VIP Portal empty batch IDs crash            | HIGH     | 🔴 OPEN                   |
+| BUG-043 | Permission Service empty array SQL crash    | HIGH     | ✅ COMPLETE (Jan 9, 2026) |
+| BUG-044 | VIP Portal empty batch IDs crash            | HIGH     | ✅ COMPLETE (Jan 9, 2026) |
 | BUG-045 | Order Creator: Retry resets entire form     | HIGH     | 🟡 OPEN                   |
 | BUG-046 | Settings Users tab misleading auth error    | HIGH     | 🟡 OPEN                   |
 | BUG-047 | Spreadsheet View shows empty grid           | HIGH     | 🟡 OPEN                   |
@@ -272,12 +273,12 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 | Task    | Description                                        | Priority | Status      | Prompt                    |
 | ------- | -------------------------------------------------- | -------- | ----------- | ------------------------- |
-| SEC-005 | Protect Location Router Mutations                  | HIGH     | ready       | `docs/prompts/SEC-005.md` |
-| SEC-006 | Protect Warehouse Transfer Mutations               | HIGH     | ready       | `docs/prompts/SEC-006.md` |
-| SEC-007 | Protect Order Enhancement Mutations (11 Endpoints) | HIGH     | ready       | `docs/prompts/SEC-007.md` |
-| SEC-008 | Protect Settings Router Mutations                  | HIGH     | ready       | `docs/prompts/SEC-008.md` |
-| SEC-009 | Protect VIP Portal Needs Data Exposure             | HIGH     | ready       | `docs/prompts/SEC-009.md` |
-| SEC-010 | Protect Returns and Refunds Query Endpoints        | HIGH     | ready       | `docs/prompts/SEC-010.md` |
+| SEC-005 | Protect Location Router Mutations                  | HIGH     | ✅ COMPLETE | `docs/prompts/SEC-005.md` |
+| SEC-006 | Protect Warehouse Transfer Mutations               | HIGH     | ✅ COMPLETE | `docs/prompts/SEC-006.md` |
+| SEC-007 | Protect Order Enhancement Mutations (11 Endpoints) | HIGH     | ✅ COMPLETE | `docs/prompts/SEC-007.md` |
+| SEC-008 | Protect Settings Router Mutations                  | HIGH     | ✅ COMPLETE | `docs/prompts/SEC-008.md` |
+| SEC-009 | Protect VIP Portal Needs Data Exposure             | HIGH     | ✅ COMPLETE | `docs/prompts/SEC-009.md` |
+| SEC-010 | Protect Returns and Refunds Query Endpoints        | HIGH     | ✅ COMPLETE | `docs/prompts/SEC-010.md` |
 | SEC-011 | Reduce VIP Portal Session Duration                 | HIGH     | ✅ COMPLETE | `docs/prompts/SEC-011.md` |
 | SEC-012 | Secure Admin Setup Endpoint                        | HIGH     | ✅ COMPLETE | `docs/prompts/SEC-012.md` |
 
@@ -285,67 +286,67 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 ### Stability Tasks (P1)
 
-| Task   | Description                            | Priority | Status | Prompt                   |
-| ------ | -------------------------------------- | -------- | ------ | ------------------------ |
-| ST-025 | Add Error Boundaries to Critical Pages | HIGH     | ready  | `docs/prompts/ST-025.md` |
-| ST-026 | Implement Concurrent Edit Detection    | HIGH     | ready  | `docs/prompts/ST-026.md` |
-| ST-010 | Implement Caching Layer (Redis)        | MEDIUM   | ready  | `docs/prompts/ST-010.md` |
-| ST-024 | Remove Comments Feature                | LOW      | ready  | `docs/prompts/ST-024.md` |
+| Task   | Description                                | Priority | Status      | Prompt                   |
+| ------ | ------------------------------------------ | -------- | ----------- | ------------------------ |
+| ST-025 | Add Error Boundaries to Critical Pages     | HIGH     | ✅ COMPLETE | `docs/prompts/ST-025.md` |
+| ST-026 | Implement Concurrent Edit Detection        | HIGH     | ready       | `docs/prompts/ST-026.md` |
+| ST-010 | Implement Caching Layer (Permission Cache) | MEDIUM   | ✅ COMPLETE | `docs/prompts/ST-010.md` |
+| ST-024 | Permission Caching in Service              | LOW      | ✅ COMPLETE | `docs/prompts/ST-024.md` |
 
 ---
 
 ### UX Tasks (P1)
 
-| Task   | Description                           | Priority | Status | Prompt |
-| ------ | ------------------------------------- | -------- | ------ | ------ |
-| UX-001 | Implement Form Dirty State Protection | MEDIUM   | ready  | -      |
-| UX-003 | Fix Mobile Kanban Overflow            | MEDIUM   | ready  | -      |
-| UX-006 | Add Error Recovery UI with Retry      | MEDIUM   | ready  | -      |
+| Task   | Description                           | Priority | Status      | Prompt |
+| ------ | ------------------------------------- | -------- | ----------- | ------ |
+| UX-001 | Implement Form Dirty State Protection | MEDIUM   | ✅ COMPLETE | -      |
+| UX-003 | Fix Mobile Kanban Overflow            | MEDIUM   | ✅ COMPLETE | -      |
+| UX-006 | Add Error Recovery UI with Retry      | MEDIUM   | ✅ COMPLETE | -      |
 
 ---
 
 ### Feature Tasks (P2)
 
-| Task        | Description                                          | Priority | Status | Prompt |
-| ----------- | ---------------------------------------------------- | -------- | ------ | ------ |
-| FEAT-001    | Client Form Field Updates                            | MEDIUM   | ready  | -      |
-| FEAT-002    | Tag System Revamp for Clients and Products           | MEDIUM   | ready  | -      |
-| FEAT-003    | Order Creator Quick Add Quantity Field               | MEDIUM   | ready  | -      |
-| FEAT-004    | Add Dollar Amount Discount Option                    | MEDIUM   | ready  | -      |
-| FEAT-005    | Merge Draft and Quote Workflows                      | MEDIUM   | ready  | -      |
-| FEAT-006    | Show Product Name Instead of SKU in Order Creator    | MEDIUM   | ready  | -      |
-| FEAT-007    | Add Payment Recording Against Invoices               | HIGH     | ready  | -      |
-| FEAT-008    | Invoice Editing from Order View                      | MEDIUM   | ready  | -      |
-| FEAT-009    | Add Product Subcategories (Smalls, Trim, etc.)       | MEDIUM   | ready  | -      |
-| FEAT-010    | Default Warehouse Selection                          | MEDIUM   | ready  | -      |
-| FEAT-011    | COGS Logic and Sales Flow Integration                | HIGH     | ready  | -      |
-| FEAT-012    | Make Grade Field Optional/Customizable               | LOW      | ready  | -      |
-| FEAT-013    | Add Packaged Unit Type for Products                  | LOW      | ready  | -      |
-| FEAT-014    | Remove Expected Delivery from Purchases              | LOW      | ready  | -      |
-| FEAT-015    | Finance Status Customization                         | LOW      | ready  | -      |
-| FEAT-016    | Rename Credits to Credit Settings                    | LOW      | ready  | -      |
-| FEAT-017    | Feature Flags Direct Access                          | LOW      | ready  | -      |
-| FEAT-018    | Remove Development-Only Features from User-Facing UI | LOW      | ready  | -      |
-| FEAT-019    | VIP Status and Tiers Implementation                  | MEDIUM   | ready  | -      |
-| FEAT-020    | Product Subcategory and Strain Matching              | MEDIUM   | ready  | -      |
-| FEAT-021    | Settings Changes Apply to Entire Team                | MEDIUM   | ready  | -      |
-| FEAT-022    | Show Role Names Instead of Count in Permissions      | LOW      | ready  | -      |
-| FEAT-023    | Notification Preferences - System vs User Level      | MEDIUM   | ready  | -      |
-| FEAT-024    | Inline Notifications Without Page Navigation         | MEDIUM   | ready  | -      |
-| FEATURE-003 | Live Shopping & Price Negotiation System             | MEDIUM   | ready  | -      |
+| Task        | Description                                          | Priority | Status      | Prompt |
+| ----------- | ---------------------------------------------------- | -------- | ----------- | ------ |
+| FEAT-001    | Client Form Field Updates                            | MEDIUM   | ready       | -      |
+| FEAT-002    | Tag System Revamp for Clients and Products           | MEDIUM   | ready       | -      |
+| FEAT-003    | Order Creator Quick Add Quantity Field               | MEDIUM   | ready       | -      |
+| FEAT-004    | Add Dollar Amount Discount Option                    | MEDIUM   | ready       | -      |
+| FEAT-005    | Merge Draft and Quote Workflows                      | MEDIUM   | ready       | -      |
+| FEAT-006    | Show Product Name Instead of SKU in Order Creator    | MEDIUM   | ready       | -      |
+| FEAT-007    | Add Payment Recording Against Invoices               | HIGH     | ready       | -      |
+| FEAT-008    | Invoice Editing from Order View                      | MEDIUM   | ready       | -      |
+| FEAT-009    | Add Product Subcategories (Smalls, Trim, etc.)       | MEDIUM   | ready       | -      |
+| FEAT-010    | Default Warehouse Selection                          | MEDIUM   | ready       | -      |
+| FEAT-011    | COGS Logic and Sales Flow Integration                | HIGH     | ready       | -      |
+| FEAT-012    | Make Grade Field Optional/Customizable               | LOW      | ready       | -      |
+| FEAT-013    | Add Packaged Unit Type for Products                  | LOW      | ready       | -      |
+| FEAT-014    | Remove Expected Delivery from Purchases              | LOW      | ready       | -      |
+| FEAT-015    | Finance Status Customization                         | LOW      | ready       | -      |
+| FEAT-016    | Rename Credits to Credit Settings                    | LOW      | ✅ COMPLETE | -      |
+| FEAT-017    | Feature Flags Direct Access                          | LOW      | ready       | -      |
+| FEAT-018    | Remove Development-Only Features from User-Facing UI | LOW      | ready       | -      |
+| FEAT-019    | VIP Status and Tiers Implementation                  | MEDIUM   | ready       | -      |
+| FEAT-020    | Product Subcategory and Strain Matching              | MEDIUM   | ready       | -      |
+| FEAT-021    | Settings Changes Apply to Entire Team                | MEDIUM   | ready       | -      |
+| FEAT-022    | Show Role Names Instead of Count in Permissions      | LOW      | ready       | -      |
+| FEAT-023    | Notification Preferences - System vs User Level      | MEDIUM   | ready       | -      |
+| FEAT-024    | Inline Notifications Without Page Navigation         | MEDIUM   | ready       | -      |
+| FEATURE-003 | Live Shopping & Price Negotiation System             | MEDIUM   | ready       | -      |
 
 ---
 
 ### Video Testing Session Tasks (Jan 7, 2026)
 
-| Task   | Description                                    | Priority | Status |
-| ------ | ---------------------------------------------- | -------- | ------ |
-| UX-009 | Fix Sidebar Slide Animation                    | LOW      | ready  |
-| UX-010 | Clarify My Account vs User Settings Navigation | LOW      | ready  |
-| UX-011 | Fix Two Export Buttons Issue                   | LOW      | ready  |
-| UX-012 | Fix Period Display Formatting                  | LOW      | ready  |
-| UX-013 | Fix Mirrored Elements Issue                    | LOW      | ready  |
-| UX-014 | Make Optional Fields Clear                     | LOW      | ready  |
+| Task   | Description                                    | Priority | Status      |
+| ------ | ---------------------------------------------- | -------- | ----------- |
+| UX-009 | Fix Sidebar Slide Animation                    | LOW      | ✅ COMPLETE |
+| UX-010 | Clarify My Account vs User Settings Navigation | LOW      | ready       |
+| UX-011 | Fix Two Export Buttons Issue                   | LOW      | ready       |
+| UX-012 | Fix Period Display Formatting                  | LOW      | ready       |
+| UX-013 | Fix Mirrored Elements Issue                    | LOW      | ready       |
+| UX-014 | Make Optional Fields Clear                     | LOW      | ✅ COMPLETE |
 
 ---
 
@@ -362,23 +363,23 @@ All 15 tasks from the Cooper Rd Working Session completed:
 
 ### Quality Tasks (P2)
 
-| Task        | Description                                    | Priority | Status | Prompt |
-| ----------- | ---------------------------------------------- | -------- | ------ | ------ |
-| QUAL-003    | Complete Critical TODOs                        | MEDIUM   | ready  | -      |
-| QUAL-004    | Review Referential Integrity (CASCADE Deletes) | HIGH     | ready  | -      |
-| QUAL-007    | Final TODO Audit & Documentation               | MEDIUM   | ready  | -      |
-| ROADMAP-001 | Process Consolidated Roadmap Update Report     | LOW      | ready  | -      |
+| Task        | Description                                    | Priority | Status      | Prompt |
+| ----------- | ---------------------------------------------- | -------- | ----------- | ------ |
+| QUAL-003    | Complete Critical TODOs                        | MEDIUM   | ready       | -      |
+| QUAL-004    | Review Referential Integrity (CASCADE Deletes) | HIGH     | ✅ COMPLETE | -      |
+| QUAL-007    | Final TODO Audit & Documentation               | MEDIUM   | ✅ COMPLETE | -      |
+| ROADMAP-001 | Process Consolidated Roadmap Update Report     | LOW      | ready       | -      |
 
 ---
 
 ### Improvement Tasks (P3)
 
-| Task        | Description                     | Priority | Status |
-| ----------- | ------------------------------- | -------- | ------ |
-| IMPROVE-001 | Fix Backup Script Security      | MEDIUM   | ready  |
-| IMPROVE-002 | Enhance Health Check Endpoints  | MEDIUM   | ready  |
-| IMPROVE-003 | Add Composite Database Indexes  | MEDIUM   | ready  |
-| IMPROVE-004 | Reduce Rate Limiting Thresholds | LOW      | ready  |
+| Task        | Description                     | Priority | Status      |
+| ----------- | ------------------------------- | -------- | ----------- |
+| IMPROVE-001 | Fix Backup Script Security      | MEDIUM   | ✅ COMPLETE |
+| IMPROVE-002 | Enhance Health Check Endpoints  | MEDIUM   | ✅ COMPLETE |
+| IMPROVE-003 | Add Composite Database Indexes  | MEDIUM   | ✅ COMPLETE |
+| IMPROVE-004 | Reduce Rate Limiting Thresholds | LOW      | ✅ COMPLETE |
 
 ---
 
@@ -404,15 +405,16 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | Category         | Completed | Open    | Total    |
 | ---------------- | --------- | ------- | -------- |
 | Infrastructure   | 18        | 4       | 22       |
-| Security         | 4         | 8       | 12       |
-| Bug Fixes        | 8         | 24      | 32       |
+| Security         | 12        | 0       | 12       |
+| Bug Fixes        | 12        | 20      | 32       |
 | API Registration | 0         | 10      | 10       |
-| Stability        | 7         | 4       | 11       |
-| Quality          | 8         | 4       | 12       |
-| Features         | 4         | 25+     | 29+      |
-| UX               | 0         | 9       | 9        |
+| Stability        | 10        | 1       | 11       |
+| Quality          | 10        | 2       | 12       |
+| Features         | 6         | 23+     | 29+      |
+| UX               | 5         | 4       | 9        |
 | Data & Schema    | 7         | 1       | 8        |
-| **TOTAL**        | **56+**   | **89+** | **145+** |
+| Improvements     | 4         | 0       | 4        |
+| **TOTAL**        | **84+**   | **65+** | **149+** |
 
 > **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
 > See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.

@@ -42,7 +42,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   TOO_MANY_REQUESTS: "Too many requests. Please slow down.",
 
   // Custom TERP codes
-  TERI_CODE_EXISTS: "This TERI code already exists. Please use a different code.",
+  TERI_CODE_EXISTS:
+    "This TERI code already exists. Please use a different code.",
   INSUFFICIENT_QUANTITY: "Insufficient quantity available.",
   INVALID_TRANSITION: "This status change is not allowed.",
 };
@@ -50,12 +51,19 @@ const ERROR_MESSAGES: Record<string, string> = {
 /**
  * BUG-046: Auth error type detection
  */
-export type AuthErrorType = "NOT_LOGGED_IN" | "SESSION_EXPIRED" | "DEMO_USER_RESTRICTED" | "PERMISSION_DENIED" | "UNKNOWN";
+export type AuthErrorType =
+  | "NOT_LOGGED_IN"
+  | "SESSION_EXPIRED"
+  | "DEMO_USER_RESTRICTED"
+  | "PERMISSION_DENIED"
+  | "UNKNOWN";
 
 /**
  * Type guard for tRPC client errors
  */
-export function isTRPCClientError(error: unknown): error is TRPCClientError<AppRouter> {
+export function isTRPCClientError(
+  error: unknown
+): error is TRPCClientError<AppRouter> {
   return error instanceof TRPCClientError;
 }
 
@@ -91,7 +99,10 @@ export function getErrorMessage(error: unknown): string {
     if (error.message.includes("TERI code already exists")) {
       return ERROR_MESSAGES.TERI_CODE_EXISTS;
     }
-    if (error.message.includes("fetch failed") || error.message.includes("network")) {
+    if (
+      error.message.includes("fetch failed") ||
+      error.message.includes("network")
+    ) {
       return "Network error. Please check your connection and try again.";
     }
     return error.message || ERROR_MESSAGES.INTERNAL_SERVER_ERROR;
@@ -107,19 +118,57 @@ export function getErrorMessage(error: unknown): string {
 
 /**
  * Extract error code from various error types
+ * BUG-046 FIX: Enhanced error code extraction to handle tRPC error shapes correctly
  */
 export function getErrorCode(error: unknown): string {
   if (isTRPCClientError(error)) {
+    // BUG-046 FIX: tRPC errors can have code in multiple locations depending on version
+    // Check .data.code first (tRPC v10+)
     const data = error.data as Record<string, unknown> | undefined;
-    const code = data?.code;
-    return (code as string) || "UNKNOWN";
+    if (data?.code) {
+      return data.code as string;
+    }
+
+    // BUG-046 FIX: Check .shape.data.code (alternative tRPC structure)
+    const shape = error.shape as { data?: { code?: string } } | undefined;
+    if (shape?.data?.code) {
+      return shape.data.code;
+    }
+
+    // BUG-046 FIX: Check the error's code property directly (tRPC v11+)
+    const errorWithCode = error as { code?: string };
+    if (errorWithCode.code) {
+      return errorWithCode.code;
+    }
+
+    // BUG-046 FIX: Parse from message as last resort for known patterns
+    const message = error.message.toLowerCase();
+    if (
+      message.includes("permission denied") ||
+      message.includes("do not have permission") ||
+      message.includes("forbidden")
+    ) {
+      return "FORBIDDEN";
+    }
+    if (
+      message.includes("authentication required") ||
+      message.includes("please log in") ||
+      message.includes("unauthorized")
+    ) {
+      return "UNAUTHORIZED";
+    }
+
+    return "UNKNOWN";
   }
 
   if (error instanceof Error) {
     if (error.message.includes("TERI code already exists")) {
       return "TERI_CODE_EXISTS";
     }
-    if (error.message.includes("fetch failed") || error.message.includes("network")) {
+    if (
+      error.message.includes("fetch failed") ||
+      error.message.includes("network")
+    ) {
       return "NETWORK_ERROR";
     }
   }
@@ -131,7 +180,9 @@ export function getErrorCode(error: unknown): string {
  * Extract field-level errors from Zod validation errors
  * Returns a map of field names to error messages
  */
-export function extractFieldErrors(error: unknown): Record<string, string[]> | undefined {
+export function extractFieldErrors(
+  error: unknown
+): Record<string, string[]> | undefined {
   if (!isTRPCClientError(error)) {
     return undefined;
   }
@@ -140,14 +191,18 @@ export function extractFieldErrors(error: unknown): Record<string, string[]> | u
   // tRPC wraps Zod errors in a specific format
   try {
     const data = error.data as Record<string, unknown> | undefined;
-    const zodError = data?.zodError as { fieldErrors?: Record<string, string[]> } | undefined;
+    const zodError = data?.zodError as
+      | { fieldErrors?: Record<string, string[]> }
+      | undefined;
 
     if (zodError?.fieldErrors) {
       return zodError.fieldErrors;
     }
 
     // Also check the shape property
-    const shape = error.shape as { data?: { zodError?: { fieldErrors?: Record<string, string[]> } } } | undefined;
+    const shape = error.shape as
+      | { data?: { zodError?: { fieldErrors?: Record<string, string[]> } } }
+      | undefined;
     if (shape?.data?.zodError?.fieldErrors) {
       return shape.data.zodError.fieldErrors;
     }
@@ -191,9 +246,11 @@ export function isAuthError(error: unknown): boolean {
 export function isNetworkError(error: unknown): boolean {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-    return message.includes("fetch failed") ||
-           message.includes("network") ||
-           message.includes("connection");
+    return (
+      message.includes("fetch failed") ||
+      message.includes("network") ||
+      message.includes("connection")
+    );
   }
   return false;
 }
@@ -202,7 +259,10 @@ export function isNetworkError(error: unknown): boolean {
  * Log error with context for debugging
  * In production, this could be sent to a monitoring service
  */
-export function logError(error: unknown, context?: Record<string, unknown>): void {
+export function logError(
+  error: unknown,
+  context?: Record<string, unknown>
+): void {
   const normalized = normalizeError(error);
 
   console.error("[TERP Error]", {
@@ -217,25 +277,31 @@ export function logError(error: unknown, context?: Record<string, unknown>): voi
 
 /**
  * BUG-046: Determine the specific type of auth error
+ * Enhanced to use getErrorCode for consistent code extraction
  */
 export function getAuthErrorType(error: unknown): AuthErrorType {
   if (!isTRPCClientError(error)) {
     return "UNKNOWN";
   }
 
-  const data = error.data as Record<string, unknown> | undefined;
-  const code = data?.code as string | undefined;
   const message = error.message.toLowerCase();
 
-  // Check for session expiry
+  // Check for session expiry first (before checking code)
   if (message.includes("session") && message.includes("expired")) {
     return "SESSION_EXPIRED";
   }
 
   // Check for demo user restriction
-  if (message.includes("demo") || message.includes("not available in demo")) {
+  if (
+    message.includes("demo") ||
+    message.includes("not available in demo") ||
+    message.includes("public user")
+  ) {
     return "DEMO_USER_RESTRICTED";
   }
+
+  // BUG-046 FIX: Use getErrorCode for consistent extraction across tRPC versions
+  const code = getErrorCode(error);
 
   // Differentiate by error code
   if (code === "UNAUTHORIZED") {
@@ -244,6 +310,23 @@ export function getAuthErrorType(error: unknown): AuthErrorType {
 
   if (code === "FORBIDDEN") {
     return "PERMISSION_DENIED";
+  }
+
+  // BUG-046 FIX: Additional message-based detection for edge cases
+  if (
+    message.includes("permission") ||
+    message.includes("access denied") ||
+    message.includes("not allowed")
+  ) {
+    return "PERMISSION_DENIED";
+  }
+
+  if (
+    message.includes("log in") ||
+    message.includes("authentication required") ||
+    message.includes("not authenticated")
+  ) {
+    return "NOT_LOGGED_IN";
   }
 
   return "UNKNOWN";
@@ -297,7 +380,8 @@ export function getAuthErrorInfo(error: unknown): AuthErrorInfo {
       return {
         type,
         title: "Feature Not Available",
-        message: "This feature is not available in demo mode. Upgrade your account to access full functionality.",
+        message:
+          "This feature is not available in demo mode. Upgrade your account to access full functionality.",
         action: {
           label: "Upgrade Account",
           href: "/upgrade",
@@ -308,7 +392,9 @@ export function getAuthErrorInfo(error: unknown): AuthErrorInfo {
       return {
         type,
         title: "Access Denied",
-        message: originalMessage || "You do not have permission to perform this action.",
+        message:
+          originalMessage ||
+          "You do not have permission to perform this action.",
       };
 
     default:
