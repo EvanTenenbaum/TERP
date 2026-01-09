@@ -77,11 +77,30 @@ When making changes to the codebase that affect user flows:
 2. Add note in `Known Issues` column
 3. Update `FLOW_GUIDE.md` to mark as deprecated
 
+## QA Testing with Role Authentication
+
+To test USER_FLOW_MATRIX coverage, QA accounts are available for each role:
+
+| QA Email | Role | Password |
+|----------|------|----------|
+| `qa.superadmin@terp.test` | Super Admin | `TerpQA2026!` |
+| `qa.salesmanager@terp.test` | Sales Manager | `TerpQA2026!` |
+| `qa.salesrep@terp.test` | Sales Rep | `TerpQA2026!` |
+| `qa.inventory@terp.test` | Inventory Manager | `TerpQA2026!` |
+| `qa.fulfillment@terp.test` | Fulfillment | `TerpQA2026!` |
+| `qa.accounting@terp.test` | Accounting Manager | `TerpQA2026!` |
+| `qa.auditor@terp.test` | Read-Only Auditor | `TerpQA2026!` |
+
+**Enable QA Auth:** Set `QA_AUTH_ENABLED=true` in your environment.
+
+See [QA Authentication Documentation](../auth/QA_AUTH.md) for full details.
+
 ## Related Documentation
 
 - [MASTER_ROADMAP.md](../roadmaps/MASTER_ROADMAP.md) - Development roadmap
 - [docs/specs/](../specs/) - Feature specifications
 - [docs/prompts/](../prompts/) - AI agent prompts
+- [QA Authentication](../auth/QA_AUTH.md) - Deterministic QA login for RBAC testing
 
 ## Source Assets
 

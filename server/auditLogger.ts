@@ -60,6 +60,10 @@ export enum AuditEventType {
   USER_LOGIN = "USER_LOGIN",
   USER_LOGOUT = "USER_LOGOUT",
   PERMISSION_CHANGED = "PERMISSION_CHANGED",
+
+  // QA Auth events (for deterministic RBAC testing)
+  QA_AUTH_LOGIN = "QA_AUTH_LOGIN",
+  QA_AUTH_ROLE_SWITCH = "QA_AUTH_ROLE_SWITCH",
 }
 
 /**
@@ -602,6 +606,67 @@ export async function logIntakeCompleted(
       productName: result.product.name,
       lotCode: result.lot.code,
       batchCode: result.batch.code,
+    },
+  });
+}
+
+// ============================================================================
+// QA AUTH AUDIT LOGGING
+// ============================================================================
+
+/**
+ * Log QA authentication event
+ * Tracks QA logins for audit compliance and security monitoring
+ */
+export async function logQaAuthLogin(
+  data: {
+    userId: number;
+    email: string;
+    role: string;
+    environment: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }
+): Promise<void> {
+  await logAuditEvent({
+    eventType: AuditEventType.QA_AUTH_LOGIN,
+    entityType: "QaAuth",
+    entityId: data.userId,
+    userId: data.userId,
+    metadata: {
+      email: data.email,
+      role: data.role,
+      environment: data.environment,
+      ipAddress: data.ipAddress,
+      userAgent: data.userAgent,
+      authMethod: "qa-auth",
+      timestamp: new Date().toISOString(),
+    },
+  });
+}
+
+/**
+ * Log QA role switch event
+ * Tracks when QA users switch between roles during testing
+ */
+export async function logQaRoleSwitch(
+  data: {
+    userId: number;
+    fromRole: string;
+    toRole: string;
+    email: string;
+  }
+): Promise<void> {
+  await logAuditEvent({
+    eventType: AuditEventType.QA_AUTH_ROLE_SWITCH,
+    entityType: "QaAuth",
+    entityId: data.userId,
+    userId: data.userId,
+    beforeState: { role: data.fromRole },
+    afterState: { role: data.toRole },
+    metadata: {
+      email: data.email,
+      timestamp: new Date().toISOString(),
     },
   });
 }

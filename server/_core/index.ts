@@ -18,6 +18,7 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerSimpleAuthRoutes } from "./simpleAuth";
+import { registerQaAuthRoutes, isQaAuthEnabled } from "./qaAuth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./vite";
@@ -269,6 +270,13 @@ async function startServer() {
 
     // Simple auth routes under /api/auth
     registerSimpleAuthRoutes(app);
+
+    // QA auth routes under /api/qa-auth (for deterministic RBAC testing)
+    // Only registers routes if QA_AUTH_ENABLED=true and not in production
+    if (isQaAuthEnabled()) {
+      registerQaAuthRoutes(app);
+      logger.info("✅ QA authentication enabled (QA_AUTH_ENABLED=true)");
+    }
 
     // GitHub webhook endpoint (must be before JSON body parser middleware)
     // We need raw body for signature verification

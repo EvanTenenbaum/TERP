@@ -287,11 +287,55 @@ Run `tsx scripts/seed-rbac.ts` to seed RBAC tables.
 
 ---
 
+## QA Authentication for RBAC Validation
+
+TERP provides a dedicated QA authentication system for deterministic role-based testing.
+
+### Enable QA Auth
+
+```bash
+# .env
+QA_AUTH_ENABLED=true
+```
+
+**Security**: QA auth is automatically disabled in production (`NODE_ENV=production`).
+
+### Seed QA Accounts
+
+```bash
+pnpm seed:qa-accounts
+```
+
+### QA Accounts
+
+| Email                        | Role              | Password      |
+| ---------------------------- | ----------------- | ------------- |
+| qa.superadmin@terp.test      | Super Admin       | TerpQA2026!   |
+| qa.salesmanager@terp.test    | Sales Manager     | TerpQA2026!   |
+| qa.salesrep@terp.test        | Sales Rep         | TerpQA2026!   |
+| qa.inventory@terp.test       | Inventory Manager | TerpQA2026!   |
+| qa.fulfillment@terp.test     | Fulfillment       | TerpQA2026!   |
+| qa.accounting@terp.test      | Accounting        | TerpQA2026!   |
+| qa.auditor@terp.test         | Read-Only Auditor | TerpQA2026!   |
+
+### QA Auth API Endpoints
+
+- **POST** `/api/qa-auth/login` - Login as QA user
+- **GET** `/api/qa-auth/roles` - List available QA roles
+- **GET** `/api/qa-auth/status` - Check if QA auth is enabled
+
+### Full Documentation
+
+See [docs/auth/QA_AUTH.md](./auth/QA_AUTH.md) for complete QA authentication documentation.
+
+---
+
 ## Available Scripts
 
 | Command                                        | Description                        |
 | ---------------------------------------------- | ---------------------------------- |
 | `pnpm setup:admin <email> <password>`          | Create/update admin user           |
 | `pnpm seed:test-accounts`                      | Create test accounts for all roles |
+| `pnpm seed:qa-accounts`                        | Create QA accounts for RBAC testing|
 | `pnpm get:auth-token <email> <password> [url]` | Get auth token for automation      |
 | `tsx scripts/seed-rbac.ts`                     | Seed RBAC roles and permissions    |

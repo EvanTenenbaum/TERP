@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+### Added - 2026-01-09
+#### QA Authentication Layer (AUTH-QA-001)
+- Added deterministic QA authentication for RBAC validation testing
+- New QA accounts for all roles: Super Admin, Sales Manager, Sales Rep, Inventory Manager, Fulfillment, Accounting Manager, Read-Only Auditor
+- QA auth endpoints: `/api/qa-auth/login`, `/api/qa-auth/roles`, `/api/qa-auth/status`
+- Environment flag `QA_AUTH_ENABLED=true` (automatically disabled in production)
+- Audit logging for QA login events (`QA_AUTH_LOGIN`, `QA_AUTH_ROLE_SWITCH`)
+- Comprehensive documentation: `docs/auth/QA_AUTH.md`, `docs/qa/QA_PLAYBOOK.md`
+- New seed command: `pnpm seed:qa-accounts`
+- Maps to USER_FLOW_MATRIX.csv roles for complete coverage testing
+
 ### Added - 2026-01-05
 #### TERP Logo and Branding
 - Added professional TERP logo (`terp-logo.png`) with subtle leaf accent

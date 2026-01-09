@@ -95,6 +95,14 @@ export const env = {
   get enableTestAuth() {
     return process.env.ENABLE_TEST_AUTH === "true";
   },
+  // QA authentication (for deterministic RBAC testing)
+  // SECURITY: Only enabled in non-production environments
+  get qaAuthEnabled() {
+    const enabled = process.env.QA_AUTH_ENABLED === "true";
+    const isProduction = process.env.NODE_ENV === "production";
+    // Safety: Never enable in production
+    return enabled && !isProduction;
+  },
 };
 
 // Legacy export for compatibility
