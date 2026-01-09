@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Users, Package, Loader2 } from "lucide-react";
+import { Search, FileText, Users, Package, Loader2, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 
 export default function SearchResultsPage() {
@@ -32,6 +32,7 @@ export default function SearchResultsPage() {
     data: results,
     isLoading,
     error,
+    refetch,
   } = trpc.search.global.useQuery(
     { query: searchQuery },
     { enabled: searchQuery.trim().length > 0 }
@@ -84,10 +85,18 @@ export default function SearchResultsPage() {
             </div>
           )}
 
-          {/* Error State */}
+          {/* Error State - UX-006: Added retry button */}
           {error && (
-            <div className="text-center py-12 text-destructive">
-              <p>Error searching: {error.message}</p>
+            <div className="text-center py-12">
+              <p className="text-destructive mb-4">Error searching: {error.message}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
             </div>
           )}
 

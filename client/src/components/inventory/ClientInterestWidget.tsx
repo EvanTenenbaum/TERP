@@ -193,7 +193,6 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    // TODO: Navigate to client page
                     window.location.href = `/clients/${match.clientId}`;
                   }}
                 >

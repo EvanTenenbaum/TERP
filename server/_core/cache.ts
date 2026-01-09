@@ -180,6 +180,13 @@ export const CacheKeys = {
     userEffective: (userOpenId: string) => `featureFlags:user:${userOpenId}`,
     moduleFlags: (module: string) => `featureFlags:module:${module}`,
   },
+  // Calendar Event Permissions cache keys
+  calendarEventPermission: (userId: number, eventId: number, permission: string) =>
+    `calendarEvent:${eventId}:user:${userId}:permission:${permission}`,
+  calendarEventPermissionsForUser: (userId: number) =>
+    `calendarEvent:user:${userId}:permissions`,
+  calendarEventPermissionsForEvent: (eventId: number) =>
+    `calendarEvent:${eventId}:permissions`,
 };
 
 /**

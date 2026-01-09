@@ -31,6 +31,7 @@ import { AlertCircle, Check, Info, RotateCcw, Save, Eye, Shield, Sliders } from 
 import { BackButton } from "@/components/common/BackButton";
 import { FormSkeleton } from "@/components/ui/skeleton-loaders";
 import { toast } from "sonner";
+import { useBeforeUnloadWarning } from "@/hooks/useUnsavedChangesWarning";
 
 type EnforcementMode = "WARNING" | "SOFT_BLOCK" | "HARD_BLOCK";
 
@@ -71,6 +72,9 @@ export default function CreditSettingsPage() {
   // Visibility settings state
   const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
   const [hasVisibilityChanges, setHasVisibilityChanges] = useState(false);
+
+  // UX-001: Warn before leaving with unsaved changes
+  useBeforeUnloadWarning(hasWeightChanges || hasVisibilityChanges);
 
   // Fetch current weight settings
   const { data: settings, isLoading: weightsLoading, refetch: refetchWeights } = trpc.credit.getSettings.useQuery();

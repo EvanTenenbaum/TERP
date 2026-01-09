@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { UserRoleManagement } from "@/components/settings/rbac/UserRoleManagemen
 import { RoleManagement } from "@/components/settings/rbac/RoleManagement";
 import { PermissionAssignment } from "@/components/settings/rbac/PermissionAssignment";
 import { VIPImpersonationManager } from "@/components/settings/VIPImpersonationManager";
+import { useBeforeUnloadWarning } from "@/hooks/useUnsavedChangesWarning";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -257,12 +258,24 @@ function LocationsManager() {
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // UX-001: Warn before leaving with unsaved changes
+  useBeforeUnloadWarning(hasUnsavedChanges);
+
+  // Track unsaved changes
+  useEffect(() => {
+    const hasNewLocation = Object.values(newLocation).some(v => v !== "");
+    const isEditing = editingId !== null;
+    setHasUnsavedChanges(hasNewLocation || isEditing);
+  }, [newLocation, editingId]);
 
   const { data: locations, refetch } = trpc.settings.locations.list.useQuery();
   const createMutation = trpc.settings.locations.create.useMutation({
     onSuccess: () => {
       toast.success("Location created successfully");
       setNewLocation({ site: "", zone: "", rack: "", shelf: "", bin: "" });
+      setHasUnsavedChanges(false);
       refetch();
     },
     onError: () => {
@@ -275,6 +288,7 @@ function LocationsManager() {
       toast.success("Location updated successfully");
       setEditingId(null);
       setEditData(null);
+      setHasUnsavedChanges(false);
       refetch();
     },
     onError: () => {
@@ -329,7 +343,9 @@ function LocationsManager() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="new-zone">Zone</Label>
+              <Label htmlFor="new-zone">
+                Zone <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+              </Label>
               <Input
                 id="new-zone"
                 value={newLocation.zone}
@@ -338,7 +354,9 @@ function LocationsManager() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="new-rack">Rack</Label>
+              <Label htmlFor="new-rack">
+                Rack <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+              </Label>
               <Input
                 id="new-rack"
                 value={newLocation.rack}
@@ -347,7 +365,9 @@ function LocationsManager() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="new-shelf">Shelf</Label>
+              <Label htmlFor="new-shelf">
+                Shelf <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+              </Label>
               <Input
                 id="new-shelf"
                 value={newLocation.shelf}
@@ -356,7 +376,9 @@ function LocationsManager() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="new-bin">Bin</Label>
+              <Label htmlFor="new-bin">
+                Bin <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+              </Label>
               <Input
                 id="new-bin"
                 value={newLocation.bin}
@@ -473,6 +495,18 @@ function CategoriesManager() {
   const [newSubcategory, setNewSubcategory] = useState({ categoryId: 0, name: "" });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // UX-001: Warn before leaving with unsaved changes
+  useBeforeUnloadWarning(hasUnsavedChanges);
+
+  // Track unsaved changes
+  useEffect(() => {
+    const hasNewCategory = newCategory !== "";
+    const hasNewSubcategory = newSubcategory.name !== "" || newSubcategory.categoryId !== 0;
+    const isEditing = editingId !== null;
+    setHasUnsavedChanges(hasNewCategory || hasNewSubcategory || isEditing);
+  }, [newCategory, newSubcategory, editingId]);
 
   const { data: categories, refetch } = trpc.settings.categories.list.useQuery();
   
@@ -480,6 +514,7 @@ function CategoriesManager() {
     onSuccess: () => {
       toast.success("Category created successfully");
       setNewCategory("");
+      setHasUnsavedChanges(false);
       refetch();
     },
   });
@@ -488,6 +523,7 @@ function CategoriesManager() {
     onSuccess: () => {
       toast.success("Subcategory created successfully");
       setNewSubcategory({ categoryId: 0, name: "" });
+      setHasUnsavedChanges(false);
       refetch();
     },
   });
@@ -496,6 +532,7 @@ function CategoriesManager() {
     onSuccess: () => {
       toast.success("Category updated successfully");
       setEditingId(null);
+      setHasUnsavedChanges(false);
       refetch();
     },
   });
@@ -632,6 +669,17 @@ function GradesManager() {
   const [newGrade, setNewGrade] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // UX-001: Warn before leaving with unsaved changes
+  useBeforeUnloadWarning(hasUnsavedChanges);
+
+  // Track unsaved changes
+  useEffect(() => {
+    const hasNewGrade = newGrade !== "";
+    const isEditing = editingId !== null;
+    setHasUnsavedChanges(hasNewGrade || isEditing);
+  }, [newGrade, editingId]);
 
   const { data: grades, refetch } = trpc.settings.grades.list.useQuery();
   
@@ -639,6 +687,7 @@ function GradesManager() {
     onSuccess: () => {
       toast.success("Grade created successfully");
       setNewGrade("");
+      setHasUnsavedChanges(false);
       refetch();
     },
   });
@@ -647,6 +696,7 @@ function GradesManager() {
     onSuccess: () => {
       toast.success("Grade updated successfully");
       setEditingId(null);
+      setHasUnsavedChanges(false);
       refetch();
     },
   });

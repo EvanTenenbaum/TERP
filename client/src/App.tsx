@@ -1,3 +1,4 @@
+import type { FC } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -77,7 +78,7 @@ import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 
 // Helper to wrap route components with error boundary
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const withErrorBoundary = (Component: React.ComponentType<any>) => () => (
+const withErrorBoundary = (Component: FC<any>) => () => (
   <PageErrorBoundary>
     <Component />
   </PageErrorBoundary>
@@ -170,10 +171,6 @@ function Router() {
               <Route path="/locations" component={withErrorBoundary(LocationsPage)} />
               <Route path="/matchmaking" component={withErrorBoundary(MatchmakingServicePage)} />
               <Route path="/live-shopping" component={withErrorBoundary(LiveShoppingPage)} />
-              <Route
-                path="/live-shopping/:sessionId"
-                component={withErrorBoundary(LiveShoppingPage)}
-              />
               <Route path="/spreadsheet-view" component={withErrorBoundary(SpreadsheetViewPage)} />
               <Route path="/help" component={withErrorBoundary(Help)} />
               <Route

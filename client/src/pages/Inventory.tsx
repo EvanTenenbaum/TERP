@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 import {
   Table,
   TableBody,
@@ -479,6 +480,7 @@ export default function Inventory() {
   }
 
   return (
+    <PageErrorBoundary pageName="Inventory">
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -1098,5 +1100,6 @@ export default function Inventory() {
         variant={bulkAction.type === "delete" ? "destructive" : "default"}
       />
     </div>
+    </PageErrorBoundary>
   );
 }

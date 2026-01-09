@@ -270,6 +270,19 @@ export const purchaseOrders = mysqlTable(
     vendorIdIdx: index("idx_po_vendor_id").on(table.vendorId),
     statusIdx: index("idx_po_status").on(table.purchaseOrderStatus),
     orderDateIdx: index("idx_po_order_date").on(table.orderDate),
+    // Composite indexes for common query patterns
+    supplierStatusIdx: index("idx_po_supplier_status").on(
+      table.supplierClientId,
+      table.purchaseOrderStatus
+    ),
+    vendorStatusIdx: index("idx_po_vendor_status").on(
+      table.vendorId,
+      table.purchaseOrderStatus
+    ),
+    statusDateIdx: index("idx_po_status_date").on(
+      table.purchaseOrderStatus,
+      table.orderDate
+    ),
   })
 );
 
@@ -565,6 +578,15 @@ export const batches = mysqlTable(
   },
   table => ({
     productIdIdx: index("idx_batches_product_id").on(table.productId),
+    // Composite indexes for common query patterns
+    productStatusIdx: index("idx_batches_product_status").on(
+      table.productId,
+      table.batchStatus
+    ),
+    statusCreatedIdx: index("idx_batches_status_created").on(
+      table.batchStatus,
+      table.createdAt
+    ),
   })
 );
 
@@ -644,6 +666,16 @@ export const sales = mysqlTable(
   table => ({
     customerIdIdx: index("idx_sales_customer_id").on(table.customerId),
     createdByIdx: index("idx_sales_created_by").on(table.createdBy),
+    // Composite indexes for common query patterns
+    customerDateIdx: index("idx_sales_customer_date").on(
+      table.customerId,
+      table.saleDate
+    ),
+    createdByDateIdx: index("idx_sales_created_by_date").on(
+      table.createdBy,
+      table.saleDate
+    ),
+    saleDateIdx: index("idx_sales_sale_date").on(table.saleDate),
   })
 );
 
@@ -674,18 +706,36 @@ export type InsertCogsHistory = typeof cogsHistory.$inferInsert;
  * Audit Log table
  * Immutable append-only log of all inventory actions
  */
-export const auditLogs = mysqlTable("auditLogs", {
-  id: int("id").autoincrement().primaryKey(),
-  actorId: int("actorId").notNull(),
-  entity: varchar("entity", { length: 50 }).notNull(),
-  deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
-  entityId: int("entityId").notNull(),
-  action: varchar("action", { length: 100 }).notNull(),
-  before: text("before"), // JSON string
-  after: text("after"), // JSON string
-  reason: text("reason"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const auditLogs = mysqlTable(
+  "auditLogs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    actorId: int("actorId").notNull(),
+    entity: varchar("entity", { length: 50 }).notNull(),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (ST-013)
+    entityId: int("entityId").notNull(),
+    action: varchar("action", { length: 100 }).notNull(),
+    before: text("before"), // JSON string
+    after: text("after"), // JSON string
+    reason: text("reason"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => ({
+    // Composite indexes for common query patterns
+    entityLookupIdx: index("idx_audit_entity_lookup").on(
+      table.entity,
+      table.entityId
+    ),
+    actorTimeIdx: index("idx_audit_actor_time").on(
+      table.actorId,
+      table.createdAt
+    ),
+    entityTimeIdx: index("idx_audit_entity_time").on(
+      table.entity,
+      table.createdAt
+    ),
+  })
+);
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
@@ -987,6 +1037,19 @@ export const invoices = mysqlTable(
   table => ({
     customerIdIdx: index("idx_invoices_customer_id").on(table.customerId),
     createdByIdx: index("idx_invoices_created_by").on(table.createdBy),
+    // Composite indexes for common query patterns
+    customerStatusIdx: index("idx_invoices_customer_status").on(
+      table.customerId,
+      table.status
+    ),
+    statusDueDateIdx: index("idx_invoices_status_due_date").on(
+      table.status,
+      table.dueDate
+    ),
+    statusCreatedIdx: index("idx_invoices_status_created").on(
+      table.status,
+      table.createdAt
+    ),
   })
 );
 
@@ -1172,6 +1235,23 @@ export const payments = mysqlTable(
     invoiceIdIdx: index("idx_payments_invoice_id").on(table.invoiceId),
     billIdIdx: index("idx_payments_bill_id").on(table.billId),
     createdByIdx: index("idx_payments_created_by").on(table.createdBy),
+    // Composite indexes for common query patterns
+    customerDateIdx: index("idx_payments_customer_date").on(
+      table.customerId,
+      table.paymentDate
+    ),
+    vendorDateIdx: index("idx_payments_vendor_date").on(
+      table.vendorId,
+      table.paymentDate
+    ),
+    typeDateIdx: index("idx_payments_type_date").on(
+      table.paymentType,
+      table.paymentDate
+    ),
+    reconcileStatusIdx: index("idx_payments_reconcile_status").on(
+      table.isReconciled,
+      table.paymentDate
+    ),
   })
 );
 
@@ -2348,7 +2428,7 @@ export const orderStatusHistory = mysqlTable(
     id: int("id").primaryKey().autoincrement(),
     orderId: int("order_id")
       .notNull()
-      .references(() => orders.id, { onDelete: "cascade" }),
+      .references(() => orders.id, { onDelete: "restrict" }), // QUAL-004: Protect audit trail
     fulfillmentStatus: fulfillmentStatusEnum.notNull().default("PENDING"),
     changedBy: int("changed_by")
       .notNull()
@@ -2855,7 +2935,7 @@ export const inventoryMovements = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     batchId: int("batchId")
       .notNull()
-      .references(() => batches.id, { onDelete: "cascade" }),
+      .references(() => batches.id, { onDelete: "restrict" }), // QUAL-004: Protect audit trail
     inventoryMovementType: inventoryMovementTypeEnum.notNull(),
     quantityChange: varchar("quantityChange", { length: 20 }).notNull(), // Can be negative
     quantityBefore: varchar("quantityBefore", { length: 20 }).notNull(),

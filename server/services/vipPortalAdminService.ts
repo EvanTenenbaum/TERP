@@ -28,6 +28,23 @@ import { TRPCError } from "@trpc/server";
 import { randomUUID } from "crypto";
 
 // ============================================================================
+// SECURITY: Pagination validation helper
+// ============================================================================
+
+const MAX_LIMIT = 100;
+const DEFAULT_LIMIT = 50;
+
+/**
+ * SECURITY: Validate and sanitize pagination parameters
+ * Prevents DoS attacks via excessive limit values
+ */
+function validatePagination(limit?: number, offset?: number): { limit: number; offset: number } {
+  const safeLimit = Math.min(Math.max(1, limit ?? DEFAULT_LIMIT), MAX_LIMIT);
+  const safeOffset = Math.max(0, offset ?? 0);
+  return { limit: safeLimit, offset: safeOffset };
+}
+
+// ============================================================================
 // CLIENT MANAGEMENT SERVICES
 // ============================================================================
 
@@ -37,7 +54,8 @@ export interface VipClientListOptions {
 }
 
 export async function getVipClients(options: VipClientListOptions = {}) {
-  const { limit = 50, offset = 0 } = options;
+  // SECURITY: Validate pagination parameters
+  const { limit, offset } = validatePagination(options.limit, options.offset);
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
@@ -406,7 +424,7 @@ export async function copyConfiguration(sourceClientId: number, targetClientId: 
     });
   }
 
-  const { id, clientId, createdAt, updatedAt, ...configData } = sourceConfig;
+  const { id: _id, clientId: _clientId, createdAt: _createdAt, updatedAt: _updatedAt, ...configData } = sourceConfig;
 
   await db.update(vipPortalConfigurations)
     .set(configData)
@@ -466,7 +484,7 @@ export async function getVipTierConfiguration() {
   };
 }
 
-export async function updateVipTierConfiguration(tiers: any[]) {
+export async function updateVipTierConfiguration(_tiers: any[]) {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
   
@@ -665,7 +683,9 @@ export interface GetInterestListsByClientOptions {
 }
 
 export async function getInterestListsByClient(options: GetInterestListsByClientOptions) {
-  const { clientId, status, limit = 50, offset = 0 } = options;
+  const { clientId, status } = options;
+  // SECURITY: Validate pagination parameters
+  const { limit, offset } = validatePagination(options.limit, options.offset);
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
   
@@ -715,16 +735,25 @@ export async function getInterestListById(listId: number) {
   const items = await db.query.clientInterestListItems.findMany({
     where: eq(clientInterestListItems.interestListId, listId),
   });
-  
+
   if (items.length === 0) {
     return {
       ...list,
       items: [],
     };
   }
-  
+
   // Get current batch data
   const batchIds = items.map(item => item.batchId);
+
+  // BUG-044 FIX: Guard against empty batch IDs to prevent SQL IN () crash
+  if (batchIds.length === 0) {
+    return {
+      ...list,
+      items: [],
+    };
+  }
+
   const batchesData = await db
     .select({
       batch: batches,
@@ -753,7 +782,7 @@ export async function getInterestListById(listId: number) {
   let pricedItems;
   try {
     pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
-  } catch (error) {
+  } catch (_error) {
     pricedItems = inventoryItems.map(item => ({
       ...item,
       retailPrice: item.basePrice,
@@ -761,7 +790,7 @@ export async function getInterestListById(listId: number) {
       appliedRules: [],
     }));
   }
-  
+
   // Add change detection
   const itemsWithChangeDetection = items.map(item => {
     const pricedItem = pricedItems.find(p => p.id === item.batchId);
@@ -849,7 +878,7 @@ export async function getDraftInterestsByClient(clientId: number) {
   const drafts = await db.query.clientDraftInterests.findMany({
     where: eq(clientDraftInterests.clientId, clientId),
   });
-  
+
   if (drafts.length === 0) {
     return {
       items: [],
@@ -857,9 +886,19 @@ export async function getDraftInterestsByClient(clientId: number) {
       totalValue: '0.00',
     };
   }
-  
+
   // Get batch details
   const batchIds = drafts.map(d => d.batchId);
+
+  // BUG-044 FIX: Guard against empty batch IDs to prevent SQL IN () crash
+  if (batchIds.length === 0) {
+    return {
+      items: [],
+      totalItems: 0,
+      totalValue: '0.00',
+    };
+  }
+
   const batchesData = await db
     .select({
       batch: batches,
@@ -888,7 +927,7 @@ export async function getDraftInterestsByClient(clientId: number) {
   let pricedItems;
   try {
     pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
-  } catch (error) {
+  } catch (_error) {
     pricedItems = inventoryItems.map(item => ({
       ...item,
       retailPrice: item.basePrice,
@@ -896,7 +935,7 @@ export async function getDraftInterestsByClient(clientId: number) {
       appliedRules: [],
     }));
   }
-  
+
   // Build items
   const items = drafts.map(draft => {
     const pricedItem = pricedItems.find(p => p.id === draft.batchId);
@@ -978,7 +1017,7 @@ export interface CreateImpersonationSessionOptions {
  * Returns a one-time-use token that must be exchanged for a portal session.
  */
 export async function createAuditedImpersonationSession(options: CreateImpersonationSessionOptions) {
-  const { adminUserId, clientId, reason, ipAddress, userAgent } = options;
+  const { adminUserId, clientId, reason: _reason, ipAddress, userAgent } = options;
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
@@ -1283,7 +1322,9 @@ export interface GetActiveImpersonationSessionsOptions {
  * Gets active impersonation sessions for monitoring.
  */
 export async function getActiveImpersonationSessions(options: GetActiveImpersonationSessionsOptions = {}) {
-  const { adminUserId, clientId, limit = 50, offset = 0 } = options;
+  const { adminUserId, clientId } = options;
+  // SECURITY: Validate pagination parameters
+  const { limit, offset } = validatePagination(options.limit, options.offset);
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 
@@ -1319,7 +1360,9 @@ export interface GetImpersonationSessionHistoryOptions {
  * Gets impersonation session history for audit purposes.
  */
 export async function getImpersonationSessionHistory(options: GetImpersonationSessionHistoryOptions = {}) {
-  const { sessionGuid, adminUserId, clientId, limit = 50, offset = 0 } = options;
+  const { sessionGuid, adminUserId, clientId } = options;
+  // SECURITY: Validate pagination parameters
+  const { limit, offset } = validatePagination(options.limit, options.offset);
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 

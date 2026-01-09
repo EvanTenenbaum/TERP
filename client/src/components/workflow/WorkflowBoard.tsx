@@ -16,7 +16,7 @@ import {
   useSensors,
   closestCorners,
 } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+// SortableContext and verticalListSortingStrategy available for future per-column sorting
 import { WorkflowColumn } from "./WorkflowColumn";
 import { WorkflowBatchCard } from "./WorkflowBatchCard";
 import { trpc } from "@/lib/trpc";
@@ -126,8 +126,9 @@ export function WorkflowBoard({ statuses, queues }: WorkflowBoardProps) {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="h-full overflow-x-auto">
-        <div className="flex gap-4 p-6 h-full min-w-max">
+      {/* UX-003: Responsive kanban board - stacks vertically on mobile, horizontal scroll on desktop */}
+      <div className="h-full max-w-full overflow-x-auto md:overflow-visible -webkit-overflow-scrolling-touch">
+        <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6 h-full md:min-w-max">
           {sortedStatuses.map((status) => {
             const batches = queues[status.id] || [];
             const batchIds = batches.map((b: any) => b.id);

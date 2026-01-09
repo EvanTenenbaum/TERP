@@ -1,3 +1,4 @@
+import type { FormEvent } from "react";
 import { useState, useEffect, useCallback } from "react";
 import { Calendar, MapPin, Users, Repeat } from "lucide-react";
 import { trpc } from "../../lib/trpc";
@@ -147,7 +148,7 @@ export default function EventFormDialog({
     }
   }, [eventData, initialDate, initialClientId, calendarsData, isOpen, eventId, resetForm]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     const eventPayload: any = {
@@ -191,7 +192,7 @@ export default function EventFormDialog({
       onSaved();
     } catch (error) {
       console.error("Error saving event:", error);
-      alert("Failed to save event. Please try again.");
+      window.alert("Failed to save event. Please try again.");
     }
   };
 
@@ -228,7 +229,9 @@ export default function EventFormDialog({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">
+              Description <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+            </Label>
             <Textarea
               id="description"
               value={description}
@@ -242,7 +245,7 @@ export default function EventFormDialog({
           <div className="space-y-2">
             <Label htmlFor="location" className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
-              Location
+              Location <span className="text-muted-foreground text-sm font-normal">(optional)</span>
             </Label>
             <Input
               id="location"
@@ -337,7 +340,9 @@ export default function EventFormDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Client</Label>
+              <Label>
+                Client <span className="text-muted-foreground text-sm font-normal">(optional)</span>
+              </Label>
               <Select
                 value={clientId?.toString() || "none"}
                 onValueChange={(value) => setClientId(value === "none" ? null : parseInt(value, 10))}
@@ -416,7 +421,7 @@ export default function EventFormDialog({
           <div className="space-y-2">
             <Label className="flex items-center gap-1">
               <Users className="h-4 w-4" />
-              Attendees
+              Attendees <span className="text-muted-foreground text-sm font-normal">(optional)</span>
             </Label>
             <select
               multiple

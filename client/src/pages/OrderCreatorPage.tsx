@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useDebounceCallback } from "@/hooks/useDebounceCallback";
+import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 import {
   Card,
   CardContent,
@@ -462,6 +463,7 @@ export default function OrderCreatorPageV2() {
   };
 
   return (
+    <PageErrorBoundary pageName="OrderCreator">
     <div className="container mx-auto p-4 md:p-6 space-y-6">
       {/* Header */}
       <BackButton label="Back to Orders" to="/orders" className="mb-4" />
@@ -776,5 +778,6 @@ export default function OrderCreatorPageV2() {
       {/* CHAOS-007: Unsaved Changes Navigation Dialog */}
       <ConfirmNavigationDialog />
     </div>
+    </PageErrorBoundary>
   );
 }

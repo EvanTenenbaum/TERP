@@ -358,6 +358,20 @@ export const PERMISSIONS = [
   { name: "tags:assign", description: "Can assign tags to entities", module: "tags" },
   { name: "tags:advanced:access", description: "Can access advanced tag features", module: "tags" },
   { name: "tags:bulk_operations", description: "Can perform bulk tag operations", module: "tags" },
+
+  // Alerts (5) - User alert configurations for orders/inventory
+  { name: "alerts:read", description: "Can view own alert configurations", module: "alerts" },
+  { name: "alerts:create", description: "Can create alert configurations", module: "alerts" },
+  { name: "alerts:update", description: "Can edit own alert configurations", module: "alerts" },
+  { name: "alerts:delete", description: "Can delete own alert configurations", module: "alerts" },
+  { name: "alerts:admin", description: "Can view all users' alert configurations", module: "alerts" },
+
+  // System Health & Metrics (2)
+  { name: "system:health", description: "Can view detailed system health information", module: "system" },
+  { name: "system:metrics", description: "Can view system performance metrics", module: "system" },
+
+  // VIP Portal Admin (1) - General VIP portal management
+  { name: "vip_portal:manage", description: "Can manage VIP portal settings and clients", module: "vip_portal" },
 ];
 
 // ============================================================================
@@ -513,6 +527,15 @@ export const operationsManagerPermissions = [
   "inbox:mark_read",
   "audit_logs:access",
   "audit_logs:view",
+  // Alerts - for order/inventory notifications
+  "alerts:read",
+  "alerts:create",
+  "alerts:update",
+  "alerts:delete",
+  // VIP Portal management
+  "vip_portal:manage",
+  // System health for ops monitoring
+  "system:health",
 ];
 
 // Sales Manager: Full access to clients, orders, quotes, sales sheets
@@ -598,6 +621,13 @@ export const salesManagerPermissions = [
   "inbox:mark_read",
   "audit_logs:access",
   "audit_logs:view",
+  // Alerts - for order/inventory notifications
+  "alerts:read",
+  "alerts:create",
+  "alerts:update",
+  "alerts:delete",
+  // VIP Portal management
+  "vip_portal:manage",
 ];
 
 // Accountant: Full access to accounting, credits, COGS, bad debt
@@ -745,6 +775,11 @@ export const inventoryManagerPermissions = [
   "inbox:mark_read",
   "audit_logs:access",
   "audit_logs:view",
+  // Alerts - for inventory notifications
+  "alerts:read",
+  "alerts:create",
+  "alerts:update",
+  "alerts:delete",
 ];
 
 // Buyer/Procurement: Full access to POs, vendors, vendor supply

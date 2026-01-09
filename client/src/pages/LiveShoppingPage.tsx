@@ -403,11 +403,16 @@ export default function LiveShoppingPage() {
                             : "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <a href={`/live-shopping/${session.id}`}>
-                            <ExternalLink className="h-4 w-4 mr-1" />
-                            Open Console
-                          </a>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            // TODO: Implement session console/detail view
+                            alert(`Session ${session.id} - Console view coming soon`);
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          View Details
                         </Button>
                       </TableCell>
                     </TableRow>

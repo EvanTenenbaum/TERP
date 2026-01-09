@@ -78,7 +78,7 @@ export const Sidebar = React.memo(function Sidebar({
       )}
       <aside
         className={cn(
-          "flex flex-col w-72 bg-card border-r border-border transition-transform duration-300 ease-in-out z-50",
+          "flex flex-col w-72 bg-card border-r border-border transition-transform duration-200 ease-in-out z-50",
           "md:relative md:translate-x-0",
           "fixed inset-y-0 left-0",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"

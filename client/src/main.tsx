@@ -35,14 +35,19 @@ const queryClient = new QueryClient({
     },
     mutations: {
       onError: (error: any) => {
-        // Log all mutation errors for debugging
-        console.error('[tRPC Mutation Error]', {
-          message: error?.message || 'Unknown error',
-          code: error?.data?.code,
-          httpStatus: error?.data?.httpStatus,
-          path: error?.data?.path,
-          stack: error?.stack,
-        });
+        // SECURITY: Only log detailed errors in development mode
+        if (import.meta.env.DEV) {
+          console.error('[tRPC Mutation Error]', {
+            message: error?.message || 'Unknown error',
+            code: error?.data?.code,
+            httpStatus: error?.data?.httpStatus,
+            path: error?.data?.path,
+            stack: error?.stack,
+          });
+        } else {
+          // In production, log minimal info without exposing sensitive details
+          console.error('[Error]', error?.data?.code || 'UNKNOWN');
+        }
       },
     },
   },

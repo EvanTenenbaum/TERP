@@ -24,10 +24,14 @@ export const NotificationBell = React.memo(function NotificationBell({
   const [, setLocation] = useLocation();
   const utils = trpc.useContext();
 
-  const { data: unreadData } = trpc.notifications.getUnreadCount.useQuery();
+  const { data: unreadData } = trpc.notifications.getUnreadCount.useQuery(undefined, {
+    refetchInterval: 30000, // Poll every 30 seconds
+  });
   const { data: listData } = trpc.notifications.list.useQuery({
     limit: 5,
     offset: 0,
+  }, {
+    refetchInterval: 30000, // Poll every 30 seconds
   });
 
   const markRead = trpc.notifications.markRead.useMutation({

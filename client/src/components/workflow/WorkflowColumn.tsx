@@ -29,7 +29,8 @@ export function WorkflowColumn({ status, batches, batchIds }: WorkflowColumnProp
   });
 
   return (
-    <div className="flex-shrink-0 w-80">
+    // UX-003: Responsive column - full width on mobile, fixed width on desktop
+    <div className="flex-shrink-0 w-full md:w-80">
       <Card className="h-full flex flex-col">
         {/* Column Header */}
         <div className="p-4 border-b border-gray-200">

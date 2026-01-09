@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, TrendingUp, Users, Package, AlertCircle, Loader2, Download, DollarSign, CreditCard, Percent, Calendar } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Package, Download, DollarSign, CreditCard, Percent, Calendar } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { trpc } from "@/lib/trpc";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+// Alert components available from @/components/ui/alert when needed
 import { formatCurrency } from "@/lib/utils";
 import { MetricCard, TopClientsTable, RevenueTrendsTable } from "@/components/analytics";
 import { ErrorState, EmptyState, emptyStateConfigs } from "@/components/ui/empty-state";
@@ -16,12 +16,12 @@ import { useLocation } from "wouter";
 type Period = "day" | "week" | "month" | "quarter" | "year" | "all";
 
 const periodLabels: Record<Period, string> = {
-  day: "Last 24 Hours",
-  week: "Last 7 Days",
-  month: "Last 30 Days",
-  quarter: "Last 90 Days",
-  year: "Last Year",
-  all: "All Time",
+  day: "Last 24 hours",
+  week: "Last 7 days",
+  month: "Last 30 days",
+  quarter: "Last 90 days",
+  year: "Last 12 months",
+  all: "All time",
 };
 
 export default function AnalyticsPage() {
@@ -131,14 +131,7 @@ export default function AnalyticsPage() {
               {trendsLoading ? (
                 <LoadingState message="Loading revenue trends..." size="sm" />
               ) : chartData.length > 0 ? (
-                <div className="space-y-4">
-                  <RevenueTrendsTable data={chartData} maxRows={6} />
-                  <div className="flex justify-end">
-                    <Button variant="outline" size="sm" onClick={() => handleExport("revenue", "csv")} disabled={exportMutation.isPending}>
-                      <Download className="h-4 w-4 mr-2" />Export Revenue Data
-                    </Button>
-                  </div>
-                </div>
+                <RevenueTrendsTable data={chartData} maxRows={6} />
               ) : (
                 <EmptyState
                   {...emptyStateConfigs.analytics}

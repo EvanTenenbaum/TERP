@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 import {
   Card,
   CardContent,
@@ -250,6 +251,7 @@ export default function ClientProfilePage() {
   };
 
   return (
+    <PageErrorBoundary pageName="ClientProfile">
     <div className="space-y-6">
       {/* Breadcrumb and Header */}
       <BackButton label="Back to Clients" to="/clients" />
@@ -1183,5 +1185,6 @@ export default function ClientProfilePage() {
         </DialogContent>
       </Dialog>
     </div>
+    </PageErrorBoundary>
   );
 }
