@@ -223,7 +223,7 @@ export const auditRouter = router({
           id: inventoryMovements.id,
           movementType: inventoryMovements.inventoryMovementType,
           quantity: inventoryMovements.quantityChange,
-          reason: inventoryMovements.reason,
+          reason: inventoryMovements.notes,
           createdAt: inventoryMovements.createdAt,
           createdByName: users.name,
           referenceId: inventoryMovements.referenceId,
@@ -655,7 +655,7 @@ export const auditRouter = router({
               action: inventoryMovements.inventoryMovementType,
               createdAt: inventoryMovements.createdAt,
               quantity: inventoryMovements.quantityChange,
-              reason: inventoryMovements.reason,
+              reason: inventoryMovements.notes,
             })
             .from(inventoryMovements)
             .where(eq(inventoryMovements.batchId, entityId))

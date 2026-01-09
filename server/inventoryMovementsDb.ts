@@ -139,7 +139,7 @@ export async function decreaseInventory(
           quantityAfter: newQty.toString(),
           referenceType,
           referenceId,
-          reason,
+          notes: reason,
           performedBy: userId,
         })
         .$returningId();
@@ -239,7 +239,7 @@ export async function increaseInventory(
           quantityAfter: newQty.toString(),
           referenceType,
           referenceId,
-          reason,
+          notes: reason,
           performedBy: userId,
         })
         .$returningId();
@@ -282,8 +282,10 @@ export async function increaseInventory(
  *
  * @param batchId Batch ID
  * @param newQuantity New quantity
- * @param reason Reason for adjustment
+ * @param reason Reason for adjustment (free-form text)
  * @param userId User ID performing the action
+ * @param notes Optional additional notes
+ * @param adjustmentReason Optional structured adjustment reason (DATA-010 enum)
  * @returns The created inventory movement
  */
 export async function adjustInventory(
@@ -291,7 +293,8 @@ export async function adjustInventory(
   newQuantity: string,
   reason: string,
   userId: number,
-  notes?: string
+  notes?: string,
+  adjustmentReason?: "DAMAGED" | "EXPIRED" | "LOST" | "THEFT" | "COUNT_DISCREPANCY" | "QUALITY_ISSUE" | "REWEIGH" | "OTHER"
 ): Promise<InventoryMovement> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -337,7 +340,8 @@ export async function adjustInventory(
           quantityAfter: newQty.toString(),
           referenceType: "MANUAL_ADJUSTMENT",
           referenceId: null,
-          reason: notes ? `${reason} - ${notes}` : reason,
+          adjustmentReason, // DATA-010: structured adjustment reason enum
+          notes: notes ? `${reason} - ${notes}` : reason,
           performedBy: userId,
         })
         .$returningId();
@@ -584,7 +588,7 @@ export async function reverseInventoryMovement(
           quantityAfter: newQty.toString(),
           referenceType: "REVERSAL",
           referenceId: movementId,
-          reason,
+          notes: reason,
           performedBy: userId,
         })
         .$returningId();

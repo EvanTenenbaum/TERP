@@ -310,7 +310,7 @@ export const returnsRouter = router({
               quantityAfter: newQty.toString(),
               referenceType: "RETURN",
               referenceId: returnRecord.insertId,
-              reason: item.reason || input.notes,
+              notes: item.reason || input.notes,
               performedBy: userId,
             });
           }
@@ -493,7 +493,7 @@ export const returnsRouter = router({
                 quantityAfter: currentQty.toString(),
                 referenceType: "RETURN_RECEIVE",
                 referenceId: input.id,
-                reason: `Return received - Condition: ${item.actualCondition}. ${item.notes || ""}`,
+                notes: `Return received - Condition: ${item.actualCondition}. ${item.notes || ""}`,
                 performedBy: userId,
               });
 
@@ -532,7 +532,7 @@ export const returnsRouter = router({
                 quantityAfter: newQty.toString(),
                 referenceType: "RETURN_RECEIVE",
                 referenceId: input.id,
-                reason: `Return received - Item ${item.actualCondition.toLowerCase()}. ${item.notes || ""}`,
+                notes: `Return received - Item ${item.actualCondition.toLowerCase()}. ${item.notes || ""}`,
                 performedBy: userId,
               });
 

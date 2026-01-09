@@ -117,7 +117,7 @@ export const warehouseTransfersRouter = router({
           quantityAfter: "0", // Not applicable for transfers
           referenceType: "WAREHOUSE_TRANSFER",
           referenceId: null,
-          reason: input.notes || `Transfer to ${input.toSite}${input.toZone ? `/${input.toZone}` : ""}${input.toRack ? `/${input.toRack}` : ""}${input.toShelf ? `/${input.toShelf}` : ""}${input.toBin ? `/${input.toBin}` : ""}`,
+          notes: input.notes || `Transfer to ${input.toSite}${input.toZone ? `/${input.toZone}` : ""}${input.toRack ? `/${input.toRack}` : ""}${input.toShelf ? `/${input.toShelf}` : ""}${input.toBin ? `/${input.toBin}` : ""}`,
           performedBy,
         });
 

@@ -2355,6 +2355,7 @@ export const orderStatusHistory = mysqlTable(
       .references(() => users.id),
     changedAt: timestamp("changed_at").defaultNow().notNull(),
     notes: text("notes"),
+    deletedAt: timestamp("deleted_at"), // Soft delete support (DATA-010)
   },
   table => ({
     orderIdIdx: index("idx_order_id").on(table.orderId),
@@ -2861,7 +2862,8 @@ export const inventoryMovements = mysqlTable(
     quantityAfter: varchar("quantityAfter", { length: 20 }).notNull(),
     referenceType: varchar("referenceType", { length: 50 }), // "ORDER", "REFUND", "ADJUSTMENT", etc.
     referenceId: int("referenceId"),
-    reason: text("reason"), // Reason for adjustment or additional context
+    adjustmentReason: adjustmentReasonEnum, // Reason for manual adjustments (DATA-010)
+    notes: text("notes"), // Additional context (renamed from reason per migration 0030)
     performedBy: int("performedBy")
       .notNull()
       .references(() => users.id),
