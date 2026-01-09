@@ -1,0 +1,55 @@
+# Seed Profile: Basic Sales
+# Standard sales scenario with active client and live inventory
+
+profile: "basic_sales"
+description: "Standard sales scenario with active client and live inventory"
+
+entities:
+  client.redwood:
+    table: "clients"
+    data:
+      name: "Redwood Dispensary"
+      teri_code: "REDWOOD01"
+      is_buyer: true
+      status: "active"
+
+  client.greenleaf:
+    table: "clients"
+    data:
+      name: "Green Leaf Co"
+      teri_code: "GREENLEAF01"
+      is_buyer: true
+      is_seller: false
+      status: "active"
+
+  batch.og_kush:
+    table: "batches"
+    data:
+      sku: "OGK-001"
+      strain_name: "OG Kush"
+      status: "LIVE"
+      current_quantity: 100
+      unit_price: 1000.00
+      category: "flower"
+
+  batch.blue_dream:
+    table: "batches"
+    data:
+      sku: "BD-001"
+      strain_name: "Blue Dream"
+      status: "LIVE"
+      current_quantity: 50
+      unit_price: 800.00
+      category: "flower"
+
+  user.sales_rep:
+    table: "users"
+    data:
+      email: "qa.salesrep@terp.test"
+      name: "QA Sales Rep"
+
+  user.sales_manager:
+    table: "users"
+    data:
+      email: "qa.salesmanager@terp.test"
+      name: "QA Sales Manager"

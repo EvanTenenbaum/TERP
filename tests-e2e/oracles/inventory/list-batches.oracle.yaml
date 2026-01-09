@@ -1,0 +1,36 @@
+# Oracle: Inventory.Batches.ListBatches
+# Verify inventory batches list loads
+
+flow_id: "Inventory.Batches.ListBatches"
+description: "Verify inventory batches list page loads and displays batch data"
+role: "InventoryManager"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - inventory
+  - smoke
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "batch"
+      ref: "seed:batch.og_kush"
+
+steps:
+  - action: navigate
+    path: "/inventory"
+    wait_for: "table, [data-testid='inventory-table'], .inventory-list"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: screenshot
+    name: "inventory_list"
+
+expected_ui:
+  url_contains: "/inventory"
+  visible:
+    - "table, [data-testid='inventory-table'], .inventory-list"
+  text_present:
+    - "Inventory"

@@ -1,0 +1,33 @@
+# Oracle: Orders.Orders.ListOrders
+# Verify orders list page loads
+
+flow_id: "Orders.Orders.ListOrders"
+description: "Verify orders list page loads and displays order data"
+role: "SalesRep"
+tags:
+  - tier1
+  - orders
+  - smoke
+timeout: 30000
+
+preconditions:
+  ensure: []
+
+steps:
+  - action: navigate
+    path: "/orders"
+    wait_for: "table, [data-testid='orders-table'], .orders-list"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: screenshot
+    name: "orders_list"
+
+expected_ui:
+  url_contains: "/orders"
+  visible:
+    - "table, [data-testid='orders-table'], .orders-list, main"
+  text_present:
+    - "Order"
