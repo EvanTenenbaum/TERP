@@ -55,16 +55,15 @@ export default function SearchResultsPage() {
    * page is still in a transitional state, leading to incorrect data display.
    *
    * Fix: Use programmatic navigation with state tracking to ensure clean transitions.
+   * REDHAT-FIX-002: Removed setTimeout - React batches state updates automatically.
    */
   const handleResultClick = useCallback(
     (url: string, e: React.MouseEvent) => {
       e.preventDefault();
       // Set navigating state to pause queries and prevent race conditions
       setIsNavigating(true);
-      // Use setTimeout to ensure state is updated before navigation
-      setTimeout(() => {
-        setLocation(url);
-      }, 0);
+      // Navigate immediately - React batches the state update with navigation
+      setLocation(url);
     },
     [setLocation]
   );

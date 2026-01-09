@@ -49,6 +49,8 @@ export const navigationItems: NavigationItem[] = [
     icon: Video,
     group: "sales",
     ariaLabel: "Live shopping sessions with clients",
+    // NOTE: Feature flag intentionally omitted to ensure BUG-073 fix remains active
+    // Add featureFlag: "live-shopping" when ready for controlled rollout
   },
   {
     name: "Invoices",

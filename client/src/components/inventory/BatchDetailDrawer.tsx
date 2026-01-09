@@ -278,9 +278,16 @@ export function BatchDetailDrawer({
     (newOpen: boolean) => {
       if (!newOpen && !isClosingRef.current) {
         isClosingRef.current = true;
-        // Reset internal states to prevent stale state issues
+        // Reset ALL internal states to prevent stale state issues
         setShowCogsEdit(false);
         setShowPriceSimulation(false);
+        // REDHAT-FIX-001: Reset action modal states added in BUG-041 fix
+        setShowQtyAdjust(false);
+        setShowStatusChange(false);
+        setQtyAdjustment("");
+        setQtyReason("");
+        setNewStatus("");
+        setStatusReason("");
         // Defer close to next animation frame to prevent render crashes
         window.requestAnimationFrame(() => {
           try {
