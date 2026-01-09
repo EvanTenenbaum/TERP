@@ -233,3 +233,18 @@ export async function toggleAlertConfiguration(alertConfigId: number) {
   }
 }
 
+/**
+ * Get alert configuration by ID (for ownership validation)
+ */
+export async function getAlertConfigurationById(alertConfigId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [config] = await db
+    .select()
+    .from(alertConfigurations)
+    .where(eq(alertConfigurations.id, alertConfigId));
+
+  return config || null;
+}
+

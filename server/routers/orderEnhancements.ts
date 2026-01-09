@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, getAuthenticatedUserId } from "../_core/trpc";
 import * as recurringOrdersDb from "../recurringOrdersDb";
 import * as orderEnhancements from "../orderEnhancements";
 import * as productRecommendations from "../productRecommendations";
 import * as alertConfigurationDb from "../alertConfigurationDb";
 import { requirePermission } from "../_core/permissionMiddleware";
+import { TRPCError } from "@trpc/server";
 
 export const orderEnhancementsRouter = router({
   // ===== RECURRING ORDERS =====
@@ -30,11 +31,16 @@ export const orderEnhancementsRouter = router({
         endDate: z.string().optional(),
         notifyClient: z.boolean().optional(),
         notifyEmail: z.string().optional(),
-        createdBy: z.number(),
+        // SECURITY FIX: Remove createdBy from input - will be derived from context
       })
     )
-    .mutation(async ({ input }) => {
-      return await recurringOrdersDb.createRecurringOrder(input);
+    .mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: Use authenticated user ID from context
+      const userId = getAuthenticatedUserId(ctx);
+      return await recurringOrdersDb.createRecurringOrder({
+        ...input,
+        createdBy: userId,
+      });
     }),
 
   updateRecurringOrder: protectedProcedure
@@ -113,7 +119,7 @@ export const orderEnhancementsRouter = router({
       z.object({
         originalOrderId: z.number(),
         clientId: z.number(),
-        createdBy: z.number(),
+        // SECURITY FIX: Remove createdBy from input - will be derived from context
         modifications: z
           .array(
             z.object({
@@ -125,8 +131,13 @@ export const orderEnhancementsRouter = router({
           .optional(),
       })
     )
-    .mutation(async ({ input }) => {
-      return await orderEnhancements.reorderFromPrevious(input);
+    .mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: Use authenticated user ID from context
+      const userId = getAuthenticatedUserId(ctx);
+      return await orderEnhancements.reorderFromPrevious({
+        ...input,
+        createdBy: userId,
+      });
     }),
 
   getRecentOrdersForReorder: protectedProcedure
@@ -134,7 +145,7 @@ export const orderEnhancementsRouter = router({
     .input(
       z.object({
         clientId: z.number(),
-        limit: z.number().optional(),
+        limit: z.number().min(1).max(100).optional(), // SECURITY FIX: Add bounds validation
       })
     )
     .query(async ({ input }) => {
@@ -177,7 +188,7 @@ export const orderEnhancementsRouter = router({
     .input(
       z.object({
         clientId: z.number(),
-        limit: z.number().optional(),
+        limit: z.number().min(1).max(100).optional(), // SECURITY FIX: Add bounds validation
       })
     )
     .query(async ({ input }) => {
@@ -192,7 +203,7 @@ export const orderEnhancementsRouter = router({
     .input(
       z.object({
         productId: z.number(),
-        limit: z.number().optional(),
+        limit: z.number().min(1).max(100).optional(), // SECURITY FIX: Add bounds validation
       })
     )
     .query(async ({ input }) => {
@@ -207,7 +218,7 @@ export const orderEnhancementsRouter = router({
     .input(
       z.object({
         productId: z.number(),
-        limit: z.number().optional(),
+        limit: z.number().min(1).max(100).optional(), // SECURITY FIX: Add bounds validation
       })
     )
     .query(async ({ input }) => {
@@ -220,10 +231,10 @@ export const orderEnhancementsRouter = router({
   // ===== ALERT CONFIGURATION =====
 
   createAlertConfiguration: protectedProcedure
-    .use(requirePermission("orders:manage_alerts"))
+    .use(requirePermission("alerts:create"))
     .input(
       z.object({
-        userId: z.number(),
+        // SECURITY FIX: Remove userId from input - will be derived from context
         alertType: z.enum([
           "LOW_STOCK",
           "EXPIRING_BATCH",
@@ -237,55 +248,115 @@ export const orderEnhancementsRouter = router({
         thresholdValue: z.number(),
         thresholdOperator: z.enum(["LESS_THAN", "GREATER_THAN", "EQUALS"]),
         deliveryMethod: z.enum(["DASHBOARD", "EMAIL", "BOTH"]).optional(),
-        emailAddress: z.string().optional(),
+        emailAddress: z.string().email().optional(),
       })
     )
-    .mutation(async ({ input }) => {
-      return await alertConfigurationDb.createAlertConfiguration(input);
+    .mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: Use authenticated user ID from context
+      const userId = getAuthenticatedUserId(ctx);
+      return await alertConfigurationDb.createAlertConfiguration({
+        ...input,
+        userId,
+      });
     }),
 
   updateAlertConfiguration: protectedProcedure
-    .use(requirePermission("orders:manage_alerts"))
+    .use(requirePermission("alerts:update"))
     .input(
       z.object({
         alertConfigId: z.number(),
         thresholdValue: z.number().optional(),
         thresholdOperator: z.enum(["LESS_THAN", "GREATER_THAN", "EQUALS"]).optional(),
         deliveryMethod: z.enum(["DASHBOARD", "EMAIL", "BOTH"]).optional(),
-        emailAddress: z.string().optional(),
+        emailAddress: z.string().email().optional(),
         isActive: z.boolean().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { alertConfigId, ...data } = input;
+
+      // SECURITY FIX: Validate ownership before update
+      const userId = getAuthenticatedUserId(ctx);
+      const existingConfig = await alertConfigurationDb.getAlertConfigurationById(alertConfigId);
+
+      if (!existingConfig) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Alert configuration not found",
+        });
+      }
+
+      if (existingConfig.userId !== userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only modify your own alert configurations",
+        });
+      }
+
       return await alertConfigurationDb.updateAlertConfiguration(alertConfigId, data);
     }),
 
   deleteAlertConfiguration: protectedProcedure
-    .use(requirePermission("orders:manage_alerts"))
+    .use(requirePermission("alerts:delete"))
     .input(z.object({ alertConfigId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: Validate ownership before delete
+      const userId = getAuthenticatedUserId(ctx);
+      const existingConfig = await alertConfigurationDb.getAlertConfigurationById(input.alertConfigId);
+
+      if (!existingConfig) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Alert configuration not found",
+        });
+      }
+
+      if (existingConfig.userId !== userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only delete your own alert configurations",
+        });
+      }
+
       return await alertConfigurationDb.deleteAlertConfiguration(input.alertConfigId);
     }),
 
   getUserAlertConfigurations: protectedProcedure
     .use(requirePermission("alerts:read"))
-    .input(z.object({ userId: z.number() }))
-    .query(async ({ input }) => {
-      return await alertConfigurationDb.getUserAlertConfigurations(input.userId);
+    // SECURITY FIX: Remove userId from input - use context instead
+    .query(async ({ ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      return await alertConfigurationDb.getUserAlertConfigurations(userId);
     }),
 
   getAllActiveAlertConfigurations: protectedProcedure
-    .use(requirePermission("alerts:read"))
+    .use(requirePermission("alerts:admin")) // SECURITY FIX: Require admin permission
     .query(async () => {
       return await alertConfigurationDb.getAllActiveAlertConfigurations();
     }),
 
   toggleAlertConfiguration: protectedProcedure
-    .use(requirePermission("orders:manage_alerts"))
+    .use(requirePermission("alerts:update"))
     .input(z.object({ alertConfigId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // SECURITY FIX: Validate ownership before toggle
+      const userId = getAuthenticatedUserId(ctx);
+      const existingConfig = await alertConfigurationDb.getAlertConfigurationById(input.alertConfigId);
+
+      if (!existingConfig) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Alert configuration not found",
+        });
+      }
+
+      if (existingConfig.userId !== userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only toggle your own alert configurations",
+        });
+      }
+
       return await alertConfigurationDb.toggleAlertConfiguration(input.alertConfigId);
     }),
 });
-
