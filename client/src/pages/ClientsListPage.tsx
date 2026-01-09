@@ -774,8 +774,18 @@ export default function ClientsListPage() {
                       className={`${editingClientId === client.id ? '' : 'cursor-pointer hover:bg-muted/50'} transition-colors ${
                         index === selectedIndex ? 'bg-accent' : ''
                       }`}
-                      onClick={() => {
-                        if (editingClientId !== client.id) {
+                      onClick={(e) => {
+                        // Only navigate if not clicking on interactive elements and not in edit mode
+                        const target = e.target as HTMLElement;
+                        if (editingClientId !== client.id && !target.closest('button, input, a, select, textarea')) {
+                          setLocation(`/clients/${client.id}`);
+                        }
+                      }}
+                      role={editingClientId === client.id ? undefined : "button"}
+                      tabIndex={editingClientId === client.id ? undefined : 0}
+                      onKeyDown={(e) => {
+                        if (editingClientId !== client.id && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault();
                           setLocation(`/clients/${client.id}`);
                         }
                       }}

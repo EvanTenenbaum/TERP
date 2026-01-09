@@ -18,6 +18,7 @@ export default defineConfig({
       "tests/property/**/*.test.ts",
       "tests/contracts/**/*.test.ts",
       "tests/unit/**/*.test.{ts,tsx}",
+      "tests/security/**/*.test.ts",
     ],
     environmentMatchGlobs: [
       ["server/**/*.test.ts", "node"],
@@ -26,6 +27,7 @@ export default defineConfig({
       ["client/**/*.spec.{ts,tsx}", "jsdom"],
       ["tests/property/**/*.test.ts", "node"],
       ["tests/contracts/**/*.test.ts", "node"],
+      ["tests/security/**/*.test.ts", "node"],
       ["tests/unit/server/**/*.test.ts", "node"],
       ["tests/unit/client/**/*.test.ts", "jsdom"],
     ],

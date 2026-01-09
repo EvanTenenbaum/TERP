@@ -406,7 +406,7 @@ export async function copyConfiguration(sourceClientId: number, targetClientId: 
     });
   }
 
-  const { id, clientId, createdAt, updatedAt, ...configData } = sourceConfig;
+  const { id: _id, clientId: _clientId, createdAt: _createdAt, updatedAt: _updatedAt, ...configData } = sourceConfig;
 
   await db.update(vipPortalConfigurations)
     .set(configData)
@@ -466,7 +466,7 @@ export async function getVipTierConfiguration() {
   };
 }
 
-export async function updateVipTierConfiguration(tiers: any[]) {
+export async function updateVipTierConfiguration(_tiers: any[]) {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
   
@@ -715,16 +715,25 @@ export async function getInterestListById(listId: number) {
   const items = await db.query.clientInterestListItems.findMany({
     where: eq(clientInterestListItems.interestListId, listId),
   });
-  
+
   if (items.length === 0) {
     return {
       ...list,
       items: [],
     };
   }
-  
+
   // Get current batch data
   const batchIds = items.map(item => item.batchId);
+
+  // BUG-044 FIX: Guard against empty batch IDs to prevent SQL IN () crash
+  if (batchIds.length === 0) {
+    return {
+      ...list,
+      items: [],
+    };
+  }
+
   const batchesData = await db
     .select({
       batch: batches,
@@ -753,7 +762,7 @@ export async function getInterestListById(listId: number) {
   let pricedItems;
   try {
     pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
-  } catch (error) {
+  } catch (_error) {
     pricedItems = inventoryItems.map(item => ({
       ...item,
       retailPrice: item.basePrice,
@@ -761,7 +770,7 @@ export async function getInterestListById(listId: number) {
       appliedRules: [],
     }));
   }
-  
+
   // Add change detection
   const itemsWithChangeDetection = items.map(item => {
     const pricedItem = pricedItems.find(p => p.id === item.batchId);
@@ -849,7 +858,7 @@ export async function getDraftInterestsByClient(clientId: number) {
   const drafts = await db.query.clientDraftInterests.findMany({
     where: eq(clientDraftInterests.clientId, clientId),
   });
-  
+
   if (drafts.length === 0) {
     return {
       items: [],
@@ -857,9 +866,19 @@ export async function getDraftInterestsByClient(clientId: number) {
       totalValue: '0.00',
     };
   }
-  
+
   // Get batch details
   const batchIds = drafts.map(d => d.batchId);
+
+  // BUG-044 FIX: Guard against empty batch IDs to prevent SQL IN () crash
+  if (batchIds.length === 0) {
+    return {
+      items: [],
+      totalItems: 0,
+      totalValue: '0.00',
+    };
+  }
+
   const batchesData = await db
     .select({
       batch: batches,
@@ -888,7 +907,7 @@ export async function getDraftInterestsByClient(clientId: number) {
   let pricedItems;
   try {
     pricedItems = await pricingEngine.calculateRetailPrices(inventoryItems, clientRules);
-  } catch (error) {
+  } catch (_error) {
     pricedItems = inventoryItems.map(item => ({
       ...item,
       retailPrice: item.basePrice,
@@ -896,7 +915,7 @@ export async function getDraftInterestsByClient(clientId: number) {
       appliedRules: [],
     }));
   }
-  
+
   // Build items
   const items = drafts.map(draft => {
     const pricedItem = pricedItems.find(p => p.id === draft.batchId);
@@ -978,7 +997,7 @@ export interface CreateImpersonationSessionOptions {
  * Returns a one-time-use token that must be exchanged for a portal session.
  */
 export async function createAuditedImpersonationSession(options: CreateImpersonationSessionOptions) {
-  const { adminUserId, clientId, reason, ipAddress, userAgent } = options;
+  const { adminUserId, clientId, reason: _reason, ipAddress, userAgent } = options;
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
 

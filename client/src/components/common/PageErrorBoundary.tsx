@@ -1,23 +1,56 @@
-import React from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import * as Sentry from '@sentry/react';
 
-export function PageErrorBoundary({ children }: { children: React.ReactNode }) {
-  return (
-    <ErrorBoundary
-      FallbackComponent={({ error, resetErrorBoundary }) => (
-        <div className="p-8 text-center">
-          <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
-          <h2 className="mt-4 text-lg font-semibold">Something went wrong</h2>
-          <p className="mt-2 text-muted-foreground">{error.message}</p>
-          <Button onClick={resetErrorBoundary} className="mt-4">
+interface Props {
+  children: ReactNode;
+  pageName?: string;
+}
+
+interface State {
+  hasError: boolean;
+  error: Error | null;
+}
+
+export class PageErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Page error:', error, errorInfo);
+    Sentry.captureException(error, {
+      tags: { page: this.props.pageName || 'unknown' },
+      extra: { componentStack: errorInfo.componentStack },
+    });
+  }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+          <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+          <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
+          <p className="text-sm text-muted-foreground mb-4 text-center max-w-md">
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </p>
+          <Button onClick={this.handleRetry} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
             Try Again
           </Button>
         </div>
-      )}
-    >
-      {children}
-    </ErrorBoundary>
-  );
+      );
+    }
+    return this.props.children;
+  }
 }

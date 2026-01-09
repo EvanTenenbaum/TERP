@@ -72,7 +72,7 @@ export const orderEnhancementsRouter = router({
     }),
 
   cancelRecurringOrder: protectedProcedure
-    .use(requirePermission("orders:update"))
+    .use(requirePermission("orders:delete"))
     .input(z.object({ recurringOrderId: z.number() }))
     .mutation(async ({ input }) => {
       return await recurringOrdersDb.cancelRecurringOrder(input.recurringOrderId);
@@ -220,7 +220,7 @@ export const orderEnhancementsRouter = router({
   // ===== ALERT CONFIGURATION =====
 
   createAlertConfiguration: protectedProcedure
-    .use(requirePermission("alerts:manage"))
+    .use(requirePermission("orders:manage_alerts"))
     .input(
       z.object({
         userId: z.number(),
@@ -245,7 +245,7 @@ export const orderEnhancementsRouter = router({
     }),
 
   updateAlertConfiguration: protectedProcedure
-    .use(requirePermission("alerts:manage"))
+    .use(requirePermission("orders:manage_alerts"))
     .input(
       z.object({
         alertConfigId: z.number(),
@@ -262,7 +262,7 @@ export const orderEnhancementsRouter = router({
     }),
 
   deleteAlertConfiguration: protectedProcedure
-    .use(requirePermission("alerts:manage"))
+    .use(requirePermission("orders:manage_alerts"))
     .input(z.object({ alertConfigId: z.number() }))
     .mutation(async ({ input }) => {
       return await alertConfigurationDb.deleteAlertConfiguration(input.alertConfigId);
@@ -282,7 +282,7 @@ export const orderEnhancementsRouter = router({
     }),
 
   toggleAlertConfiguration: protectedProcedure
-    .use(requirePermission("alerts:manage"))
+    .use(requirePermission("orders:manage_alerts"))
     .input(z.object({ alertConfigId: z.number() }))
     .mutation(async ({ input }) => {
       return await alertConfigurationDb.toggleAlertConfiguration(input.alertConfigId);

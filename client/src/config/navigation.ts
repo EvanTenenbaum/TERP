@@ -76,7 +76,8 @@ export const navigationItems: NavigationItem[] = [
   { name: "AR/AP", path: "/accounting", icon: CreditCard, group: "finance" },
   {
     // QA-W2-008: Use Coins icon to avoid duplicate with AR/AP
-    name: "Credits",
+    // FEAT-016: Renamed from "Credits" to "Credit Settings" for clarity
+    name: "Credit Settings",
     path: "/credit-settings",
     icon: Coins,
     group: "finance",

@@ -89,9 +89,13 @@ export const strainsRouter = router({
     // Search strains (for autocomplete)
     // BUG-034: Standardized pagination response
     search: protectedProcedure.use(requirePermission("inventory:read"))
-      .input(z.object({ query: z.string() }))
+      .input(z.object({ query: z.string().min(1, "Search query cannot be empty") }))
       .query(async ({ input }) => {
-        const result = await inventoryDb.searchStrains(input.query);
+        const trimmedQuery = input.query.trim();
+        if (!trimmedQuery) {
+          return createSafeUnifiedResponse([], 0, 20, 0);
+        }
+        const result = await inventoryDb.searchStrains(trimmedQuery);
         return createSafeUnifiedResponse(result, result.length, 20, 0);
       }),
     // Create custom strain

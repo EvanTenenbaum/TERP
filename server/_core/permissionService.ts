@@ -1,9 +1,10 @@
 /**
  * Permission Service
  * Handles Role-Based Access Control (RBAC) for calendar events
- * 
+ *
  * Critical for Calendar & Scheduling Module Security
  * Version 2.0 - Post-Adversarial QA
+ * Version 2.1 - Added caching layer (ST-010)
  */
 
 import { TRPCError } from "@trpc/server";
@@ -14,6 +15,7 @@ import {
   calendarEventPermissions,
   type CalendarEvent,
 } from "../../drizzle/schema";
+import cache, { CacheKeys, CacheTTL } from "./cache";
 
 export type PermissionLevel = "VIEW" | "EDIT" | "DELETE" | "MANAGE";
 export type GrantType = "USER" | "ROLE" | "TEAM";
@@ -25,12 +27,23 @@ export type GrantType = "USER" | "ROLE" | "TEAM";
 export class PermissionService {
   /**
    * Check if a user has a specific permission on an event
+   *
+   * ST-010: Added caching layer for performance
+   * Cache TTL: 5 minutes
+   * Cache invalidation: On permission grant/revoke
    */
   static async hasPermission(
     userId: number,
     eventId: number,
     requiredPermission: PermissionLevel
   ): Promise<boolean> {
+    // Check cache first
+    const cacheKey = CacheKeys.calendarEventPermission(userId, eventId, requiredPermission);
+    const cached = cache.get<boolean>(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
@@ -42,28 +55,35 @@ export class PermissionService {
       .limit(1);
 
     if (!event) {
+      // Cache negative result with shorter TTL
+      cache.set(cacheKey, false, CacheTTL.SHORT);
       return false;
     }
 
     // Creator always has MANAGE permission
     if (event.createdBy === userId) {
+      cache.set(cacheKey, true, CacheTTL.MEDIUM);
       return true;
     }
 
     // Assigned user has EDIT permission
     if (event.assignedTo === userId && this.isPermissionSufficient("EDIT", requiredPermission)) {
+      cache.set(cacheKey, true, CacheTTL.MEDIUM);
       return true;
     }
 
     // Check visibility
     if (event.visibility === "COMPANY" && requiredPermission === "VIEW") {
       // All users in the company can view company-wide events
+      cache.set(cacheKey, true, CacheTTL.MEDIUM);
       return true;
     }
 
     if (event.visibility === "PRIVATE" && requiredPermission === "VIEW") {
       // Only creator can view private events
-      return event.createdBy === userId;
+      const hasPermission = event.createdBy === userId;
+      cache.set(cacheKey, hasPermission, CacheTTL.MEDIUM);
+      return hasPermission;
     }
 
     // Check explicit permissions
@@ -80,10 +100,12 @@ export class PermissionService {
 
     for (const perm of permissions) {
       if (this.isPermissionSufficient(perm.permission, requiredPermission)) {
+        cache.set(cacheKey, true, CacheTTL.MEDIUM);
         return true;
       }
     }
 
+    cache.set(cacheKey, false, CacheTTL.MEDIUM);
     return false;
   }
 
@@ -125,6 +147,8 @@ export class PermissionService {
 
   /**
    * Grant permission to a user
+   *
+   * ST-010: Invalidates cache on permission changes
    */
   static async grantPermission(
     eventId: number,
@@ -172,10 +196,15 @@ export class PermissionService {
         grantedBy,
       });
     }
+
+    // Invalidate cache for this user and event
+    this.invalidatePermissionCache(granteeId, eventId);
   }
 
   /**
    * Revoke permission from a user
+   *
+   * ST-010: Invalidates cache on permission changes
    */
   static async revokePermission(
     eventId: number,
@@ -198,6 +227,9 @@ export class PermissionService {
           eq(calendarEventPermissions.granteeId, granteeId)
         )
       );
+
+    // Invalidate cache for this user and event
+    this.invalidatePermissionCache(granteeId, eventId);
   }
 
   /**
@@ -447,6 +479,43 @@ export class PermissionService {
     }
 
     return null;
+  }
+
+  /**
+   * Invalidate permission cache for a user and event
+   * Called when permissions are granted or revoked
+   *
+   * ST-010: Cache invalidation helper
+   */
+  static invalidatePermissionCache(userId: number, eventId: number): void {
+    // Invalidate all permission levels for this user-event combination
+    const permissionLevels: PermissionLevel[] = ["VIEW", "EDIT", "DELETE", "MANAGE"];
+    for (const permission of permissionLevels) {
+      const cacheKey = CacheKeys.calendarEventPermission(userId, eventId, permission);
+      cache.delete(cacheKey);
+    }
+  }
+
+  /**
+   * Invalidate all permission caches for an event
+   * Called when an event is deleted or significantly modified
+   *
+   * ST-010: Cache invalidation helper for events
+   */
+  static invalidateEventCache(eventId: number): void {
+    const cacheKeyPattern = new RegExp(`^calendarEvent:${eventId}:`);
+    cache.invalidatePattern(cacheKeyPattern);
+  }
+
+  /**
+   * Invalidate all permission caches for a user
+   * Called when user roles change
+   *
+   * ST-010: Cache invalidation helper for users
+   */
+  static invalidateUserCache(userId: number): void {
+    const cacheKeyPattern = new RegExp(`:user:${userId}:`);
+    cache.invalidatePattern(cacheKeyPattern);
   }
 }
 

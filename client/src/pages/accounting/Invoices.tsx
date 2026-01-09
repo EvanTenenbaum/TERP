@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableSkeleton, StatsSkeleton, Skeleton } from "@/components/ui/skeleton";
+import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 import {
   Table,
   TableBody,
@@ -200,6 +201,7 @@ export default function Invoices() {
   };
 
   return (
+    <PageErrorBoundary pageName="Invoices">
     <div className="flex flex-col gap-6 p-6">
       <BackButton label="Back to Accounting" to="/accounting" />
       {/* Header */}
@@ -557,5 +559,6 @@ export default function Invoices() {
         </Sheet>
       )}
     </div>
+    </PageErrorBoundary>
   );
 }

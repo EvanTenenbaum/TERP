@@ -30,6 +30,26 @@ async function main() {
   const password = url.password;
   const database = url.pathname.slice(1);
 
+  // Cleanup function to clear sensitive data
+  const cleanup = () => {
+    // Clear password from memory
+    url.password = '';
+    // Clear from local variables (not strictly necessary in JS but good practice)
+    if (process.env.MYSQL_PWD) delete process.env.MYSQL_PWD;
+    if (process.env.PGPASSWORD) delete process.env.PGPASSWORD;
+  };
+
+  // Register cleanup on exit
+  process.on('exit', cleanup);
+  process.on('SIGINT', () => {
+    cleanup();
+    process.exit(130);
+  });
+  process.on('SIGTERM', () => {
+    cleanup();
+    process.exit(143);
+  });
+
   console.log(`📊 Database: ${database} @ ${host}`);
   console.log(`📁 Output: ${filename}`);
 
@@ -42,19 +62,36 @@ async function main() {
   // Create dump
   try {
     if (isMySQL) {
+      // SECURITY: Use MYSQL_PWD environment variable to avoid password in process list
+      // Set password in environment, not command line (prevents exposure in `ps` output)
       execSync(
-        `mysqldump -h ${host} -P ${port} -u ${user} -p${password} ${database} | gzip > ${localPath}`,
-        { stdio: 'inherit' }
+        `mysqldump -h ${host} -P ${port} -u ${user} ${database} | gzip > ${localPath}`,
+        {
+          stdio: 'inherit',
+          env: { ...process.env, MYSQL_PWD: password }
+        }
       );
     } else {
+      // SECURITY: PGPASSWORD is passed via environment, not command line
       execSync(
-        `PGPASSWORD=${password} pg_dump -h ${host} -p ${port} -U ${user} ${database} | gzip > ${localPath}`,
-        { stdio: 'inherit' }
+        `pg_dump -h ${host} -p ${port} -U ${user} ${database} | gzip > ${localPath}`,
+        {
+          stdio: 'inherit',
+          env: { ...process.env, PGPASSWORD: password }
+        }
       );
     }
     console.log('✅ Database dump created');
+
+    // SECURITY: Set restrictive permissions on backup file (owner read/write only)
+    try {
+      execSync(`chmod 600 ${localPath}`);
+    } catch (error) {
+      console.warn('⚠️  Could not set secure permissions on backup file');
+    }
   } catch (error) {
     console.error('❌ Failed to create dump:', error);
+    cleanup();
     process.exit(1);
   }
 

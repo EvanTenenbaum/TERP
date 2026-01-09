@@ -144,7 +144,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => setLocation("/account")}>
                 <User className="h-4 w-4 mr-2" />
-                My Account
+                My Profile
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setLocation("/settings/notifications")}
@@ -157,7 +157,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
                 className="sm:hidden"
               >
                 <Settings className="h-4 w-4 mr-2" />
-                Settings
+                App Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

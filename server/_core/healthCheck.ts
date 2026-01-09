@@ -13,6 +13,13 @@ export interface HealthCheckResult {
     database: {
       status: "ok" | "error";
       latency?: number;
+      latencyMs?: number;
+      error?: string;
+    };
+    redis?: {
+      status: "ok" | "error" | "disabled";
+      latency?: number;
+      latencyMs?: number;
       error?: string;
     };
     transaction?: {
@@ -24,9 +31,18 @@ export interface HealthCheckResult {
       status: "ok" | "warning" | "critical";
       used: number;
       total: number;
+      usedMb: number;
+      totalMb: number;
       percentage: number;
       rss: number;
       external: number;
+    };
+    disk?: {
+      status: "ok" | "warning" | "critical";
+      usedPercent: number;
+      availableMb: number;
+      totalMb: number;
+      error?: string;
     };
     connectionPool?: {
       status: "ok" | "warning";
@@ -47,11 +63,13 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
   const startTime = Date.now();
 
   // Run checks in parallel for faster response
-  const [dbCheck, transactionCheck, poolCheck, externalCheck] =
+  const [dbCheck, transactionCheck, redisCheck, poolCheck, diskCheck, externalCheck] =
     await Promise.all([
       checkDatabase(),
       checkTransaction(),
+      checkRedis(),
       Promise.resolve(checkConnectionPool()),
+      checkDisk(),
       checkExternalServices(),
     ]);
 
@@ -64,12 +82,15 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
   if (
     dbCheck.status === "error" ||
     transactionCheck.status === "error" ||
-    memoryCheck.status === "critical"
+    memoryCheck.status === "critical" ||
+    diskCheck?.status === "critical"
   ) {
     status = "unhealthy";
   } else if (
     memoryCheck.status === "warning" ||
     poolCheck?.status === "warning" ||
+    diskCheck?.status === "warning" ||
+    redisCheck?.status === "error" ||
     externalCheck.sentry.status === "error"
   ) {
     status = "degraded";
@@ -88,6 +109,8 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
       database: dbCheck,
       transaction: transactionCheck,
       memory: memoryCheck,
+      ...(redisCheck && { redis: redisCheck }),
+      ...(diskCheck && { disk: diskCheck }),
       ...(poolCheck && { connectionPool: poolCheck }),
       externalServices: externalCheck,
     },
@@ -142,6 +165,7 @@ export async function checkDatabase(): Promise<
         return {
           status: "ok" as const,
           latency,
+          latencyMs: latency,
         };
       })();
 
@@ -230,10 +254,97 @@ function checkMemory(): HealthCheckResult["checks"]["memory"] {
     status,
     used: usedMemory,
     total: totalMemory,
+    usedMb: Math.round(usedMemory / 1024 / 1024),
+    totalMb: Math.round(totalMemory / 1024 / 1024),
     percentage: Math.round(percentage * 100) / 100,
     rss: usage.rss,
     external: usage.external,
   };
+}
+
+/**
+ * Check Redis connectivity (if Redis is configured)
+ */
+async function checkRedis(): Promise<
+  HealthCheckResult["checks"]["redis"] | null
+> {
+  // Check if Redis is configured in environment
+  const redisUrl = process.env.REDIS_URL || process.env.REDIS_HOST;
+
+  if (!redisUrl) {
+    return { status: "disabled" };
+  }
+
+  try {
+    const start = Date.now();
+
+    // Redis client is not installed - return disabled
+    // When redis package is installed, uncomment below and implement actual ping
+    // const client = createClient({ url: redisUrl });
+    // await client.connect();
+    // await client.ping();
+    // await client.disconnect();
+
+    // For now, just indicate Redis is configured but client not available
+    const latency = Date.now() - start;
+    return {
+      status: "disabled" as const,
+      latencyMs: latency,
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      error: error instanceof Error ? error.message : "Redis check failed",
+    };
+  }
+}
+
+/**
+ * Check disk usage (Linux/Unix only)
+ */
+async function checkDisk(): Promise<
+  HealthCheckResult["checks"]["disk"] | null
+> {
+  try {
+    const { execSync } = await import('child_process');
+
+    // Use df to check disk usage of root filesystem
+    const output = execSync("df -BM / | tail -1 | awk '{print $2,$3,$5}'")
+      .toString()
+      .trim();
+
+    const [totalStr, usedStr, percentStr] = output.split(' ');
+
+    // Parse values (remove 'M' suffix and '%' from percentage)
+    const totalMb = parseInt(totalStr.replace('M', ''));
+    const usedMb = parseInt(usedStr.replace('M', ''));
+    const usedPercent = parseInt(percentStr.replace('%', ''));
+    const availableMb = totalMb - usedMb;
+
+    let status: "ok" | "warning" | "critical" = "ok";
+
+    if (usedPercent > 90) {
+      status = "critical";
+    } else if (usedPercent > 80) {
+      status = "warning";
+    }
+
+    return {
+      status,
+      usedPercent,
+      availableMb,
+      totalMb,
+    };
+  } catch (error) {
+    // Disk check not available on this platform or df command failed
+    return {
+      status: "ok",
+      usedPercent: 0,
+      availableMb: 0,
+      totalMb: 0,
+      error: "Disk check not available",
+    };
+  }
 }
 
 /**

@@ -2,11 +2,16 @@ import rateLimit from "express-rate-limit";
 
 /**
  * General API rate limiter
- * 100 requests per 15 minutes per IP
+ * Protects against abuse while allowing normal application usage
+ *
+ * Threshold rationale:
+ * - 500 requests per 15 minutes = ~33 req/min = reasonable for interactive apps
+ * - Reduced from 1000 to improve security posture
+ * - High enough for typical user workflows but catches obvious abuse
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Increased from 100 to support normal app usage
+  max: 500, // Reduced from 1000 for better security
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
@@ -15,11 +20,17 @@ export const apiLimiter = rateLimit({
 
 /**
  * Authentication endpoint rate limiter
- * 5 requests per 15 minutes per IP
+ * Protects against brute force attacks
+ *
+ * Threshold rationale:
+ * - 10 failed attempts per 15 minutes is reasonable for legitimate users
+ * - Increased from 5 to reduce false positives (typos, forgotten passwords)
+ * - skipSuccessfulRequests=true means successful logins don't count
+ * - Still strict enough to prevent brute force attacks
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  max: 10, // Increased from 5 to reduce user friction
   message: "Too many login attempts, please try again later.",
   skipSuccessfulRequests: true,
   standardHeaders: true,
@@ -28,11 +39,17 @@ export const authLimiter = rateLimit({
 
 /**
  * Strict rate limiter for sensitive operations
- * 10 requests per minute per IP
+ * Used for data modification, financial transactions, and bulk operations
+ *
+ * Threshold rationale:
+ * - 30 requests per minute balances batch operations with security
+ * - Reduced from 100 (too permissive) but higher than original 10 (too restrictive)
+ * - Suitable for legitimate batch imports while preventing abuse
+ * - Apply to: create, update, delete operations on sensitive data
  */
 export const strictLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 100, // Increased from 10 to support batch operations
+  max: 30, // Reduced from 100, balanced approach
   message: "Rate limit exceeded. Please slow down.",
   standardHeaders: true,
   legacyHeaders: false,

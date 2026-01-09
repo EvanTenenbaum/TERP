@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Plus } from "lucide-react";
+import { toast } from "sonner";
+import { useBeforeUnloadWarning } from "@/hooks/useUnsavedChangesWarning";
 
 interface AddClientWizardProps {
   open: boolean;
@@ -40,15 +42,25 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   });
   const [newTag, setNewTag] = useState("");
 
+  // UX-001: Warn before leaving with unsaved changes
+  const hasFormData = formData.name !== "" || formData.teriCode !== "" || formData.email !== "" ||
+    formData.phone !== "" || formData.address !== "" || formData.tags.length > 0;
+  useBeforeUnloadWarning(hasFormData && open);
+
   // Fetch all existing tags for autocomplete
   const { data: existingTags } = trpc.clients.tags.getAll.useQuery();
 
   // Create client mutation
   const createClientMutation = trpc.clients.create.useMutation({
     onSuccess: (data) => {
+      toast.success('Client created successfully');
       onOpenChange(false);
       resetForm();
       if (onSuccess && data) onSuccess(data as number);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to create client');
+      console.error('Create client error:', error);
     },
   });
 
@@ -79,10 +91,15 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   };
 
   const handleSubmit = async () => {
-    await createClientMutation.mutateAsync({
-      ...formData,
-      tags: formData.tags.length > 0 ? formData.tags : undefined,
-    });
+    try {
+      await createClientMutation.mutateAsync({
+        ...formData,
+        tags: formData.tags.length > 0 ? formData.tags : undefined,
+      });
+    } catch (error) {
+      // Error is already handled by onError callback
+      console.error('Failed to create client:', error);
+    }
   };
 
   const addTag = (tag: string) => {

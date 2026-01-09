@@ -321,21 +321,32 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         {error && (
           <div className="mb-3 text-sm text-destructive">{error.message}</div>
         )}
-        <div className="ag-theme-alpine h-[600px] w-full">
-          <AgGridReact<InventoryGridRow>
-            rowData={data?.rows ?? []}
-            columnDefs={columnDefs}
-            defaultColDef={defaultColDef}
-            // Row identity for efficient updates
-            getRowId={params => String(params.data.id)}
-            animateRows={false} // Disable for better performance
-            pagination
-            paginationPageSize={50}
-            onCellValueChanged={handleCellValueChanged}
-            onGridReady={onGridReady}
-            suppressLoadingOverlay={!isLoading}
-          />
-        </div>
+        {!isLoading && !error && (!data?.rows || data.rows.length === 0) ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-lg font-medium text-muted-foreground mb-2">
+              No inventory data available
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Add inventory batches to see them in the spreadsheet view
+            </p>
+          </div>
+        ) : (
+          <div className="ag-theme-alpine h-[600px] w-full">
+            <AgGridReact<InventoryGridRow>
+              rowData={data?.rows ?? []}
+              columnDefs={columnDefs}
+              defaultColDef={defaultColDef}
+              // Row identity for efficient updates
+              getRowId={params => String(params.data.id)}
+              animateRows={false} // Disable for better performance
+              pagination
+              paginationPageSize={50}
+              onCellValueChanged={handleCellValueChanged}
+              onGridReady={onGridReady}
+              suppressLoadingOverlay={!isLoading}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -219,16 +219,27 @@ export const ClientGrid = React.memo(function ClientGrid() {
                 {error.message}
               </div>
             )}
-            <AgGridReact<ClientGridRow>
-              rowData={gridData?.rows ?? []}
-              columnDefs={columnDefs}
-              defaultColDef={defaultColDef}
-              getRowStyle={getRowStyle}
-              animateRows
-              pagination
-              paginationPageSize={50}
-              suppressLoadingOverlay={!isLoading}
-            />
+            {!isLoading && !error && (!gridData?.rows || gridData.rows.length === 0) ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-lg font-medium text-muted-foreground mb-2">
+                  No orders found for this client
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Orders will appear here once created
+                </p>
+              </div>
+            ) : (
+              <AgGridReact<ClientGridRow>
+                rowData={gridData?.rows ?? []}
+                columnDefs={columnDefs}
+                defaultColDef={defaultColDef}
+                getRowStyle={getRowStyle}
+                animateRows
+                pagination
+                paginationPageSize={50}
+                suppressLoadingOverlay={!isLoading}
+              />
+            )}
           </div>
         </div>
       </CardContent>

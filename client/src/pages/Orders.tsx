@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageErrorBoundary } from '@/components/common/PageErrorBoundary';
 import {
   Select,
   SelectContent,
@@ -263,6 +264,7 @@ export default function Orders() {
   };
 
   return (
+    <PageErrorBoundary pageName="Orders">
     <div className="container mx-auto p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -680,5 +682,6 @@ export default function Orders() {
         />
       )}
     </div>
+    </PageErrorBoundary>
   );
 }

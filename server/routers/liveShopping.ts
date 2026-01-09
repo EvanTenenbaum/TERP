@@ -2,10 +2,9 @@ import { z } from "zod";
 import { router, protectedProcedure, getAuthenticatedUserId } from "../_core/trpc";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getDb } from "../db";
-import { 
-  liveShoppingSessions, 
-  sessionCartItems, 
-  sessionPriceOverrides 
+import {
+  liveShoppingSessions,
+  sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
 import { clients, users, products, batches } from "../../drizzle/schema";
 import { eq, and, desc, like, or, sql } from "drizzle-orm";
@@ -14,7 +13,7 @@ import { sessionCartService } from "../services/live-shopping/sessionCartService
 import { sessionPricingService } from "../services/live-shopping/sessionPricingService";
 import { sessionOrderService } from "../services/live-shopping/sessionOrderService";
 import { sessionCreditService } from "../services/live-shopping/sessionCreditService";
-import * as ordersDb from "../ordersDb";
+// ordersDb available for future direct order operations
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 import { randomUUID } from "crypto";
 
@@ -333,11 +332,17 @@ export const liveShoppingRouter = router({
    */
   searchProducts: protectedProcedure
     .use(requirePermission("orders:read"))
-    .input(z.object({ query: z.string() }))
+    .input(z.object({ query: z.string().min(1, "Search query cannot be empty") }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      
+
+      // Return empty results if query is empty or just whitespace
+      const trimmedQuery = input.query.trim();
+      if (!trimmedQuery) {
+        return [];
+      }
+
       // Search batches available
       const results = await db
         .select({
@@ -353,8 +358,8 @@ export const liveShoppingRouter = router({
         .innerJoin(products, eq(batches.productId, products.id))
         .where(
           or(
-            like(products.nameCanonical, `%${input.query}%`),
-            like(batches.code, `%${input.query}%`)
+            like(products.nameCanonical, `%${trimmedQuery}%`),
+            like(batches.code, `%${trimmedQuery}%`)
           )
         )
         .limit(20);
