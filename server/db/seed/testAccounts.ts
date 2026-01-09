@@ -28,6 +28,7 @@ interface TestAccount {
   userRole: "admin" | "user";
   rbacRoleName: string;
   password: string;
+  matrixRoleName?: string;
 }
 
 const TEST_ACCOUNTS: TestAccount[] = [
@@ -101,6 +102,62 @@ const TEST_ACCOUNTS: TestAccount[] = [
     rbacRoleName: "Read-Only Auditor",
     password: "TestAuditor123!",
   },
+  {
+    email: "test-accounting-manager@terp-app.local",
+    name: "Test Accounting Manager",
+    userRole: "user",
+    rbacRoleName: "Accountant",
+    matrixRoleName: "Accounting Manager",
+    password: "TestAccountingManager123!",
+  },
+  {
+    email: "test-sales-rep@terp-app.local",
+    name: "Test Sales Rep",
+    userRole: "user",
+    rbacRoleName: "Sales Manager",
+    matrixRoleName: "Sales Rep",
+    password: "TestSalesRep123!",
+  },
+  {
+    email: "test-purchasing-manager@terp-app.local",
+    name: "Test Purchasing Manager",
+    userRole: "user",
+    rbacRoleName: "Buyer/Procurement",
+    matrixRoleName: "Purchasing Manager",
+    password: "TestPurchasingManager123!",
+  },
+  {
+    email: "test-fulfillment@terp-app.local",
+    name: "Test Fulfillment",
+    userRole: "user",
+    rbacRoleName: "Warehouse Staff",
+    matrixRoleName: "Fulfillment",
+    password: "TestFulfillment123!",
+  },
+  {
+    email: "test-manager@terp-app.local",
+    name: "Test Manager",
+    userRole: "user",
+    rbacRoleName: "Operations Manager",
+    matrixRoleName: "Manager",
+    password: "TestManager123!",
+  },
+  {
+    email: "test-all-auth@terp-app.local",
+    name: "Test All Authenticated Users",
+    userRole: "user",
+    rbacRoleName: "Read-Only Auditor",
+    matrixRoleName: "All Authenticated Users",
+    password: "TestAllAuthenticated123!",
+  },
+  {
+    email: "test-all-users@terp-app.local",
+    name: "Test All Users",
+    userRole: "user",
+    rbacRoleName: "Read-Only Auditor",
+    matrixRoleName: "All Users",
+    password: "TestAllUsers123!",
+  },
 ];
 
 async function seedTestAccounts() {
@@ -128,7 +185,10 @@ async function seedTestAccounts() {
     }
 
     for (const account of TEST_ACCOUNTS) {
-      console.info(`Creating: ${account.email} (${account.rbacRoleName})`);
+      const displayRole = account.matrixRoleName
+        ? `${account.matrixRoleName} → ${account.rbacRoleName}`
+        : account.rbacRoleName;
+      console.info(`Creating: ${account.email} (${displayRole})`);
 
       // Check if user exists
       const existing = await db
@@ -182,8 +242,11 @@ async function seedTestAccounts() {
     );
     console.info("─".repeat(85));
     for (const account of TEST_ACCOUNTS) {
+      const displayRole = account.matrixRoleName
+        ? `${account.matrixRoleName} → ${account.rbacRoleName}`
+        : account.rbacRoleName;
       console.info(
-        `${account.email.padEnd(40)} | ${account.rbacRoleName.padEnd(22)} | ${account.password}`
+        `${account.email.padEnd(40)} | ${displayRole.padEnd(22)} | ${account.password}`
       );
     }
     console.info("─".repeat(85));

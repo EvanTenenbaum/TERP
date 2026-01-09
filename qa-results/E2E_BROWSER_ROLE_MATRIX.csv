@@ -1,0 +1,18 @@
+Role,Authentication Status,Allowed Navigation,Disallowed Navigation,Notes
+Super Admin,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,
+Owner/Executive,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,Role not in USER_FLOW_MATRIX
+Operations Manager,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,Role not in USER_FLOW_MATRIX
+Sales Manager,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,
+Accountant,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,Role name differs from USER_FLOW_MATRIX (Accounting Manager)
+Inventory Manager,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,
+Buyer/Procurement,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,Role not in USER_FLOW_MATRIX
+Customer Service,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,Role not in USER_FLOW_MATRIX
+Warehouse Staff,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,Role not in USER_FLOW_MATRIX
+Read-Only Auditor,Authenticated,Dashboard; Clients; Orders; Invoices; Products; Batches; Samples; Purchase Orders; Spreadsheet View; AR/AP; Credit Settings; Reports; Users; Settings; Calendar,,
+Accounting Manager,Seedable via seed:test-accounts,,,Mapped to Accountant role in seed:test-accounts.
+Sales Rep,Seedable via seed:test-accounts,,,Mapped to Sales Manager role in seed:test-accounts.
+Purchasing Manager,Seedable via seed:test-accounts,,,Mapped to Buyer/Procurement role in seed:test-accounts.
+Fulfillment,Seedable via seed:test-accounts,,,Mapped to Warehouse Staff role in seed:test-accounts.
+Manager,Seedable via seed:test-accounts,,,Mapped to Operations Manager role in seed:test-accounts.
+All Authenticated Users,Seedable via seed:test-accounts,,,Mapped to Read-Only Auditor role in seed:test-accounts.
+All Users,Seedable via seed:test-accounts,,,Mapped to Read-Only Auditor role in seed:test-accounts.
