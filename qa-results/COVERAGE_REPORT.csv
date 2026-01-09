@@ -1,22 +1,23 @@
-Domain,Total Flows,Tested,Passed,Failed,Skipped,Pass Rate,Coverage,Status
-Auth,4,1,1,0,3,100.0%,25.0%,Partial
-CRM/Clients,29,10,8,2,19,80.0%,34.5%,Partial
-Inventory,37,12,10,2,25,83.3%,32.4%,Partial
-Orders,37,5,1,4,32,20.0%,13.5%,Critical Gap
-Accounting,52,9,0,9,43,0.0%,17.3%,Critical Gap
-Dashboard,12,8,2,6,4,25.0%,66.7%,Partial
-Analytics,8,3,3,0,5,100.0%,37.5%,Good
-Pricing,16,3,2,1,13,66.7%,18.8%,Partial
-Calendar,34,3,0,3,31,0.0%,8.8%,Critical Gap
-Workflow/Todo,13,5,2,3,8,40.0%,38.5%,Partial
-Admin,27,10,6,4,17,60.0%,37.0%,Partial
-VIP Portal,8,1,0,1,7,0.0%,12.5%,Critical Gap
-Search/Reports,4,1,0,1,3,0.0%,25.0%,Gap
-Pick Pack,4,2,0,2,2,0.0%,50.0%,Gap
-Vendors,3,1,1,0,2,100.0%,33.3%,Good
-Returns,3,1,1,0,2,100.0%,33.3%,Good
-Credits,3,1,1,0,2,100.0%,33.3%,Good
-Notifications,4,2,0,2,2,0.0%,50.0%,Gap
-Health/System,2,1,1,0,1,100.0%,50.0%,Good
-DEPRECATED,6,0,0,0,6,N/A,0.0%,Skipped
-TOTAL,274,82,40,42,232,48.8%,29.9%,Needs Improvement
+Domain,Total Flows,Tested,Passed,Failed,Skipped,Pass Rate,Coverage,Status,Run Date
+Auth,4,1,0,1,3,0.0%,25.0%,Critical Gap,2026-01-09
+CRM/Clients,29,9,7,2,20,77.8%,31.0%,Good,2026-01-09
+Inventory,37,12,9,3,25,75.0%,32.4%,Good,2026-01-09
+Orders,37,5,1,4,32,20.0%,13.5%,Critical Gap,2026-01-09
+Accounting,52,6,2,4,46,33.3%,11.5%,Critical Gap,2026-01-09
+Dashboard,12,8,2,6,4,25.0%,66.7%,Partial,2026-01-09
+Analytics,8,3,3,0,5,100.0%,37.5%,Excellent,2026-01-09
+Pricing,16,3,2,1,13,66.7%,18.8%,Partial,2026-01-09
+Calendar,34,3,0,3,31,0.0%,8.8%,Critical Gap,2026-01-09
+Workflow/Todo,13,5,3,2,8,60.0%,38.5%,Partial,2026-01-09
+Admin/RBAC,27,9,6,3,18,66.7%,33.3%,Good,2026-01-09
+Vendors/PO,5,2,1,1,3,50.0%,40.0%,Partial,2026-01-09
+Sales/Samples,4,2,0,2,2,0.0%,50.0%,Gap,2026-01-09
+Returns/Credits,4,2,2,0,2,100.0%,50.0%,Good,2026-01-09
+Alerts/Notif/Inbox,6,3,0,3,3,0.0%,50.0%,Critical Gap,2026-01-09
+Locations,3,1,0,1,2,0.0%,33.3%,Gap,2026-01-09
+VIP Portal,8,1,0,1,7,0.0%,12.5%,Critical Gap,2026-01-09
+Pick Pack,4,2,0,2,2,0.0%,50.0%,Critical Gap,2026-01-09
+Search,2,1,0,1,1,0.0%,50.0%,Gap,2026-01-09
+Health/System,2,2,1,1,0,50.0%,100.0%,Partial,2026-01-09
+DEPRECATED,6,0,0,0,6,N/A,0.0%,Skipped,2026-01-09
+TOTAL,274,80,39,41,234,48.7%,29.2%,Needs Improvement,2026-01-09

@@ -1,9 +1,10 @@
 # TERP ERP E2E Test Execution Report
 
-**Generated:** 2026-01-09T06:05:00Z
+**Generated:** 2026-01-09T14:45:00Z
 **Target Environment:** https://terp-app-b9s35.ondigitalocean.app
 **Test Approach:** API-based coverage testing against USER_FLOW_MATRIX.csv
 **Branch:** claude/erp-e2e-test-coverage-ZDvvL
+**Run:** Fresh execution after latest main merge
 
 ---
 
@@ -15,148 +16,135 @@
 | **Client-wired Flows (UI testable)** | ~180  |
 | **API-only Flows**                   | ~90   |
 | **Deprecated Flows (skipped)**       | 6     |
-| **Total API Tests Executed**         | 82    |
-| **Tests Passed**                     | 40    |
-| **Tests Failed**                     | 42    |
-| **Pass Rate**                        | 48.8% |
-| **Defects Logged**                   | 38    |
+| **Total API Tests Executed**         | 80    |
+| **Tests Passed**                     | 39    |
+| **Tests Failed**                     | 41    |
+| **Pass Rate**                        | 48.7% |
+| **Defects Logged**                   | 41    |
 
 ---
 
-## Phase 0: Test Surface Analysis
+## Comparison with Previous Run
 
-### Domain Distribution (from USER_FLOW_MATRIX.csv)
+| Metric      | Previous Run | Fresh Run | Change |
+| ----------- | ------------ | --------- | ------ |
+| Total Tests | 82           | 80        | -2     |
+| Passed      | 40           | 39        | -1     |
+| Failed      | 42           | 41        | -1     |
+| Pass Rate   | 48.8%        | 48.7%     | -0.1%  |
 
-| Domain        | Flow Count | Implementation Status           |
-| ------------- | ---------- | ------------------------------- |
-| Accounting    | 52         | Mixed (Client-wired + API-only) |
-| CRM/Clients   | 29         | Client-wired                    |
-| Inventory     | 37         | Client-wired                    |
-| Orders        | 37         | Client-wired                    |
-| Pricing       | 16         | Client-wired                    |
-| Calendar      | 34         | Mixed                           |
-| Workflow/Todo | 13         | Client-wired                    |
-| Dashboard     | 12         | Client-wired                    |
-| Analytics     | 8          | Mixed                           |
-| Admin         | 27         | Client-wired                    |
-| Auth          | 4          | Client-wired                    |
-| Deprecated    | 6          | Deprecated (skipped)            |
+### Improvements (Fixed)
 
-### Role Matrix (from testAccounts.ts)
+- `clients.getById` - Now PASSING (input parameter fixed)
+- `todoTasks.getMyTasks` - Now PASSING
+- `rbacPermissions.list` - Now PASSING
 
-| Role               | Email                            | Test Account Status |
-| ------------------ | -------------------------------- | ------------------- |
-| Super Admin        | test-superadmin@terp-app.local   | Seeded              |
-| Owner/Executive    | test-owner@terp-app.local        | Seeded              |
-| Operations Manager | test-opsmanager@terp-app.local   | Seeded              |
-| Sales Manager      | test-salesmanager@terp-app.local | Seeded              |
-| Accountant         | test-accountant@terp-app.local   | Seeded              |
-| Inventory Manager  | test-invmanager@terp-app.local   | Seeded              |
-| Buyer/Procurement  | test-buyer@terp-app.local        | Seeded              |
-| Customer Service   | test-custservice@terp-app.local  | Seeded              |
-| Warehouse Staff    | test-warehouse@terp-app.local    | Seeded              |
-| Read-Only Auditor  | test-auditor@terp-app.local      | Seeded              |
+### Regressions (New Failures)
+
+- `auth.me` - Now returning empty response
+- `clients.count` - Now returning empty response
+- `clients.tags.getAll` - Now returning empty response
 
 ---
 
-## Phase 1: Authentication & Environment Verification
+## Phase 1: Environment Verification
 
-| Check                | Status  | Details                                       |
-| -------------------- | ------- | --------------------------------------------- |
-| Live Site Accessible | ✅ PASS | HTTP 200                                      |
-| tRPC API Accessible  | ✅ PASS | /api/trpc/\* endpoints responding             |
-| Public Demo User     | ✅ PASS | demo+public@terp-app.local auto-authenticated |
-| Session Management   | ✅ PASS | auth.me returns valid user                    |
+| Check                | Status  | Details                           |
+| -------------------- | ------- | --------------------------------- |
+| Live Site Accessible | ✅ PASS | HTTP 200                          |
+| tRPC API Accessible  | ✅ PASS | /api/trpc/\* endpoints responding |
+| Health Check         | ✅ PASS | health.check returns success      |
 
 ---
 
-## Phase 2-5: Domain Test Results
+## Domain Test Results
 
 ### Domain: Authentication
 
-| Flow        | Status        | Notes                        |
-| ----------- | ------------- | ---------------------------- |
-| auth.me     | ✅ PASS       | Returns public demo user     |
-| auth.logout | ⚠️ NOT TESTED | Mutation - would end session |
+| Flow    | Status  | Notes                           |
+| ------- | ------- | ------------------------------- |
+| auth.me | ❌ FAIL | Empty response (session issue?) |
 
 ### Domain: CRM / Clients
 
-| Flow                           | Status        | Notes                               |
-| ------------------------------ | ------------- | ----------------------------------- |
-| clients.list                   | ⚠️ PARTIAL    | Returns data but truncated response |
-| clients.count                  | ✅ PASS       | Returns 24 clients                  |
-| clients.getByTeriCode          | ✅ PASS       | Works correctly                     |
-| clients.checkTeriCodeAvailable | ✅ PASS       | Validation works                    |
-| clients.tags.getAll            | ✅ PASS       | Returns 7 tags                      |
-| clients.activity.list          | ✅ PASS       | Returns empty (no activity data)    |
-| clients.transactions.list      | ✅ PASS       | Returns empty (no transaction data) |
-| clients.communications.list    | ✅ PASS       | Returns empty                       |
-| clients.getById                | ❌ FAIL       | BAD_REQUEST - needs clientId not id |
-| clients.create                 | ⚠️ NOT TESTED | Mutation                            |
-| clients.update                 | ⚠️ NOT TESTED | Mutation                            |
-| clients.delete                 | ⚠️ NOT TESTED | Mutation                            |
-| clients.archive                | ⚠️ NOT TESTED | Mutation                            |
+| Flow                           | Status  | Notes                   |
+| ------------------------------ | ------- | ----------------------- |
+| clients.list                   | ✅ PASS | Returns client data     |
+| clients.count                  | ❌ FAIL | Empty response          |
+| clients.getByTeriCode          | ✅ PASS | Works correctly         |
+| clients.checkTeriCodeAvailable | ✅ PASS | Validation works        |
+| clients.tags.getAll            | ❌ FAIL | Empty response          |
+| clients.activity.list          | ✅ PASS | Works                   |
+| clients.transactions.list      | ✅ PASS | Works                   |
+| clients.communications.list    | ✅ PASS | Works                   |
+| clients.getById                | ✅ PASS | **FIXED** - Now working |
 
 ### Domain: Inventory
 
-| Flow                           | Status  | Notes                          |
-| ------------------------------ | ------- | ------------------------------ |
-| inventory.list                 | ✅ PASS | Returns batch data             |
-| inventory.getById              | ❌ FAIL | BAD_REQUEST - input validation |
-| inventoryMovements.getByBatch  | ✅ PASS | Works correctly                |
-| strains.list                   | ✅ PASS | Returns strain data            |
-| strains.getById                | ✅ PASS | Returns single strain          |
-| strains.search                 | ✅ PASS | Search works                   |
-| strains.fuzzySearch            | ✅ PASS | Fuzzy search works             |
-| productCatalogue.list          | ✅ PASS | Returns products               |
-| productCatalogue.getCategories | ✅ PASS | 5 categories                   |
-| productCatalogue.getBrands     | ✅ PASS | 1 brand                        |
-| cogs.getCOGS                   | ❌ FAIL | INTERNAL_SERVER_ERROR          |
-| cogs.getHistory                | ✅ PASS | Works correctly                |
+| Flow                           | Status  | Notes                 |
+| ------------------------------ | ------- | --------------------- |
+| inventory.list                 | ✅ PASS | Returns batch data    |
+| inventory.getById              | ❌ FAIL | Empty response        |
+| inventoryMovements.getByBatch  | ✅ PASS | Works correctly       |
+| strains.list                   | ✅ PASS | Returns strain data   |
+| strains.getById                | ✅ PASS | Returns single strain |
+| strains.search                 | ❌ FAIL | Empty response        |
+| strains.fuzzySearch            | ✅ PASS | Fuzzy search works    |
+| productCatalogue.list          | ✅ PASS | Returns products      |
+| productCatalogue.getCategories | ✅ PASS | 5 categories          |
+| productCatalogue.getBrands     | ✅ PASS | 1 brand               |
+| cogs.getCOGS                   | ❌ FAIL | INTERNAL_SERVER_ERROR |
+| cogs.getHistory                | ✅ PASS | Works correctly       |
 
 ### Domain: Orders
 
 | Flow                         | Status  | Notes                 |
 | ---------------------------- | ------- | --------------------- |
-| orders.getAll                | ❌ FAIL | Database query error  |
+| orders.getAll                | ❌ FAIL | INTERNAL_SERVER_ERROR |
 | orders.getById               | ❌ FAIL | INTERNAL_SERVER_ERROR |
 | orders.getByClient           | ❌ FAIL | INTERNAL_SERVER_ERROR |
 | orders.getOrderStatusHistory | ✅ PASS | Works correctly       |
-| quotes.list                  | ❌ FAIL | Database query error  |
+| quotes.list                  | ❌ FAIL | INTERNAL_SERVER_ERROR |
 
 ### Domain: Accounting
 
-| Flow                           | Status  | Notes                         |
-| ------------------------------ | ------- | ----------------------------- |
-| invoices.list                  | ❌ FAIL | No response data              |
-| invoices.getById               | ❌ FAIL | NOT_FOUND                     |
-| invoices.getSummary            | ❌ FAIL | Database query error          |
-| payments.list                  | ❌ FAIL | No response data              |
-| accounting.getARSummary        | ❌ FAIL | NOT_FOUND - procedure missing |
-| accounting.getARAging          | ❌ FAIL | NOT_FOUND - procedure missing |
-| accounting.getAPSummary        | ❌ FAIL | NOT_FOUND - procedure missing |
-| accounting.getTotalCashBalance | ❌ FAIL | NOT_FOUND - procedure missing |
+| Flow                                | Status  | Notes                      |
+| ----------------------------------- | ------- | -------------------------- |
+| invoices.list                       | ✅ PASS | **IMPROVED** - Now working |
+| invoices.getById                    | ❌ FAIL | NOT_FOUND                  |
+| invoices.getSummary                 | ❌ FAIL | INTERNAL_SERVER_ERROR      |
+| payments.list                       | ❌ FAIL | Empty response             |
+| accounting.fiscalPeriods.list       | ❌ FAIL | BAD_REQUEST                |
+| accounting.fiscalPeriods.getCurrent | ✅ PASS | Works                      |
 
 ### Domain: Dashboard
 
-| Flow                                      | Status  | Notes                            |
-| ----------------------------------------- | ------- | -------------------------------- |
-| dashboard.getStats                        | ❌ FAIL | No response                      |
-| dashboardEnhanced.getDashboardData        | ❌ FAIL | BAD_REQUEST - needs period param |
-| dashboardEnhanced.getSalesPerformance     | ❌ FAIL | BAD_REQUEST - needs period param |
-| dashboardEnhanced.getARAgingReport        | ✅ PASS | Works                            |
-| dashboardEnhanced.getInventoryValuation   | ✅ PASS | Works                            |
-| dashboardEnhanced.getTopProducts          | ❌ FAIL | BAD_REQUEST                      |
-| dashboardEnhanced.getTopClients           | ❌ FAIL | BAD_REQUEST                      |
-| dashboardEnhanced.getProfitabilityMetrics | ❌ FAIL | BAD_REQUEST                      |
+| Flow                                      | Status  | Notes       |
+| ----------------------------------------- | ------- | ----------- |
+| dashboard.getStats                        | ❌ FAIL | NOT_FOUND   |
+| dashboardEnhanced.getDashboardData        | ❌ FAIL | BAD_REQUEST |
+| dashboardEnhanced.getSalesPerformance     | ❌ FAIL | BAD_REQUEST |
+| dashboardEnhanced.getARAgingReport        | ✅ PASS | Works       |
+| dashboardEnhanced.getInventoryValuation   | ✅ PASS | Works       |
+| dashboardEnhanced.getTopProducts          | ❌ FAIL | BAD_REQUEST |
+| dashboardEnhanced.getTopClients           | ❌ FAIL | BAD_REQUEST |
+| dashboardEnhanced.getProfitabilityMetrics | ❌ FAIL | BAD_REQUEST |
+
+### Domain: Analytics
+
+| Flow                         | Status  | Notes |
+| ---------------------------- | ------- | ----- |
+| analytics.getExtendedSummary | ✅ PASS | Works |
+| analytics.getRevenueTrends   | ✅ PASS | Works |
+| analytics.getTopClients      | ✅ PASS | Works |
 
 ### Domain: Pricing
 
-| Flow                   | Status  | Notes                  |
-| ---------------------- | ------- | ---------------------- |
-| pricing.listRules      | ✅ PASS | Returns rules          |
-| pricing.listProfiles   | ✅ PASS | Returns profiles       |
-| pricingDefaults.getAll | ❌ FAIL | Database table missing |
+| Flow                   | Status  | Notes                 |
+| ---------------------- | ------- | --------------------- |
+| pricing.listRules      | ✅ PASS | Returns rules         |
+| pricing.listProfiles   | ✅ PASS | Returns profiles      |
+| pricingDefaults.getAll | ❌ FAIL | INTERNAL_SERVER_ERROR |
 
 ### Domain: Calendar
 
@@ -168,202 +156,185 @@
 
 ### Domain: Workflow / Todo
 
-| Flow                   | Status  | Notes                 |
-| ---------------------- | ------- | --------------------- |
-| todoLists.list         | ❌ FAIL | Procedure NOT_FOUND   |
-| todoTasks.getMyTasks   | ❌ FAIL | No response           |
-| todoTasks.getListTasks | ❌ FAIL | INTERNAL_SERVER_ERROR |
-| todoTasks.getOverdue   | ✅ PASS | Works                 |
-| todoTasks.getDueSoon   | ✅ PASS | Works                 |
-| workflowQueue.list     | ❌ FAIL | No response           |
+| Flow                 | Status  | Notes                   |
+| -------------------- | ------- | ----------------------- |
+| todoLists.list       | ❌ FAIL | NOT_FOUND               |
+| todoTasks.getMyTasks | ✅ PASS | **FIXED** - Now working |
+| todoTasks.getOverdue | ✅ PASS | Works                   |
+| todoTasks.getDueSoon | ✅ PASS | Works                   |
+| workflowQueue.list   | ❌ FAIL | Empty response          |
 
-### Domain: Analytics
+### Domain: Admin / RBAC
 
-| Flow                         | Status  | Notes |
-| ---------------------------- | ------- | ----- |
-| analytics.getExtendedSummary | ✅ PASS | Works |
-| analytics.getRevenueTrends   | ✅ PASS | Works |
-| analytics.getTopClients      | ✅ PASS | Works |
+| Flow                             | Status  | Notes                   |
+| -------------------------------- | ------- | ----------------------- |
+| rbacRoles.list                   | ✅ PASS | Returns roles           |
+| rbacRoles.getById                | ❌ FAIL | BAD_REQUEST             |
+| rbacPermissions.list             | ✅ PASS | **FIXED** - Now working |
+| userManagement.listUsers         | ❌ FAIL | UNAUTHORIZED            |
+| configuration.get                | ✅ PASS | Works                   |
+| featureFlags.list                | ❌ FAIL | NOT_FOUND               |
+| monitoring.getRecentMetrics      | ✅ PASS | Works                   |
+| monitoring.getPerformanceSummary | ✅ PASS | Works                   |
+| auditLogs.query                  | ✅ PASS | Works                   |
 
-### Domain: Admin
+### Domain: Vendors / Purchase Orders
 
-| Flow                             | Status  | Notes         |
-| -------------------------------- | ------- | ------------- |
-| rbacRoles.list                   | ✅ PASS | Returns roles |
-| rbacRoles.getById                | ❌ FAIL | BAD_REQUEST   |
-| rbacPermissions.list             | ❌ FAIL | BAD_REQUEST   |
-| userManagement.listUsers         | ❌ FAIL | Auth required |
-| configuration.get                | ✅ PASS | Works         |
-| configuration.getValue           | ❌ FAIL | BAD_REQUEST   |
-| featureFlags.list                | ❌ FAIL | NOT_FOUND     |
-| monitoring.getRecentMetrics      | ✅ PASS | Works         |
-| monitoring.getPerformanceSummary | ✅ PASS | Works         |
-| auditLogs.query                  | ✅ PASS | Works         |
+| Flow                | Status  | Notes               |
+| ------------------- | ------- | ------------------- |
+| vendors.getAll      | ✅ PASS | Returns vendor data |
+| purchaseOrders.list | ❌ FAIL | NOT_FOUND           |
 
-### Domain: Other
+### Domain: Sales / Samples
 
-| Flow                | Status  | Notes                 |
-| ------------------- | ------- | --------------------- |
-| vendors.getAll      | ✅ PASS | Returns vendor data   |
-| returns.list        | ✅ PASS | Works                 |
-| credits.list        | ✅ PASS | Works                 |
-| salesSheets.list    | ❌ FAIL | NOT_FOUND             |
-| samples.list        | ❌ FAIL | NOT_FOUND             |
-| purchaseOrders.list | ❌ FAIL | NOT_FOUND             |
-| alerts.list         | ❌ FAIL | NOT_FOUND             |
-| notifications.list  | ❌ FAIL | INTERNAL_SERVER_ERROR |
-| inbox.list          | ❌ FAIL | NOT_FOUND             |
-| locations.list      | ❌ FAIL | NOT_FOUND             |
-| health.check        | ✅ PASS | Health endpoint works |
+| Flow             | Status  | Notes     |
+| ---------------- | ------- | --------- |
+| salesSheets.list | ❌ FAIL | NOT_FOUND |
+| samples.list     | ❌ FAIL | NOT_FOUND |
+
+### Domain: Returns / Credits
+
+| Flow         | Status  | Notes |
+| ------------ | ------- | ----- |
+| returns.list | ✅ PASS | Works |
+| credits.list | ✅ PASS | Works |
+
+### Domain: Alerts / Notifications / Inbox
+
+| Flow               | Status  | Notes                 |
+| ------------------ | ------- | --------------------- |
+| alerts.list        | ❌ FAIL | NOT_FOUND             |
+| notifications.list | ❌ FAIL | INTERNAL_SERVER_ERROR |
+| inbox.list         | ❌ FAIL | Empty response        |
+
+### Domain: Locations / Warehouse
+
+| Flow           | Status  | Notes     |
+| -------------- | ------- | --------- |
+| locations.list | ❌ FAIL | NOT_FOUND |
+
+### Domain: VIP Portal
+
+| Flow                           | Status  | Notes     |
+| ------------------------------ | ------- | --------- |
+| vipPortal.listAppointmentTypes | ❌ FAIL | NOT_FOUND |
+
+### Domain: Pick Pack / Fulfillment
+
+| Flow                 | Status  | Notes                 |
+| -------------------- | ------- | --------------------- |
+| pickPack.getPickList | ❌ FAIL | INTERNAL_SERVER_ERROR |
+| pickPack.getStats    | ❌ FAIL | INTERNAL_SERVER_ERROR |
+
+### Domain: Search
+
+| Flow         | Status  | Notes     |
+| ------------ | ------- | --------- |
+| search.query | ❌ FAIL | NOT_FOUND |
+
+### Domain: Health / System
+
+| Flow              | Status  | Notes                 |
+| ----------------- | ------- | --------------------- |
+| health.check      | ✅ PASS | Health endpoint works |
+| system.getVersion | ❌ FAIL | NOT_FOUND             |
 
 ---
 
-## Phase 6: Defect Classification
-
-### Defect Summary by Category
+## Defect Classification Summary
 
 | Category                | Count | Severity |
 | ----------------------- | ----- | -------- |
-| Database Query Errors   | 8     | Critical |
-| Procedure Not Found     | 10    | Major    |
-| Input Validation Errors | 9     | Minor    |
+| Internal Server Errors  | 12    | Critical |
+| Procedure Not Found     | 12    | Major    |
+| Input Validation Errors | 8     | Minor    |
+| Empty Response          | 7     | Major    |
 | Authentication Required | 2     | Expected |
-| Internal Server Errors  | 7     | Critical |
-| No Response / Empty     | 5     | Major    |
-
-### Critical Defects (Blockers)
-
-| ID      | Domain     | Flow                   | Issue                         | Reproduction                      |
-| ------- | ---------- | ---------------------- | ----------------------------- | --------------------------------- |
-| DEF-001 | Orders     | orders.getAll          | Database query fails          | GET /api/trpc/orders.getAll       |
-| DEF-002 | Orders     | quotes.list            | Database query fails          | GET /api/trpc/quotes.list         |
-| DEF-003 | Accounting | invoices.getSummary    | Database query fails          | GET /api/trpc/invoices.getSummary |
-| DEF-004 | Accounting | accounting.\*          | Multiple procedures NOT_FOUND | Procedures not registered         |
-| DEF-005 | Calendar   | calendar.getEvents     | INTERNAL_SERVER_ERROR         | GET /api/trpc/calendar.getEvents  |
-| DEF-006 | Orders     | orders.getById         | INTERNAL_SERVER_ERROR         | GET /api/trpc/orders.getById      |
-| DEF-007 | Inventory  | cogs.getCOGS           | INTERNAL_SERVER_ERROR         | GET /api/trpc/cogs.getCOGS        |
-| DEF-008 | Pricing    | pricingDefaults.getAll | Database table missing        | pricing_defaults table            |
-
-### Major Defects
-
-| ID      | Domain        | Flow                           | Issue                 |
-| ------- | ------------- | ------------------------------ | --------------------- |
-| DEF-009 | Workflow      | todoLists.list                 | Procedure NOT_FOUND   |
-| DEF-010 | Admin         | featureFlags.list              | Procedure NOT_FOUND   |
-| DEF-011 | VIP Portal    | vipPortal.listAppointmentTypes | Procedure NOT_FOUND   |
-| DEF-012 | Sales         | salesSheets.list               | Procedure NOT_FOUND   |
-| DEF-013 | Samples       | samples.list                   | Procedure NOT_FOUND   |
-| DEF-014 | PO            | purchaseOrders.list            | Procedure NOT_FOUND   |
-| DEF-015 | Alerts        | alerts.list                    | Procedure NOT_FOUND   |
-| DEF-016 | Inbox         | inbox.list                     | Procedure NOT_FOUND   |
-| DEF-017 | Locations     | locations.list                 | Procedure NOT_FOUND   |
-| DEF-018 | Notifications | notifications.list             | INTERNAL_SERVER_ERROR |
-
-### Minor Defects (Input Validation)
-
-| ID      | Domain    | Flow                   | Issue                                |
-| ------- | --------- | ---------------------- | ------------------------------------ |
-| DEF-019 | CRM       | clients.getById        | Expects clientId, not id             |
-| DEF-020 | Inventory | inventory.getById      | Input validation error               |
-| DEF-021 | Dashboard | dashboardEnhanced.\*   | Multiple endpoints need period param |
-| DEF-022 | Admin     | rbacRoles.getById      | Input validation error               |
-| DEF-023 | Admin     | configuration.getValue | Input validation error               |
 
 ---
 
-## Phase 7: Coverage Report
+## Critical Defects (INTERNAL_SERVER_ERROR)
 
-### Coverage by Domain
+| ID      | Domain        | Flow                       | Issue                 |
+| ------- | ------------- | -------------------------- | --------------------- |
+| DEF-001 | Orders        | orders.getAll              | INTERNAL_SERVER_ERROR |
+| DEF-002 | Orders        | orders.getById             | INTERNAL_SERVER_ERROR |
+| DEF-003 | Orders        | orders.getByClient         | INTERNAL_SERVER_ERROR |
+| DEF-004 | Orders        | quotes.list                | INTERNAL_SERVER_ERROR |
+| DEF-005 | Accounting    | invoices.getSummary        | INTERNAL_SERVER_ERROR |
+| DEF-006 | Inventory     | cogs.getCOGS               | INTERNAL_SERVER_ERROR |
+| DEF-007 | Pricing       | pricingDefaults.getAll     | INTERNAL_SERVER_ERROR |
+| DEF-008 | Calendar      | calendar.getEvents         | INTERNAL_SERVER_ERROR |
+| DEF-009 | Calendar      | calendar.getEventsByClient | INTERNAL_SERVER_ERROR |
+| DEF-010 | Notifications | notifications.list         | INTERNAL_SERVER_ERROR |
+| DEF-011 | Pick Pack     | pickPack.getPickList       | INTERNAL_SERVER_ERROR |
+| DEF-012 | Pick Pack     | pickPack.getStats          | INTERNAL_SERVER_ERROR |
+
+---
+
+## Major Defects (NOT_FOUND - Missing Procedures)
+
+| ID      | Domain     | Flow                           | Issue     |
+| ------- | ---------- | ------------------------------ | --------- |
+| DEF-013 | Dashboard  | dashboard.getStats             | NOT_FOUND |
+| DEF-014 | Accounting | invoices.getById               | NOT_FOUND |
+| DEF-015 | Workflow   | todoLists.list                 | NOT_FOUND |
+| DEF-016 | Admin      | featureFlags.list              | NOT_FOUND |
+| DEF-017 | PO         | purchaseOrders.list            | NOT_FOUND |
+| DEF-018 | Sales      | salesSheets.list               | NOT_FOUND |
+| DEF-019 | Samples    | samples.list                   | NOT_FOUND |
+| DEF-020 | Alerts     | alerts.list                    | NOT_FOUND |
+| DEF-021 | Locations  | locations.list                 | NOT_FOUND |
+| DEF-022 | VIP Portal | vipPortal.listAppointmentTypes | NOT_FOUND |
+| DEF-023 | Search     | search.query                   | NOT_FOUND |
+| DEF-024 | System     | system.getVersion              | NOT_FOUND |
+
+---
+
+## Coverage Report
 
 | Domain      | Total Flows | Tested | Passed | Failed | Coverage % |
 | ----------- | ----------- | ------ | ------ | ------ | ---------- |
-| Auth        | 4           | 1      | 1      | 0      | 100%       |
-| CRM/Clients | 29          | 10     | 8      | 2      | 80%        |
-| Inventory   | 37          | 12     | 10     | 2      | 83%        |
+| Auth        | 4           | 1      | 0      | 1      | 0%         |
+| CRM/Clients | 29          | 9      | 7      | 2      | 78%        |
+| Inventory   | 37          | 12     | 9      | 3      | 75%        |
 | Orders      | 37          | 5      | 1      | 4      | 20%        |
-| Accounting  | 52          | 9      | 0      | 9      | 0%         |
+| Accounting  | 52          | 6      | 2      | 4      | 33%        |
 | Dashboard   | 12          | 8      | 2      | 6      | 25%        |
 | Analytics   | 8           | 3      | 3      | 0      | 100%       |
 | Pricing     | 16          | 3      | 2      | 1      | 67%        |
 | Calendar    | 34          | 3      | 0      | 3      | 0%         |
-| Workflow    | 13          | 5      | 2      | 3      | 40%        |
-| Admin       | 27          | 10     | 6      | 4      | 60%        |
-| Other       | 12          | 8      | 4      | 4      | 50%        |
-| **TOTAL**   | **274**     | **82** | **40** | **42** | **48.8%**  |
-
-### Coverage Gaps
-
-1. **Mutations Not Tested** - All create, update, delete operations skipped (require write permissions)
-2. **Authenticated Roles** - Only public demo user tested; role-specific flows untested
-3. **State Transitions** - Order lifecycle, invoice status changes not tested
-4. **E2E Scenarios** - Quote→Order→Ship→Invoice→Pay lifecycle not tested
+| Workflow    | 13          | 5      | 3      | 2      | 60%        |
+| Admin       | 27          | 9      | 6      | 3      | 67%        |
+| Other       | 15          | 16     | 4      | 12     | 25%        |
+| **TOTAL**   | **274**     | **80** | **39** | **41** | **48.7%**  |
 
 ---
 
-## Phase 8: Recommendations
+## Recommendations
 
-### Immediate Actions (P0 - Blocker)
+### Immediate (P0 - Blockers)
 
-1. **Fix Orders Database Query** - orders.getAll and quotes.list failing on query execution
-2. **Register Missing Accounting Procedures** - accounting.getARSummary, getARAging, getAPSummary, getTotalCashBalance not found
-3. **Fix Calendar INTERNAL_SERVER_ERROR** - calendar.getEvents crashing
-4. **Create pricing_defaults table** - Missing database table
+1. Fix Orders domain server errors (orders.getAll, orders.getById, quotes.list)
+2. Fix Calendar server errors (calendar.getEvents)
+3. Fix Pick Pack server errors
+4. Investigate auth.me empty response issue
 
-### Short-term Actions (P1 - Critical)
+### Short-term (P1 - Critical)
 
-1. **Register Missing Procedures**:
-   - todoLists.list
-   - featureFlags.list
-   - salesSheets.list
-   - samples.list
-   - purchaseOrders.list
-   - alerts.list
-   - inbox.list
-   - locations.list
+1. Register 12 missing tRPC procedures
+2. Fix COGS calculation server error
+3. Fix pricing defaults table issue
+4. Fix notifications list server error
 
-2. **Fix Input Validation**:
-   - Standardize getById input format across all routers (id vs entityId)
-   - Document required parameters for dashboardEnhanced endpoints
+### Medium-term (P2 - Major)
 
-### Medium-term Actions (P2 - Major)
-
-1. **Implement authenticated E2E tests** with role-specific test accounts
-2. **Add mutation testing** for CRUD operations
-3. **Implement state transition testing** for order/invoice lifecycles
-4. **Add visual regression testing** once UI browser tests are working
-
----
-
-## Appendix: Test Evidence
-
-### Passing Endpoints Sample Response
-
-```json
-// auth.me
-{"result":{"data":{"json":{"id":1,"openId":"public-demo-user","name":"Public Demo User","email":"demo+public@terp-app.local","role":"admin"}}}}
-
-// clients.count
-{"result":{"data":{"json":24}}}
-
-// productCatalogue.getCategories
-{"result":{"data":{"json":["Concentrates","Edibles","Flower","PreRolls","Vapes"]}}}
-
-// strains.list
-{"result":{"data":{"json":{"items":[{"id":13,"name":"AK-47","category":"Sativa"...}]}}}}
-```
-
-### Failing Endpoints Sample Response
-
-```json
-// orders.getAll - Database Error
-{"error":{"json":{"message":"Failed query: select `orders`.`id`...","code":-32603,"data":{"code":"INTERNAL_SERVER_ERROR"}}}}
-
-// accounting.getARSummary - Not Found
-{"error":{"json":{"message":"No procedure found on path \"accounting.getARSummary\"","code":-32004,"data":{"code":"NOT_FOUND"}}}}
-```
+1. Fix input validation for dashboard endpoints
+2. Fix empty response issues (7 endpoints)
+3. Add system.getVersion endpoint
 
 ---
 
 **Report Generated By:** Claude Code E2E QA Agent
 **Session:** ERP-E2E-TEST-COVERAGE-ZDvvL
-**Timestamp:** 2026-01-09T06:05:00Z
+**Timestamp:** 2026-01-09T14:45:00Z

@@ -1,39 +1,42 @@
-ID,Domain,Entity,Flow Name,Role,Variant/State,URL,Expected Result,Actual Result,Severity,Category,Status
-DEF-001,Orders,Order,orders.getAll,All,List View,/api/trpc/orders.getAll,Return list of orders,Database query failure,Blocker,Data Integrity,Open
-DEF-002,Orders,Quote,quotes.list,All,List View,/api/trpc/quotes.list,Return list of quotes,Database query failure,Blocker,Data Integrity,Open
-DEF-003,Accounting,Invoice,invoices.getSummary,All,Summary View,/api/trpc/invoices.getSummary,Return invoice summary,Database query failure,Blocker,Data Integrity,Open
-DEF-004,Accounting,AR,accounting.getARSummary,All,Dashboard,/api/trpc/accounting.getARSummary,Return AR summary,Procedure NOT_FOUND,Critical,Not Implemented,Open
-DEF-005,Accounting,AR,accounting.getARAging,All,Dashboard,/api/trpc/accounting.getARAging,Return AR aging,Procedure NOT_FOUND,Critical,Not Implemented,Open
-DEF-006,Accounting,AP,accounting.getAPSummary,All,Dashboard,/api/trpc/accounting.getAPSummary,Return AP summary,Procedure NOT_FOUND,Critical,Not Implemented,Open
-DEF-007,Accounting,Cash,accounting.getTotalCashBalance,All,Dashboard,/api/trpc/accounting.getTotalCashBalance,Return cash balance,Procedure NOT_FOUND,Critical,Not Implemented,Open
-DEF-008,Calendar,Event,calendar.getEvents,All,List View,/api/trpc/calendar.getEvents,Return events,INTERNAL_SERVER_ERROR,Blocker,Functional,Open
-DEF-009,Calendar,Event,calendar.getEventsByClient,All,Client View,/api/trpc/calendar.getEventsByClient,Return client events,INTERNAL_SERVER_ERROR,Critical,Functional,Open
-DEF-010,Orders,Order,orders.getById,All,Detail View,/api/trpc/orders.getById,Return order details,INTERNAL_SERVER_ERROR,Blocker,Functional,Open
-DEF-011,Orders,Order,orders.getByClient,All,Client Orders,/api/trpc/orders.getByClient,Return client orders,INTERNAL_SERVER_ERROR,Critical,Functional,Open
-DEF-012,Inventory,COGS,cogs.getCOGS,All,Cost View,/api/trpc/cogs.getCOGS,Return COGS data,INTERNAL_SERVER_ERROR,Critical,Functional,Open
-DEF-013,Pricing,Defaults,pricingDefaults.getAll,All,Settings,/api/trpc/pricingDefaults.getAll,Return pricing defaults,Database table missing,Blocker,Data Integrity,Open
-DEF-014,Workflow,TodoList,todoLists.list,All,List View,/api/trpc/todoLists.list,Return todo lists,Procedure NOT_FOUND,Major,Not Implemented,Open
-DEF-015,Admin,FeatureFlags,featureFlags.list,Admin,Settings,/api/trpc/featureFlags.list,Return feature flags,Procedure NOT_FOUND,Major,Not Implemented,Open
-DEF-016,VIP Portal,Appointments,vipPortal.listAppointmentTypes,All,VIP Portal,/api/trpc/vipPortal.listAppointmentTypes,Return appointment types,Procedure NOT_FOUND,Major,Not Implemented,Open
-DEF-017,Sales,SalesSheet,salesSheets.list,All,List View,/api/trpc/salesSheets.list,Return sales sheets,Procedure NOT_FOUND,Major,Not Implemented,Open
-DEF-018,Samples,Sample,samples.list,All,List View,/api/trpc/samples.list,Return samples,Procedure NOT_FOUND,Major,Not Implemented,Open
-DEF-019,Procurement,PurchaseOrder,purchaseOrders.list,All,List View,/api/trpc/purchaseOrders.list,Return POs,Procedure NOT_FOUND,Major,Not Implemented,Open
-DEF-020,Alerts,Alert,alerts.list,All,List View,/api/trpc/alerts.list,Return alerts,Procedure NOT_FOUND,Major,Not Implemented,Open
-DEF-021,Inbox,Message,inbox.list,All,Inbox View,/api/trpc/inbox.list,Return inbox items,Procedure NOT_FOUND,Major,Not Implemented,Open
-DEF-022,Locations,Location,locations.list,All,Settings,/api/trpc/locations.list,Return locations,Procedure NOT_FOUND,Major,Not Implemented,Open
-DEF-023,Notifications,Notification,notifications.list,All,List View,/api/trpc/notifications.list,Return notifications,INTERNAL_SERVER_ERROR,Critical,Functional,Open
-DEF-024,CRM,Client,clients.getById,All,Detail View,/api/trpc/clients.getById,Return client details,BAD_REQUEST - wrong param name,Minor,Business Rule,Open
-DEF-025,Inventory,Batch,inventory.getById,All,Detail View,/api/trpc/inventory.getById,Return batch details,BAD_REQUEST - input validation,Minor,Business Rule,Open
-DEF-026,Dashboard,Stats,dashboard.getStats,All,Dashboard,/api/trpc/dashboard.getStats,Return dashboard stats,No response,Critical,Functional,Open
-DEF-027,Dashboard,Enhanced,dashboardEnhanced.getDashboardData,All,Dashboard,/api/trpc/dashboardEnhanced.getDashboardData,Return enhanced data,BAD_REQUEST - needs period,Minor,Business Rule,Open
-DEF-028,Dashboard,Enhanced,dashboardEnhanced.getSalesPerformance,All,Dashboard,/api/trpc/dashboardEnhanced.getSalesPerformance,Return sales performance,BAD_REQUEST - needs period,Minor,Business Rule,Open
-DEF-029,Dashboard,Enhanced,dashboardEnhanced.getTopProducts,All,Dashboard,/api/trpc/dashboardEnhanced.getTopProducts,Return top products,BAD_REQUEST - needs limit,Minor,Business Rule,Open
-DEF-030,Dashboard,Enhanced,dashboardEnhanced.getTopClients,All,Dashboard,/api/trpc/dashboardEnhanced.getTopClients,Return top clients,BAD_REQUEST - needs limit,Minor,Business Rule,Open
-DEF-031,Dashboard,Enhanced,dashboardEnhanced.getProfitabilityMetrics,All,Dashboard,/api/trpc/dashboardEnhanced.getProfitabilityMetrics,Return profitability,BAD_REQUEST - needs period,Minor,Business Rule,Open
-DEF-032,Admin,RBAC,rbacRoles.getById,Admin,Role Detail,/api/trpc/rbacRoles.getById,Return role details,BAD_REQUEST - input validation,Minor,Business Rule,Open
-DEF-033,Admin,RBAC,rbacPermissions.list,Admin,Permissions,/api/trpc/rbacPermissions.list,Return permissions,BAD_REQUEST - input validation,Minor,Business Rule,Open
-DEF-034,Admin,Users,userManagement.listUsers,Admin,User List,/api/trpc/userManagement.listUsers,Return users,Authentication required,Expected,Permission/Access,Expected
-DEF-035,Calendar,Invitations,calendarInvitations.getPendingInvitations,All,Invitations,/api/trpc/calendarInvitations.getPendingInvitations,Return invitations,UNAUTHORIZED,Expected,Permission/Access,Expected
-DEF-036,Workflow,Tasks,todoTasks.getMyTasks,All,Task List,/api/trpc/todoTasks.getMyTasks,Return my tasks,No response,Major,Functional,Open
-DEF-037,Workflow,Queue,workflowQueue.list,All,Queue View,/api/trpc/workflowQueue.list,Return queue items,No response,Major,Functional,Open
-DEF-038,Search,Query,search.query,All,Search,/api/trpc/search.query,Return search results,No response,Major,Functional,Open
+ID,Domain,Entity,Flow Name,Role,Variant/State,URL,Expected Result,Actual Result,Severity,Category,Status,Run Date
+DEF-001,Orders,Order,orders.getAll,All,List View,/api/trpc/orders.getAll,Return list of orders,INTERNAL_SERVER_ERROR,Blocker,Functional,Open,2026-01-09
+DEF-002,Orders,Order,orders.getById,All,Detail View,/api/trpc/orders.getById,Return order details,INTERNAL_SERVER_ERROR,Blocker,Functional,Open,2026-01-09
+DEF-003,Orders,Order,orders.getByClient,All,Client Orders,/api/trpc/orders.getByClient,Return client orders,INTERNAL_SERVER_ERROR,Critical,Functional,Open,2026-01-09
+DEF-004,Orders,Quote,quotes.list,All,List View,/api/trpc/quotes.list,Return list of quotes,INTERNAL_SERVER_ERROR,Blocker,Functional,Open,2026-01-09
+DEF-005,Accounting,Invoice,invoices.getSummary,All,Summary View,/api/trpc/invoices.getSummary,Return invoice summary,INTERNAL_SERVER_ERROR,Critical,Functional,Open,2026-01-09
+DEF-006,Inventory,COGS,cogs.getCOGS,All,Cost View,/api/trpc/cogs.getCOGS,Return COGS data,INTERNAL_SERVER_ERROR,Critical,Functional,Open,2026-01-09
+DEF-007,Pricing,Defaults,pricingDefaults.getAll,All,Settings,/api/trpc/pricingDefaults.getAll,Return pricing defaults,INTERNAL_SERVER_ERROR,Critical,Functional,Open,2026-01-09
+DEF-008,Calendar,Event,calendar.getEvents,All,List View,/api/trpc/calendar.getEvents,Return events,INTERNAL_SERVER_ERROR,Blocker,Functional,Open,2026-01-09
+DEF-009,Calendar,Event,calendar.getEventsByClient,All,Client View,/api/trpc/calendar.getEventsByClient,Return client events,INTERNAL_SERVER_ERROR,Critical,Functional,Open,2026-01-09
+DEF-010,Notifications,Notification,notifications.list,All,List View,/api/trpc/notifications.list,Return notifications,INTERNAL_SERVER_ERROR,Critical,Functional,Open,2026-01-09
+DEF-011,Pick Pack,PickList,pickPack.getPickList,All,List View,/api/trpc/pickPack.getPickList,Return pick list,INTERNAL_SERVER_ERROR,Critical,Functional,Open,2026-01-09
+DEF-012,Pick Pack,Stats,pickPack.getStats,All,Stats View,/api/trpc/pickPack.getStats,Return pick pack stats,INTERNAL_SERVER_ERROR,Critical,Functional,Open,2026-01-09
+DEF-013,Dashboard,Stats,dashboard.getStats,All,Dashboard,/api/trpc/dashboard.getStats,Return dashboard stats,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-014,Accounting,Invoice,invoices.getById,All,Detail View,/api/trpc/invoices.getById,Return invoice details,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-015,Workflow,TodoList,todoLists.list,All,List View,/api/trpc/todoLists.list,Return todo lists,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-016,Admin,FeatureFlags,featureFlags.list,Admin,Settings,/api/trpc/featureFlags.list,Return feature flags,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-017,Procurement,PurchaseOrder,purchaseOrders.list,All,List View,/api/trpc/purchaseOrders.list,Return POs,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-018,Sales,SalesSheet,salesSheets.list,All,List View,/api/trpc/salesSheets.list,Return sales sheets,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-019,Samples,Sample,samples.list,All,List View,/api/trpc/samples.list,Return samples,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-020,Alerts,Alert,alerts.list,All,List View,/api/trpc/alerts.list,Return alerts,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-021,Locations,Location,locations.list,All,Settings,/api/trpc/locations.list,Return locations,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-022,VIP Portal,Appointments,vipPortal.listAppointmentTypes,All,VIP Portal,/api/trpc/vipPortal.listAppointmentTypes,Return appointment types,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-023,Search,Query,search.query,All,Search,/api/trpc/search.query,Return search results,NOT_FOUND,Major,Not Implemented,Open,2026-01-09
+DEF-024,System,Version,system.getVersion,All,System,/api/trpc/system.getVersion,Return system version,NOT_FOUND,Minor,Not Implemented,Open,2026-01-09
+DEF-025,Dashboard,Enhanced,dashboardEnhanced.getDashboardData,All,Dashboard,/api/trpc/dashboardEnhanced.getDashboardData,Return dashboard data,BAD_REQUEST,Minor,Input Validation,Open,2026-01-09
+DEF-026,Dashboard,Enhanced,dashboardEnhanced.getSalesPerformance,All,Dashboard,/api/trpc/dashboardEnhanced.getSalesPerformance,Return sales performance,BAD_REQUEST,Minor,Input Validation,Open,2026-01-09
+DEF-027,Dashboard,Enhanced,dashboardEnhanced.getTopProducts,All,Dashboard,/api/trpc/dashboardEnhanced.getTopProducts,Return top products,BAD_REQUEST,Minor,Input Validation,Open,2026-01-09
+DEF-028,Dashboard,Enhanced,dashboardEnhanced.getTopClients,All,Dashboard,/api/trpc/dashboardEnhanced.getTopClients,Return top clients,BAD_REQUEST,Minor,Input Validation,Open,2026-01-09
+DEF-029,Dashboard,Enhanced,dashboardEnhanced.getProfitabilityMetrics,All,Dashboard,/api/trpc/dashboardEnhanced.getProfitabilityMetrics,Return profitability,BAD_REQUEST,Minor,Input Validation,Open,2026-01-09
+DEF-030,Accounting,FiscalPeriods,accounting.fiscalPeriods.list,All,Accounting,/api/trpc/accounting.fiscalPeriods.list,Return fiscal periods,BAD_REQUEST,Minor,Input Validation,Open,2026-01-09
+DEF-031,Admin,RBAC,rbacRoles.getById,Admin,Role Detail,/api/trpc/rbacRoles.getById,Return role details,BAD_REQUEST,Minor,Input Validation,Open,2026-01-09
+DEF-032,Auth,Session,auth.me,All,Auth,/api/trpc/auth.me,Return current user,Empty Response,Major,Functional,Open,2026-01-09
+DEF-033,CRM,Client,clients.count,All,Count,/api/trpc/clients.count,Return client count,Empty Response,Major,Functional,Open,2026-01-09
+DEF-034,CRM,Tags,clients.tags.getAll,All,Tags,/api/trpc/clients.tags.getAll,Return all tags,Empty Response,Major,Functional,Open,2026-01-09
+DEF-035,Inventory,Batch,inventory.getById,All,Detail View,/api/trpc/inventory.getById,Return batch details,Empty Response,Major,Functional,Open,2026-01-09
+DEF-036,Inventory,Strain,strains.search,All,Search,/api/trpc/strains.search,Return search results,Empty Response,Major,Functional,Open,2026-01-09
+DEF-037,Accounting,Payment,payments.list,All,List View,/api/trpc/payments.list,Return payments,Empty Response,Major,Functional,Open,2026-01-09
+DEF-038,Workflow,Queue,workflowQueue.list,All,Queue View,/api/trpc/workflowQueue.list,Return queue items,Empty Response,Major,Functional,Open,2026-01-09
+DEF-039,Inbox,Message,inbox.list,All,Inbox View,/api/trpc/inbox.list,Return inbox items,Empty Response,Major,Functional,Open,2026-01-09
+DEF-040,Admin,Users,userManagement.listUsers,Admin,User List,/api/trpc/userManagement.listUsers,Return users,UNAUTHORIZED,Expected,Permission/Access,Expected,2026-01-09
+DEF-041,Calendar,Invitations,calendarInvitations.getPendingInvitations,All,Invitations,/api/trpc/calendarInvitations.getPendingInvitations,Return invitations,UNAUTHORIZED,Expected,Permission/Access,Expected,2026-01-09
