@@ -738,7 +738,7 @@ describe("Schema Validation Property Tests", () => {
     }
 
     function prioritizeIssues(issues: Issue[]): Issue[] {
-      const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+      const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
       return [...issues].sort((a, b) => {
         // Critical tables first
@@ -747,9 +747,10 @@ describe("Schema Validation Property Tests", () => {
         if (aIsCritical && !bIsCritical) return -1;
         if (!aIsCritical && bIsCritical) return 1;
 
-        // Then by severity
-        return (severityOrder[a.severity as keyof typeof severityOrder] || 3) -
-               (severityOrder[b.severity as keyof typeof severityOrder] || 3);
+        // Then by severity (use ?? instead of || to handle 0 correctly)
+        const aSeverity = severityOrder[a.severity] ?? 3;
+        const bSeverity = severityOrder[b.severity] ?? 3;
+        return aSeverity - bSeverity;
       });
     }
 

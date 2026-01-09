@@ -32,7 +32,7 @@ async function validateSchemaSync() {
   // Check for known issues
   console.log("🔍 Checking known issues...\n");
 
-  // Issue 1: inventoryMovements.reason
+  // Issue 1: inventoryMovements.notes (renamed from reason per migration 0030)
   const invMovColumns = await db.execute(sql`
     SELECT COLUMN_NAME
     FROM information_schema.COLUMNS
@@ -42,10 +42,17 @@ async function validateSchemaSync() {
     invMovColumns[0] as Array<{ COLUMN_NAME: string }>
   ).map(c => c.COLUMN_NAME);
 
-  if (!invMovColumnNames.includes("reason")) {
-    issues.push("❌ inventoryMovements missing reason column");
+  if (!invMovColumnNames.includes("notes")) {
+    issues.push("❌ inventoryMovements missing notes column (renamed from reason per migration 0030)");
   } else {
-    console.log("✅ inventoryMovements.reason exists");
+    console.log("✅ inventoryMovements.notes exists");
+  }
+
+  // Also check for adjustmentReason column (added per migration 0030)
+  if (!invMovColumnNames.includes("adjustmentReason")) {
+    issues.push("❌ inventoryMovements missing adjustmentReason column (added per migration 0030)");
+  } else {
+    console.log("✅ inventoryMovements.adjustmentReason exists");
   }
 
   // Check for inventoryMovementType column

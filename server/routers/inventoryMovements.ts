@@ -88,16 +88,22 @@ export const inventoryMovementsRouter = router({
       newQuantity: z.string(),
       reason: z.string(),
       notes: z.string().optional(),
+      // Optional structured adjustment reason (DATA-010: maps to adjustmentReason enum column)
+      adjustmentReason: z.enum([
+        "DAMAGED", "EXPIRED", "LOST", "THEFT",
+        "COUNT_DISCREPANCY", "QUALITY_ISSUE", "REWEIGH", "OTHER"
+      ]).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.user) throw new Error("Unauthorized");
-      
+
       return await inventoryMovementsDb.adjustInventory(
         input.batchId,
         input.newQuantity,
         input.reason,
         ctx.user.id,
-        input.notes
+        input.notes,
+        input.adjustmentReason
       );
     }),
 
