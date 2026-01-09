@@ -377,8 +377,9 @@ export const vipPortalRouter = router({
         }
 
         // Generate session token
+        // SEC-011: Reduced session duration from 30 days to 7 days for security
         const sessionToken = crypto.randomUUID();
-        const sessionExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+        const sessionExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
         // Update auth record
         await db.update(vipPortalAuth)
