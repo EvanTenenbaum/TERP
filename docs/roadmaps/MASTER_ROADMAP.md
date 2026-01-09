@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 4.3
-**Last Updated:** 2026-01-09 (Verification Update)
+**Version:** 4.5
+**Last Updated:** 2026-01-09 (E2E Defects + Verification Merged)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -215,6 +215,42 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | BUG-076 | Fix Search and Filter Functionality         | HIGH     | ready                     |
 | BUG-077 | Fix Notification System Not Working         | HIGH     | ready                     |
 
+#### E2E Test Coverage Defects (Jan 9, 2026)
+
+> Discovered during comprehensive E2E API testing against live environment.
+> See: `qa-results/E2E_TEST_EXECUTION_REPORT.md`, `qa-results/DEFECT_LOG.csv`
+
+| Task    | Description                                                      | Priority | Status  | Source  |
+| ------- | ---------------------------------------------------------------- | -------- | ------- | ------- |
+| BUG-078 | Orders List API Database Query Failure (orders.getAll)           | HIGH     | 🔴 OPEN | DEF-001 |
+| BUG-079 | Quotes List API Database Query Failure (quotes.list)             | HIGH     | 🔴 OPEN | DEF-002 |
+| BUG-080 | Invoice Summary API Database Query Failure (invoices.getSummary) | HIGH     | 🔴 OPEN | DEF-003 |
+| BUG-081 | Calendar Events API Internal Server Error (calendar.getEvents)   | HIGH     | 🔴 OPEN | DEF-008 |
+| BUG-082 | Order Detail API Internal Server Error (orders.getById)          | HIGH     | 🔴 OPEN | DEF-010 |
+| BUG-083 | COGS Calculation API Internal Server Error (cogs.getCOGS)        | HIGH     | 🔴 OPEN | DEF-012 |
+| BUG-084 | Pricing Defaults Table Missing (pricing_defaults)                | HIGH     | 🔴 OPEN | DEF-013 |
+| BUG-085 | Notifications List API Internal Server Error                     | HIGH     | 🔴 OPEN | DEF-023 |
+
+---
+
+### API Registration Issues (P1)
+
+> tRPC procedures returning NOT_FOUND - may be missing router registration or endpoint implementation.
+> Discovered during E2E coverage testing (Jan 9, 2026).
+
+| Task    | Description                                                                                          | Priority | Status | Source      |
+| ------- | ---------------------------------------------------------------------------------------------------- | -------- | ------ | ----------- |
+| API-001 | Register todoLists.list procedure                                                                    | MEDIUM   | ready  | DEF-014     |
+| API-002 | Register featureFlags.list procedure                                                                 | MEDIUM   | ready  | DEF-015     |
+| API-003 | Register vipPortal.listAppointmentTypes procedure                                                    | MEDIUM   | ready  | DEF-016     |
+| API-004 | Register salesSheets.list procedure                                                                  | MEDIUM   | ready  | DEF-017     |
+| API-005 | Register samples.list procedure                                                                      | MEDIUM   | ready  | DEF-018     |
+| API-006 | Register purchaseOrders.list procedure                                                               | MEDIUM   | ready  | DEF-019     |
+| API-007 | Register alerts.list procedure                                                                       | MEDIUM   | ready  | DEF-020     |
+| API-008 | Register inbox.list procedure                                                                        | MEDIUM   | ready  | DEF-021     |
+| API-009 | Register locations.list procedure                                                                    | MEDIUM   | ready  | DEF-022     |
+| API-010 | Fix accounting.\* procedures not found (getARSummary, getARAging, getAPSummary, getTotalCashBalance) | HIGH     | ready  | DEF-004-007 |
+
 ---
 
 ### Security Tasks (P0)
@@ -350,17 +386,21 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ## 📊 MVP Summary
 
-| Category       | Completed | Open    | Total    |
-| -------------- | --------- | ------- | -------- |
-| Infrastructure | 18        | 4       | 22       |
-| Security       | 4         | 8       | 12       |
-| Bug Fixes      | 8         | 16      | 24       |
-| Stability      | 7         | 4       | 11       |
-| Quality        | 8         | 4       | 12       |
-| Features       | 4         | 25+     | 29+      |
-| UX             | 0         | 9       | 9        |
-| Data & Schema  | 7         | 1       | 8        |
-| **TOTAL**      | **56+**   | **71+** | **127+** |
+| Category         | Completed | Open    | Total    |
+| ---------------- | --------- | ------- | -------- |
+| Infrastructure   | 18        | 4       | 22       |
+| Security         | 4         | 8       | 12       |
+| Bug Fixes        | 8         | 24      | 32       |
+| API Registration | 0         | 10      | 10       |
+| Stability        | 7         | 4       | 11       |
+| Quality          | 8         | 4       | 12       |
+| Features         | 4         | 25+     | 29+      |
+| UX               | 0         | 9       | 9        |
+| Data & Schema    | 7         | 1       | 8        |
+| **TOTAL**        | **56+**   | **89+** | **145+** |
+
+> **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
+> See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.
 
 ---
 
@@ -431,11 +471,11 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 
 ## 📊 Overall Roadmap Summary
 
-| Milestone | Completed | Open    | Total    | Progress |
-| --------- | --------- | ------- | -------- | -------- |
-| MVP       | 56+       | 71+     | 127+     | ~44%     |
-| Beta      | 0         | 17      | 17       | 0%       |
-| **TOTAL** | **56+**   | **88+** | **144+** | ~39%     |
+| Milestone | Completed | Open     | Total    | Progress |
+| --------- | --------- | -------- | -------- | -------- |
+| MVP       | 56+       | 89+      | 145+     | ~39%     |
+| Beta      | 0         | 17       | 17       | 0%       |
+| **TOTAL** | **56+**   | **106+** | **162+** | ~35%     |
 
 ---
 
