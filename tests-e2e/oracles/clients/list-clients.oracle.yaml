@@ -1,0 +1,36 @@
+# Oracle: CRM.Clients.ListClients
+# Verify clients list page loads with data
+
+flow_id: "CRM.Clients.ListClients"
+description: "Verify clients list page loads and displays client data"
+role: "SalesRep"
+seed_profile: "basic_sales"
+tags:
+  - tier1
+  - clients
+  - smoke
+timeout: 30000
+
+preconditions:
+  ensure:
+    - entity: "client"
+      ref: "seed:client.redwood"
+
+steps:
+  - action: navigate
+    path: "/clients"
+    wait_for: "table, [data-testid='clients-table'], .clients-list"
+
+  - action: wait
+    network_idle: true
+    timeout: 10000
+
+  - action: screenshot
+    name: "clients_list"
+
+expected_ui:
+  url_contains: "/clients"
+  visible:
+    - "table, [data-testid='clients-table'], .clients-list"
+  text_present:
+    - "Client"
