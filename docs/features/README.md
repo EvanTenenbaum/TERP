@@ -1,6 +1,6 @@
 # TERP Feature Documentation
 
-**Last Updated:** November 5, 2025
+**Last Updated:** January 9, 2026
 
 This directory contains comprehensive documentation for all TERP features, including discovered modules, user flows, and gap analysis.
 
@@ -28,7 +28,8 @@ docs/features/
     ├── notes-commenting.md
     ├── inbox-notifications.md
     ├── dashboard-system.md
-    └── scratch-pad.md
+    ├── scratch-pad.md
+    └── qa-authentication.md            # QA auth for deterministic RBAC testing
 ```
 
 ## Documentation Standards

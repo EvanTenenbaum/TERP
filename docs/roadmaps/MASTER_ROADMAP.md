@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 4.5
-**Last Updated:** 2026-01-09 (E2E Defects + Verification Merged)
+**Version:** 4.6
+**Last Updated:** 2026-01-09 (QA Auth Layer Added)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -87,6 +87,21 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 | SEC-002 | Require JWT_SECRET Environment Variable | ✅ COMPLETE | Dec 2025        |
 | SEC-003 | Remove Hardcoded Admin Credentials      | ✅ COMPLETE | Dec 2025        |
 | SEC-004 | Remove Debug Code from Production       | ✅ COMPLETE | Dec 2025        |
+
+### ✅ QA & Testing Infrastructure (COMPLETE)
+
+| Task        | Description                                        | Status      | Completion Date |
+| ----------- | -------------------------------------------------- | ----------- | --------------- |
+| AUTH-QA-001 | QA Authentication Layer for Deterministic RBAC     | ✅ COMPLETE | Jan 9, 2026     |
+
+> **AUTH-QA-001 Details:**
+> - Deterministic QA login for 7 roles (Super Admin, Sales Manager, Sales Rep, Inventory, Fulfillment, Accounting, Auditor)
+> - API endpoints: `/api/qa-auth/login`, `/api/qa-auth/roles`, `/api/qa-auth/status`
+> - Environment flag: `QA_AUTH_ENABLED=true` (auto-disabled in production)
+> - Role switcher UI on login page
+> - Audit logging for QA auth events
+> - Documentation: `docs/auth/QA_AUTH.md`, `docs/qa/QA_PLAYBOOK.md`
+> - Seed command: `pnpm seed:qa-accounts`
 
 ### ✅ Bug Fixes (COMPLETE)
 
