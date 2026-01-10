@@ -39,22 +39,29 @@ console.log(
 async function seedPricingDefaults() {
   console.log("📝 Phase 2: Seeding pricing defaults...");
 
+  // Include all product categories plus "OTHER" fallback used by order creation
   const categories = [
-    { category: "Flower", margin: 35.0 },
-    { category: "Edibles", margin: 40.0 },
-    { category: "Concentrates", margin: 45.0 },
-    { category: "Vapes", margin: 38.0 },
-    { category: "Pre-Rolls", margin: 35.0 },
-    { category: "Accessories", margin: 50.0 },
-    { category: "Topicals", margin: 42.0 },
-    { category: "Tinctures", margin: 40.0 },
+    { productCategory: "Flower", margin: 35.0 },
+    { productCategory: "Edibles", margin: 40.0 },
+    { productCategory: "Concentrates", margin: 45.0 },
+    { productCategory: "Vapes", margin: 38.0 },
+    { productCategory: "Pre-Rolls", margin: 35.0 },
+    { productCategory: "Accessories", margin: 50.0 },
+    { productCategory: "Topicals", margin: 42.0 },
+    { productCategory: "Tinctures", margin: 40.0 },
+    // CRITICAL: "OTHER" is used by orders.ts as fallback category
+    { productCategory: "OTHER", margin: 30.0 },
+    // Additional common categories
+    { productCategory: "Seeds", margin: 45.0 },
+    { productCategory: "Beverages", margin: 35.0 },
+    { productCategory: "DEFAULT", margin: 30.0 },
   ];
 
   let count = 0;
   for (const cat of categories) {
     await db.execute(sql`
-      INSERT INTO pricing_defaults (category, default_margin_percent)
-      VALUES (${cat.category}, ${cat.margin})
+      INSERT INTO pricing_defaults (product_category, default_margin_percent)
+      VALUES (${cat.productCategory}, ${cat.margin})
       ON DUPLICATE KEY UPDATE default_margin_percent = ${cat.margin}
     `);
     count++;

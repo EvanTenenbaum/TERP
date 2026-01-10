@@ -38,9 +38,19 @@ export default function AccountingDashboard() {
   const [payVendorOpen, setPayVendorOpen] = useState(false);
 
   // Fetch dashboard data
-  const { data: totalCash } = trpc.accounting.bankAccounts.getTotalCashBalance.useQuery();
-  const { data: arAging } = trpc.accounting.invoices.getARAging.useQuery();
-  const { data: apAging } = trpc.accounting.bills.getAPAging.useQuery();
+  // BUG-092 fix: Add error handling to prevent widgets stuck on "Loading..."
+  const { data: totalCash } = trpc.accounting.bankAccounts.getTotalCashBalance.useQuery(undefined, {
+    retry: 2,
+    retryDelay: 1000,
+  });
+  const { data: arAging, isLoading: arAgingLoading, error: arAgingError } = trpc.accounting.invoices.getARAging.useQuery(undefined, {
+    retry: 2,
+    retryDelay: 1000,
+  });
+  const { data: apAging, isLoading: apAgingLoading, error: apAgingError } = trpc.accounting.bills.getAPAging.useQuery(undefined, {
+    retry: 2,
+    retryDelay: 1000,
+  });
   const { data: recentInvoices } = trpc.accounting.invoices.list.useQuery({});
   const { data: recentBills } = trpc.accounting.bills.list.useQuery({});
   const { data: recentPayments } = trpc.accounting.payments.list.useQuery({});
@@ -49,8 +59,15 @@ export default function AccountingDashboard() {
   const { data: outstandingPayables } = trpc.accounting.bills.getOutstandingPayables.useQuery();
 
   // Wave 5C: New AR/AP Dashboard endpoints
-  const { data: arSummary } = trpc.accounting.arApDashboard.getARSummary.useQuery();
-  const { data: apSummary } = trpc.accounting.arApDashboard.getAPSummary.useQuery();
+  // BUG-092 fix: Add error/loading tracking
+  const { data: arSummary, isLoading: arSummaryLoading, error: arSummaryError } = trpc.accounting.arApDashboard.getARSummary.useQuery(undefined, {
+    retry: 2,
+    retryDelay: 1000,
+  });
+  const { data: apSummary, isLoading: apSummaryLoading, error: apSummaryError } = trpc.accounting.arApDashboard.getAPSummary.useQuery(undefined, {
+    retry: 2,
+    retryDelay: 1000,
+  });
   const { data: overdueInvoices } = trpc.accounting.arApDashboard.getOverdueInvoices.useQuery({ limit: 5 });
   const { data: overdueBills } = trpc.accounting.arApDashboard.getOverdueBills.useQuery({ limit: 5 });
 
@@ -100,14 +117,18 @@ export default function AccountingDashboard() {
       {/* Financial Overview */}
       <DataCardSection moduleId="accounting" />
 
-      {/* AR/AP Aging */}
+      {/* AR/AP Aging - BUG-092 fix: Proper loading/error states */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>AR Aging</CardTitle>
           </CardHeader>
           <CardContent>
-            {arAging ? (
+            {arAgingError ? (
+              <p className="text-sm text-destructive">Unable to load AR aging data</p>
+            ) : arAgingLoading ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : arAging ? (
               <div className="flex flex-wrap gap-3">
                 <AgingBadge bucket="current" amount={arAging.current} />
                 <AgingBadge bucket="30" amount={arAging.days30} />
@@ -116,7 +137,7 @@ export default function AccountingDashboard() {
                 <AgingBadge bucket="90+" amount={arAging.days90Plus} />
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Loading...</p>
+              <p className="text-sm text-muted-foreground">No AR data available</p>
             )}
           </CardContent>
         </Card>
@@ -126,7 +147,11 @@ export default function AccountingDashboard() {
             <CardTitle>AP Aging</CardTitle>
           </CardHeader>
           <CardContent>
-            {apAging ? (
+            {apAgingError ? (
+              <p className="text-sm text-destructive">Unable to load AP aging data</p>
+            ) : apAgingLoading ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : apAging ? (
               <div className="flex flex-wrap gap-3">
                 <AgingBadge bucket="current" amount={apAging.current} />
                 <AgingBadge bucket="30" amount={apAging.days30} />
@@ -135,7 +160,7 @@ export default function AccountingDashboard() {
                 <AgingBadge bucket="90+" amount={apAging.days90Plus} />
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Loading...</p>
+              <p className="text-sm text-muted-foreground">No AP data available</p>
             )}
           </CardContent>
         </Card>

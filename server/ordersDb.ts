@@ -399,33 +399,41 @@ export async function getOrderById(id: number): Promise<Order | null> {
 
 /**
  * Get orders by client
+ * @param clientId - The client ID to get orders for
+ * @param orderType - Optional filter by order type ('QUOTE' or 'SALE')
+ * @param limit - Maximum number of orders to return (default 100, max 500)
  */
 export async function getOrdersByClient(
   clientId: number,
-  orderType?: 'QUOTE' | 'SALE'
+  orderType?: 'QUOTE' | 'SALE',
+  limit: number = 100
 ): Promise<Order[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
+  // Ensure limit is within bounds to prevent unbounded queries (BUG-088 fix)
+  const safeLimit = Math.min(Math.max(limit, 1), 500);
+
   const conditions: any[] = [eq(orders.clientId, clientId)];
-  
+
   if (orderType) {
     conditions.push(eq(orders.orderType, orderType));
   }
-  
+
   const results = await db
     .select()
     .from(orders)
     .where(and(...conditions))
-    .orderBy(desc(orders.createdAt));
-  
+    .orderBy(desc(orders.createdAt))
+    .limit(safeLimit);
+
   // Parse items JSON string to array for each order
   return results.map(order => {
     let parsedItems: OrderItem[] = [];
     if (order.items) {
       try {
-        parsedItems = typeof order.items === 'string' 
-          ? JSON.parse(order.items) 
+        parsedItems = typeof order.items === 'string'
+          ? JSON.parse(order.items)
           : order.items;
       } catch (e) {
         console.error(`Failed to parse items for order ${order.id}:`, e);

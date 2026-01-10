@@ -86,8 +86,11 @@ export default function ClientProfilePage() {
   // Credit visibility settings
   const { shouldShowCreditWidgetInProfile } = useCreditVisibility();
 
+  // BUG-090 fix: Get utils for cache invalidation
+  const utils = trpc.useUtils();
+
   // Fetch client data
-  const { data: client, isLoading: clientLoading } =
+  const { data: client, isLoading: clientLoading, refetch: refetchClient } =
     trpc.clients.getById.useQuery({
       clientId,
     });
@@ -113,8 +116,14 @@ export default function ClientProfilePage() {
   });
 
   // Mutations
+  // BUG-090 fix: Add proper cache invalidation and refetch on success
   const updateClientMutation = trpc.clients.update.useMutation({
     onSuccess: () => {
+      // Invalidate all client-related caches to ensure fresh data
+      utils.clients.getById.invalidate({ clientId });
+      utils.clients.list.invalidate();
+      // Refetch the current client to show updated data
+      refetchClient();
       setEditDialogOpen(false);
     },
   });

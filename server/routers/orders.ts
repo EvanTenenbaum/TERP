@@ -345,12 +345,26 @@ export const ordersRouter = router({
             marginPercent = item.marginPercent;
             marginSource = "MANUAL";
           } else {
+            // Try to get margin using batch's product category or fallback to "OTHER"
+            const productCategory = batch.productCategory || "OTHER";
             const marginResult = await pricingService.getMarginWithFallback(
               input.clientId,
-              "OTHER"
+              productCategory
             );
-            marginPercent = marginResult.marginPercent || 0;
-            marginSource = marginResult.source;
+
+            // If no margin found after all fallbacks, use 30% as last resort
+            // This ensures orders can still be created while alerting the user
+            if (marginResult.marginPercent === null) {
+              console.warn(
+                `[orders.create] No pricing default found for category "${productCategory}". ` +
+                `Using 30% fallback margin. Please seed pricing_defaults table.`
+              );
+              marginPercent = 30; // Safe default margin
+              marginSource = "MANUAL";
+            } else {
+              marginPercent = marginResult.marginPercent;
+              marginSource = marginResult.source;
+            }
           }
 
           const unitPrice =

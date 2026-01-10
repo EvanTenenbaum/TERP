@@ -1,6 +1,23 @@
 {
   "initiatives": [
     {
+      "id": "TERP-INIT-009",
+      "title": "QA Sales Manager Role Fixes - January 2026",
+      "status": "approved",
+      "created_at": "2026-01-10T00:00:00.000000Z",
+      "priority": "critical",
+      "tags": [
+        "qa",
+        "bug-fixes",
+        "sales-manager",
+        "revenue-blocking",
+        "rbac"
+      ],
+      "description": "Fixes for 10 issues discovered during QA testing as Sales Manager/TERP Operator role",
+      "bugs_covered": ["BUG-086", "BUG-087", "BUG-088", "BUG-089", "BUG-090", "BUG-091", "BUG-092", "BLOCKED-001", "BLOCKED-002", "BLOCKED-003"],
+      "strategic_plan": "docs/roadmaps/QA_STRATEGIC_FIX_PLAN.md"
+    },
+    {
       "id": "TERP-INIT-001",
       "title": "Sample Initiative - CSV Export",
       "status": "in-progress",
@@ -91,14 +108,15 @@
       ]
     }
   ],
-  "next_id": 9,
-  "last_updated": "2025-11-04T10:35:24.621847Z",
+  "next_id": 10,
+  "last_updated": "2026-01-10T00:00:00.000000Z",
   "metadata": {
-    "total_count": 7,
+    "total_count": 8,
     "by_status": {
       "in-progress": 4,
       "complete": 1,
-      "approved": 1
+      "approved": 2,
+      "ready-to-deploy": 1
     }
   }
 }

@@ -216,7 +216,8 @@ export const ClientGrid = React.memo(function ClientGrid() {
           <div className="ag-theme-alpine h-[600px] w-full">
             {error && (
               <div className="mb-3 text-sm text-destructive">
-                {error.message}
+                {/* BUG-088 fix: Show user-friendly error instead of raw SQL/query errors */}
+                Unable to load client orders. Please try again or contact support if the issue persists.
               </div>
             )}
             {!isLoading && !error && (!gridData?.rows || gridData.rows.length === 0) ? (

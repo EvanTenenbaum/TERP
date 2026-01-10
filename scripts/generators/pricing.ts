@@ -40,10 +40,8 @@ export interface PricingProfileData {
 
 export interface PricingDefaultData {
   id?: number;
-  category: string;
-  defaultMargin: string;
-  minMargin: string;
-  maxMargin: string;
+  productCategory: string;  // Matches schema column name
+  defaultMarginPercent: string;  // Matches schema column name
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,6 +67,12 @@ const PRODUCT_CATEGORIES = [
   "Edibles",
   "Vapes",
   "Topicals",
+  "Tinctures",
+  "Accessories",
+  "Seeds",
+  "Beverages",
+  "OTHER",    // CRITICAL: Fallback used by orders.ts
+  "DEFAULT",  // Global fallback
 ];
 
 /**
@@ -113,53 +117,51 @@ export function generatePricing(
   // ========================================================================
 
   for (const category of PRODUCT_CATEGORIES) {
-    // Different margins for different categories
-    let defaultMargin: number;
-    let minMargin: number;
-    let maxMargin: number;
+    // Different margins for different categories (as percentages 0-100)
+    let defaultMarginPercent: number;
 
     switch (category) {
       case "Flower":
-        defaultMargin = 0.35;
-        minMargin = 0.15;
-        maxMargin = 0.60;
+        defaultMarginPercent = 35.0;
         break;
       case "Pre-Rolls":
-        defaultMargin = 0.40;
-        minMargin = 0.20;
-        maxMargin = 0.65;
+        defaultMarginPercent = 40.0;
         break;
       case "Concentrates":
-        defaultMargin = 0.45;
-        minMargin = 0.25;
-        maxMargin = 0.70;
+        defaultMarginPercent = 45.0;
         break;
       case "Edibles":
-        defaultMargin = 0.50;
-        minMargin = 0.30;
-        maxMargin = 0.75;
+        defaultMarginPercent = 50.0;
         break;
       case "Vapes":
-        defaultMargin = 0.40;
-        minMargin = 0.20;
-        maxMargin = 0.65;
+        defaultMarginPercent = 40.0;
         break;
       case "Topicals":
-        defaultMargin = 0.55;
-        minMargin = 0.35;
-        maxMargin = 0.80;
+        defaultMarginPercent = 55.0;
+        break;
+      case "Tinctures":
+        defaultMarginPercent = 40.0;
+        break;
+      case "Accessories":
+        defaultMarginPercent = 50.0;
+        break;
+      case "Seeds":
+        defaultMarginPercent = 45.0;
+        break;
+      case "Beverages":
+        defaultMarginPercent = 35.0;
+        break;
+      case "OTHER":
+      case "DEFAULT":
+        defaultMarginPercent = 30.0;  // Safe fallback margin
         break;
       default:
-        defaultMargin = 0.35;
-        minMargin = 0.15;
-        maxMargin = 0.60;
+        defaultMarginPercent = 35.0;
     }
 
     pricingDefaults.push({
-      category,
-      defaultMargin: defaultMargin.toFixed(2),
-      minMargin: minMargin.toFixed(2),
-      maxMargin: maxMargin.toFixed(2),
+      productCategory: category,
+      defaultMarginPercent: defaultMarginPercent.toFixed(2),
       createdAt: new Date(2023, 10, 1),
       updatedAt: new Date(2023, 10, 1),
     });
