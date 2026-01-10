@@ -1,0 +1,100 @@
+name: Oracle QA Tests (Cloud)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_mode:
+        description: "Test run mode"
+        type: choice
+        options:
+          - tier1
+          - smoke
+          - all
+        default: tier1
+      base_url:
+        description: "Base URL to test against (leave empty for default)"
+        type: string
+        required: false
+  schedule:
+    # Run daily at 4:00 UTC (after mega-qa)
+    - cron: "0 4 * * *"
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  oracle-qa-cloud:
+    runs-on: [self-hosted, do, mega-qa]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright (Chromium)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Ensure QA accounts exist
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm seed:qa-accounts
+
+      - name: Run Oracle Tests
+        env:
+          CI: "true"
+          SKIP_E2E_SETUP: "1"
+          PLAYWRIGHT_BASE_URL: ${{ inputs.base_url || secrets.MEGA_QA_BASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ORACLE_RUN_MODE: ${{ inputs.run_mode || 'tier1' }}
+          QA_AUTH_ENABLED: "true"
+        run: |
+          echo "Running oracle tests in $ORACLE_RUN_MODE mode"
+          echo "Base URL: $PLAYWRIGHT_BASE_URL"
+          pnpm playwright test tests-e2e/oracles/oracle-runner.spec.ts --project=chromium
+
+      - name: Generate Coverage Report
+        if: always()
+        run: pnpm qa:coverage || true
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-qa-results-${{ github.run_id }}
+          path: |
+            test-results/oracle-results.json
+            test-results/oracle-coverage.json
+            playwright-report/
+          retention-days: 14
+
+      - name: Post Summary
+        if: always()
+        run: |
+          if [ -f test-results/oracle-results.json ]; then
+            echo "## Oracle Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat test-results/oracle-results.json | jq -r '"| Metric | Value |
+            |--------|-------|
+            | Total Tests | \(.summary.total) |
+            | Passed | \(.summary.passed) |
+            | Failed | \(.summary.failed) |
+            | Duration | \(.summary.duration)ms |"' >> $GITHUB_STEP_SUMMARY
+          fi
