@@ -13,8 +13,8 @@ import type {
   QARole,
   ExpectedUIState,
   ExpectedDBState,
-} from "./types";
-import { loginAsRole } from "./auth-fixtures";
+} from "./types.js";
+import { loginAsRole } from "./auth-fixtures.js";
 
 /**
  * Execute a test oracle

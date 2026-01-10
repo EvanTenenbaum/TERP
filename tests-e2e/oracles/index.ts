@@ -5,7 +5,7 @@
  */
 
 // Types
-export * from "./types";
+export * from "./types.js";
 
 // Auth fixtures
 export {
@@ -20,7 +20,7 @@ export {
   logout,
   isLoggedIn,
   ensureLoggedInAs,
-} from "./auth-fixtures";
+} from "./auth-fixtures.js";
 
 // Loader
 export {
@@ -35,11 +35,11 @@ export {
   getAllOracleIds,
   findOracleById,
   generateOracleSummary,
-} from "./loader";
+} from "./loader.js";
 
 // Executor
 export {
   executeOracle,
   createEmptyContext,
   formatOracleResult,
-} from "./executor";
+} from "./executor.js";

@@ -6,7 +6,8 @@
  */
 
 import { Page } from "@playwright/test";
-import { QARole, QA_CREDENTIALS } from "./types";
+import type { QARole } from "./types.js";
+import { QA_CREDENTIALS } from "./types.js";
 
 /**
  * Fill the first visible input matching any selector
@@ -198,4 +199,5 @@ export async function ensureLoggedInAs(
 }
 
 // Re-export types
-export { QARole, QA_CREDENTIALS } from "./types";
+export type { QARole } from "./types.js";
+export { QA_CREDENTIALS } from "./types.js";

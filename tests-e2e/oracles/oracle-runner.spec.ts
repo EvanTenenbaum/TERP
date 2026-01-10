@@ -18,7 +18,7 @@ import {
   formatOracleResult,
   type TestOracle,
   type OracleResult,
-} from "./index";
+} from "./index.js";
 
 // Configuration
 const ORACLE_TIMEOUT = 60000; // 60 seconds per oracle

@@ -6,12 +6,16 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import * as yaml from "js-yaml";
-import type { TestOracle, SeedProfile } from "./types";
+import type { TestOracle, SeedProfile } from "./types.js";
 
-const ORACLES_DIR = path.join(__dirname, "..");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const ORACLES_DIR = path.dirname(__dirname);
 const ORACLE_EXTENSION = ".oracle.yaml";
-const SEED_PROFILES_DIR = path.join(ORACLES_DIR, "oracles", "_seed-profiles");
+const SEED_PROFILES_DIR = path.join(__dirname, "_seed-profiles");
 
 /**
  * Load a single oracle file
