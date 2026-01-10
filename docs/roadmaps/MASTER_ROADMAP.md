@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 4.7
-**Last Updated:** 2026-01-09 (48-Hour Commit Reconciliation)
+**Version:** 4.8
+**Last Updated:** 2026-01-10 (QA Sales Manager Role Testing)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -247,6 +247,24 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | BUG-084 | Pricing Defaults Table Missing (pricing_defaults)                | HIGH     | 🔴 OPEN | DEF-013 |
 | BUG-085 | Notifications List API Internal Server Error                     | HIGH     | 🔴 OPEN | DEF-023 |
 
+#### QA Sales Manager Role Testing (Jan 10, 2026)
+
+> Discovered during comprehensive QA testing as Sales Manager / TERP Operator role.
+> See: `docs/roadmaps/QA_STRATEGIC_FIX_PLAN.md` for full analysis and fix strategy.
+
+| Task       | Description                                                    | Priority | Status  | Root Cause |
+| ---------- | -------------------------------------------------------------- | -------- | ------- | ---------- |
+| BUG-086    | Cannot finalize sales order - missing pricing defaults         | P0       | 🔴 OPEN | RC-001 (relates to BUG-084) |
+| BUG-087    | Inventory → Products fails to load ("limit too large")         | P1       | 🔴 OPEN | RC-002 |
+| BUG-088    | Spreadsheet Clients detail query fails with raw SQL error      | P1       | 🔴 OPEN | RC-002 (relates to BUG-078) |
+| BUG-089    | Invoices "New Invoice" button non-functional (no onClick)      | P1       | 🔴 OPEN | RC-003 |
+| BUG-090    | Client edit save inconsistent / phone not persisting           | P2       | 🔴 OPEN | RC-003 |
+| BUG-091    | Spreadsheet View Inventory grid renders blank                  | P2       | 🔴 OPEN | RC-004 (relates to BUG-047/074) |
+| BUG-092    | Finance AR/AP dashboard widgets stuck loading                  | P2       | 🔴 OPEN | RC-004 (relates to API-010) |
+| BLOCKED-001| Sales Manager cannot access Samples (samples:read)             | P2       | BLOCKED | RBAC |
+| BLOCKED-002| Sales Manager cannot access Pick & Pack (permission 10002)     | P2       | BLOCKED | RBAC |
+| BLOCKED-003| Sales Manager cannot access Finance Reports                    | P2       | BLOCKED | RBAC |
+
 ---
 
 ### API Registration Issues (P1)
@@ -406,7 +424,7 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | ---------------- | --------- | ------- | -------- |
 | Infrastructure   | 18        | 4       | 22       |
 | Security         | 12        | 0       | 12       |
-| Bug Fixes        | 12        | 20      | 32       |
+| Bug Fixes        | 12        | 30      | 42       |
 | API Registration | 0         | 10      | 10       |
 | Stability        | 10        | 1       | 11       |
 | Quality          | 10        | 2       | 12       |
@@ -414,10 +432,13 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 | UX               | 5         | 4       | 9        |
 | Data & Schema    | 7         | 1       | 8        |
 | Improvements     | 4         | 0       | 4        |
-| **TOTAL**        | **84+**   | **65+** | **149+** |
+| **TOTAL**        | **84+**   | **75+** | **159+** |
 
 > **E2E Coverage (Jan 9, 2026):** 18 new defects added from comprehensive API testing.
 > See `qa-results/E2E_TEST_EXECUTION_REPORT.md` for full details.
+>
+> **QA Role Testing (Jan 10, 2026):** 10 new issues (7 bugs + 3 permission blocks) from Sales Manager testing.
+> See `docs/roadmaps/QA_STRATEGIC_FIX_PLAN.md` for strategic fix plan.
 
 ---
 
