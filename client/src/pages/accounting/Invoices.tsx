@@ -75,6 +75,8 @@ export default function Invoices() {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [showAging, setShowAging] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  // BUG-089 fix: Add state for create invoice dialog
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   // PERF-003: Pagination state
   const { page, pageSize, offset, setPage, setPageSize } = usePagination(50);
@@ -222,7 +224,8 @@ export default function Invoices() {
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button>
+          {/* BUG-089 fix: Add onClick handler for New Invoice button */}
+          <Button onClick={() => setIsCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Invoice
           </Button>
@@ -558,6 +561,62 @@ export default function Invoices() {
           </SheetContent>
         </Sheet>
       )}
+
+      {/* BUG-089 fix: Create Invoice Sheet */}
+      <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Create New Invoice</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <p className="text-muted-foreground">
+              To create an invoice, please use one of the following methods:
+            </p>
+            <div className="space-y-3">
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-2">From Sales Order</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Navigate to Sales → Orders, select a finalized order, and click "Generate Invoice"
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    window.location.href = '/sales/orders';
+                  }}
+                >
+                  Go to Orders
+                </Button>
+              </div>
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-2">From Client Profile</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Navigate to a client's profile and create an invoice from their Transactions tab
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    window.location.href = '/sales/clients';
+                  }}
+                >
+                  Go to Clients
+                </Button>
+              </div>
+            </div>
+            <Separator className="my-4" />
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => setIsCreateOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
     </PageErrorBoundary>
   );
