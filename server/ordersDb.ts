@@ -3,17 +3,16 @@
  * Handles all database operations for the unified Quote/Sales system
  */
 
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   orders,
   batches,
   clients,
   sampleInventoryLog,
-  InsertOrder,
   type Order,
 } from "../drizzle/schema";
-import { calculateCogs, calculateDueDate, type CogsCalculationInput } from "./cogsCalculator";
+import { calculateCogs, calculateDueDate } from "./cogsCalculator";
 import {
   createInvoiceFromOrder,
   recordOrderCashPayment,
@@ -21,6 +20,7 @@ import {
   restoreInventoryFromOrder,
   reverseOrderAccountingEntries,
 } from "./services/orderAccountingService";
+import { calculateAvailableQty } from "./inventoryUtils";
 
 // ============================================================================
 // TYPES
@@ -130,13 +130,14 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       
       // Verify sufficient inventory BEFORE processing order
       // This check happens AFTER locking, ensuring accuracy
+      // Uses calculateAvailableQty which accounts for reserved, quarantine, and hold quantities
       const requestedQty = item.quantity;
-      const availableQty = item.isSample 
+      const availableQty = item.isSample
         ? parseFloat(batch.sampleQty || "0")
-        : parseFloat(batch.onHandQty || "0");
-      
+        : calculateAvailableQty(batch);
+
       if (availableQty < requestedQty) {
-        const qtyType = item.isSample ? "sample" : "on-hand";
+        const qtyType = item.isSample ? "sample" : "available";
         throw new Error(
           `Insufficient ${qtyType} inventory for batch ${batch.sku || batch.id}. ` +
           `Available: ${availableQty}, Requested: ${requestedQty}`
@@ -280,12 +281,13 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         }
         
         // Final inventory verification (defensive check)
-        const currentQty = item.isSample 
+        // Uses calculateAvailableQty to account for quarantine/hold/reserved quantities
+        const currentQty = item.isSample
           ? parseFloat(lockedBatch.sampleQty || "0")
-          : parseFloat(lockedBatch.onHandQty || "0");
-        
+          : calculateAvailableQty(lockedBatch);
+
         if (currentQty < item.quantity) {
-          const qtyType = item.isSample ? "sample" : "on-hand";
+          const qtyType = item.isSample ? "sample" : "available";
           throw new Error(
             `Insufficient ${qtyType} inventory detected during update for batch ${lockedBatch.sku || lockedBatch.id}. ` +
             `Current: ${currentQty}, Requested: ${item.quantity}`
@@ -780,19 +782,20 @@ export async function convertQuoteToSale(
       }
       
       // Verify sufficient inventory
+      // Uses calculateAvailableQty to account for quarantine/hold/reserved quantities
       const requestedQty = item.quantity;
-      const availableQty = item.isSample 
+      const availableQty = item.isSample
         ? parseFloat(batch.sampleQty || "0")
-        : parseFloat(batch.onHandQty || "0");
-      
+        : calculateAvailableQty(batch);
+
       if (availableQty < requestedQty) {
-        const qtyType = item.isSample ? "sample" : "on-hand";
+        const qtyType = item.isSample ? "sample" : "available";
         throw new Error(
           `Insufficient ${qtyType} inventory for batch ${batch.sku || batch.id}. ` +
           `Available: ${availableQty}, Requested: ${requestedQty}`
         );
       }
-      
+
       if (item.isSample) {
         await tx.update(batches)
           .set({ 
@@ -906,7 +909,7 @@ export async function exportOrder(
   };
   
   switch (format) {
-    case 'clipboard':
+    case 'clipboard': {
       // Return formatted text for clipboard
       const lines = [
         `Order: ${exportData.orderNumber}`,
@@ -924,6 +927,7 @@ export async function exportOrder(
         `Total: $${parseFloat(exportData.total ?? '0').toFixed(2)}`,
       ];
       return lines.join('\n');
+    }
       
     case 'pdf':
       // Return JSON data that can be used by a PDF generator on the client
@@ -986,6 +990,7 @@ export async function confirmDraftOrder(input: {
     const draftItems = JSON.parse(draft.items as string) as OrderItem[];
     
     // 3. Check inventory availability
+    // Uses calculateAvailableQty to account for quarantine/hold/reserved quantities
     for (const item of draftItems) {
       const batch = await tx
         .select()
@@ -993,15 +998,15 @@ export async function confirmDraftOrder(input: {
         .where(eq(batches.id, item.batchId))
         .limit(1)
         .then(rows => rows[0]);
-      
+
       if (!batch) {
         throw new Error(`Batch ${item.batchId} not found`);
       }
-      
-      const availableQty = item.isSample 
+
+      const availableQty = item.isSample
         ? parseFloat(batch.sampleQty as string)
-        : parseFloat(batch.onHandQty as string);
-      
+        : calculateAvailableQty(batch);
+
       if (availableQty < item.quantity) {
         throw new Error(
           `Insufficient inventory for ${item.displayName}. ` +
@@ -1341,16 +1346,17 @@ export async function updateOrderStatus(input: {
       updateData.shippedBy = userId;
       
       // Check inventory availability before shipping
+      // Uses calculateAvailableQty to account for quarantine/hold/reserved quantities
       const orderItems = order.items as Array<{ batchId: number; quantity: number; isSample?: boolean }>;
       for (const item of orderItems) {
         if (item.isSample) continue; // Skip samples
-        
+
         const [batch] = await tx.select().from(batches).where(eq(batches.id, item.batchId));
         if (!batch) {
           throw new Error(`Batch ${item.batchId} not found`);
         }
-        
-        const available = parseFloat(batch.onHandQty);
+
+        const available = calculateAvailableQty(batch);
         if (available < item.quantity) {
           throw new Error(
             `Insufficient inventory for batch ${item.batchId}. ` +

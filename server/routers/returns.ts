@@ -504,6 +504,51 @@ export const returnsRouter = router({
                 condition: item.actualCondition,
               });
             }
+          } else if (item.actualCondition === "QUARANTINE") {
+            // For items that need quarantine, move from onHandQty to quarantineQty
+            const [batch] = await tx
+              .select()
+              .from(batches)
+              .where(eq(batches.id, item.batchId))
+              .for("update");
+
+            if (batch) {
+              const currentOnHand = parseFloat(batch.onHandQty || "0");
+              const currentQuarantine = parseFloat(batch.quarantineQty || "0");
+
+              // Move quantity from onHand to quarantine
+              const newOnHand = Math.max(0, currentOnHand - receivedQty);
+              const newQuarantine = currentQuarantine + receivedQty;
+
+              await tx
+                .update(batches)
+                .set({
+                  onHandQty: newOnHand.toString(),
+                  quarantineQty: newQuarantine.toString(),
+                  // If all inventory is now quarantined, update status
+                  ...(newOnHand === 0 && newQuarantine > 0 ? { batchStatus: "QUARANTINED" } : {})
+                })
+                .where(eq(batches.id, item.batchId));
+
+              await tx.insert(inventoryMovements).values({
+                batchId: item.batchId,
+                inventoryMovementType: "QUARANTINE",
+                quantityChange: `-${receivedQty}`,
+                quantityBefore: currentOnHand.toString(),
+                quantityAfter: newOnHand.toString(),
+                referenceType: "RETURN_RECEIVE",
+                referenceId: input.id,
+                notes: `Return received - Item quarantined. ${item.notes || ""}`,
+                performedBy: userId,
+              });
+
+              logger.info({
+                msg: "[Returns] Item quarantined",
+                returnId: input.id,
+                batchId: item.batchId,
+                quantityQuarantined: receivedQty,
+              });
+            }
           } else if (
             item.actualCondition === "DAMAGED" ||
             item.actualCondition === "DESTROYED"

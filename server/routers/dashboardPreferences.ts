@@ -62,45 +62,41 @@ export const dashboardPreferencesRouter = router({
    *
    * @returns UserDashboardPreferences or default preferences
    */
-  getPreferences: protectedProcedure
-    .use(requirePermission("dashboard:read"))
-    .query(async ({ ctx }) => {
-      const db = await getDb();
-      if (!db) {
-        throw new Error("Database not available");
-      }
+  getPreferences: protectedProcedure.use(requirePermission("dashboard:read")).query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
-      try {
-        // Query for user's preferences
-        const preferences = await db.query.userDashboardPreferences.findFirst({
-          where: eq(userDashboardPreferences.userId, ctx.user.id),
-        });
+    try {
+      // Query for user's preferences
+      const preferences = await db.query.userDashboardPreferences.findFirst({
+        where: eq(userDashboardPreferences.userId, ctx.user.id),
+      });
 
-        // Return saved preferences or defaults
-        if (preferences) {
-          return {
-            id: preferences.id,
-            userId: preferences.userId,
-            activeLayout: preferences.activeLayout,
-            widgetConfig: preferences.widgetConfig,
-            createdAt: preferences.createdAt,
-            updatedAt: preferences.updatedAt,
-          };
-        } else {
-          // Return default preferences (not saved to DB yet)
-          return {
-            ...getDefaultPreferences(),
-            id: 0, // Indicates not yet saved
-            userId: ctx.user.id,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-        }
-      } catch (error) {
-        console.error("Error fetching dashboard preferences:", error);
-        throw new Error("Failed to fetch dashboard preferences");
+      // Return saved preferences or defaults
+      if (preferences) {
+        return {
+          id: preferences.id,
+          userId: preferences.userId,
+          activeLayout: preferences.activeLayout,
+          widgetConfig: preferences.widgetConfig,
+          createdAt: preferences.createdAt,
+          updatedAt: preferences.updatedAt,
+        };
+      } else {
+        // Return default preferences (not saved to DB yet)
+        return {
+          ...getDefaultPreferences(),
+          id: 0, // Indicates not yet saved
+          userId: ctx.user.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
       }
-    }),
+    } catch (error) {
+      console.error("Error fetching dashboard preferences:", error);
+      throw new Error("Failed to fetch dashboard preferences");
+    }
+  }),
 
   /**
    * Update User's Dashboard Preferences
@@ -117,9 +113,7 @@ export const dashboardPreferencesRouter = router({
     .input(preferencesInputSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) {
-        throw new Error("Database not available");
-      }
+      if (!db) throw new Error("Database not available");
 
       try {
         // Check if preferences already exist
@@ -171,29 +165,25 @@ export const dashboardPreferencesRouter = router({
    *
    * @returns Success status
    */
-  resetPreferences: protectedProcedure
-    .use(requirePermission("dashboard:read"))
-    .mutation(async ({ ctx }) => {
-      const db = await getDb();
-      if (!db) {
-        throw new Error("Database not available");
-      }
+  resetPreferences: protectedProcedure.use(requirePermission("dashboard:read")).mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
 
-      try {
-        // Delete user's preferences
-        await db
-          .delete(userDashboardPreferences)
-          .where(eq(userDashboardPreferences.userId, ctx.user.id));
+    try {
+      // Delete user's preferences
+      await db
+        .delete(userDashboardPreferences)
+        .where(eq(userDashboardPreferences.userId, ctx.user.id));
 
-        return {
-          success: true,
-          message: "Dashboard preferences reset to defaults",
-        };
-      } catch (error) {
-        console.error("Error resetting dashboard preferences:", error);
-        throw new Error("Failed to reset dashboard preferences");
-      }
-    }),
+      return {
+        success: true,
+        message: "Dashboard preferences reset to defaults",
+      };
+    } catch (error) {
+      console.error("Error resetting dashboard preferences:", error);
+      throw new Error("Failed to reset dashboard preferences");
+    }
+  }),
 
   /**
    * Get Default Preferences
