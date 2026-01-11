@@ -27,6 +27,8 @@ import { ProcessReturnModal } from '@/components/orders/ProcessReturnModal';
 import { ReturnHistorySection } from '@/components/orders/ReturnHistorySection';
 import { ConfirmDraftModal } from '@/components/orders/ConfirmDraftModal';
 import { DeleteDraftModal } from '@/components/orders/DeleteDraftModal';
+// FEAT-008: Import Edit Invoice Dialog
+import { EditInvoiceDialog } from '@/components/orders/EditInvoiceDialog';
 import {
   Search,
   CheckCircle2,
@@ -34,7 +36,8 @@ import {
   PackageX,
   Download,
   FileText,
-  CheckSquare
+  CheckSquare,
+  Receipt,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLocation } from 'wouter';
@@ -108,6 +111,9 @@ export default function Orders() {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // FEAT-008: State for edit invoice dialog
+  const [showEditInvoiceDialog, setShowEditInvoiceDialog] = useState(false);
+  const [editInvoiceId, setEditInvoiceId] = useState<number | null>(null);
   
   // Fetch clients for name lookup - handle paginated response
   const { data: clientsData } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -593,6 +599,20 @@ export default function Orders() {
                         Mark as Shipped
                       </Button>
                     )}
+                    {/* FEAT-008: Edit Invoice Button */}
+                    {selectedOrder.invoiceId && (
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        onClick={() => {
+                          setEditInvoiceId(selectedOrder.invoiceId);
+                          setShowEditInvoiceDialog(true);
+                        }}
+                      >
+                        <Receipt className="h-4 w-4 mr-2" />
+                        Edit Invoice
+                      </Button>
+                    )}
                     <Button
                       className="w-full"
                       variant="outline"
@@ -681,6 +701,17 @@ export default function Orders() {
           }}
         />
       )}
+
+      {/* FEAT-008: Edit Invoice Dialog */}
+      <EditInvoiceDialog
+        open={showEditInvoiceDialog}
+        onOpenChange={setShowEditInvoiceDialog}
+        invoiceId={editInvoiceId}
+        onSuccess={() => {
+          setEditInvoiceId(null);
+          refetchConfirmed();
+        }}
+      />
     </div>
     </PageErrorBoundary>
   );

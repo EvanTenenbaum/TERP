@@ -334,6 +334,7 @@ export async function getClientByTeriCode(teriCode: string) {
 
 /**
  * Create new client
+ * FEAT-001: Added wishlist field support for notes/additional info
  */
 export async function createClient(
   userId: number,
@@ -349,6 +350,7 @@ export async function createClient(
     isReferee?: boolean;
     isContractor?: boolean;
     tags?: string[];
+    wishlist?: string; // FEAT-001: Notes/additional info
   }
 ) {
   const db = await getDb();
@@ -372,6 +374,7 @@ export async function createClient(
     isReferee: data.isReferee || false,
     isContractor: data.isContractor || false,
     tags: data.tags || null,
+    wishlist: data.wishlist || null, // FEAT-001: Store notes/additional info
   };
 
   const result = await db.insert(clients).values(clientData);

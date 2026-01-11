@@ -75,26 +75,44 @@ export const rbacPermissionsRouter = router({
           );
         }
 
-        // Get role counts for each permission
+        // FEAT-022: Get role names for each permission instead of just counts
         const permissionIds = filteredPermissions.map(p => p.id);
-        
-        const roleCounts = permissionIds.length > 0
+
+        // Get role details for each permission
+        const roleAssignments = permissionIds.length > 0
           ? await db
               .select({
                 permissionId: rolePermissions.permissionId,
-                count: sql<number>`COUNT(*)`.as('count'),
+                roleId: roles.id,
+                roleName: roles.name,
               })
               .from(rolePermissions)
+              .innerJoin(roles, eq(rolePermissions.roleId, roles.id))
               .where(inArray(rolePermissions.permissionId, permissionIds))
-              .groupBy(rolePermissions.permissionId)
           : [];
 
-        const countMap = new Map(roleCounts.map(rc => [rc.permissionId, Number(rc.count)]));
+        // Group role names by permission ID
+        const rolesByPermission = new Map<number, { roleId: number; roleName: string }[]>();
+        for (const ra of roleAssignments) {
+          if (!rolesByPermission.has(ra.permissionId)) {
+            rolesByPermission.set(ra.permissionId, []);
+          }
+          rolesByPermission.get(ra.permissionId)!.push({
+            roleId: ra.roleId,
+            roleName: ra.roleName,
+          });
+        }
 
-        const permissionsWithCounts = filteredPermissions.map(permission => ({
-          ...permission,
-          roleCount: countMap.get(permission.id) || 0,
-        }));
+        const permissionsWithCounts = filteredPermissions.map(permission => {
+          const permRoles = rolesByPermission.get(permission.id) || [];
+          return {
+            ...permission,
+            roleCount: permRoles.length,
+            // FEAT-022: Include role names for display
+            roleNames: permRoles.map(r => r.roleName),
+            roles: permRoles,
+          };
+        });
 
         logger.info({ 
           msg: "Listed permissions", 

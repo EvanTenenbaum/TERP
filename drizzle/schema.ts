@@ -6227,6 +6227,153 @@ export const vendorHarvestRemindersRelations = relations(vendorHarvestReminders,
 }));
 
 // ============================================================================
+// USER PREFERENCES (FEAT-010: Default Warehouse Selection)
+// ============================================================================
+
+/**
+ * User Preferences Table
+ * Stores user-specific preferences including default warehouse
+ */
+export const userPreferences = mysqlTable(
+  "user_preferences",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" })
+      .unique(),
+    defaultWarehouseId: int("default_warehouse_id").references(() => locations.id, {
+      onDelete: "set null",
+    }),
+    defaultLocationId: int("default_location_id").references(() => locations.id, {
+      onDelete: "set null",
+    }),
+    showCogsInOrders: boolean("show_cogs_in_orders").notNull().default(true),
+    showMarginInOrders: boolean("show_margin_in_orders").notNull().default(true),
+    showGradeField: boolean("show_grade_field").notNull().default(true),
+    hideExpectedDelivery: boolean("hide_expected_delivery").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    userIdIdx: index("idx_user_preferences_user_id").on(table.userId),
+  })
+);
+
+export type UserPreference = typeof userPreferences.$inferSelect;
+export type InsertUserPreference = typeof userPreferences.$inferInsert;
+
+// ============================================================================
+// ORGANIZATION SETTINGS (FEAT-012 & FEAT-014)
+// ============================================================================
+
+/**
+ * Organization Settings Table
+ * Stores organization-wide configuration options
+ */
+export const organizationSettings = mysqlTable(
+  "organization_settings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    settingKey: varchar("setting_key", { length: 100 }).notNull().unique(),
+    settingValue: json("setting_value"),
+    settingType: mysqlEnum("setting_type", ["BOOLEAN", "STRING", "NUMBER", "JSON"])
+      .notNull()
+      .default("STRING"),
+    description: text("description"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  }
+);
+
+export type OrganizationSetting = typeof organizationSettings.$inferSelect;
+export type InsertOrganizationSetting = typeof organizationSettings.$inferInsert;
+
+// ============================================================================
+// UNIT TYPES (FEAT-013: Packaged Unit Type)
+// ============================================================================
+
+/**
+ * Unit Type Category Enum
+ */
+export const unitTypeCategoryEnum = mysqlEnum("unitTypeCategory", [
+  "WEIGHT",
+  "COUNT",
+  "VOLUME",
+  "PACKAGED",
+]);
+
+/**
+ * Unit Types Table
+ * Customizable unit types including packaged products
+ */
+export const unitTypes = mysqlTable(
+  "unit_types",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 20 }).notNull().unique(),
+    name: varchar("name", { length: 100 }).notNull(),
+    description: text("description"),
+    category: unitTypeCategoryEnum.notNull(),
+    conversionFactor: decimal("conversion_factor", { precision: 15, scale: 6 }).default("1"),
+    baseUnitCode: varchar("base_unit_code", { length: 20 }),
+    isActive: boolean("is_active").notNull().default(true),
+    sortOrder: int("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  }
+);
+
+export type UnitType = typeof unitTypes.$inferSelect;
+export type InsertUnitType = typeof unitTypes.$inferInsert;
+
+// ============================================================================
+// CUSTOM FINANCE STATUSES (FEAT-015)
+// ============================================================================
+
+/**
+ * Finance Entity Type Enum
+ */
+export const financeEntityTypeEnum = mysqlEnum("financeEntityType", [
+  "INVOICE",
+  "ORDER",
+  "PAYMENT",
+  "BILL",
+  "CREDIT",
+]);
+
+/**
+ * Custom Finance Statuses Table
+ * Allows customization of finance status options per entity type
+ */
+export const customFinanceStatuses = mysqlTable(
+  "custom_finance_statuses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    entityType: financeEntityTypeEnum.notNull(),
+    statusCode: varchar("status_code", { length: 50 }).notNull(),
+    statusLabel: varchar("status_label", { length: 100 }).notNull(),
+    description: text("description"),
+    color: varchar("color", { length: 7 }).default("#6B7280"),
+    sortOrder: int("sort_order").notNull().default(0),
+    isDefault: boolean("is_default").notNull().default(false),
+    isTerminal: boolean("is_terminal").notNull().default(false),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    entityTypeIdx: index("idx_custom_finance_statuses_entity").on(table.entityType),
+    activeIdx: index("idx_custom_finance_statuses_active").on(table.isActive),
+    uniqueEntityStatus: unique("unique_entity_status").on(table.entityType, table.statusCode),
+  })
+);
+
+export type CustomFinanceStatus = typeof customFinanceStatuses.$inferSelect;
+export type InsertCustomFinanceStatus = typeof customFinanceStatuses.$inferInsert;
+
+// ============================================================================
 // LIVE SHOPPING MODULE (Phase 0)
 // ============================================================================
 export * from "./schema-live-shopping";

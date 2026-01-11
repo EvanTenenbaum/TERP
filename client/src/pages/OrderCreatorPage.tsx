@@ -185,7 +185,8 @@ export default function OrderCreatorPageV2() {
         // We're in finalization mode - proceed to finalize the draft
         // Don't reset form yet - wait for finalization to complete
         toast.info(`Draft #${data.orderId} created, finalizing...`);
-        finalizeMutation.mutate({ orderId: data.orderId });
+        // BUG-045 FIX: Pass version 1 for newly created drafts (optimistic locking)
+        finalizeMutation.mutate({ orderId: data.orderId, version: 1 });
       } else {
         // Just saving draft - show success and reset
         toast.success(`Draft order #${data.orderId} saved successfully`);
@@ -729,9 +730,18 @@ export default function OrderCreatorPageV2() {
               isDraft={false}
             />
 
-            {/* Actions */}
+            {/* FEAT-005: Merged Draft/Quote Workflow Actions */}
             <Card>
               <CardContent className="pt-6 space-y-3">
+                {/* Order Type Indicator */}
+                <div className="flex items-center justify-between p-2 bg-muted rounded-md mb-2">
+                  <span className="text-sm text-muted-foreground">Creating:</span>
+                  <span className="font-medium">
+                    {orderType === "QUOTE" ? "Quote" : "Sale Order"}
+                  </span>
+                </div>
+
+                {/* Save as Draft - works for both Quote and Sale */}
                 <Button
                   className="w-full"
                   variant="outline"
@@ -742,6 +752,38 @@ export default function OrderCreatorPageV2() {
                   Save as Draft
                 </Button>
 
+                {/* Quick Quote Option - saves and marks as quote */}
+                {orderType === "SALE" && (
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    onClick={() => {
+                      setOrderType("QUOTE");
+                      handleSaveDraft();
+                    }}
+                    disabled={items.length === 0 || createDraftMutation.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save as Quote Instead
+                  </Button>
+                )}
+
+                {/* Convert Quote to Sale */}
+                {orderType === "QUOTE" && (
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    onClick={() => {
+                      setOrderType("SALE");
+                    }}
+                    disabled={items.length === 0}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Convert to Sale
+                  </Button>
+                )}
+
+                {/* Finalize Button */}
                 <Button
                   className="w-full"
                   onClick={handlePreviewAndFinalize}
@@ -750,12 +792,12 @@ export default function OrderCreatorPageV2() {
                   {(finalizeMutation.isPending || (createDraftMutation.isPending && isFinalizingRef.current)) ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Finalizing...
+                      {orderType === "QUOTE" ? "Creating Quote..." : "Finalizing Sale..."}
                     </>
                   ) : (
                     <>
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Preview & Finalize
+                      {orderType === "QUOTE" ? "Create Quote" : "Finalize Sale"}
                     </>
                   )}
                 </Button>

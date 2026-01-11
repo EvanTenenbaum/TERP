@@ -343,3 +343,108 @@ export const adminImpersonationActions = mysqlTable("admin_impersonation_actions
 
 export type AdminImpersonationAction = typeof adminImpersonationActions.$inferSelect;
 export type InsertAdminImpersonationAction = typeof adminImpersonationActions.$inferInsert;
+
+// ============================================================================
+// VIP TIER SYSTEM (FEAT-019)
+// ============================================================================
+
+/**
+ * VIP Tiers
+ * Defines VIP tier levels with requirements and benefits
+ */
+export const vipTiers = mysqlTable("vip_tiers", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 50 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 100 }).notNull(),
+  description: text("description"),
+  level: int("level").notNull().default(0), // Higher level = higher tier
+  color: varchar("color", { length: 7 }).notNull().default("#6B7280"), // Hex color for badge
+  icon: varchar("icon", { length: 50 }), // Lucide icon name
+
+  // Requirements to reach this tier
+  minSpendYtd: decimal("min_spend_ytd", { precision: 15, scale: 2 }).default("0"), // Minimum YTD spend
+  minOrdersYtd: int("min_orders_ytd").default(0), // Minimum YTD orders
+  minAccountAgeDays: int("min_account_age_days").default(0), // Minimum account age
+  minPaymentOnTimeRate: decimal("min_payment_on_time_rate", { precision: 5, scale: 2 }).default("0"), // 0-100%
+
+  // Benefits
+  discountPercentage: decimal("discount_percentage", { precision: 5, scale: 2 }).default("0"), // Tier discount
+  creditLimitMultiplier: decimal("credit_limit_multiplier", { precision: 5, scale: 2 }).default("1.00"), // Credit limit boost
+  prioritySupport: boolean("priority_support").default(false),
+  earlyAccessToProducts: boolean("early_access_to_products").default(false),
+  freeShipping: boolean("free_shipping").default(false),
+  dedicatedRep: boolean("dedicated_rep").default(false),
+  customBenefits: json("custom_benefits").$type<{
+    name: string;
+    description: string;
+    value?: string;
+  }[]>(),
+
+  isActive: boolean("is_active").default(true).notNull(),
+  isDefault: boolean("is_default").default(false), // Default tier for new clients
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  levelIdx: index("idx_vip_tiers_level").on(table.level),
+  activeIdx: index("idx_vip_tiers_active").on(table.isActive),
+}));
+
+export type VipTier = typeof vipTiers.$inferSelect;
+export type InsertVipTier = typeof vipTiers.$inferInsert;
+
+/**
+ * Client VIP Status
+ * Tracks current VIP tier and progress for each client
+ */
+export const clientVipStatus = mysqlTable("client_vip_status", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().unique().references(() => clients.id, { onDelete: "cascade" }),
+  currentTierId: int("current_tier_id").references(() => vipTiers.id, { onDelete: "set null" }),
+
+  // Metrics for tier calculation
+  ytdSpend: decimal("ytd_spend", { precision: 15, scale: 2 }).default("0"),
+  ytdOrders: int("ytd_orders").default(0),
+  paymentOnTimeRate: decimal("payment_on_time_rate", { precision: 5, scale: 2 }).default("100"), // 0-100%
+  lifetimeSpend: decimal("lifetime_spend", { precision: 15, scale: 2 }).default("0"),
+
+  // Manual override
+  manualTierOverride: boolean("manual_tier_override").default(false),
+  overrideReason: text("override_reason"),
+  overrideBy: int("override_by").references(() => users.id, { onDelete: "set null" }),
+  overrideAt: timestamp("override_at"),
+
+  // Tier progression tracking
+  lastTierChangeAt: timestamp("last_tier_change_at"),
+  lastCalculatedAt: timestamp("last_calculated_at"),
+  nextTierProgress: decimal("next_tier_progress", { precision: 5, scale: 2 }).default("0"), // 0-100%
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  clientIdIdx: index("idx_client_vip_status_client_id").on(table.clientId),
+  tierIdIdx: index("idx_client_vip_status_tier_id").on(table.currentTierId),
+}));
+
+export type ClientVipStatus = typeof clientVipStatus.$inferSelect;
+export type InsertClientVipStatus = typeof clientVipStatus.$inferInsert;
+
+/**
+ * VIP Tier History
+ * Audit trail of tier changes
+ */
+export const vipTierHistory = mysqlTable("vip_tier_history", {
+  id: int("id").primaryKey().autoincrement(),
+  clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  previousTierId: int("previous_tier_id").references(() => vipTiers.id, { onDelete: "set null" }),
+  newTierId: int("new_tier_id").references(() => vipTiers.id, { onDelete: "set null" }),
+  changeReason: varchar("change_reason", { length: 50 }).notNull(), // AUTO_UPGRADE, AUTO_DOWNGRADE, MANUAL, SYSTEM
+  changeDetails: text("change_details"),
+  changedBy: int("changed_by").references(() => users.id, { onDelete: "set null" }), // null for automatic
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  clientIdIdx: index("idx_vip_tier_history_client_id").on(table.clientId),
+  createdAtIdx: index("idx_vip_tier_history_created_at").on(table.createdAt),
+}));
+
+export type VipTierHistory = typeof vipTierHistory.$inferSelect;
+export type InsertVipTierHistory = typeof vipTierHistory.$inferInsert;

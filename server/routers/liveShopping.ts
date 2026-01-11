@@ -593,7 +593,7 @@ export const liveShoppingRouter = router({
     .input(z.object({ sessionId: z.number() }))
     .query(async ({ input }) => {
       const cart = await sessionCartService.getCart(input.sessionId);
-      
+
       const sampleRequests = cart.items.filter(i => i.itemStatus === "SAMPLE_REQUEST");
       const interested = cart.items.filter(i => i.itemStatus === "INTERESTED");
       const toPurchase = cart.items.filter(i => i.itemStatus === "TO_PURCHASE");
@@ -612,5 +612,363 @@ export const liveShoppingRouter = router({
           ),
         },
       };
+    }),
+
+  // ==========================================================================
+  // PRICE NEGOTIATION WORKFLOW (FEATURE-003)
+  // ==========================================================================
+
+  /**
+   * Request price negotiation for an item
+   * Client can propose a new price for a cart item
+   */
+  requestNegotiation: protectedProcedure
+    .use(requirePermission("orders:read")) // VIP clients can also negotiate
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+        proposedPrice: z.number().positive(),
+        reason: z.string().optional(),
+        quantity: z.number().positive().optional(), // Can also negotiate on quantity
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get current cart item
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+      }
+
+      const currentPrice = parseFloat(cartItem.unitPrice?.toString() || "0");
+
+      // Store negotiation request in metadata
+      const negotiationData = {
+        status: "PENDING",
+        originalPrice: currentPrice,
+        proposedPrice: input.proposedPrice,
+        proposedQuantity: input.quantity,
+        reason: input.reason,
+        requestedBy: userId,
+        requestedAt: new Date().toISOString(),
+        history: [
+          {
+            action: "REQUEST",
+            price: input.proposedPrice,
+            quantity: input.quantity,
+            by: userId,
+            at: new Date().toISOString(),
+            reason: input.reason,
+          },
+        ],
+      };
+
+      // Update cart item with negotiation status
+      await db
+        .update(sessionCartItems)
+        .set({
+          negotiationStatus: "PENDING",
+          negotiationData: JSON.stringify(negotiationData),
+        })
+        .where(eq(sessionCartItems.id, input.cartItemId));
+
+      // Emit negotiation event for real-time updates
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "NEGOTIATION_REQUESTED",
+        payload: {
+          cartItemId: input.cartItemId,
+          proposedPrice: input.proposedPrice,
+          originalPrice: currentPrice,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      return { success: true, negotiationId: input.cartItemId };
+    }),
+
+  /**
+   * Respond to a negotiation request
+   * Host can accept, reject, or counter-offer
+   */
+  respondToNegotiation: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+        response: z.enum(["ACCEPT", "REJECT", "COUNTER"]),
+        counterPrice: z.number().positive().optional(), // Required if response is COUNTER
+        counterQuantity: z.number().positive().optional(),
+        reason: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get current cart item with negotiation data
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem || !cartItem.negotiationData) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
+      }
+
+      let negotiationData;
+      try {
+        negotiationData = JSON.parse(cartItem.negotiationData as string);
+      } catch {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid negotiation data" });
+      }
+
+      // Add response to history
+      negotiationData.history.push({
+        action: input.response,
+        price: input.response === "COUNTER" ? input.counterPrice : null,
+        quantity: input.counterQuantity,
+        by: userId,
+        at: new Date().toISOString(),
+        reason: input.reason,
+      });
+
+      const updates: Record<string, unknown> = {};
+
+      if (input.response === "ACCEPT") {
+        // Apply the negotiated price
+        updates.unitPrice = negotiationData.proposedPrice.toString();
+        updates.negotiationStatus = "ACCEPTED";
+        negotiationData.status = "ACCEPTED";
+        negotiationData.finalPrice = negotiationData.proposedPrice;
+        negotiationData.acceptedAt = new Date().toISOString();
+        negotiationData.acceptedBy = userId;
+      } else if (input.response === "REJECT") {
+        updates.negotiationStatus = "REJECTED";
+        negotiationData.status = "REJECTED";
+        negotiationData.rejectedAt = new Date().toISOString();
+        negotiationData.rejectedBy = userId;
+        negotiationData.rejectionReason = input.reason;
+      } else if (input.response === "COUNTER") {
+        if (!input.counterPrice) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Counter price is required" });
+        }
+        updates.negotiationStatus = "COUNTER_OFFERED";
+        negotiationData.status = "COUNTER_OFFERED";
+        negotiationData.counterPrice = input.counterPrice;
+        negotiationData.counterQuantity = input.counterQuantity;
+      }
+
+      updates.negotiationData = JSON.stringify(negotiationData);
+
+      await db
+        .update(sessionCartItems)
+        .set(updates)
+        .where(eq(sessionCartItems.id, input.cartItemId));
+
+      // Emit negotiation response event
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "NEGOTIATION_RESPONSE",
+        payload: {
+          cartItemId: input.cartItemId,
+          response: input.response,
+          counterPrice: input.counterPrice,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      // Also update cart view
+      await sessionCartService.emitCartUpdate(input.sessionId);
+
+      return { success: true };
+    }),
+
+  /**
+   * Accept counter-offer
+   * Client accepts the counter-offer from host
+   */
+  acceptCounterOffer: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Get current cart item with negotiation data
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem || !cartItem.negotiationData) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
+      }
+
+      let negotiationData;
+      try {
+        negotiationData = JSON.parse(cartItem.negotiationData as string);
+      } catch {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid negotiation data" });
+      }
+
+      if (negotiationData.status !== "COUNTER_OFFERED") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No counter-offer to accept" });
+      }
+
+      // Add acceptance to history
+      negotiationData.history.push({
+        action: "ACCEPT_COUNTER",
+        price: negotiationData.counterPrice,
+        by: userId,
+        at: new Date().toISOString(),
+      });
+
+      negotiationData.status = "ACCEPTED";
+      negotiationData.finalPrice = negotiationData.counterPrice;
+      negotiationData.acceptedAt = new Date().toISOString();
+
+      // Apply the counter-offer price
+      await db
+        .update(sessionCartItems)
+        .set({
+          unitPrice: negotiationData.counterPrice.toString(),
+          quantity: negotiationData.counterQuantity?.toString() || cartItem.quantity,
+          negotiationStatus: "ACCEPTED",
+          negotiationData: JSON.stringify(negotiationData),
+        })
+        .where(eq(sessionCartItems.id, input.cartItemId));
+
+      // Emit acceptance event
+      sessionEventManager.emit(sessionEventManager.getRoomId(input.sessionId), {
+        type: "COUNTER_OFFER_ACCEPTED",
+        payload: {
+          cartItemId: input.cartItemId,
+          finalPrice: negotiationData.counterPrice,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      // Also update cart view
+      await sessionCartService.emitCartUpdate(input.sessionId);
+
+      return { success: true, finalPrice: negotiationData.counterPrice };
+    }),
+
+  /**
+   * Get negotiation history for an item
+   */
+  getNegotiationHistory: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        sessionId: z.number(),
+        cartItemId: z.number(),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const cartItem = await db.query.sessionCartItems.findFirst({
+        where: and(
+          eq(sessionCartItems.sessionId, input.sessionId),
+          eq(sessionCartItems.id, input.cartItemId)
+        ),
+      });
+
+      if (!cartItem) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+      }
+
+      if (!cartItem.negotiationData) {
+        return { hasNegotiation: false, history: [] };
+      }
+
+      let negotiationData;
+      try {
+        negotiationData = JSON.parse(cartItem.negotiationData as string);
+      } catch {
+        return { hasNegotiation: false, history: [] };
+      }
+
+      return {
+        hasNegotiation: true,
+        status: negotiationData.status,
+        originalPrice: negotiationData.originalPrice,
+        proposedPrice: negotiationData.proposedPrice,
+        counterPrice: negotiationData.counterPrice,
+        finalPrice: negotiationData.finalPrice,
+        history: negotiationData.history || [],
+      };
+    }),
+
+  /**
+   * Get all active negotiations in a session
+   */
+  getActiveNegotiations: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(z.object({ sessionId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const items = await db
+        .select({
+          id: sessionCartItems.id,
+          productId: sessionCartItems.productId,
+          batchId: sessionCartItems.batchId,
+          quantity: sessionCartItems.quantity,
+          unitPrice: sessionCartItems.unitPrice,
+          negotiationStatus: sessionCartItems.negotiationStatus,
+          negotiationData: sessionCartItems.negotiationData,
+          productName: products.nameCanonical,
+        })
+        .from(sessionCartItems)
+        .leftJoin(products, eq(sessionCartItems.productId, products.id))
+        .where(
+          and(
+            eq(sessionCartItems.sessionId, input.sessionId),
+            sql`${sessionCartItems.negotiationStatus} IS NOT NULL AND ${sessionCartItems.negotiationStatus} != 'ACCEPTED' AND ${sessionCartItems.negotiationStatus} != 'REJECTED'`
+          )
+        );
+
+      return items.map((item) => {
+        let negotiation = null;
+        if (item.negotiationData) {
+          try {
+            negotiation = JSON.parse(item.negotiationData as string);
+          } catch {
+            negotiation = null;
+          }
+        }
+        return {
+          ...item,
+          negotiation,
+        };
+      });
     }),
 });

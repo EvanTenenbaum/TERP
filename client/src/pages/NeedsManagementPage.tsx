@@ -16,6 +16,8 @@ import { MatchBadge } from "@/components/needs/MatchBadge";
 import { Search, Filter, Plus, Loader2, Package, TrendingUp, Users } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
+// UX-012: Import centralized date formatting utility
+import { formatDate } from "@/lib/utils";
 
 /**
  * Needs Management Page
@@ -257,11 +259,12 @@ export default function NeedsManagementPage() {
                           <p className="font-medium">${need.priceMax}/unit</p>
                         </div>
                       )}
+                      {/* UX-012: Use standardized date formatting */}
                       {need.neededBy && (
                         <div>
                           <p className="text-muted-foreground">Needed By</p>
                           <p className="font-medium">
-                            {new Date(need.neededBy).toLocaleDateString()}
+                            {formatDate(need.neededBy)}
                           </p>
                         </div>
                       )}
@@ -269,7 +272,7 @@ export default function NeedsManagementPage() {
                         <div>
                           <p className="text-muted-foreground">Created</p>
                           <p className="font-medium">
-                            {new Date(need.createdAt).toLocaleDateString()}
+                            {formatDate(need.createdAt)}
                           </p>
                         </div>
                       )}

@@ -142,17 +142,23 @@ export function getErrorCode(error: unknown): string {
     }
 
     // BUG-046 FIX: Parse from message as last resort for known patterns
-    const message = error.message.toLowerCase();
+    // Use optional chaining and nullish coalescing for safety
+    const message = (error.message ?? "").toLowerCase();
     if (
       message.includes("permission denied") ||
       message.includes("do not have permission") ||
-      message.includes("forbidden")
+      message.includes("not have permission") ||
+      message.includes("access denied") ||
+      message.includes("forbidden") ||
+      message.includes("required permission:")
     ) {
       return "FORBIDDEN";
     }
     if (
       message.includes("authentication required") ||
       message.includes("please log in") ||
+      message.includes("not authenticated") ||
+      message.includes("login required") ||
       message.includes("unauthorized")
     ) {
       return "UNAUTHORIZED";
@@ -162,14 +168,28 @@ export function getErrorCode(error: unknown): string {
   }
 
   if (error instanceof Error) {
-    if (error.message.includes("TERI code already exists")) {
+    const message = (error.message ?? "").toLowerCase();
+    if (message.includes("teri code already exists")) {
       return "TERI_CODE_EXISTS";
     }
-    if (
-      error.message.includes("fetch failed") ||
-      error.message.includes("network")
-    ) {
+    if (message.includes("fetch failed") || message.includes("network")) {
       return "NETWORK_ERROR";
+    }
+    // BUG-046 FIX: Also detect auth errors from generic Error instances
+    if (
+      message.includes("permission denied") ||
+      message.includes("do not have permission") ||
+      message.includes("forbidden") ||
+      message.includes("access denied")
+    ) {
+      return "FORBIDDEN";
+    }
+    if (
+      message.includes("authentication required") ||
+      message.includes("please log in") ||
+      message.includes("unauthorized")
+    ) {
+      return "UNAUTHORIZED";
     }
   }
 
@@ -234,10 +254,23 @@ export function isErrorCode(error: unknown, code: string): boolean {
 
 /**
  * Check if an error is an authentication error
+ * BUG-046 FIX: More comprehensive auth error detection
  */
 export function isAuthError(error: unknown): boolean {
   const code = getErrorCode(error);
-  return code === "UNAUTHORIZED" || code === "FORBIDDEN";
+  if (code === "UNAUTHORIZED" || code === "FORBIDDEN") {
+    return true;
+  }
+
+  // BUG-046 FIX: Also check auth error type for edge cases
+  // where code extraction fails but message indicates auth error
+  const authType = getAuthErrorType(error);
+  return (
+    authType === "NOT_LOGGED_IN" ||
+    authType === "SESSION_EXPIRED" ||
+    authType === "PERMISSION_DENIED" ||
+    authType === "DEMO_USER_RESTRICTED"
+  );
 }
 
 /**
@@ -280,11 +313,10 @@ export function logError(
  * Enhanced to use getErrorCode for consistent code extraction
  */
 export function getAuthErrorType(error: unknown): AuthErrorType {
-  if (!isTRPCClientError(error)) {
-    return "UNKNOWN";
-  }
-
-  const message = error.message.toLowerCase();
+  // BUG-046 FIX: Handle both tRPC errors and regular errors
+  const message = (
+    error instanceof Error ? error.message : String(error)
+  ).toLowerCase();
 
   // Check for session expiry first (before checking code)
   if (message.includes("session") && message.includes("expired")) {
@@ -295,7 +327,8 @@ export function getAuthErrorType(error: unknown): AuthErrorType {
   if (
     message.includes("demo") ||
     message.includes("not available in demo") ||
-    message.includes("public user")
+    message.includes("public user") ||
+    message.includes("public users can only")
   ) {
     return "DEMO_USER_RESTRICTED";
   }
@@ -313,18 +346,24 @@ export function getAuthErrorType(error: unknown): AuthErrorType {
   }
 
   // BUG-046 FIX: Additional message-based detection for edge cases
+  // Permission-related patterns (more specific first)
   if (
-    message.includes("permission") ||
+    message.includes("do not have permission") ||
+    message.includes("not have permission") ||
+    message.includes("required permission:") ||
     message.includes("access denied") ||
-    message.includes("not allowed")
+    message.includes("not allowed") ||
+    message.includes("forbidden")
   ) {
     return "PERMISSION_DENIED";
   }
 
+  // Authentication-related patterns
   if (
     message.includes("log in") ||
     message.includes("authentication required") ||
-    message.includes("not authenticated")
+    message.includes("not authenticated") ||
+    message.includes("login required")
   ) {
     return "NOT_LOGGED_IN";
   }
@@ -379,23 +418,37 @@ export function getAuthErrorInfo(error: unknown): AuthErrorInfo {
     case "DEMO_USER_RESTRICTED":
       return {
         type,
-        title: "Feature Not Available",
+        title: "Demo Mode Restriction",
         message:
-          "This feature is not available in demo mode. Upgrade your account to access full functionality.",
+          originalMessage ||
+          "This feature is not available in demo mode. Please log in with a full account.",
         action: {
-          label: "Upgrade Account",
-          href: "/upgrade",
+          label: "Log In",
+          href: `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
         },
       };
 
-    case "PERMISSION_DENIED":
+    case "PERMISSION_DENIED": {
+      // BUG-046 FIX: Extract and display the required permission if available
+      const permissionMatch = originalMessage.match(
+        /required permission[s]?:\s*([^\s.]+)/i
+      );
+      const requiredPermission = permissionMatch?.[1];
+
+      let message = originalMessage;
+      if (requiredPermission) {
+        message = `You do not have the "${requiredPermission}" permission required to access this feature. Please contact your administrator to request access.`;
+      } else if (!message || message === ERROR_MESSAGES.FORBIDDEN) {
+        message =
+          "You do not have permission to access this feature. Please contact your administrator if you believe this is an error.";
+      }
+
       return {
         type,
         title: "Access Denied",
-        message:
-          originalMessage ||
-          "You do not have permission to perform this action.",
+        message,
       };
+    }
 
     default:
       return {

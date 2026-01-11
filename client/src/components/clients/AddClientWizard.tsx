@@ -30,9 +30,15 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
   const [formData, setFormData] = useState({
     teriCode: "",
     name: "",
+    companyName: "", // FEAT-001: Added company name field
     email: "",
     phone: "",
+    secondaryPhone: "", // FEAT-001: Added secondary phone
     address: "",
+    city: "", // FEAT-001: Added city
+    state: "", // FEAT-001: Added state
+    zipCode: "", // FEAT-001: Added zip code
+    notes: "", // FEAT-001: Added notes field
     isBuyer: false,
     isSeller: false,
     isBrand: false,
@@ -44,7 +50,8 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
 
   // UX-001: Warn before leaving with unsaved changes
   const hasFormData = formData.name !== "" || formData.teriCode !== "" || formData.email !== "" ||
-    formData.phone !== "" || formData.address !== "" || formData.tags.length > 0;
+    formData.phone !== "" || formData.address !== "" || formData.tags.length > 0 ||
+    formData.companyName !== "" || formData.secondaryPhone !== "" || formData.notes !== "";
   useBeforeUnloadWarning(hasFormData && open);
 
   // Fetch all existing tags for autocomplete
@@ -69,9 +76,15 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
     setFormData({
       teriCode: "",
       name: "",
+      companyName: "",
       email: "",
       phone: "",
+      secondaryPhone: "",
       address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      notes: "",
       isBuyer: false,
       isSeller: false,
       isBrand: false,
@@ -92,9 +105,38 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
 
   const handleSubmit = async () => {
     try {
+      // FEAT-001: Compose full address from parts
+      const addressParts = [
+        formData.address,
+        formData.city,
+        formData.state,
+        formData.zipCode
+      ].filter(Boolean);
+      const fullAddress = addressParts.join(', ');
+
+      // Include company name in the name if provided
+      const displayName = formData.companyName
+        ? `${formData.name} (${formData.companyName})`
+        : formData.name;
+
+      // Combine notes and secondary phone info
+      const notesWithPhone = formData.secondaryPhone
+        ? `${formData.notes ? formData.notes + '\n' : ''}Secondary Phone: ${formData.secondaryPhone}`
+        : formData.notes;
+
       await createClientMutation.mutateAsync({
-        ...formData,
+        teriCode: formData.teriCode,
+        name: displayName,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        address: fullAddress || undefined,
+        isBuyer: formData.isBuyer,
+        isSeller: formData.isSeller,
+        isBrand: formData.isBrand,
+        isReferee: formData.isReferee,
+        isContractor: formData.isContractor,
         tags: formData.tags.length > 0 ? formData.tags : undefined,
+        wishlist: notesWithPhone || undefined, // Store additional notes in wishlist field
       });
     } catch (error) {
       // Error is already handled by onError callback
@@ -128,38 +170,50 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step 1: Basic Information */}
+        {/* Step 1: Basic Information - FEAT-001 Enhanced */}
         {step === 1 && (
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="teriCode">
-                TERI Code <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="teriCode"
-                placeholder="Enter unique TERI code"
-                value={formData.teriCode}
-                onChange={(e) => setFormData({ ...formData, teriCode: e.target.value })}
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                This is the unique identifier for the client (e.g., "KJ", "FO1")
-              </p>
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="teriCode">
+                  TERI Code <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="teriCode"
+                  placeholder="Enter unique TERI code"
+                  value={formData.teriCode}
+                  onChange={(e) => setFormData({ ...formData, teriCode: e.target.value })}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Unique identifier (e.g., "KJ", "FO1")
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Company Name</Label>
+                <Input
+                  id="companyName"
+                  placeholder="Enter company name"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="name">
-                Client Name <span className="text-destructive">*</span>
+                Contact Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
-                placeholder="Enter client's full name"
+                placeholder="Enter contact's full name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Full name is kept private and only visible in the client profile
+                Primary contact person for this client
               </p>
             </div>
 
@@ -174,24 +228,76 @@ export function AddClientWizard({ open, onOpenChange, onSuccess }: AddClientWiza
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Primary Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="secondaryPhone">Secondary Phone</Label>
+                <Input
+                  id="secondaryPhone"
+                  type="tel"
+                  placeholder="+1 (555) 987-6543"
+                  value={formData.secondaryPhone}
+                  onChange={(e) => setFormData({ ...formData, secondaryPhone: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
+              <Label htmlFor="address">Street Address</Label>
+              <Input
                 id="address"
-                placeholder="Enter client's address"
+                placeholder="123 Main Street"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  placeholder="City"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  placeholder="State"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">ZIP Code</Label>
+                <Input
+                  id="zipCode"
+                  placeholder="12345"
+                  value={formData.zipCode}
+                  onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                placeholder="Additional notes about this client..."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
               />
             </div>

@@ -117,8 +117,13 @@
     "dashboard": "tsx scripts/dashboard.ts",
     "dashboard:html": "tsx scripts/generate-html-dashboard.ts && open dashboard.html",
     "slack-bot:ai": "tsx scripts/slack-bot-ai.ts",
+    "slack-bot:start": "tsx scripts/slack-bot-ai.ts",
+    "slack-bot:dev": "tsx watch scripts/slack-bot-ai.ts",
     "backup:db": "tsx scripts/backup-database.ts",
-    "backup:db:dry": "tsx scripts/backup-database.ts --dry-run"
+    "backup:db:dry": "tsx scripts/backup-database.ts --dry-run",
+    "deploy:enforce": "tsx scripts/deployment-enforcement.ts monitor",
+    "deploy:check": "tsx scripts/deployment-enforcement.ts check",
+    "deploy:health": "tsx scripts/deployment-enforcement.ts health"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

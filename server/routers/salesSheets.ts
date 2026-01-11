@@ -65,6 +65,40 @@ const columnConfigSchema = z
   .optional();
 
 export const salesSheetsRouter = router({
+  // List sales sheets with pagination
+  // BUG-034: Standardized .list procedure for API consistency
+  list: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        limit: z.number().min(1).max(1000).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+        clientId: z.number().positive().optional(),
+      }).optional()
+    )
+    .query(async ({ input }) => {
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+      const clientId = input?.clientId;
+
+      // Fetch sales sheet history with optional client filter
+      const sheets = await salesSheetsDb.getSalesSheetHistory(
+        clientId ?? 0, // 0 means fetch all when supported
+        limit + offset // Fetch more to slice, since getSalesSheetHistory doesn't support offset directly
+      );
+
+      // Apply offset manually
+      const paginatedSheets = sheets.slice(offset, offset + limit);
+
+      return {
+        data: paginatedSheets,
+        total: sheets.length,
+        limit,
+        offset,
+        hasMore: offset + limit < sheets.length,
+      };
+    }),
+
   // Inventory with Pricing
   getInventory: protectedProcedure.use(requirePermission("orders:read"))
     .input(z.object({ clientId: z.number().positive() }))

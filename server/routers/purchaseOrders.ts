@@ -9,6 +9,57 @@ import { logger } from "../_core/logger";
 import { TRPCError } from "@trpc/server";
 
 export const purchaseOrdersRouter = router({
+  // List purchase orders with pagination
+  // BUG-034: Standardized .list procedure for API consistency
+  list: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(1000).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+        supplierClientId: z.number().optional(),
+        status: z.enum(["DRAFT", "SENT", "CONFIRMED", "RECEIVING", "RECEIVED", "CANCELLED"]).optional(),
+        search: z.string().optional(),
+      }).optional()
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+
+      // Build conditions array
+      const conditions = [];
+
+      // Filter by supplier
+      if (input?.supplierClientId) {
+        conditions.push(eq(purchaseOrders.supplierClientId, input.supplierClientId));
+      }
+
+      // Filter by status
+      if (input?.status) {
+        conditions.push(eq(purchaseOrders.purchaseOrderStatus, input.status));
+      }
+
+      // Execute query with conditions
+      const baseQuery = db.select().from(purchaseOrders);
+      const query = conditions.length > 0
+        ? baseQuery.where(and(...conditions))
+        : baseQuery;
+
+      const pos = await query.orderBy(desc(purchaseOrders.createdAt)).limit(limit).offset(offset);
+
+      // Get total count for pagination
+      const countQuery = conditions.length > 0
+        ? db.select({ count: sql<number>`COUNT(*)` }).from(purchaseOrders).where(and(...conditions))
+        : db.select({ count: sql<number>`COUNT(*)` }).from(purchaseOrders);
+
+      const [countResult] = await countQuery;
+      const total = countResult?.count ?? pos.length;
+
+      return createSafeUnifiedResponse(pos, total, limit, offset);
+    }),
+
   // Create new purchase order
   // Supports both supplierClientId (canonical) and vendorId (deprecated, for backward compat)
   create: protectedProcedure

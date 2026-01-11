@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag, Bell, Calendar } from "lucide-react";
+import { Plus, Trash2, Edit2, Save, X, Database, AlertTriangle, Flag, Bell, Calendar, Code2, Building } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { CalendarSettings } from "@/components/calendar/CalendarSettings";
 import { trpc } from "@/lib/trpc";
@@ -15,6 +15,13 @@ import { RoleManagement } from "@/components/settings/rbac/RoleManagement";
 import { PermissionAssignment } from "@/components/settings/rbac/PermissionAssignment";
 import { VIPImpersonationManager } from "@/components/settings/VIPImpersonationManager";
 import { useBeforeUnloadWarning } from "@/hooks/useUnsavedChangesWarning";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  GeneralOrgSettings,
+  UserPreferencesSettings,
+  UnitTypesManager,
+  FinanceStatusManager,
+} from "@/components/settings/OrganizationSettings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,11 +35,16 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Settings() {
+  // FEAT-018: Check if user has admin/dev access for development-only features
+  const { isSuperAdmin, hasPermission } = usePermissions();
+  const showDevTools = isSuperAdmin || hasPermission("admin:dev-tools");
+
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
       <BackButton label="Back to Dashboard" to="/" className="mb-2 sm:mb-4" />
+      {/* UX-010: Updated title to "System Settings" to distinguish from personal "My Account" settings */}
       <div>
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Settings</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">System Settings</h1>
         <p className="text-muted-foreground mt-1 text-sm sm:text-base">
           Manage system configurations and master data
         </p>
@@ -48,11 +60,21 @@ export default function Settings() {
             <TabsTrigger value="locations" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Locations</TabsTrigger>
             <TabsTrigger value="categories" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Categories</TabsTrigger>
             <TabsTrigger value="grades" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Grades</TabsTrigger>
-            <TabsTrigger value="database" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Database</TabsTrigger>
+            {/* FEAT-018: Hide Database tab from non-admin/dev users */}
+            {showDevTools && (
+              <TabsTrigger value="database" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+                <Code2 className="h-3 w-3 mr-1" />
+                Database
+              </TabsTrigger>
+            )}
             <TabsTrigger value="feature-flags" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Feature Flags</TabsTrigger>
             <TabsTrigger value="vip-impersonation" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">VIP Access</TabsTrigger>
             <TabsTrigger value="notifications" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Notifications</TabsTrigger>
             <TabsTrigger value="calendars" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">Calendars</TabsTrigger>
+            <TabsTrigger value="organization" className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+              <Building className="h-3 w-3 mr-1" />
+              Organization
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -84,9 +106,12 @@ export default function Settings() {
           <GradesManager />
         </TabsContent>
 
-        <TabsContent value="database" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
-          <DatabaseManager />
-        </TabsContent>
+        {/* FEAT-018: Only show Database tab content for admin/dev users */}
+        {showDevTools && (
+          <TabsContent value="database" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+            <DatabaseManager />
+          </TabsContent>
+        )}
 
         <TabsContent value="feature-flags" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
           <Card>
@@ -136,6 +161,14 @@ export default function Settings() {
 
         <TabsContent value="calendars" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
           <CalendarSettings />
+        </TabsContent>
+
+        {/* FEAT-009 to FEAT-015: Organization Settings */}
+        <TabsContent value="organization" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+          <GeneralOrgSettings />
+          <UserPreferencesSettings />
+          <UnitTypesManager />
+          <FinanceStatusManager />
         </TabsContent>
       </Tabs>
     </div>
