@@ -6282,6 +6282,8 @@ export const organizationSettings = mysqlTable(
       .default("STRING"),
     description: text("description"),
     isActive: boolean("is_active").notNull().default(true),
+    // FEAT-021/FEAT-023: Scope for system vs user level settings
+    scope: mysqlEnum("scope", ["SYSTEM", "USER", "TEAM"]).notNull().default("SYSTEM"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   }

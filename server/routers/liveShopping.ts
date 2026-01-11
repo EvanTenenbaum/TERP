@@ -679,7 +679,7 @@ export const liveShoppingRouter = router({
         .update(sessionCartItems)
         .set({
           negotiationStatus: "PENDING",
-          negotiationData: JSON.stringify(negotiationData),
+          negotiationData: negotiationData, // Drizzle handles JSON serialization
         })
         .where(eq(sessionCartItems.id, input.cartItemId));
 
@@ -731,10 +731,12 @@ export const liveShoppingRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
       }
 
-      let negotiationData;
-      try {
-        negotiationData = JSON.parse(cartItem.negotiationData as string);
-      } catch {
+      // Drizzle returns JSON as parsed object, but handle string case for safety
+      const negotiationData = typeof cartItem.negotiationData === "string"
+        ? JSON.parse(cartItem.negotiationData)
+        : cartItem.negotiationData;
+
+      if (!negotiationData || !negotiationData.history) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid negotiation data" });
       }
 
@@ -774,11 +776,11 @@ export const liveShoppingRouter = router({
         negotiationData.counterQuantity = input.counterQuantity;
       }
 
-      updates.negotiationData = JSON.stringify(negotiationData);
+      updates.negotiationData = negotiationData; // Drizzle handles JSON serialization
 
       await db
         .update(sessionCartItems)
-        .set(updates)
+        .set(updates as Partial<typeof sessionCartItems.$inferInsert>)
         .where(eq(sessionCartItems.id, input.cartItemId));
 
       // Emit negotiation response event
@@ -828,14 +830,12 @@ export const liveShoppingRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Negotiation not found" });
       }
 
-      let negotiationData;
-      try {
-        negotiationData = JSON.parse(cartItem.negotiationData as string);
-      } catch {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Invalid negotiation data" });
-      }
+      // Drizzle returns JSON as parsed object, but handle string case for safety
+      const negotiationData = typeof cartItem.negotiationData === "string"
+        ? JSON.parse(cartItem.negotiationData)
+        : cartItem.negotiationData;
 
-      if (negotiationData.status !== "COUNTER_OFFERED") {
+      if (!negotiationData || negotiationData.status !== "COUNTER_OFFERED") {
         throw new TRPCError({ code: "BAD_REQUEST", message: "No counter-offer to accept" });
       }
 
@@ -858,7 +858,7 @@ export const liveShoppingRouter = router({
           unitPrice: negotiationData.counterPrice.toString(),
           quantity: negotiationData.counterQuantity?.toString() || cartItem.quantity,
           negotiationStatus: "ACCEPTED",
-          negotiationData: JSON.stringify(negotiationData),
+          negotiationData: negotiationData, // Drizzle handles JSON serialization
         })
         .where(eq(sessionCartItems.id, input.cartItemId));
 
@@ -908,10 +908,12 @@ export const liveShoppingRouter = router({
         return { hasNegotiation: false, history: [] };
       }
 
-      let negotiationData;
-      try {
-        negotiationData = JSON.parse(cartItem.negotiationData as string);
-      } catch {
+      // Drizzle returns JSON as parsed object, but handle string case for safety
+      const negotiationData = typeof cartItem.negotiationData === "string"
+        ? JSON.parse(cartItem.negotiationData)
+        : cartItem.negotiationData;
+
+      if (!negotiationData) {
         return { hasNegotiation: false, history: [] };
       }
 
