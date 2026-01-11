@@ -12,6 +12,7 @@ export const vipPortalConfigurations = mysqlTable("vip_portal_configurations", {
   // Module-level toggles
   moduleDashboardEnabled: boolean("module_dashboard_enabled").default(true).notNull(),
   moduleLiveCatalogEnabled: boolean("module_live_catalog_enabled").default(false).notNull(),
+  moduleLiveShoppingEnabled: boolean("module_live_shopping_enabled").default(true).notNull(),
   moduleArEnabled: boolean("module_ar_enabled").default(true).notNull(),
   moduleApEnabled: boolean("module_ap_enabled").default(true).notNull(),
   moduleTransactionHistoryEnabled: boolean("module_transaction_history_enabled").default(true).notNull(),
@@ -92,6 +93,11 @@ export const vipPortalConfigurations = mysqlTable("vip_portal_configurations", {
       showBasePrice?: boolean;
       showMarkup?: boolean;
       enablePriceAlerts?: boolean;
+    };
+    liveShopping?: {
+      allowProductSearch?: boolean;
+      autoJoinActive?: boolean;
+      showPriceHistory?: boolean;
     };
     leaderboard?: {
       enabled?: boolean;

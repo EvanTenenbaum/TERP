@@ -6,12 +6,74 @@ import {
   sessionCartItems,
 } from "../../drizzle/schema-live-shopping";
 import { batches, products, productMedia } from "../../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, like, gt } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sessionCartService } from "../services/live-shopping/sessionCartService";
 import { sessionEventManager } from "../lib/sse/sessionEventManager";
 
 export const vipPortalLiveShoppingRouter = router({
+  // ============================================================================
+  // SESSION DISCOVERY
+  // ============================================================================
+
+  /**
+   * Check if client has an active session
+   * Used to show "active session" banner in VIP Portal
+   */
+  getActiveSession: vipPortalProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database unavailable",
+        });
+
+      // Validate client ownership
+      if (input.clientId !== ctx.clientId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Access denied",
+        });
+      }
+
+      // Find active or scheduled session for this client
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: and(
+          eq(liveShoppingSessions.clientId, input.clientId),
+          or(
+            eq(liveShoppingSessions.status, "ACTIVE"),
+            eq(liveShoppingSessions.status, "SCHEDULED"),
+            eq(liveShoppingSessions.status, "PAUSED")
+          )
+        ),
+        with: {
+          host: {
+            columns: {
+              name: true,
+            },
+          },
+        },
+        orderBy: (sessions, { desc }) => [desc(sessions.createdAt)],
+      });
+
+      if (!session) {
+        return { session: null };
+      }
+
+      return {
+        session: {
+          id: session.id,
+          roomCode: session.roomCode,
+          title: session.title,
+          status: session.status,
+          hostName: session.host?.name || "Staff",
+          scheduledAt: session.scheduledAt,
+        },
+      };
+    }),
+
   // ============================================================================
   // SESSION INTERACTION
   // ============================================================================
@@ -61,7 +123,7 @@ export const vipPortalLiveShoppingRouter = router({
           id: session.id,
           title: session.title,
           status: session.status,
-          hostName: session.host.name,
+          hostName: session.host?.name || "Staff",
           roomCode: session.roomCode,
         },
         cart,
@@ -367,6 +429,65 @@ export const vipPortalLiveShoppingRouter = router({
           message: e.message || "Failed to add item",
         });
       }
+    }),
+
+  /**
+   * Customer searches for products to add to session
+   * Allows customers to find and add items themselves
+   */
+  searchProducts: vipPortalProcedure
+    .input(
+      z.object({
+        sessionId: z.number(),
+        query: z.string().min(1),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Validate session ownership
+      const session = await db.query.liveShoppingSessions.findFirst({
+        where: eq(liveShoppingSessions.id, input.sessionId),
+      });
+
+      if (!session || session.clientId !== ctx.clientId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Invalid session" });
+      }
+
+      if (session.status !== "ACTIVE" && session.status !== "PAUSED") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Session is not active" });
+      }
+
+      const trimmedQuery = input.query.trim();
+      if (!trimmedQuery) {
+        return [];
+      }
+
+      // Search for available products - only show basic info to clients
+      const results = await db
+        .select({
+          batchId: batches.id,
+          productId: products.id,
+          productName: products.nameCanonical,
+          batchCode: batches.code,
+          available: batches.onHandQty,
+          // Don't expose COGS or internal pricing to clients
+        })
+        .from(batches)
+        .innerJoin(products, eq(batches.productId, products.id))
+        .where(
+          and(
+            or(
+              like(products.nameCanonical, `%${trimmedQuery}%`),
+              like(batches.code, `%${trimmedQuery}%`)
+            ),
+            gt(batches.onHandQty, 0) // Only show in-stock items
+          )
+        )
+        .limit(15);
+
+      return results;
     }),
 
   /**

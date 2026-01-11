@@ -20,6 +20,7 @@ import {
   LogOut,
   Menu,
   CalendarIcon,
+  Video,
 } from "lucide-react";
 import {
   Sheet,
@@ -41,6 +42,7 @@ import { ImpersonationBanner } from "@/components/vip-portal/ImpersonationBanner
 import AppointmentBooking from "./AppointmentBooking";
 import VipNotificationsBell from "./VipNotificationsBell";
 import DocumentDownloads from "./DocumentDownloads";
+import LiveShoppingPage from "./LiveShoppingPage";
 
 // Type for VIP Portal configuration with all module flags as boolean
 interface VipPortalConfig {
@@ -48,6 +50,7 @@ interface VipPortalConfig {
   clientId: number;
   moduleDashboardEnabled: boolean;
   moduleLiveCatalogEnabled: boolean;
+  moduleLiveShoppingEnabled: boolean;
   moduleArEnabled: boolean;
   moduleApEnabled: boolean;
   moduleTransactionHistoryEnabled: boolean;
@@ -174,6 +177,11 @@ export default function VIPDashboard() {
       id: "dashboard",
       label: "Dashboard",
       enabled: config.moduleDashboardEnabled,
+    },
+    {
+      id: "live-shopping",
+      label: "Live Shopping",
+      enabled: config.moduleLiveShoppingEnabled ?? true, // Default enabled
     },
     {
       id: "catalog",
@@ -491,6 +499,16 @@ export default function VIPDashboard() {
                             Book Appointment
                           </span>
                         </Button>
+                        <Button
+                          variant="outline"
+                          className="h-auto flex-col gap-2 p-4 md:p-6 border-green-200 bg-green-50 hover:bg-green-100"
+                          onClick={() => setActiveTab("live-shopping")}
+                        >
+                          <Video className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
+                          <span className="text-xs md:text-sm">
+                            Live Shopping
+                          </span>
+                        </Button>
                         {config.moduleCreditCenterEnabled && (
                           <Button
                             variant="outline"
@@ -509,6 +527,11 @@ export default function VIPDashboard() {
                 <DocumentDownloads clientId={clientId} />
               </div>
             )}
+
+          {/* Live Shopping Tab */}
+          {activeTab === "live-shopping" && (
+            <LiveShoppingPage onBack={() => setActiveTab("dashboard")} />
+          )}
 
           {/* AR Tab */}
           {activeTab === "ar" && config.moduleArEnabled && (

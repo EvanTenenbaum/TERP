@@ -1,17 +1,19 @@
 /**
  * Live Shopping Staff Console
- * 
+ *
  * Staff-facing interface for managing live shopping sessions.
  * Implements three-status workflow:
  * - SAMPLE_REQUEST: Customer wants to see a sample
  * - INTERESTED: Customer is interested, may negotiate price
  * - TO_PURCHASE: Customer intends to buy
  */
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { trpc } from "../../utils/trpc";
 import { useLiveSessionSSE } from "../../hooks/useLiveSessionSSE";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 type ItemStatus = "SAMPLE_REQUEST" | "INTERESTED" | "TO_PURCHASE";
 
@@ -57,14 +59,35 @@ export default function LiveSessionConsole() {
 
   const { data: itemsByStatus, refetch: refetchItems } = trpc.liveShopping.getItemsByStatus.useQuery(
     { sessionId: sessionId! },
-    { 
+    {
       enabled: !!sessionId,
-      refetchInterval: 2000, // Poll for updates until SSE is fully integrated
+      refetchInterval: 5000, // Fallback polling every 5 seconds (SSE is primary)
     }
   );
 
-  // SSE for real-time updates
-  const { sessionStatus: sseStatus, connectionStatus } = useLiveSessionSSE(sessionId!);
+  // SSE for real-time updates - use cart data to trigger refetch
+  const { cart: sseCart, sessionStatus: sseStatus, connectionStatus } = useLiveSessionSSE(sessionId!);
+
+  // Track previous cart state to detect changes
+  const prevCartRef = useRef<string | null>(null);
+
+  // When SSE cart updates, immediately refetch for accurate data
+  useEffect(() => {
+    if (sseCart) {
+      const cartKey = JSON.stringify(sseCart.items.map(i => ({ id: i.id, qty: i.quantity, price: i.unitPrice })));
+      if (prevCartRef.current !== cartKey) {
+        prevCartRef.current = cartKey;
+        refetchItems();
+      }
+    }
+  }, [sseCart, refetchItems]);
+
+  // Track SSE session status changes
+  useEffect(() => {
+    if (sseStatus && sseStatus !== session?.status) {
+      refetchSession();
+    }
+  }, [sseStatus, session?.status, refetchSession]);
   
   // Mutations
   const updateStatusMutation = trpc.liveShopping.updateItemStatus.useMutation({
@@ -92,6 +115,12 @@ export default function LiveSessionConsole() {
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+
+  // Dialog state for ConfirmDialog (replacing window.confirm)
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState<number | null>(null);
+  const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false);
+  const [convertOnEnd, setConvertOnEnd] = useState(false);
 
   // Handlers
   const handleStatusChange = useCallback(
@@ -121,54 +150,64 @@ export default function LiveSessionConsole() {
   const handleRemove = useCallback(
     (cartItemId: number) => {
       if (!sessionId) return;
-      if (confirm("Remove this item from the session?")) {
-        removeItemMutation.mutate({ sessionId, cartItemId });
-      }
+      setItemToRemove(cartItemId);
+      setRemoveDialogOpen(true);
     },
-    [sessionId, removeItemMutation]
+    [sessionId]
   );
+
+  const confirmRemoveItem = useCallback(() => {
+    if (sessionId && itemToRemove !== null) {
+      removeItemMutation.mutate({ sessionId, cartItemId: itemToRemove });
+    }
+    setItemToRemove(null);
+  }, [sessionId, itemToRemove, removeItemMutation]);
 
   const handleSessionAction = useCallback(
     (action: "start" | "pause" | "end" | "convert") => {
       if (!sessionId) return;
-      
+
       if (action === "start") {
         updateSessionStatusMutation.mutate({ sessionId, status: "ACTIVE" });
       } else if (action === "pause") {
         updateSessionStatusMutation.mutate({ sessionId, status: "PAUSED" });
       } else if (action === "end") {
-        if (confirm("End session without creating an order?")) {
-          endSessionMutation.mutate(
-            { sessionId, convertToOrder: false },
-            { onSuccess: () => router.push("/live-shopping") }
-          );
-        }
+        setConvertOnEnd(false);
+        setEndSessionDialogOpen(true);
       } else if (action === "convert") {
         const toPurchaseCount = itemsByStatus?.totals?.toPurchaseCount || 0;
         if (toPurchaseCount === 0) {
-          alert("Cannot convert to order: No items marked 'To Purchase'. Please have the customer mark items they want to buy.");
+          toast.error(
+            "Cannot convert to order: No items marked 'To Purchase'. Please have the customer mark items they want to buy."
+          );
           return;
         }
-        if (confirm(`Convert ${toPurchaseCount} items to order?`)) {
-          endSessionMutation.mutate(
-            { sessionId, convertToOrder: true },
-            {
-              onSuccess: (data) => {
-                if ('orderId' in data && data.orderId) {
-                  alert(`Order #${data.orderId} created successfully!`);
-                }
-                router.push("/live-shopping");
-              },
-              onError: (error) => {
-                alert(`Error: ${error.message}`);
-              },
-            }
-          );
-        }
+        setConvertOnEnd(true);
+        setEndSessionDialogOpen(true);
       }
     },
-    [sessionId, updateSessionStatusMutation, endSessionMutation, itemsByStatus, router]
+    [sessionId, updateSessionStatusMutation, itemsByStatus]
   );
+
+  const confirmEndSession = useCallback(() => {
+    if (!sessionId) return;
+    endSessionMutation.mutate(
+      { sessionId, convertToOrder: convertOnEnd },
+      {
+        onSuccess: (data) => {
+          if (convertOnEnd && "orderId" in data && data.orderId) {
+            toast.success(`Order #${data.orderId} created successfully!`);
+          } else {
+            toast.success("Session ended.");
+          }
+          router.push("/live-shopping");
+        },
+        onError: (error) => {
+          toast.error(`Error: ${error.message}`);
+        },
+      }
+    );
+  }, [sessionId, convertOnEnd, endSessionMutation, router]);
 
   // Loading state
   if (!sessionId || sessionLoading || !session) {
@@ -356,6 +395,37 @@ export default function LiveSessionConsole() {
           />
         </div>
       </div>
+
+      {/* Remove Item Confirmation Dialog */}
+      <ConfirmDialog
+        open={removeDialogOpen}
+        onOpenChange={(open) => {
+          setRemoveDialogOpen(open);
+          if (!open) setItemToRemove(null);
+        }}
+        title="Remove Item"
+        description="Are you sure you want to remove this item from the session?"
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={confirmRemoveItem}
+        isLoading={removeItemMutation.isPending}
+      />
+
+      {/* End Session Confirmation Dialog */}
+      <ConfirmDialog
+        open={endSessionDialogOpen}
+        onOpenChange={setEndSessionDialogOpen}
+        title={convertOnEnd ? "Convert to Order" : "End Session"}
+        description={
+          convertOnEnd
+            ? `Convert ${itemsByStatus?.totals?.toPurchaseCount || 0} items to an order?`
+            : "Are you sure you want to end this session without creating an order?"
+        }
+        confirmLabel={convertOnEnd ? "Convert to Order" : "End Session"}
+        variant={convertOnEnd ? "default" : "destructive"}
+        onConfirm={confirmEndSession}
+        isLoading={endSessionMutation.isPending}
+      />
     </div>
   );
 }
