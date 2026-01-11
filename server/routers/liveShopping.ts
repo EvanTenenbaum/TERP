@@ -38,7 +38,20 @@ export const liveShoppingRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
-      
+
+      // BUG-094 FIX: Validate that client exists before inserting
+      const clientExists = await db.query.clients.findFirst({
+        where: eq(clients.id, input.clientId),
+        columns: { id: true },
+      });
+
+      if (!clientExists) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Client with ID ${input.clientId} does not exist`,
+        });
+      }
+
       const userId = getAuthenticatedUserId(ctx);
       const roomCode = randomUUID(); // Unique room ID
 
