@@ -2,6 +2,7 @@
  * SalesSheetCreatorPage
  * Create customized sales sheets with dynamic pricing for clients
  * QA-062: Added draft/auto-save functionality
+ * SALES-SHEET-IMPROVEMENTS: Added advanced filtering, sorting, and saved views
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -13,16 +14,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { FileText } from "lucide-react";
+import { FileText, Save } from "lucide-react";
 import { BackButton } from "@/components/common/BackButton";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
 import { SalesSheetPreview } from "@/components/sales/SalesSheetPreview";
 import { DraftControls } from "@/components/sales/DraftControls";
 import { DraftDialog } from "@/components/sales/DraftDialog";
+import { QuickViewSelector } from "@/components/sales/QuickViewSelector";
+import { SaveViewDialog } from "@/components/sales/SaveViewDialog";
 import { ClientCombobox } from "@/components/ui/client-combobox";
 import { toast } from "sonner";
-import type { PricedInventoryItem, DraftInfo } from "@/components/sales/types";
+import type {
+  PricedInventoryItem,
+  DraftInfo,
+  InventoryFilters,
+  InventorySortConfig,
+  ColumnVisibility,
+} from "@/components/sales/types";
+import {
+  DEFAULT_FILTERS,
+  DEFAULT_SORT,
+  DEFAULT_COLUMN_VISIBILITY,
+} from "@/components/sales/types";
 
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
@@ -37,9 +52,23 @@ export default function SalesSheetCreatorPage() {
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [showDraftDialog, setShowDraftDialog] = useState(false);
 
+  // Filter/Sort state (SALES-SHEET-IMPROVEMENTS)
+  const [filters, setFilters] = useState<InventoryFilters>(DEFAULT_FILTERS);
+  const [sort, setSort] = useState<InventorySortConfig>(DEFAULT_SORT);
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(
+    DEFAULT_COLUMN_VISIBILITY
+  );
+  const [currentViewId, setCurrentViewId] = useState<number | null>(null);
+  const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
+
   // Track initial load to prevent auto-save on first render
   const isInitialLoad = useRef(true);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // FIX: Use refs to avoid stale closures in auto-save timer
+  const selectedItemsRef = useRef<PricedInventoryItem[]>([]);
+  const draftNameRef = useRef("");
+  const selectedClientIdRef = useRef<number | null>(null);
+  const currentDraftIdRef = useRef<number | null>(null);
 
   // Fetch clients
   const { data: clients } = trpc.clients.list.useQuery({ limit: 1000 });
@@ -61,16 +90,24 @@ export default function SalesSheetCreatorPage() {
     { enabled: true }
   );
 
+  // Fetch saved views for auto-loading default
+  const { data: savedViews } = trpc.salesSheets.getViews.useQuery(
+    { clientId: selectedClientId ?? undefined },
+    { enabled: selectedClientId !== null && selectedClientId > 0 }
+  );
+
+  const utils = trpc.useUtils();
+
   // Save draft mutation
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation({
-    onSuccess: data => {
+    onSuccess: (data) => {
       setCurrentDraftId(data.draftId);
       setLastSaveTime(new Date());
       setHasUnsavedChanges(false);
       refetchDrafts();
       toast.success("Draft saved");
     },
-    onError: error => {
+    onError: (error) => {
       toast.error("Failed to save draft: " + error.message);
     },
   });
@@ -81,13 +118,43 @@ export default function SalesSheetCreatorPage() {
       refetchDrafts();
       toast.success("Draft deleted");
     },
-    onError: error => {
+    onError: (error) => {
       toast.error("Failed to delete draft: " + error.message);
     },
   });
 
-  // Utils for fetching drafts
-  const utils = trpc.useUtils();
+  // Auto-load default view when client changes
+  useEffect(() => {
+    if (selectedClientId && savedViews && savedViews.length > 0) {
+      const defaultView = savedViews.find(
+        (v) => v.clientId === selectedClientId && v.isDefault
+      );
+      if (defaultView) {
+        setFilters(defaultView.filters);
+        setSort(defaultView.sort as InventorySortConfig);
+        setColumnVisibility(defaultView.columnVisibility);
+        setCurrentViewId(defaultView.id);
+        toast.info(`Loaded default view: ${defaultView.name}`);
+      }
+    }
+  }, [selectedClientId, savedViews]);
+
+  // FIX: Keep refs in sync with state to avoid stale closures
+  useEffect(() => {
+    selectedItemsRef.current = selectedItems;
+  }, [selectedItems]);
+
+  useEffect(() => {
+    draftNameRef.current = draftName;
+  }, [draftName]);
+
+  useEffect(() => {
+    selectedClientIdRef.current = selectedClientId;
+  }, [selectedClientId]);
+
+  useEffect(() => {
+    currentDraftIdRef.current = currentDraftId;
+  }, [currentDraftId]);
 
   // Mark changes as unsaved when items change
   useEffect(() => {
@@ -100,7 +167,7 @@ export default function SalesSheetCreatorPage() {
     }
   }, [selectedItems]);
 
-  // Auto-save functionality
+  // Auto-save functionality using refs to avoid stale closures
   useEffect(() => {
     if (
       !hasUnsavedChanges ||
@@ -116,9 +183,30 @@ export default function SalesSheetCreatorPage() {
       clearTimeout(autoSaveTimerRef.current);
     }
 
-    // Set new auto-save timer
+    // Set new auto-save timer - uses refs to get fresh values
     autoSaveTimerRef.current = setTimeout(() => {
-      handleSaveDraft();
+      // FIX: Read from refs to get current values, not stale closure values
+      const items = selectedItemsRef.current;
+      const name = draftNameRef.current;
+      const clientId = selectedClientIdRef.current;
+      const draftId = currentDraftIdRef.current;
+
+      if (!clientId || items.length === 0 || !name.trim()) {
+        return;
+      }
+
+      const totalValue = items.reduce(
+        (sum, item) => sum + item.retailPrice,
+        0
+      );
+
+      saveDraftMutation.mutate({
+        draftId: draftId ?? undefined,
+        clientId: clientId,
+        name: name,
+        items: items,
+        totalValue,
+      });
     }, AUTO_SAVE_INTERVAL);
 
     return () => {
@@ -126,8 +214,7 @@ export default function SalesSheetCreatorPage() {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleSaveDraft intentionally omitted to avoid infinite loop
-  }, [hasUnsavedChanges, selectedClientId, selectedItems, draftName]);
+  }, [hasUnsavedChanges, selectedClientId, selectedItems, draftName, saveDraftMutation]);
 
   // Handle save draft
   const handleSaveDraft = useCallback(() => {
@@ -159,7 +246,6 @@ export default function SalesSheetCreatorPage() {
   const handleLoadDraft = useCallback(
     async (draftId: number) => {
       try {
-        // Use the utils to fetch the draft
         const result = await utils.salesSheets.getDraftById.fetch({ draftId });
 
         if (result) {
@@ -195,9 +281,9 @@ export default function SalesSheetCreatorPage() {
 
   // Handle add items to sheet
   const handleAddItems = useCallback((items: PricedInventoryItem[]) => {
-    setSelectedItems(prev => {
+    setSelectedItems((prev) => {
       const newItems = items.filter(
-        item => !prev.some(selected => selected.id === item.id)
+        (item) => !prev.some((selected) => selected.id === item.id)
       );
       return [...prev, ...newItems];
     });
@@ -205,7 +291,7 @@ export default function SalesSheetCreatorPage() {
 
   // Handle remove item from sheet
   const handleRemoveItem = useCallback((itemId: number) => {
-    setSelectedItems(prev => prev.filter(item => item.id !== itemId));
+    setSelectedItems((prev) => prev.filter((item) => item.id !== itemId));
   }, []);
 
   // Handle clear all items
@@ -221,7 +307,7 @@ export default function SalesSheetCreatorPage() {
     []
   );
 
-  // Reset draft state when client changes
+  // Reset state when client changes
   const handleClientChange = useCallback((clientId: number | null) => {
     setSelectedClientId(clientId);
     setSelectedItems([]);
@@ -230,10 +316,41 @@ export default function SalesSheetCreatorPage() {
     setLastSaveTime(null);
     setHasUnsavedChanges(false);
     isInitialLoad.current = true;
+    // Reset filters when changing clients
+    setFilters(DEFAULT_FILTERS);
+    setSort(DEFAULT_SORT);
+    setColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
+    setCurrentViewId(null);
   }, []);
 
+  // Handle loading a saved view
+  const handleLoadView = useCallback(
+    (view: {
+      filters: InventoryFilters;
+      sort: InventorySortConfig;
+      columnVisibility: ColumnVisibility;
+    }) => {
+      setFilters(view.filters);
+      setSort(view.sort);
+      setColumnVisibility(view.columnVisibility);
+    },
+    []
+  );
+
+  // Get selected client name for dialogs
+  const selectedClientName = (() => {
+    if (!selectedClientId) return undefined;
+    const clientList = Array.isArray(clients)
+      ? clients
+      : (clients?.items ?? []);
+    const client = clientList.find(
+      (c: { id: number }) => c.id === selectedClientId
+    );
+    return client?.name;
+  })();
+
   // Format drafts for dialog
-  const formattedDrafts: DraftInfo[] = (drafts ?? []).map(d => ({
+  const formattedDrafts: DraftInfo[] = (drafts ?? []).map((d) => ({
     id: d.id,
     name: d.name,
     clientId: d.clientId,
@@ -273,33 +390,56 @@ export default function SalesSheetCreatorPage() {
             disabled={!selectedClientId}
           />
 
-          {/* Client Selection */}
+          {/* Client Selection with Quick View */}
           <div className="space-y-2">
             <Label htmlFor="client-select">Select Client</Label>
-            <ClientCombobox
-              value={selectedClientId}
-              onValueChange={handleClientChange}
-              clients={(() => {
-                const clientList = Array.isArray(clients)
-                  ? clients
-                  : (clients?.items ?? []);
-                return clientList
-                  .filter((c: { isBuyer?: boolean | null }) => c.isBuyer)
-                  .map(
-                    (c: {
-                      id: number;
-                      name: string;
-                      email?: string | null;
-                    }) => ({
-                      id: c.id,
-                      name: c.name,
-                      email: c.email,
-                    })
-                  );
-              })()}
-              placeholder="Choose a client..."
-              emptyText="No clients found"
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex-1 min-w-[200px]">
+                <ClientCombobox
+                  value={selectedClientId}
+                  onValueChange={handleClientChange}
+                  clients={(() => {
+                    const clientList = Array.isArray(clients)
+                      ? clients
+                      : (clients?.items ?? []);
+                    return clientList
+                      .filter((c: { isBuyer?: boolean | null }) => c.isBuyer)
+                      .map(
+                        (c: {
+                          id: number;
+                          name: string;
+                          email?: string | null;
+                        }) => ({
+                          id: c.id,
+                          name: c.name,
+                          email: c.email,
+                        })
+                      );
+                  })()}
+                  placeholder="Choose a client..."
+                  emptyText="No clients found"
+                />
+              </div>
+
+              {/* Quick View and Save View buttons */}
+              {selectedClientId && (
+                <>
+                  <QuickViewSelector
+                    clientId={selectedClientId}
+                    onLoadView={handleLoadView}
+                    currentViewId={currentViewId}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSaveViewDialog(true)}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Save View
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
           {selectedClientId ? (
@@ -311,6 +451,10 @@ export default function SalesSheetCreatorPage() {
                   isLoading={inventoryLoading}
                   onAddItems={handleAddItems}
                   selectedItems={selectedItems}
+                  filters={filters}
+                  sort={sort}
+                  onFiltersChange={setFilters}
+                  onSortChange={setSort}
                 />
               </div>
 
@@ -344,6 +488,20 @@ export default function SalesSheetCreatorPage() {
         onDeleteDraft={handleDeleteDraft}
         isDeleting={deleteDraftMutation.isPending}
       />
+
+      {/* Save View Dialog */}
+      {selectedClientId && (
+        <SaveViewDialog
+          open={showSaveViewDialog}
+          onOpenChange={setShowSaveViewDialog}
+          clientId={selectedClientId}
+          clientName={selectedClientName}
+          filters={filters}
+          sort={sort}
+          columnVisibility={columnVisibility}
+          onSaved={(viewId) => setCurrentViewId(viewId)}
+        />
+      )}
     </div>
   );
 }

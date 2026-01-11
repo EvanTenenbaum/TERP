@@ -378,4 +378,105 @@ export const salesSheetsRouter = router({
       );
       return { sessionId };
     }),
+
+  // ============================================================================
+  // SAVED VIEWS (SALES-SHEET-IMPROVEMENTS)
+  // ============================================================================
+
+  /**
+   * Save a view configuration (filters, sort, columns)
+   * Reuses the templates table with filters/columnVisibility JSON fields
+   */
+  saveView: protectedProcedure.use(requirePermission("orders:create"))
+    .input(
+      z.object({
+        id: z.number().positive().optional(), // For updates
+        name: z.string().min(1).max(255),
+        description: z.string().max(500).optional(),
+        clientId: z.number().positive().optional(), // null = universal view
+        filters: z.object({
+          search: z.string(),
+          categories: z.array(z.string()),
+          grades: z.array(z.string()),
+          priceMin: z.number().nullable(),
+          priceMax: z.number().nullable(),
+          strainFamilies: z.array(z.string()),
+          vendors: z.array(z.string()),
+          inStockOnly: z.boolean(),
+        }),
+        sort: z.object({
+          field: z.enum(['name', 'category', 'retailPrice', 'quantity', 'basePrice', 'grade']),
+          direction: z.enum(['asc', 'desc']),
+        }),
+        columnVisibility: z.object({
+          category: z.boolean(),
+          quantity: z.boolean(),
+          basePrice: z.boolean(),
+          retailPrice: z.boolean(),
+          markup: z.boolean(),
+          grade: z.boolean(),
+          vendor: z.boolean(),
+          strain: z.boolean(),
+        }),
+        isDefault: z.boolean().default(false),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      const viewId = await salesSheetsDb.saveView({
+        ...input,
+        createdBy: userId,
+      });
+      return { viewId };
+    }),
+
+  /**
+   * Get saved views for a client (includes universal views)
+   */
+  getViews: protectedProcedure.use(requirePermission("orders:read"))
+    .input(
+      z.object({
+        clientId: z.number().positive().optional(),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      return await salesSheetsDb.getViews(input?.clientId, userId);
+    }),
+
+  /**
+   * Load a specific view by ID
+   */
+  loadView: protectedProcedure.use(requirePermission("orders:read"))
+    .input(z.object({ viewId: z.number().positive() }))
+    .query(async ({ input }) => {
+      return await salesSheetsDb.loadViewById(input.viewId);
+    }),
+
+  /**
+   * Set a view as the default for a client
+   */
+  setDefaultView: protectedProcedure.use(requirePermission("orders:create"))
+    .input(
+      z.object({
+        viewId: z.number().positive(),
+        clientId: z.number().positive(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      await salesSheetsDb.setDefaultView(input.viewId, input.clientId, userId);
+      return { success: true };
+    }),
+
+  /**
+   * Delete a saved view
+   */
+  deleteView: protectedProcedure.use(requirePermission("orders:create"))
+    .input(z.object({ viewId: z.number().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      await salesSheetsDb.deleteView(input.viewId, userId);
+      return { success: true };
+    }),
 });

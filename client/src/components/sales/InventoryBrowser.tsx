@@ -1,6 +1,11 @@
-import { useState } from "react";
+/**
+ * InventoryBrowser Component
+ * Browse and select inventory items for sales sheets with advanced filtering
+ * SALES-SHEET-IMPROVEMENTS: Integrated advanced filtering and sorting
+ */
+
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
@@ -10,16 +15,125 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, CheckSquare, Square } from "lucide-react";
+import { Plus, CheckSquare, Square, Package } from "lucide-react";
 import { StrainFamilyIndicator } from "@/components/strain/StrainComponents";
+import { AdvancedFilters } from "./AdvancedFilters";
+import type {
+  PricedInventoryItem,
+  InventoryFilters,
+  InventorySortConfig,
+} from "./types";
+import { DEFAULT_FILTERS, DEFAULT_SORT } from "./types";
 
 interface InventoryBrowserProps {
-  inventory: any[];
+  inventory: PricedInventoryItem[];
   isLoading: boolean;
-  onAddItems: (items: any[]) => void;
-  selectedItems: any[];
+  onAddItems: (items: PricedInventoryItem[]) => void;
+  selectedItems: PricedInventoryItem[];
+  // Optional: external filter/sort control for saved views
+  filters?: InventoryFilters;
+  sort?: InventorySortConfig;
+  onFiltersChange?: (filters: InventoryFilters) => void;
+  onSortChange?: (sort: InventorySortConfig) => void;
+}
+
+// Apply filters to inventory
+function applyFilters(
+  item: PricedInventoryItem,
+  filters: InventoryFilters
+): boolean {
+  // Search filter
+  if (filters.search) {
+    const searchLower = filters.search.toLowerCase();
+    const matchesSearch =
+      item.name?.toLowerCase().includes(searchLower) ||
+      item.category?.toLowerCase().includes(searchLower) ||
+      item.strain?.toLowerCase().includes(searchLower) ||
+      item.strainFamily?.toLowerCase().includes(searchLower) ||
+      item.vendor?.toLowerCase().includes(searchLower) ||
+      item.grade?.toLowerCase().includes(searchLower);
+    if (!matchesSearch) return false;
+  }
+
+  // Category filter
+  if (filters.categories.length > 0) {
+    if (!item.category || !filters.categories.includes(item.category)) {
+      return false;
+    }
+  }
+
+  // Grade filter
+  if (filters.grades.length > 0) {
+    if (!item.grade || !filters.grades.includes(item.grade)) {
+      return false;
+    }
+  }
+
+  // Strain family filter
+  if (filters.strainFamilies.length > 0) {
+    if (
+      !item.strainFamily ||
+      !filters.strainFamilies.includes(item.strainFamily)
+    ) {
+      return false;
+    }
+  }
+
+  // Vendor filter
+  if (filters.vendors.length > 0) {
+    if (!item.vendor || !filters.vendors.includes(item.vendor)) {
+      return false;
+    }
+  }
+
+  // Price range filter
+  if (filters.priceMin !== null && item.retailPrice < filters.priceMin) {
+    return false;
+  }
+  if (filters.priceMax !== null && item.retailPrice > filters.priceMax) {
+    return false;
+  }
+
+  // In stock filter
+  if (filters.inStockOnly && item.quantity <= 0) {
+    return false;
+  }
+
+  return true;
+}
+
+// Apply sorting to inventory
+function applySorting(
+  a: PricedInventoryItem,
+  b: PricedInventoryItem,
+  sort: InventorySortConfig
+): number {
+  const direction = sort.direction === "asc" ? 1 : -1;
+
+  switch (sort.field) {
+    case "name":
+      return direction * (a.name || "").localeCompare(b.name || "");
+    case "category":
+      return direction * (a.category || "").localeCompare(b.category || "");
+    case "retailPrice":
+      return direction * (a.retailPrice - b.retailPrice);
+    case "quantity":
+      return direction * (a.quantity - b.quantity);
+    case "basePrice":
+      return direction * (a.basePrice - b.basePrice);
+    case "grade":
+      return direction * (a.grade || "").localeCompare(b.grade || "");
+    default:
+      return 0;
+  }
 }
 
 export function InventoryBrowser({
@@ -27,67 +141,107 @@ export function InventoryBrowser({
   isLoading,
   onAddItems,
   selectedItems,
+  filters: externalFilters,
+  sort: externalSort,
+  onFiltersChange: externalOnFiltersChange,
+  onSortChange: externalOnSortChange,
 }: InventoryBrowserProps) {
-  const [search, setSearch] = useState("");
+  // Internal state for when not controlled externally
+  const [internalFilters, setInternalFilters] =
+    useState<InventoryFilters>(DEFAULT_FILTERS);
+  const [internalSort, setInternalSort] =
+    useState<InventorySortConfig>(DEFAULT_SORT);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
-  // Filter inventory by search, ensuring items have valid data
-  const filteredInventory = inventory.filter((item) => {
-    // Skip items without valid id or name
-    if (!item || item.id === undefined || item.id === null || !item.name) {
-      return false;
-    }
-    return (
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.category?.toLowerCase().includes(search.toLowerCase()) ||
-      item.strain?.toLowerCase().includes(search.toLowerCase())
+  // Use external or internal state
+  const filters = externalFilters ?? internalFilters;
+  const sort = externalSort ?? internalSort;
+  const onFiltersChange = externalOnFiltersChange ?? setInternalFilters;
+  const onSortChange = externalOnSortChange ?? setInternalSort;
+
+  // Filter and sort inventory
+  const filteredInventory = useMemo(() => {
+    // First, filter out invalid items
+    const validItems = inventory.filter(
+      (item) => item && item.id !== undefined && item.id !== null && item.name
     );
-  });
+
+    // Apply filters
+    const filtered = validItems.filter((item) => applyFilters(item, filters));
+
+    // Apply sorting
+    return filtered.sort((a, b) => applySorting(a, b, sort));
+  }, [inventory, filters, sort]);
 
   // Check if item is already in sheet
-  const isInSheet = (itemId: number) => {
-    return selectedItems.some((item) => item.id === itemId);
-  };
+  const isInSheet = useCallback(
+    (itemId: number) => {
+      return selectedItems.some((item) => item.id === itemId);
+    },
+    [selectedItems]
+  );
 
   // Toggle item selection
-  const toggleSelection = (itemId: number) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(itemId)) {
-      newSelected.delete(itemId);
-    } else {
-      newSelected.add(itemId);
-    }
-    setSelectedIds(newSelected);
-  };
+  const toggleSelection = useCallback((itemId: number) => {
+    setSelectedIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  }, []);
 
-  // Select all visible items
-  const selectAll = () => {
-    const allIds = new Set(filteredInventory.map((item) => item.id));
-    setSelectedIds(allIds);
-  };
+  // Select all visible items (that aren't already in sheet)
+  const selectAll = useCallback(() => {
+    const selectableIds = filteredInventory
+      .filter((item) => !isInSheet(item.id))
+      .map((item) => item.id);
+    setSelectedIds(new Set(selectableIds));
+  }, [filteredInventory, isInSheet]);
 
   // Clear selection
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelectedIds(new Set());
-  };
+  }, []);
 
   // Add selected items to sheet
-  const addSelectedToSheet = () => {
+  const addSelectedToSheet = useCallback(() => {
     const itemsToAdd = inventory.filter((item) => selectedIds.has(item.id));
     onAddItems(itemsToAdd);
     setSelectedIds(new Set());
-  };
+  }, [inventory, selectedIds, onAddItems]);
 
   // Add single item to sheet
-  const addSingleItem = (item: any) => {
-    onAddItems([item]);
-  };
+  const addSingleItem = useCallback(
+    (item: PricedInventoryItem) => {
+      onAddItems([item]);
+    },
+    [onAddItems]
+  );
 
   // Calculate markup percentage
   const calculateMarkup = (basePrice: number, retailPrice: number) => {
     if (basePrice === 0) return 0;
     return ((retailPrice - basePrice) / basePrice) * 100;
   };
+
+  // Calculate stats for filtered inventory
+  const stats = useMemo(() => {
+    const totalValue = filteredInventory.reduce(
+      (sum, item) => sum + item.retailPrice * item.quantity,
+      0
+    );
+    const avgPrice =
+      filteredInventory.length > 0
+        ? filteredInventory.reduce((sum, item) => sum + item.retailPrice, 0) /
+          filteredInventory.length
+        : 0;
+    return { totalValue, avgPrice };
+  }, [filteredInventory]);
 
   if (isLoading) {
     return (
@@ -109,7 +263,10 @@ export function InventoryBrowser({
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <CardTitle>Inventory</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Inventory
+            </CardTitle>
             <CardDescription>
               Browse and select items to add to the sales sheet
             </CardDescription>
@@ -123,16 +280,19 @@ export function InventoryBrowser({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search inventory..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        {/* Advanced Filters */}
+        <AdvancedFilters
+          filters={filters}
+          sort={sort}
+          onFiltersChange={onFiltersChange}
+          onSortChange={onSortChange}
+          inventory={inventory}
+          isOpen={filtersOpen}
+          onOpenChange={setFiltersOpen}
+        />
+
+        {/* Bulk Actions */}
+        <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={selectAll}>
             <CheckSquare className="mr-2 h-4 w-4" />
             Select All
@@ -143,6 +303,7 @@ export function InventoryBrowser({
           </Button>
         </div>
 
+        {/* Inventory Table */}
         <div className="rounded-md border max-h-[600px] overflow-y-auto">
           <Table>
             <TableHeader>
@@ -160,17 +321,25 @@ export function InventoryBrowser({
             <TableBody>
               {filteredInventory.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
-                    No inventory items found
+                  <TableCell
+                    colSpan={8}
+                    className="text-center text-muted-foreground"
+                  >
+                    {inventory.length === 0
+                      ? "No inventory items available"
+                      : "No items match the current filters"}
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredInventory.map((item) => {
                   const markup = calculateMarkup(item.basePrice, item.retailPrice);
                   const alreadyInSheet = isInSheet(item.id);
-                  
+
                   return (
-                    <TableRow key={item.id} className={alreadyInSheet ? "opacity-50" : ""}>
+                    <TableRow
+                      key={item.id}
+                      className={alreadyInSheet ? "opacity-50" : ""}
+                    >
                       <TableCell>
                         <Checkbox
                           checked={selectedIds.has(item.id)}
@@ -191,13 +360,22 @@ export function InventoryBrowser({
                           {item.strainId && (
                             <StrainFamilyIndicator strainId={item.strainId} />
                           )}
-                          {item.quantity <= 0 && item.strainId && (
-                            <span className="text-xs text-destructive">Out of stock</span>
+                          {item.quantity <= 0 && (
+                            <span className="text-xs text-destructive">
+                              Out of stock
+                            </span>
+                          )}
+                          {item.vendor && (
+                            <span className="text-xs text-muted-foreground">
+                              {item.vendor}
+                            </span>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{item.category || "N/A"}</Badge>
+                        <Badge variant="outline">
+                          {item.category || "N/A"}
+                        </Badge>
                       </TableCell>
                       <TableCell>{item.quantity.toFixed(2)}</TableCell>
                       <TableCell>${item.basePrice.toFixed(2)}</TableCell>
@@ -206,7 +384,8 @@ export function InventoryBrowser({
                       </TableCell>
                       <TableCell>
                         <Badge variant={markup > 0 ? "default" : "secondary"}>
-                          {markup > 0 ? "+" : ""}{markup.toFixed(1)}%
+                          {markup > 0 ? "+" : ""}
+                          {markup.toFixed(1)}%
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -227,11 +406,17 @@ export function InventoryBrowser({
           </Table>
         </div>
 
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredInventory.length} of {inventory.length} items
+        {/* Stats Bar */}
+        <div className="flex items-center justify-between text-sm text-muted-foreground border-t pt-3">
+          <span>
+            Showing {filteredInventory.length} of {inventory.length} items
+          </span>
+          <div className="flex gap-4">
+            <span>Total Value: ${stats.totalValue.toLocaleString()}</span>
+            <span>Avg Price: ${stats.avgPrice.toFixed(2)}</span>
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
-
