@@ -18,8 +18,22 @@ import {
   Copy,
   FileText,
   Image as ImageIcon,
+  Share2,
+  ShoppingCart,
+  Video,
+  Link,
+  Check,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useLocation } from "wouter";
 import {
   DndContext,
   closestCenter,
@@ -263,14 +277,54 @@ export function SalesSheetPreview({
     return sum + price;
   }, 0);
 
+  const [, setLocation] = useLocation();
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [lastSavedSheetId, setLastSavedSheetId] = useState<number | null>(null);
+
   // Save mutation
   const saveMutation = trpc.salesSheets.save.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("Sales sheet saved successfully");
       utils.salesSheets.getHistory.invalidate();
+      setLastSavedSheetId(data);
     },
     onError: error => {
       toast.error("Failed to save sales sheet: " + error.message);
+    },
+  });
+
+  // Share link mutation
+  const shareMutation = trpc.salesSheets.generateShareLink.useMutation({
+    onSuccess: (data) => {
+      const fullUrl = `${window.location.origin}${data.shareUrl}`;
+      setShareUrl(fullUrl);
+      setShareDialogOpen(true);
+    },
+    onError: error => {
+      toast.error("Failed to generate share link: " + error.message);
+    },
+  });
+
+  // Convert to order mutation
+  const convertToOrderMutation = trpc.salesSheets.convertToOrder.useMutation({
+    onSuccess: (data) => {
+      toast.success("Converted to order successfully");
+      setLocation(`/orders?id=${data.orderId}`);
+    },
+    onError: error => {
+      toast.error("Failed to convert to order: " + error.message);
+    },
+  });
+
+  // Convert to live session mutation
+  const convertToSessionMutation = trpc.salesSheets.convertToLiveSession.useMutation({
+    onSuccess: (data) => {
+      toast.success("Live session started");
+      setLocation(`/live-shopping?session=${data.sessionId}`);
+    },
+    onError: error => {
+      toast.error("Failed to start live session: " + error.message);
     },
   });
 
@@ -439,6 +493,7 @@ export function SalesSheetPreview({
                   variant="outline"
                   size="sm"
                   onClick={handleCopyToClipboard}
+                  title="Copy to clipboard"
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -446,13 +501,117 @@ export function SalesSheetPreview({
                   variant="outline"
                   size="sm"
                   onClick={handleExportAsImage}
+                  title="Export as image"
                 >
                   <ImageIcon className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportAsPDF}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportAsPDF}
+                  title="Export as PDF"
+                >
                   <FileText className="h-4 w-4" />
                 </Button>
               </div>
+
+              {/* Share & Convert Section */}
+              {lastSavedSheetId && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Share & Convert</p>
+
+                    {/* Share Button */}
+                    <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            if (lastSavedSheetId) {
+                              shareMutation.mutate({
+                                sheetId: lastSavedSheetId,
+                                expiresInDays: 7
+                              });
+                            }
+                          }}
+                          disabled={shareMutation.isPending}
+                        >
+                          <Share2 className="mr-2 h-4 w-4" />
+                          {shareMutation.isPending ? "Generating..." : "Share Link"}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Share Sales Sheet</DialogTitle>
+                          <DialogDescription>
+                            Send this link to your client. They can view the sales sheet without logging in.
+                          </DialogDescription>
+                        </DialogHeader>
+                        {shareUrl && (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={shareUrl}
+                                readOnly
+                                className="flex-1"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(shareUrl);
+                                  toast.success("Link copied!");
+                                }}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              This link expires in 7 days.
+                            </p>
+                          </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Convert Buttons */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          if (lastSavedSheetId) {
+                            convertToOrderMutation.mutate({
+                              sheetId: lastSavedSheetId,
+                              orderType: "DRAFT",
+                            });
+                          }
+                        }}
+                        disabled={convertToOrderMutation.isPending}
+                      >
+                        <ShoppingCart className="mr-1 h-4 w-4" />
+                        To Order
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          if (lastSavedSheetId) {
+                            convertToSessionMutation.mutate({
+                              sheetId: lastSavedSheetId,
+                            });
+                          }
+                        }}
+                        disabled={convertToSessionMutation.isPending}
+                      >
+                        <Video className="mr-1 h-4 w-4" />
+                        Live Session
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </>
         )}

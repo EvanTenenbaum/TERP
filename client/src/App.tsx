@@ -29,6 +29,7 @@ import CreditSettingsPage from "@/pages/CreditSettingsPage";
 import PricingRulesPage from "@/pages/PricingRulesPage";
 import PricingProfilesPage from "@/pages/PricingProfilesPage";
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
+import SharedSalesSheetPage from "@/pages/SharedSalesSheetPage";
 import { NotificationPreferencesPage } from "@/pages/settings/NotificationPreferences";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
 import Orders from "@/pages/Orders";
@@ -95,6 +96,10 @@ function Router() {
       />
       <Route path="/login" component={withErrorBoundary(Login)} />
       <Route path="/vip-portal/login" component={withErrorBoundary(VIPLogin)} />
+      <Route
+        path="/shared/sales-sheet/:token"
+        component={withErrorBoundary(SharedSalesSheetPage)}
+      />
       <Route
         path="/vip-portal/dashboard"
         component={withErrorBoundary(VIPDashboard)}

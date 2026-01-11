@@ -15,6 +15,7 @@ import {
   BarChart3,
   Table,
   Video,
+  Layers,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,6 +44,13 @@ export const navigationItems: NavigationItem[] = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard, group: "sales" },
   { name: "Clients", path: "/clients", icon: Users, group: "sales" },
   { name: "Orders", path: "/orders", icon: ShoppingCart, group: "sales" },
+  {
+    name: "Sales Sheets",
+    path: "/sales-sheets",
+    icon: Layers,
+    group: "sales",
+    ariaLabel: "Create and share sales sheets with clients",
+  },
   {
     name: "Live Shopping",
     path: "/live-shopping",
