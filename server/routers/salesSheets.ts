@@ -74,7 +74,7 @@ export const salesSheetsRouter = router({
     }),
 
   // History
-  save: protectedProcedure.use(requirePermission("orders:read"))
+  save: protectedProcedure.use(requirePermission("orders:create"))
     .input(
       z.object({
         clientId: z.number().positive(),
@@ -120,7 +120,7 @@ export const salesSheetsRouter = router({
       return await salesSheetsDb.getSalesSheetById(input.sheetId);
     }),
 
-  delete: protectedProcedure.use(requirePermission("orders:read"))
+  delete: protectedProcedure.use(requirePermission("orders:create"))
     .input(z.object({ sheetId: z.number().positive() }))
     .mutation(async ({ input }) => {
       await salesSheetsDb.deleteSalesSheet(input.sheetId);
@@ -166,7 +166,7 @@ export const salesSheetsRouter = router({
       return await salesSheetsDb.loadTemplate(input.templateId);
     }),
 
-  deleteTemplate: protectedProcedure.use(requirePermission("orders:read"))
+  deleteTemplate: protectedProcedure.use(requirePermission("orders:create"))
     .input(z.object({ templateId: z.number().positive() }))
     .mutation(async ({ input }) => {
       await salesSheetsDb.deleteTemplate(input.templateId);
@@ -232,7 +232,7 @@ export const salesSheetsRouter = router({
   /**
    * Delete a draft
    */
-  deleteDraft: protectedProcedure.use(requirePermission("orders:read"))
+  deleteDraft: protectedProcedure.use(requirePermission("orders:create"))
     .input(z.object({ draftId: z.number().positive() }))
     .mutation(async ({ input, ctx }) => {
       const userId = getAuthenticatedUserId(ctx);

@@ -732,25 +732,42 @@ export async function convertToLiveSession(
   // Add items from the sales sheet to the session
   const items = sheet.items as any[];
   if (items && items.length > 0) {
-    for (const item of items) {
-      // Get the batch to find the productId
-      const batch = await db
-        .select()
-        .from(batchesTable)
-        .where(eq(batchesTable.id, item.id))
-        .limit(1);
+    // Fetch all batches at once to avoid N+1 queries
+    const batchIds = items.map((item) => item.id).filter(Boolean);
+    const batchesData = await db
+      .select()
+      .from(batchesTable)
+      .where(inArray(batchesTable.id, batchIds));
 
-      if (batch.length > 0) {
+    // Create a map for quick lookup
+    const batchMap = new Map(batchesData.map((b) => [b.id, b]));
+
+    // Track items that couldn't be added
+    const skippedItems: string[] = [];
+
+    for (const item of items) {
+      const batch = batchMap.get(item.id);
+      if (batch) {
         await db.insert(sessionCartItems).values({
           sessionId,
           batchId: item.id,
-          productId: batch[0].productId || 1, // Use productId from batch
+          productId: batch.productId || 1,
           quantity: item.quantity?.toString() || "1",
           unitPrice: (item.finalPrice || item.retailPrice || item.basePrice)?.toString() || "0",
           addedByRole: "HOST",
           itemStatus: "TO_PURCHASE",
         });
+      } else {
+        skippedItems.push(item.name || `Item #${item.id}`);
       }
+    }
+
+    // Log warning if items were skipped
+    if (skippedItems.length > 0) {
+      logger.warn(
+        { sessionId, skippedItems },
+        `convertToLiveSession: ${skippedItems.length} items skipped (batch not found)`
+      );
     }
   }
 
