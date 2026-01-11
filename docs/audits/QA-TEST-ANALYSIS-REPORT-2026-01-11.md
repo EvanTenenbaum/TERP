@@ -13,15 +13,17 @@ A comprehensive QA test was conducted across 274 test cases covering 15 domains.
 
 | Category           | Count | Percentage |
 | ------------------ | ----- | ---------- |
-| **PASS**           | 153   | 55.8%      |
+| **PASS**           | 179   | 65.3%      |
 | **FAIL**           | 16    | 5.8%       |
-| **BLOCKED**        | 42    | 15.3%      |
-| **N/A (API-only)** | 63    | 23.0%      |
+| **BLOCKED**        | 17    | 6.2%       |
+| **N/A (API-only)** | 62    | 22.6%      |
+
+> **Updated:** Initial analysis incorrectly marked several working features as BLOCKED due to navigation documentation gaps. Workflow, Analytics, Auth, and Vendor read operations are all functional.
 
 ### Critical Findings
 
-1. **16 FAIL cases** - Actual bugs requiring immediate attention
-2. **42 BLOCKED cases** - Features that couldn't be tested due to navigation, missing data, or safety concerns
+1. **16 FAIL cases** - Actual bugs requiring immediate attention (Batches 404, Calendar DB errors)
+2. **17 BLOCKED cases** - Features blocked due to missing data, safety concerns, or no UI
 3. **12 TypeScript errors** - Type-check failures in production code
 4. **Systemic code quality issue** - Duplicate database availability checks throughout calendarDb.ts
 
@@ -136,25 +138,20 @@ Every function in `calendarDb.ts` contains duplicate database availability check
 
 ## Part 3: BLOCKED Test Cases Analysis
 
-### Category: Navigation Issues (27 cases)
+### Category: Navigation Issues (8 cases)
 
 Features that couldn't be tested due to navigation problems:
 
-| Domain    | Entity                | Rows    | Count |
-| --------- | --------------------- | ------- | ----- |
-| CRM       | Client Activity       | 73      | 1     |
-| CRM       | Client Tags           | 74-76   | 3     |
-| CRM       | Client Notes          | 77-78   | 2     |
-| CRM       | Client Communications | 79-80   | 2     |
-| Workflow  | Todo Lists            | 205-217 | 13    |
-| Analytics | Analytics             | 231-237 | 7     |
-| Auth      | Auth                  | 265-268 | 4     |
+| Domain | Entity                | Rows  | Count |
+| ------ | --------------------- | ----- | ----- |
+| CRM    | Client Activity       | 73    | 1     |
+| CRM    | Client Tags           | 74-76 | 3     |
+| CRM    | Client Notes          | 77-78 | 2     |
+| CRM    | Client Communications | 79-80 | 2     |
 
-**Root Cause:** These features either:
+> **Resolved:** Workflow/Todos (/todos), Analytics (/analytics), Auth (/account), and Vendors (/vendors) are all accessible and functional.
 
-- Lack proper navigation links in the sidebar
-- Require specific navigation paths not documented
-- Are accessible only through sub-routes of other pages
+**Root Cause:** CRM sub-features accessed via client detail page tabs, not standalone routes.
 
 ### Category: Missing Data (9 cases)
 
@@ -165,7 +162,7 @@ Features that couldn't be tested due to navigation problems:
 | Orders     | Orders       | 119, 122 | No confirmed orders available                |
 | Orders     | Draft Orders | 126-130  | No draft orders (0) available                |
 
-### Category: Unsafe Production Data (6 cases)
+### Category: Unsafe Production Data (7 cases)
 
 Destructive operations skipped to protect data:
 
@@ -176,6 +173,17 @@ Destructive operations skipped to protect data:
 | CRM       | `clients.transactions.delete` | 69  |
 | Inventory | `productCatalogue.delete`     | 106 |
 | Orders    | `orders.delete`               | 123 |
+| Workflow  | `todoTasks.delete`            | 210 |
+
+### Category: No UI Available (3 cases)
+
+Deprecated vendor CRUD operations have no UI buttons:
+
+| Domain     | Procedure        | Row |
+| ---------- | ---------------- | --- |
+| Deprecated | `vendors.create` | 272 |
+| Deprecated | `vendors.update` | 273 |
+| Deprecated | `vendors.delete` | 274 |
 
 ---
 
@@ -189,12 +197,14 @@ Destructive operations skipped to protect data:
 | Orders     | 37    | 27   | 0    | 9       | 1   |
 | Pricing    | 16    | 16   | 0    | 0       | 0   |
 | Calendar   | 29    | 1    | 9    | 0       | 19  |
-| Workflow   | 13    | 0    | 0    | 13      | 0   |
+| Workflow   | 14    | 12   | 0    | 1       | 1   |
 | Dashboard  | 12    | 12   | 0    | 0       | 0   |
-| Analytics  | 8     | 0    | 0    | 8       | 0   |
+| Analytics  | 8     | 7    | 0    | 0       | 1   |
 | Admin      | 24    | 24   | 0    | 0       | 0   |
-| Auth       | 4     | 0    | 0    | 4       | 0   |
-| Deprecated | 6     | 0    | 0    | 6       | 0   |
+| Auth       | 4     | 4    | 0    | 0       | 0   |
+| Deprecated | 6     | 3    | 0    | 3       | 0   |
+
+> **Note:** Workflow, Analytics, Auth, and Deprecated (Vendors) domains updated after re-testing confirmed features are accessible.
 
 ---
 
@@ -202,21 +212,21 @@ Destructive operations skipped to protect data:
 
 ### Immediate Actions (P0)
 
-1. **Fix Calendar Database Layer** - Remove duplicate checks, implement proper filtering
-2. **Add `/batches` Route** - Either add dedicated route or redirect to `/inventory`
+1. **Fix Calendar Database Layer** - Remove duplicate checks, implement proper filtering (9 FAIL cases)
+2. **Add `/batches` Route** - Either add dedicated route or redirect to `/inventory` (7 FAIL cases)
 3. **Fix TypeScript Errors** - Address all 12 compilation errors
 
 ### Short-term Actions (P1)
 
-4. **Improve Navigation** - Add missing navigation links for blocked features
-5. **Add Route Redirects** - `/invoices` -> `/accounting/invoices`
-6. **Create Test Data Seeding** - Enable testing of data-dependent features
+4. **Add Route Redirects** - `/invoices` -> `/accounting/invoices`
+5. **Expose CRM Sub-features** - Client Activity, Tags, Notes, Communications (8 BLOCKED cases)
+6. **Create Test Data Seeding** - Enable testing of data-dependent features (9 BLOCKED cases)
 
 ### Medium-term Actions (P2)
 
 7. **Review API-only Endpoints** - Consider UI exposure for frequently used API-only procedures
-8. **Add Integration Tests** - Cover the 42 blocked test cases
-9. **Implement Safe Test Mode** - Allow destructive operation testing without affecting production data
+8. **Implement Safe Test Mode** - Allow destructive operation testing without affecting production data
+9. **Deprecate Vendor Module** - Vendor CRUD has no UI; confirm if feature is intentionally deprecated
 
 ---
 

@@ -184,39 +184,44 @@ Navigation inconsistency: `/invoices` returns 404 while correct path is `/accoun
 
 ---
 
-### Phase 4: Navigation Improvements (8h)
+### Phase 4: CRM Sub-feature Navigation (4h)
 
-**Objective:** Enable testing of blocked features
+**Objective:** Enable testing of CRM blocked features
 
 **Tasks:**
 
-#### QA-006: Add Navigation for Blocked Features
+#### QA-006: Expose CRM Sub-features in Client Detail Page
 
 **Status:** ready
 **Priority:** MEDIUM
-**Estimate:** 8h
-**Module:** `client/src/config/navigation.ts`, `client/src/App.tsx`
+**Estimate:** 4h
+**Module:** `client/src/pages/ClientProfilePage.tsx`
 **Dependencies:** QA-002, QA-003
 **Prompt:** `docs/prompts/QA-006.md`
 
 **Problem:**
-27 test cases blocked due to navigation issues. Features exist but aren't accessible through standard navigation.
+8 test cases blocked due to CRM sub-features not being easily accessible. Features exist in client detail page tabs but may need better exposure.
+
+> **Scope Reduced:** Initial analysis incorrectly marked 27 cases as blocked. Re-testing confirmed:
+>
+> - Workflow/Todos: Working at /todos (12 PASS)
+> - Analytics: Working at /analytics (7 PASS)
+> - Auth: Working at /account (4 PASS)
+> - Vendors: Working at /vendors (3 PASS)
 
 **Objectives:**
 
-1. Add navigation paths for client sub-features (activity, tags, notes, communications)
-2. Expose workflow/todo features in sidebar
-3. Add analytics and auth profile access
+1. Verify client sub-feature tabs are functional (Activity, Tags, Notes, Communications)
+2. Ensure tabs are visible and accessible
+3. Document navigation paths for QA testing
 
 **Deliverables:**
 
-- [ ] Add Client Activity tab/link on client detail page
-- [ ] Add Client Tags management UI access
-- [ ] Add Client Notes section navigation
-- [ ] Add Client Communications panel access
-- [ ] Add Todo Lists to sidebar navigation
-- [ ] Add Analytics page to sidebar (currently only "Reports" label)
-- [ ] Add user profile/account settings link
+- [ ] Verify Client Activity tab functionality
+- [ ] Verify Client Tags tab functionality
+- [ ] Verify Client Notes tab functionality
+- [ ] Verify Client Communications tab functionality
+- [ ] Document navigation paths in QA playbook
 - [ ] Update navigation tests
 
 ---
