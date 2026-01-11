@@ -1,6 +1,6 @@
 import { getDb } from "./db";
 import { dashboardWidgetLayouts, dashboardKpiConfigs, users } from "../drizzle/schema";
-import { eq, and, or, isNull } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 
 /**
  * Dashboard Database Access Layer

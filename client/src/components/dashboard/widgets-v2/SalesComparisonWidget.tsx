@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -196,17 +197,12 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 space-y-2">
-            <p className="text-muted-foreground">
-              No sales comparison data available
-            </p>
-            <p className="text-xs text-muted-foreground">
-              To see data here, seed the database with:{" "}
-              <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
-                pnpm seed
-              </code>
-            </p>
-          </div>
+          <EmptyState
+            variant="analytics"
+            size="sm"
+            title="No sales comparison data"
+            description="Sales comparison will appear once orders are recorded"
+          />
         )}
       </CardContent>
     </Card>

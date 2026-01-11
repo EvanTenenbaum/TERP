@@ -3,17 +3,16 @@
  * Handles all database operations for the unified Quote/Sales system
  */
 
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   orders,
   batches,
   clients,
   sampleInventoryLog,
-  InsertOrder,
   type Order,
 } from "../drizzle/schema";
-import { calculateCogs, calculateDueDate, type CogsCalculationInput } from "./cogsCalculator";
+import { calculateCogs, calculateDueDate } from "./cogsCalculator";
 import {
   createInvoiceFromOrder,
   recordOrderCashPayment,
@@ -910,7 +909,7 @@ export async function exportOrder(
   };
   
   switch (format) {
-    case 'clipboard':
+    case 'clipboard': {
       // Return formatted text for clipboard
       const lines = [
         `Order: ${exportData.orderNumber}`,
@@ -928,6 +927,7 @@ export async function exportOrder(
         `Total: $${parseFloat(exportData.total ?? '0').toFixed(2)}`,
       ];
       return lines.join('\n');
+    }
       
     case 'pdf':
       // Return JSON data that can be used by a PDF generator on the client
