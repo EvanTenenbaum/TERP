@@ -61,10 +61,7 @@ export const dashboardPreferencesRouter = router({
    */
   getPreferences: protectedProcedure.use(requirePermission("dashboard:read")).query(async ({ ctx }) => {
     const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) {
-      throw new Error("Database not available");
-    }
+    if (!db) throw new Error("Database not available");
 
     try {
       // Query for user's preferences
@@ -112,10 +109,7 @@ export const dashboardPreferencesRouter = router({
     .input(preferencesInputSchema)
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-        if (!db) throw new Error("Database not available");
-      if (!db) {
-        throw new Error("Database not available");
-      }
+      if (!db) throw new Error("Database not available");
 
       try {
         // Check if preferences already exist
@@ -169,10 +163,7 @@ export const dashboardPreferencesRouter = router({
    */
   resetPreferences: protectedProcedure.use(requirePermission("dashboard:read")).mutation(async ({ ctx }) => {
     const db = await getDb();
-        if (!db) throw new Error("Database not available");
-    if (!db) {
-      throw new Error("Database not available");
-    }
+    if (!db) throw new Error("Database not available");
 
     try {
       // Delete user's preferences

@@ -151,6 +151,7 @@ export async function getRankHistory(
 
 /**
  * Save rank history snapshot (called by scheduled job)
+ * Uses a transaction to ensure all-or-nothing bulk save (prevents partial data on failure)
  */
 export async function saveRankHistorySnapshot(
   clients: Array<{
@@ -166,23 +167,26 @@ export async function saveRankHistorySnapshot(
 
   const today = new Date();
 
-  // Save snapshot for each client
-  for (const client of clients) {
-    await db
-      .insert(leaderboardRankHistory)
-      .values({
-        clientId: client.clientId,
-        snapshotDate: today,
-        masterRank: client.rank,
-        masterScore: client.masterScore?.toString() ?? null,
-        totalClients: totalCount,
-      })
-      .onDuplicateKeyUpdate({
-        set: {
+  // Use transaction to ensure atomic bulk save
+  await db.transaction(async (tx) => {
+    // Save snapshot for each client
+    for (const client of clients) {
+      await tx
+        .insert(leaderboardRankHistory)
+        .values({
+          clientId: client.clientId,
+          snapshotDate: today,
           masterRank: client.rank,
           masterScore: client.masterScore?.toString() ?? null,
           totalClients: totalCount,
-        },
-      });
-  }
+        })
+        .onDuplicateKeyUpdate({
+          set: {
+            masterRank: client.rank,
+            masterScore: client.masterScore?.toString() ?? null,
+            totalClients: totalCount,
+          },
+        });
+    }
+  });
 }
