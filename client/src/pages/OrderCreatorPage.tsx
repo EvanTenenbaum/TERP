@@ -5,7 +5,7 @@
  * v2.0 Sales Order Enhancements
  */
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
@@ -121,6 +121,10 @@ export default function OrderCreatorPageV2() {
   const [lastSavedDraftId, setLastSavedDraftId] = useState<number | null>(null);
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // BUG-093 FIX: Track whether we're in finalization mode to prevent form reset
+  // before finalization completes
+  const isFinalizingRef = useRef(false);
+
   // QA-W2-005: Track unsaved changes - consider both items and auto-save status
   // Warning should show when there are items OR when auto-save is pending/failed
   useEffect(() => {
@@ -174,26 +178,42 @@ export default function OrderCreatorPageV2() {
   const { totals, warnings, isValid } = useOrderCalculations(items, adjustment);
 
   // Mutations
+  // BUG-093 FIX: Modified to support two-step finalization
   const createDraftMutation = trpc.orders.createDraftEnhanced.useMutation({
     onSuccess: data => {
-      toast.success(`Draft order #${data.orderId} saved successfully`);
-      // Reset form
-      setItems([]);
-      setAdjustment(null);
+      if (isFinalizingRef.current) {
+        // We're in finalization mode - proceed to finalize the draft
+        // Don't reset form yet - wait for finalization to complete
+        toast.info(`Draft #${data.orderId} created, finalizing...`);
+        finalizeMutation.mutate({ orderId: data.orderId });
+      } else {
+        // Just saving draft - show success and reset
+        toast.success(`Draft order #${data.orderId} saved successfully`);
+        setItems([]);
+        setAdjustment(null);
+      }
     },
     onError: error => {
+      // Reset finalization flag on error
+      isFinalizingRef.current = false;
       toast.error(`Failed to save draft: ${error.message}`);
     },
   });
 
   const finalizeMutation = trpc.orders.finalizeDraft.useMutation({
     onSuccess: data => {
+      // BUG-093 FIX: Reset finalization flag and form after successful finalization
+      isFinalizingRef.current = false;
       toast.success(`Order #${data.orderNumber} finalized successfully!`);
-      // Navigate to order details or reset
+      // Now it's safe to reset the form
       setItems([]);
       setAdjustment(null);
+      setClientId(null);
+      setReferredByClientId(null);
     },
     onError: error => {
+      // BUG-093 FIX: Reset flag on error, but preserve form data so user can retry
+      isFinalizingRef.current = false;
       toast.error(`Failed to finalize order: ${error.message}`);
     },
   });
@@ -362,7 +382,11 @@ export default function OrderCreatorPageV2() {
 
     if (!clientId) return;
 
-    // First create the draft, then finalize it
+    // BUG-093 FIX: Set finalization mode BEFORE calling createDraftMutation
+    // This ensures the onSuccess handler knows to call finalizeMutation
+    isFinalizingRef.current = true;
+
+    // First create the draft - finalization will happen in onSuccess callback
     createDraftMutation.mutate({
       orderType,
       clientId,
@@ -721,10 +745,19 @@ export default function OrderCreatorPageV2() {
                 <Button
                   className="w-full"
                   onClick={handlePreviewAndFinalize}
-                  disabled={!isValid || finalizeMutation.isPending}
+                  disabled={!isValid || finalizeMutation.isPending || (createDraftMutation.isPending && isFinalizingRef.current)}
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Preview & Finalize
+                  {(finalizeMutation.isPending || (createDraftMutation.isPending && isFinalizingRef.current)) ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Finalizing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Preview & Finalize
+                    </>
+                  )}
                 </Button>
 
                 {!isValid && items.length > 0 && (

@@ -2,8 +2,8 @@
 
 ## Single Source of Truth for All Development
 
-**Version:** 4.8
-**Last Updated:** 2026-01-10 (QA Sales Manager Role Testing)
+**Version:** 4.9
+**Last Updated:** 2026-01-11 (QA Wave 2 Fixes Complete)
 **Status:** Active
 
 > **ROADMAP STRUCTURE (v4.0)**
@@ -265,6 +265,19 @@ All 15 tasks from the Cooper Rd Working Session completed:
 | BLOCKED-002| Sales Manager cannot access Pick & Pack (permission 10002)     | P2       | BY-DESIGN | RBAC (warehouse-only) |
 | BLOCKED-003| Sales Manager cannot access Finance Reports                    | P2       | ✅ FIXED (Jan 10, 2026) | RBAC |
 
+#### QA Baseline Execution - Wave 2 (Jan 11, 2026)
+
+> Discovered during baseline QA run after Wave 1 fixes merged.
+> See: `docs/roadmaps/QA_STRATEGIC_FIX_PLAN_WAVE2.md` for full analysis and fix strategy.
+
+| Task       | Description                                                    | Priority | Status  | Root Cause |
+| ---------- | -------------------------------------------------------------- | -------- | ------- | ---------- |
+| BUG-093    | Sales Order finalization unreliable (finalizeMutation never called) | P0       | ✅ FIXED (Jan 11, 2026) | RC-006 |
+| BUG-094    | Live Shopping session creation fails (FK constraint violation) | P1       | ✅ FIXED (Jan 11, 2026) | RC-007 |
+| BUG-095    | Batches "New Purchase" button inert (Dialog handler mismatch)  | P1       | ✅ FIXED (Jan 11, 2026) | RC-008 |
+| BUG-096    | AR/AP aging widgets still failing (underlying query issue)     | P1       | ✅ FIXED (Jan 11, 2026) | RC-009 |
+| BUG-097    | Error handling inconsistency across modules                    | P3       | 🔴 OPEN | UX |
+
 ---
 
 ### API Registration Issues (P1)
@@ -439,6 +452,9 @@ tsx scripts/seed-client-needs.ts  # Seed client needs
 >
 > **QA Role Testing (Jan 10, 2026):** 10 issues identified, **9 fixed**, 1 by-design.
 > See `docs/qa/QA_SALES_MANAGER_FIXES_VALIDATION.md` for validation checklist.
+>
+> **QA Wave 2 (Jan 11, 2026):** 5 issues identified, **4 fixed** (BUG-093 to BUG-096), 1 deferred (P3).
+> See `docs/roadmaps/QA_STRATEGIC_FIX_PLAN_WAVE2.md` for fix strategy.
 
 ---
 

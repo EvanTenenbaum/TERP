@@ -257,7 +257,9 @@ export function PurchaseModal({ open, onClose, onSuccess }: PurchaseModalProps) 
   const showAmountPaidField = formData.paymentTerms === "COD" || formData.paymentTerms === "PARTIAL";
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    // BUG-095 FIX: onOpenChange expects (isOpen: boolean) => void, but onClose is () => void
+    // Wrap onClose to only trigger when dialog is closing (isOpen=false)
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Product Purchase</DialogTitle>

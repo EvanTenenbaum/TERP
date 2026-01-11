@@ -232,54 +232,64 @@ export async function getOutstandingReceivables() {
 
 /**
  * Calculate AR aging buckets
+ * BUG-096 FIX: Improved error handling with proper error propagation
  */
 export async function calculateARAging() {
   const db = await getDb();
-  if (!db) return { current: 0, days30: 0, days60: 0, days90: 0, days90Plus: 0 };
+  // BUG-096 FIX: Throw error instead of returning zeros when DB unavailable
+  // This allows the frontend to properly show error state
+  if (!db) {
+    throw new Error("Database not available for AR aging calculation");
+  }
 
-  const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
+  try {
+    const today = new Date();
 
-  const result = await db
-    .select({
-      invoiceId: invoices.id,
-      dueDate: invoices.dueDate,
-      amountDue: invoices.amountDue,
-    })
-    .from(invoices)
-    .where(
-      and(
-        inArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
-        sql`${invoices.amountDue} > 0`,
-        sql`${invoices.deletedAt} IS NULL`
-      )
-    );
+    const result = await db
+      .select({
+        invoiceId: invoices.id,
+        dueDate: invoices.dueDate,
+        amountDue: invoices.amountDue,
+      })
+      .from(invoices)
+      .where(
+        and(
+          inArray(invoices.status, ["SENT", "PARTIAL", "OVERDUE"]),
+          sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+          sql`${invoices.deletedAt} IS NULL`
+        )
+      );
 
-  let current = 0;
-  let days30 = 0;
-  let days60 = 0;
-  let days90 = 0;
-  let days90Plus = 0;
+    let current = 0;
+    let days30 = 0;
+    let days60 = 0;
+    let days90 = 0;
+    let days90Plus = 0;
 
-  result.forEach((inv) => {
-    const amountDue = Number(inv.amountDue);
-    const dueDate = new Date(inv.dueDate);
-    const daysPastDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+    result.forEach((inv) => {
+      const amountDue = Number(inv.amountDue) || 0;
+      const dueDate = new Date(inv.dueDate);
+      const daysPastDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (daysPastDue < 0) {
-      current += amountDue;
-    } else if (daysPastDue <= 30) {
-      days30 += amountDue;
-    } else if (daysPastDue <= 60) {
-      days60 += amountDue;
-    } else if (daysPastDue <= 90) {
-      days90 += amountDue;
-    } else {
-      days90Plus += amountDue;
-    }
-  });
+      if (daysPastDue < 0) {
+        current += amountDue;
+      } else if (daysPastDue <= 30) {
+        days30 += amountDue;
+      } else if (daysPastDue <= 60) {
+        days60 += amountDue;
+      } else if (daysPastDue <= 90) {
+        days90 += amountDue;
+      } else {
+        days90Plus += amountDue;
+      }
+    });
 
-  return { current, days30, days60, days90, days90Plus };
+    return { current, days30, days60, days90, days90Plus };
+  } catch (error) {
+    // Log the error for debugging but rethrow for frontend to handle
+    console.error("[arApDb] calculateARAging error:", error);
+    throw error;
+  }
 }
 
 /**
@@ -513,53 +523,64 @@ export async function getOutstandingPayables() {
 
 /**
  * Calculate AP aging buckets
+ * BUG-096 FIX: Improved error handling with proper error propagation
  */
 export async function calculateAPAging() {
   const db = await getDb();
-  if (!db) return { current: 0, days30: 0, days60: 0, days90: 0, days90Plus: 0 };
+  // BUG-096 FIX: Throw error instead of returning zeros when DB unavailable
+  // This allows the frontend to properly show error state
+  if (!db) {
+    throw new Error("Database not available for AP aging calculation");
+  }
 
-  const today = new Date();
+  try {
+    const today = new Date();
 
-  const result = await db
-    .select({
-      billId: bills.id,
-      dueDate: bills.dueDate,
-      amountDue: bills.amountDue,
-    })
-    .from(bills)
-    .where(
-      and(
-        inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
-        sql`${bills.amountDue} > 0`,
-        sql`${bills.deletedAt} IS NULL`
-      )
-    );
+    const result = await db
+      .select({
+        billId: bills.id,
+        dueDate: bills.dueDate,
+        amountDue: bills.amountDue,
+      })
+      .from(bills)
+      .where(
+        and(
+          inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+          sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
+          sql`${bills.deletedAt} IS NULL`
+        )
+      );
 
-  let current = 0;
-  let days30 = 0;
-  let days60 = 0;
-  let days90 = 0;
-  let days90Plus = 0;
+    let current = 0;
+    let days30 = 0;
+    let days60 = 0;
+    let days90 = 0;
+    let days90Plus = 0;
 
-  result.forEach((bill) => {
-    const amountDue = Number(bill.amountDue);
-    const dueDate = new Date(bill.dueDate);
-    const daysPastDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+    result.forEach((bill) => {
+      const amountDue = Number(bill.amountDue) || 0;
+      const dueDate = new Date(bill.dueDate);
+      const daysPastDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (daysPastDue < 0) {
-      current += amountDue;
-    } else if (daysPastDue <= 30) {
-      days30 += amountDue;
-    } else if (daysPastDue <= 60) {
-      days60 += amountDue;
-    } else if (daysPastDue <= 90) {
-      days90 += amountDue;
-    } else {
-      days90Plus += amountDue;
-    }
-  });
+      if (daysPastDue < 0) {
+        current += amountDue;
+      } else if (daysPastDue <= 30) {
+        days30 += amountDue;
+      } else if (daysPastDue <= 60) {
+        days60 += amountDue;
+      } else if (daysPastDue <= 90) {
+        days90 += amountDue;
+      } else {
+        days90Plus += amountDue;
+      }
+    });
 
-  return { current, days30, days60, days90, days90Plus };
+    return { current, days30, days60, days90, days90Plus };
+  } catch (error) {
+    // Log the error for debugging but rethrow for frontend to handle
+    console.error("[arApDb] calculateAPAging error:", error);
+    throw error;
+  }
 }
 
 /**
